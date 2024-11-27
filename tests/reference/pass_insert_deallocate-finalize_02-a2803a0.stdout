@@ -7,26 +7,6 @@
                     (SymbolTable
                         4
                         {
-                            1_circle_radius:
-                                (ExternalSymbol
-                                    4
-                                    1_circle_radius
-                                    3 radius
-                                    circle
-                                    []
-                                    radius
-                                    Public
-                                ),
-                            1_my_int_int:
-                                (ExternalSymbol
-                                    4
-                                    1_my_int_int
-                                    5 int
-                                    my_int
-                                    []
-                                    int
-                                    Public
-                                ),
                             c:
                                 (Variable
                                     4
@@ -133,16 +113,6 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_my_int_int:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_my_int_int
-                                                    5 int
-                                                    my_int
-                                                    []
-                                                    int
-                                                    Public
-                                                ),
                                             my_int_sub:
                                                 (Struct
                                                     (SymbolTable
@@ -219,29 +189,7 @@
                                     )
                                     []
                                     []
-                                    [(Allocate
-                                        [((StructInstanceMember
-                                            (Var 6 x_sub)
-                                            6 1_my_int_int
-                                            (Allocatable
-                                                (Array
-                                                    (Integer 4)
-                                                    [(()
-                                                    ())]
-                                                    DescriptorArray
-                                                )
-                                            )
-                                            ()
-                                        )
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 2 (Integer 4) Decimal))]
-                                        ()
-                                        ())]
-                                        ()
-                                        ()
-                                        ()
-                                    )
-                                    (ImplicitDeallocate
+                                    [(ImplicitDeallocate
                                         [(StructInstanceMember
                                             (Var 6 x_sub)
                                             5 1_my_int_int
@@ -283,61 +231,7 @@
                         })
                     finalize_02
                     [finalize_module]
-                    [(Allocate
-                        [((StructInstanceMember
-                            (Var 4 c)
-                            4 1_circle_radius
-                            (Allocatable
-                                (Array
-                                    (Real 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                )
-                            )
-                            ()
-                        )
-                        [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerConstant 2 (Integer 4) Decimal))]
-                        ()
-                        ())]
-                        ()
-                        ()
-                        ()
-                    )
-                    (Allocate
-                        [((StructInstanceMember
-                            (Var 4 x_int)
-                            4 1_my_int_int
-                            (Allocatable
-                                (Array
-                                    (Integer 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                )
-                            )
-                            ()
-                        )
-                        [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerConstant 2 (Integer 4) Decimal))]
-                        ()
-                        ())]
-                        ()
-                        ()
-                        ()
-                    )
-                    (Allocate
-                        [((Var 4 int)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerConstant 2 (Integer 4) Decimal))]
-                        ()
-                        ())]
-                        ()
-                        ()
-                        ()
-                    )
-                    (SubroutineCall
+                    [(SubroutineCall
                         4 sub
                         ()
                         []
