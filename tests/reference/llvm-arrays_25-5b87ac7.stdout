@@ -240,10 +240,34 @@ loop.end5:                                        ; preds = %loop.head3
   %159 = load i32, i32* %158, align 4
   store i32 %159, i32* %call_arg_value6, align 4
   call void @decode_integer____0(i32* %145, i32* %call_arg_value, i32* %call_arg_value6)
+  %160 = getelementptr %model_t, %model_t* %m, i32 0, i32 0
+  %161 = load %array*, %array** %160, align 8
+  %162 = getelementptr %array, %array* %161, i32 0, i32 0
+  %163 = load i32*, i32** %162, align 8
+  %164 = ptrtoint i32* %163 to i64
+  %165 = icmp ne i64 %164, 0
+  br i1 %165, label %then7, label %else8
+
+then7:                                            ; preds = %loop.end5
+  %166 = getelementptr %array, %array* %161, i32 0, i32 0
+  %167 = load i32*, i32** %166, align 8
+  %168 = alloca i8*, align 8
+  %169 = bitcast i32* %167 to i8*
+  store i8* %169, i8** %168, align 8
+  %170 = load i8*, i8** %168, align 8
+  call void @_lfortran_free(i8* %170)
+  %171 = getelementptr %array, %array* %161, i32 0, i32 0
+  store i32* null, i32** %171, align 8
+  br label %ifcont9
+
+else8:                                            ; preds = %loop.end5
+  br label %ifcont9
+
+ifcont9:                                          ; preds = %else8, %then7
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %loop.end5
+return:                                           ; preds = %ifcont9
   ret i32 0
 }
 
@@ -306,5 +330,7 @@ declare i8* @_lfortran_malloc(i32)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
