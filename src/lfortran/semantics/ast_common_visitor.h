@@ -4299,13 +4299,14 @@ public:
             if( a.m_right ) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(a.m_right))) {
                     is_arg_array = true;
-                    if (ASRUtils::is_array(ASRUtils::expr_type(a.m_right))) {
-                        ASR::dimension_t* arg_dim = nullptr;
-                        LCOMPILERS_ASSERT(
-                            ASRUtils::extract_dimensions_from_ttype(
-                                ASRUtils::expr_type(a.m_right), arg_dim) == 1);
-                        res_dims_vec.push_back(al, arg_dim[0]);
+                    ASR::dimension_t* arg_dim = nullptr;
+                    if (!(ASRUtils::extract_dimensions_from_ttype(
+                            ASRUtils::expr_type(a.m_right), arg_dim) == 1)) {
+                        diag.add(Diagnostic("Array index must be of rank 1",
+                            Level::Error, Stage::Semantic, {Label("", {a.m_right->base.loc})}));
+                        throw SemanticAbort();
                     }
+                    res_dims_vec.push_back(al, arg_dim[0]);
                 }
                 if( all_args_eval ) {
                     flag = true;
