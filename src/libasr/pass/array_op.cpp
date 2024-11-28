@@ -431,13 +431,35 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 std::vector<int> loop_var_indices;
                 Vec<ASR::stmt_t*> doloop_body;
                 const Location& loc = x->base.base.loc;
-                int res_rank = ASR::down_cast<ASR::Array_t>(x->m_type)->n_dims;
+                int res_rank = 0;
                 
                 if( result_var == nullptr ) {
-                    ASR::ttype_t* result_var_type = x->m_type;
+                    bool allocate = false;
+                    Vec<ASR::dimension_t> res_dims_vec;
+                    res_dims_vec.reserve(al, x->n_args);
+                    for (size_t j = 0; j < x->n_args; j++) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
+                            ASR::dimension_t* arg_dim = nullptr;
+                            LCOMPILERS_ASSERT(
+                                ASRUtils::extract_dimensions_from_ttype(
+                                    ASRUtils::expr_type(x->m_args[j].m_right), arg_dim) == 1);
+                            res_dims_vec.push_back(al, arg_dim[0]);
+                            res_rank++;
+                        }
+                    }
+                    ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
+                        res_dims_vec.p, (int)res_dims_vec.size(), loc, x->class_type, allocate);
+                    if( allocate ) {
+                        result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                           ASRUtils::type_get_past_allocatable(result_var_type)));
+                    }
+                    result_var_type = x->m_type;
                     result_var = PassUtils::create_var(result_counter, "array_item", loc,
                                     result_var_type, al, current_scope);
                     result_counter += 1;
+                    if( allocate ) {
+                        allocate_result_var(x->m_v, res_dims_vec.p, (int)res_dims_vec.size(), true, true);
+                    }
                 }
 
                 create_do_loop(
