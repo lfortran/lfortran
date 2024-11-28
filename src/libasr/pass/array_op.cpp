@@ -464,7 +464,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 create_do_loop(
                     x->base.base.loc, res_rank,
                     idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
-                    [=, this, &idx_vars, &doloop_body] {
+                    [=, &idx_vars, &doloop_body] {
                         ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
 
                         for (size_t j = 0, k = 0; j < x->n_args; j++) {
