@@ -861,6 +861,7 @@ else58:                                           ; preds = %ifcont56
   br label %ifcont59
 
 ifcont59:                                         ; preds = %else58, %then57
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont59
@@ -876,3 +877,5 @@ declare void @exit(i32)
 declare void @_lfortran_complex_sub_32(%complex_4*, %complex_4*, %complex_4*)
 
 declare void @_lfortran_complex_add_32(%complex_4*, %complex_4*, %complex_4*)
+
+declare void @_lpython_free_argv()

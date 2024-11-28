@@ -7,6 +7,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
     -DWITH_LLVM=yes \
+    -DWITH_LSP=yes \
     -DLFORTRAN_BUILD_ALL=yes \
     -DWITH_STACKTRACE=no \
     -DWITH_RUNTIME_STACKTRACE=yes \

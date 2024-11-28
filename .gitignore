@@ -47,6 +47,9 @@ _CPack_Packages
 /CMakeSettings.json
 .cmake
 
+## Pixi
+.pixi/
+
 ## libraries
 *.a
 *.a.*

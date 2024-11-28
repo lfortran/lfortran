@@ -611,6 +611,31 @@ int python_wrapper(const std::string &infile, std::string array_order,
     return 0;
 }
 
+[[maybe_unused]] int run_parser_and_semantics(const std::string &infile,
+    CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    return has_error_w_cc;
+}
+
 [[maybe_unused]] int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
@@ -2204,9 +2229,11 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
     app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
     app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR");
+    app.add_flag("--rename-symbol", compiler_options.rename_symbol, "Returns list of locations where symbol specified by --line & --column appears in the ASR");
     app.add_option("--line", compiler_options.line, "Line number for --lookup-name")->capture_default_str();
     app.add_option("--column", compiler_options.column, "Column number for --lookup-name")->capture_default_str();
     app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation");
+    app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors");
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
@@ -2237,6 +2264,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
     app.add_flag("--experimental-simplifier", compiler_options.po.experimental_simplifier, "Use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
+    app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
 
     // LSP specific options
     app.add_flag("--show-errors", show_errors, "Show errors when LSP is running in the background");
@@ -2450,6 +2478,12 @@ int main_app(int argc, char *argv[]) {
         compiler_options.c_preprocessor = false;
     }
 
+    if(compiler_options.po.enable_gpu_offloading && !compiler_options.openmp) {
+        std::cerr << "The option `--mlir-gpu-offloading` requires openmp pass "
+            "to be applied. Rerun with `--openmp` option\n";
+        return 1;
+    }
+
     std::string outfile;
     std::filesystem::path basename = std::filesystem::path(arg_file).filename();
     if (compiler_options.arg_o.size() > 0) {
@@ -2497,21 +2531,21 @@ int main_app(int argc, char *argv[]) {
         return emit_ast_f90(arg_file, compiler_options);
     }
     lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
-    if (show_asr || compiler_options.lookup_name) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
+    if (compiler_options.rename_symbol) {
+        return LCompilers::get_all_occurences(arg_file, compiler_options);
+    }
+    if (compiler_options.lookup_name) {
         return get_definitions(arg_file, compiler_options);
-#else
+    }
+    if ( compiler_options.semantics_only ) {
+        return run_parser_and_semantics(arg_file, compiler_options);
+    }
+    if (show_asr) {
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);
-#endif
     }
     if (show_document_symbols) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_symbols(arg_file, compiler_options);
-#else
-        std::cerr << "Compiler was not built with LSP support (-DWITH_LSP), please build it again." << std::endl;
-        return 1;
-#endif
     }
 
     if (show_errors) {
@@ -2671,11 +2705,14 @@ int main_app(int argc, char *argv[]) {
         }
         if (err && !compiler_options.continue_compilation) return err;
         err_ = err;
-        object_files.push_back(tmp_o);
+        if (!err) object_files.push_back(tmp_o);
     }
-
-    return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
+    if (object_files.size() == 0) { 
+        return err_;
+    } else {
+        return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
                            link_with_gcc, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
+    }
 }
 
 int main(int argc, char *argv[])

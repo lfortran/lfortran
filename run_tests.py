@@ -39,6 +39,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
     lookup_name = is_included("lookup_name")
+    rename_symbol = is_included("rename_symbol")
     line = "-1"
     if is_included("line"):
         line = str(test["line"])
@@ -53,6 +54,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     continue_compilation = is_included("continue_compilation")
+    semantics_only_cc = is_included("semantics_only_cc")
     asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
@@ -74,6 +76,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     fast = is_included("fast")
     print_leading_space = is_included("print_leading_space")
     interactive = is_included("interactive")
+    options = test.get("options", "")
     pass_ = test.get("pass", None)
     extrafiles = test.get("extrafiles", "").split(",")
     run = test.get("run")
@@ -92,7 +95,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "where",
-                        "nested_vars"] and
+                        "nested_vars", "insert_deallocate", "openmp"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -113,6 +116,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         extra_args += " --line=" + line
     if column:
         extra_args += " --column=" + column
+    if options:
+        extra_args += " " + options
 
     if tokens:
         run_test(
@@ -135,25 +140,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
         else:
-            # Use free form
-            if (continue_compilation):
-                run_test(
-                    filename,
-                    "ast",
-                    "lfortran --continue-compilation --show-ast --no-color {infile} -o {outfile}",
-                    filename,
-                    update_reference,
-                    verify_hash,
-                    extra_args)
-            else:
-                run_test(
-                    filename,
-                    "ast",
-                    "lfortran --show-ast --no-color {infile} -o {outfile}",
-                    filename,
-                    update_reference,
-                    verify_hash,
-                    extra_args)
+            run_test(
+                filename,
+                "ast",
+                "lfortran --show-ast --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
     if ast_indent:
         run_test(
             filename,
@@ -232,6 +226,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "lookup_name",
             "lfortran --lookup-name --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+    if rename_symbol:
+        run_test(
+            filename,
+            "rename_symbol",
+            "lfortran --rename-symbol --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
@@ -341,7 +344,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
-    
+
+    if semantics_only_cc:
+        run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
     if continue_compilation:
         if no_llvm:
             log.info(f"{filename} * obj    SKIPPED as requested")
@@ -432,7 +442,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-        
+
     if mod_to_asr:
         run_test(
             filename,

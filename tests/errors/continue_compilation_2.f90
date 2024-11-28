@@ -94,7 +94,7 @@ program continue_compilation_2
     call atomic_add (atom[2], this_image())
     !array_constructor_with_asterisk_in_type_spec
     print *, [character(*) :: "a", "b", "ball", "cat"]
-    !array_constructor_with_different_kind
+    !array_constructor_with_different_char_length
     print *, ["a", "b", "ball", "cat"]
     print *, ["a1", "b1", "ball1", "cat1"]
     !array_constructor_with_different_kind
@@ -150,11 +150,140 @@ program continue_compilation_2
     FLUSH(unit=10, start=100)
     !func_parameter_type
     print *, f(42.9)
+    !ichar_01
+    print*, ichar("okay")
+    !idint_real4
+    print *, idint(4.5)
+    !ifix_01
+    print *, ifix(4.23_8)
+    !incompatible_dimension_assignment_arr1
+    integer :: arr1(1)
+    arr1 = [1, 2, 3]
+    !incompatible_dimension_assignment_arr2
+    integer :: idaa2_x(1:2,1:2,1:2)
+    integer :: idaa2_y(1:2,1:2,1:1)
+    idaa2_x = reshape([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2])
+    idaa2_y = reshape([1, 2, 3, 4], [2, 2, 1])
+    idaa2_y = idaa2_x
+    !incompatible_dimension_logical_arrays_logical_binop_01
+    logical, parameter :: idlalb1_x(3) = [.true., .false., .false.]
+    print *, idlalb1_x .neqv. [.true., .true.]
+    !incompatible_dimension_logical_arrays_logical_binop_02
+    logical, parameter :: idlalb2_x1(3) = [.true., .false., .false.]
+    logical, parameter :: idlalb2_x2(2) = [.true., .true.]
+    print *, idlalb2_x1 .neqv. idlalb2_x2
+    !incompatible_rank_allocatable_arr1
+    integer, allocatable :: iraa1_arr1(:, :)
+    iraa1_arr1 = [1, 2, 3]
+    !incompatible_rank_allocatable_arr2
+    integer, allocatable :: iraa2_arr1(:, :, :)
+    integer, allocatable :: iraa2_arr3(:)
+    iraa2_arr3 = iraa2_arr1
+    !incorrect_array_type_where_01
+    integer :: iatw1_b(5)
+    where([1, 2, 3, 4, 5]) iatw1_b = 1
+    print *, iatw1_b
+    if (all(iatw1_b /= [1, 0, 1, 0, 1])) error stop
+    !incorrect_array_type_where_02
+    integer :: iatw2_i1(5)
+    integer :: iatw2_b(5)
+    iatw2_i1 = [1, 2, 3, 4, 5]
+    where(iatw2_i1) iatw2_b = 1
+    print *, iatw2_b
+    if (all(iatw2_b /= [1, 0, 1, 0, 1])) error stop
+    !incorrect_type_where_01
+    integer  :: itw1_b(5)
+    where(.true.) itw1_b = 12121
+    print *, itw1_b
+    !incorrect_type_where_02
+    integer  :: itw2_b(5)
+    where(1) itw2_b = 12121
+    print *, itw2_b
+    !incorrect_type_where_03
+    integer  :: itw3_b(5)
+    where(max(1.33, 2.67)) itw3_b = 12121
+    print *, itw3_b
+    !intent1
+    INTEGER :: intent_x
+    intent_x = 42
+    CALL try_to_change(intent_x)
+    !intrinsics1
+    print *, radix((2.4, 1.0))
+    !intrinsics2
+    real(8) :: intr2_x, intr2_y, datan2
+    intr2_x = 2.33D0
+    intr2_y = 3.41D0
+    print *, datan2(x,y)
+    if(abs(datan2(x,y) - 0.59941916594660438) > 1d-6) error stop
+    !intrinsics3
+    print *, ibclr(1, -2)
+    !intrinsics4
+    print *, dshiftl(1, 1_8, 1)
+    !intrinsics5
+    print *, ior(1, 1_8)
+    !intrinsics6
+    print *, ieor(1, 1_8)
+    !intrinsics7
+    print *, hypot(1.0, 2.7_8)
+    !intrinsics8
+    integer(4) :: intr8_x = 1
+    integer(8) :: intr8_y = 2
+    print *, ior(intr8_x, intr8_y)
+    !intrinsics9
+    integer(4) :: intr9_x = 1
+    integer(8) :: intr9_y = 2
+    print *, iand(intr9_x, intr9_y)
+    !intrinsics10
+    integer(4) :: intr10_x = 1
+    integer(8) :: intr10_y = 2
+    print *, ieor(intr10_x, intr10_y)
+    !intrinsics11
+    real(4) :: intr11_x = 1
+    real(8) :: intr11_y = 2
+    print *, hypot(intr11_x, intr11_y)
+    !intrinsics12
+    print *, max(12, 13.94)
+    !intrinsics13
+    print *, min(12, 13.94)
+    !intrinsics14
+    print *, scale([1, 2, 3], 2)
+    !intrinsics15
+    print *, set_exponent([1, 2, 3], 2)
+    !iostat_constant_integer
+    integer, parameter :: ici_ios = 1
+    character(len=100) :: ici_buffer
+    ici_buffer = 'Temporary date for testing purpose'
+    read(ici_buffer, *, iostat=ici_ios)
+    !iostat_non_scalar_value
+    integer :: insv_ios(2) = 1
+    character(len=100) :: insv_buffer
+    insv_buffer = 'Temporary date for testing purpose'
+    read(insv_buffer, *, iostat=insv_ios(1:1))
+    !ishftc_size
+    print *, ishftc(10, 6, 4)
+    !complex_01
+    complex :: complex_z = (1, 2)
+    print *, cmplx(complex_z , 1)
+    !kind_01
+    print *, aint([1.0, 2.0, 3.0], [4, 4])
+    !type_mismatch_1
+    integer :: tm1_x
+    tm1_x = "x"
+    !type_mismatch_2
+    integer :: tm2_x
+    tm2_x = 5 + "x"
 
-    CONTAINS
-    LOGICAL FUNCTION f(x)
-        INTEGER, INTENT(IN), OPTIONAL :: x
+
+    contains
+    logical function f(x)
+        integer, intent(in), optional :: x
         f = PRESENT(x)
-    END FUNCTION
+    end function
 
 end program
+
+
+subroutine try_to_change(y)
+    integer, intent(in) :: y
+    y = 99  
+end subroutine

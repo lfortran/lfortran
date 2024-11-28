@@ -904,6 +904,7 @@ loop.end150:                                      ; preds = %ifcont110
   %365 = sext i32 %364 to i64
   %366 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 18, i8* null, i32 2, i64 %341, i32 2, i64 %344, i32 2, i64 %347, i32 2, i64 %350, i32 2, i64 %353, i32 2, i64 %356, i32 2, i64 %359, i32 2, i64 %362, i32 2, i64 %365)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %366, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %loop.end150
@@ -918,5 +919,7 @@ declare void @_lfortran_printf(i8*, ...)
 
 ; Function Attrs: nounwind readnone speculatable willreturn
 declare float @llvm.pow.f32(float, float) #0
+
+declare void @_lpython_free_argv()
 
 attributes #0 = { nounwind readnone speculatable willreturn }

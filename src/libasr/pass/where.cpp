@@ -85,8 +85,13 @@ public:
         this->replace_expr(x->m_right); \
         ASR::expr_t* right = *current_expr; \
         current_expr = current_expr_copy; \
+        ASR::ttype_t* return_type;\
+        /* Both sides are primitives, OR one side is primitive and the other is ArrayBroadCast, OR both arrays*/ \
+        bool return_is_primitve =!ASRUtils::is_array(ASRUtils::expr_type(x->m_left)) || \
+            !ASRUtils::is_array(ASRUtils::expr_type(x->m_right)); \
+        return_type = return_is_primitve? ASRUtils::type_get_past_array(ASRUtils::expr_type(x->m_left)) : x->m_type;\
         *current_expr = ASRUtils::EXPR(ASR::Constructor(al, x->base.base.loc, \
-            left, x->m_op, right, x->m_type, nullptr)); \
+            left, x->m_op, right, return_type, nullptr)); \
 
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
         BinOpReplacement(make_IntegerBinOp_t)

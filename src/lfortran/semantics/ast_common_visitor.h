@@ -4512,7 +4512,9 @@ public:
                     args.p[i].m_left == nullptr ) {
                     args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
                 }
-                if( args.p[i].m_step != nullptr ) {
+                if (args.p[i].m_step != nullptr
+                    || (args.p[i].m_step == nullptr && args.p[i].m_right != nullptr
+                        && ASR::is_a<ASR::Array_t>(*ASRUtils::expr_type(args.p[i].m_right)))) {
                     ASR::dimension_t empty_dim;
                     empty_dim.loc = loc;
                     empty_dim.m_start = nullptr;

@@ -60,6 +60,7 @@ struct PassOptions {
     bool c_mangling = false;
     bool openmp = false;
     bool experimental_simplifier = false;
+    bool enable_gpu_offloading = false;
 };
 
 struct CompilerOptions {
@@ -85,9 +86,11 @@ struct CompilerOptions {
     bool openmp = false;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
+    bool rename_symbol = false;
     std::string line = "";
     std::string column = "";
     bool continue_compilation = false;
+    bool semantics_only = false;
     bool generate_object_code = false;
     bool no_warnings = false;
     bool disable_style = false;

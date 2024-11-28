@@ -336,12 +336,7 @@
                                                         ColMajor
                                                     )
                                                 )
-                                                (Array
-                                                    (Real 4)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 4 (Integer 4) Decimal))]
-                                                    FixedSizeArray
-                                                )
+                                                (Real 4)
                                                 ()
                                             )
                                             Div
@@ -354,12 +349,7 @@
                                                 RowMajor
                                                 ()
                                             )
-                                            (Array
-                                                (Real 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 4 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                            )
+                                            (Real 4)
                                             ()
                                         )
                                         Mul
@@ -397,12 +387,7 @@
                                                 ColMajor
                                             )
                                         )
-                                        (Array
-                                            (Real 4)
-                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerConstant 4 (Integer 4) Decimal))]
-                                            FixedSizeArray
-                                        )
+                                        (Real 4)
                                         ()
                                     )
                                     ()

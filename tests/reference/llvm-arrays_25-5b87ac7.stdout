@@ -240,6 +240,7 @@ loop.end5:                                        ; preds = %loop.head3
   %159 = load i32, i32* %158, align 4
   store i32 %159, i32* %call_arg_value6, align 4
   call void @decode_integer____0(i32* %145, i32* %call_arg_value, i32* %call_arg_value6)
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %loop.end5
@@ -305,3 +306,5 @@ declare i8* @_lfortran_malloc(i32)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lpython_free_argv()

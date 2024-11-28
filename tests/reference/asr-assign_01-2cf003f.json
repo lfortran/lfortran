@@ -1,0 +1,13 @@
+{
+    "basename": "asr-assign_01-2cf003f",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/assign_01.f90",
+    "infile_hash": "b3907bfc11ab4a5400099590f3d20715a7fed312e26241facae934fb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-assign_01-2cf003f.stderr",
+    "stderr_hash": "22926a0ca854e3a26213cee88788e52c189e7e6d275089ff0cdc971c",
+    "returncode": 1
+}
