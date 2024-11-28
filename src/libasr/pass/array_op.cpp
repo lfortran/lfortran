@@ -467,14 +467,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     [=, this, &idx_vars, &doloop_body] {
                         ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
 
-                        for (int j = 0; j < res_rank; j++) {
+                        for (size_t j = 0, k = 0; j < x->n_args; j++) {
                             if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
                                 Vec<ASR::array_index_t> arr_dims;
                                 arr_dims.reserve(al, idx_vars.size());
                                 ASR::array_index_t ai;
-                                ai.loc = idx_vars[j]->base.loc;
+                                ai.loc = x->m_args[j].loc;
                                 ai.m_left = nullptr;
-                                ai.m_right = idx_vars[j];
+                                ai.m_right = idx_vars[k];
                                 ai.m_step = nullptr;
                                 arr_dims.push_back(al, ai);
 
@@ -485,10 +485,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                                             ASR::arraystorageType::ColMajor,
                                                             nullptr));
                                 x->m_args[j].m_right = arr_index;
+                                k++;
                             } else {
-                                x->m_args[j].loc = idx_vars[j]->base.loc;
+                                x->m_args[j].loc = x->m_args[j].loc;
                                 x->m_args[j].m_left = nullptr;
-                                x->m_args[j].m_right = idx_vars[j];
+                                x->m_args[j].m_right = x->m_args[j].m_right;
                                 x->m_args[j].m_step = nullptr;
                             }
                         }
