@@ -157,7 +157,8 @@ namespace LCompilers {
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
             return (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var)) ||
                     ASRUtils::is_array(ASRUtils::expr_type(var)) ||
-                    ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
+                    ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)) || 
+                    ASRUtils::is_descriptorString(ASRUtils::expr_type(var)));
         }
 
         static inline bool is_symbolic_list_type(ASR::expr_t* var) {
