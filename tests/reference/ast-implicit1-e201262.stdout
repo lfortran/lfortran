@@ -18,6 +18,10 @@
             ()
         )
         (ImplicitNone
+            []
+            ()
+        )
+        (ImplicitNone
             [(ImplicitNoneExternal
                 0
             )]
