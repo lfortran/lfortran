@@ -1611,7 +1611,49 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
-        replace_intrinsic_function(x);
+
+        for (size_t i = 0; i < x->n_args; i++){
+            ASR::expr_t* arg = x->m_args[i];
+
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+            }
+
+            if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*arg)) {
+                ASR::expr_t** current_expr_copy_9 = current_expr;
+                current_expr = &(x->m_args[i]);
+                ASR::dimension_t* op_dims_copy = op_dims;
+                size_t op_n_dims_copy = op_n_dims;
+                self().replace_expr(x->m_args[i]);
+                x->m_args[i] = *current_expr;
+                op_dims = op_dims_copy;
+                op_n_dims = op_n_dims_copy;
+                current_expr = current_expr_copy_9;
+            } else if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
+                ASR::expr_t** current_expr_copy_9 = current_expr;
+                current_expr = &(x->m_args[i]);
+                ASR::dimension_t* op_dims_copy = op_dims;
+                size_t op_n_dims_copy = op_n_dims;
+                self().replace_expr(x->m_args[i]);
+                x->m_args[i] = *current_expr;
+                op_dims = op_dims_copy;
+                op_n_dims = op_n_dims_copy;
+                current_expr = current_expr_copy_9;
+            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*arg)) {
+                ASR::expr_t** current_expr_copy_9 = current_expr;
+                current_expr = &(x->m_args[i]);
+                ASR::dimension_t* op_dims_copy = op_dims;
+                size_t op_n_dims_copy = op_n_dims;
+                self().replace_expr(x->m_args[i]);
+                x->m_args[i] = *current_expr;
+                op_dims = op_dims_copy;
+                op_n_dims = op_n_dims_copy;
+                current_expr = current_expr_copy_9;
+            } else {
+                replace_intrinsic_function(x);
+            }
+        }
+        return ;
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
