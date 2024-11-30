@@ -265,4 +265,17 @@ char* str_unescape_fortran(Allocator &al, LCompilers::Str &s, char ch) {
     return LCompilers::s2c(al, x);
 }
 
+bool str_compare(const unsigned char *pos, std::string s) {
+    for (size_t i = 0; i < s.size(); i++) {
+        if (pos[i] == '\0') {
+            return false;
+        }
+
+        if (pos[i] != s[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace LCompilers
