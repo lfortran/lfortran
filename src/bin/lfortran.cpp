@@ -1736,28 +1736,20 @@ int link_executable(const std::vector<std::string> &infiles,
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
-std::cout << system("which clang");
-#ifndef __clang__
-#define __clang__ 0
-#endif
-std::cout << __clang__ << ": __clang__\n";
-std::cout << __GNUC__ << ": __GNUC__\n";
             if (!linker_path.empty()) {
                 CC = linker_path;
             } else if (char *env_CC = std::getenv("LFORTRAN_CC")) {
                  CC = env_CC;
             } else {
-#if defined(__clang__)
-                CC = "clang";
-#elif defined(__GNUC__)
-                CC = "gcc";
-#else
-                std::cerr << "Error: linker not specified, "
-                    "use --linker-path=<CC> or create an environment variable "
-                    "`export LFORTRAN_CC=<CC>`, where CC is path to "
-                    "clang or gcc ";
-                return 1;
-#endif
+                if (std::ifstream c_path{"/usr/bin/clang"}) {
+                    CC = "clang";
+                } else {
+                    std::cerr << "Error: linker not specified, "
+                        "use --linker-path=<CC> or create an environment variable "
+                        "`export LFORTRAN_CC=<CC>`, where CC is path to "
+                        "clang or gcc ";
+                    return 1;
+                }
             }
 
             if (compiler_options.target != "" &&
