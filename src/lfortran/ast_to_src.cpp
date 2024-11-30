@@ -1210,13 +1210,11 @@ public:
         r += syn();
         r += " ";
         if (x.n_specs > 0) {
-            r += " (";
             for (size_t i=0; i<x.n_specs; i++) {
                 visit_implicit_spec(*x.m_specs[i]);
                 r += s;
                 if (i < x.n_specs-1) r.append(",");
             }
-            r += ")";
         }
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
