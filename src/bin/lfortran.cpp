@@ -1741,8 +1741,10 @@ int link_executable(const std::vector<std::string> &infiles,
             } else if (char *env_CC = std::getenv("LFORTRAN_CC")) {
                  CC = env_CC;
             } else {
-#ifdef __clang__
+#if defined(__clang__)
                 CC = "clang";
+#elif defined(__GNUC__)
+                CC = "gcc";
 #else
                 std::cerr << "Error: linker not specified, "
                     "use --linker-path=<CC> or create an environment variable "
@@ -2715,7 +2717,7 @@ int main_app(int argc, char *argv[]) {
         err_ = err;
         if (!err) object_files.push_back(tmp_o);
     }
-    if (object_files.size() == 0) { 
+    if (object_files.size() == 0) {
         return err_;
     } else {
         return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
