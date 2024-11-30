@@ -2,6 +2,7 @@ program implicit1
 ! AST only
 implicit none
 IMPLICIT NONE
+implicit none ()
 implicit none (external)
 implicit none (type)
 implicit none (external, type)
