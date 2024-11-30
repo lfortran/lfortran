@@ -922,7 +922,8 @@ RUN(NAME intrinsics_307 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_308 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dgamma
 RUN(NAME intrinsics_309 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # pack
 RUN(NAME intrinsics_310 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # digits
-RUN(NAME intrinsics_311 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
+RUN(NAME intrinsics_311 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
+    EXTRA_ARGS --realloc-lhs) # minloc
 RUN(NAME intrinsics_312 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
 RUN(NAME intrinsics_313 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxloc
 RUN(NAME intrinsics_314 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshift
