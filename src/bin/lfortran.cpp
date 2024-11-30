@@ -1597,7 +1597,7 @@ int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
     const std::string &runtime_library_dir, Backend backend,
     bool static_executable, bool shared_executable,
-    bool link_with_gcc, bool kokkos, bool verbose,
+    std::string linker_path, bool kokkos, bool verbose,
     const std::vector<std::string> &lib_dirs,
     const std::vector<std::string> &libraries,
     const std::vector<std::string> &linker_flags,
@@ -1731,21 +1731,25 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += runtime_library_dir + "/" + runtime_lib;
             compile_cmd +=  extra_linker_flags;
         } else {
-            std::string CC;
+            std::string CC{""};
             std::string base_path = "\"" + runtime_library_dir + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
-            if (link_with_gcc) {
-                CC = "gcc";
+            if (!linker_path.empty()) {
+                CC = linker_path;
+            } else if (char *env_CC = std::getenv("LFORTRAN_CC")) {
+                 CC = env_CC;
             } else {
-                CC = "clang";
+                std::cerr << "Error: linker not specified, "
+                    "use --linker-path=<CC> or create an environment variable "
+                    "`export LFORTRAN_CC=<CC>`, where CC is path to "
+                    "clang or gcc ";
+                return 1;
             }
 
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
-
-            if (compiler_options.target != "" && !link_with_gcc) {
+            if (compiler_options.target != "" &&
+                    CC.find("clang" ) != std::string::npos) {
                 options = " -target " + compiler_options.target;
             }
 
@@ -2130,8 +2134,8 @@ int main_app(int argc, char *argv[]) {
     std::string skip_pass;
     std::string arg_backend = "llvm";
     std::string arg_kernel_f;
+    std::string linker_path{""};
     bool print_targets = false;
-    bool link_with_gcc = false;
     bool fixed_form_infer = false;
     bool cpp = false;
     bool cpp_infer = false;
@@ -2238,7 +2242,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
     app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
-    app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
+    app.add_flag("--linker-path", linker_path, "Use the linker from this path, gcc or clang")->capture_default_str();
     app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
     app.add_flag("--print-targets", print_targets, "Print the registered targets");
     app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
@@ -2711,7 +2715,7 @@ int main_app(int argc, char *argv[]) {
         return err_;
     } else {
         return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
-                           link_with_gcc, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
+                           linker_path, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
     }
 }
 
