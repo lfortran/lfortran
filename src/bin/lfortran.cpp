@@ -1736,6 +1736,12 @@ int link_executable(const std::vector<std::string> &infiles,
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
+std::cout << system("which clang");
+#ifndef __clang__
+#define __clang__ 0
+#endif
+std::cout << __clang__ << ": __clang__\n";
+std::cout << __GNUC__ << ": __GNUC__\n";
             if (!linker_path.empty()) {
                 CC = linker_path;
             } else if (char *env_CC = std::getenv("LFORTRAN_CC")) {
