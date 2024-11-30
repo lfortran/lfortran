@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit13-4b9822a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/implicit13.f90",
+    "infile_hash": "846836e213592204557603a57b6f7420ebd88db79c59d7a369174c36",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit13-4b9822a.stderr",
+    "stderr_hash": "4dd5eaa28869f721809250de8371b9acce7ae9fd0f9110a5e5c8e5eb",
+    "returncode": 2
+}
