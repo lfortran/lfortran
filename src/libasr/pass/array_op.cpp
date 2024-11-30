@@ -422,7 +422,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
-        replace_vars_helper(x);
         for ( size_t i = 0; i < x->n_args; i++ ) {
             ASR::expr_t* arg = x->m_args[i].m_right;
             if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
@@ -431,7 +430,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 std::vector<int> loop_var_indices;
                 Vec<ASR::stmt_t*> doloop_body;
                 const Location& loc = x->base.base.loc;
-                int res_rank = 0;
                 
                 if( result_var == nullptr ) {
                     bool allocate = false;
@@ -444,7 +442,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 ASRUtils::extract_dimensions_from_ttype(
                                     ASRUtils::expr_type(x->m_args[j].m_right), arg_dim) == 1);
                             res_dims_vec.push_back(al, arg_dim[0]);
-                            res_rank++;
                         }
                     }
                     ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
@@ -453,7 +450,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                            ASRUtils::type_get_past_allocatable(result_var_type)));
                     }
-                    result_var_type = x->m_type;
                     result_var = PassUtils::create_var(result_counter, "array_item", loc,
                                     result_var_type, al, current_scope);
                     result_counter += 1;
@@ -462,6 +458,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     }
                 }
 
+                int res_rank = PassUtils::get_rank(result_var);
                 create_do_loop(
                     x->base.base.loc, res_rank,
                     idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
@@ -511,10 +508,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 );
                 
                 *current_expr = result_var;
-                break;
+                return;
             }
         }
-
+        replace_vars_helper(x);
     }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
