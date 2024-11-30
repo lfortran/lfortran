@@ -1741,11 +1741,15 @@ int link_executable(const std::vector<std::string> &infiles,
             } else if (char *env_CC = std::getenv("LFORTRAN_CC")) {
                  CC = env_CC;
             } else {
+#ifdef __clang__
+                CC = "clang";
+#else
                 std::cerr << "Error: linker not specified, "
                     "use --linker-path=<CC> or create an environment variable "
                     "`export LFORTRAN_CC=<CC>`, where CC is path to "
                     "clang or gcc ";
                 return 1;
+#endif
             }
 
             if (compiler_options.target != "" &&
