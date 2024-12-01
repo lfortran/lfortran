@@ -15,5 +15,6 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
     -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
+-G Ninja \
     .
-cmake --build . -j16 --target install
+cmake --build . --target install

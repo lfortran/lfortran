@@ -554,7 +554,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> implicit_statement
 %type <vec_ast> implicit_statement_star
 %type <ast> implicit_none_spec
-%type <vec_ast> implicit_none_spec_list
+%type <vec_ast> implicit_none_spec_star
 %type <ast> letter_spec
 %type <vec_ast> letter_spec_list
 %type <ast> procedure_decl
@@ -1149,7 +1149,7 @@ implicit_statement_star
 
 implicit_statement
     : KW_IMPLICIT KW_NONE sep { $$ = IMPLICIT_NONE(TRIVIA_AFTER($3, @$), @$); }
-    | KW_IMPLICIT KW_NONE "(" implicit_none_spec_list ")" sep {
+    | KW_IMPLICIT KW_NONE "(" implicit_none_spec_star ")" sep {
             $$ = IMPLICIT_NONE2($4, TRIVIA_AFTER($6, @$), @$); }
     | KW_IMPLICIT KW_INTEGER "(" letter_spec_list ")" sep {
             $$ = IMPLICIT(ATTR_TYPE(Integer, @$), $4, TRIVIA_AFTER($6, @$), @$); }
@@ -1206,9 +1206,11 @@ implicit_statement
             $$ = IMPLICIT(ATTR_TYPE_NAME(Class, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
     ;
 
-implicit_none_spec_list
-    : implicit_none_spec_list "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
+// IMPLICIT NONE [ ( [implicit-none-spec-list] ) ]
+implicit_none_spec_star
+    : implicit_none_spec_star "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
+    | %empty { LIST_NEW($$); }	 
     ;
 
 implicit_none_spec

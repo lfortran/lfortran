@@ -39,6 +39,22 @@
                                     Required
                                     .false.
                                 ),
+                            __1_k1:
+                                (Variable
+                                    2
+                                    __1_k1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             a:
                                 (Variable
                                     2
@@ -193,7 +209,7 @@
                     )
                     (DoLoop
                         ()
-                        ((Var 2 __1_k)
+                        ((Var 2 __1_k1)
                         (ArrayBound
                             (Var 2 a)
                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -214,7 +230,7 @@
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k1)
                                     ())]
                                     (Real 4)
                                     RowMajor
@@ -232,7 +248,7 @@
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k1)
                                     ())]
                                     (Real 4)
                                     RowMajor
@@ -249,7 +265,7 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (Var 2 __1_k)
+                                        (Var 2 __1_k1)
                                         ())]
                                         (Real 4)
                                         RowMajor
@@ -267,7 +283,7 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (Var 2 __1_k)
+                                        (Var 2 __1_k1)
                                         ())]
                                         (Real 4)
                                         RowMajor
@@ -283,7 +299,7 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (Var 2 __1_k)
+                                        (Var 2 __1_k1)
                                         ())]
                                         (Real 4)
                                         RowMajor
@@ -295,7 +311,7 @@
                                                 (ArrayItem
                                                     (Var 2 b)
                                                     [(()
-                                                    (Var 2 __1_k)
+                                                    (Var 2 __1_k1)
                                                     ())]
                                                     (Real 4)
                                                     RowMajor
@@ -343,7 +359,7 @@
                                             (ArrayItem
                                                 (Var 2 a)
                                                 [(()
-                                                (Var 2 __1_k)
+                                                (Var 2 __1_k1)
                                                 ())]
                                                 (Real 4)
                                                 RowMajor
