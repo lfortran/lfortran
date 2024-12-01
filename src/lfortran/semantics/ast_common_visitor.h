@@ -2478,6 +2478,13 @@ public:
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                             v->m_storage = ASR::storage_typeType::Parameter;
+                                            if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
+                                                ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
+                                                init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
+                                            } else if (ASR::is_a<ASR::IntegerConstant_t>(*init_val)) {
+                                                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(init_val);
+                                                init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
+                                            }
                                             v->m_symbolic_value = init_val;
                                             v->m_value = ASRUtils::expr_value(init_val);
                                             SetChar variable_dependencies_vec;
