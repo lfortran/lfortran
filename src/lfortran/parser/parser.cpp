@@ -310,7 +310,7 @@ LineType determine_line_type(const unsigned char *pos)
         }
         if (col <= 6) {
             return LineType::LabeledStatement;
-        } else if (std::string(pos, pos + 7) == "include") {
+        } else if (str_compare(pos, "include")) {
             return LineType::Include;
         } else {
             return LineType::Statement;
