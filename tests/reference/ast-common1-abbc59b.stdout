@@ -8,17 +8,19 @@
         )
         []
         [(Implicit
-            (AttrType
-                TypeReal
+            [(ImplicitSpec
+                (AttrType
+                    TypeReal
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                a
-                z
+                [(LetterSpec
+                    a
+                    z
+                )]
             )]
             ()
         )]

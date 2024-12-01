@@ -19,17 +19,19 @@
         )
         []
         [(Implicit
-            (AttrType
-                TypeInteger
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                a
-                z
+                [(LetterSpec
+                    a
+                    z
+                )]
             )]
             ()
         )]

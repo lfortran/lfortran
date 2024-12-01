@@ -446,15 +446,15 @@ ast_t* data_implied_do(Allocator &al, Location &loc,
 #define IMPLICIT_NONE_EXTERNAL(l) make_ImplicitNoneExternal_t(p.m_a, l, 0)
 #define IMPLICIT_NONE_TYPE(l) make_ImplicitNoneType_t(p.m_a, l)
 
-#define IMPLICIT(t, spec, trivia, l) make_Implicit_t(p.m_a, l, \
+#define IMPLICIT(specs, trivia, l) make_Implicit_t(p.m_a, l, \
+	VEC_CAST(specs, implicit_spec), specs.size(), trivia_cast(trivia))
+#define IMPLICIT_SPEC(t, specs, l) make_ImplicitSpec_t(p.m_a, l, \
         down_cast<decl_attribute_t>(t), nullptr, 0, \
-        VEC_CAST(spec, letter_spec), spec.size(), \
-        trivia_cast(trivia))
-#define IMPLICIT1(t, spec, specs, trivia, l) make_Implicit_t(p.m_a, l, \
+	VEC_CAST(specs, letter_spec), specs.size())
+#define IMPLICIT_SPEC_KIND(t, kind, specs, l) make_ImplicitSpec_t(p.m_a, l, \
         down_cast<decl_attribute_t>(t), \
-        VEC_CAST(spec, letter_spec), spec.size(), \
-        VEC_CAST(specs, letter_spec), specs.size(), \
-        trivia_cast(trivia))
+        VEC_CAST(kind, letter_spec), kind.size(), \
+        VEC_CAST(specs, letter_spec), specs.size())
 
 #define LETTER_SPEC1(a, l) make_LetterSpec_t(p.m_a, l, \
         nullptr, name2char(a))
