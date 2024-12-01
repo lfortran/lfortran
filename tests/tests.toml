@@ -3418,7 +3418,6 @@ asr_implicit_typing = true
 
 [[test]]
 filename = "implicit13.f90"
-asr = true
 asr_implicit_typing = true
 
 [[test]]
