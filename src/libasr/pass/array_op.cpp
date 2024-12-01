@@ -432,6 +432,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 const Location& loc = x->base.base.loc;
                 
                 if( result_var == nullptr ) {
+                    std::cout << "Entered here" << std::endl;
                     bool allocate = false;
                     Vec<ASR::dimension_t> res_dims_vec;
                     res_dims_vec.reserve(al, x->n_args);
@@ -444,9 +445,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             res_dims_vec.push_back(al, arg_dim[0]);
                         }
                     }
+                    std::cout << "Dimensions created with dimensions: " << res_dims_vec.n << std::endl;
                     ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
                         res_dims_vec.p, (int)res_dims_vec.size(), loc, x->class_type, allocate);
                     if( allocate ) {
+                        std::cout << "Allocated 1" << std::endl;
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                            ASRUtils::type_get_past_allocatable(result_var_type)));
                     }
@@ -454,11 +457,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                     result_var_type, al, current_scope);
                     result_counter += 1;
                     if( allocate ) {
+                        std::cout << "Allocated 2" << std::endl;
                         allocate_result_var(x->m_v, res_dims_vec.p, (int)res_dims_vec.size(), true, true);
                     }
                 }
 
                 int res_rank = PassUtils::get_rank(result_var);
+                std::cout << "Result rank: " << res_rank << std::endl;
                 create_do_loop(
                     x->base.base.loc, res_rank,
                     idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
@@ -467,6 +472,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
                         for (size_t j = 0, k = 0; j < x->n_args; j++) {
                             if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
+                                std::cout << "Array at index " << j << std::endl;
                                 Vec<ASR::array_index_t> arr_dims;
                                 arr_dims.reserve(al, idx_vars.size());
                                 ASR::array_index_t ai;
@@ -475,6 +481,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 ai.m_right = idx_vars[k];
                                 ai.m_step = nullptr;
                                 arr_dims.push_back(al, ai);
+                                std::cout << "Array index at index " << j << " created" << std::endl;
 
                                 ASR::expr_t* arr_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                             al, x->base.base.loc, x->m_args[j].m_right, arr_dims.p, arr_dims.n,
@@ -483,12 +490,15 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                                             ASR::arraystorageType::ColMajor,
                                                             nullptr));
                                 x->m_args[j].m_right = arr_index;
+                                std::cout << "Array index at index " << j << " replaced" << std::endl;
                                 k++;
                             } else {
                                 x->m_args[j].loc = x->m_args[j].loc;
                                 x->m_args[j].m_left = nullptr;
                                 x->m_args[j].m_right = x->m_args[j].m_right;
                                 x->m_args[j].m_step = nullptr;
+
+                                std::cout << "Standard index at index " << j << " replaced" << std::endl;
                             }
                         }
                         x->m_type = ASRUtils::extract_type(ASRUtils::expr_type(x->m_v));
@@ -502,6 +512,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                                         ASR::arraystorageType::ColMajor,
                                                         nullptr)),
                                                     nullptr));
+                        std::cout << "Assignment created" << std::endl;
 
                         doloop_body.push_back(al, assign);
                     }                        
@@ -511,7 +522,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 return;
             }
         }
+        std::cout << "Not an array" << std::endl;
         replace_vars_helper(x);
+        std::cout << "Exited function" << std::endl;
     }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
