@@ -1677,6 +1677,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
         ASR::BaseExprReplacer<ReplaceArrayOp>::replace_ArrayPhysicalCast(x);
+        if ( ASRUtils::is_value_constant(x->m_arg) && !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg)) ) {
+            *current_expr = ASRUtils::expr_value(x->m_arg);
+            return;
+        }
         if( (x->m_old == x->m_new &&
              x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
             (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
