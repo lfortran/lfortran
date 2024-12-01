@@ -1619,17 +1619,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
             }
 
-            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
-                ASR::expr_t** current_expr_copy_9 = current_expr;
-                current_expr = &(x->m_args[i]);
-                ASR::dimension_t* op_dims_copy = op_dims;
-                size_t op_n_dims_copy = op_n_dims;
-                self().replace_expr(x->m_args[i]);
-                x->m_args[i] = *current_expr;
-                op_dims = op_dims_copy;
-                op_n_dims = op_n_dims_copy;
-                current_expr = current_expr_copy_9;
-            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*arg)) {
+            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg) || 
+                   ASR::is_a<ASR::IntegerBinOp_t>(*arg) || ASR::is_a<ASR::RealBinOp_t>(*arg)) {
                 ASR::expr_t** current_expr_copy_9 = current_expr;
                 current_expr = &(x->m_args[i]);
                 ASR::dimension_t* op_dims_copy = op_dims;
