@@ -23,12 +23,12 @@ program array_indices_array_item
     if (all(arr_2 /= arr_2_reshape)) error stop
 
     arr_4 = arr_3(1, arr_idx, arr_idx)
-    !arr_4_reshape = reshape([4.0, 2.0, 3.0, 1.0], shape(arr_4_reshape));
-    !print *, rank(arr_4)
-    !if (rank(arr_4) /= 2) error stop
-    !if (all(arr_4 /= arr_4_reshape)) error stop
+    arr_4_reshape = reshape([4.0, 2.0, 3.0, 1.0], shape(arr_4_reshape));
+    print *, rank(arr_4)
+    if (rank(arr_4) /= 2) error stop
+    if (all(arr_4 /= arr_4_reshape)) error stop
 
-    !rank_val = rank(arr_3(1, arr_idx, 2))
+    rank_val = rank(arr_3(1, arr_idx, 2))
     !print *, rank_val
     !if (rank_val /= 1) error stop
 
