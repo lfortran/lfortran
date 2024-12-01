@@ -1855,6 +1855,7 @@ RUN(NAME openmp_36 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_37 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_40 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 
