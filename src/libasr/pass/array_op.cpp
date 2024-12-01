@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <utility>
+#include <iostream>
 
 /*
 This ASR pass replaces operations over arrays with do loops.
