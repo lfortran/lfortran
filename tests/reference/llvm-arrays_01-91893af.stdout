@@ -307,6 +307,7 @@ else39:                                           ; preds = %ifcont37
   br label %ifcont40
 
 ifcont40:                                         ; preds = %else39, %then38
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont40
@@ -318,3 +319,5 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
+
+declare void @_lpython_free_argv()

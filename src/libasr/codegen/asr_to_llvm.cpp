@@ -1,8 +1,6 @@
 #include <iostream>
 #include <memory>
 #include <unordered_map>
-#include <functional>
-#include <string_view>
 #include <utility>
 
 #include <llvm/ADT/STLExtras.h>
@@ -3297,6 +3295,17 @@ public:
             LLVM::lfortran_free(context, *module, *builder, value);
         }
         call_lcompilers_free_strings();
+
+        {
+            llvm::Function *fn = module->getFunction("_lpython_free_argv");
+            if(!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {}, false);
+                fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, "_lpython_free_argv", *module);
+            }
+            builder->CreateCall(fn, {});
+        }
 
         start_new_block(proc_return);
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,

@@ -482,6 +482,7 @@ ifcont62:                                         ; preds = %else61, %then60
   %143 = sext i32 %142 to i64
   %144 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %143)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @54, i32 0, i32 0), i8* %144, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @53, i32 0, i32 0))
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont62
@@ -497,3 +498,5 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lpython_free_argv()

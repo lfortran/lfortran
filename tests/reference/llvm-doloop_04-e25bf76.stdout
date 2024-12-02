@@ -323,6 +323,7 @@ goto_target:                                      ; preds = %loop.body31
   br label %loop.head30
 
 loop.end32:                                       ; preds = %loop.head30
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %loop.end32
@@ -338,3 +339,5 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lpython_free_argv()

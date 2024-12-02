@@ -18,6 +18,10 @@
             ()
         )
         (ImplicitNone
+            []
+            ()
+        )
+        (ImplicitNone
             [(ImplicitNoneExternal
                 0
             )]
@@ -46,85 +50,93 @@
             )
         )
         (Implicit
-            (AttrType
-                TypeReal
+            [(ImplicitSpec
+                (AttrType
+                    TypeReal
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeReal
+            [(ImplicitSpec
+                (AttrType
+                    TypeReal
+                    []
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    dp
+                )]
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeReal
+                    [(()
+                    8
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            [(LetterSpec
-                ()
-                dp
-            )]
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeReal
-                [(()
-                8
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
-            )]
-            ()
-        )
-        (Implicit
-            (AttrType
-                TypeReal
-                [(()
-                8
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
+            [(ImplicitSpec
+                (AttrType
+                    TypeReal
+                    [(()
+                    8
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
             )]
             (TriviaNode
                 []
@@ -133,21 +145,23 @@
             )
         )
         (Implicit
-            (AttrType
-                TypeDoublePrecision
+            [(ImplicitSpec
+                (AttrType
+                    TypeDoublePrecision
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
             )]
             (TriviaNode
                 []
@@ -156,39 +170,43 @@
             )
         )
         (Implicit
-            (AttrType
-                TypeCharacter
+            [(ImplicitSpec
+                (AttrType
+                    TypeCharacter
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                c
-            )
-            (LetterSpec
-                o
-                z
+                [(LetterSpec
+                    ()
+                    c
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeCharacter
-                []
-                ()
-                ()
-                None
-            )
-            [(LetterSpec
-                ()
-                id
-            )]
-            [(LetterSpec
-                a
-                z
+            [(ImplicitSpec
+                (AttrType
+                    TypeCharacter
+                    []
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    id
+                )]
+                [(LetterSpec
+                    a
+                    z
+                )]
             )]
             (TriviaNode
                 []
@@ -197,191 +215,207 @@
             )
         )
         (Implicit
-            (AttrType
-                TypeInteger
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                i
-                n
+                [(LetterSpec
+                    i
+                    n
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeInteger
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                i
-            )
-            (LetterSpec
-                ()
-                j
-            )
-            (LetterSpec
-                ()
-                k
-            )
-            (LetterSpec
-                ()
-                l
-            )
-            (LetterSpec
-                ()
-                m
-            )
-            (LetterSpec
-                ()
-                n
+                [(LetterSpec
+                    ()
+                    i
+                )
+                (LetterSpec
+                    ()
+                    j
+                )
+                (LetterSpec
+                    ()
+                    k
+                )
+                (LetterSpec
+                    ()
+                    l
+                )
+                (LetterSpec
+                    ()
+                    m
+                )
+                (LetterSpec
+                    ()
+                    n
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeInteger
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                i
-            )
-            (LetterSpec
-                j
-                l
-            )
-            (LetterSpec
-                ()
-                m
-            )
-            (LetterSpec
-                ()
-                n
+                [(LetterSpec
+                    ()
+                    i
+                )
+                (LetterSpec
+                    j
+                    l
+                )
+                (LetterSpec
+                    ()
+                    m
+                )
+                (LetterSpec
+                    ()
+                    n
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeInteger
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    dp
+                )]
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    [(()
+                    8
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            [(LetterSpec
-                ()
-                dp
-            )]
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
-            )]
-            ()
-        )
-        (Implicit
-            (AttrType
-                TypeInteger
-                [(()
-                8
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                i
-            )
-            (LetterSpec
-                j
-                l
-            )
-            (LetterSpec
-                ()
-                m
-            )
-            (LetterSpec
-                ()
-                n
+                [(LetterSpec
+                    ()
+                    i
+                )
+                (LetterSpec
+                    j
+                    l
+                )
+                (LetterSpec
+                    ()
+                    m
+                )
+                (LetterSpec
+                    ()
+                    n
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeInteger
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                A
-            )
-            (LetterSpec
-                ()
-                C
+                [(LetterSpec
+                    ()
+                    A
+                )
+                (LetterSpec
+                    ()
+                    C
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeInteger
-                [(()
-                4
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                C
-            )
-            (LetterSpec
-                D
-                x
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    [(()
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(LetterSpec
+                    ()
+                    C
+                )
+                (LetterSpec
+                    D
+                    x
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeInteger
-                [(()
-                4
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                C
-            )
-            (LetterSpec
-                D
-                x
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    [(()
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(LetterSpec
+                    ()
+                    C
+                )
+                (LetterSpec
+                    D
+                    x
+                )]
             )]
             (TriviaNode
                 []
@@ -390,85 +424,93 @@
             )
         )
         (Implicit
-            (AttrType
-                TypeLogical
+            [(ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                l
-            )
-            (LetterSpec
-                u
-                z
+                [(LetterSpec
+                    ()
+                    l
+                )
+                (LetterSpec
+                    u
+                    z
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeLogical
+            [(ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    []
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    dp
+                )]
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    [(()
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            [(LetterSpec
-                ()
-                dp
-            )]
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
+                [(LetterSpec
+                    ()
+                    l
+                )
+                (LetterSpec
+                    u
+                    z
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeLogical
-                [(()
-                4
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                l
-            )
-            (LetterSpec
-                u
-                z
-            )]
-            ()
-        )
-        (Implicit
-            (AttrType
-                TypeLogical
-                [(()
-                4
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                l
-            )
-            (LetterSpec
-                u
-                z
+            [(ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    [(()
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(LetterSpec
+                    ()
+                    l
+                )
+                (LetterSpec
+                    u
+                    z
+                )]
             )]
             (TriviaNode
                 []
@@ -477,88 +519,98 @@
             )
         )
         (Implicit
-            (AttrType
-                TypeComplex
+            [(ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                z
+                [(LetterSpec
+                    ()
+                    z
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeComplex
+            [(ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    []
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    dp
+                )]
+                [(LetterSpec
+                    a
+                    h
+                )
+                (LetterSpec
+                    o
+                    z
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            [(LetterSpec
-                ()
-                dp
-            )]
-            [(LetterSpec
-                a
-                h
-            )
-            (LetterSpec
-                o
-                z
+                [(LetterSpec
+                    ()
+                    C
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeComplex
+            [(ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    [(()
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                C
+                [(LetterSpec
+                    ()
+                    z
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeComplex
-                [(()
-                4
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                z
-            )]
-            ()
-        )
-        (Implicit
-            (AttrType
-                TypeComplex
-                [(()
-                4
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                z
+            [(ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    [(()
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(LetterSpec
+                    ()
+                    z
+                )]
             )]
             (TriviaNode
                 []
@@ -567,47 +619,53 @@
             )
         )
         (Implicit
-            (AttrType
-                TypeType
+            [(ImplicitSpec
+                (AttrType
+                    TypeType
+                    []
+                    ()
+                    BLOB
+                    None
+                )
                 []
-                ()
-                BLOB
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                A
+                [(LetterSpec
+                    ()
+                    A
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeClass
+            [(ImplicitSpec
+                (AttrType
+                    TypeClass
+                    []
+                    ()
+                    X
+                    None
+                )
                 []
-                ()
-                X
-                None
-            )
-            []
-            [(LetterSpec
-                A
-                b
+                [(LetterSpec
+                    A
+                    b
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeProcedure
+            [(ImplicitSpec
+                (AttrType
+                    TypeProcedure
+                    []
+                    ()
+                    Y
+                    None
+                )
                 []
-                ()
-                Y
-                None
-            )
-            []
-            [(LetterSpec
-                A
-                b
+                [(LetterSpec
+                    A
+                    b
+                )]
             )]
             ()
         )]

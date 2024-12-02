@@ -23,6 +23,38 @@
                                     Required
                                     .false.
                                 ),
+                            __1_k1:
+                                (Variable
+                                    2
+                                    __1_k1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            __1_k2:
+                                (Variable
+                                    2
+                                    __1_k2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             a:
                                 (Variable
                                     2
@@ -253,7 +285,7 @@
                     )
                     (DoLoop
                         ()
-                        ((Var 2 __1_k)
+                        ((Var 2 __1_k1)
                         (ArrayBound
                             (Var 2 a)
                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -274,7 +306,7 @@
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k1)
                                     ())]
                                     (Integer 4)
                                     RowMajor
@@ -289,7 +321,7 @@
                                 (ArrayItem
                                     (Var 2 b)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k1)
                                     ())]
                                     (Integer 4)
                                     RowMajor
@@ -302,7 +334,7 @@
                                 (ArrayItem
                                     (Var 2 b)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k1)
                                     ())]
                                     (Integer 4)
                                     RowMajor
@@ -316,7 +348,7 @@
                     )
                     (DoLoop
                         ()
-                        ((Var 2 __1_k)
+                        ((Var 2 __1_k2)
                         (ArrayBound
                             (Var 2 a)
                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -337,7 +369,7 @@
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k2)
                                     ())]
                                     (Integer 4)
                                     RowMajor
@@ -352,7 +384,7 @@
                                 (ArrayItem
                                     (Var 2 b)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k2)
                                     ())]
                                     (Integer 4)
                                     RowMajor
@@ -365,7 +397,7 @@
                                 (ArrayItem
                                     (Var 2 b)
                                     [(()
-                                    (Var 2 __1_k)
+                                    (Var 2 __1_k2)
                                     ())]
                                     (Integer 4)
                                     RowMajor

@@ -142,6 +142,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
@@ -345,6 +346,7 @@ jobs:
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_KOKKOS=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -403,6 +405,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -479,6 +482,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
@@ -815,6 +819,45 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
+# Commented out to save CI runners:
+#  test-pixi:
+#    name: Pixi Build (${{ matrix.os }})
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: ["ubuntu-latest"]
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#      - uses: prefix-dev/setup-pixi@v0.8.1
+#        with:
+#          pixi-version: v0.37.0
+#          cache: true
+#      - name: LLVM 10
+#        run: |
+#          pixi run -e llvm10 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run integration_tests
+#          pixi run clean
+#      - name: LLVM 11
+#        run: |
+#          pixi run -e llvm11 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run tests # Only run for LLVM 11
+#          pixi run integration_tests
+#          pixi run clean
+#      - name: LLVM 19
+#        run: |
+#          pixi run -e llvm19 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run integration_tests
+#          pixi run clean
+
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ${{ matrix.os }}
@@ -927,10 +970,10 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_TARGET_WASM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-              -DWITH_LIBUNWIND=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -957,9 +1000,9 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-              -DWITH_LIBUNWIND=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -1318,6 +1361,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -1451,6 +1495,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_MLIR=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -1496,6 +1541,7 @@ jobs:
           cmake . -GNinja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DWITH_LLVM=yes \
+            -DWITH_LSP=yes \
             -DWITH_XEUS=yes \
             -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
             -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \

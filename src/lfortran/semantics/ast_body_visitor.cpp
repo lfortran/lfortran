@@ -1,11 +1,7 @@
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <memory>
 #include <string>
 #include <cmath>
 #include <set>
+#include <unordered_set>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
@@ -123,14 +119,6 @@ public:
                 if (!compiler_options.continue_compilation) {
                     throw a;
                 } else {
-                    tmp = nullptr;
-                    tmp_vec.clear();
-                }
-            } catch (const SemanticError &e) {
-                if (!compiler_options.continue_compilation) {
-                    throw e;
-                } else {
-                    diag.add(e.d);
                     tmp = nullptr;
                     tmp_vec.clear();
                 }
@@ -2665,7 +2653,7 @@ public:
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                        ASRUtils::expr_type(value),ASRUtils::expr_type(to_return));
+                                        ASRUtils::expr_type(value),ASRUtils::expr_type(to_return), diag);
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(to_return),
                                     ASRUtils::expr_type(value))) {
             std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(to_return));
@@ -2804,10 +2792,6 @@ public:
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
         try {
             this->visit_expr(*x.m_value);
-        } catch (const SemanticError &e) {
-            // TODO: remove this once we replace SemanticError with diag.add + throw SemanticAbort
-            if ( compiler_options.continue_compilation ) diag.add(e.d);
-            else throw e;
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
         }
@@ -2959,7 +2943,7 @@ public:
                         ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
                                                 ASRUtils::expr_type(arg),
-                                                ASRUtils::type_get_past_allocatable(target_type));
+                                                ASRUtils::type_get_past_allocatable(target_type), diag);
                         // ASRUtils::set_ArrayConstant_value(ac, arg, i);
                         args.push_back(al, arg);
                     }
@@ -2976,7 +2960,7 @@ public:
                     }
                 } else {
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                        value_type, target_type);
+                                        value_type, target_type, diag);
                 }
             }
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
@@ -3740,16 +3724,7 @@ public:
         }
 
         for (size_t i=0; i<x.n_values; i++) {
-            try {
-                this->visit_expr(*x.m_values[i]);
-            } catch (const SemanticError &e) {
-                if ( compiler_options.continue_compilation ) diag.add(e.d);
-                else throw e;
-            } catch (const SemanticAbort &a) {
-                if ( !compiler_options.continue_compilation ) throw a;
-                return;
-            }
-            // visit_expr(*x.m_values[i]);
+            this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
                 expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
@@ -3933,7 +3908,7 @@ public:
     #define cast_as_loop_var(conv_candidate) \
         ASR::ttype_t *des_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(var)); \
         ASR::ttype_t *src_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(*conv_candidate)); \
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type);
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type, diag);
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
         loop_nesting += 1;
@@ -4642,10 +4617,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
         b.is_body_visitor = false;
-    } catch (const SemanticError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
     } catch (const SemanticAbort &) {
         Error error;
         return error;

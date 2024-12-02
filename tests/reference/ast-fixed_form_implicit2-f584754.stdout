@@ -4,46 +4,50 @@
         ()
         []
         [(Implicit
-            (AttrType
-                TypeComplex
+            [(ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                a
-            )
-            (LetterSpec
-                ()
-                b
-            )
-            (LetterSpec
-                ()
-                c
+                [(LetterSpec
+                    ()
+                    a
+                )
+                (LetterSpec
+                    ()
+                    b
+                )
+                (LetterSpec
+                    ()
+                    c
+                )]
             )]
             ()
         )
         (Implicit
-            (AttrType
-                TypeCharacter
-                [(()
-                4
-                Value)]
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                ()
-                k
-            )
-            (LetterSpec
-                ()
-                l
+            [(ImplicitSpec
+                (AttrType
+                    TypeCharacter
+                    [(()
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(LetterSpec
+                    ()
+                    k
+                )
+                (LetterSpec
+                    ()
+                    l
+                )]
             )]
             ()
         )]

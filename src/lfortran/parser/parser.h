@@ -1,9 +1,6 @@
 #ifndef LFORTRAN_PARSER_PARSER_H
 #define LFORTRAN_PARSER_PARSER_H
 
-#include <fstream>
-#include <algorithm>
-#include <memory>
 #include <filesystem>
 
 #include <libasr/utils.h>

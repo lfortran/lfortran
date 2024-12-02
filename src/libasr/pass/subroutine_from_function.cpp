@@ -169,7 +169,8 @@ class ReplaceFunctionCallWithSubroutineCall:
             }
 
             bool is_return_var_handled = false;
-            ASR::symbol_t *fn_name = ASRUtils::symbol_get_past_external(x->m_name);
+            ASR::symbol_t *fn_name = ASRUtils::symbol_get_past_ClassProcedure(
+                ASRUtils::symbol_get_past_external(x->m_name));
             if (ASR::is_a<ASR::Function_t>(*fn_name)) {
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_name);
                 is_return_var_handled = fn->m_return_var == nullptr;
@@ -301,7 +302,7 @@ class ReplaceFunctionCallWithSubroutineCall:
                 result_arg.m_value = *current_expr;
                 s_args.push_back(al, result_arg);
                 ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                                                x->m_name, nullptr, s_args.p, s_args.size(), nullptr,
+                                                x->m_name, nullptr, s_args.p, s_args.size(), x->m_dt,
                                                 nullptr, false, false));
                 pass_result.push_back(al, subrout_call);
             }

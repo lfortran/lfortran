@@ -1,10 +1,7 @@
-#include <fstream>
 #include <iostream>
 #include <map>
-#include <memory>
 #include <string>
 #include <cmath>
-#include <limits>
 #include <queue>
 
 #include <lfortran/ast.h>
@@ -24,7 +21,7 @@
 namespace LCompilers::LFortran {
 
 template <typename T>
-void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
+void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
     if (x.m_bind) {
         AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(x.m_bind);
         if (bind->n_args == 1) {
@@ -36,16 +33,25 @@ void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
                 } else if (to_lower(std::string(name->m_id)) == "js") {
                     abi_type=ASR::abiType::BindJS;
                 } else {
-                    throw SemanticError("Unsupported language in bind()",
-                        x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Unsupported language in bind()",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             } else {
-                    throw SemanticError("Language name must be specified in bind() as plain text",
-                        x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Language name must be specified in bind() as plain text",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
             }
         } else {
-            throw SemanticError("At least one argument needed in bind()",
-                x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "At least one argument needed in bind()",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         if (bind->n_kwargs == 1) {
             char *arg = bind->m_kwargs[0].m_arg;
@@ -55,12 +61,18 @@ void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
                     AST::String_t *name = AST::down_cast<AST::String_t>(value);
                     bindc_name = name->m_s;
                 } else {
-                    throw SemanticError("The value of the 'name' keyword argument in bind(c) must be a string",
-                        x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "The value of the 'name' keyword argument in bind(c) must be a string",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             } else {
-                throw SemanticError("Unsupported keyword argument in bind()",
-                    x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "Unsupported keyword argument in bind()",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         }
     }
@@ -133,7 +145,11 @@ public:
                 }
             }
             if (!sym_name.empty()) {
-                throw SemanticError(sym_name + " is/are used as dimensions but not declared", x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    sym_name + " is/are used as dimensions but not declared",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         }
     }
@@ -196,7 +212,11 @@ public:
                         break;
                     }
                     default: {
-                        throw SemanticError("Only String type is supported as of now.", data->type->base.loc);
+                        diag.add(diag::Diagnostic(
+                            "Only String type is supported as of now.",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {data->type->base.loc})}));
+                        throw SemanticAbort();
                     }
                 }
             }
@@ -266,8 +286,11 @@ public:
                     std::string derived_type_name = ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_name;
                     ASR::symbol_t* sym_ = symtab->resolve_symbol(derived_type_name);
                     if( !sym_ ) {
-                        throw SemanticError("Derived type '"
-                                + derived_type_name + "' not declared", der_sym->base.loc);
+                        diag.add(diag::Diagnostic(
+                            "Derived type '" + derived_type_name + "' not declared",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {der_sym->base.loc})}));
+                        throw SemanticAbort();
                     }
                     struct_t->m_derived_type = sym_;
                 }
@@ -305,7 +328,11 @@ public:
             if (AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
                 if (x.n_implicit != 1) {
-                    throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "No other implicit statement is allowed when 'implicit none' is used",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
                 for (auto &it: implicit_dictionary) {
                     it.second = nullptr;
@@ -314,60 +341,69 @@ public:
                 //if no, then it is of type "implicit"
                 //get the implicit statement
                 AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
-                AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(implicit->m_type);
-                AST::decl_typeType ast_type=attr_type->m_type;
-                ASR::ttype_t *type = nullptr;
-                //convert the ast_type to asr_type
-                int i_kind = compiler_options.po.default_integer_kind;
-                int a_kind = 4;
-                int a_len = -10;
-                if (attr_type->m_kind != nullptr) {
-                    if (attr_type->n_kind == 1) {
-                        visit_expr(*attr_type->m_kind->m_value);
-                        ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                        if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
-                            a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
-                        } else {
-                            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
-                            i_kind = a_kind;
+                for (size_t si=0;si<implicit->n_specs;++si) {
+                    AST::ImplicitSpec_t* spec = AST::down_cast<AST::ImplicitSpec_t>(implicit->m_specs[si]);
+                    AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(spec->m_type);
+                    AST::decl_typeType ast_type=attr_type->m_type;
+                    ASR::ttype_t *type = nullptr;
+                    //convert the ast_type to asr_type
+                    int i_kind = compiler_options.po.default_integer_kind;
+                    int a_kind = 4;
+                    int a_len = -10;
+                    if (attr_type->m_kind != nullptr) {
+                       if (attr_type->n_kind == 1) {
+                          visit_expr(*attr_type->m_kind->m_value);
+                          ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                          if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
+                             a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
+                          } else {
+                             a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
+                             i_kind = a_kind;
+                          }
+                       } else {
+                         diag.add(diag::Diagnostic(
+                             "Only one kind item supported for now",
+                             diag::Level::Error, diag::Stage::Semantic, {
+                                 diag::Label("", {x.base.base.loc})}));
+                         throw SemanticAbort();
+                       }
+                    }
+                    switch (ast_type) {
+                        case (AST::decl_typeType::TypeInteger) : {
+                            type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
+                            break;
                         }
-                    } else {
-                        throw SemanticError("Only one kind item supported for now", x.base.base.loc);
+                        case (AST::decl_typeType::TypeReal) : {
+                            type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeDoublePrecision) : {
+                            type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeComplex) : {
+                            type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeLogical) : {
+                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeCharacter) : {
+                            type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                            break;
+                        }
+                        default :
+                            diag.add(diag::Diagnostic(
+                                              "Return type not supported",
+                                              diag::Level::Error, diag::Stage::Semantic, {
+                                                diag::Label("", {x.base.base.loc})}));
+                            throw SemanticAbort();
                     }
-                }
-                switch (ast_type) {
-                    case (AST::decl_typeType::TypeInteger) : {
-                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeReal) : {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeDoublePrecision) : {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeComplex) : {
-                        type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeLogical) : {
-                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeCharacter) : {
-                        type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
-                        break;
-                    }
-                    default :
-                        throw SemanticError("Return type not supported",
-                                x.base.base.loc);
-                }
-                //iterate over all implicit rules
-                for (size_t j=0;j<implicit->n_specs;j++) {
+                  //iterate over all implicit rules
+                  for (size_t j=0;j<spec->n_specs;j++) {
                     //cast x.m_specs[j] to AST::LetterSpec_t
-                    AST::LetterSpec_t* letter_spec = AST::down_cast<AST::LetterSpec_t>(implicit->m_specs[j]);
+                    AST::LetterSpec_t* letter_spec = AST::down_cast<AST::LetterSpec_t>(spec->m_specs[j]);
                     char *start=letter_spec->m_start;
                     char *end=letter_spec->m_end;
                     if (!start) {
@@ -375,12 +411,14 @@ public:
                     } else {
                         for(char ch=*start; ch<=*end; ch++){
                             implicit_dictionary[to_lower(std::string(1, ch))] = type;
-                        }
+                      }
                     }
+                  }
                 }
             }
         }
     }
+
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         std::cout << "Implicit Dictionary: " << std::endl;
@@ -412,7 +450,11 @@ public:
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
                                                 compiler_options.po, true,
-                                                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
+                                                [&](const std::string &msg, const Location &loc) {
+                                                    diag.add(diag::Diagnostic(
+                                                        msg, diag::Level::Error, diag::Stage::Semantic, {
+                                                            diag::Label("", {loc})}));
+                                                    throw SemanticAbort();}
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -445,7 +487,11 @@ public:
         m->n_dependencies = current_module_dependencies.size();
         std::string sym_name = to_lower(x.m_name);
         if (parent_scope->get_symbol(sym_name) != nullptr) {
-            throw SemanticError("Module already defined", tmp->loc);
+            diag.add(diag::Diagnostic(
+                "Module already defined",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {tmp->loc})}));
+            throw SemanticAbort();
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -463,7 +509,11 @@ public:
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -509,7 +559,11 @@ public:
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -539,7 +593,11 @@ public:
             /* n_body */ 0);
         std::string sym_name = to_lower(x.m_name);
         if (parent_scope->get_symbol(sym_name) != nullptr) {
-            throw SemanticError("Program already defined", tmp->loc);
+            diag.add(diag::Diagnostic(
+                "Program already defined",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {tmp->loc})}));
+            throw SemanticAbort();
         }
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -704,8 +762,11 @@ public:
             if (arg) {
                 current_procedure_args.push_back(to_lower(arg));
             } else {
-                throw SemanticError("Alternate returns are not implemented yet",
-                    it.loc);
+                diag.add(diag::Diagnostic(
+                    "Alternate returns are not implemented yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {it.loc})}));
+                throw SemanticAbort();
             }
         }
 
@@ -718,12 +779,20 @@ public:
                 if (compiler_options.implicit_typing) {
                     ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
                     if (t == nullptr) {
-                        throw SemanticError("Dummy argument '" + arg_s + "' not defined", it.loc);
+                        diag.add(diag::Diagnostic(
+                            "Dummy argument '" + arg_s + "' not defined",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {it.loc})}));
+                        throw SemanticAbort();
                     }
                     declare_implicit_variable2(it.loc, arg_s,
                         ASRUtils::intent_unspecified, t);
                 } else {
-                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", it.loc);
+                    diag.add(diag::Diagnostic(
+                        "Dummy argument '" + arg_s + "' not defined",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {it.loc})}));
+                    throw SemanticAbort();
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
@@ -874,7 +943,11 @@ public:
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -934,13 +1007,16 @@ public:
             if (arg) {
                 current_procedure_args.push_back(to_lower(arg));
             } else {
-                throw SemanticError("Alternate returns are not implemented yet",
-                    x.m_args[i].loc);
+                diag.add(diag::Diagnostic(
+                    "Alternate returns are not implemented yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_args[i].loc})}));
+                throw SemanticAbort();
             }
         }
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
-        extract_bind(x, current_procedure_abi_type, bindc_name);
+        extract_bind(x, current_procedure_abi_type, bindc_name, diag);
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
@@ -971,12 +1047,20 @@ public:
                 if (compiler_options.implicit_typing) {
                     ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
                     if (t == nullptr) {
-                        throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                        diag.add(diag::Diagnostic(
+                            "Dummy argument '" + arg_s + "' not defined",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
                     }
                     declare_implicit_variable2(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified, t);
                 } else {
-                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Dummy argument '" + arg_s + "' not defined",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
@@ -1024,7 +1108,11 @@ public:
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
-                    throw SemanticError("Subroutine already defined " + sym_name, tmp->loc);
+                    diag.add(diag::Diagnostic(
+                        "Subroutine already defined " + sym_name,
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {tmp->loc})}));
+                    throw SemanticAbort();
                 }
             } else if( ASR::is_a<ASR::GenericProcedure_t>(*f1) ) {
                 ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f1);
@@ -1055,7 +1143,11 @@ public:
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
-                throw SemanticError("Subroutine already defined " + sym_name, tmp->loc);
+                diag.add(diag::Diagnostic(
+                    "Subroutine already defined " + sym_name,
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {tmp->loc})}));
+                throw SemanticAbort();
             }
         }
         if( sym_name == interface_name ) {
@@ -1143,7 +1235,11 @@ public:
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
             if (t == nullptr) {
-                throw SemanticError("No implicit return type available for `" + return_var_name +"`", loc);
+                diag.add(diag::Diagnostic(
+                    "No implicit return type available for `" + return_var_name +"`",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
             switch( t->type ) {
                 case ASR::ttypeType::Integer: {
@@ -1174,7 +1270,11 @@ public:
                     break;
                 }
                 default: {
-                    throw SemanticError("Implicit return type not supported yet", loc);
+                    diag.add(diag::Diagnostic(
+                        "Implicit return type not supported yet",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
                 }
             }
             AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, AST::symbolType::None);
@@ -1184,7 +1284,11 @@ public:
         for (size_t i=0; i<n; i++) {
             if (AST::is_a<AST::AttrType_t>(*attributes[i])) {
                 if (found) {
-                    throw SemanticError("Return type declared twice", loc);
+                    diag.add(diag::Diagnostic(
+                        "Return type declared twice",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
                 } else {
                     r = AST::down_cast<AST::AttrType_t>(attributes[i]);
                     found = true;
@@ -1205,7 +1309,11 @@ public:
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -1274,7 +1382,7 @@ public:
         // Determine the ABI (Source or BindC for now)
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
-        extract_bind(x, current_procedure_abi_type, bindc_name);
+        extract_bind(x, current_procedure_abi_type, bindc_name, diag);
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
@@ -1308,7 +1416,11 @@ public:
                     declare_implicit_variable2(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified, t);
                 } else {
-                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Dummy argument '" + arg_s + "' not defined",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
@@ -1324,8 +1436,11 @@ public:
             if (x.m_return_var->type == AST::exprType::Name) {
                 return_var_name = to_lower(((AST::Name_t*)(x.m_return_var))->m_id);
             } else {
-                throw SemanticError("Return variable must be an identifier",
-                    x.m_return_var->base.loc);
+                diag.add(diag::Diagnostic(
+                    "Return variable must be an identifier",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_return_var->base.loc})}));
+                throw SemanticAbort();
             }
         } else {
             return_var_name = to_lower(x.m_name);
@@ -1342,8 +1457,11 @@ public:
             // The variable is not defined among local variables, extract the
             // type from "integer function f()" and add the variable.
             if (!return_type) {
-                throw SemanticError("Return type not specified",
-                        x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "Return type not specified",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
             ASR::ttype_t *type;
             int i_kind = compiler_options.po.default_integer_kind;
@@ -1354,13 +1472,17 @@ public:
                     visit_expr(*return_type->m_kind->m_value);
                     ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                     if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
-                        a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
+                        a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                     } else {
-                        a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                        a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
                     }
                 } else {
-                    throw SemanticError("Only one kind item supported for now", x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Only one kind item supported for now",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             }
             switch (return_type->m_type) {
@@ -1397,16 +1519,23 @@ public:
                     std::string derived_type_name = to_lower(return_type->m_name);
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
                     if (!v) {
-                        throw SemanticError("Derived type '"
-                            + derived_type_name + "' not declared", x.base.base.loc);
+                        diag.add(diag::Diagnostic(
+                            "Derived type '"
+                            + derived_type_name + "' not declared",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
 
                     }
                     type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
                     break;
                 }
                 default :
-                    throw SemanticError("Return type not supported",
-                            x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Return type not supported",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
             }
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
@@ -1421,8 +1550,11 @@ public:
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
             if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
-                throw SemanticError("Cannot specify the return type twice",
-                    x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "Cannot specify the return type twice",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
@@ -1462,13 +1594,21 @@ public:
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
-                    throw SemanticError("Function already defined", tmp->loc);
+                    diag.add(diag::Diagnostic(
+                        "Function already defined",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {tmp->loc})}));
+                    throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
-                throw SemanticError("Function already defined", tmp->loc);
+                diag.add(diag::Diagnostic(
+                    "Function already defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {tmp->loc})}));
+                throw SemanticAbort();
             }
         }
 
@@ -1536,9 +1676,12 @@ public:
             for (size_t i=0; i<x.n_temp_args; i++) {
                 ASR::symbol_t *s = parent_scope->get_symbol(to_lower(x.m_temp_args[i]));
                 if (!s) {
-                    throw SemanticError("Template argument " + std::string(x.m_temp_args[i])
+                    diag.add(diag::Diagnostic(
+                        "Template argument " + std::string(x.m_temp_args[i])
                         + " has not been declared in templated function specification.",
-                        x.base.base.loc);
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             }
             current_scope = grandparent_scope;
@@ -1582,17 +1725,26 @@ public:
                         simd_variables.push_back(std::pair(var, x.base.base.loc));
                     }
                 } else {
-                    throw SemanticError("Only `simd` attribute supported",
-                        x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Only `simd` attribute supported",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             } else {
-                throw SemanticError("Unsupported LFortran pragma type",
-                    x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "Unsupported LFortran pragma type",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
 
         } else {
-            throw SemanticError("The pragma type not supported yet",
-                x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "The pragma type not supported yet",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
     }
 
@@ -1609,12 +1761,18 @@ public:
                     // * the right, compile time, size, compatible type
                     // * Not allocatable, or pointer
                 } else {
-                    throw SemanticError("The SIMD variable `" + var.first + "` must be an array",
-                        t->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "The SIMD variable `" + var.first + "` must be an array",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {t->base.loc})}));
+                    throw SemanticAbort();
                 }
             } else {
-                throw SemanticError("The SIMD variable `" + var.first + "` not declared",
-                    var.second);
+                diag.add(diag::Diagnostic(
+                    "The SIMD variable `" + var.first + "` not declared",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {var.second})}));
+                throw SemanticAbort();
             }
 
         }
@@ -1630,8 +1788,11 @@ public:
             switch( x.m_attrtype[i]->type ) {
                 case AST::decl_attributeType::AttrExtends: {
                     if( attr_extend != nullptr ) {
-                        throw SemanticError("DerivedType can only extend one another DerivedType",
-                                            x.base.base.loc);
+                        diag.add(diag::Diagnostic(
+                            "DerivedType can only extend one another DerivedType",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
                     }
                     attr_extend = (AST::AttrExtends_t*)(&(x.m_attrtype[i]->base));
                     break;
@@ -1666,13 +1827,21 @@ public:
         }
         std::string sym_name = to_lower(x.m_name);
         if (current_scope->get_symbol(sym_name) != nullptr) {
-            throw SemanticError("DerivedType already defined", x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "DerivedType already defined",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         ASR::symbol_t* parent_sym = nullptr;
         if( attr_extend != nullptr ) {
             std::string parent_sym_name = to_lower(attr_extend->m_name);
             if( parent_scope->get_symbol(parent_sym_name) == nullptr ) {
-                throw SemanticError(parent_sym_name + " is not defined.", x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    parent_sym_name + " is not defined.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
@@ -1813,7 +1982,11 @@ public:
                     }
                 }
             } else {
-                throw SemanticError("Interface procedure type not imlemented yet", item->base.loc);
+                diag.add(diag::Diagnostic(
+                    "Interface procedure type not imlemented yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {item->base.loc})}));
+                throw SemanticAbort();
             }
         }
     }
@@ -1852,7 +2025,11 @@ public:
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id);
             if (op_name != "formatted" && op_name != "unformatted") {
-                throw SemanticError("Can only be `formatted` or `unformatted`", x.m_header->base.loc);
+                diag.add(diag::Diagnostic(
+                    "Can only be `formatted` or `unformatted`",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_header->base.loc})}));
+                throw SemanticAbort();
             }
             op_name = "~write_" + op_name;
             std::vector<std::string> proc_names;
@@ -1861,14 +2038,22 @@ public:
         }  else if (AST::is_a<AST::InterfaceHeaderRead_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id);
             if (op_name != "formatted" && op_name != "unformatted") {
-                throw SemanticError("Can only be `formatted` or `unformatted`", x.m_header->base.loc);
+                diag.add(diag::Diagnostic(
+                    "Can only be `formatted` or `unformatted`",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_header->base.loc})}));
+                throw SemanticAbort();
             }
             op_name = "~read_" + op_name;
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
             defined_op_procs[op_name] = proc_names;
         }  else {
-            throw SemanticError("Interface type not imlemented yet", x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Interface type not imlemented yet",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
     }
 
@@ -2010,7 +2195,11 @@ public:
                     if( clss->m_symtab->get_symbol(cand_proc) != nullptr ) {
                         cand_procs.push_back(al, clss->m_symtab->get_symbol(cand_proc));
                     } else {
-                        throw SemanticError(cand_proc + " doesn't exist inside " + proc.first + " type", loc);
+                        diag.add(diag::Diagnostic(
+                            cand_proc + " doesn't exist inside " + proc.first + " type",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {loc})}));
+                        throw SemanticAbort();
                     }
                 }
                 Str s;
@@ -2067,7 +2256,11 @@ public:
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
             if (func_type->n_arg_types == 0 ||
                 !arg_type_equal_to_class(func_type->m_arg_types[0], clss_sym)) {
-                throw SemanticError("Passed object dummy argument does not match function argument", loc);
+                diag.add(diag::Diagnostic(
+                    "Passed object dummy argument does not match function argument",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
         } else {
             bool is_pass_arg_name_found = false;
@@ -2075,15 +2268,23 @@ public:
                 ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[i]);
                 if (strcmp(v->m_name, pass_arg_name) == 0) {
                     if (!arg_type_equal_to_class(v->m_type, clss_sym)) {
-                        throw SemanticError("Passed object dummy argument " + std::string(pass_arg_name)
-                            + " type does not match function argument", loc);
+                        diag.add(diag::Diagnostic(
+                            "Passed object dummy argument " + std::string(pass_arg_name)
+                            + " type does not match function argument",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {loc})}));
+                        throw SemanticAbort();
                     }
                     is_pass_arg_name_found = true;
                 }
             }
             if (!is_pass_arg_name_found) {
-                throw SemanticError("Passed object dummy argument " + std::string(pass_arg_name)
-                    + " not found in function arguments", loc);
+                diag.add(diag::Diagnostic(
+                    "Passed object dummy argument " + std::string(pass_arg_name)
+                    + " not found in function arguments",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
         }
     }
@@ -2118,26 +2319,39 @@ public:
                 bool is_deferred = check_is_deferred(pname.first, clss);
                 bool is_nopass = (cdf.count(proc.first) && cdf[proc.first].count(pname.first) && cdf[proc.first][pname.first].count("nopass"));
                 if (is_pass && is_nopass) {
-                    throw SemanticError(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
+                    diag.add(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("pass specified here", { pname.second["pass"].loc} ),
                             diag::Label("nopass specified here", { cdf[proc.first][pname.first]["nopass"] })
                         }));
+                    throw SemanticAbort();
                 }
 
                 ASR::symbol_t *proc_sym = proc_scope->resolve_symbol(pname.second["procedure"].name);
                 if (proc_sym == nullptr) {
                     if (is_deferred) {
-                        throw SemanticError("Interface must be specified for DEFERRED binding", cdf[proc.first][pname.first]["deferred"]);
+                        diag.add(diag::Diagnostic(
+                            "Interface must be specified for DEFERRED binding",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {cdf[proc.first][pname.first]["deferred"]})}));
+                        throw SemanticAbort();
                     } else {
-                        throw SemanticError("'" + pname.second["procedure"].name + "' must be a module procedure"
-                            " or an external procedure with an explicit interface", loc);
+                        diag.add(diag::Diagnostic(
+                            "'" + pname.second["procedure"].name + "' must be a module procedure"
+                            " or an external procedure with an explicit interface",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {loc})}));
+                        throw SemanticAbort();
                     }
                 }
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
                 if (!is_deferred &&
                     ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
-                    throw SemanticError("PROCEDURE(interface) should be declared DEFERRED", loc);
+                    diag.add(diag::Diagnostic(
+                        "PROCEDURE(interface) should be declared DEFERRED",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
                 }
                 Str s;
                 s.from_str_view(pname.first);
@@ -2421,8 +2635,11 @@ public:
                              const Location& loc) {
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
-            throw SemanticError("The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
-                loc);
+            diag.add(diag::Diagnostic(
+                "The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
@@ -2512,7 +2729,11 @@ public:
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
             if (mv->m_access == ASR::accessType::Private) {
-                throw SemanticError("Private variable `" + local_sym + "` cannot be imported", loc);
+                diag.add(diag::Diagnostic(
+                    "Private variable `" + local_sym + "` cannot be imported",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
                 al, mv->base.base.loc,
@@ -2618,12 +2839,19 @@ public:
             }
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, compiler_options.po, true,
-                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
-                ));
+                [&](const std::string &msg, const Location &loc) {
+                    diag.add(diag::Diagnostic(
+                        msg, diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
+            }));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
-            throw SemanticError("The symbol '" + msym + "' must be a module",
-                x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "The symbol '" + msym + "' must be a module",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         if (x.n_symbols == 0) {
@@ -2661,7 +2889,11 @@ public:
                         remote_sym = AST::down_cast<AST::UseWrite_t>(
                             x.m_symbols[i])->m_id;
                         if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            throw SemanticError("Can only be `formatted` or `unformatted`", x.m_symbols[i]->base.loc);
+                            diag.add(diag::Diagnostic(
+                                "Can only be `formatted` or `unformatted`",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
+                            throw SemanticAbort();
                         }
                         remote_sym = "~write_" + remote_sym;
                         break;
@@ -2670,13 +2902,21 @@ public:
                         remote_sym = AST::down_cast<AST::UseRead_t>(
                             x.m_symbols[i])->m_id;
                         if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            throw SemanticError("Can only be `formatted` or `unformatted`", x.m_symbols[i]->base.loc);
+                            diag.add(diag::Diagnostic(
+                                "Can only be `formatted` or `unformatted`",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
+                            throw SemanticAbort();
                         }
                         remote_sym = "~read_" + remote_sym;
                         break;
                     }
                     default:
-                        throw SemanticError("Symbol with use not supported yet " + std::to_string(x.m_symbols[i]->type), x.base.base.loc);
+                        diag.add(diag::Diagnostic(
+                            "Symbol with use not supported yet " + std::to_string(x.m_symbols[i]->type),
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
                 }
                 std::string local_sym;
                 if (AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i]) &&
@@ -2801,8 +3041,12 @@ public:
                 }
             }
             if (!defined) {
-                throw SemanticError("Symbol " + sym + " is not declared in "
-                    + to_lower(x.m_name) + "'s parameters", x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "Symbol " + sym + " is not declared in "
+                    + to_lower(x.m_name) + "'s parameters",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         }
 
@@ -2834,15 +3078,22 @@ public:
             current_scope->resolve_symbol(require_name));
 
         if (!req0 || !ASR::is_a<ASR::Requirement_t>(*req0)) {
-            throw SemanticError("No requirement '" + require_name+ "' is defined",
-                x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "No requirement '" + require_name+ "' is defined",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
         ASR::Requirement_t *req = ASR::down_cast<ASR::Requirement_t>(req0);
 
         if (x.n_namelist != req->n_args) {
-            throw SemanticError("The number of parameters passed to '" +
-                require_name + "' is not correct", x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "The number of parameters passed to '" +
+                require_name + "' is not correct",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
         std::map<std::string, ASR::ttype_t*> type_subs;
@@ -2863,7 +3114,11 @@ public:
                         current_procedure_args.end(),
                         req_arg) == current_procedure_args.end()
                         && !current_scope->get_symbol(req_arg)) {
-                    throw SemanticError("Parameter '" + req_arg + "' was not declared", x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Parameter '" + req_arg + "' was not declared",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             } else if (AST::is_a<AST::AttrType_t>(*attr)) {
                 Vec<ASR::dimension_t> dims;
@@ -2875,7 +3130,11 @@ public:
                 req_arg = ASRUtils::type_to_str(ttype);
                 type_subs[req_param] = ttype;
             } else {
-                throw SemanticError("Unsupported decl_attribute for require statements.", x.m_namelist[i]->base.loc);
+                diag.add(diag::Diagnostic(
+                    "Unsupported decl_attribute for require statements.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_namelist[i]->base.loc})}));
+                throw SemanticAbort();
             }
 
             ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
@@ -2955,8 +3214,12 @@ public:
             args.push_back(al, s2c(al, arg));
             ASR::symbol_t *s = current_scope->get_symbol(arg);
             if (!s) {
-                throw SemanticError("Template argument " + arg  + " has not been"
-                    " declared in template specification.", x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "Template argument " + arg  + " has not been"
+                    " declared in template specification.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         }
 
@@ -2986,22 +3249,32 @@ public:
         ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
             current_scope->resolve_symbol(template_name));
         if (!sym0) {
-            throw SemanticError("Use of an unspecified template '" + template_name
-                + "'", x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Use of an unspecified template '" + template_name + "'",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
         // check if the symbol is a template
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(sym0);
         if (!ASR::is_a<ASR::Template_t>(*sym)) {
-            throw SemanticError("Cannot instantiate a non-template '" + template_name
-                + "'", x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Cannot instantiate a non-template '" + template_name + "'",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
         // check for number of template arguments
         if (temp->n_args != x.n_args) {
-            throw SemanticError("Number of template arguments don't match", x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Number of template arguments don't match",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
         std::map<std::string, ASR::ttype_t*> type_subs;
@@ -3019,8 +3292,12 @@ public:
                     x.m_args[i], false, false, dims, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
-                    throw SemanticError("The type " + ASRUtils::type_to_str(arg_type) +
-                        " cannot be applied to non-type parameter " + param, x.m_args[i]->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "The type " + ASRUtils::type_to_str(arg_type) +
+                        " cannot be applied to non-type parameter " + param,
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_args[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
                 type_subs[param] = arg_type;
             } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_args[i])) {
@@ -3031,14 +3308,19 @@ public:
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                     ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
                     if (!f_arg0) {
-                        throw SemanticError("The function argument " + arg + " is not found",
-                            x.m_args[i]->base.loc);
+                        diag.add(diag::Diagnostic(
+                            "The function argument " + arg + " is not found",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.m_args[i]->base.loc})}));
+                        throw SemanticAbort();
                     }
                     ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
                     if (!ASR::is_a<ASR::Function_t>(*f_arg)) {
-                        throw SemanticError(
+                        diag.add(diag::Diagnostic(
                             "The argument for " + param + " must be a function",
-                            x.m_args[i]->base.loc);
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.m_args[i]->base.loc})}));
+                        throw SemanticAbort();
                     }
                     check_restriction(type_subs,
                         symbol_subs, f, f_arg0, x.m_args[i]->base.loc, diag,
@@ -3061,8 +3343,11 @@ public:
                         ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
                         ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
                         if (!ASRUtils::check_equal_type(arg_type, param_type)) {
-                            throw SemanticError("The type of " + arg + " does not match the type of " + param,
-                                x.m_args[i]->base.loc);
+                            diag.add(diag::Diagnostic(
+                                "The type of " + arg + " does not match the type of " + param,
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.m_args[i]->base.loc})}));
+                            throw SemanticAbort();
                         }
                         symbol_subs[param] = arg_sym;
                     }
@@ -3109,7 +3394,11 @@ public:
                         is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte";
                         break;
                     default:
-                        throw SemanticError("Unsupported binary operator", x.m_args[i]->base.loc);
+                        diag.add(diag::Diagnostic(
+                            "Unsupported binary operator",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.m_args[i]->base.loc})}));
+                        throw SemanticAbort();
                 }
 
                 bool is_overloaded;
@@ -3118,7 +3407,11 @@ public:
                 } else if (is_cmpop) {
                     is_overloaded = ASRUtils::is_op_overloaded(cmpop, op_name, current_scope, nullptr);
                 } else {
-                    throw SemanticError("Must be binop or cmop", x.m_args[i]->base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Must be binop or cmop",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_args[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
 
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
@@ -3140,8 +3433,12 @@ public:
                 // if not found, then try to build a function for intrinsic operator
                 if (!found) {
                     if (f->n_args != 2) {
-                        throw SemanticError("The restriction " + f_name
-                            + " does not have 2 parameters", x.base.base.loc);
+                        diag.add(diag::Diagnostic(
+                            "The restriction " + f_name
+                            + " does not have 2 parameters",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
                     }
 
                     ASR::ttype_t *left_type = ASRUtils::subs_expr_type(type_subs, f->m_args[0]);
@@ -3185,12 +3482,15 @@ public:
                                                                      right_type, conversion_cand,
                                                                      &source_type, &dest_type);
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                                               source_type, dest_type);
+                                                               source_type, dest_type, diag);
                         return_type = ASRUtils::duplicate_type(al, ftype);
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, left, right, dest_type));
                         if (!ASRUtils::check_equal_type(dest_type, return_type)) {
-                            throw SemanticError("Unapplicable types for intrinsic operator " + op_name,
-                                x.base.base.loc);
+                            diag.add(diag::Diagnostic(
+                                "Unapplicable types for intrinsic operator " + op_name,
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.base.base.loc})}));
+                            throw SemanticAbort();
                         }
                     } else {
                         return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -3248,7 +3548,11 @@ public:
                     symbol_subs[f->m_name] = op_sym;
                 }
             } else {
-                throw SemanticError("Unsupported template argument", x.m_args[i]->base.loc);
+                diag.add(diag::Diagnostic(
+                    "Unsupported template argument",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_args[i]->base.loc})}));
+                throw SemanticAbort();
             }
         }
 
@@ -3266,7 +3570,11 @@ public:
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
                 if (s == nullptr) {
-                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Symbol " + generic_name + " was not found",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
                 std::string new_sym_name = generic_name;
                 if (use_symbol->m_local_rename) {
@@ -3424,7 +3732,11 @@ public:
             }
             default : {
                 std::string sym_name = ASRUtils::symbol_name(s);
-                throw SemanticError("Symbol not found " + sym_name, s->base.loc);
+                diag.add(diag::Diagnostic(
+                    "Symbol not found " + sym_name,
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {s->base.loc})}));
+                throw SemanticAbort();
             }
         }
     }
@@ -3448,20 +3760,34 @@ public:
                     AST::Name_t *name = AST::down_cast<AST::Name_t>(
                         bind->m_args[0]);
                     if (to_lower(std::string(name->m_id)) != "c") {
-                        throw SemanticError("Unsupported language in bind()",
-                            x.base.base.loc);
+                        diag.add(diag::Diagnostic(
+                            "Unsupported language in bind()",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
                     }
                 } else {
-                    throw SemanticError("Language name must be specified in "
-                        "bind() as a plain text", x.base.base.loc);
+                    diag.add(diag::Diagnostic(
+                        "Language name must be specified in "
+                        "bind() as a plain text",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             } else {
-                throw SemanticError("Unsupported attribute type in enum, "
-                    "only bind() is allowed", x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "Unsupported attribute type in enum, "
+                    "only bind() is allowed",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         } else {
-            throw SemanticError("Only one attribute is allowed in enum",
-                x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Only one attribute is allowed in enum",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
         for ( size_t i = 0; i < x.n_items; i++ ) {
@@ -3511,10 +3837,6 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
                          instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         v.visit_TranslationUnit(ast);
-    } catch (const SemanticError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
     } catch (const SemanticAbort &) {
         Error error;
         return error;

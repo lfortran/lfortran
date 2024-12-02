@@ -864,9 +864,12 @@ void report_check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
     }
     if (f->m_return_var) {
         if (!arg->m_return_var) {
-            std::string msg = "The restriction argument " + arg_name
-                + " should have a return value";
-            throw SemanticError(msg, loc);
+            diagnostics.add(diag::Diagnostic(
+                "The restriction argument " + arg_name
+                + " should have a return value",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         ASR::ttype_t *f_ret = ASRUtils::expr_type(f->m_return_var);
         ASR::ttype_t *arg_ret = ASRUtils::expr_type(arg->m_return_var);
@@ -891,9 +894,12 @@ void report_check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         }
     } else {
         if (arg->m_return_var) {
-            std::string msg = "The restriction argument " + arg_name
-                + " should not have a return value";
-            throw SemanticError(msg, loc);
+            diagnostics.add(diag::Diagnostic(
+                "The restriction argument " + arg_name
+                + " should not have a return value",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
     symbol_subs[f_name] = sym_arg;

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <sstream>
 #include <cctype>
 
 #include <lfortran/parser/parser.h>
@@ -122,7 +121,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
     try {
         if (!p.parse(s)) {
-            return Error();
+            if (!co.continue_compilation) {
+                return Error();
+            }
         };
     } catch (const parser_local::TokenizerError &e) {
         Error error;
@@ -309,7 +310,7 @@ LineType determine_line_type(const unsigned char *pos)
         }
         if (col <= 6) {
             return LineType::LabeledStatement;
-        } else if (std::string(pos, pos + 7) == "include") {
+        } else if (str_compare(pos, "include")) {
             return LineType::Include;
         } else {
             return LineType::Statement;

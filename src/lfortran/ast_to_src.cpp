@@ -1209,6 +1209,23 @@ public:
         r += "implicit";
         r += syn();
         r += " ";
+        if (x.n_specs > 0) {
+            for (size_t i=0; i<x.n_specs; i++) {
+                visit_implicit_spec(*x.m_specs[i]);
+                r += s;
+                if (i < x.n_specs-1) r.append(",");
+            }
+        }
+        if(x.m_trivia){
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
+        s = r;
+    }
+
+     void visit_ImplicitSpec(const ImplicitSpec_t &x) {
+        std::string r;
         visit_decl_attribute(*x.m_type);
         r += s;
         if (x.n_kind > 0) {
@@ -1228,12 +1245,7 @@ public:
             }
             r += ")";
         }
-        if(x.m_trivia){
-            r += print_trivia_after(*x.m_trivia);
-        } else {
-            r.append("\n");
-        }
-        s = r;
+	s = r;
     }
 
     void visit_LetterSpec(const LetterSpec_t &x) {

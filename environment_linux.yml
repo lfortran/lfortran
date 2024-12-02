@@ -20,5 +20,5 @@ dependencies:
   - ninja
   - zlib
   - zstd-static
-  - cmake
+  - cmake=3.29.1
   - make

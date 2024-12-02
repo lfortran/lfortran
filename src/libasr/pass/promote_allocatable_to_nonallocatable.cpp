@@ -66,11 +66,29 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
+        bool is_array_size_called_on_pointer(ASR::dimension_t* m_dims, size_t n_dims) {
+            for( size_t i = 0; i < n_dims; i++ ) {
+                #define check_pointer_in_array_size(expr) if( expr && ASR::is_a<ASR::ArraySize_t>(*expr) ) { \
+                    ASR::ArraySize_t* array_size_t = ASR::down_cast<ASR::ArraySize_t>(expr); \
+                    if( ASRUtils::is_pointer(ASRUtils::expr_type(array_size_t->m_v)) ) { \
+                        return true; \
+                    } \
+                } \
+
+                check_pointer_in_array_size(m_dims[i].m_start)
+                check_pointer_in_array_size(m_dims[i].m_length)
+
+            }
+
+            return false;
+        }
+
         void visit_Allocate(const ASR::Allocate_t& x) {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 ASR::alloc_arg_t alloc_arg = x.m_args[i];
                 if( !ASRUtils::is_dimension_dependent_only_on_arguments(
-                        alloc_arg.m_dims, alloc_arg.n_dims) ) {
+                        alloc_arg.m_dims, alloc_arg.n_dims) ||
+                    is_array_size_called_on_pointer(alloc_arg.m_dims, alloc_arg.n_dims) ) {
                     if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
                         scope2var[current_scope].push_back(
                                 ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);

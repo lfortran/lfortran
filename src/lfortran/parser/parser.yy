@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    228 // shift/reduce conflicts
+%expect    227 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -426,6 +426,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_coarrayarg> coarray_arg_list
 %type <dim> array_comp_decl
 %type <codim> coarray_comp_decl
+%type <ast> intrinsic_type_spec
+%type <ast> declaration_type_spec
 %type <ast> var_type
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
@@ -534,7 +536,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> data_stmt_repeat
 %type <ast> data_stmt_constant
 %type <ast> data_object
-%type <ast> integer_type
+%type <ast> integer_type_spec
 %type <vec_kind_arg> kind_arg_list
 %type <kind_arg> kind_arg2
 %type <vec_ast> interface_body
@@ -551,8 +553,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> import_statement
 %type <ast> implicit_statement
 %type <vec_ast> implicit_statement_star
+%type <ast> implicit_spec
+%type <vec_ast> implicit_spec_list
 %type <ast> implicit_none_spec
-%type <vec_ast> implicit_none_spec_list
+%type <vec_ast> implicit_none_spec_star
 %type <ast> letter_spec
 %type <vec_ast> letter_spec_list
 %type <ast> procedure_decl
@@ -681,7 +685,6 @@ endinterface
     | endinterface0 KW_OPERATOR "(" operator_type ")"
     | endinterface0 KW_OPERATOR "(" "/)"
     | endinterface0 KW_OPERATOR "(" TK_DEF_OP ")"
-    | error
     ;
 
 endinterface0
@@ -723,7 +726,6 @@ endenum
 enum_var_modifiers
     : %empty { LIST_NEW($$); }
     | var_modifier_list { $$ = $1; }
-    | error { LIST_NEW($$); }
     ;
 
 derived_type_decl
@@ -757,7 +759,6 @@ require_decl
 unit_require_plus
     : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
     | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 unit_require
@@ -818,19 +819,16 @@ procedure_decl
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
-    | error { $$ = nullptr; }
     ;
 
 access_spec_list
     : "::" { LIST_NEW($$); }
     | access_spec "::" { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 access_spec
     : "," KW_PRIVATE  { $$ = SIMPLE_ATTR(Private, @$); }
     | "," KW_PUBLIC { $$ = SIMPLE_ATTR(Public, @$); }
-    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 operator_type
@@ -852,7 +850,6 @@ operator_type
     | ".xor."  { $$ = OPERATOR(XOR, @$); }
     | ".eqv."  { $$ = OPERATOR(EQV, @$); }
     | ".neqv." { $$ = OPERATOR(NEQV, @$); }
-    | error { $$ = OPERATOR_INVALID(@$); }
     ;
 
 proc_modifiers
@@ -874,7 +871,6 @@ proc_modifier
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
     | KW_DEFERRED { $$ = SIMPLE_ATTR(Deferred, @$); }
     | KW_NON_OVERRIDABLE { $$ = SIMPLE_ATTR(NonDeferred, @$); }
-    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 
@@ -910,7 +906,6 @@ end_blockdata
     : KW_END_BLOCK_DATA id_opt
     | KW_ENDBLOCKDATA id_opt
     | KW_END
-    | error
     ;
 
 end_subroutine
@@ -934,13 +929,11 @@ end_function
 end_associate
     : KW_END_ASSOCIATE
     | KW_ENDASSOCIATE
-    | error
     ;
 
 end_block
     : KW_END_BLOCK
     | KW_ENDBLOCK
-    | error
     ;
 
 end_select
@@ -951,7 +944,6 @@ end_select
 end_critical
     : KW_END_CRITICAL
     | KW_ENDCRITICAL
-    | error
     ;
 
 end_team
@@ -1057,7 +1049,6 @@ function
 fn_mod_plus
     : fn_mod_plus fn_mod { $$ = $1; LIST_ADD($$, $2); }
     | fn_mod { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 fn_mod
@@ -1102,13 +1093,11 @@ contains_block_opt
     : KW_CONTAINS sep sub_or_func_plus { $$ = $3; }
     | KW_CONTAINS sep { LIST_NEW($$); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 sub_or_func_star
     : sub_or_func_plus
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
 
 sub_or_func_plus
     : sub_or_func_plus sub_or_func { LIST_ADD($$, $2); }
@@ -1124,7 +1113,6 @@ sub_or_func
 sub_args
     : "(" id_or_star_list ")" { $$ = $2; }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 id_or_star_list
@@ -1150,7 +1138,6 @@ bind
 result_opt
     : result { $$ = $1; }
     | %empty { $$ = nullptr; }
-    | error { $$ = nullptr; }
     ;
 
 result
@@ -1164,67 +1151,104 @@ implicit_statement_star
 
 implicit_statement
     : KW_IMPLICIT KW_NONE sep { $$ = IMPLICIT_NONE(TRIVIA_AFTER($3, @$), @$); }
-    | KW_IMPLICIT KW_NONE "(" implicit_none_spec_list ")" sep {
+    | KW_IMPLICIT KW_NONE "(" implicit_none_spec_star ")" sep {
             $$ = IMPLICIT_NONE2($4, TRIVIA_AFTER($6, @$), @$); }
-    | KW_IMPLICIT KW_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE(Integer, @$), $4, TRIVIA_AFTER($6, @$), @$); }
-    | KW_IMPLICIT KW_INTEGER "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Integer, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
-    | KW_IMPLICIT KW_INTEGER "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Integer, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_INTEGER "(" letter_spec_list ")"
-        "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT1(ATTR_TYPE(Integer, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_CHARACTER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE(Character, @$), $4, TRIVIA_AFTER($6, @$), @$); }
-    | KW_IMPLICIT KW_CHARACTER "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Character, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
-    | KW_IMPLICIT KW_CHARACTER "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
-        $$ = IMPLICIT(ATTR_TYPE_INT(Character, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_CHARACTER "(" letter_spec_list ")"
-        "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT1(ATTR_TYPE(Character, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_REAL "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE(Real, @$), $4, TRIVIA_AFTER($6, @$), @$); }
-    | KW_IMPLICIT KW_REAL "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Real, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
-    | KW_IMPLICIT KW_REAL "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Real, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_REAL "(" letter_spec_list ")"
-        "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT1(ATTR_TYPE(Real, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_COMPLEX "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE(Complex, @$), $4, TRIVIA_AFTER($6, @$), @$); }
-    | KW_IMPLICIT KW_COMPLEX "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Complex, DIV2($4), @$), $6, TRIVIA_AFTER($8, @$), @$); }
-    | KW_IMPLICIT KW_COMPLEX "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Complex, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_COMPLEX "(" letter_spec_list ")"
-        "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT1(ATTR_TYPE(Complex, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_LOGICAL "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE(Logical, @$), $4, TRIVIA_AFTER($6, @$), @$); }
-    | KW_IMPLICIT KW_LOGICAL "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Logical, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
-    | KW_IMPLICIT KW_LOGICAL "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Logical, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_LOGICAL "(" letter_spec_list ")"
-        "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT1(ATTR_TYPE(Logical, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_DOUBLE KW_PRECISION "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE(DoublePrecision, @$), $5, TRIVIA_AFTER($7, @$), @$); }
-    | KW_IMPLICIT KW_TYPE "(" id ")" "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_NAME(Type, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_PROCEDURE "(" id ")" "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_NAME(Procedure, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
-    | KW_IMPLICIT KW_CLASS "(" id ")" "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_NAME(Class, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
+    | KW_IMPLICIT implicit_spec_list sep {
+            $$ = IMPLICIT($2, TRIVIA_AFTER($3, @$), @$); }
     ;
 
-implicit_none_spec_list
-    : implicit_none_spec_list "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
+implicit_spec_list
+    : implicit_spec_list "," implicit_spec { $$ = $1; LIST_ADD($$, $3); }
+    | implicit_spec { LIST_NEW($$); LIST_ADD($$, $1); }
+    ;
+
+/*
+   HERE BE DRAGONS!
+
+   The standard gives the rule:
+
+       _implicit-spec_ := _declaration-type-spec_ ( _letter-spec-list_ )
+
+   which allows for full `KIND` specifications on any
+   _intrinsic_type_spec_.  The following grammar rule attempts to
+   approximate that in three ways:
+
+      1. If no KIND parameter is given, an IMPLICIT_SPEC is constructed
+         with an ATTR_TYPE as the first parameter; or
+      2. If an integer is given as an (unlabelled) KIND parameter, then
+         an IMPLICIT_SPEC is constructed with an ATTR_TYPE_INT as the
+	 first parameter; or
+      3. If an expression that matches `letter_spec_list` is passed as
+         an (unlabelled) KIND parameter, then an IMPLICIT_SPEC_KIND
+	 is constructed with an ATTR_TYPE as the first parameter and
+	 the `letter_spec_list` result as the second.
+
+    Note that #3 accepts `id` (and `id - id`), because `letter_spec_list`
+    itself accepts an `id`, rather than just `letter`.
+
+    So, this rule accepts only a portion of the full KIND specification.
+    We should just be using the grammar `declaration_type_spec` rule
+    instead of all of these special cases, but that leads to a fundamental
+    shift/reduce conflict due to the overlap between `( kind_arg_list )`
+    and `( letter_spec_list )`.
+*/
+
+implicit_spec
+    : KW_INTEGER "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(Integer, @$), $3, @$); }
+    | KW_INTEGER "*" TK_INTEGER "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $5, @$); }
+    | KW_INTEGER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $6, @$); }
+    | KW_INTEGER "(" letter_spec_list ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Integer, @$), $3, $6, @$); }
+    | KW_CHARACTER "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(Character, @$), $3, @$); }
+    | KW_CHARACTER "*" TK_INTEGER "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $5, @$); }
+    | KW_CHARACTER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $6, @$); }
+    | KW_CHARACTER "(" letter_spec_list ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Character, @$), $3, $6, @$); }
+    | KW_REAL "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(Real, @$), $3, @$); }
+    | KW_REAL "*" TK_INTEGER "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $5, @$); }
+    | KW_REAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $6, @$); }
+    | KW_REAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Real, @$), $3, $6, @$); }
+    | KW_COMPLEX "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
+    | KW_COMPLEX "*" TK_INTEGER "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, DIV2($3), @$), $5, @$); }
+    | KW_COMPLEX "(" TK_INTEGER ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, $3, @$), $6, @$); }
+    | KW_COMPLEX "(" letter_spec_list ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Complex, @$), $3, $6, @$); }
+    | KW_LOGICAL "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(Logical, @$), $3, @$); }
+    | KW_LOGICAL "*" TK_INTEGER "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $5, @$); }
+    | KW_LOGICAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $6, @$); }
+    | KW_LOGICAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Logical, @$), $3, $6, @$); }
+    | KW_DOUBLE KW_PRECISION "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $4, @$); }
+    | KW_TYPE "(" id ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Type, $3, @$), $6, @$); }
+    | KW_PROCEDURE "(" id ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Procedure, $3, @$), $6, @$); }
+    | KW_CLASS "(" id ")" "(" letter_spec_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Class, $3, @$), $6, @$); }
+    ;
+
+// IMPLICIT NONE [ ( [implicit-none-spec-list] ) ]
+implicit_none_spec_star
+    : implicit_none_spec_star "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
+    | %empty { LIST_NEW($$); }	 
     ;
 
 implicit_none_spec
@@ -1307,14 +1331,12 @@ use_modifier_list
 use_modifier
     : KW_INTRINSIC { $$ = SIMPLE_ATTR(Intrinsic, @$); }
     | KW_NON_INTRINSIC { $$ = SIMPLE_ATTR(Non_Intrinsic, @$); }
-    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 // var_decl*
 var_decl_star
     : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 var_decl
@@ -1345,7 +1367,6 @@ var_decl
 equivalence_set_list
     : equivalence_set_list "," equivalence_set { $$ = $1; PLIST_ADD($$, $3); }
     | equivalence_set { LIST_NEW($$); PLIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 equivalence_set
@@ -1356,7 +1377,6 @@ named_constant_def_list
     : named_constant_def_list "," named_constant_def {
             $$ = $1; PLIST_ADD($$, $3); }
     | named_constant_def { LIST_NEW($$); PLIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 named_constant_def
@@ -1393,12 +1413,12 @@ data_object
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
     | "(" data_object_list "," id "=" expr "," expr ")" {
             $$ = DATA_IMPLIED_DO1($2, nullptr, $4, $6, $8, @$); }
-    | "(" data_object_list "," integer_type id "=" expr "," expr ")" {
-            $$ = DATA_IMPLIED_DO1($2, $4, $5, $7, $9, @$); }
+    | "(" data_object_list "," integer_type_spec "::" id "=" expr "," expr ")" {
+            $$ = DATA_IMPLIED_DO1($2, $4, $6, $8, $10, @$); }
     | "(" data_object_list "," id "=" expr "," expr "," expr ")" {
             $$ = DATA_IMPLIED_DO2($2, nullptr, $4, $6, $8, $10, @$); }
-    | "(" data_object_list "," integer_type id "=" expr "," expr "," expr ")" {
-            $$ = DATA_IMPLIED_DO2($2, $4, $5, $7, $9, $11, @$); }
+    | "(" data_object_list "," integer_type_spec "::" id "=" expr "," expr "," expr ")" {
+            $$ = DATA_IMPLIED_DO2($2, $4, $6, $8, $10, $12, @$); }
     ;
 
 data_stmt_value_list
@@ -1431,12 +1451,6 @@ data_stmt_constant
     | ".false." { $$ = FALSE(@$); }
     | "(" signed_numeric_constant "," signed_numeric_constant ")" { $$ = COMPLEX($2, $4, @$); }
 
-    ;
-
-integer_type
-    : KW_INTEGER "(" kind_arg_list ")" "::" {
-            $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
-    | error { $$ = nullptr; }
     ;
 
 kind_arg_list
@@ -1496,10 +1510,15 @@ var_modifier
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
     ;
 
-var_type
+
+integer_type_spec
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
     | KW_INTEGER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
     | KW_INTEGER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Integer, $3, @$); WARN_INTEGERSTAR($3, @$); }
+    ;
+
+intrinsic_type_spec
+    : integer_type_spec { $$ = $1; }
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
@@ -1518,20 +1537,20 @@ var_type
     | KW_DOUBLE_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
     | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
-    | KW_TYPE "(" id ")" { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
-    | KW_TYPE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
-    | KW_TYPE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Real, $5, @$), @$); }
-    | KW_TYPE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE(DoublePrecision, @$), @$); }
-    | KW_TYPE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Complex, $5, @$), @$); }
-    | KW_TYPE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Logical, $5, @$), @$); }
-    | KW_TYPE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
+    ;
+
+declaration_type_spec
+    : intrinsic_type_spec { $$ = $1; }
+    | KW_TYPE "(" intrinsic_type_spec ")" %dprec 2 { $$ = ATTR_TYPE_ATTR(
+        Type, $3, @$); }
+    | KW_TYPE "(" id ")" %dprec 1 { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
+    | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
+    | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
+    ;
+
+var_type
+    : declaration_type_spec { $$ = $1; }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
     | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
@@ -1540,8 +1559,6 @@ var_type
     | KW_PROCEDURE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
-    | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
 
 var_sym_decl_list
@@ -1635,6 +1652,7 @@ sep_one
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | decl_statements error sep_one { $$ = $1; }
     ;
 
 decl_statement
@@ -1915,7 +1933,6 @@ elseif_block
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
-    | error { $$ = nullptr; }
     ;
 
 where_statement
@@ -1954,7 +1971,6 @@ elsewhere_block
             $$ = WHERE1($3, TRIVIA_AFTER($5, @$), $6, @$); }
     | KW_ELSE KW_WHERE "(" expr ")" sep statements {
             $$ = WHERE1($4, TRIVIA_AFTER($6, @$), $7, @$); }
-    | error { $$ = nullptr; }
     ;
 
 select_statement
@@ -1967,7 +1983,6 @@ select_statement
 case_statements
     : case_statements case_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 case_statement
@@ -2003,7 +2018,6 @@ select_rank
 select_rank_case_stmts
     : select_rank_case_stmts select_rank_case_stmt { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 select_rank_case_stmt
@@ -2030,7 +2044,6 @@ select_type_body_statements
     : select_type_body_statements select_type_body_statement {
                         $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 select_type_body_statement
@@ -2071,7 +2084,6 @@ concurrent_control_list
     : concurrent_control_list "," concurrent_control {
         $$ = $1; LIST_ADD($$, $3); }
     | concurrent_control { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 concurrent_control
@@ -2085,7 +2097,6 @@ concurrent_locality_star
     : concurrent_locality_star concurrent_locality {
         $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 concurrent_locality
@@ -2153,13 +2164,11 @@ enddo
     | TK_LABEL KW_END_DO
     | KW_ENDDO { WARN_ENDDO(@$); }
     | TK_LABEL KW_ENDDO {}
-    | error
     ;
 
 endforall
     : KW_END_FORALL
     | KW_ENDFORALL
-    | error
     ;
 
 endif
@@ -2273,7 +2282,6 @@ event_wait_spec_list
     : event_wait_spec_list "," sync_stat { $$ = $1; LIST_ADD($$, $3); }
     | event_wait_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 event_wait_spec
@@ -2282,7 +2290,6 @@ event_wait_spec
 
 event_post_stat_list
     : sync_stat { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 sync_stat_list
@@ -2325,7 +2332,6 @@ coarray_association_list
     : coarray_association_list "," coarray_association { $$ = $1; LIST_ADD($$, $3); }
     | coarray_association { LIST_NEW($$); LIST_ADD($$, $1); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$);}
     ;
 
 coarray_association
@@ -2686,5 +2692,4 @@ id
     | KW_WHERE { $$ = SYMBOL($1, @$); }
     | KW_WHILE { $$ = SYMBOL($1, @$); }
     | KW_WRITE { $$ = SYMBOL($1, @$); }
-    | error { $$ = SYMBOL(LCompilers::Str(), @$); }
     ;

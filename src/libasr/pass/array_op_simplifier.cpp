@@ -11,7 +11,6 @@
 #include <libasr/asr_builder.h>
 
 #include <vector>
-#include <utility>
 
 namespace LCompilers {
 
@@ -56,6 +55,14 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* /*x*/) {
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        if( !ASRUtils::is_elemental(x->m_name) ) {
+            return ;
+        }
+
+        ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_FunctionCall(x);
     }
 
 };

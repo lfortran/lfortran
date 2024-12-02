@@ -6,6 +6,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <set>
+
 namespace LCompilers {
 
 namespace ASR {
@@ -78,19 +80,19 @@ public:
                         // The symbol table was found and the symbol `sym` is in it
                         return true;
                     } else {
-                        diagnostics.message_label("ASR verify: The symbol table was found and the symbol in it shares the name, but is not equal to `sym`",
+                        diagnostics.message_label("The symbol table was found and the symbol in it shares the name, but is not equal to `sym`",
                         {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                         return false;
                     }
                 } else {
-                    diagnostics.message_label("ASR verify: The symbol table was found, but the symbol `sym` is not in it",
+                    diagnostics.message_label("The symbol table was found, but the symbol `sym` is not in it",
                         {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                     return false;
                 }
             }
             s = s->parent;
         }
-        diagnostics.message_label("ASR verify: The symbol table was not found in the scope of `symtab`.",
+        diagnostics.message_label("The symbol table was not found in the scope of `symtab`.",
                         {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
         return false;
     }
