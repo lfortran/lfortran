@@ -27,9 +27,3 @@ style suggestion: Use complex(8) instead of complex*8
    |
 38 | implicit complex*8 (z)
    |          ^^^^^^^^^ help: write this as 'complex(8)'
-
-syntax error: Token 'procedure' is unexpected here
-  --> tests/implicit1.f90:43:10
-   |
-43 | IMPLICIT procedure(Y) (A-b)
-   |          ^^^^^^^^^ 
