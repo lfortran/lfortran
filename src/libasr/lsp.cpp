@@ -281,6 +281,7 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
 
         diag_results.SetArray();
 
+        diag_capture.SetObject();
         diag_capture.AddMember("source", "lpyth");
         diag_capture.AddMember("range", range_obj);
         diag_capture.AddMember("message", msg);
