@@ -436,8 +436,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     std::cout << "Entered here" << std::endl;
                     bool allocate = false;
                     Vec<ASR::dimension_t> res_dims_vec;
-                    res_dims_vec.reserve(al, x->n_args);
+                    res_dims_vec.reserve(al, ASRUtils::extract_n_dims_from_ttype(x->m_type));
+                    std::cout << "Reserved dimensions" << std::endl;
                     for (size_t j = 0; j < x->n_args; j++) {
+                        std::cout << "j: " << j << std::endl;
                         if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
                             ASR::dimension_t* arg_dim = nullptr;
                             LCOMPILERS_ASSERT(
