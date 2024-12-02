@@ -523,9 +523,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 return;
             }
         }
-        std::cout << "Not an array" << std::endl;
         replace_vars_helper(x);
-        std::cout << "Exited function" << std::endl;
     }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
