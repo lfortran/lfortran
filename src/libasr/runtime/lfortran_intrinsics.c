@@ -3233,12 +3233,23 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
 
 LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t unit_num)
 {
+    // TODO: Add support for initializing character arrays to read more than one character
+    int n = 1;
+    const char SPACE = ' ';
     if (unit_num == -1) {
         // Read from stdin
         for (int i = 0; i < array_size; i++) {
-            int n = 1; // TODO: Support character length > 1
-            p[i] = (char*) malloc(n * sizeof(char));
-            (void)!scanf("%s", p[i]);
+            p[i] = (char*) malloc((n + 1) * sizeof(char));
+            char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
+            (void)!fscanf(stdin, "%s", tmp_buffer);
+            size_t input_length = strlen(tmp_buffer);
+            strcpy(p[i], tmp_buffer);
+            free(tmp_buffer);
+            while (input_length < n) {
+                strncat(p[i], &SPACE, 1);
+                input_length++;
+            }
+            p[i][n] = '\0';
         }
         return;
     }
@@ -3251,13 +3262,21 @@ LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t un
     }
 
     for (int i = 0; i < array_size; i++) {
-        int n = 1; // TODO: Support character length > 1
         p[i] = (char*) malloc((n + 1) * sizeof(char));
         if (unit_file_bin) {
             (void)!fread(p[i], sizeof(char), n, filep);
             p[i][1] = '\0';
         } else {
-            (void)!fscanf(filep, "%c", p[i]);
+            char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
+            (void)!fscanf(filep, "%s", tmp_buffer);
+            size_t input_length = strlen(tmp_buffer);
+            strcpy(p[i], tmp_buffer);
+            free(tmp_buffer);
+            while (input_length < n) {
+                strncat(p[i], &SPACE, 1);
+                input_length++;
+            }
+            p[i][n] = '\0';
         }
     }
 }
