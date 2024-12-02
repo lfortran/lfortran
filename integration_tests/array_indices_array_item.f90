@@ -9,7 +9,7 @@ program array_indices_array_item
     integer :: rank_val
 
     ! Initialize the matrices and arrays
-    !arr_1 = reshape([1.0, 2.0, 3.0, 4.0], shape(arr_1))
+    arr_1 = reshape([1.0, 2.0, 3.0, 4.0], shape(arr_1))
     arr_3 = reshape([1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0, 5.0], shape(arr_3))
     arr_idx = [2, 1]
     allocate(arr_idx2(2))
