@@ -433,19 +433,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 
                 if( result_var == nullptr ) {
                     bool allocate = false;
-                    Vec<ASR::dimension_t> res_dims_vec;
-                    res_dims_vec.reserve(al, x->n_args);
-                    for (size_t j = 0; j < x->n_args; j++) {
-                        if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
-                            ASR::dimension_t* arg_dim = nullptr;
-                            LCOMPILERS_ASSERT(
-                                ASRUtils::extract_dimensions_from_ttype(
-                                    ASRUtils::expr_type(x->m_args[j].m_right), arg_dim) == 1);
-                            res_dims_vec.push_back(al, arg_dim[0]);
-                        }
-                    }
+                    ASR::dimension_t* res_dims_p;
+                    int res_dims_n = ASRUtils::extract_dimensions_from_ttype(x->m_type, res_dims_p);
                     ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
-                        res_dims_vec.p, (int)res_dims_vec.size(), loc, x->class_type, allocate);
+                        res_dims_p, res_dims_n, loc, x->class_type, allocate);
                     if( allocate ) {
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                            ASRUtils::type_get_past_allocatable(result_var_type)));
@@ -454,7 +445,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                     result_var_type, al, current_scope);
                     result_counter += 1;
                     if( allocate ) {
-                        allocate_result_var(x->m_v, res_dims_vec.p, (int)res_dims_vec.size(), true, true);
+                        allocate_result_var(x->m_v, res_dims_p, res_dims_n, true, true);
                     }
                 }
 
