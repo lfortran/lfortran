@@ -4,6 +4,7 @@ program array_indices_array_item
 
     integer :: arr_idx(2)
     integer, allocatable :: arr_idx2(:)
+    integer, allocatable ::  arr(:, :)
     real ::  arr_1(2, 2), arr_2(2), arr_3(2, 2, 2), arr_4(2, 2)
     real :: arr_2_reshape(2), arr_4_reshape(2, 2)
     integer :: rank_val
@@ -47,5 +48,12 @@ program array_indices_array_item
     rank_val = rank(arr_3(1, arr_idx2, 2))
     print *, rank_val
     if (rank_val /= 1) error stop
+
+    allocate(arr(1, 3))
+    arr = reshape([1, 2, 3], shape(arr))
+    rank_val = rank(arr(arr_idx, 1))
+    print *, rank_val
+    if (rank_val /= 1) error stop
+    if (all(arr(arr_idx, 1) /= [3, 1])) error stop
 
 end program array_indices_array_item

@@ -435,7 +435,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     bool allocate = false;
                     ASR::dimension_t* res_dims_p;
                     int res_dims_n = ASRUtils::extract_dimensions_from_ttype(x->m_type, res_dims_p);
-                    ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
+                    ASR::ttype_t* result_var_type = get_result_type(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x->m_v)),
                         res_dims_p, res_dims_n, loc, x->class_type, allocate);
                     if( allocate ) {
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
