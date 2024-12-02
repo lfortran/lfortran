@@ -15,7 +15,7 @@ program array_indices_array_item
     allocate(arr_idx2(2))
     arr_idx2 = [2, 1]
 
-     Slicing
+    ! Slicing
     arr_2 = arr_1(arr_idx, 1)
     arr_2_reshape = reshape([3.0, 1.0], shape(arr_2_reshape));
     print *, rank(arr_2)
