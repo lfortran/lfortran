@@ -6118,6 +6118,24 @@ static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
 static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_fmt, ASR::expr_t** a_args, size_t n_args, ASR::string_format_kindType a_kind,
         ASR::ttype_t* a_type, ASR::expr_t* a_value) {
+    if (a_fmt && ASR::is_a<ASR::Var_t>(*a_fmt)) {
+        ASR::Variable_t* fmt_str = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(a_fmt)->m_v);
+        if (ASR::is_a<ASR::String_t>(
+                *ASRUtils::type_get_past_array_pointer_allocatable(fmt_str->m_type))) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                ASRUtils::type_get_past_array_pointer_allocatable(fmt_str->m_type));
+            if (str_type->m_physical_type != ASR::string_physical_typeType::PointerString) {
+                a_fmt = ASRUtils::EXPR(ASR::make_StringPhysicalCast_t(
+                    al,
+                    a_fmt->base.loc,
+                    a_fmt,
+                    str_type->m_physical_type,
+                    ASR::string_physical_typeType::PointerString,
+                    a_type,
+                    nullptr));
+            }
+        }
+    }
     return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind, a_type, a_value);
 }
 
