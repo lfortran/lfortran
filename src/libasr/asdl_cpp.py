@@ -243,8 +243,13 @@ class ASTNodeVisitor(ASDLVisitor):
                 seq = " size_t n_%s; // Sequence" % f.name
             else:
                 seq = ""
+            if f.type == "Location":
+                type_ = "Location*"
             self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-            args.append("%s a_%s" % (type_, f.name))
+            if f.type == "Location":
+                args.append("%s a_%s = nullptr" % (type_, f.name))
+            else:
+                args.append("%s a_%s" % (type_, f.name))
             lines.append("n->m_%s = a_%s;" % (f.name, f.name))
             if f.name in ["global_scope", "symtab"]:
                 lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
@@ -551,6 +556,8 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
         self.used = False
         have_body = False
         for field in fields:
+            if field.type == "Location":
+                continue
             self.visitField(field)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
@@ -931,6 +938,8 @@ class TreeVisitorVisitor(ASDLVisitor):
             self.emit(    '}', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if field.type == "Location":
+                continue
             self.visitField(field, cons, n == len(fields)-1)
         self.emit(    'dec_indent();', 2)
         if not self.used:
@@ -1710,6 +1719,8 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    's.append(" ");', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if ( field.type == "Location" ):
+                continue
             self.visitField(field, cons)
             if n < len(fields) - 1 and field.type != "void":
                 if name not in symbol:
@@ -2022,6 +2033,8 @@ class JsonVisitorVisitor(ASDLVisitor):
         if len(fields) > 0:
             self.emit('inc_indent(); s.append("\\n" + indtd);', 2)
             for n, field in enumerate(fields):
+                if field.type == "Location":
+                    continue
                 self.visitField(field, cons)
                 if n < len(fields) - 1:
                     self.emit('s.append(",\\n" + indtd);', 2)
@@ -2234,6 +2247,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
             self.emit(    'self().write_int64(x.base.base.loc.last);', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if field.type == "Location":
+                continue
             self.visitField(field, cons, name)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
@@ -2649,23 +2664,30 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("%s::%sType m_%s = self().deserialize_%s();" % (subs["MOD"],
                                 f.type, f.name, f.type))
                         else:
-                            lines.append("%s::%s_t *m_%s;" % (subs["MOD"],
-                                f.type, f.name))
-                            if f.opt:
-                                lines.append("if (self().read_bool()) {")
-                            if f.type == "symbol":
-                                if name == "ExternalSymbol":
-                                    lines.append("// We skip the symbol for ExternalSymbol")
-                                    lines.append("m_%s = nullptr;" % (f.name))
-                                else:
-                                    lines.append("m_%s = self().read_symbol();" % (f.name))
+                            if f.type == "Location":
+                                lines.append("Location* m_%s;"% f.name)
+                                lines.append("m_%s = new Location();"% f.name)
+                                lines.append("m_%s->first = self().read_int64();"% f.name)
+                                lines.append("m_%s->last = self().read_int64();"% f.name)
                             else:
-                                lines.append("m_%s = %s::down_cast<%s::%s_t>(self().deserialize_%s());" % (
-                                    f.name, subs["MOD"], subs["MOD"], f.type, f.type))
-                            if f.opt:
-                                lines.append("} else {")
-                                lines.append("m_%s = nullptr;" % f.name)
-                                lines.append("}")
+                                lines.append("%s::%s_t *m_%s;" % (subs["MOD"],
+                                    f.type, f.name))
+                                if f.opt:
+                                    lines.append("if (self().read_bool()) {")
+                                if f.type == "symbol":
+                                    if name == "ExternalSymbol":
+                                        lines.append("// We skip the symbol for ExternalSymbol")
+                                        lines.append("m_%s = nullptr;" % (f.name))
+                                    else:
+                                        lines.append("m_%s = self().read_symbol();" % (f.name))
+
+                                else:
+                                    lines.append("m_%s = %s::down_cast<%s::%s_t>(self().deserialize_%s());" % (
+                                        f.name, subs["MOD"], subs["MOD"], f.type, f.type))
+                                if f.opt:
+                                    lines.append("} else {")
+                                    lines.append("m_%s = nullptr;" % f.name)
+                                    lines.append("}")
                     args.append("m_%s" % (f.name))
 
         self.emit(    'Location loc;', 2)

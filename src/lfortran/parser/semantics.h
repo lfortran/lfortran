@@ -1356,7 +1356,7 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
-#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l, s_l, e_l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
@@ -1378,8 +1378,10 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
-        /*n_temp_args*/ 0)
-#define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+        /*n_temp_args*/ 0, \
+        /*start_name*/ s_l, \
+        /*end_name*/ e_l)
+#define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l, s_l, e_l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
@@ -1401,7 +1403,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
-        /*n_temp_args*/ 0)
+        /*n_temp_args*/ 0, \
+        /*start_name*/ s_l, \
+        /*end_name*/ e_l)
 
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \

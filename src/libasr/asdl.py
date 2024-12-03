@@ -223,7 +223,9 @@ def tokenize_asdl(buf):
     for lineno, line in enumerate(buf.splitlines(), 1):
         for m in re.finditer(r'\s*(\w+|--.*|.)', line.strip()):
             c = m.group(1)
-            if c[0].isalpha():
+            if c == "Location":
+                yield Token(TokenKind.TypeId, c, lineno)
+            elif c[0].isalpha():
                 # Some kind of identifier
                 if c[0].isupper():
                     yield Token(TokenKind.ConstructorId, c, lineno)

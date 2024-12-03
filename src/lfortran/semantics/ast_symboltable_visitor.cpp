@@ -1299,6 +1299,14 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        std::cout<<"Function: "<<x.m_name<<std::endl;
+        if (x.m_start_name != nullptr) {
+            Location* loc = x.m_start_name;
+            std::cout<<"loc->first: "<<loc->first<<std::endl;
+            std::cout<<"loc->last: "<<loc->last<<std::endl;
+        } else {
+            std::cout<<"nullptr hai"<<std::endl;
+        }
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
