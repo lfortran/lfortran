@@ -848,7 +848,38 @@ public:
         src = r;
     }
 
-    // void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {}
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        std::string r = indent;
+
+        r += "do concurrent";
+        r += " ( ";
+        for (size_t i = 0; i < x.n_head; i++) {
+            visit_expr(*x.m_head[i].m_v);
+            r += src;
+            r += " = ";
+            visit_expr(*x.m_head[i].m_start);
+            r += src;
+            r += ": ";
+            visit_expr(*x.m_head[i].m_end);
+            r += src;
+            if (x.m_head[i].m_increment) {
+                r += ":";
+                visit_expr(*x.m_head[i].m_increment);
+                r += src;
+            }
+            if ( i < x.n_head - 1 ) {
+                r+=", ";
+            }
+        }
+        r+=" )";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        visit_body(x, r);
+        r += indent;
+        r += "end do";
+        r += "\n";
+        src = r;
+    }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         std::string r = indent;
