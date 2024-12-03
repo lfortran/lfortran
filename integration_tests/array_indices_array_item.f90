@@ -33,6 +33,10 @@ program array_indices_array_item
     print *, rank_val
     if (rank_val /= 1) error stop
 
+    rank_val = rank(arr_3(1, [2, 1], 2))
+    print *, rank_val
+    if (rank_val /= 1) error stop
+
     arr_2 = arr_1(arr_idx2, 1)
     arr_2_reshape = reshape([3.0, 1.0], shape(arr_2_reshape));
     print *, rank(arr_2)

@@ -4314,8 +4314,7 @@ public:
                         throw SemanticAbort();
                     }
                     res_dims_vec.push_back(al, arg_dim[0]);
-                }
-                if( all_args_eval ) {
+                } else if( all_args_eval ) {
                     flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
                     if(!ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr)) {
