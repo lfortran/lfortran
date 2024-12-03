@@ -1,0 +1,36 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            kind_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    kind_01
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(ArrayConstant
+                                8
+                                [4, 4]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)
