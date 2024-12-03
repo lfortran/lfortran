@@ -8004,6 +8004,12 @@ public:
         if (x.m_file) {
             this->visit_expr_wrapper(x.m_file, true);
             f_name = tmp;
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_file))) {
+                llvm::Type *string_desc = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_file), module.get());
+                llvm::Type *i8_pointer = llvm::Type::getInt8Ty(context)->getPointerTo();
+                f_name = llvm_utils->CreateLoad2(i8_pointer, llvm_utils->create_gep2(string_desc, f_name, 0));
+            }
+
         } else {
             f_name = llvm::Constant::getNullValue(character_type);
         }
