@@ -1194,45 +1194,35 @@ implicit_spec_list
 */
 
 implicit_spec
-    : KW_INTEGER "(" letter_spec_list ")" {
+    : KW_INTEGER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Integer, @$), $3, @$); }
     | KW_INTEGER "*" TK_INTEGER "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $5, @$); }
-    | KW_INTEGER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $6, @$); }
-    | KW_INTEGER "(" letter_spec_list ")" "(" letter_spec_list ")" {
+    | KW_INTEGER "(" kind_arg_list ")" "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Integer, @$), $3, $6, @$); }
-    | KW_CHARACTER "(" letter_spec_list ")" {
+    | KW_CHARACTER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Character, @$), $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $5, @$); }
-    | KW_CHARACTER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $6, @$); }
-    | KW_CHARACTER "(" letter_spec_list ")" "(" letter_spec_list ")" {
+    | KW_CHARACTER "(" kind_arg_list ")" "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Character, @$), $3, $6, @$); }
-    | KW_REAL "(" letter_spec_list ")" {
+    | KW_REAL "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Real, @$), $3, @$); }
     | KW_REAL "*" TK_INTEGER "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $5, @$); }
-    | KW_REAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $6, @$); }
-    | KW_REAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
+    | KW_REAL "(" kind_arg_list ")" "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Real, @$), $3, $6, @$); }
-    | KW_COMPLEX "(" letter_spec_list ")" {
+    | KW_COMPLEX "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
     | KW_COMPLEX "*" TK_INTEGER "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, DIV2($3), @$), $5, @$); }
-    | KW_COMPLEX "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, $3, @$), $6, @$); }
-    | KW_COMPLEX "(" letter_spec_list ")" "(" letter_spec_list ")" {
+    | KW_COMPLEX "(" kind_arg_list ")" "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Complex, @$), $3, $6, @$); }
-    | KW_LOGICAL "(" letter_spec_list ")" {
+    | KW_LOGICAL "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Logical, @$), $3, @$); }
     | KW_LOGICAL "*" TK_INTEGER "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $5, @$); }
-    | KW_LOGICAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $6, @$); }
-    | KW_LOGICAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
+    | KW_LOGICAL "(" kind_arg_list ")" "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Logical, @$), $3, $6, @$); }
     | KW_DOUBLE KW_PRECISION "(" letter_spec_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $4, @$); }
