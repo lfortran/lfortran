@@ -1559,6 +1559,7 @@ RUN(NAME pass_array_by_data_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llv
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
