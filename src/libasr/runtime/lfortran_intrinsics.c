@@ -3488,8 +3488,24 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t* size, int64
     if(iostat != NULL) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read(char *str, char *format, int *i) {
+LFORTRAN_API void _lfortran_string_read_i32(char *str, char *format, int32_t *i) {
     sscanf(str, format, i);
+}
+
+LFORTRAN_API void _lfortran_string_read_i64(char *str, char *format, int64_t *i) {
+    sscanf(str, format, i);
+}
+
+LFORTRAN_API void _lfortran_string_read_f32(char *str, char *format, float *f) {
+    sscanf(str, format, f);
+}
+
+LFORTRAN_API void _lfortran_string_read_f64(char *str, char *format, double *f) {
+    sscanf(str, format, f);
+}
+
+LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
+    sscanf(str, format, *s);
 }
 
 LFORTRAN_API void _lpython_close(int64_t fd)

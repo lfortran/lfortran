@@ -4418,7 +4418,8 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
     bool m_module, bool m_inline, bool m_static,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
-    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr) {
+    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
+    Location* m_end_name = nullptr) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
@@ -4426,7 +4427,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-        m_side_effect_free, m_c_header);
+        m_side_effect_free, m_c_header, m_start_name, m_end_name);
 }
 
 

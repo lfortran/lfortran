@@ -115,6 +115,9 @@ def convert_type(asdl_type, seq, opt, mod_name):
     elif asdl_type == "void":
         type_ = "void *"
         assert not seq
+    elif asdl_type == "location":
+        type_ = "Location*"
+        assert not seq
     else:
         type_ = asdl_type + "_t"
         if asdl_type in products:
@@ -244,7 +247,10 @@ class ASTNodeVisitor(ASDLVisitor):
             else:
                 seq = ""
             self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-            args.append("%s a_%s" % (type_, f.name))
+            if f.type == "location":
+                args.append("%s a_%s = nullptr" % (type_, f.name))
+            else:
+                args.append("%s a_%s" % (type_, f.name))
             lines.append("n->m_%s = a_%s;" % (f.name, f.name))
             if f.name in ["global_scope", "symtab"]:
                 lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
@@ -1710,8 +1716,10 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    's.append(" ");', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if field.type == "location":
+                continue
             self.visitField(field, cons)
-            if n < len(fields) - 1 and field.type != "void":
+            if n < len(fields) - 1 and field.type != "void" and fields[n+1].type != "location":
                 if name not in symbol:
                     self.emit(    'if(indent) s.append("\\n" + indented);', 2)
                     self.emit(    'else s.append(" ");', 2)
@@ -2022,8 +2030,10 @@ class JsonVisitorVisitor(ASDLVisitor):
         if len(fields) > 0:
             self.emit('inc_indent(); s.append("\\n" + indtd);', 2)
             for n, field in enumerate(fields):
+                if field.type == "location":
+                    continue
                 self.visitField(field, cons)
-                if n < len(fields) - 1:
+                if n < len(fields) - 1 and fields[n+1].type!="location":
                     self.emit('s.append(",\\n" + indtd);', 2)
             self.emit('dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)
@@ -2370,6 +2380,14 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit('self().write_float64(x.m_%s);' % field.name, 2)
             elif field.type == "void":
                 assert True
+            elif field.type == "location":
+                # self.emit("if (x.m_%s != nullptr) {" % field.name, 2)
+                # self.emit('self().write_int64(x.m_%s->first);' % field.name, 3)
+                # self.emit('self().write_int64(x.m_%s->last);' % field.name, 3)
+                # self.emit("} else {", 2)
+                self.emit('self().write_int64(0);', 2)
+                self.emit('self().write_int64(0);', 2)
+                # self.emit("}", 2)
             elif field.type in self.data.simple_types:
                 if field.opt:
                     raise Exception("Unimplemented opt for field type: " + field.type);
@@ -2635,6 +2653,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("}")
                     elif f.type == "void":
                         lines.append("void *m_%s = self().read_void(m_n_data);" % (f.name))
+                        args.append("m_%s" % (f.name))
+                    elif f.type == "location":
+                        lines.append("Location* m_%s;"% f.name)
+                        lines.append("m_%s = al.make_new<Location>();"% f.name)
+                        lines.append("m_%s->first = self().read_int64();"% f.name)
+                        lines.append("m_%s->last = self().read_int64();"% f.name)
                         args.append("m_%s" % (f.name))
                     else:
                         print(f.type)
