@@ -1,4 +1,5 @@
 module la_constants_module
+
 integer, parameter :: sp = kind(1.e0)
  
 real(sp), parameter :: szero = 0.0_sp
