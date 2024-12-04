@@ -6661,6 +6661,7 @@ public:
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     fill_optional_kind_arg(var_name, args);
+                    tmp = nullptr;
                     scalar_kind_arg(var_name, args);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
