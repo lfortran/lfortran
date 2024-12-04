@@ -1487,8 +1487,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         std::vector<bool> array_mask(x->n_args, false);
         bool at_least_one_array = false;
         for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
-            array_mask[iarg] = ASRUtils::is_array(
-                ASRUtils::expr_type(x->m_args[iarg]));
+            ASR::expr_t* arg = x->m_args[iarg];
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+            }
+            array_mask[iarg] = ASRUtils::is_array(ASRUtils::expr_type(arg)) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg) ||
+                        ASR::is_a<ASR::RealBinOp_t>(*arg) || ASR::is_a<ASR::IntegerBinOp_t>(*arg);
             at_least_one_array = at_least_one_array || array_mask[iarg];
         }
         if (!at_least_one_array) {
@@ -1611,28 +1615,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
-
-        for (size_t i = 0; i < x->n_args; i++){
-            ASR::expr_t* arg = x->m_args[i];
-
-            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
-                arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
-            }
-
-            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg) || 
-                   ASR::is_a<ASR::IntegerBinOp_t>(*arg) || ASR::is_a<ASR::RealBinOp_t>(*arg)) {
-                ASR::expr_t** current_expr_copy_9 = current_expr;
-                current_expr = &(x->m_args[i]);
-                ASR::dimension_t* op_dims_copy = op_dims;
-                size_t op_n_dims_copy = op_n_dims;
-                self().replace_expr(x->m_args[i]);
-                x->m_args[i] = *current_expr;
-                op_dims = op_dims_copy;
-                op_n_dims = op_n_dims_copy;
-                current_expr = current_expr_copy_9;
-            }
-        }
-
         replace_intrinsic_function(x);
         return ;
     }
