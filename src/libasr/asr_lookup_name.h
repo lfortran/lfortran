@@ -71,14 +71,34 @@ namespace LCompilers::LFortran {
             void visit_symbol(const ASR::symbol_t& x) {
                 ASR::symbol_t* sym = const_cast<ASR::symbol_t*>(&x);
                 if ( ASRUtils::symbol_name(sym) == symbol_name ) {
-                    this->populate_document_symbol_and_push(x.base.loc);
+                    if ( ASR::is_a<ASR::Function_t>(*sym) ) {
+                        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+                        if ( f->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_start_name));
+                        }
+                        if ( f->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_end_name));
+                        }
+                    } else {
+                        this->populate_document_symbol_and_push(x.base.loc);
+                    }
                 }
                 ASR::BaseWalkVisitor<OccurenceCollector>::visit_symbol(x);
             }
 
             void visit_Var(const ASR::Var_t& x) {
                 if ( ASRUtils::symbol_name(x.m_v) == symbol_name ) {
-                    this->populate_document_symbol_and_push(x.base.base.loc);
+                    if ( ASR::is_a<ASR::Function_t>(*x.m_v) ) {
+                        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x.m_v);
+                        if ( f->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_start_name));
+                        }
+                        if ( f->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_end_name));
+                        }
+                    } else {
+                        this->populate_document_symbol_and_push(x.base.base.loc);
+                    }
                 }
                 ASR::BaseWalkVisitor<OccurenceCollector>::visit_Var(x);
             }
@@ -87,6 +107,11 @@ namespace LCompilers::LFortran {
             // overwritten `visit_symbol` and not `this->visit_symbol`
             // in BaseWalkVisitor we have `this->visit_symbol` which
             // prevents us from using the overwritten `visit_symbol`
+            void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+                for (auto &a : x.m_symtab->get_scope()) {
+                    visit_symbol(*a.second);
+                }
+            }
             void visit_Program(const ASR::Program_t &x) {
                 for (auto &a : x.m_symtab->get_scope()) {
                     visit_symbol(*a.second);
@@ -94,6 +119,19 @@ namespace LCompilers::LFortran {
                 for (size_t i=0; i<x.n_body; i++) {
                     visit_stmt(*x.m_body[i]);
                 }
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                for (size_t i=0; i<x.n_args; i++) {
+                    this->visit_call_arg(x.m_args[i]);
+                }
+                if ( ASRUtils::symbol_name(x.m_name) == symbol_name ) {
+                    this->populate_document_symbol_and_push(x.base.base.loc);
+                }
+                this->visit_ttype(*x.m_type);
+                if (x.m_value && visit_compile_time_value)
+                    this->visit_expr(*x.m_value);
+                if (x.m_dt)
+                    this->visit_expr(*x.m_dt);
             }
             void visit_Module(const ASR::Module_t &x) {
                 for (auto &a : x.m_symtab->get_scope()) {
