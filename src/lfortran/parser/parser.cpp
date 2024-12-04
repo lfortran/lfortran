@@ -507,6 +507,15 @@ bool is_include(const std::string &s, uint32_t pos) {
     }
 }
 
+/*
+The prescan phase includes:
+- Removal of whitespace (fixed-form only)
+- Joining of continuation lines
+- Removal of comments and empty lines
+- Handling of include statements
+- Conversion to lowercase (fixed-form only)
+- Handling of fixed-form column rules (columns 1–6 for labels/comments)
+*/
 std::string prescan(const std::string &s, LocationManager &lm,
         bool fixed_form, std::vector<std::filesystem::path> &include_dirs)
 {
