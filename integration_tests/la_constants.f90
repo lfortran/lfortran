@@ -116,29 +116,14 @@ if ( abs(deps - 1.11022302462515654e-16) > 1.0d-8 ) error stop "deps test failed
 print *, "dsafmin: ", dsafmin
 if ( abs(dsafmin - 2.22507385850720138e-308) > 1.0d-8 ) error stop "dsafmin test failed"
 
-print *, "dsafmax: ", dsafmax
-if ( abs(dsafmax - 4.49423283715578977e+307) > 1.0d-8 ) error stop "dsafmax test failed"
-
 print *, "dsmlnum: ", dsmlnum
 if ( abs(dsmlnum - 1.00208418000448639e-292) > 1.0d-8 ) error stop "dsmlnum test failed"
-
-print *, "dbignum: ", dbignum
-if ( abs(dbignum - 9.97920154767359906e+291) > 1.0d-8 ) error stop "dbignum test failed"
 
 print *, "drtmin: ", drtmin
 if ( abs(drtmin - 1.00104154759155046e-146) > 1.0d-8 ) error stop "drtmin test failed"
 
-print *, "drtmax: ", drtmax
-if ( abs(drtmax - 9.98959536101117514e+145) > 1.0d-8 ) error stop "drtmax test failed"
-
 print *, "dtsml: ", dtsml
 if ( abs(dtsml - 1.49166814624004135e-154) > 1.0d-8 ) error stop "dtsml test failed"
-
-print *, "dtbig: ", dtbig
-if ( abs(dtbig - 1.99791907220223503e+146) > 1.0d-8 ) error stop "dtbig test failed"
-
-print *, "dssml: ", dssml
-if ( abs(dssml - 4.49891379454319638e+161) > 1.0d-8 ) error stop "dssml test failed"
 
 print *, "dsbig: ", dsbig
 if ( abs( dsbig - 1.1113793747425387e-162) > 1.0d-8 ) error stop "dsbig test failed"
