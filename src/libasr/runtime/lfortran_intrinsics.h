@@ -251,7 +251,11 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num);
 LFORTRAN_API void _lfortran_string_write(char **str, int64_t* size, int64_t* capacity, int32_t* iostat, const char *format, ...);
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char *format, ...);
-LFORTRAN_API void _lfortran_string_read(char *str, char *format, int *i);
+LFORTRAN_API void _lfortran_string_read_i32(char *str, char *format, int32_t *i);
+LFORTRAN_API void _lfortran_string_read_i64(char *str, char *format, int64_t *i);
+LFORTRAN_API void _lfortran_string_read_f32(char *str, char *format, float *f);
+LFORTRAN_API void _lfortran_string_read_f64(char *str, char *format, double *f);
+LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s);
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num);

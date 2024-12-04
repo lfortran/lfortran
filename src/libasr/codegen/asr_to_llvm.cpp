@@ -7894,18 +7894,29 @@ public:
                 llvm::Function *fn;
                 if (is_string) {
                     // TODO: Support multiple arguments and fmt
-                    std::string runtime_func_name = "_lfortran_string_read";
+                    std::string runtime_func_name = "_lfortran_string_read_" + ASRUtils::type_to_str_python(type);
                     llvm::Function *fn = module->getFunction(runtime_func_name);
                     if (!fn) {
                         llvm::FunctionType *function_type = llvm::FunctionType::get(
                                 llvm::Type::getVoidTy(context), {
                                     character_type, character_type,
-                                    llvm::Type::getInt32Ty(context)->getPointerTo()
+                                    llvm_utils->get_type_from_ttype_t_util(type, module.get())->getPointerTo()
                                 }, false);
                         fn = llvm::Function::Create(function_type,
                                 llvm::Function::ExternalLinkage, runtime_func_name, *module);
                     }
-                    llvm::Value *fmt = builder->CreateGlobalStringPtr("%d");
+                    llvm::Value *fmt = nullptr;
+                    if (ASR::is_a<ASR::Integer_t>(*type)) {
+                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(type);
+                        fmt = int_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%d")
+                                                    : builder->CreateGlobalStringPtr("%ld");
+                    } else if (ASR::is_a<ASR::Real_t>(*type)) {
+                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
+                        fmt = real_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%f")
+                                                     : builder->CreateGlobalStringPtr("%lf");
+                    } else if (ASR::is_a<ASR::String_t>(*type)) {
+                        fmt = builder->CreateGlobalStringPtr("%s");
+                    }
                     builder->CreateCall(fn, {unit_val, fmt, tmp});
                     return;
                 } else {
