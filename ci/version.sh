@@ -24,11 +24,12 @@ if [[ -n $(git status --porcelain) ]]; then
   git commit -m "Auto commit before tagging"  # Commit with a default message
 fi
 
-# Check if there are any tags in the repository
-if ! git rev-parse --verify --quiet refs/tags/; then
-  # If no tags are found, create a default tag
+# Check if tags exist; if not, create a default tag
+if ! git tag -l | grep -q "v"; then
   git tag v0.0.0
   echo "No tags found. Created default tag v0.0.0"
+else
+  echo "Tag already exists."
 fi
 
 # Extract version using git describe
@@ -37,4 +38,3 @@ version="${version:1}"
 
 # Save version to a file
 echo $version > version
-
