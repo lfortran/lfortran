@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#!/usr/bin/env bash
+
 # This script extracts the project's current version from git using
 # `git describe`, which determines the version based on the latest tag, such as:
 #
@@ -13,6 +15,23 @@
 
 set -ex
 
+# Check if there are uncommitted changes
+if [[ -n $(git status --porcelain) ]]; then
+  echo "There are uncommitted changes. Committing them..."
+  git add .    # Stage all changes
+  git commit -m "Auto commit before tagging"  # Commit with a default message
+fi
+
+# Check if there are any tags in the repository
+if ! git rev-parse --verify --quiet refs/tags/; then
+  # If no tags are found, create a default tag
+  git tag v0.0.0
+  echo "No tags found. Created default tag v0.0.0"
+fi
+
+# Extract version using git describe
 version=$(git describe --tags --dirty)
 version="${version:1}"
+
+# Save version to a file
 echo $version > version
