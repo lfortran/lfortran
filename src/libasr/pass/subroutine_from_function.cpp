@@ -297,6 +297,14 @@ class ReplaceFunctionCallWithSubroutineCall:
                     current_expr = current_expr_copy_9;
                     s_args.push_back(al, x->m_args[i]);
                 }
+                if(is_func_call_allocatable){ //Make sure to deallocate the argument that will hold the return of function.
+                    Vec<ASR::expr_t*> to_be_deallocated;
+                    to_be_deallocated.reserve(al, 1);
+                    to_be_deallocated.push_back(al, *current_expr);
+                    pass_result.push_back(al, ASRUtils::STMT(
+                        ASR::make_ImplicitDeallocate_t(al, (*current_expr)->base.loc,
+                        to_be_deallocated.p, to_be_deallocated.size())));
+                }
                 ASR::call_arg_t result_arg;
                 result_arg.loc = loc;
                 result_arg.m_value = *current_expr;
