@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include <libasr/asr.h>
+
 namespace LCompilers {
 
        struct error_highlight {
@@ -21,6 +23,7 @@ namespace LCompilers {
               uint32_t last_line;
               uint32_t last_column;
               std::string filename;
+              ASR::symbolType symbol_type;
        };
 
 } // namespace LCompilers
