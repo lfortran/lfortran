@@ -89,6 +89,14 @@ class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
             }
+            if(ASRUtils::is_allocatable(x.m_value)){ // Make sure to deallocate the argument that will hold the return of function.
+                Vec<ASR::expr_t*> to_be_deallocated;
+                to_be_deallocated.reserve(al, 1);
+                to_be_deallocated.push_back(al, x.m_target);
+                pass_result.push_back(al, ASRUtils::STMT(
+                    ASR::make_ImplicitDeallocate_t(al, x.m_target->base.loc,
+                    to_be_deallocated.p, to_be_deallocated.size())));
+            }
             ASR::call_arg_t result_arg;
             result_arg.loc = x.m_target->base.loc;
             result_arg.m_value = x.m_target;
