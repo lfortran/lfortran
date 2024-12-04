@@ -1378,7 +1378,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
-        /*n_temp_args*/ 0)
+        /*n_temp_args*/ 0, \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 #define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
         /*args*/ ARGS(p.m_a, l, args), \
@@ -1401,7 +1403,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
-        /*n_temp_args*/ 0)
+        /*n_temp_args*/ 0, \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
@@ -1426,7 +1430,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size())
+        /*n_temp_args*/ temp_args.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 #define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
@@ -1450,7 +1456,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size())
+        /*n_temp_args*/ temp_args.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 #define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
         make_Subroutine_t(p.m_a, l, \
         /*name*/ name2char(name), \
