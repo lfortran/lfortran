@@ -1302,8 +1302,12 @@ public:
         std::cout<<"Function: "<<x.m_name<<std::endl;
         if (x.m_start_name != nullptr) {
             Location* loc = x.m_start_name;
-            std::cout<<"loc->first: "<<loc->first<<std::endl;
-            std::cout<<"loc->last: "<<loc->last<<std::endl;
+            std::cout<<"loc->first: "<<(*loc).first<<std::endl;
+            std::cout<<"loc->last: "<<(*loc).last<<std::endl;
+
+            Location* end_loc = x.m_end_name;
+            std::cout<<"end_loc->first: "<<(*end_loc).first<<std::endl;
+            std::cout<<"end_loc->last: "<<(*end_loc).last<<std::endl;
         } else {
             std::cout<<"nullptr hai"<<std::endl;
         }

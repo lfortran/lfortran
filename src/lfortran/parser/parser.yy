@@ -988,28 +988,25 @@ function
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            YYLTYPE start_name_loc = @2;
             LLOC(@$, @12); $$ = FUNCTION0($2, $4, nullptr, nullptr,
                 TRIVIA($6, $13, @$), $7, $8, $9, SPLIT_DECL(p.m_a, $10),
-                SPLIT_STMT(p.m_a, $10), $11, $12, @$, &start_name_loc, nullptr); }
+                SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            YYLTYPE start_name_loc = @2;
             LLOC(@$, @14); $$ = FUNCTION0($2, $4, $7, $6, TRIVIA($8, $15, @$),
-                $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, $14, @$, &start_name_loc, nullptr); }
+                $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, $14, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            YYLTYPE start_name_loc = @2;
             LLOC(@$, @14); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $15, @$),
-                $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, $14, @$, &start_name_loc, nullptr); }
+                $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, $14, @$); }
     | KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
@@ -1021,28 +1018,25 @@ function
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            YYLTYPE start_name_loc = @2;
             LLOC(@$, @13); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
                 TRIVIA($7, $14, @$), $8, $9, $10, SPLIT_DECL(p.m_a, $11),
-                SPLIT_STMT(p.m_a, $11), $12, $13, @$, &start_name_loc, nullptr); }
+                SPLIT_STMT(p.m_a, $11), $12, $13, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            YYLTYPE start_name_loc = @2;
             LLOC(@$, @15); $$ = FUNCTION($1, $3, $5, $8, $7, TRIVIA($9, $16, @$),
-                $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, $15, @$, &start_name_loc, nullptr); }
+                $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, $15, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            YYLTYPE start_name_loc = @2;
             LLOC(@$, @15); $$ = FUNCTION($1, $3, $5, $7, $8, TRIVIA($9, $16, @$),
-                $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, $15, @$, &start_name_loc, nullptr); }
+                $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, $15, @$); }
     | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
