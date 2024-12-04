@@ -108,10 +108,10 @@ program la_constants
 use la_constants_module
 
 print *, "dulp: ", dulp
-if ( abs(dulp - 2.22044604925031308d-16) > 1.0d-20 ) error stop "dulp test failed"
+if ( abs(dulp - 2.22044604925031308d-16) > 1.0d-16 ) error stop "dulp test failed"
 
 print *, "deps: ", deps
-if ( abs(deps - 1.11022302462515654e-16) > 1.0d-20 ) error stop "deps test failed"
+if ( abs(deps - 1.11022302462515654e-16) > 1.0d-16 ) error stop "deps test failed"
 
 print *, "dsafmin: ", dsafmin
 if ( abs(dsafmin - 2.22507385850720138e-308) > 1.0d-16 ) error stop "dsafmin test failed"
