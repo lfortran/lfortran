@@ -2442,7 +2442,7 @@ public:
                 // local symbol table
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
                 std::string sym;
-                if( in_submodule ) {
+                if( in_submodule || ASR::is_a<ASR::Function_t>(*es0->m_external)) {
                     sym = item.first;
                 } else {
                     sym = to_lower(es0->m_original_name);
