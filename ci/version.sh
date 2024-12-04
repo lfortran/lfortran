@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-#!/usr/bin/env bash
-
 # This script extracts the project's current version from git using
 # `git describe`, which determines the version based on the latest tag, such as:
 #
@@ -14,6 +12,10 @@
 #
 
 set -ex
+
+# Set default Git identity if not configured
+git config user.name "GitHub Actions"
+git config user.email "runner@github.com"
 
 # Check if there are uncommitted changes
 if [[ -n $(git status --porcelain) ]]; then
@@ -35,3 +37,4 @@ version="${version:1}"
 
 # Save version to a file
 echo $version > version
+
