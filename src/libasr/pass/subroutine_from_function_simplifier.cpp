@@ -7,6 +7,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
+#include<libasr/pickle.h>
 
 
 namespace LCompilers {
@@ -39,25 +40,35 @@ class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
 
         Allocator& al;
         Vec<ASR::stmt_t*> pass_result;
+        Vec<ASR::stmt_t*>* parent_body = nullptr;
+
 
     public:
 
         ReplaceFunctionCallWithSubroutineCallSimplifierVisitor(Allocator& al_): al(al_)
         {
             pass_result.n = 0;
+            pass_result.reserve(al, 1);
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
-            for (size_t i = 0; i < n_body; i++) {
+            if(!pass_result.empty()){  // Flush `pass_result`.
+                LCOMPILERS_ASSERT(parent_body != nullptr);
+                for(size_t i = 0; i < pass_result.size(); i++){
+                    parent_body->push_back(al, pass_result[i]);
+                }
                 pass_result.n = 0;
-                pass_result.reserve(al, 1);
+            }
+            for (size_t i = 0; i < n_body; i++) {
+                parent_body = &body;
                 visit_stmt(*m_body[i]);
                 if( pass_result.size() > 0 ) {
                     for (size_t j=0; j < pass_result.size(); j++) {
                         body.push_back(al, pass_result[j]);
                     }
+                    pass_result.n = 0;
                 } else {
                     body.push_back(al, m_body[i]);
                 }
