@@ -5570,17 +5570,27 @@ public:
     }
 
     void visit_SelectType(const ASR::SelectType_t& x) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector) || ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector));
         // Process TypeStmtName first, then ClassStmt
         std::vector<ASR::type_stmt_t*> select_type_stmts;
         fill_type_stmt(x, select_type_stmts, ASR::type_stmtType::TypeStmtName);
         fill_type_stmt(x, select_type_stmts, ASR::type_stmtType::TypeStmtType);
         fill_type_stmt(x, select_type_stmts, ASR::type_stmtType::ClassStmt);
         LCOMPILERS_ASSERT(x.n_body == select_type_stmts.size());
-        ASR::Var_t* selector_var = ASR::down_cast<ASR::Var_t>(x.m_selector);
+        ASR::Var_t* selector_var = nullptr;
+        ASR::StructInstanceMember_t* selector_struct = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*x.m_selector)) {
+            selector_var = ASR::down_cast<ASR::Var_t>(x.m_selector);
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector)) {
+            selector_struct = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_selector);
+        }
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
-        visit_Var(*selector_var);
+        if (selector_var) {
+            visit_Var(*selector_var);
+        } else if (selector_struct) {
+            visit_StructInstanceMember(*selector_struct);
+        }
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_selector = tmp;
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");

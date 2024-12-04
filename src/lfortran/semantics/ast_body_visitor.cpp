@@ -1649,6 +1649,15 @@ public:
             selector_variable_type = selector_variable->m_type;
             selector_variable_dependencies = selector_variable->m_dependencies;
             selector_variable_n_dependencies = selector_variable->n_dependencies;
+        } else if( ASR::is_a<ASR::StructInstanceMember_t>(*m_selector) ) {
+            ASR::symbol_t* selector_sym = ASR::down_cast<ASR::StructInstanceMember_t>(m_selector)->m_m;
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::ExternalSymbol_t>(*selector_sym));
+            ASR::symbol_t* selector_ext = ASR::down_cast<ASR::ExternalSymbol_t>(selector_sym)->m_external;
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_ext));
+            selector_variable = ASR::down_cast<ASR::Variable_t>(selector_ext);
+            selector_variable_type = selector_variable->m_type;
+            selector_variable_dependencies = selector_variable->m_dependencies;
+            selector_variable_n_dependencies = selector_variable->n_dependencies;
         }
         for( size_t i = 0; i < x.n_body; i++ ) {
             SymbolTable* parent_scope = current_scope;
