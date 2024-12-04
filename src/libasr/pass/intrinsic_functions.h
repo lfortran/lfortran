@@ -450,7 +450,7 @@ namespace ObjectType {
 
      static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
-            "ASR Verify: type() takes only 1 argument `object`",
+            "type() takes only 1 argument `object`",
             x.base.base.loc, diagnostics);
     }
 
@@ -1192,7 +1192,7 @@ namespace CompilerVersion {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
-            "ASR Verify: compiler_version() takes no argument",
+            "compiler_version() takes no argument",
             x.base.base.loc, diagnostics);
     }
 
@@ -1219,7 +1219,7 @@ namespace CommandArgumentCount {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
-            "ASR Verify: command_argument_count() takes no argument",
+            "command_argument_count() takes no argument",
             x.base.base.loc, diagnostics);
     }
 

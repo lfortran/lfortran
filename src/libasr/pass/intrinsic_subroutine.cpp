@@ -38,6 +38,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
 
         ReplaceIntrinsicSubroutines(Allocator& al_) :
         al(al_), remove_original_statement(false) {
+            parent_body = nullptr;
             pass_result.n = 0;
         }
 

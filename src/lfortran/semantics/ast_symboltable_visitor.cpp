@@ -341,67 +341,69 @@ public:
                 //if no, then it is of type "implicit"
                 //get the implicit statement
                 AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
-                AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(implicit->m_type);
-                AST::decl_typeType ast_type=attr_type->m_type;
-                ASR::ttype_t *type = nullptr;
-                //convert the ast_type to asr_type
-                int i_kind = compiler_options.po.default_integer_kind;
-                int a_kind = 4;
-                int a_len = -10;
-                if (attr_type->m_kind != nullptr) {
-                    if (attr_type->n_kind == 1) {
-                        visit_expr(*attr_type->m_kind->m_value);
-                        ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                        if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
-                            a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
-                        } else {
-                            a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
-                            i_kind = a_kind;
+                for (size_t si=0;si<implicit->n_specs;++si) {
+                    AST::ImplicitSpec_t* spec = AST::down_cast<AST::ImplicitSpec_t>(implicit->m_specs[si]);
+                    AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(spec->m_type);
+                    AST::decl_typeType ast_type=attr_type->m_type;
+                    ASR::ttype_t *type = nullptr;
+                    //convert the ast_type to asr_type
+                    int i_kind = compiler_options.po.default_integer_kind;
+                    int a_kind = 4;
+                    int a_len = -10;
+                    if (attr_type->m_kind != nullptr) {
+                       if (attr_type->n_kind == 1) {
+                          visit_expr(*attr_type->m_kind->m_value);
+                          ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                          if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
+                             a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
+                          } else {
+                             a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
+                             i_kind = a_kind;
+                          }
+                       } else {
+                         diag.add(diag::Diagnostic(
+                             "Only one kind item supported for now",
+                             diag::Level::Error, diag::Stage::Semantic, {
+                                 diag::Label("", {x.base.base.loc})}));
+                         throw SemanticAbort();
+                       }
+                    }
+                    switch (ast_type) {
+                        case (AST::decl_typeType::TypeInteger) : {
+                            type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
+                            break;
                         }
-                    } else {
-                        diag.add(diag::Diagnostic(
-                            "Only one kind item supported for now",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
+                        case (AST::decl_typeType::TypeReal) : {
+                            type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeDoublePrecision) : {
+                            type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeComplex) : {
+                            type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeLogical) : {
+                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            break;
+                        }
+                        case (AST::decl_typeType::TypeCharacter) : {
+                            type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                            break;
+                        }
+                        default :
+                            diag.add(diag::Diagnostic(
+                                              "Return type not supported",
+                                              diag::Level::Error, diag::Stage::Semantic, {
+                                                diag::Label("", {x.base.base.loc})}));
+                            throw SemanticAbort();
                     }
-                }
-                switch (ast_type) {
-                    case (AST::decl_typeType::TypeInteger) : {
-                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeReal) : {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeDoublePrecision) : {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeComplex) : {
-                        type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeLogical) : {
-                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-                        break;
-                    }
-                    case (AST::decl_typeType::TypeCharacter) : {
-                        type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
-                        break;
-                    }
-                    default :
-                        diag.add(diag::Diagnostic(
-                            "Return type not supported",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
-                }
-                //iterate over all implicit rules
-                for (size_t j=0;j<implicit->n_specs;j++) {
+                  //iterate over all implicit rules
+                  for (size_t j=0;j<spec->n_specs;j++) {
                     //cast x.m_specs[j] to AST::LetterSpec_t
-                    AST::LetterSpec_t* letter_spec = AST::down_cast<AST::LetterSpec_t>(implicit->m_specs[j]);
+                    AST::LetterSpec_t* letter_spec = AST::down_cast<AST::LetterSpec_t>(spec->m_specs[j]);
                     char *start=letter_spec->m_start;
                     char *end=letter_spec->m_end;
                     if (!start) {
@@ -409,12 +411,14 @@ public:
                     } else {
                         for(char ch=*start; ch<=*end; ch++){
                             implicit_dictionary[to_lower(std::string(1, ch))] = type;
-                        }
+                      }
                     }
+                  }
                 }
             }
         }
     }
+
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         std::cout << "Implicit Dictionary: " << std::endl;
@@ -446,7 +450,7 @@ public:
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
                                                 compiler_options.po, true,
-                                                [&](const std::string &msg, const Location &loc) { 
+                                                [&](const std::string &msg, const Location &loc) {
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
@@ -2835,7 +2839,7 @@ public:
             }
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, compiler_options.po, true,
-                [&](const std::string &msg, const Location &loc) { 
+                [&](const std::string &msg, const Location &loc) {
                     diag.add(diag::Diagnostic(
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));

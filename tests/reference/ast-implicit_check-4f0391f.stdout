@@ -4,21 +4,23 @@
         ()
         []
         [(Implicit
-            (AttrType
-                TypeDoublePrecision
+            [(ImplicitSpec
+                (AttrType
+                    TypeDoublePrecision
+                    []
+                    ()
+                    ()
+                    None
+                )
                 []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                A
-                H
-            )
-            (LetterSpec
-                O
-                Z
+                [(LetterSpec
+                    A
+                    H
+                )
+                (LetterSpec
+                    O
+                    Z
+                )]
             )]
             ()
         )]

@@ -824,8 +824,38 @@ class DoConcurrentVisitor :
             v.current_expr = nullptr;
             v.visit_DoConcurrentLoop(do_loop);
             ASR::do_loop_head_t loop_head = do_loop.m_head[0];
+
+            /*
+            do concurrent ( ix =ax:nx, iy = ay:ny, iz=az:nz , ik=ak:nk )
+                print *, "iy->", iy, "ix->", ix, "iz->", iz
+            end do
+
+            ------To----->
+
+            total_iterations = (nx - ax + 1) * (ny - ay + 1) * (nz - az + 1) * (nk - ak + 1) - 1
+            integer :: I = 0;
+            do I = 0, total_iterations
+                ix = (I / ((ny - ay + 1) * (nz - az + 1) * (nk - ak + 1))) + ax
+                iy = ((I / ((nz - az + 1) * (nk - ak + 1))) % (ny - ay + 1)) + ay
+                iz = ((I / (nk - ak + 1)) % (nz - az + 1)) + az
+                ik = (I % (nk - ak + 1)) + ak
+                ! ... some computation ...
+            end do
+            */
+
+            // total_iterations = (nx - ax + 1) * (ny - ay + 1) * (nz - az + 1) * (nk - ak + 1) - 1
+            ASR::expr_t* total_iterations = b.i32(1);
+            std::vector<ASR::expr_t*> dimension_lengths;
+            for (size_t i = 0; i < do_loop.n_head; ++i) {
+                ASR::do_loop_head_t head = do_loop.m_head[i];
+                ASR::expr_t* length = b.Add(b.Sub(head.m_end, head.m_start), b.i32(1));
+                dimension_lengths.push_back(length);
+                total_iterations = b.Mul(total_iterations, length);
+            }
+  
             // always this shall be IntegerBinOp_t
-            ASR::expr_t* loop_length = b.Add(b.Sub(loop_head.m_end, loop_head.m_start), b.i32(1));
+            ASR::expr_t* loop_length = total_iterations;
+            // ASR::expr_t* loop_length = b.Add(b.Sub(loop_head.m_end, loop_head.m_start), b.i32(1));
             // calculate chunk size
             body.push_back(al, b.Assignment(num_threads,
                             ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_max_threads"),

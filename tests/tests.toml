@@ -3412,6 +3412,15 @@ filename = "implicit11.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "implicit12.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit13.f90"
+asr_implicit_typing = true
+
+[[test]]
 filename = "fixed_form/assign_to1.f"
 ast = true
 
@@ -3436,11 +3445,6 @@ asr_implicit_typing = true
 [[test]]
 filename = "../integration_tests/conv_complex2real.f90"
 asr = true
-
-[[test]]
-filename = "implicit12.f90"
-asr = true
-asr_implicit_typing = true
 
 [[test]]
 filename = "../integration_tests/statement1.f90"
