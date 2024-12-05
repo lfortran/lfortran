@@ -3017,14 +3017,6 @@ def main(argv):
             for visitor in asr_visitors:
                 visitor(fp, data).visit(mod)
                 fp.write("\n\n")
-        if not is_asr:
-            fp.write(FOOT % subs)
-    finally:
-        if not is_asr:
-            fp.close()
-
-    try:
-        if is_asr:
             ASRPassWalkVisitorVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprStmtDuplicatorVisitor(fp, data).visit(mod)
@@ -3039,7 +3031,8 @@ def main(argv):
             fp.write("\n\n")
             ExprValueVisitor(fp, data).visit(mod)
             fp.write("\n\n")
-            fp.write(FOOT % subs)
+
+        fp.write(FOOT % subs)
     finally:
         fp.close()
 
