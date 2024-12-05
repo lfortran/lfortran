@@ -327,7 +327,7 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
                         s2c(v.al, new_func_sym_name), x->m_v, x_sym_ext->m_module_name,
                         x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(x->m_v),
                         x_sym_ext->m_access));
-                v.proc2newproc[(ASR::symbol_t*) x_sym_] = std::make_pair(new_func_sym_, std::vector<uint64_t>{}); 
+                v.proc2newproc[x_sym_] = std::make_pair(new_func_sym_, std::vector<uint64_t>{}); 
                 current_scope->add_symbol(new_func_sym_name, new_func_sym_);
                 x->m_v = new_func_sym_;
             }
