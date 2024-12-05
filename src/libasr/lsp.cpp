@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <libasr/asr.h>
 #include <libasr/containers.h>
+#include <libasr/diagnostics.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
@@ -12,6 +13,50 @@
 #include <libasr/asr_lookup_name.h>
 
 namespace LCompilers {
+
+LSP::DiagnosticSeverity diagnostic_level_to_lsp_severity(diag::Level level)
+{
+    switch (level) {
+    case diag::Level::Error:
+        return LSP::DiagnosticSeverity::Error;
+    case diag::Level::Warning:
+        return LSP::DiagnosticSeverity::Warning;
+    case diag::Level::Note:
+        return LSP::DiagnosticSeverity::Information;
+    case diag::Level::Help:
+        return LSP::DiagnosticSeverity::Hint;
+    default:
+        return LSP::DiagnosticSeverity::Warning;
+    }
+}
+
+LSP::SymbolKind asr_symbol_type_to_lsp_symbol_kind(ASR::symbolType symbol_type)
+{
+    switch (symbol_type) {
+    case ASR::symbolType::Module:
+        return LSP::SymbolKind::Module;
+    case ASR::symbolType::Function:
+        return LSP::SymbolKind::Function;
+    case ASR::symbolType::GenericProcedure:
+        return LSP::SymbolKind::Function;
+    case ASR::symbolType::CustomOperator:
+        return LSP::SymbolKind::Operator;
+    case ASR::symbolType::Struct:
+        return LSP::SymbolKind::Struct;
+    case ASR::symbolType::Enum:
+        return LSP::SymbolKind::Enum;
+    case ASR::symbolType::Variable:
+        return LSP::SymbolKind::Variable;
+    case ASR::symbolType::Class:
+        return LSP::SymbolKind::Class;
+    case ASR::symbolType::ClassProcedure:
+        return LSP::SymbolKind::Method;
+    case ASR::symbolType::Template:
+        return LSP::SymbolKind::TypeParameter;
+    default:
+        return LSP::SymbolKind::Function;
+    }
+}
 
 enum LFortranJSONType {
     kArrayType, kObjectType
@@ -123,6 +168,7 @@ void populate_symbol_lists(T* x, LCompilers::LocationManager lm, std::vector<LCo
         loc.last_line = last_line-1;
         loc.symbol_name = symbol_name;
         loc.filename = filename;
+        loc.symbol_type = a.second->type;
         symbol_lists.push_back(loc);
         if ( LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*a.second) ) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(a.second);
@@ -177,6 +223,7 @@ int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
         uint32_t end_character = symbol.last_column;
         uint32_t end_line = symbol.last_line;
         std::string name = symbol.symbol_name;
+        LSP::SymbolKind kind = asr_symbol_type_to_lsp_symbol_kind(symbol.symbol_type);
 
         range_object.SetObject();
 
@@ -195,7 +242,7 @@ int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
         location_object.AddMember("uri", "uri");
 
         test_capture.SetObject();
-        test_capture.AddMember("kind", 1);
+        test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
         test_output.PushBack(test_capture);
@@ -264,7 +311,7 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
         uint32_t start_column = diag.first_column;
         uint32_t end_line = diag.last_line;
         uint32_t end_column = diag.last_column;
-        uint32_t severity = diag.severity;
+        LSP::DiagnosticSeverity severity = diagnostic_level_to_lsp_severity(diag.severity);
         std::string msg = diag.message;
 
         range_obj.SetObject();
@@ -342,6 +389,7 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             loc.last_line = last_line-1;
             loc.symbol_name = symbol_name;
             loc.filename = filename;
+            loc.symbol_type = s->type;
             symbol_lists.push_back(loc);
         } else {
             std::cout << "[]";
@@ -364,6 +412,7 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
         uint32_t end_character = symbol.last_column;
         uint32_t end_line = symbol.last_line;
         std::string name = symbol.symbol_name;
+        LSP::SymbolKind kind = asr_symbol_type_to_lsp_symbol_kind(symbol.symbol_type);
 
         range_object.SetObject();
 
@@ -382,7 +431,7 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
         location_object.AddMember("uri", "uri");
 
         test_capture.SetObject();
-        test_capture.AddMember("kind", 1);
+        test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
         test_output.PushBack(test_capture);
@@ -446,6 +495,7 @@ int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &c
         uint32_t end_character = symbol.last_column;
         uint32_t end_line = symbol.last_line;
         std::string name = symbol.symbol_name;
+        LSP::SymbolKind kind = asr_symbol_type_to_lsp_symbol_kind(symbol.symbol_type);
 
         range_object.SetObject();
 
@@ -464,7 +514,7 @@ int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &c
         location_object.AddMember("uri", "uri");
 
         test_capture.SetObject();
-        test_capture.AddMember("kind", 1);
+        test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
         test_output.PushBack(test_capture);
