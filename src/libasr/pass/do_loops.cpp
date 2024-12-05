@@ -46,10 +46,10 @@ public:
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         Vec<ASR::stmt_t*> body;body.reserve(al,1);
-        for (int i = 0; i < x.n_body; i++) {
+        for (int i = 0; i < static_cast<int>(x.n_body); i++) {
             body.push_back(al,x.m_body[i]);
         }
-        for (int i = x.n_head - 1; i > 0; i--) {
+        for (int i = static_cast<int>(x.n_head) - 1; i > 0; i--) {
             ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[i], body.p, body.n, nullptr, 0);
             body={};body.reserve(al,1);
             body.push_back(al,ASRUtils::STMT(do_loop));
