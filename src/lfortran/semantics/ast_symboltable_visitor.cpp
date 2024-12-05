@@ -1861,14 +1861,16 @@ public:
             if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
                 continue;
             }
-            ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
             char* aggregate_type_name = nullptr;
-            if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
+            if (item.first != "~abstract_type") {
+                ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
+                if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
+                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
+                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                }
             }
             if( aggregate_type_name ) {
                 struct_dependencies.push_back(al, aggregate_type_name);
