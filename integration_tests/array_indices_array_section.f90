@@ -29,5 +29,5 @@ program array_indices_array_section
     print *, rank(arr_4)
     if (rank(arr_4) /= 3) error stop
     if (all(arr_4 /= arr_4_reshape)) error stop
-        
+
 end program array_indices_array_section

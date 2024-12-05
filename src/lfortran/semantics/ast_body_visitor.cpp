@@ -1128,6 +1128,18 @@ public:
                 throw SemanticAbort();
             }
         }
+
+        if (file && ASR::is_a<ASR::Var_t>(*file)) {
+            ASR::Variable_t *file_var = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(file)->m_v);
+            if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(file_var->m_type))) {
+              ASR::String_t *file_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(file_var->m_type));
+              if (file_type->m_physical_type != ASR::string_physical_typeType::PointerString) {
+                file = ASRUtils::cast_string_descriptor_to_pointer(al, file);
+              }
+            }
+        }
+
         tmp = ASR::make_FileInquire_t(al, x.base.base.loc, x.m_label,
                                   unit, file, iostat, err,
                                   exist, opened, number, named,

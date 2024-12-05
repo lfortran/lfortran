@@ -879,7 +879,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 array_3(i, j) = array_1(i, array_2(j))
                             END DO
                         END DO
-                */ 
+                */
                 has_array_type_index = true;
                 ASR::expr_t* arg = x->m_args[i].m_right;
                 Vec<ASR::expr_t*> idx_vars;
@@ -974,7 +974,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 ASR::expr_t* m_step = x->m_args[j].m_step;
                                 if (m_right) m_right = CastingUtil::perform_casting(m_right, int32_type, al, loc);
                                 if (m_left) m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
-                                
+
                                 if (m_step) {
                                   m_step = CastingUtil::perform_casting(m_step, int32_type, al, loc);
                                 } else {
@@ -1002,9 +1002,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                                         ASR::arraystorageType::ColMajor,
                                                         nullptr)),
                                                     nullptr));
-                                                    
+
                         doloop_body.push_back(al, assign);
-                    }                        
+                    }
                 );
                 *current_expr = result_var;
                 break;

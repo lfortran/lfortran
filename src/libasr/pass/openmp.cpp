@@ -828,6 +828,7 @@ class DoConcurrentVisitor :
             /*
             do concurrent ( ix =ax:nx, iy = ay:ny, iz=az:nz , ik=ak:nk )
                 print *, "iy->", iy, "ix->", ix, "iz->", iz
+                ! ........some computation ....
             end do
 
             ------To----->
@@ -932,12 +933,52 @@ class DoConcurrentVisitor :
                 }
             }
 
-            std::vector<ASR::stmt_t*> loop_body;
-            for (size_t i = 0; i < do_loop.n_body; i++) {
-                loop_body.push_back(do_loop.m_body[i]);
-            }
-            body.push_back(al, b.DoLoop(loop_head.m_v, b.Add(start, b.i32(1)), end, loop_body, loop_head.m_increment));
+            // integer :: I = 0;
+            std::vector<ASR::stmt_t*> flattened_body;
+            ASR::expr_t* I = b.Variable(current_scope, "I", ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            4)),ASR::intentType::Local, ASR::abiType::BindC);
 
+            ASR::expr_t* temp_I = I;
+            for (size_t i = 0; i < do_loop.n_head; ++i) {
+                ASR::do_loop_head_t head = do_loop.m_head[i];
+                ASR::expr_t* computed_var;
+
+                if (i == do_loop.n_head - 1) {
+                    // Last loop variable -> ik = (I % (nk - ak 1)) + ak
+                    Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                    mod_args.push_back(al, temp_I);
+                    mod_args.push_back(al, dimension_lengths[i]);
+                    computed_var = b.Add(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+                    loc,2,mod_args.p, 2, 0, ASRUtils::expr_type(dimension_lengths[i]), nullptr)),head.m_start);
+                } else {
+                    // Intermediate loop variable -> iy = ((I / ((nz - az 1) * (nk - ak 1))) % (ny - ay +1)) ay
+                    ASR::expr_t* product_of_next_dimensions = b.i32(1); 
+                    for (size_t j = i + 1 ; j <do_loop.n_head; ++j) {
+                        product_of_next_dimensions = b.Mul(product_of_next_dimensions, dimension_lengths[j]);
+                    }
+
+                    if (i != 0){
+                        Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                        mod_args.push_back(al, b.Div(temp_I, product_of_next_dimensions));
+                        mod_args.push_back(al, dimension_lengths[i]);
+                        computed_var = b.Add(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+                    loc,2,mod_args.p, 2, 0, ASRUtils::expr_type(dimension_lengths[i]), nullptr)),head.m_start);
+                    } else {
+                        computed_var = b.Add(b.Div(b.Add(temp_I,b.i32(-1)), product_of_next_dimensions),head.m_start);
+                    }
+                }
+
+                // Add the assignment to the body
+                flattened_body.push_back(b.Assignment(b.Var(current_scope->resolve_symbol(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(head.m_v)->m_v))),
+                computed_var));
+            }
+
+            for (size_t i = 0; i < do_loop.n_body; ++i) {
+                flattened_body.push_back(do_loop.m_body[i]);
+            }
+            //  Collapse Ends Here
+
+            body.push_back(al, b.DoLoop(I, b.Add(start, b.i32(1)), end, flattened_body, loop_head.m_increment));
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr)));
 
             /*
