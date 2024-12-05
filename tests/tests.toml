@@ -4318,6 +4318,12 @@ rename_symbol = true
 line = 7
 column = 11
 
+[[test]]
+filename = "collect_occurence3.f90"
+rename_symbol = true
+line = 6
+column = 11
+
 
 [[test]]
 filename = "../integration_tests/multiple_objects_args.f90"
