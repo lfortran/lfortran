@@ -7,6 +7,7 @@
 #include <libasr/bwriter.h>
 #include <libasr/string_utils.h>
 #include <libasr/exception.h>
+#include <libasr/asr_deserialization_visitor.h>
 
 using LCompilers::ASRUtils::symbol_parent_symtab;
 using LCompilers::ASRUtils::symbol_name;
