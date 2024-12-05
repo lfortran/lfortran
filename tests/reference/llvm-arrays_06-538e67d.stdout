@@ -58,7 +58,6 @@ define i32 @main(i32 %0, i8** %1) {
   %__2_k = alloca i32, align 4
   %__2_t = alloca i32, align 4
   %__2_v = alloca i32, align 4
-  %__3_k = alloca i32, align 4
   %__3_t = alloca i32, align 4
   %__3_v = alloca i32, align 4
   %i = alloca i32, align 4
