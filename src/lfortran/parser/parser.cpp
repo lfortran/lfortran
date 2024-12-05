@@ -688,7 +688,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 process_include(out, s, lm, pos, fixed_form, include_dirs, col);
             }
             newline = false;
-            if (s[pos] == '!') in_comment = true;
+            if (s[pos] == '!' && !in_string) in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
             if (!in_comment && s[pos] == '&') {
                 size_t pos2=pos+1;
