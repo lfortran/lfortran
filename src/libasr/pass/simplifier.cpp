@@ -35,6 +35,21 @@ static inline ASR::asr_t* make_Assignment_t_util(
     return ASR::make_Assignment_t(al, a_loc, a_target, a_value, a_overloaded);
 }
 
+bool is_array_section_with_array_indices(ASR::ArraySection_t* x) {
+    for( size_t i = 0; i < x->n_args; i++ ) {
+        if( x->m_args[i].m_left == nullptr &&
+            x->m_args[i].m_right != nullptr &&
+            x->m_args[i].m_step == nullptr &&
+            ASRUtils::is_array(
+                ASRUtils::expr_type(x->m_args[i].m_right)) ) {
+            return true;
+            break ;
+        }
+    }
+
+    return false;
+}
+
 /*
 This pass collector that the BinOp only Var nodes and nothing else.
 */
@@ -663,19 +678,24 @@ ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
-    ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false) {
+    ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false,
+    ASR::expr_t* allocate_size_reference=nullptr) {
     const Location& loc = array_expr->base.loc;
+    if( allocate_size_reference == nullptr ) {
+        allocate_size_reference = array_expr;
+    }
     ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-        al, array_expr, current_scope, name_hint, is_pointer_required);
+        al, allocate_size_reference, current_scope, name_hint, is_pointer_required);
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
         exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTarget);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, array_var_temporary, array_expr)));
     } else {
-        insert_allocate_stmt_for_array(al, array_var_temporary, array_expr, current_body);
+        insert_allocate_stmt_for_array(al, array_var_temporary, allocate_size_reference, current_body);
         array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
         if( ASR::is_a<ASR::ArraySection_t>(*array_expr) && !is_pointer_required &&
-            !ASRUtils::is_simd_array(array_expr) ) {
+            !ASRUtils::is_simd_array(array_expr) &&
+            !is_array_section_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(array_expr)) ) {
             size_t value_n_dims = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(array_expr));
             ASR::ttype_t* tmp_type = create_array_type_with_empty_dims(
@@ -763,9 +783,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     #define END_VAR_CHECK }
 
     #define call_create_and_allocate_temporary_variable(expr) ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr); \
-        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array( \
-            x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
-            ASR::is_a<ASR::ArraySection_t>(*x_m_args_i));
+        ASR::expr_t* array_var_temporary = nullptr; \
+        if( ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) && \
+            is_array_section_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i)) ) { \
+            array_var_temporary = create_and_allocate_temporary_variable_for_array( \
+                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
+                false, ASR::down_cast<ASR::ArraySection_t>(x_m_args_i)->m_v); \
+        } else { \
+            array_var_temporary = create_and_allocate_temporary_variable_for_array( \
+                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
+                ASR::is_a<ASR::ArraySection_t>(*x_m_args_i)); \
+        }
 
     void visit_IO(ASR::expr_t**& x_values, size_t& n_values, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_values; x_m_values.reserve(al, n_values);
@@ -1425,6 +1453,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
+        if( is_array_section_with_array_indices(x) ) {
+            if( exprs_with_target.find(*current_expr) == exprs_with_target.end() ) {
+                *current_expr = create_and_allocate_temporary_variable_for_array(
+                    x->m_v, "_array_section_", al, current_body,
+                    current_scope, exprs_with_target);
+            }
+            return ;
+        }
+
         #define generate_associate_for_array_section size_t value_n_dims = \
             ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(*current_expr)); \
             ASR::ttype_t* tmp_type = create_array_type_with_empty_dims( \
