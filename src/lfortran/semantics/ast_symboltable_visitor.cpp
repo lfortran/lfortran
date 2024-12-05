@@ -594,7 +594,9 @@ public:
             current_module_dependencies.p,
             current_module_dependencies.size(),
             /* a_body */ nullptr,
-            /* n_body */ 0);
+            /* n_body */ 0, 
+            /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
+            /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr);
         std::string sym_name = to_lower(x.m_name);
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             diag.add(diag::Diagnostic(
