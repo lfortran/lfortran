@@ -1856,12 +1856,12 @@ RUN(NAME openmp_32 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_33 LABELS gfortran llvm_omp NO_EXPERIMENTAL_SIMPLIFIER GFORTRAN_ARGS -fopenmp) # mandelbrot
 RUN(NAME openmp_34 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # Ensure uniform load distribution over threads
 RUN(NAME openmp_35 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_36 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_36 LABELS gfortran GFORTRAN_ARGS -fopenmp llvm)
 RUN(NAME openmp_37 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_40 LABELS llvm_omp)
-RUN(NAME openmp_41 LABELS llvm_omp)
+RUN(NAME openmp_40 LABELS llvm_omp llvm)
+RUN(NAME openmp_41 LABELS llvm_omp llvm)
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME fortran_02 LABELS gfortran fortran)
