@@ -456,6 +456,140 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         }
     }
 
+
+    template <typename T>
+    void generate_loop_for_array_section(const T& x,
+        ASR::expr_t** target_address, ASR::expr_t** value_address,
+        const Location& loc) {
+        ASR::expr_t* target = *target_address;
+        ASR::expr_t* value = *value_address;
+        size_t var_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(target));
+        Vec<ASR::expr_t*> vars_expr; vars_expr.reserve(al, 2);
+        vars_expr.push_back(al, target);
+        vars_expr.push_back(al, ASR::down_cast<ASR::ArraySection_t>(value)->m_v);
+
+        std::unordered_map<size_t, Vec<ASR::expr_t*>> var2indices;
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        for( size_t i = 0; i < 2; i++ ) {
+            Vec<ASR::expr_t*> indices;
+            indices.reserve(al, var_rank);
+            for( size_t j = 0; j < var_rank; j++ ) {
+                std::string index_var_name = current_scope->get_unique_name(
+                    "__libasr_index_" + std::to_string(j) + "_");
+                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                    al, loc, current_scope, s2c(al, index_var_name), nullptr, 0, ASR::intentType::Local,
+                    nullptr, nullptr, ASR::storage_typeType::Default, int32_type, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+                current_scope->add_symbol(index_var_name, index);
+                ASR::expr_t* index_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, index));
+                indices.push_back(al, index_expr);
+            }
+            var2indices[i] = indices;
+        }
+
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, var_rank);
+        for( size_t j = 0; j < var_rank; j++ ) {
+            ASR::array_index_t array_index;
+            array_index.loc = loc;
+            array_index.m_left = nullptr;
+            array_index.m_right = var2indices[0][j];
+            array_index.m_step = nullptr;
+            indices.push_back(al, array_index);
+        }
+        ASR::ttype_t* var_i_type = ASRUtils::type_get_past_array_pointer_allocatable(
+            ASRUtils::expr_type(target));
+        *target_address = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, target, indices.p,
+            indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
+
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArraySection_t>(*value));
+        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(value);
+        Vec<ASR::array_index_t> array_item_args;
+        array_item_args.reserve(al, array_section->n_args);
+        for( size_t i = 0; i < array_section->n_args; i++ ) {
+            if( array_section->m_args[i].m_left == nullptr &&
+                array_section->m_args[i].m_right != nullptr &&
+                array_section->m_args[i].m_step == nullptr ) {
+                if( ASRUtils::is_array(ASRUtils::expr_type(
+                        array_section->m_args[i].m_right)) ) {
+                    ASR::array_index_t array_index;
+                    array_index.loc = loc;
+                    array_index.m_left = nullptr;
+                    Vec<ASR::array_index_t> indices1; indices1.reserve(al, 1);
+                    ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
+                    // TODO: Create seprate indices for vector indices in array section
+                    index1.m_right = var2indices[0][i]; index1.m_step = nullptr;
+                    indices1.push_back(al, index1);
+                    array_index.m_right = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                        array_section->m_args[i].m_right, indices1.p, 1, int32_type,
+                        ASR::arraystorageType::ColMajor, nullptr));
+                    array_index.m_step = nullptr;
+                    array_item_args.push_back(al, array_index);
+                } else {
+                    array_item_args.push_back(al, array_section->m_args[i]);
+                }
+            } else {
+                ASR::array_index_t array_index;
+                array_index.loc = loc;
+                array_index.m_left = nullptr;
+                ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
+                index1.m_right = var2indices[1][i]; index1.m_step = nullptr;
+                array_item_args.push_back(al, index1);
+            }
+        }
+
+        ASR::ttype_t* value_type = ASRUtils::type_get_past_array_pointer_allocatable(
+                ASRUtils::expr_type(value));
+        *value_address = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, array_section->m_v,
+            array_item_args.p, array_item_args.size(), value_type,
+            ASR::arraystorageType::ColMajor, nullptr));
+
+        size_t var_with_maxrank = 0;
+
+        ASR::do_loop_head_t do_loop_head;
+        do_loop_head.loc = loc;
+        do_loop_head.m_v = at(var2indices[var_with_maxrank], -1);
+        do_loop_head.m_start = PassUtils::get_bound(target, var_rank, "lbound", al);
+        do_loop_head.m_end = PassUtils::get_bound(target, var_rank, "ubound", al);
+        do_loop_head.m_increment = nullptr;
+        Vec<ASR::stmt_t*> parent_do_loop_body; parent_do_loop_body.reserve(al, 1);
+        Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
+        set_index_variables(var2indices, vars_expr, var_with_maxrank,
+                            var_rank, -1, parent_do_loop_body, loc);
+        do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        increment_index_variables(var2indices, var_with_maxrank, -1,
+                                  do_loop_body, loc);
+        ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+        parent_do_loop_body.push_back(al, do_loop);
+        do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
+        parent_do_loop_body.reserve(al, 1);
+
+        for( int64_t i = -2; i >= -static_cast<int64_t>(var_rank); i-- ) {
+            set_index_variables(var2indices, vars_expr, var_with_maxrank,
+                                var_rank, i, parent_do_loop_body, loc);
+            increment_index_variables(var2indices, var_with_maxrank, i,
+                                      do_loop_body, loc);
+            ASR::do_loop_head_t do_loop_head;
+            do_loop_head.loc = loc;
+            do_loop_head.m_v = at(var2indices[var_with_maxrank], i);
+            do_loop_head.m_start = PassUtils::get_bound(
+                vars_expr[var_with_maxrank], var_rank + i + 1, "lbound", al);
+            do_loop_head.m_end = PassUtils::get_bound(
+                vars_expr[var_with_maxrank], var_rank + i + 1, "ubound", al);
+            do_loop_head.m_increment = nullptr;
+            ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+                do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+            parent_do_loop_body.push_back(al, do_loop);
+            do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
+            parent_do_loop_body.reserve(al, 1);
+        }
+
+        for( size_t i = 0; i < do_loop_body.size(); i++ ) {
+            pass_result.push_back(al, do_loop_body[i]);
+        }
+    }
+
     template <typename T>
     void generate_loop(const T& x, Vec<ASR::expr_t**>& vars,
                        Vec<ASR::expr_t**>& fix_types_args,
@@ -638,6 +772,11 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         }
         xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
         const Location loc = x.base.base.loc;
+        if( ASR::is_a<ASR::ArraySection_t>(*xx.m_value) ) {
+            generate_loop_for_array_section(x, &(xx.m_target), &(xx.m_value), loc);
+            return ;
+        }
+
         if( call_replace_on_expr(xx.m_value->type) ) {
             replacer.result_expr = xx.m_target;
             ASR::expr_t** current_expr_copy = current_expr;
