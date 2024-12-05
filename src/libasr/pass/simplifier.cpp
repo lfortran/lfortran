@@ -1154,7 +1154,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASRUtils::symbol_name(x.m_dt_sym));
     }
 
-    void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& x) {
+    void visit_UnionConstructor(const ASR::UnionConstructor_t& x) {
         visit_TypeConstructor(x, std::string("_union_type_constructor_") +
             ASRUtils::symbol_name(x.m_dt_sym));
     }
@@ -1410,7 +1410,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_enum_constructor_")
     }
 
-    void replace_UnionConstructor(ASR::UnionTypeConstructor_t* x) {
+    void replace_UnionConstructor(ASR::UnionConstructor_t* x) {
         replace_current_expr("_union_constructor_")
     }
 
@@ -2039,7 +2039,7 @@ class VerifySimplifierASROutput:
         check_if_linked_to_target(x.base, x.m_type);
     }
 
-    void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& x) {
+    void visit_UnionConstructor(const ASR::UnionConstructor_t& x) {
         traverse_args(x.m_args, x.n_args);
         check_if_linked_to_target(x.base, x.m_type);
     }

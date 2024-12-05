@@ -1346,7 +1346,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             LCOMPILERS_ASSERT(false)
         }
         from_std_vector_helper.clear();
-        if( ASR::is_a<ASR::UnionTypeConstructor_t>(*x.m_value) ) {
+        if( ASR::is_a<ASR::UnionConstructor_t>(*x.m_value) ) {
             src = "";
             return ;
         }

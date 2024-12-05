@@ -368,7 +368,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::ExternalSymbol: return "ExternalSymbol";
         case ASR::symbolType::Struct: return "Struct";
         case ASR::symbolType::Enum: return "Enum";
-        case ASR::symbolType::UnionType: return "UnionType";
+        case ASR::symbolType::Union: return "Union";
         case ASR::symbolType::Variable: return "Variable";
         case ASR::symbolType::Class: return "Class";
         case ASR::symbolType::ClassProcedure: return "ClassProcedure";
@@ -510,8 +510,8 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_name;
         }
-        case ASR::symbolType::UnionType: {
-            return ASR::down_cast<ASR::UnionType_t>(f)->m_name;
+        case ASR::symbolType::Union: {
+            return ASR::down_cast<ASR::Union_t>(f)->m_name;
         }
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_name;
@@ -623,7 +623,7 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::ClassType: {
             return ASRUtils::symbol_name(ASR::down_cast<ASR::ClassType_t>(t)->m_class_type);
         }
-        case ASR::ttypeType::Union: {
+        case ASR::ttypeType::UnionType: {
             return "union";
         }
         case ASR::ttypeType::CPtr: {
@@ -776,8 +776,8 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
             ASR::Enum_t* sym = ASR::down_cast<ASR::Enum_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
-        case ASR::symbolType::UnionType: {
-            ASR::UnionType_t* sym = ASR::down_cast<ASR::UnionType_t>(f);
+        case ASR::symbolType::Union: {
+            ASR::Union_t* sym = ASR::down_cast<ASR::Union_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
         default : throw LCompilersException("Not implemented");
@@ -816,8 +816,8 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_symtab->parent;
         }
-        case ASR::symbolType::UnionType: {
-            return ASR::down_cast<ASR::UnionType_t>(f)->m_symtab->parent;
+        case ASR::symbolType::Union: {
+            return ASR::down_cast<ASR::Union_t>(f)->m_symtab->parent;
         }
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_parent_symtab;
@@ -870,8 +870,8 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_symtab;
         }
-        case ASR::symbolType::UnionType: {
-            return ASR::down_cast<ASR::UnionType_t>(f)->m_symtab;
+        case ASR::symbolType::Union: {
+            return ASR::down_cast<ASR::Union_t>(f)->m_symtab;
         }
         case ASR::symbolType::Variable: {
             return nullptr;
@@ -1627,8 +1627,8 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             }
             break;
         }
-        case ASR::ttypeType::Union: {
-            ASR::Union_t* d = ASR::down_cast<ASR::Union_t>(t);
+        case ASR::ttypeType::UnionType: {
+            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
             res = symbol_name(d->m_union_type);
             break;
         }
@@ -1770,8 +1770,8 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
             ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);
             return "enum " + std::string(symbol_name(d->m_enum_type));
         }
-        case ASR::ttypeType::Union: {
-            ASR::Union_t* d = ASR::down_cast<ASR::Union_t>(t);
+        case ASR::ttypeType::UnionType: {
+            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
             return "union " + std::string(symbol_name(d->m_union_type));
         }
         case ASR::ttypeType::Pointer: {
@@ -2277,7 +2277,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::EnumType:
-        case ASR::ttypeType::Union:
+        case ASR::ttypeType::UnionType:
         case ASR::ttypeType::ClassType:
         case ASR::ttypeType::List:
         case ASR::ttypeType::Tuple:
@@ -2720,7 +2720,7 @@ inline bool ttype_set_dimensions(ASR::ttype_t** x,
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::EnumType:
-        case ASR::ttypeType::Union:
+        case ASR::ttypeType::UnionType:
         case ASR::ttypeType::TypeParameter: {
             *x = ASRUtils::make_Array_t_util(al,
                 (*x)->base.loc, *x, m_dims, n_dims, abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -3488,13 +3488,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                 }
                 return false;
             }
-            case (ASR::ttypeType::Union) : {
-                ASR::Union_t *a2 = ASR::down_cast<ASR::Union_t>(a);
-                ASR::Union_t *b2 = ASR::down_cast<ASR::Union_t>(b);
-                ASR::UnionType_t *a2_type = ASR::down_cast<ASR::UnionType_t>(
+            case (ASR::ttypeType::UnionType) : {
+                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
+                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
+                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     a2->m_union_type));
-                ASR::UnionType_t *b2_type = ASR::down_cast<ASR::UnionType_t>(
+                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_union_type));
                 return a2_type == b2_type;
@@ -3671,13 +3671,13 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 }
                 return false;
             }
-            case (ASR::ttypeType::Union) : {
-                ASR::Union_t *a2 = ASR::down_cast<ASR::Union_t>(a);
-                ASR::Union_t *b2 = ASR::down_cast<ASR::Union_t>(b);
-                ASR::UnionType_t *a2_type = ASR::down_cast<ASR::UnionType_t>(
+            case (ASR::ttypeType::UnionType) : {
+                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
+                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
+                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     a2->m_union_type));
-                ASR::UnionType_t *b2_type = ASR::down_cast<ASR::UnionType_t>(
+                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_union_type));
                 return a2_type == b2_type;

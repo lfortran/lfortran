@@ -169,7 +169,7 @@ namespace LCompilers::LFortran {
                 }
                 visit_ttype(*x.m_type);
             }
-            void visit_UnionType(const ASR::UnionType_t &x) {
+            void visit_Union(const ASR::Union_t &x) {
                 for (auto &a : x.m_symtab->get_scope()) {
                     this->visit_symbol(*a.second);
                 }

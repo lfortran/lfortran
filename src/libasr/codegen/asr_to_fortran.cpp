@@ -320,7 +320,7 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
                     ASR::is_a<ASR::Enum_t>(*item.second) ||
-                    ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
                 for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
@@ -405,7 +405,7 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
                     ASR::is_a<ASR::Enum_t>(*item.second) ||
-                    ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
                 for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
@@ -681,7 +681,7 @@ public:
         src = r;
     }
 
-    // void visit_UnionType(const ASR::UnionType_t &x) {}
+    // void visit_Union(const ASR::Union_t &x) {}
 
     void visit_Variable(const ASR::Variable_t &x) {
         std::string r = indent;
@@ -1448,7 +1448,7 @@ public:
 
     // void visit_EnumConstructor(const ASR::EnumConstructor_t &x) {}
 
-    // void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t &x) {}
+    // void visit_UnionConstructor(const ASR::UnionConstructor_t &x) {}
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
         if (x.m_value) {

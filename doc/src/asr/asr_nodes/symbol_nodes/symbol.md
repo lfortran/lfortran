@@ -28,7 +28,7 @@ symbol
         abi abi, access access, symbol? parent)
     | EnumType(symbol_table symtab, identifier name, identifier* members,
         abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
-    | UnionType(symbol_table symtab, identifier name, identifier* members,
+    | Union(symbol_table symtab, identifier name, identifier* members,
         abi abi, access access, symbol? parent)
     | Variable(symbol_table parent_symtab, identifier name, intent intent,
         expr? symbolic_value, expr? value, storage_type storage, ttype type,
