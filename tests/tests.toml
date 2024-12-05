@@ -4398,3 +4398,7 @@ ast = true
 [[test]]
 filename = "../integration_tests/enum_01.f90"
 fortran = true
+
+[[test]]
+filename = "polymorphic_class_in_derived_type.f90"
+asr = true
