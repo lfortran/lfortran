@@ -403,6 +403,7 @@ RUN(NAME functions_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --fixed-form)
 RUN(NAME functions_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME functions_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME common_01 LABELS gfortran)
@@ -1859,6 +1860,7 @@ RUN(NAME openmp_37 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_40 LABELS llvm_omp)
+RUN(NAME openmp_41 LABELS llvm_omp)
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME fortran_02 LABELS gfortran fortran)
