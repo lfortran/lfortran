@@ -115,36 +115,48 @@ class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
                 }
                 pass_result.n = 0;
             }
+            bool remove_original_statement_copy = remove_original_statement;
             for (size_t i = 0; i < n_body; i++) {
                 parent_body = &body;
+                remove_original_statement = false;
                 visit_stmt(*m_body[i]);
                 if( pass_result.size() > 0 ) {
                     for (size_t j=0; j < pass_result.size(); j++) {
                         body.push_back(al, pass_result[j]);
                     }
                     pass_result.n = 0;
-                } else {
+                }
+                if (!remove_original_statement){
                     body.push_back(al, m_body[i]);
                 }
             }
+            remove_original_statement = remove_original_statement_copy;
             m_body = body.p;
             n_body = body.size();
         }
 
-        bool is_function_call_returning_aggregate_type(ASR::expr_t* m_value) {
+        bool is_function_call_returning_aggregate_or_nonPrimitive_type(ASR::expr_t* m_value) {
             bool is_function_call = ASR::is_a<ASR::FunctionCall_t>(*m_value);
             bool is_aggregate_type = (ASRUtils::is_aggregate_type(
                 ASRUtils::expr_type(m_value)) ||
-                PassUtils::is_aggregate_or_array_type(m_value));
+                PassUtils::is_aggregate_or_array_or_nonPrimitive_type(m_value));
             return is_function_call && is_aggregate_type;
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
-            if( !is_function_call_returning_aggregate_type(x.m_value) ) {
+            if( !is_function_call_returning_aggregate_or_nonPrimitive_type(x.m_value) ) {
+                visit_expr(*x.m_value);
                 return ;
             }
-
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(x.m_value);
+            if(PassUtils::is_non_primitive_return_type(fc->m_type)){ 
+                /*  
+                RHS functionCalls of type Array or struct is handled beforehand by simplifier,
+                while Non-Primitive functionCall needs to be handled in this pass. 
+                */
+                replacer.traverse_functionCall_args(fc->m_args, fc->n_args); // Check for nested-NonPrimitive functionCall.
+            }
+
             if( PassUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
                 return ;
             }
@@ -169,6 +181,7 @@ class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                 fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, false));
             pass_result.push_back(al, subrout_call);
+            remove_original_statement = true;
         }
 };
 
