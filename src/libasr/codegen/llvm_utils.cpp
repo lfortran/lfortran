@@ -152,8 +152,8 @@ namespace LCompilers {
                 llvm_mem_type = llvm::Type::getInt32Ty(context);
                 break ;
             }
-            case ASR::ttypeType::Union: {
-                llvm_mem_type = getUnionType(mem_type, module);
+            case ASR::ttypeType::UnionType: {
+                llvm_mem_type = getUnion(mem_type, module);
                 break;
             }
             case ASR::ttypeType::Allocatable: {
@@ -273,7 +273,7 @@ namespace LCompilers {
         return type;
     }
 
-    llvm::Type* LLVMUtils::getUnionType(ASR::UnionType_t* union_type,
+    llvm::Type* LLVMUtils::getUnion(ASR::Union_t* union_type,
         llvm::Module* module, bool is_pointer) {
         std::string union_type_name = std::string(union_type->m_name);
         llvm::StructType* union_type_llvm = nullptr;
@@ -302,11 +302,11 @@ namespace LCompilers {
         return (llvm::Type*) union_type_llvm;
     }
 
-    llvm::Type* LLVMUtils::getUnionType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
-        ASR::Union_t* union_ = ASR::down_cast<ASR::Union_t>(_type);
+    llvm::Type* LLVMUtils::getUnion(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
+        ASR::UnionType_t* union_ = ASR::down_cast<ASR::UnionType_t>(_type);
         ASR::symbol_t* union_sym = ASRUtils::symbol_get_past_external(union_->m_union_type);
-        ASR::UnionType_t* union_type = ASR::down_cast<ASR::UnionType_t>(union_sym);
-        return getUnionType(union_type, module, is_pointer);
+        ASR::Union_t* union_type = ASR::down_cast<ASR::Union_t>(union_sym);
+        return getUnion(union_type, module, is_pointer);
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::Class_t* der_type, bool is_pointer) {
@@ -480,8 +480,8 @@ namespace LCompilers {
                 el_type = getStructType(m_type_, module);
                 break;
             }
-            case ASR::ttypeType::Union: {
-                el_type = getUnionType(m_type_, module);
+            case ASR::ttypeType::UnionType: {
+                el_type = getUnion(m_type_, module);
                 break;
             }
             case ASR::ttypeType::ClassType: {
@@ -1431,8 +1431,8 @@ namespace LCompilers {
                 llvm_type = getClassType(asr_type, is_pointer);
                 break;
             }
-            case (ASR::ttypeType::Union) : {
-                llvm_type = getUnionType(asr_type, module, false);
+            case (ASR::ttypeType::UnionType) : {
+                llvm_type = getUnion(asr_type, module, false);
                 break;
             }
             case (ASR::ttypeType::Pointer) : {

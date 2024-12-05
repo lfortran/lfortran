@@ -2600,7 +2600,7 @@ public:
         this->visit_expr(*m_arg);
     }
 
-    void visit_UnionTypeConstructor([[maybe_unused]] const ASR::UnionTypeConstructor_t& x) {
+    void visit_UnionConstructor([[maybe_unused]] const ASR::UnionConstructor_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 0);
     }
 
@@ -3411,7 +3411,7 @@ public:
             }
             if( ASR::is_a<ASR::ClassProcedure_t>(*sym) ||
                 ASR::is_a<ASR::GenericProcedure_t>(*sym) ||
-                ASR::is_a<ASR::UnionType_t>(*sym) ||
+                ASR::is_a<ASR::Union_t>(*sym) ||
                 ASR::is_a<ASR::Struct_t>(*sym) ||
                 ASR::is_a<ASR::CustomOperator_t>(*sym) ) {
                 continue ;
@@ -5130,7 +5130,7 @@ public:
                 }
             }
         }
-        if( ASR::is_a<ASR::UnionTypeConstructor_t>(*x.m_value) ) {
+        if( ASR::is_a<ASR::UnionConstructor_t>(*x.m_value) ) {
             return ;
         }
         ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
@@ -5145,7 +5145,7 @@ public:
         this->visit_expr_wrapper(m_value, true);
         ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::Var_t>(*x.m_value) &&
-            ASR::is_a<ASR::Union_t>(*value_type) ) {
+            ASR::is_a<ASR::UnionType_t>(*value_type) ) {
             tmp = llvm_utils->CreateLoad(tmp);
         }
         value = tmp;
@@ -7114,9 +7114,9 @@ public:
                 }
                 break;
             }
-            case ASR::ttypeType::Union: {
-                ASR::Union_t* der = ASR::down_cast<ASR::Union_t>(t2_);
-                ASR::UnionType_t* der_type = ASR::down_cast<ASR::UnionType_t>(
+            case ASR::ttypeType::UnionType: {
+                ASR::UnionType_t* der = ASR::down_cast<ASR::UnionType_t>(t2_);
+                ASR::Union_t* der_type = ASR::down_cast<ASR::Union_t>(
                     ASRUtils::symbol_get_past_external(der->m_union_type));
                 current_der_type_name = std::string(der_type->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);

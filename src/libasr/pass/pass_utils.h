@@ -588,7 +588,7 @@ namespace LCompilers {
                     visit_UserDefinedType(x);
                 }
 
-                void visit_UnionType(const ASR::UnionType_t& x) {
+                void visit_Union(const ASR::Union_t& x) {
                     visit_UserDefinedType(x);
                 }
             */

@@ -325,10 +325,10 @@ namespace LCompilers {
 
             llvm::Type* getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer=false);
 
-            llvm::Type* getUnionType(ASR::UnionType_t* union_type,
+            llvm::Type* getUnion(ASR::Union_t* union_type,
                 llvm::Module* module, bool is_pointer=false);
 
-            llvm::Type* getUnionType(ASR::ttype_t* _type,
+            llvm::Type* getUnion(ASR::ttype_t* _type,
                 llvm::Module* module, bool is_pointer=false);
 
             llvm::Type* getClassType(ASR::Class_t* der_type, bool is_pointer=false);

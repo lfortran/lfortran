@@ -249,7 +249,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         visit_symbols_2(x);
     }
 
-    void visit_UnionType(const ASR::UnionType_t &x) {
+    void visit_Union(const ASR::Union_t &x) {
         visit_symbols_2(x);
     }
 
@@ -451,7 +451,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         update_symbols_2(x);
     }
 
-    void visit_UnionType(const ASR::UnionType_t &x) {
+    void visit_Union(const ASR::Union_t &x) {
         update_symbols_2(x);
     }
 
