@@ -80,6 +80,14 @@ namespace LCompilers::LFortran {
                         if ( f->m_end_name ) {
                             this->populate_document_symbol_and_push(*(f->m_end_name), x.type);
                         }
+                    } else if ( ASR::is_a<ASR::Program_t>(*sym) ) {
+                        ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(sym);
+                        if ( p->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_start_name), x.type);
+                        }
+                        if ( p->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_end_name), x.type);
+                        }
                     } else {
                         this->populate_document_symbol_and_push(x.base.loc, x.type);
                     }
@@ -96,6 +104,14 @@ namespace LCompilers::LFortran {
                         }
                         if ( f->m_end_name ) {
                             this->populate_document_symbol_and_push(*(f->m_end_name), x.m_v->type);
+                        }
+                    } else if ( ASR::is_a<ASR::Program_t>(*x.m_v) ) {
+                        ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(x.m_v);
+                        if ( p->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_start_name), x.m_v->type);
+                        }
+                        if ( p->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_end_name), x.m_v->type);
                         }
                     } else {
                         this->populate_document_symbol_and_push(x.base.base.loc, x.m_v->type);
