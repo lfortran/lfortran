@@ -377,7 +377,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
 
     new_args.reserve(al, func->n_args);
     for( size_t i = 0, j = 0; j < func->n_args; j++, i++ ) {
-        LCOMPILERS_ASSERT(i < x.n_args + is_method);
+        LCOMPILERS_ASSERT(i <= x.n_args + is_method);
         if( std::find(sym2optionalargidx[func_sym].begin(),
                       sym2optionalargidx[func_sym].end(), j)
             != sym2optionalargidx[func_sym].end() ) {
