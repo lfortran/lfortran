@@ -45,8 +45,16 @@ public:
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        LCOMPILERS_ASSERT(x.n_head == 1);
-        ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], x.m_body, x.n_body, nullptr, 0);
+        Vec<ASR::stmt_t*> body;body.reserve(al,1);
+        for (size_t i = 0; i < x.n_body; i++) {
+            body.push_back(al,x.m_body[i]);
+        }
+        for (size_t i = x.n_head - 1; i > 0; i--) {
+            ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[i], body.p, body.n, nullptr, 0);
+            body={};body.reserve(al,1);
+            body.push_back(al,ASRUtils::STMT(do_loop));
+        }
+        ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0);
         const ASR::DoLoop_t &do_loop_ref = (const ASR::DoLoop_t&)(*do_loop);
         pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1, use_loop_variable_after_loop);
     }
