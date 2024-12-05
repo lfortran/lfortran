@@ -238,12 +238,54 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
     }
 }
 
-void cont1(const std::string &s, size_t &pos, bool &ws_or_comment)
-{
+char previous_nonspace_character(const std::string &s, size_t pos) {
+    while (pos > 0) {
+        --pos;
+        if (s[pos] != ' ' && s[pos] != '\t') {
+            return s[pos];
+        }
+    }
+    return '\0';
+}
+
+void is_within_string(
+    const std::string &s,
+    size_t pos,
+    char &quote,
+    const bool in_comment,
+    bool &in_string
+) {
+    // when in a comment, as everything is ignored, wearen't in string
+    if (in_comment) {
+        return;
+    }
+    if ((s[pos] == '\'' || s[pos] == '"')) {
+        if (quote == '\0') {
+            in_string = true;
+            quote = s[pos];
+        } else if (quote == s[pos]) {
+            in_string = false;
+            quote = '\0';
+        }
+    }
+}
+
+void cont1(
+    const std::string &s,
+    size_t &pos,
+    bool &in_string,
+    char &quote,
+    bool &ws_or_comment
+) {
     ws_or_comment = true;
     bool in_comment = false;
     while (s[pos] != '\n') {
-        if (s[pos] == '!') in_comment = true;
+        // when in a comment, as everything is ignore, wearen't in string
+        is_within_string(s, pos, quote, in_comment, in_string);
+        // in a string if '&!' appear together then it isn't a comment
+        if (s[pos] == '!' && (!in_string || previous_nonspace_character(s, pos) != '&')) {
+            in_comment = true;
+        }
         if (!in_comment) {
             if (s[pos] != ' ' && s[pos] != '\t') {
                 ws_or_comment = false;
@@ -629,7 +671,13 @@ std::string prescan(const std::string &s, LocationManager &lm,
         std::string out;
         size_t pos = 0;
         bool in_comment = false, newline = true;
+        // keeps track of whether we're in a string or not
+        bool in_string = false;
+        // if `in_string` is true, keeps track of the quote
+        // used for that string
+        char quote = '\0';
         while (pos < s.size()) {
+            is_within_string(s, pos, quote, in_comment, in_string);
             if (newline && is_include(s, pos)) {
                 int col = 0; // doesn't matter
                 while (pos < s.size() && s[pos] == ' ') pos++;
@@ -645,11 +693,11 @@ std::string prescan(const std::string &s, LocationManager &lm,
             if (!in_comment && s[pos] == '&') {
                 size_t pos2=pos+1;
                 bool ws_or_comment;
-                cont1(s, pos2, ws_or_comment);
+                cont1(s, pos2, in_string, quote, ws_or_comment);
                 if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
                 if (ws_or_comment) {
                     while (ws_or_comment) {
-                        cont1(s, pos2, ws_or_comment);
+                        cont1(s, pos2, in_string, quote, ws_or_comment);
                         if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
                     }
                     // `pos` will move by more than 1, close the old interval
