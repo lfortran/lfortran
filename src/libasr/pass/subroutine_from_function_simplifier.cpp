@@ -26,11 +26,59 @@ class CreateFunctionFromSubroutineSimplifier: public ASR::BaseWalkVisitor<Create
         void visit_Function(const ASR::Function_t& x) {
             ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
             ASR::Function_t* x_ptr = ASR::down_cast<ASR::Function_t>(&(xx.base));
-            PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_type);
+            PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
         }
 
 };
 
+class ReplaceFunctionCallWithSubroutineCallSimplifier:
+    public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCallSimplifier> {
+private : 
+public :
+    Allocator & al;
+    int result_counter = 0;
+    SymbolTable* current_scope;
+    Vec<ASR::stmt_t*> &pass_result;
+    ReplaceFunctionCallWithSubroutineCallSimplifier(Allocator& al_, Vec<ASR::stmt_t*> &pass_result_) :
+        al(al_),pass_result(pass_result_) {}
+
+    void traverse_functionCall_args(ASR::call_arg_t* call_args, size_t call_args_n){
+        for(size_t i = 0; i < call_args_n; i++){
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &call_args[i].m_value;
+            replace_expr(call_args[i].m_value);
+            current_expr = current_expr_copy;
+        }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x){
+        traverse_functionCall_args(x->m_args, x->n_args);
+        if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the simplifier. No need to check for them here.
+            // Create variable in current_scope to be holding the return + Deallocate. 
+            ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
+                "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
+            if(ASRUtils::is_allocatable(result_var)){
+                Vec<ASR::expr_t*> to_be_deallocated;
+                to_be_deallocated.reserve(al, 1);
+                to_be_deallocated.push_back(al, result_var);
+                pass_result.push_back(al, ASRUtils::STMT(
+                ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
+                    to_be_deallocated.p, to_be_deallocated.size())));
+            }
+            // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
+            Vec<ASR::call_arg_t> new_call_args;
+            new_call_args.reserve(al,1);
+            new_call_args.from_pointer_n_copy(al, x->m_args, x->n_args);
+            new_call_args.push_back(al, {result_var->base.loc, result_var});
+            ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
+                                                x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
+                                                nullptr, false, false));
+            // replace functionCall with `result_var` + push subroutineCall into the body.
+            *current_expr = result_var;
+            pass_result.push_back(al, subrout_call); 
+        }
+    }
+};
 class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
     public ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallWithSubroutineCallSimplifierVisitor> {
 
@@ -38,15 +86,23 @@ class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
 
         Allocator& al;
         Vec<ASR::stmt_t*> pass_result;
+        ReplaceFunctionCallWithSubroutineCallSimplifier replacer;
+        bool remove_original_statement = false;
         Vec<ASR::stmt_t*>* parent_body = nullptr;
 
 
     public:
 
-        ReplaceFunctionCallWithSubroutineCallSimplifierVisitor(Allocator& al_): al(al_)
+        ReplaceFunctionCallWithSubroutineCallSimplifierVisitor(Allocator& al_): al(al_), replacer(al, pass_result)
         {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
+        }
+
+        void call_replacer(){
+            replacer.current_expr = current_expr;
+            replacer.current_scope = current_scope;
+            replacer.replace_expr(*current_expr);
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
