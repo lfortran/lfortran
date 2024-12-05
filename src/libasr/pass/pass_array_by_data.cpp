@@ -327,6 +327,7 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
                         s2c(v.al, new_func_sym_name), x->m_v, x_sym_ext->m_module_name,
                         x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(x->m_v),
                         x_sym_ext->m_access));
+                v.proc2newproc[x_sym_] = {new_func_sym_, {}};
                 current_scope->add_symbol(new_func_sym_name, new_func_sym_);
                 x->m_v = new_func_sym_;
             }
@@ -543,6 +544,20 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
             subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
 
+            if(ASR::is_a<ASR::Variable_t>(*x.m_name)){
+                // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
+                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x.m_name);
+                ASR::symbol_t* type_dec = variable->m_type_declaration;
+                if(type_dec && ASR::is_a<ASR::ExternalSymbol_t>(*type_dec) &&
+                            v.proc2newproc.find(type_dec) != v.proc2newproc.end()){
+                    ASR::symbol_t* new_sym = v.proc2newproc[type_dec].first;
+                    variable->m_type_declaration = new_sym;
+                    ASR::symbol_t* new_var_sym = (ASR::symbol_t*) variable;
+                    current_scope->add_or_overwrite_symbol(ASRUtils::symbol_name(subrout_sym), new_var_sym);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*variable->m_type));
+                    subrout_sym = ASRUtils::symbol_get_past_external(type_dec);
+                }
+            }
             if( !can_edit_call(x.m_args, x.n_args) ) {
                 not_to_be_erased.insert(subrout_sym);
                 return ;
@@ -598,8 +613,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
             T& xx = const_cast<T&>(x);
-            xx.m_name = new_func_sym_;
-            xx.m_original_name = new_func_sym_;
+            if(!ASR::is_a<ASR::Variable_t>(*x.m_name)){
+                xx.m_name = new_func_sym_;
+                xx.m_original_name = new_func_sym_;
+            }
             xx.m_args = new_args.p;
             xx.n_args = new_args.size();
         }
