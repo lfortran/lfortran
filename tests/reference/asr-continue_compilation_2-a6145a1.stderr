@@ -1,3 +1,15 @@
+semantic error: kind argument of `int` intrinsic must be a scalar
+   --> tests/errors/continue_compilation_2.f90:276:54
+    |
+276 |     integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
+    |                                                      ^^^^^^^^^ 
+
+semantic error: kind argument of `int` intrinsic must be a scalar
+   --> tests/errors/continue_compilation_2.f90:278:54
+    |
+278 |     integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
+    |                                                      ^^^^^^^^^ 
+
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
   --> tests/errors/continue_compilation_2.f90:56:38
    |
@@ -476,7 +488,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |     ^^^^^       ^^^ type mismatch (integer and string)
 
 semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:288:5
+   --> tests/errors/continue_compilation_2.f90:292:5
     |
-288 |     y = 99  
+292 |     y = 99  
     |     ^ 

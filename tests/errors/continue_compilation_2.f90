@@ -272,6 +272,10 @@ program continue_compilation_2
     !type_mismatch_2
     integer :: tm2_x
     tm2_x = 5 + "x"
+    !int_01_1.f90
+    integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
+    !int_01_2.f90
+    integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
 
 
     contains
