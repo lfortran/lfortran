@@ -15,6 +15,7 @@
 #include <libasr/asr_stmt_base_replacer_visitor.h>
 #include <libasr/asr_expr_call_replacer_visitor.h>
 #include <libasr/asr_expr_type_visitor.h>
+#include <libasr/asr_expr_value_visitor.h>
 
 #include <complex>
 
