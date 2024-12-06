@@ -10,6 +10,7 @@
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 #include <libasr/casting_utils.h>
+#include <libasr/asr_expr_stmt_duplicator_visitor.h>
 
 #include <complex>
 
