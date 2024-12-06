@@ -531,7 +531,7 @@ class ASRBuilder {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
-        #define compute_value(ctype, TypeConstructor) ctype left_value, right_value; \
+        #define compute_value(ctype, TypeConstructor) ctype left_value = 0, right_value = 0; \
             ASR::expr_t* value = nullptr; \
             if( ASRUtils::extract_value(left, left_value) && \
                 ASRUtils::extract_value(right, right_value) ) { \
