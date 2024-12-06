@@ -2997,7 +2997,7 @@ ast_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
 
 asr_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
-        ASTWalkVisitorVisitor, TreeVisitorVisitor,
+        ASTWalkVisitorVisitor,
         ASRPassWalkVisitorVisitor, ExprStmtDuplicatorVisitor,
         ExprBaseReplacerVisitor, StmtBaseReplacerVisitor,
         CallReplacerOnExpressionsVisitor, ExprTypeVisitor, ExprValueVisitor]
@@ -3008,6 +3008,7 @@ asr_visitor_files = [
         ("pickle", PickleVisitorVisitor),
         ("json", JsonVisitorVisitor),
         ("lookup_name", DefaultLookupNameVisitor),
+        ("tree", TreeVisitorVisitor),
     ]
 
 
