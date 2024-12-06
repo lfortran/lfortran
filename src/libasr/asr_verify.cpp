@@ -855,8 +855,13 @@ public:
 
     void visit_ArrayItem(const ArrayItem_t &x) {
         if (ASRUtils::use_experimental_simplifier) {
-            require(!ASRUtils::is_array(x.m_type),
-                "ArrayItem::m_type cannot be array.")
+            if( ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ) {
+                require(ASRUtils::is_array(x.m_type),
+                    "ArrayItem::m_type with array indices must be an array.")
+            } else {
+                require(!ASRUtils::is_array(x.m_type),
+                    "ArrayItem::m_type cannot be array.")
+            }
         }
         handle_ArrayItemSection(x);
     }
