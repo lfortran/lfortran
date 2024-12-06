@@ -6248,6 +6248,53 @@ static inline ASR::asr_t* make_Associate_t_util(
     return ASR::make_Associate_t(al, a_loc, a_target, a_value);
 }
 
+static inline ASR::expr_t* extract_array_variable(ASR::expr_t* x) {
+    if( x->type == ASR::exprType::ArrayItem ) {
+        return ASR::down_cast<ASR::ArrayItem_t>(x)->m_v;
+    } else if( x->type == ASR::exprType::ArraySection ) {
+        return ASR::down_cast<ASR::ArraySection_t>(x)->m_v;
+    } else {
+        LCOMPILERS_ASSERT(false);
+    }
+
+    return nullptr;
+}
+
+static inline bool is_array_indexed_with_array_indices(ASR::array_index_t* m_args, size_t n_args) {
+    for( size_t i = 0; i < n_args; i++ ) {
+        if( m_args[i].m_left == nullptr &&
+            m_args[i].m_right != nullptr &&
+            m_args[i].m_step == nullptr &&
+            ASRUtils::is_array(
+                ASRUtils::expr_type(m_args[i].m_right)) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+template <typename T>
+static inline bool is_array_indexed_with_array_indices(T* x) {
+    return is_array_indexed_with_array_indices(x->m_args, x->n_args);
+}
+
+static inline ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
+    size_t value_n_dims, ASR::ttype_t* value_type) {
+    Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, value_n_dims);
+    for( size_t i = 0; i < value_n_dims; i++ ) {
+        ASR::dimension_t empty_dim;
+        Location loc; loc.first = 1, loc.last = 1;
+        empty_dim.loc = loc;
+        empty_dim.m_length = nullptr;
+        empty_dim.m_start = nullptr;
+        empty_dims.push_back(al, empty_dim);
+    }
+    return ASRUtils::make_Array_t_util(al, value_type->base.loc,
+        ASRUtils::extract_type(value_type), empty_dims.p, empty_dims.size());
+}
+
+
 static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_v, ASR::array_index_t* a_args, size_t n_args, ASR::ttype_t* a_type,
     ASR::arraystorageType a_storage_format, ASR::expr_t* a_value) {
@@ -6255,6 +6302,21 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
 
+    if( ASRUtils::use_experimental_simplifier ) {
+        if( !ASRUtils::is_array_indexed_with_array_indices(a_args, n_args) ) {
+            a_type = ASRUtils::type_get_past_array_pointer_allocatable(a_type);
+        }
+
+        if( ASRUtils::is_allocatable(a_type) ) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
+            if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
+                a_type = ASRUtils::create_array_type_with_empty_dims(
+                    al, n_dims, ASRUtils::type_get_past_array_pointer_allocatable(a_type));
+                a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, a_loc, a_type));
+            }
+        }
+    }
     return ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
         n_args, a_type, a_storage_format, a_value);
 }

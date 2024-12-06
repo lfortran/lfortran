@@ -34,7 +34,7 @@ program intrinsics_159
     res = matmul( x, y)
     print *, abs(sum(res))
     if (abs(abs(sum(res)) - 60.0) > 1e-8) error stop
-    
+
 
     x_dp = reshape([ (i, i = 1, 6) ], [2, 3])
     y_dp = transpose(x_dp)
