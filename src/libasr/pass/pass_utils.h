@@ -3,6 +3,7 @@
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
+#include <libasr/asr_pass_walk_visitor.h>
 
 #include <deque>
 

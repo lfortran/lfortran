@@ -10,6 +10,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/asr_builder.h>
 #include <libasr/lsp_interface.h>
+#include <libasr/asr_lookup_name_visitor.h>
 
 namespace LCompilers::LFortran {
     class LookupNameVisitor : public ASR::DefaultLookupNameVisitor<LookupNameVisitor> {

@@ -4,6 +4,9 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/asr_pickle_visitor.h>
+#include <libasr/asr_json_visitor.h>
+#include <libasr/asr_tree_visitor.h>
 
 namespace LCompilers {
 
