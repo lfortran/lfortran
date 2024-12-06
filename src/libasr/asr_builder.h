@@ -533,8 +533,15 @@ class ASRBuilder {
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
+                int64_t left_value, right_value;
+                ASR::expr_t* value = nullptr;
+                if( ASRUtils::extract_value(left, left_value) &&
+                    ASRUtils::extract_value(right, right_value) ) {
+                    int64_t mul_value = left_value * right_value;
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, mul_value, type));
+                }
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
-                    ASR::binopType::Mul, right, type, nullptr));
+                    ASR::binopType::Mul, right, type, value));
             }
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
