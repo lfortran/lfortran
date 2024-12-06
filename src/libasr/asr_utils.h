@@ -6268,7 +6268,6 @@ static inline bool is_array_indexed_with_array_indices(ASR::array_index_t* m_arg
             ASRUtils::is_array(
                 ASRUtils::expr_type(m_args[i].m_right)) ) {
             return true;
-            break ;
         }
     }
 
