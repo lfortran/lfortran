@@ -2998,7 +2998,6 @@ ast_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
 asr_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor,
-        StmtBaseReplacerVisitor,
         CallReplacerOnExpressionsVisitor, ExprTypeVisitor, ExprValueVisitor]
 
 asr_visitor_files = [
@@ -3011,6 +3010,7 @@ asr_visitor_files = [
         ("pass_walk", ASRPassWalkVisitorVisitor),
         ("expr_stmt_duplicator", ExprStmtDuplicatorVisitor),
         ("expr_base_replacer", ExprBaseReplacerVisitor),
+        ("stmt_base_replacer", StmtBaseReplacerVisitor),
     ]
 
 
