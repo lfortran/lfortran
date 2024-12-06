@@ -1303,7 +1303,9 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
-        /*n_temp_args*/ 0)
+        /*n_temp_args*/ 0, \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 #define SUBROUTINE1(fn_mod, name, args, bind, trivia, use, import, implicit, \
         decl, stmts, contains, name_opt, l) make_Subroutine_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "subroutine"), \
@@ -1326,7 +1328,9 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
-        /*n_temp_args*/ 0)
+        /*n_temp_args*/ 0, \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 #define PROCEDURE(fn_mod, name, args, trivia, use, import, implicit, decl, stmts, contains, l) \
     make_Procedure_t(p.m_a, l, \
         /*name*/ name2char(name), \
@@ -1481,7 +1485,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size())
+        /*n_temp_args*/ temp_args.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name->loc))
 #define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
         make_Subroutine_t(p.m_a, l, \
         /*name*/ name2char(name), \
@@ -1504,7 +1510,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size())
+        /*n_temp_args*/ temp_args.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name->loc))
 
 Vec<ast_t*> SPLIT_DECL(Allocator &al, Vec<ast_t*> ast)
 {
@@ -2211,7 +2219,8 @@ ast_t* MODULE2(Allocator &al, const Location &a_loc, char* a_name,
         trivia_t* a_trivia, unit_decl1_t** a_use, size_t n_use,
         implicit_statement_t** a_implicit, size_t n_implicit,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains) {
+        size_t n_contains, Location* a_start_name = nullptr,
+        Location* a_end_name = nullptr) {
 
 Vec<ast_t*> decl;
 Vec<ast_t*> stmt;
@@ -2238,7 +2247,9 @@ return make_Module_t(al, a_loc,
         /*body*/ STMTS(stmt),
         /*n_body*/ stmt.size(),
         /*contains*/ a_contains,
-        /*n_contains*/ n_contains);
+        /*n_contains*/ n_contains,
+        /*m_start_name*/ a_start_name,
+        /*m_end_name*/ a_end_name);
 
 }
 
@@ -2252,14 +2263,17 @@ return make_Module_t(al, a_loc,
         /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 
 ast_t* SUBMODULE2(Allocator &al, const Location &a_loc, char* a_id,
         char* a_parent_name, char* a_name, trivia_t* a_trivia,
         unit_decl1_t** a_use, size_t n_use,
         implicit_statement_t** a_implicit, size_t n_implicit,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains) {
+        size_t n_contains, Location* a_start_name = nullptr,
+        Location* a_end_name = nullptr) {
 
 Vec<ast_t*> decl;
 Vec<ast_t*> stmt;
@@ -2288,7 +2302,9 @@ return make_Submodule_t(al, a_loc,
         /*body*/ STMTS(stmt),
         /*n_body*/ stmt.size(),
         /*contains*/ a_contains,
-        /*n_contains*/ n_contains);
+        /*n_contains*/ n_contains,
+        /*m_start_name*/ a_start_name,
+        /*m_end_name*/ a_end_name);
 }
 
 
@@ -2304,7 +2320,9 @@ return make_Submodule_t(al, a_loc,
         /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 
 #define SUBMODULE1(id, parent_name, name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
     SUBMODULE2(p.m_a, l, \
@@ -2318,7 +2336,9 @@ return make_Submodule_t(al, a_loc,
         /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 
 #define BLOCKDATA(trivia, use, implicit, decl, stmt, l) make_BlockData_t(p.m_a, l, \
         nullptr, trivia_cast(trivia), \
