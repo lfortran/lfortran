@@ -2992,11 +2992,12 @@ FOOT_VISITOR = r"""}
 visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
-        JsonVisitorVisitor, SerializationVisitorVisitor]
+        JsonVisitorVisitor]
 
 asr_visitors = [DefaultLookupNameVisitor]
 
 visitor_files = [
+        ("serialization_visitor", SerializationVisitorVisitor),
         ("deserialization_visitor", DeserializationVisitorVisitor),
     ]
 
@@ -3039,6 +3040,8 @@ def main(argv):
             visitor(fp, data).visit(mod)
             fp.write("\n\n")
         if not is_asr:
+            SerializationVisitorVisitor(fp, data).visit(mod)
+            fp.write("\n\n")
             DeserializationVisitorVisitor(fp, data).visit(mod)
             fp.write("\n\n")
         if is_asr:
