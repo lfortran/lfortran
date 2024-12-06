@@ -2989,14 +2989,21 @@ namespace LCompilers::%(MOD)s {
 FOOT_VISITOR = r"""}
 """
 
-visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
+ast_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
-        JsonVisitorVisitor]
+        JsonVisitorVisitor, SerializationVisitorVisitor,
+        DeserializationVisitorVisitor]
 
-asr_visitors = [DefaultLookupNameVisitor]
+asr_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
+        ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
+        ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
+        JsonVisitorVisitor, DefaultLookupNameVisitor,
+        ASRPassWalkVisitorVisitor, ExprStmtDuplicatorVisitor,
+        ExprBaseReplacerVisitor, StmtBaseReplacerVisitor,
+        CallReplacerOnExpressionsVisitor, ExprTypeVisitor, ExprValueVisitor]
 
-visitor_files = [
+asr_visitor_files = [
         ("serialization_visitor", SerializationVisitorVisitor),
         ("deserialization_visitor", DeserializationVisitorVisitor),
     ]
@@ -3036,20 +3043,16 @@ def main(argv):
     fp = open(out_file, "w", encoding="utf-8")
     try:
         fp.write(HEAD % subs)
-        for visitor in visitors:
-            visitor(fp, data).visit(mod)
-            fp.write("\n\n")
         if not is_asr:
-            SerializationVisitorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            DeserializationVisitorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
+            for visitor in ast_visitors:
+                visitor(fp, data).visit(mod)
+                fp.write("\n\n")
         if is_asr:
             for visitor in asr_visitors:
                 visitor(fp, data).visit(mod)
                 fp.write("\n\n")
             asr_path = Path(out_file)
-            for filename, Visitor in visitor_files:
+            for filename, Visitor in asr_visitor_files:
                 full_filename = asr_path.with_name(
                         f"{asr_path.stem}_{filename}{asr_path.suffix}")
                 with open(full_filename, "w", encoding="utf-8") as f:
@@ -3057,21 +3060,6 @@ def main(argv):
                     Visitor(f, data).visit(mod)
                     f.write("\n\n")
                     f.write(FOOT_VISITOR)
-            ASRPassWalkVisitorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprStmtDuplicatorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprBaseReplacerVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            StmtBaseReplacerVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            CallReplacerOnExpressionsVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprTypeVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprValueVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-
         fp.write(FOOT % subs)
     finally:
         fp.close()
