@@ -13,6 +13,7 @@
 #include <libasr/asr_expr_stmt_duplicator_visitor.h>
 #include <libasr/asr_expr_base_replacer_visitor.h>
 #include <libasr/asr_stmt_base_replacer_visitor.h>
+#include <libasr/asr_expr_call_replacer_visitor.h>
 
 #include <complex>
 
