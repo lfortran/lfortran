@@ -2998,7 +2998,7 @@ ast_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
 asr_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor,
-        ExprTypeVisitor, ExprValueVisitor]
+        ExprValueVisitor]
 
 asr_visitor_files = [
         ("serialization", SerializationVisitorVisitor),
@@ -3012,6 +3012,7 @@ asr_visitor_files = [
         ("expr_base_replacer", ExprBaseReplacerVisitor),
         ("stmt_base_replacer", StmtBaseReplacerVisitor),
         ("expr_call_replacer", CallReplacerOnExpressionsVisitor),
+        ("expr_type", ExprTypeVisitor),
     ]
 
 
