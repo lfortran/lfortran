@@ -2996,6 +2996,10 @@ visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
 
 asr_visitors = [DefaultLookupNameVisitor]
 
+visitor_files = [
+        ("deserialization_visitor", DeserializationVisitorVisitor),
+    ]
+
 
 def main(argv):
     if len(argv) == 3:
@@ -3042,13 +3046,14 @@ def main(argv):
                 visitor(fp, data).visit(mod)
                 fp.write("\n\n")
             asr_path = Path(out_file)
-            asr_deserialization = asr_path.with_name(
-                    f"{asr_path.stem}_deserialization_visitor{asr_path.suffix}")
-            with open(asr_deserialization, "w", encoding="utf-8") as f:
-                f.write(HEAD_VISITOR % subs)
-                DeserializationVisitorVisitor(f, data).visit(mod)
-                f.write("\n\n")
-                f.write(FOOT_VISITOR)
+            for filename, Visitor in visitor_files:
+                full_filename = asr_path.with_name(
+                        f"{asr_path.stem}_{filename}{asr_path.suffix}")
+                with open(full_filename, "w", encoding="utf-8") as f:
+                    f.write(HEAD_VISITOR % subs)
+                    Visitor(f, data).visit(mod)
+                    f.write("\n\n")
+                    f.write(FOOT_VISITOR)
             ASRPassWalkVisitorVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprStmtDuplicatorVisitor(fp, data).visit(mod)
