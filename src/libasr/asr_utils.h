@@ -11,6 +11,7 @@
 #include <libasr/utils.h>
 #include <libasr/casting_utils.h>
 #include <libasr/asr_expr_stmt_duplicator_visitor.h>
+#include <libasr/asr_expr_base_replacer_visitor.h>
 
 #include <complex>
 
