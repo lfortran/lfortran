@@ -531,21 +531,26 @@ class ASRBuilder {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
-        #define compute_value(ctype, TypeConstructor) ctype left_value = 0, right_value = 0; \
-            ASR::expr_t* value = nullptr; \
-            if( ASRUtils::extract_value(left, left_value) && \
-                ASRUtils::extract_value(right, right_value) ) { \
-                ctype mul_value = left_value * right_value; \
-                value = ASRUtils::EXPR(ASR::TypeConstructor(al, loc, mul_value, type)); \
-            }
         switch (type->type) {
             case ASR::ttypeType::Integer: {
-                compute_value(int64_t, make_IntegerConstant_t)
+                int64_t left_value = 0, right_value = 0;
+                ASR::expr_t* value = nullptr;
+                if( ASRUtils::extract_value(left, left_value) &&
+                    ASRUtils::extract_value(right, right_value) ) {
+                    int64_t mul_value = left_value * right_value;
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, mul_value, type));
+                }
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
                     ASR::binopType::Mul, right, type, value));
             }
             case ASR::ttypeType::Real: {
-                compute_value(double, make_RealConstant_t)
+                double left_value = 0, right_value = 0;
+                ASR::expr_t* value = nullptr;
+                if( ASRUtils::extract_value(left, left_value) &&
+                    ASRUtils::extract_value(right, right_value) ) {
+                    double mul_value = left_value * right_value;
+                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, mul_value, type));
+                }
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Mul, right, type, value));
             }
