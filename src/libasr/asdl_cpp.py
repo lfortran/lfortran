@@ -2997,15 +2997,16 @@ ast_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
 
 asr_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
-        ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
+        ASTWalkVisitorVisitor, TreeVisitorVisitor,
         JsonVisitorVisitor, DefaultLookupNameVisitor,
         ASRPassWalkVisitorVisitor, ExprStmtDuplicatorVisitor,
         ExprBaseReplacerVisitor, StmtBaseReplacerVisitor,
         CallReplacerOnExpressionsVisitor, ExprTypeVisitor, ExprValueVisitor]
 
 asr_visitor_files = [
-        ("serialization_visitor", SerializationVisitorVisitor),
-        ("deserialization_visitor", DeserializationVisitorVisitor),
+        ("serialization", SerializationVisitorVisitor),
+        ("deserialization", DeserializationVisitorVisitor),
+        ("pickle", PickleVisitorVisitor),
     ]
 
 
@@ -3054,7 +3055,7 @@ def main(argv):
             asr_path = Path(out_file)
             for filename, Visitor in asr_visitor_files:
                 full_filename = asr_path.with_name(
-                        f"{asr_path.stem}_{filename}{asr_path.suffix}")
+                        f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
                 with open(full_filename, "w", encoding="utf-8") as f:
                     f.write(HEAD_VISITOR % subs)
                     Visitor(f, data).visit(mod)
