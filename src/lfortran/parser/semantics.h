@@ -1534,7 +1534,7 @@ ast_t* PROGRAM2(Allocator &al, const Location &a_loc, char* a_name,
         trivia_t* a_trivia, unit_decl1_t** a_use, size_t n_use,
         implicit_statement_t** a_implicit, size_t n_implicit,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains) {
+        size_t n_contains, Location *start_name, Location *end_name) {
 
 Vec<ast_t*> decl;
 Vec<ast_t*> stmt;
@@ -1561,7 +1561,9 @@ return make_Program_t(al, a_loc,
         /*body*/ STMTS(stmt),
         /*n_body*/ stmt.size(),
         /*contains*/ a_contains,
-        /*n_contains*/ n_contains);
+        /*n_contains*/ n_contains,
+        /*m_start_name*/ start_name,
+        /*m_end_name*/ end_name);
 
 }
 
@@ -1576,7 +1578,9 @@ return make_Program_t(al, a_loc,
         /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*start_name*/ &(name->loc), \
+        /*end_name*/ &(name_opt->loc))
 #define RESULT(x) p.result.push_back(p.m_a, x)
 
 #define STMT_NAME(id_first, id_last, stmt) \
