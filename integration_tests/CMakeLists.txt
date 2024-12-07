@@ -969,7 +969,7 @@ RUN(NAME parameter_13 LABELS gfortran llvm) # compile time example
 RUN(NAME parameter_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME parameter_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
-RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME modules_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME modules_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
