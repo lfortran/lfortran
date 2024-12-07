@@ -16,7 +16,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     a
                     z
