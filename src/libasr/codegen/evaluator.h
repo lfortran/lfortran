@@ -51,7 +51,8 @@ public:
     MLIRModule(std::unique_ptr<mlir::ModuleOp> m,
         std::unique_ptr<mlir::MLIRContext> ctx);
     ~MLIRModule();
-    std::string str();
+    std::string mlir_str();
+    std::string llvm_str();
     void mlir_to_llvm();
 };
 
