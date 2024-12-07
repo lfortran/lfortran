@@ -333,6 +333,27 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
             }
             return ;
         }
+        if(ASR::is_a<ASR::Variable_t>(*x_sym_)){
+            // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x_sym_);
+            ASR::symbol_t* type_dec = variable->m_type_declaration;
+            if(type_dec && ASR::is_a<ASR::ExternalSymbol_t>(*type_dec)){
+                if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() && 
+                        v.proc2newproc.find(type_dec) == v.proc2newproc.end()){
+                    ASR::symbol_t* new_func = v.proc2newproc[ASRUtils::symbol_get_past_external(type_dec)].first;
+                    ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(type_dec);
+                    std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(type_dec)));
+                    ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(v.al, type_dec->base.loc, x_sym_ext->m_parent_symtab,
+                            s2c(v.al, new_func_sym_name), new_func, x_sym_ext->m_module_name,
+                            x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(new_func),
+                            x_sym_ext->m_access));
+                    v.proc2newproc[type_dec] = {new_func_sym_, {}};
+                    x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
+                }
+            }
+        }
 
         edit_symbol_pointer(v)
     }
