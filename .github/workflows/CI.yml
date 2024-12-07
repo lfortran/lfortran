@@ -499,6 +499,17 @@ jobs:
             ./build0.sh
             ./build1.sh
 
+      - name: Test PRIMA
+        shell: bash -e -l {0}
+        if: contains(matrix.llvm-version, '11') && contains(matrix.os, 'macos')
+        run: |
+            git clone https://github.com/Pranavchiku/prima.git
+            cd prima
+            git checkout -t origin/lf13
+            git checkout b3f5b55c94b3b0b2568fe9af97a8e34a48cac7b4
+            FC="$(pwd)/../src/bin/lfortran --cpp --skip-pass=pass_array_by_data" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            ./build/fortran/example_bobyqa_fortran_1_exe
+
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
