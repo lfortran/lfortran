@@ -95,6 +95,3 @@ if (WITH_FMT)
     add_executable(parse3 parse3.cpp)
     target_link_libraries(parse3 lfortran_lib fmt::fmt)
 endif()
-
-add_executable(cpptranslate cpptranslate.cpp)
-target_link_libraries(cpptranslate lfortran_lib)
