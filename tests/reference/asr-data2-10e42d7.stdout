@@ -69,23 +69,7 @@
                     )
                     [b]
                     []
-                    [(Assignment
-                        (Var 3 factor)
-                        (RealConstant
-                            100.000000
-                            (Real 8)
-                        )
-                        ()
-                    )
-                    (Assignment
-                        (Var 3 zero)
-                        (RealConstant
-                            0.000000
-                            (Real 8)
-                        )
-                        ()
-                    )
-                    (Print
+                    [(Print
                         (StringFormat
                             ()
                             [(StringConstant
