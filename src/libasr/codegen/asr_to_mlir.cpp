@@ -65,6 +65,28 @@ public:
             llvmI8PtrTy = mlir::LLVM::LLVMPointerType::get(builder->getI8Type());
         }
 
+    /********************************** Utils *********************************/
+    mlir::Type getType(ASR::ttype_t *asr_type) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
+        switch (asr_type->type) {
+            case ASR::ttypeType::Integer: {
+                if      (kind == 4) return builder->getI32Type();
+                else if (kind == 8) return builder->getI64Type();
+            } case ASR::ttypeType::Real: {
+                if      (kind == 4) return builder->getF32Type();
+                else if (kind == 8) return builder->getF64Type();
+            } case ASR::ttypeType::Array: {
+                ASR::Array_t *arr_type = down_cast<ASR::Array_t>(asr_type);
+                return mlir::LLVM::LLVMArrayType::get(getType(arr_type->m_type),
+                    ASRUtils::get_fixed_size_of_array(asr_type));
+            } default: {
+                throw LCompilersException("Variable type '"+
+                    ASRUtils::type_to_str_python(asr_type) +
+                    "' is not supported yet");
+            }
+        }
+    }
+
     void visit_expr2(ASR::expr_t &x) {
         this->visit_expr(x);
         if (ASR::is_a<ASR::Var_t>(x)) {
@@ -72,6 +94,7 @@ public:
         }
     }
 
+    /******************************** Visitors ********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
@@ -110,34 +133,9 @@ public:
 
     void visit_Variable(const ASR::Variable_t &x) {
         uint32_t h = get_hash((ASR::asr_t*) &x);
-        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        if (kind != 4) {
-            throw CodeGenError("Integer of kind: `"+ std::to_string(kind)
-                +"` is not supported yet", x.base.base.loc);
-        }
-        // Used by scalar variables
         mlir::Value size = builder->create<mlir::LLVM::ConstantOp>(loc,
-            builder->getI32Type(), builder->getI32IntegerAttr(1));
-        mlir::Type var_type;
-        switch (x.m_type->type) {
-            case ASR::ttypeType::Integer: {
-                if (kind == 4) {
-                    var_type = mlir::LLVM::LLVMPointerType::get(
-                        builder->getI32Type());
-                }
-                break;
-            } case ASR::ttypeType::Real: {
-                if (kind == 4) {
-                    var_type = mlir::LLVM::LLVMPointerType::get(
-                        builder->getF32Type());
-                }
-                break;
-            }
-            default:
-                throw LCompilersException("Variable type '"+
-                    ASRUtils::type_to_str_python(x.m_type) +
-                    "' is not supported yet");
-        }
+            builder->getI32Type(), builder->getI64IntegerAttr(1));
+        mlir::Type var_type = mlir::LLVM::LLVMPointerType::get(getType(x.m_type));
         mlir_symtab[h] = builder->create<mlir::LLVM::AllocaOp>(loc, var_type,
             size);
         if (x.m_symbolic_value) {
