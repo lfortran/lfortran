@@ -40,4 +40,14 @@ implicit complex(4) (z)
 
 implicit type(BLOB) (A)
 implicit class(X) (A-b)
+
+implicit real(4) (a),real(4 + 4) (b),real(d) (d),real(d(2)) (a-z)
+implicit integer(4) (a),integer(4 + 4) (b),integer(d) (d),integer(d(2)) (a-z)
+implicit logical(4) (a),logical(4 + 4) (b),logical(d) (d),logical(d(2)) (a-z)
+implicit complex(4) (a),complex(4 + 4) (b),complex(d) (d),complex(d(2)) (a-z)
+implicit character(len=4, kind=c_char) (a)
+implicit character(len=4, kind=c_char) (a)
+implicit character(kind=c_char) (a)
+
+
 end program implicit1
