@@ -1056,14 +1056,11 @@ int compile_src_to_object_file(const std::string &infile,
     if (compiler_options.emit_debug_info) {
 #ifndef HAVE_RUNTIME_STACKTRACE
         diagnostics.add(LCompilers::diag::Diagnostic(
-            "The `runtime stacktrace` is not enabled. To get the stack traces "
-            "or debugging information, please re-build LFortran with "
-            "`-DWITH_RUNTIME_STACKTRACE=yes`",
-            LCompilers::diag::Level::Error,
+            "The `runtime stacktrace` is not enabled. To get the stack traces, "
+            "please re-build LFortran with `-DWITH_RUNTIME_STACKTRACE=yes`",
+            LCompilers::diag::Level::Warning,
             LCompilers::diag::Stage::Semantic, {})
         );
-        std::cerr << diagnostics.render(lm, compiler_options);
-        return 1;
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
