@@ -1244,6 +1244,7 @@ RUN(NAME line_continuation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm
 RUN(NAME line_continuation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME line_continuation_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME line_continuation_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME line_continuation_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME program_01 LABELS gfortran)
 RUN(NAME init_values LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

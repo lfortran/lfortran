@@ -690,7 +690,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
             newline = false;
             if (s[pos] == '!') in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&') {
+            if (!in_comment && s[pos] == '&' && (pos + 1 < s.size() && s[pos + 1] == ' ')) {
                 size_t pos2=pos+1;
                 bool ws_or_comment;
                 cont1(s, pos2, in_string, quote, ws_or_comment);
