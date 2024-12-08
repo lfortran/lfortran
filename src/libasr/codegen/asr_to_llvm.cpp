@@ -582,7 +582,6 @@ public:
         llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, character_type);
         std::vector<llvm::Value*> args = {pleft_arg, pright_arg, presult};
         builder->CreateCall(fn, args);
-        strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad(presult));
         return llvm_utils->CreateLoad(presult);
     }
 
@@ -1169,13 +1168,13 @@ public:
     }
 
     inline void call_lcompilers_free_strings() {
-        // if (strings_to_be_deallocated.n > 0) {
-        //     llvm::Function* free_fn = _Deallocate();
-        //     for( auto &value: strings_to_be_deallocated ) {
-        //         builder->CreateCall(free_fn, {value});
-        //     }
-        //     strings_to_be_deallocated.reserve(al, 1);
-        // }
+        if (strings_to_be_deallocated.n > 0) {
+            llvm::Function* free_fn = _Deallocate();
+            for( auto &value: strings_to_be_deallocated ) {
+                builder->CreateCall(free_fn, {value});
+            }
+            strings_to_be_deallocated.reserve(al, 1);
+        }
     }
 
     llvm::Function* _Allocate(bool realloc_lhs) {
@@ -3875,9 +3874,6 @@ public:
                         llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
                         string_init(context, *module, *builder, arg_size, init_value);
                         builder->CreateStore(init_value, target_var);
-                        if (v->m_intent == intent_local) {
-                            strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
-                        }
                     } else if (strlen == -2) {
                         // Allocatable string. Initialize to `nullptr` (unallocated)
                         llvm::Value *init_value = llvm::Constant::getNullValue(type);
@@ -4844,8 +4840,8 @@ public:
             str2 = llvm_utils->CreateLoad2(character_type, str2);
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
-        strings_to_be_deallocated.push_back(al, tmp); // char* returing from this call is dead after making the next str_copy call.
         tmp = lfortran_str_copy(str, tmp, ASRUtils::is_descriptorString(expr_type(ss->m_arg)));
+        strings_to_be_deallocated.push_back(al, tmp);
     }
 
     void visit_OverloadedStringConcat(const ASR::OverloadedStringConcat_t &x) {
@@ -10034,9 +10030,6 @@ public:
                     }
                 }
             }
-        }
-        if (ASRUtils::is_character(*x.m_type)) {
-            strings_to_be_deallocated.push_back(al, tmp);
         }
     }
 
