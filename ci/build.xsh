@@ -78,7 +78,6 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=60 --out
 cd ../../..
 
 cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
-cp lfortran-$lfortran_version/test-bld/src/bin/cpptranslate src/bin
 if uname == "Windows":
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else:

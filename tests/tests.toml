@@ -216,7 +216,6 @@ llvm = true
 filename = "subroutine4.f90"
 ast = true
 ast_f90 = true
-ast_openmp = true
 asr = true
 cpp = true
 julia = true
@@ -225,7 +224,6 @@ julia = true
 filename = "do_concurrent_reduce.f90"
 ast = true
 ast_f90 = true
-ast_openmp = true
 cpp = true
 
 [[test]]
@@ -248,7 +246,6 @@ julia = true
 [[test]]
 filename = "subroutine6.f90"
 ast = true
-ast_openmp = true
 cpp = true
 julia = true
 

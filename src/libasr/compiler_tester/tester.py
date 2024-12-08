@@ -401,8 +401,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         help="Skip LLVM tests")
     parser.add_argument("--skip-run-with-dbg", action="store_true",
                         help="Skip runtime tests with debugging information enabled")
-    parser.add_argument("--skip-cpptranslate", action="store_true",
-                        help="Skip tests for ast_openmp that depend on cpptranslate")
     parser.add_argument("-s", "--sequential", action="store_true",
                         help="Run all tests sequentially")
     parser.add_argument("--no-color", action="store_true",
@@ -424,7 +422,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     verbose = args.verbose
     no_llvm = args.no_llvm
     skip_run_with_dbg = args.skip_run_with_dbg
-    skip_cpptranslate = args.skip_cpptranslate
     global no_color
     no_color = args.no_color
 
@@ -459,7 +456,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                 verbose=verbose,
                 no_llvm=no_llvm,
                 skip_run_with_dbg=True,
-                skip_cpptranslate=True,
                 no_color=True)
     filtered_tests = [test for test in filtered_tests if 'extrafiles' not in test]
 
@@ -473,7 +469,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         verbose=verbose,
                         no_llvm=no_llvm,
                         skip_run_with_dbg=skip_run_with_dbg,
-                        skip_cpptranslate=skip_cpptranslate,
                         no_color=no_color)
     # run in parallel
     else:
@@ -486,7 +481,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
             verbose=verbose,
             no_llvm=no_llvm,
             skip_run_with_dbg=skip_run_with_dbg,
-            skip_cpptranslate=skip_cpptranslate,
             no_color=no_color)
         with ThreadPoolExecutor() as ex:
             futures = ex.map(single_tester_partial_args, filtered_tests)
