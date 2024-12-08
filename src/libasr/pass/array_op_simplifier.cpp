@@ -247,7 +247,7 @@ class ReplaceArrayOpSimplifier: public ASR::BaseExprReplacer<ReplaceArrayOpSimpl
                 make_IntegerConstant_t, make_Integer_t, i + 1, 4, loc);
             array_index_arg.m_step = nullptr;
             array_index_args.push_back(al, array_index_arg);
-            ASR::expr_t* y_i = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+            ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                 result_expr, array_index_args.p, array_index_args.size(),
                 result_element_type, ASR::arraystorageType::ColMajor, nullptr));
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc, y_i, x_i, nullptr)));
@@ -324,7 +324,7 @@ class ReplaceArrayOpSimplifier: public ASR::BaseExprReplacer<ReplaceArrayOpSimpl
                 make_IntegerConstant_t, make_Integer_t, i + 1, 4, loc);
             array_index_arg.m_step = nullptr;
             array_index_args.push_back(al, array_index_arg);
-            ASR::expr_t* y_i = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+            ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                 result_expr, array_index_args.p, array_index_args.size(),
                 result_element_type, ASR::arraystorageType::ColMajor, nullptr));
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc, y_i, x_i, nullptr)));
@@ -498,7 +498,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         }
         ASR::ttype_t* var_i_type = ASRUtils::type_get_past_array_pointer_allocatable(
             ASRUtils::expr_type(target));
-        *target_address = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, target, indices.p,
+        *target_address = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, target, indices.p,
             indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
 
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArraySection_t>(*value) ||
@@ -529,7 +529,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
                     // TODO: Create seprate indices for vector indices in array section
                     index1.m_right = var2indices[0][j]; j++; index1.m_step = nullptr;
                     indices1.push_back(al, index1);
-                    array_index.m_right = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                    array_index.m_right = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                         m_args[i].m_right, indices1.p, 1, int32_type,
                         ASR::arraystorageType::ColMajor, nullptr));
                     array_index.m_step = nullptr;
@@ -546,7 +546,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
 
         ASR::ttype_t* value_type = ASRUtils::type_get_past_array_pointer_allocatable(
                 ASRUtils::expr_type(value));
-        *value_address = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, ASRUtils::extract_array_variable(value),
+        *value_address = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, ASRUtils::extract_array_variable(value),
             array_item_args.p, array_item_args.size(), value_type,
             ASR::arraystorageType::ColMajor, nullptr));
 
@@ -642,7 +642,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             }
             ASR::ttype_t* var_i_type = ASRUtils::type_get_past_array_pointer_allocatable(
                 ASRUtils::expr_type(*vars[i]));
-            *vars[i] = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, *vars[i], indices.p,
+            *vars[i] = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, *vars[i], indices.p,
                 indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
         }
 
