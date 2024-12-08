@@ -873,42 +873,17 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
 }
 
 #ifdef HAVE_LFORTRAN_MLIR
-int emit_mlir(const std::string &infile, CompilerOptions &compiler_options)
-{
-    std::string input = read_file(infile);
-
-    LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::LocationManager lm;
-    LCompilers::diag::Diagnostics diagnostics;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = infile;
-        lm.files.push_back(fl);
-        lm.file_ends.push_back(input.size());
-    }
-    LCompilers::Result<std::string> mlir = fe.get_mlir(input, lm, diagnostics);
-    std::cerr << diagnostics.render(lm, compiler_options);
-    if (mlir.ok) {
-        std::cout << mlir.result;
-        return 0;
-    } else {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 1;
-    }
-}
-
-int compile_to_object_file_mlir(const std::string &infile,
+int handle_mlir(const std::string &infile,
         const std::string &outfile,
-        CompilerOptions &compiler_options) {
+        CompilerOptions &compiler_options,
+        bool emit_mlir, bool emit_llvm) {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
 
-
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
-
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -931,18 +906,22 @@ int compile_to_object_file_mlir(const std::string &infile,
     std::unique_ptr<LCompilers::MLIRModule> m;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
-        res = fe.get_mlir2(*asr, diagnostics);
+        res = fe.get_mlir(*asr, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 5;
+        return 2;
     }
-
-    // LLVM -> Machine code (saves to an object file)
-    e.save_object_file(*(m->llvm_m), outfile);
-
+    if (emit_mlir) {
+        std::cout << m->mlir_str();
+    } else if (emit_llvm) {
+        std::cout << m->llvm_str();
+    } else {
+        // LLVM -> Machine code (saves to an object file)
+        e.save_object_file(*(m->llvm_m), outfile);
+    }
     return 0;
 }
 #endif // HAVE_LFORTRAN_MLIR
@@ -2140,6 +2119,7 @@ int main_app(int argc, char *argv[]) {
     bool arg_no_prescan = false;
     bool show_llvm = false;
     bool show_mlir = false;
+    bool show_llvm_from_mlir = false;
     bool show_cpp = false;
     bool show_c = false;
     bool show_asm = false;
@@ -2232,6 +2212,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
     app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
     app.add_flag("--show-mlir", show_mlir, "Show MLIR for the given file and exit");
+    app.add_flag("--show-llvm-from-mlir", show_llvm_from_mlir, "Show LLVM IR translated from MLIR for the given file and exit");
     app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
     app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
     app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
@@ -2590,9 +2571,10 @@ int main_app(int argc, char *argv[]) {
         return 1;
 #endif
     }
-    if (show_mlir) {
+    if (show_mlir || show_llvm_from_mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-        return emit_mlir(arg_file, compiler_options);
+        return handle_mlir(arg_file, outfile, compiler_options,
+            show_mlir, show_llvm_from_mlir);
 #else
         std::cerr << "The `--show-mlir` option requires the MLIR backend to be "
             "enabled. Recompile with `WITH_MLIR=yes`." << std::endl;
@@ -2660,7 +2642,7 @@ int main_app(int argc, char *argv[]) {
             return compile_to_binary_fortran(arg_file, outfile, compiler_options);
         } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-            return compile_to_object_file_mlir(arg_file, outfile, compiler_options);
+            return handle_mlir(arg_file, outfile, compiler_options, false, false);
 #else
             std::cerr << "The -c option with `--backend=mlir` requires the "
                 "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
@@ -2704,7 +2686,7 @@ int main_app(int argc, char *argv[]) {
                         time_report, compiler_options);
             } else if (backend == Backend::mlir) {
     #ifdef HAVE_LFORTRAN_MLIR
-                err = compile_to_object_file_mlir(arg_file, tmp_o, compiler_options);
+                err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
     #else
                 std::cerr << "Compiling Fortran files to object files using "
                     "`--backend=mlir` requires the MLIR backend to be enabled. "
@@ -2731,7 +2713,7 @@ int main_app(int argc, char *argv[]) {
         err_ = err;
         if (!err) object_files.push_back(tmp_o);
     }
-    if (object_files.size() == 0) { 
+    if (object_files.size() == 0) {
         return err_;
     } else {
         return err_ + link_executable(object_files, outfile, runtime_library_dir,

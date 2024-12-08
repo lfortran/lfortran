@@ -533,32 +533,7 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     }
 }
 
-Result<std::string> FortranEvaluator::get_mlir(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
-{
-    // Src -> AST -> ASR -> MLIR
-    SymbolTable *old_symbol_table = symbol_table;
-    symbol_table = nullptr;
-    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
-    symbol_table = old_symbol_table;
-    if (!asr.ok) {
-        return asr.error;
-    }
-#ifdef HAVE_LFORTRAN_MLIR
-    Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, *asr.result,
-        diagnostics);
-    if (res.ok) {
-        return res.result->str();
-    } else {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
-        return res.error;
-    }
-#else
-    throw LCompilersException("MLIR is not enabled");
-#endif
-}
-
-Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir2(
+Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 #ifdef HAVE_LFORTRAN_MLIR
         ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics
 #else

@@ -154,10 +154,17 @@ MLIRModule::~MLIRModule() {
     llvm_ctx.reset();
 };
 
-std::string MLIRModule::str() {
+std::string MLIRModule::mlir_str() {
     std::string mlir_str;
     llvm::raw_string_ostream raw_os(mlir_str);
     mlir_m->print(raw_os);
+    return mlir_str;
+}
+
+std::string MLIRModule::llvm_str() {
+    std::string mlir_str;
+    llvm::raw_string_ostream raw_os(mlir_str);
+    llvm_m->print(raw_os, nullptr);
     return mlir_str;
 }
 
