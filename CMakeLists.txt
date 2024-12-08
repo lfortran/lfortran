@@ -282,6 +282,9 @@ if (WITH_FMT)
     find_package(fmt)
 endif()
 
+set(WITH_BENCHMARKS no
+    CACHE BOOL "Build benchmarks")
+
 # Stacktrace
 set(WITH_UNWIND no
     CACHE BOOL "Build with unwind support")
@@ -394,6 +397,7 @@ message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
 message("WITH_LSP: ${WITH_LSP}")
 message("WITH_FMT: ${WITH_FMT}")
+message("WITH_BENCHMARKS: ${WITH_BENCHMARKS}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
 message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
