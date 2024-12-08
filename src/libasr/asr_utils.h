@@ -6317,6 +6317,9 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
             }
         }
     }
+
+    ASRUtils::ExprStmtDuplicator type_duplicator(al);
+    a_type = type_duplicator.duplicate_ttype(a_type);
     return ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
         n_args, a_type, a_storage_format, a_value);
 }
