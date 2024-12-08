@@ -1,0 +1,29 @@
+style suggestion: Use real(8) instead of real*8
+  --> tests/implicit1.f90:13:14
+   |
+13 | implicit real*8 (a-h,o-z)
+   |              ^ help: write this as 'real(8)'
+
+style suggestion: Use integer(8) instead of integer*8
+  --> tests/implicit1.f90:25:17
+   |
+25 | implicit integer*8 (i,j-l,m,n)
+   |                 ^ help: write this as 'integer(8)'
+
+style suggestion: Use integer(4) instead of integer*4
+  --> tests/implicit1.f90:27:17
+   |
+27 | IMPLICIT INTEGER*4 (C, D-x)
+   |                 ^ help: write this as 'integer(4)'
+
+style suggestion: Use logical(4) instead of logical*4
+  --> tests/implicit1.f90:32:17
+   |
+32 | implicit logical*4 (l, u-z)
+   |                 ^ help: write this as 'logical(4)'
+
+style suggestion: Use complex(4) instead of complex*8
+  --> tests/implicit1.f90:38:17
+   |
+38 | implicit complex*8 (z)
+   |                 ^ help: write this as 'complex(4)'
