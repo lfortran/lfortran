@@ -2470,7 +2470,29 @@ public:
                                                 ::AttrParameter) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
                                     if (!sym_) {
-                                        assgnd_storage[sym] = std::make_pair(ASR::storage_typeType::Parameter, s.m_initializer);
+                                        if (compiler_options.implicit_typing) {
+                                            ASR::ttype_t* type = implicit_dictionary[std::string(1,sym[0])];
+                                            if (type) {
+                                                sym_ = declare_implicit_variable(x.m_syms[i].loc, sym, ASR::intentType::Local);
+                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                                v->m_storage = ASR::storage_typeType::Parameter;
+                                                assgnd_storage[sym] = std::make_pair(ASR::storage_typeType::Parameter, s.m_initializer);
+                                            } else {
+                                                diag.add(Diagnostic(
+                                                    "Parameter `" + sym + "` is not declared",
+                                                    Level::Error, Stage::Semantic, {
+                                                        Label("",{x.base.base.loc})
+                                                    }));
+                                                throw SemanticAbort();
+                                            }
+                                        } else {
+                                            diag.add(Diagnostic(
+                                                "Parameter `" + sym + "` is not declared`",
+                                                Level::Error, Stage::Semantic, {
+                                                    Label("",{x.base.base.loc})
+                                                }));
+                                            throw SemanticAbort();
+                                        }
                                     } else {
                                         this->visit_expr(*s.m_initializer);
                                         ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
