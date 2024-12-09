@@ -8560,7 +8560,7 @@ public:
             if(array_size != -1){
                 compile_time_size = ASRUtils::EXPR(
                         ASR::make_IntegerConstant_t(al,v->base.loc,array_size,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 8))));
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 4))));
             }
             ASR::expr_t* array_size_expr = ASRUtils::EXPR(
                     ASR::make_ArraySize_t(al, v->base.loc, v,
