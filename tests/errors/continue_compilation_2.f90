@@ -277,6 +277,25 @@ program continue_compilation_2
     !int_01_2.f90
     integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
 
+    !kind_invalid_float_of_int
+    integer(4.2) :: ifoix
+    !kind_invalid_int_of_complex
+    complex(6) :: iiocx
+    !kind_invalid_int_of_int
+    integer(3) :: iifix
+    !kind_invalid_int_of_logical
+    logical(10) :: iiolx
+    !kind_star_of_complex
+    complex(*) :: ksoca
+    !kind_star_of_int
+    integer(*) :: ksoia
+    !kind_star_of_logical
+    logical(*) :: ksola
+    !kind_string_of_int
+    integer('a') :: ksoix
+    !kind_var_of_int
+    integer :: kvoia = 4
+    real(kvoia) :: kvoix
 
     contains
     logical function f(x)
