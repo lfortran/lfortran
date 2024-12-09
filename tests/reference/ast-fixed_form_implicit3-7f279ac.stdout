@@ -90,6 +90,27 @@
         []
     )
     (Function
+        cstar
+        [(a)]
+        [(AttrType
+            TypeCharacter
+            []
+            ()
+            ()
+            DoubleAsterisk
+        )]
+        ()
+        ()
+        ()
+        []
+        []
+        []
+        []
+        []
+        []
+        []
+    )
+    (Function
         i0
         [(a)]
         [(AttrType

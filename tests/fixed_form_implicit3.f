@@ -10,6 +10,9 @@
       CHARACTER*111 FUNCTION C111(A)
       END
 
+      CHARACTER*(*) FUNCTION CSTAR(A)
+      END
+
       INTEGER FUNCTION I0(A)
       END
 
