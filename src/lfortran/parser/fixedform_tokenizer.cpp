@@ -942,7 +942,7 @@ struct FixedFormRecursiveDescent {
             if (*(cur+1) == '/' && !first_slash) {
                 if (*cur != ',') {
                     cur+=1;
-                } 
+                }
                 unsigned char *end = cur;
                 // tokenize uptil here
                 tokenize_until(end);
@@ -1626,7 +1626,7 @@ struct FixedFormRecursiveDescent {
         unsigned char *nextline = cur; next_line(nextline);
         std::string line{tostr(cur, nextline-1)};
         // current line does not contain type -> we abort
-        if (!(line.find(std::string(declaration_type)) != std::string::npos)) return false;
+        if (!(line.find(declaration_type) != std::string::npos)) return false;
         std::vector<std::string> kw_found;
         std::vector<std::string> decls{keywords.begin(), keywords.end()};
         while(decls.size() != 0) {
@@ -1634,6 +1634,18 @@ struct FixedFormRecursiveDescent {
                 if (next_is(cpy, decls[i])) {
                     kw_found.push_back(decls[i]);
                     cpy += decls[i].size();
+                    if (decls[i].back() == '*') {
+ 		        if (cpy[0] == '(' &&
+			    cpy[1] == '*' &&
+			    cpy[2] == ')') {
+			    kw_found.back() += "(*)";
+			    cpy += 3;
+                        } else {
+                            while(std::isdigit(*cpy)) {
+                                kw_found.back().push_back(*cpy++);
+                            }
+                        }
+                    }
                     decls.erase(decls.begin() + i);
                     break;
                 }
@@ -1652,8 +1664,8 @@ struct FixedFormRecursiveDescent {
 
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            if (*iter == "real*8" || *iter == "complex*8" || *iter == "complex*16" || *iter == "character*1") {
-                tokenize_until(cur+(*iter).size());
+            if (iter->find('*') != std::string::npos) {
+                tokenize_until(cur+iter->size());
             } else {
                 push_token_advance(cur, *iter);
             }
@@ -1687,11 +1699,15 @@ struct FixedFormRecursiveDescent {
     }
 
     bool lex_procedure(unsigned char *&cur) {
-        std::vector<std::string> subroutine_keywords{"recursive", "pure",
+	const std::vector<std::string> subroutine_keywords{"recursive", "pure",
             "elemental"};
-        std::vector<std::string> function_keywords{"recursive", "pure",
-            "elemental",
-            "real*8", "real", "character*1", "character", "complex*16", "complex*8", "complex", "integer", "logical",
+        const std::vector<std::string> function_keywords{"recursive", "pure",
+            "elemental", "real*", "real",
+	    "character*(*)",
+            "character*", "character",
+            "complex*", "complex",
+            "integer*", "integer",
+            "logical*", "logical",
             "doubleprecision", "doublecomplex"};
         if (is_declaration(cur, "subroutine", subroutine_keywords)) {
             lex_subroutine(cur);
