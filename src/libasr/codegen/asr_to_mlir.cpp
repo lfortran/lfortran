@@ -234,7 +234,9 @@ public:
         if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(
                 x.m_text);
-            args.reserve(al, sf->n_args);
+            args.reserve(al, sf->n_args+1);
+            // Later used by `printf_fmt`
+            args.push_back(al, nullptr);
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
                 this->visit_expr(*sf->m_args[i]);
@@ -276,8 +278,9 @@ public:
             loc, global_str);
         globalPtr = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
             globalPtr, mlir::ValueRange{zero, zero});
-        builder->create<mlir::LLVM::CallOp>(loc, fn, mlir::ValueRange{globalPtr,
-            args[0]});
+        args.p[0] = globalPtr;
+        builder->create<mlir::LLVM::CallOp>(loc, fn,
+            mlir::ValueRange{args.as_vector()});
     }
 
 };
