@@ -39,6 +39,7 @@ module operator_overloading_07_mod2
         character(:), allocatable :: inp
         instance = func() ! pass `subroutine_from_function` takes action here. It must handle the overloading of `=`. 
         print *, instance%raw
+        if(instance%raw /= "Hello World!") error stop
     end subroutine ff
 end module
 
