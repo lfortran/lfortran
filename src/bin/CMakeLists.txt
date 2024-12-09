@@ -84,14 +84,15 @@ install(TARGETS lfortran
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
+if (WITH_BENCHMARKS)
+    add_executable(parse parse.cpp)
+    target_link_libraries(parse lfortran_lib)
 
-add_executable(parse parse.cpp)
-target_link_libraries(parse lfortran_lib)
+    add_executable(parse2 parse2.cpp)
+    target_link_libraries(parse2 lfortran_lib)
 
-add_executable(parse2 parse2.cpp)
-target_link_libraries(parse2 lfortran_lib)
-
-if (WITH_FMT)
-    add_executable(parse3 parse3.cpp)
-    target_link_libraries(parse3 lfortran_lib fmt::fmt)
+    if (WITH_FMT)
+        add_executable(parse3 parse3.cpp)
+        target_link_libraries(parse3 lfortran_lib fmt::fmt)
+    endif()
 endif()
