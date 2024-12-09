@@ -406,7 +406,6 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
               -DWITH_LSP=yes \
-              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
@@ -1373,7 +1372,6 @@ jobs:
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
               -DWITH_LSP=yes \
-              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
