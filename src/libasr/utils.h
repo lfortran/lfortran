@@ -7,6 +7,10 @@
 #include <libasr/containers.h>
 
 namespace LCompilers {
+    
+enum Backend {
+    llvm, c, cpp, x86, wasm, fortran, mlir
+};
 
 enum Platform {
     Linux,
@@ -61,6 +65,7 @@ struct PassOptions {
     bool openmp = false;
     bool experimental_simplifier = false;
     bool enable_gpu_offloading = false;
+    Backend backend = Backend::llvm;
 };
 
 struct CompilerOptions {
