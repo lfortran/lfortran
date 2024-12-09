@@ -46,9 +46,10 @@ class PrintArrVisitor : public PassUtils::PassVisitor<PrintArrVisitor>
 {
 private:
     std::string rl_path;
+    const LCompilers::PassOptions& pass_options;
 public:
-    PrintArrVisitor(Allocator &al, const std::string &rl_path_) : PassVisitor(al, nullptr),
-    rl_path(rl_path_) {
+    PrintArrVisitor(Allocator &al, const std::string &rl_path_, const LCompilers::PassOptions& pass_options) 
+        : PassVisitor(al, nullptr), rl_path(rl_path_), pass_options(pass_options) {
         pass_result.reserve(al, 1);
 
     }
@@ -162,7 +163,11 @@ public:
             empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, empty_space));
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             for (size_t i=0; i<format->n_args; i++) {
-                if (PassUtils::is_array(format->m_args[i])) {
+                bool print_not_handled_by_backend =   (pass_options.backend != Backend::llvm) ||
+                                                ASR::is_a<ASR::StructType_t>(*
+                                                ASRUtils::type_get_past_array_pointer_allocatable(
+                                                ASRUtils::expr_type(format->m_args[i])));
+                if (PassUtils::is_array(format->m_args[i]) && print_not_handled_by_backend ) {
                     if (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(format->m_args[i]))) {
                         print_fixed_sized_array(format->m_args[i], print_body, x.base.base.loc);
                     } else {
@@ -316,7 +321,7 @@ public:
 void pass_replace_print_arr(Allocator &al, ASR::TranslationUnit_t &unit,
                             const LCompilers::PassOptions& pass_options) {
     std::string rl_path = pass_options.runtime_library_dir;
-    PrintArrVisitor v(al, rl_path);
+    PrintArrVisitor v(al, rl_path, pass_options);
     v.visit_TranslationUnit(unit);
 }
 
