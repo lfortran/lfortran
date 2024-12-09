@@ -149,24 +149,8 @@ class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
             if( !is_function_call_returning_aggregate_type(x.m_value)) {
                 return ;
             }
+
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(x.m_value);
-            // if(PassUtils::is_non_primitive_return_type(fc->m_type)){ 
-            //     /*  
-            //     RHS functionCalls of type Array or struct is handled beforehand by simplifier,
-            //     while Non-Primitive functionCall needs to be handled in this pass. 
-            //     */
-            // //    ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
-            // //    ASR::expr_t** cc = current_expr;
-            // //     current_expr = &xx.m_value;
-            // //     call_replacer();
-            // //     current_expr= cc;
-            // //     // visit_expr(*x.m_value);
-            // //     return ;
-
-            //     // replacer.traverse_functionCall_args(fc->m_args, fc->n_args); // Check for nested-NonPrimitive functionCall.
-            //     return;
-            // }
-
             if( PassUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
                 return ;
             }
