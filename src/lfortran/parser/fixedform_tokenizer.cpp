@@ -1632,13 +1632,20 @@ struct FixedFormRecursiveDescent {
         while(decls.size() != 0) {
             for (unsigned int i=0;i<decls.size();++i) {
                 if (next_is(cpy, decls[i])) {
-		    kw_found.push_back(decls[i]);
-		    cpy += decls[i].size();
+                    kw_found.push_back(decls[i]);
+                    cpy += decls[i].size();
                     if (decls[i].back() == '*') {
-                        while(std::isdigit(*cpy)) {
-			    kw_found.back().push_back(*cpy++);
-			}
-		    }
+ 		        if (cpy[0] == '(' &&
+			    cpy[1] == '*' &&
+			    cpy[2] == ')') {
+			    kw_found.back() += "(*)";
+			    cpy += 3;
+                        } else {
+                            while(std::isdigit(*cpy)) {
+                                kw_found.back().push_back(*cpy++);
+                            }
+                        }
+                    }
                     decls.erase(decls.begin() + i);
                     break;
                 }
@@ -1696,6 +1703,7 @@ struct FixedFormRecursiveDescent {
             "elemental"};
         const std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental", "real*", "real",
+	    "character*(*)",
             "character*", "character",
             "complex*", "complex",
             "integer*", "integer",
