@@ -260,7 +260,7 @@ public:
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMArrayType arrayI8Ty = mlir::LLVM::LLVMArrayType::get(
             builder->getI8Type(), fmt.size());
-        mlir::LLVM::GlobalOp glocal_str = builder0.create<mlir::LLVM::GlobalOp>(
+        mlir::LLVM::GlobalOp global_str = builder0.create<mlir::LLVM::GlobalOp>(
             loc, arrayI8Ty, false, mlir::LLVM::Linkage::External, "printf_fmt",
             builder->getStringAttr(fmt));
 
@@ -273,7 +273,7 @@ public:
         mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
             builder->getI64Type(), builder->getIndexAttr(0));
         mlir::Value globalPtr = builder->create<mlir::LLVM::AddressOfOp>(
-            loc, glocal_str);
+            loc, global_str);
         globalPtr = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
             globalPtr, mlir::ValueRange{zero, zero});
         builder->create<mlir::LLVM::CallOp>(loc, fn, mlir::ValueRange{globalPtr,
