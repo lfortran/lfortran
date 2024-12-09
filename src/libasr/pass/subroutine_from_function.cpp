@@ -33,7 +33,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
                 if (is_a<ASR::Function_t>(*item.second)) {
                     PassUtils::handle_fn_return_var(al,
                         ASR::down_cast<ASR::Function_t>(item.second),
-                        PassUtils::is_aggregate_or_array_type);
+                        PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
                 }
             }
 
@@ -58,7 +58,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
                 if (is_a<ASR::Function_t>(*item.second)) {
                     PassUtils::handle_fn_return_var(al,
                         ASR::down_cast<ASR::Function_t>(item.second),
-                        PassUtils::is_aggregate_or_array_type);
+                        PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
                 }
             }
 
@@ -79,7 +79,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
                 if (is_a<ASR::Function_t>(*item.second)) {
                     PassUtils::handle_fn_return_var(al,
                         ASR::down_cast<ASR::Function_t>(item.second),
-                        PassUtils::is_aggregate_or_array_type);
+                        PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
                 }
             }
 
