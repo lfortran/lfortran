@@ -8,7 +8,7 @@
 
 namespace LCompilers {
     
-enum Backend {
+enum class Backend {
     llvm, c, cpp, x86, wasm, fortran, mlir
 };
 
