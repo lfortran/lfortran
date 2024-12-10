@@ -212,25 +212,31 @@ semantic error: Type mismatch in assignment, the types must be compatible
    | ^       ^^^ type mismatch (integer and string)
 
 semantic error: Subroutine `bpe` called as a function
-  --> tests/errors/continue_compilation_3.f90:89:9
+  --> tests/errors/continue_compilation_3.f90:89:5
    |
-89 |     i = bpe()
-   |         ^^^^^ 
+89 | i = bpe()
+   |     ^^^^^ 
+
+semantic error: Variable 'xx' is not declared
+  --> tests/errors/continue_compilation_3.f90:90:10
+   |
+90 | print *, xx
+   |          ^^ 'xx' is undeclared
 
 semantic error: Argument of `size` must be an array
-  --> tests/errors/continue_compilation_3.f90:92:18
+  --> tests/errors/continue_compilation_3.f90:93:14
    |
-92 |         print *, size(bpe)
-   |                  ^^^^^^^^^ 
+93 |     print *, size(bpe)
+   |              ^^^^^^^^^ 
 
 semantic error: Variable 'd' is not declared
-  --> tests/errors/continue_compilation_3.f90:93:15
+  --> tests/errors/continue_compilation_3.f90:94:11
    |
-93 |         bpe = d
-   |               ^ 'd' is undeclared
+94 |     bpe = d
+   |           ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-  --> tests/errors/continue_compilation_3.f90:93:9
+  --> tests/errors/continue_compilation_3.f90:94:5
    |
-93 |         bpe = d
-   |         ^^^ 
+94 |     bpe = d
+   |     ^^^ 
