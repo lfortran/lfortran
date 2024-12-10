@@ -64,10 +64,8 @@ namespace {
 
 using LCompilers::endswith;
 using LCompilers::CompilerOptions;
+using LCompilers::Backend;
 
-enum Backend {
-    llvm, c, cpp, x86, wasm, fortran, mlir
-};
 
 std::string get_unique_ID() {
     static std::random_device dev;
@@ -2418,19 +2416,19 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (arg_backend == "llvm") {
-        backend = Backend::llvm;
+        backend = compiler_options.po.backend = Backend::llvm;
     } else if (arg_backend == "c") {
-        backend = Backend::c;
+        backend = compiler_options.po.backend = Backend::c;
     } else if (arg_backend == "cpp") {
-        backend = Backend::cpp;
+        backend = compiler_options.po.backend = Backend::cpp;
     } else if (arg_backend == "x86") {
-        backend = Backend::x86;
+        backend = compiler_options.po.backend = Backend::x86;
     } else if (arg_backend == "wasm") {
-        backend = Backend::wasm;
+        backend = compiler_options.po.backend = Backend::wasm;
     } else if (arg_backend == "fortran") {
-        backend = Backend::fortran;
+        backend = compiler_options.po.backend = Backend::fortran;
     } else if (arg_backend == "mlir") {
-        backend = Backend::mlir;
+        backend = compiler_options.po.backend = Backend::mlir;
     } else {
         std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
         return 1;

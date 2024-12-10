@@ -6,17 +6,15 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value9 = alloca i32, align 4
   %call_arg_value8 = alloca i32, align 4
   %call_arg_value7 = alloca i32, align 4
+  %call_arg_value6 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
-  %array_bound3 = alloca i32, align 4
+  %array_bound2 = alloca i32, align 4
   %array_bound = alloca i32, align 4
-  %__1_k = alloca i32, align 4
   %__1_t = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %__1_k1 = alloca i32, align 4
-  %__1_t2 = alloca i32, align 4
+  %__1_t1 = alloca i32, align 4
   %x = alloca [3 x i32], align 4
   %y = alloca [3 x i32], align 4
   br i1 true, label %then, label %else
@@ -31,31 +29,31 @@ else:                                             ; preds = %.entry
 ifcont:                                           ; preds = %else, %then
   %2 = load i32, i32* %array_bound, align 4
   %3 = sub i32 %2, 1
-  store i32 %3, i32* %__1_t2, align 4
+  store i32 %3, i32* %__1_t1, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %ifcont
-  %4 = load i32, i32* %__1_t2, align 4
+  %4 = load i32, i32* %__1_t1, align 4
   %5 = add i32 %4, 1
-  br i1 true, label %then4, label %else5
+  br i1 true, label %then3, label %else4
 
-then4:                                            ; preds = %loop.head
-  store i32 3, i32* %array_bound3, align 4
-  br label %ifcont6
+then3:                                            ; preds = %loop.head
+  store i32 3, i32* %array_bound2, align 4
+  br label %ifcont5
 
-else5:                                            ; preds = %loop.head
-  br label %ifcont6
+else4:                                            ; preds = %loop.head
+  br label %ifcont5
 
-ifcont6:                                          ; preds = %else5, %then4
-  %6 = load i32, i32* %array_bound3, align 4
+ifcont5:                                          ; preds = %else4, %then3
+  %6 = load i32, i32* %array_bound2, align 4
   %7 = icmp sle i32 %5, %6
   br i1 %7, label %loop.body, label %loop.end
 
-loop.body:                                        ; preds = %ifcont6
-  %8 = load i32, i32* %__1_t2, align 4
+loop.body:                                        ; preds = %ifcont5
+  %8 = load i32, i32* %__1_t1, align 4
   %9 = add i32 %8, 1
-  store i32 %9, i32* %__1_t2, align 4
-  %10 = load i32, i32* %__1_t2, align 4
+  store i32 %9, i32* %__1_t1, align 4
+  %10 = load i32, i32* %__1_t1, align 4
   %11 = sub i32 %10, 1
   %12 = mul i32 1, %11
   %13 = add i32 0, %12
@@ -63,25 +61,17 @@ loop.body:                                        ; preds = %ifcont6
   store i32 3, i32* %14, align 4
   br label %loop.head
 
-loop.end:                                         ; preds = %ifcont6
+loop.end:                                         ; preds = %ifcont5
   %15 = getelementptr [3 x i32], [3 x i32]* %x, i32 0, i32 0
   store i32 1, i32* %call_arg_value, align 4
-  store i32 3, i32* %call_arg_value7, align 4
+  store i32 3, i32* %call_arg_value6, align 4
   %16 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 0
-  store i32 1, i32* %call_arg_value8, align 4
-  store i32 3, i32* %call_arg_value9, align 4
-  call void @f_integer____0_integer____1(i32* %15, i32* %call_arg_value, i32* %call_arg_value7, i32* %16, i32* %call_arg_value8, i32* %call_arg_value9)
+  store i32 1, i32* %call_arg_value7, align 4
+  store i32 3, i32* %call_arg_value8, align 4
+  call void @f_integer____0_integer____1(i32* %15, i32* %call_arg_value, i32* %call_arg_value6, i32* %16, i32* %call_arg_value7, i32* %call_arg_value8)
   %17 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 0
-  %18 = load i32, i32* %17, align 4
-  %19 = sext i32 %18 to i64
-  %20 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 1
-  %21 = load i32, i32* %20, align 4
-  %22 = sext i32 %21 to i64
-  %23 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 2
-  %24 = load i32, i32* %23, align 4
-  %25 = sext i32 %24 to i64
-  %26 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 %19, i32 2, i64 %22, i32 2, i64 %25)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %18 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 3, i8* null, i32 10, i32 3, i32* %17)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %18, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
 
