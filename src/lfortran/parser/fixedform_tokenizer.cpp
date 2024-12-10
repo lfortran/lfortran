@@ -331,25 +331,23 @@ struct FixedFormRecursiveDescent {
     }
 
     // Are the next characters in the `cur` stream equal to `str`?
-    bool next_is(unsigned char *cur, const std::string &str) {
-        unsigned char *tok = cur;
-        unsigned char *cur2 = cur;
-        while ((size_t)(cur2-tok) < str.size()) {
-            if (*cur2 == '\0') {
-                return false;
-            }
-            cur2++;
-        }
-        std::string next_str = std::string((char *)tok, cur2 - tok);
-        return next_str == str;
+    constexpr bool next_is(unsigned char const *cur, const std::string &str) {
+	for(const char s : str) {
+	    if (*cur++ != s) return false;
+	}
+	return true;
     }
 
-    bool next_is_eol(unsigned char *cur) {
-        if (*cur == '\n') {
-            return true;
-        } else {
-            return false;
-        }
+    // Are the next characters in the `cur` stream equal to `str`?
+    constexpr bool next_is(unsigned char const * cur, const char *str) {
+	while(*str) {
+	    if (*cur++ != *str++) return false;
+	}
+	return true;
+    }
+
+    constexpr bool next_is_eol(unsigned char const *cur) {
+        return (*cur == '\n');
     }
 
     bool is_integer(const std::string &s) const {
@@ -1621,7 +1619,9 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    bool is_declaration(unsigned char *&cur, std::string declaration_type /*function, subroutine, program*/, const std::vector<std::string>& keywords) {
+    bool is_declaration(unsigned char *&cur,
+			std::string declaration_type /*function, subroutine, program*/,
+			const std::vector<std::string>& keywords) {
         unsigned char *cpy = cur;
         unsigned char *nextline = cur; next_line(nextline);
         std::string line{tostr(cur, nextline-1)};
@@ -1635,15 +1635,19 @@ struct FixedFormRecursiveDescent {
                     kw_found.push_back(decls[i]);
                     cpy += decls[i].size();
                     if (decls[i].back() == '*') {
- 		        if (cpy[0] == '(' &&
-			    cpy[1] == '*' &&
-			    cpy[2] == ')') {
+ 		        if (next_is(cpy, "(*)")) {
 			    kw_found.back() += "(*)";
 			    cpy += 3;
                         } else {
-                            while(std::isdigit(*cpy)) {
-                                kw_found.back().push_back(*cpy++);
+			    unsigned char *cur = cpy;
+                            while(std::isdigit(*cur)) {
+                                kw_found.back().push_back(*cur++);
                             }
+			    if (cur == cpy) {
+				error(cpy, "Syntax error: expecting integer after " + decls[i]);
+			    } else {
+				cpy = cur;
+			    }
                         }
                     }
                     decls.erase(decls.begin() + i);
@@ -1652,10 +1656,13 @@ struct FixedFormRecursiveDescent {
             }
             if (next_is(cpy, declaration_type))
                 break;
-            // catching syntax errors like `recursive double precision recursive function f(...`
+            // catching syntax errors like `recursive double precision
+            // recursive function f(...`
             for (auto kw = kw_found.begin(); kw != kw_found.end(); ++kw) {
                 if (next_is(cpy, *kw)) {
-                    error(cpy, "Syntax error: keyword " + *kw + "cannot occur multiple times in " + declaration_type + "declaration");
+                    error(cpy, "Syntax error: keyword " + *kw +
+			  "cannot occur multiple times in " +
+			  declaration_type + "declaration");
                 }
             }
         }
@@ -1663,11 +1670,11 @@ struct FixedFormRecursiveDescent {
             return false;
 
         // tokenize all keywords
-        for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            if (iter->find('*') != std::string::npos) {
-                tokenize_until(cur+iter->size());
+        for(auto const &kw : kw_found) {
+            if (kw.find('*') != std::string::npos) {
+                tokenize_until(cur + kw.size());
             } else {
-                push_token_advance(cur, *iter);
+                push_token_advance(cur, kw);
             }
         }
         cur = cpy;
