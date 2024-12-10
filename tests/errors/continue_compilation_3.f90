@@ -86,11 +86,12 @@ x = "x"
 x = 5 + "x"
 !subroutine1, subroutine2, subroutine3, subroutine5
 call bpe()
-    i = bpe()
-    contains
-    subroutine bpe()
-        print *, size(bpe)
-        bpe = d
-    end subroutine
+i = bpe()
+print *, xx
+contains
+subroutine bpe()
+    print *, size(bpe)
+    bpe = d
+end subroutine
     
 end program
