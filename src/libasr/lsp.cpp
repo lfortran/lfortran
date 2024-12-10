@@ -344,6 +344,14 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
     return 0;
 }
 
+bool is_id_chr(const char c)
+{
+    return (('a' <= c) && (c <= 'z'))
+        || (('A' <= c) && (c <= 'Z'))
+        || (('0' <= c) && (c <= '9'))
+        || (c == '_');
+}
+
 int get_definitions(const std::string &infile, LCompilers::CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
@@ -366,6 +374,10 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             uint16_t l = std::stoi(compiler_options.line);
             uint16_t c = std::stoi(compiler_options.column);
             uint64_t pos = lm.linecol_to_pos(l, c);
+            if (c > 0 && !is_id_chr(input[pos]) && is_id_chr(input[pos - 1])) {
+                // pos is to the right of the word boundary
+                pos--;
+            }
             LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
             LCompilers::document_symbols loc;
             if (!ASR::is_a<ASR::symbol_t>(*asr)) {
