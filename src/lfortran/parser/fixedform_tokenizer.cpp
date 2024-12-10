@@ -331,7 +331,7 @@ struct FixedFormRecursiveDescent {
     }
 
     // Are the next characters in the `cur` stream equal to `str`?
-    constexpr bool next_is(unsigned char const *cur, const std::string &str) {
+    bool next_is(unsigned char const *cur, const std::string &str) {
 	for(const char s : str) {
 	    if (*cur++ != s) return false;
 	}
