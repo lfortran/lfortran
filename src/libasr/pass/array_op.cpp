@@ -2035,7 +2035,68 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                     pass_result.push_back(al, auxiliary_assign_stmt_);
                     resultvar2value[replacer.result_var] = *current_expr;
                 } else {
-                    resultvar2value[replacer.result_var] = array_broadcast->m_array;
+                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                        ASR::ArrayItem_t *array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                        for (size_t i=0;i<array_item->n_args;i++) {
+                            if (ASRUtils::is_array(ASRUtils::expr_type(array_item->m_args[i].m_right))){
+                                ASRUtils::ASRBuilder b(al, array_item->base.base.loc);
+
+                                ASR::ttype_t* integer_type = ASR::down_cast<ASR::ttype_t>(
+                                    ASR::make_Integer_t(al, array_item->base.base.loc, 4));
+                                ASR::expr_t* itr = PassUtils::create_var(
+                                    0, "itr", array_item->base.base.loc, integer_type, al, current_scope);
+
+                                ASR::expr_t* inner_size = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                    al,
+                                    array_item->m_args->m_right->base.loc,
+                                    array_item->m_args->m_right,
+                                    nullptr,
+                                    integer_type,
+                                    nullptr
+                                ));
+
+                                Vec<ASR::array_index_t> inner_arr_dims;
+                                inner_arr_dims.reserve(al, 1);
+
+                                ASR::array_index_t inner_ai;
+                                inner_ai.loc = array_item->m_args->m_right->base.loc;
+                                inner_ai.m_left = nullptr;
+                                inner_ai.m_right = itr;
+                                inner_ai.m_step = nullptr;
+                                inner_arr_dims.push_back(al, inner_ai);
+
+                                ASR::expr_t* inner_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                    al, array_item->m_args->m_right->base.loc, array_item->m_args->m_right, inner_arr_dims.p,
+                                    inner_arr_dims.n, ASRUtils::type_get_past_array_pointer_allocatable(
+                                        ASRUtils::expr_type(array_item->m_args->m_right)),
+                                    ASR::arraystorageType::ColMajor, nullptr));
+
+                                Vec<ASR::array_index_t> outer_arr_dims;
+                                outer_arr_dims.reserve(al, 1);
+
+                                ASR::array_index_t outer_ai;
+                                outer_ai.loc = array_item->m_v->base.loc;
+                                outer_ai.m_left = nullptr;
+                                outer_ai.m_right = inner_index;
+                                outer_ai.m_step = nullptr;
+                                outer_arr_dims.push_back(al, outer_ai);
+
+                                ASR::expr_t* outer_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                    al, array_item->m_v->base.loc, array_item->m_v, outer_arr_dims.p,
+                                    outer_arr_dims.n, ASRUtils::type_get_past_array_pointer_allocatable(
+                                        ASRUtils::expr_type(array_item->m_v)),
+                                    ASR::arraystorageType::ColMajor, nullptr));
+
+                                pass_result.push_back(al,
+                                    b.DoLoop(itr, b.i32(1), inner_size, {
+                                        b.Assignment(outer_index, array_broadcast->m_array),
+                                    }, nullptr)
+                                );
+                            }
+                        }
+                    } else {
+                        resultvar2value[replacer.result_var] = array_broadcast->m_array;
+                    }
                 }
             } else {
                 resultvar2value[replacer.result_var] = original_value;
