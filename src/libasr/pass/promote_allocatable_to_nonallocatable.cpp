@@ -43,7 +43,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
-            for( size_t i = 0; i < x.n_args; i++ ) {
+            for( size_t i = 0; i < x.n_args && i < func_type->n_arg_types; i++ ) {
                 if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
                     ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
