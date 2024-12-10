@@ -58,7 +58,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     a
                     h
@@ -74,15 +73,13 @@
             [(ImplicitSpec
                 (AttrType
                     TypeReal
-                    []
-                    ()
-                    ()
-                    None
-                )
-                [(LetterSpec
-                    ()
+                    [(()
                     dp
-                )]
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 [(LetterSpec
                     a
                     h
@@ -105,7 +102,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     a
                     h
@@ -128,7 +124,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     a
                     h
@@ -153,7 +148,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     a
                     h
@@ -178,7 +172,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     c
@@ -194,15 +187,13 @@
             [(ImplicitSpec
                 (AttrType
                     TypeCharacter
-                    []
+                    [(()
+                    id
+                    Value)]
                     ()
                     ()
                     None
                 )
-                [(LetterSpec
-                    ()
-                    id
-                )]
                 [(LetterSpec
                     a
                     z
@@ -223,7 +214,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     i
                     n
@@ -240,7 +230,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     i
@@ -277,7 +266,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     i
@@ -301,15 +289,13 @@
             [(ImplicitSpec
                 (AttrType
                     TypeInteger
-                    []
+                    [(()
+                    dp
+                    Value)]
                     ()
                     ()
                     None
                 )
-                [(LetterSpec
-                    ()
-                    dp
-                )]
                 [(LetterSpec
                     a
                     h
@@ -332,7 +318,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     i
@@ -361,7 +346,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     A
@@ -384,7 +368,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     C
@@ -407,7 +390,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     C
@@ -432,7 +414,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     l
@@ -448,15 +429,13 @@
             [(ImplicitSpec
                 (AttrType
                     TypeLogical
-                    []
+                    [(()
+                    dp
+                    Value)]
                     ()
                     ()
                     None
                 )
-                [(LetterSpec
-                    ()
-                    dp
-                )]
                 [(LetterSpec
                     a
                     h
@@ -479,7 +458,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     l
@@ -502,7 +480,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     l
@@ -527,7 +504,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     z
@@ -539,15 +515,13 @@
             [(ImplicitSpec
                 (AttrType
                     TypeComplex
-                    []
+                    [(()
+                    dp
+                    Value)]
                     ()
                     ()
                     None
                 )
-                [(LetterSpec
-                    ()
-                    dp
-                )]
                 [(LetterSpec
                     a
                     h
@@ -568,7 +542,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     C
@@ -587,7 +560,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     z
@@ -606,7 +578,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     z
@@ -627,7 +598,6 @@
                     BLOB
                     None
                 )
-                []
                 [(LetterSpec
                     ()
                     A
@@ -644,10 +614,86 @@
                     X
                     None
                 )
-                []
                 [(LetterSpec
                     A
                     b
+                )]
+            )]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeReal
+                    [(kind
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    a
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeReal
+                    [(()
+                    (+ 4 4)
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    b
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeReal
+                    [(()
+                    d
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    d
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeReal
+                    [(()
+                    (FuncCallOrArray
+                        d
+                        []
+                        [(()
+                        2
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    )
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    a
+                    z
                 )]
             )]
             ()
@@ -655,19 +701,286 @@
         (Implicit
             [(ImplicitSpec
                 (AttrType
-                    TypeProcedure
-                    []
+                    TypeInteger
+                    [(kind
+                    4
+                    Value)]
                     ()
-                    Y
+                    ()
                     None
                 )
-                []
                 [(LetterSpec
-                    A
+                    ()
+                    a
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    [(()
+                    (+ 4 4)
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
                     b
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    [(()
+                    d
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    d
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    [(()
+                    (FuncCallOrArray
+                        d
+                        []
+                        [(()
+                        2
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    )
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    a
+                    z
                 )]
             )]
             ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    [(kind
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    a
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    [(()
+                    (+ 4 4)
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    b
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    [(()
+                    d
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    d
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeLogical
+                    [(()
+                    (FuncCallOrArray
+                        d
+                        []
+                        [(()
+                        2
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    )
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    a
+                    z
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    [(kind
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    a
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    [(()
+                    (+ 4 4)
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    b
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    [(()
+                    d
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    d
+                )]
+            )
+            (ImplicitSpec
+                (AttrType
+                    TypeComplex
+                    [(()
+                    (FuncCallOrArray
+                        d
+                        []
+                        [(()
+                        2
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    )
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    a
+                    z
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeCharacter
+                    [(kind
+                    c_char
+                    Value)
+                    (len
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    a
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeCharacter
+                    [(len
+                    4
+                    Value)
+                    (kind
+                    c_char
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    a
+                )]
+            )]
+            ()
+        )
+        (Implicit
+            [(ImplicitSpec
+                (AttrType
+                    TypeCharacter
+                    [(kind
+                    c_char
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    ()
+                    a
+                )]
+            )]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (EndOfLine)]
+            )
         )]
         []
         []

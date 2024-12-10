@@ -3319,13 +3319,35 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 
     int n = strlen(*arg);
     *arg = (char*)malloc(n * sizeof(char));
+    const char SPACE = ' ';
 
     if (unit_num == -1) {
         // Read from stdin
-        *iostat = !(fgets(*arg, n, stdin) == *arg);
-        (*arg)[strcspn(*arg, "\n")] = 0;
-        va_end(args);
-        return;
+        char *buffer = (char*)malloc((n + 1) * sizeof(char));
+        if (fgets(buffer, n + 1, stdin) == NULL) {
+            *iostat = -1;
+            va_end(args);
+            free(buffer);
+            return;
+        } else {
+            if (streql(buffer, "\n")) {
+                *iostat = -2;
+            } else {
+                *iostat = 0;
+            }
+
+            (buffer)[strcspn(buffer, "\n")] = 0;
+
+            size_t input_length = strlen(buffer);
+            *chunk = input_length;
+            while (input_length < n) {
+                strncat(buffer, &SPACE, 1);
+                input_length++;
+            }
+            strcpy(*arg, buffer);
+            va_end(args);
+            free(buffer);
+        }
     }
 
     bool unit_file_bin;
@@ -3333,16 +3355,33 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
-    }
+    } else {
+        char *buffer = (char*)malloc((n + 1) * sizeof(char));
+        if (fgets(buffer, n + 1, filep) == NULL) {
+            *iostat = -1;
+            va_end(args);
+            free(buffer);
+            return;
+        } else {
+            if (streql(buffer, "\n")) {
+                *iostat = -2;
+            } else {
+                *iostat = 0;
+            }
 
-    *iostat = !(fgets(*arg, n+1, filep) == *arg);
-    if (streql(*arg, "\n")) {
-        *iostat = -2;
+            (buffer)[strcspn(buffer, "\n")] = 0;
+
+            size_t input_length = strlen(buffer);
+            *chunk = input_length;
+            while (input_length < n) {
+                strncat(buffer, &SPACE, 1);
+                input_length++;
+            }
+            strcpy(*arg, buffer);
+            va_end(args);
+            free(buffer);
+        }
     }
-    int len = strcspn(*arg, "\n");
-    *chunk = len;
-    (*arg)[len] = 0;
-    va_end(args);
 }
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {

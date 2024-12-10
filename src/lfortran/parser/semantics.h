@@ -446,20 +446,58 @@ ast_t* data_implied_do(Allocator &al, Location &loc,
 #define IMPLICIT_NONE_EXTERNAL(l) make_ImplicitNoneExternal_t(p.m_a, l, 0)
 #define IMPLICIT_NONE_TYPE(l) make_ImplicitNoneType_t(p.m_a, l)
 
+
+static inline char * id_if_Name_t(expr_t const * exprNode) {
+  char *id = nullptr;
+  if(exprNode->type == LCompilers::LFortran::AST::exprType::Name) {
+    Name_t const * nameNode = down_cast<Name_t>(exprNode);
+    id = const_cast<char*>(nameNode->m_id);
+  }
+  return id;
+}
+
+Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items) {
+    Vec<ast_t*> ast_nodes;
+    ast_nodes.reserve(al, kind_items.size());
+
+    for (const auto &kind_item : kind_items) {
+      /*  Each of these kind_items should be of the form:
+	     : letter
+	     | letter - letter
+	  We need to convert each one into a LetterSpec, which we
+	  return a list of.
+      */
+      expr_t const * exprNode = kind_item.m_value;
+      Location const & loc = exprNode->base.loc;
+      ast_t *ls_node = nullptr;
+      char *end_name = id_if_Name_t(exprNode);
+      if(end_name) {
+	ls_node = make_LetterSpec_t(al, loc, nullptr, end_name);
+      } else if (exprNode->type == LCompilers::LFortran::AST::exprType::BinOp) {
+	BinOp_t const * binOpNode = down_cast<BinOp_t>(exprNode);
+	if (binOpNode->m_op == LCompilers::LFortran::AST::operatorType::Sub) {
+	  char *start_name = id_if_Name_t(binOpNode->m_left);
+	  end_name = id_if_Name_t(binOpNode->m_right);
+	  if (start_name && end_name) {
+	    ls_node = make_LetterSpec_t(al, loc, start_name, end_name);
+	  }
+	}
+      }
+      if (ls_node) {
+	ast_nodes.push_back(al, ls_node);
+      } else {
+	throw LCompilers::LFortran::parser_local::ParserError(
+           "Bad implicit letter specification", loc);
+      }
+    }
+
+    return ast_nodes;
+}
 #define IMPLICIT(specs, trivia, l) make_Implicit_t(p.m_a, l, \
 	VEC_CAST(specs, implicit_spec), specs.size(), trivia_cast(trivia))
 #define IMPLICIT_SPEC(t, specs, l) make_ImplicitSpec_t(p.m_a, l, \
-        down_cast<decl_attribute_t>(t), nullptr, 0, \
-	VEC_CAST(specs, letter_spec), specs.size())
-#define IMPLICIT_SPEC_KIND(t, kind, specs, l) make_ImplicitSpec_t(p.m_a, l, \
         down_cast<decl_attribute_t>(t), \
-        VEC_CAST(kind, letter_spec), kind.size(), \
-        VEC_CAST(specs, letter_spec), specs.size())
-
-#define LETTER_SPEC1(a, l) make_LetterSpec_t(p.m_a, l, \
-        nullptr, name2char(a))
-#define LETTER_SPEC2(a, b, l) make_LetterSpec_t(p.m_a, l, \
-        name2char(a), name2char(b))
+        VEC_CAST(vec_kind_item2ast(p.m_a, specs), letter_spec), specs.size())
 
 static inline var_sym_t* VARSYM(Allocator &al, Location &l,
         char* name, dimension_t* dim, size_t n_dim,
@@ -1778,14 +1816,14 @@ void add_ws_warning(const Location &loc,
         } else if (end_token == yytokentype::KW_COMPLEX) {
             if (a_kind == 16) {
                 diagnostics.parser_style_label(
-                "Use complex(16) instead of complex*16",
-                {loc},
-                "help: write this as 'complex(16)'");
-            } else {
-                diagnostics.parser_style_label(
-                "Use complex(8) instead of complex*8",
+                "Use complex(8) instead of complex*16",
                 {loc},
                 "help: write this as 'complex(8)'");
+            } else {
+                diagnostics.parser_style_label(
+                "Use complex(4) instead of complex*8",
+                {loc},
+                "help: write this as 'complex(4)'");
             }
         } else if (end_token == yytokentype::KW_LOGICAL) {
             if (a_kind == 4) {

@@ -1,3 +1,9 @@
+style suggestion: Use real(8) instead of real*8
+ --> tests/implicit7.f90:4:14
+  |
+4 | implicit real*8 (k)
+  |              ^ help: write this as 'real(8)'
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
  --> tests/implicit7.f90:2:1
   |

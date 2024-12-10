@@ -3064,7 +3064,8 @@ public:
                         s_intent == ASRUtils::intent_inout));
                 }
                 ASR::symbol_t *type_declaration;
-                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
+                ASR::ttype_t *type = nullptr;
+                type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);

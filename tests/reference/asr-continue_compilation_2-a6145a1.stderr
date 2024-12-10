@@ -10,6 +10,60 @@ semantic error: kind argument of `int` intrinsic must be a scalar
 278 |     integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
     |                                                      ^^^^^^^^^ 
 
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
+   --> tests/errors/continue_compilation_2.f90:281:13
+    |
+281 |     integer(4.2) :: ifoix
+    |             ^^^ 
+
+semantic error: Kind 6 is not supported for Complex
+   --> tests/errors/continue_compilation_2.f90:283:13
+    |
+283 |     complex(6) :: iiocx
+    |             ^ 
+
+semantic error: Kind 3 is not supported for Integer
+   --> tests/errors/continue_compilation_2.f90:285:13
+    |
+285 |     integer(3) :: iifix
+    |             ^ 
+
+semantic error: Kind 10 is not supported for Logical
+   --> tests/errors/continue_compilation_2.f90:287:13
+    |
+287 |     logical(10) :: iiolx
+    |             ^^ 
+
+semantic error: Expected initialization expression for kind
+   --> tests/errors/continue_compilation_2.f90:289:13
+    |
+289 |     complex(*) :: ksoca
+    |             ^ 
+
+semantic error: Expected initialization expression for kind
+   --> tests/errors/continue_compilation_2.f90:291:13
+    |
+291 |     integer(*) :: ksoia
+    |             ^ 
+
+semantic error: Expected initialization expression for kind
+   --> tests/errors/continue_compilation_2.f90:293:13
+    |
+293 |     logical(*) :: ksola
+    |             ^ 
+
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
+   --> tests/errors/continue_compilation_2.f90:295:13
+    |
+295 |     integer('a') :: ksoix
+    |             ^^^ 
+
+semantic error: Parameter 'kvoia' is a variable, which does not reduce to a constant expression
+   --> tests/errors/continue_compilation_2.f90:298:10
+    |
+298 |     real(kvoia) :: kvoix
+    |          ^^^^^ 
+
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
   --> tests/errors/continue_compilation_2.f90:56:38
    |
@@ -488,7 +542,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |     ^^^^^       ^^^ type mismatch (integer and string)
 
 semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:292:5
+   --> tests/errors/continue_compilation_2.f90:311:5
     |
-292 |     y = 99  
+311 |     y = 99  
     |     ^ 
