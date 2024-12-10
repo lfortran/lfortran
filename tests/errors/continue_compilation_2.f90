@@ -17,6 +17,12 @@ contains
     end subroutine calculateArea
 end module Geometry
 
+subroutine solsy ()
+    double precision rowns(209)
+    common /rowns/ rowns(209)
+    print *, set_exponent([1, 2, 3], 2)
+end
+
 program continue_compilation_2
     use iso_fortran_env
     use iso_c_binding, only: c_ptr, c_f_pointer
@@ -296,6 +302,10 @@ program continue_compilation_2
     !kind_var_of_int
     integer :: kvoia = 4
     real(kvoia) :: kvoix
+    !kind1
+    real(3) :: x
+    !kind2
+    real(*) kind2_a
 
     contains
     logical function f(x)
