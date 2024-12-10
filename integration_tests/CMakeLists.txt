@@ -378,6 +378,7 @@ RUN(NAME subroutines_11 LABELS gfortran llvm)
 RUN(NAME subroutines_12 LABELS gfortran llvm)
 RUN(NAME subroutines_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME subroutines_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
+RUN(NAME subroutines_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST)
 
 RUN(NAME functions_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm)
 RUN(NAME functions_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
