@@ -1,0 +1,52 @@
+      CHARACTER FUNCTION C0(A)
+      END
+      
+      CHARACTER*1 FUNCTION C1(A)
+      END
+
+      CHARACTER*11 FUNCTION C11(A)
+      END
+
+      CHARACTER*111 FUNCTION C111(A)
+      END
+
+      CHARACTER*(*) FUNCTION CSTAR(A)
+      END
+
+      INTEGER FUNCTION I0(A)
+      END
+
+      INTEGER*4FUNCTION I4(A)
+      END
+
+      INTEGER*8FUNCTION I8(A)
+      END
+
+      REAL FUNCTION R0(A)
+      END
+      
+      REAL*4 FUNCTION R4(A)
+      END
+      
+      REAL*8 FUNCTION R8(A)
+      END
+
+      COMPLEX FUNCTION CM0(A)
+      END
+
+      COMPLEX*8 FUNCTION CM4(A)
+      END
+
+      COMPLEX*16 FUNCTION CM8(A)
+      END
+      
+      LOGICAL FUNCTION L0(A)
+      END
+
+      LOGICAL*1 FUNCTION L1(A)
+      END
+
+      LOGICAL*4 FUNCTION L4(A)
+      END
+      
+      
