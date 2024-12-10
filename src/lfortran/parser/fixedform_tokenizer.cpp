@@ -1635,20 +1635,17 @@ struct FixedFormRecursiveDescent {
                     kw_found.push_back(decls[i]);
                     cpy += decls[i].size();
                     if (decls[i].back() == '*') {
- 		        if (next_is(cpy, "(*)")) {
+ 		        if (decls[i] == "character*" && next_is(cpy, "(*)")) {
 			    kw_found.back() += "(*)";
 			    cpy += 3;
-                        } else {
-			    unsigned char *cur = cpy;
-                            while(std::isdigit(*cur)) {
-                                kw_found.back().push_back(*cur++);
-                            }
-			    if (cur == cpy) {
-				error(cpy, "Syntax error: expecting integer after " + decls[i]);
-			    } else {
-				cpy = cur;
-			    }
-                        }
+                        } else if (std::isdigit(*cpy)) {
+			    do {
+                                kw_found.back().push_back(*cpy++);
+                            } while(std::isdigit(*cpy));
+			} else {
+			    error(cpy, "Syntax error: expecting length "
+				  "specification after " + decls[i]);
+			}
                     }
                     decls.erase(decls.begin() + i);
                     break;
