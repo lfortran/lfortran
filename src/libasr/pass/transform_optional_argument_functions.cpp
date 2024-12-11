@@ -384,6 +384,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             if( i - is_method >= x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
                 ASR::ttype_t* arg_type = func_arg_j->m_type;
+                ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
                 if( ASR::is_a<ASR::Array_t>(*arg_type) ) {
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(arg_type);
                     Vec<ASR::dimension_t> dims;
@@ -401,7 +402,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                                 array_t->m_type, dims.p, dims.size(), ASR::array_physical_typeType::FixedSizeArray));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type);
+                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl);
                 arg_type = ASRUtils::expr_type(m_arg_i);
                 if( ASRUtils::is_array(arg_type) &&
                     ASRUtils::extract_physical_type(arg_type) !=
