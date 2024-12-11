@@ -1159,6 +1159,23 @@ public:
                     "FunctionCall::m_name " + std::string(fn_->m_name) +
                     " must be returning a non-void value.");
         }
+
+        if (fn) {
+          const ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x.m_name);
+          if (ft) {
+              bool is_nopass { false };
+              bool is_class_procedure { false };
+              if (ASR::is_a<ASR::ClassProcedure_t>(*fn)) {
+                  ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(fn);
+                  is_nopass = class_proc->m_is_nopass;
+                  is_class_procedure = true;
+              }
+              bool is_method = is_class_procedure && (!is_nopass);
+              require(ft->n_arg_types == x.n_args + is_method,
+                  "FunctionCall::m_args must match FunctionType::m_arg_types");
+          }
+        }
+
         verify_args(x);
         visit_ttype(*x.m_type);
     }
