@@ -6385,6 +6385,9 @@ class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArra
     }
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        if( x->m_new == ASR::array_physical_typeType::SIMDArray ) {
+            return ;
+        }
         ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer>::replace_ArrayPhysicalCast(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg)) ) {
             *current_expr = x->m_arg;
@@ -6407,6 +6410,14 @@ class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVis
     }
 
     RemoveArrayProcessingNodeVisitor(Allocator& al_): replacer(al_) {}
+
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        if( x.m_new == ASR::array_physical_typeType::SIMDArray ) {
+            return ;
+        }
+
+        ASR::CallReplacerOnExpressionsVisitor<RemoveArrayProcessingNodeVisitor>::visit_ArrayPhysicalCast(x);
+    }
 
 };
 
