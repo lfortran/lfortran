@@ -109,5 +109,8 @@ program intrinsics_301
     if (any(result2 /= 2)) error stop
     print *, i14
     if (any(i14 /= 3)) error stop
+
+    print *, findloc(x1_param, y1)
+    if (any(findloc(x1_param, y1) /= 3)) error stop
     
 end program intrinsics_301

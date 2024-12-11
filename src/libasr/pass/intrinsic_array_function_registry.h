@@ -3361,7 +3361,7 @@ namespace FindLoc {
             ASR::LogicalConstant_t *back = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[5]));
             int element_idx = 0;
             bool element_found = 0;
-            if (is_character(*expr_type(args[0]))) {
+            if (is_character(*expr_type(array))) {
                 std::string ele = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
                 for (int i = element_idx; i < arr_size; i++) {
                     if (((bool*)mask->m_data)[i] != 0) {
@@ -3390,12 +3390,14 @@ namespace FindLoc {
                 }
             } else {
                 double ele = 0;
-                if (is_integer(*ASRUtils::expr_type(args[1]))) {
-                    ele = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
-                } else if (is_real(*ASRUtils::expr_type(args[1]))) {
-                    ele = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[1]))->m_r;
-                } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
-                    ele = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[1]))->m_value;
+                ASR::expr_t* extracted_value = ASRUtils::expr_value(value);
+                if (!extracted_value) return nullptr;
+                if (is_integer(*ASRUtils::expr_type(value))) {
+                    ele = ASR::down_cast<ASR::IntegerConstant_t>(extracted_value)->m_n;
+                } else if (is_real(*ASRUtils::expr_type(value))) {
+                    ele = ASR::down_cast<ASR::RealConstant_t>(extracted_value)->m_r;
+                } else if (is_logical(*ASRUtils::expr_type(value))) {
+                    ele = ASR::down_cast<ASR::LogicalConstant_t>(extracted_value)->m_value;
                 }
                 for (int i = element_idx; i < arr_size; i++) {
                     if (((bool*)mask->m_data)[i] != 0) {
