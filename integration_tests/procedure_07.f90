@@ -12,13 +12,14 @@ end module procedure_07_module
 program procedure_07
     use procedure_07_module
     call temp(cb)
+    call temp() !! Optional cb not passed
     call temp2(cb)
 contains
     subroutine temp(call_back)
         implicit none
-        procedure(cb) :: call_back
+        procedure(cb), optional :: call_back
         logical :: terminate_var
-        call call_back()   
+        if(present(call_back)) call call_back()   
     end subroutine temp
     subroutine temp2(call_back)
         implicit none

@@ -8810,6 +8810,7 @@ public:
                             } else {
                                 if(arg->m_type_declaration && ASR::is_a<ASR::Function_t>(
                                         *ASRUtils::symbol_get_past_external(arg->m_type_declaration))){
+                                    // (FunctionType)** --> (FunctionType)*
                                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                                         symbol_get_past_external(arg->m_type_declaration));
                                     uint32_t h = get_hash((ASR::asr_t*)fn);
