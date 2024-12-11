@@ -14,7 +14,7 @@ module p
     end type
 end module
 
-program main
+program nullify_03
     use p
     implicit none
     type(sds) :: s

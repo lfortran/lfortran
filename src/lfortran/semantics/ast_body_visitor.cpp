@@ -4412,7 +4412,7 @@ public:
                     arg_vec.push_back(al, ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_m);
                 } else {
                     diag.add(Diagnostic(
-                        "Only a pointer variable symbol1 "
+                        "Only a pointer variable symbol "
                         "can be nullified.",
                         Level::Error, Stage::Semantic, {
                             Label("",{tmp_expr->base.loc})
