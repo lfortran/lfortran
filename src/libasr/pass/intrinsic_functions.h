@@ -2514,7 +2514,7 @@ namespace Idnint {
         if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 8 ) {
             diag.semantic_error_label("`idnint` takes argument of kind 8", {loc}, "");
         }
-        double rv = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double near_integer = std::round(rv);
 
         if (near_integer < static_cast<double>(std::numeric_limits<int32_t>::min()) ||

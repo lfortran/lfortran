@@ -2,8 +2,8 @@ program intrinsics_329
     use iso_fortran_env, only: dp => real64
     real(dp), parameter :: w = -5.1_dp
     real(dp), parameter :: x = 5.8_dp
-    real(dp), parameter :: y = 6.0_dp
-    real(dp), parameter :: z = -5.8_dp
+    real(dp) :: y = 6.0_dp
+    real(dp) :: z = -5.8_dp
     integer(dp) :: res_4
     integer(dp) :: res_8
 
