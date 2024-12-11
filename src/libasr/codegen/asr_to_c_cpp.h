@@ -1069,7 +1069,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             ASR::expr_t* call_arg = m_args[i].m_value;
             self().visit_expr(*call_arg);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
-            if (ASR::is_a<ASR::Var_t>(*call_arg) 
+            if (ASR::is_a<ASR::Var_t>(*call_arg)
                 && ASR::is_a<ASR::Variable_t>(
                     *ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(m_args[i].m_value)->m_v))) {
@@ -1553,7 +1553,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             std::string stride = "1";
             for( int i = value_rank - 1; i >= 0; i-- ) {
                 if( ds[i] != "" ) {
-                    std::string dim_length = "(((" + ubs[i] + " - " + lbs[i] + ")" + "/" + ds[i] + ") + 1)";
+                    std::string dim_length = "((( (" + ubs[i] + ") - (" + lbs[i] + ") )" + "/" + ds[i] + ") + 1)";
                     std::string target_dim_des = target_dim_des_array + "[" + std::to_string(j) + "]";
                     update_target_desc += indent + target_dim_des + ".stride = " + stride + ";\n";
                     update_target_desc += indent + target_dim_des + ".lower_bound = 1;\n";

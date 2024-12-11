@@ -757,6 +757,12 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
+        if (ASRUtils::is_simd_array(x.m_target)) {
+            if( !(ASRUtils::is_allocatable(x.m_value) ||
+                  ASRUtils::is_pointer(ASRUtils::expr_type(x.m_value))) ) {
+                return ;
+            }
+        }
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         const std::vector<ASR::exprType>& skip_exprs = {
             ASR::exprType::IntrinsicArrayFunction,
