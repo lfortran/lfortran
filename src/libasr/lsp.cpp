@@ -374,7 +374,7 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             uint16_t l = std::stoi(compiler_options.line);
             uint16_t c = std::stoi(compiler_options.column);
             uint64_t pos = lm.linecol_to_pos(l, c);
-            if (c > 0 && !is_id_chr(input[pos]) && is_id_chr(input[pos - 1])) {
+            if (c > 0 && pos > 0 && !is_id_chr(input[pos]) && is_id_chr(input[pos - 1])) {
                 // pos is to the right of the word boundary
                 pos--;
             }
