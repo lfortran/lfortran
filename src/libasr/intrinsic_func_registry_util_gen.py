@@ -326,6 +326,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Idnint": [
+        {
+            "args": [("real",)],
+            "return": "int32"
+        }
+    ],
     "Anint": [
         {
             "args": [("real",)],
