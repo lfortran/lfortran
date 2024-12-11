@@ -1535,6 +1535,7 @@ RUN(NAME external_06 LABELS gfortran llvmImplicit)
 RUN(NAME external_07 LABELS gfortran llvmImplicit)
 RUN(NAME external_08 LABELS gfortran llvmImplicit)
 RUN(NAME external_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_10 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
