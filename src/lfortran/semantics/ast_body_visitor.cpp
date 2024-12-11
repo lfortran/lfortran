@@ -4408,13 +4408,17 @@ public:
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
             if( tmp_expr->type != ASR::exprType::Var ) {
-                diag.add(Diagnostic(
-                    "Only a pointer variable symbol "
-                    "can be nullified.",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{tmp_expr->base.loc})
-                    }));
-                throw SemanticAbort();
+                if (tmp_expr->type == ASR::exprType::StructInstanceMember && ASR::is_a<ASR::Pointer_t>(*ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_type)) {
+                    arg_vec.push_back(al, ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_m);
+                } else {
+                    diag.add(Diagnostic(
+                        "Only a pointer variable symbol1 "
+                        "can be nullified.",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{tmp_expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
