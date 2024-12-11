@@ -3334,11 +3334,12 @@ namespace FindLoc {
         ASR::expr_t* dim = args[2];
         if (!array) return nullptr;
         if (!value) return nullptr;
-        if (extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+        if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
             int arr_size = 0;
+            ASR::expr_t* array_value = ASRUtils::expr_value(array);
             ASR::ArrayConstant_t *arr = nullptr;
-            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
-                arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
+            if (array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value)) {
+                arr = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
                 arr_size = ASRUtils::get_fixed_size_of_array(arr->m_type);
             } else {
                 return nullptr;
@@ -3390,11 +3391,11 @@ namespace FindLoc {
             } else {
                 double ele = 0;
                 if (is_integer(*ASRUtils::expr_type(args[1]))) {
-                    ele = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+                    ele = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
                 } else if (is_real(*ASRUtils::expr_type(args[1]))) {
-                    ele = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+                    ele = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[1]))->m_r;
                 } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
-                    ele = ASR::down_cast<ASR::LogicalConstant_t>(args[1])->m_value;
+                    ele = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[1]))->m_value;
                 }
                 for (int i = element_idx; i < arr_size; i++) {
                     if (((bool*)mask->m_data)[i] != 0) {
