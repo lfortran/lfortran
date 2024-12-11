@@ -17,15 +17,17 @@ end module procedure_08_module
 program procedure_08
     use procedure_08_module
     call temp(calfun)
+    call temp()
     call temp2(calfun)
+    call temp2()
 contains
     subroutine temp(call_back)
         implicit none
-        procedure(cb) :: call_back
-        call call_back()   
+        procedure(cb), optional :: call_back
+        if(present(call_back)) call call_back()   
     end subroutine temp
     subroutine temp2(call_back)
         implicit none
-        procedure(cb) :: call_back
+        procedure(cb), optional :: call_back
     end subroutine
 end program procedure_08
