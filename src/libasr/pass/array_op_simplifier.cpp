@@ -502,7 +502,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
 
         size_t offset_for_array_indices = 0;
 
-        ASR::array_index_t* m_args; size_t n_args;
+        ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
 
         #define fill_array_indices_in_vars_expr(expr, is_expr_array) \
             if( is_expr_array ) { \
