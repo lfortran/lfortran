@@ -1493,7 +1493,8 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
             field.type == "symbol" or
             field.type == "call_arg" or
             field.type == "ttype" or
-            field.type == "dimension"):
+            field.type == "dimension" or
+            field.type == "array_index"):
             level = 2
             if field.seq:
                 self.used = True
@@ -1506,6 +1507,16 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
                     self.emit("    }", level)
                     self.current_expr_copy_variable_count += 1
+                elif field.type == "array_index":
+                    attrs = ["left", "right", "step"]
+                    for attr in attrs:
+                        self.emit("    if (x->m_%s[i].m_%s != nullptr) {" % (field.name, attr), level)
+                        self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + 1)
+                        self.emit("    current_expr = &(x->m_%s[i].m_%s);" % (field.name, attr), level + 1)
+                        self.emit("    self().replace_expr(x->m_%s[i].m_%s);"%(field.name, attr), level + 1)
+                        self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
+                        self.emit("    }", level)
+                        self.current_expr_copy_variable_count += 1
                 elif field.type == "dimension":
                     self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
                     self.emit("    current_expr = &(x->m_%s[i].m_length);" % (field.name), level)
@@ -1531,16 +1542,27 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     if field.type == "ttype":
                         self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
                     else:
-                        one_or_zero = field.name == "value"
-                        if field.name == "value" or field.name == "symbolic_value":
-                            self.emit("if (call_replacer_on_value) {", level)
-                        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-                        self.emit("current_expr = &(x->m_%s);" % (field.name), level + one_or_zero)
-                        self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level + one_or_zero)
-                        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-                        if field.name == "value" or field.name == "symbolic_value":
-                            self.emit("}", level)
-                        self.current_expr_copy_variable_count += 1
+                        if field.type == "array_index":
+                            attrs = ["left", "right", "step"]
+                            for attr in attrs:
+                                self.emit("if (x->m_%s.m_%s != nullptr) {" % (field.name, attr), level)
+                                self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + 1)
+                                self.emit("current_expr = &(x->m_%s.m_%s);" % (field.name, attr), level + 1)
+                                self.emit("self().replace_expr(x->m_%s.m_%s);"%(field.name, attr), level + 1)
+                                self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
+                                self.emit("}", level)
+                                self.current_expr_copy_variable_count += 1
+                        else:
+                            one_or_zero = field.name == "value"
+                            if field.name == "value" or field.name == "symbolic_value":
+                                self.emit("if (call_replacer_on_value) {", level)
+                            self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                            self.emit("current_expr = &(x->m_%s);" % (field.name), level + one_or_zero)
+                            self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level + one_or_zero)
+                            self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                            if field.name == "value" or field.name == "symbolic_value":
+                                self.emit("}", level)
+                            self.current_expr_copy_variable_count += 1
 
 class StmtBaseReplacerVisitor(ASDLVisitor):
 
