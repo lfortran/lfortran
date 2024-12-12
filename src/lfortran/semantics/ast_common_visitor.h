@@ -6409,7 +6409,7 @@ public:
     }
 
     void check_specific_type_intrinsics(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
-        std::set<std::string>array_intrinsic_mapping_names = {"min0", "amin0", "min1", "amin1", "dmin1", "max0", "amax", "min1", "amax1", "dmax1"};
+        std::set<std::string>array_intrinsic_mapping_names = {"min0", "amin0", "min1", "amin1", "dmin1", "max0", "amax0", "max1", "amax1", "dmax1"};
         if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
             return;
         }
