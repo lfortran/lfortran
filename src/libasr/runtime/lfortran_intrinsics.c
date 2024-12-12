@@ -783,7 +783,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
 
 struct array_iteration_state{
     //Preserve array size and current element index
-    int64_t array_size;
+     int32_t array_size;
     int64_t current_arr_index;
     //Hold array pointers for each type.
     int64_t* arr_ptr_int64;
@@ -808,7 +808,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
             if(state->current_arr_index != state->array_size){
                 state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0; 
                 state->arr_ptr_int64 = va_arg(*args,int64_t*);
                 state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
@@ -820,7 +820,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
                 int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
                 state->current_arr_element_int64 = (int64_t)temp_val;
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0;
                 state->arr_ptr_int32 = va_arg(*args,int32_t*);
                 int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
@@ -833,7 +833,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
                 int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
                 state->current_arr_element_int64 = (int64_t)temp_val;
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0; 
                 state->arr_ptr_int16 = va_arg(*args,int16_t*);
                 int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
@@ -846,7 +846,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
                 int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
                 state->current_arr_element_int64 = (int64_t)temp_val;
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0; 
                 state->arr_ptr_int8 = va_arg(*args,int8_t*);
                 int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
@@ -858,7 +858,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
             if(state->current_arr_index != state->array_size){
                 state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0; 
                 state->arr_ptr_double = va_arg(*args,double*);
                 state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
@@ -870,7 +870,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
                 float temp_val = state->arr_ptr_float[state->current_arr_index++];
                 state->current_arr_element_double = (double)temp_val;
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0; 
                 state->arr_ptr_float = va_arg(*args,float*);
                 float temp_val = state->arr_ptr_float[state->current_arr_index++];
@@ -882,7 +882,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
             if(state->current_arr_index != state->array_size){
                 state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0; 
                 state->arr_ptr_charPtr = va_arg(*args,char**);
                 state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
@@ -893,7 +893,7 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
             if(state->current_arr_index != state->array_size){
                 state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
             } else {
-                state->array_size = va_arg(*args,int64_t);
+                state->array_size = va_arg(*args, int32_t);
                 state->current_arr_index = 0; 
                 state->arr_ptr_bool = va_arg(*args,bool*);
                 state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
