@@ -1803,8 +1803,8 @@ void add_ws_warning(const Location &loc,
                         {loc},
                         "help: write this as 'integer(8)'");
                 } else {
-                        throw LCompilers::LFortran::parser_local::ParserError(
-                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc});
+                        diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+                                "kind " + std::to_string(a_kind) + " is not supported yet.", {loc}).d);
                 }
         } else if (end_token == yytokentype::KW_CHARACTER) {
                 std::string msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
