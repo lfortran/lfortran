@@ -1271,7 +1271,22 @@ public:
         src = r;
     }
 
-    // void visit_Nullify(const ASR::Nullify_t &x) {}
+    void visit_Nullify(const ASR::Nullify_t &x) {
+        std::string r = indent;
+        r += "nullify (";
+        for (int i = 0; i < static_cast<int>(x.n_vars); i++) {
+            if(x.m_vars[i]->type == ASR::Variable) {
+                r += ASRUtils::symbol_name(x.m_vars[i]);
+                if(i != static_cast<int>(x.n_vars-1)) {
+                    r += ", ";
+                }
+            }
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
 
     // void visit_Flush(const ASR::Flush_t &x) {}
 
