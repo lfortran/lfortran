@@ -6253,11 +6253,25 @@ static inline ASR::expr_t* extract_array_variable(ASR::expr_t* x) {
         return ASR::down_cast<ASR::ArrayItem_t>(x)->m_v;
     } else if( x->type == ASR::exprType::ArraySection ) {
         return ASR::down_cast<ASR::ArraySection_t>(x)->m_v;
-    } else {
-        LCOMPILERS_ASSERT(false);
     }
 
-    return nullptr;
+    return x;
+}
+
+static inline void extract_indices(ASR::expr_t* x,
+    ASR::array_index_t*& m_args, size_t& n_args) {
+    if( x->type == ASR::exprType::ArrayItem ) {
+        m_args = ASR::down_cast<ASR::ArrayItem_t>(x)->m_args;
+        n_args = ASR::down_cast<ASR::ArrayItem_t>(x)->n_args;
+        return ;
+    } else if( x->type == ASR::exprType::ArraySection ) {
+        m_args = ASR::down_cast<ASR::ArraySection_t>(x)->m_args;
+        n_args = ASR::down_cast<ASR::ArraySection_t>(x)->n_args;
+        return ;
+    }
+
+    m_args = nullptr;
+    n_args = 0;
 }
 
 static inline bool is_array_indexed_with_array_indices(ASR::array_index_t* m_args, size_t n_args) {

@@ -1316,13 +1316,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     Vec<ASR::stmt_t*>* current_body;
     SymbolTable* current_scope;
-    bool is_assignment_target_array_section;
+    bool is_assignment_target_array_section_item;
     bool is_simd_expression;
     ASR::ttype_t* simd_type;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
-        is_assignment_target_array_section(false), is_simd_expression(false), simd_type(nullptr) {}
+        is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr) {}
 
     #define is_current_expr_linked_to_target exprs_with_target.find(*current_expr) != exprs_with_target.end()
 
@@ -1339,7 +1339,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     #define force_replace_current_expr_for_array(name_hint) *current_expr = create_and_allocate_temporary_variable_for_array( \
                 *current_expr, name_hint, al, current_body, \
-                current_scope, exprs_with_target, is_assignment_target_array_section); \
+                current_scope, exprs_with_target, is_assignment_target_array_section_item); \
 
     #define force_replace_current_expr_for_struct(name_hint) *current_expr = create_and_allocate_temporary_variable_for_struct( \
             *current_expr, name_hint, al, current_body, \
@@ -1516,11 +1516,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
-            if( exprs_with_target.find(*current_expr) == exprs_with_target.end() ) {
+            if( exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
+                !is_assignment_target_array_section_item ) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
                     current_scope, exprs_with_target);
             }
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             return ;
         }
 
@@ -1682,14 +1684,15 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
-            bool is_assignment_target_array_section = replacer.is_assignment_target_array_section;
-            replacer.is_assignment_target_array_section = true;
+        if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
+            ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ) {
+            bool is_assignment_target_array_section_item = replacer.is_assignment_target_array_section_item;
+            replacer.is_assignment_target_array_section_item = true;
             ASR::expr_t** current_expr_copy_8 = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
             call_replacer();
             current_expr = current_expr_copy_8;
-            replacer.is_assignment_target_array_section = is_assignment_target_array_section;
+            replacer.is_assignment_target_array_section_item = is_assignment_target_array_section_item;
         }
         ASR::expr_t** current_expr_copy_9 = current_expr;
         bool is_simd_expr_copy = replacer.is_simd_expression;
