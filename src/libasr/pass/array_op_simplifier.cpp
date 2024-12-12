@@ -503,36 +503,27 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         size_t offset_for_array_indices = 0;
 
         ASR::array_index_t* m_args; size_t n_args;
-        if( is_target_array ) {
-            ASRUtils::extract_indices(target, m_args, n_args);
-            for( size_t i = 0; i < n_args; i++ ) {
-                if( m_args[i].m_left == nullptr &&
-                    m_args[i].m_right != nullptr &&
-                    m_args[i].m_step == nullptr ) {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(
-                            m_args[i].m_right)) ) {
-                        vars_expr.push_back(al, m_args[i].m_right);
-                    }
-                }
-            }
-            offset_for_array_indices++;
-        }
 
-        if( is_value_array ) {
-            ASRUtils::extract_indices(value, m_args, n_args);
-            for( size_t i = 0; i < n_args; i++ ) {
-                if( m_args[i].m_left == nullptr &&
-                    m_args[i].m_right != nullptr &&
-                    m_args[i].m_step == nullptr ) {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(
-                            m_args[i].m_right)) ) {
-                        vars_expr.push_back(al, m_args[i].m_right);
-                    }
-                }
-            }
-            offset_for_array_indices++;
-        }
+        #define fill_array_indices_in_vars_expr(expr, is_expr_array) \
+            if( is_expr_array ) { \
+                ASRUtils::extract_indices(expr, m_args, n_args); \
+                for( size_t i = 0; i < n_args; i++ ) { \
+                    if( m_args[i].m_left == nullptr && \
+                        m_args[i].m_right != nullptr && \
+                        m_args[i].m_step == nullptr ) { \
+                        if( ASRUtils::is_array(ASRUtils::expr_type( \
+                                m_args[i].m_right)) ) { \
+                            vars_expr.push_back(al, m_args[i].m_right); \
+                        } \
+                    } \
+                } \
+                offset_for_array_indices++; \
+            } \
 
+        fill_array_indices_in_vars_expr(target, is_target_array)
+        fill_array_indices_in_vars_expr(value, is_value_array)
+
+        // Common code for target and value
         std::unordered_map<size_t, Vec<ASR::expr_t*>> var2indices;
         std::unordered_map<ASR::expr_t*, std::pair<ASR::expr_t*, IndexType>> index2var;
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
@@ -556,94 +547,53 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         }
 
         size_t j = offset_for_array_indices;
-        if( is_target_array ) {
-            Vec<ASR::array_index_t> target_array_item_args;
-            target_array_item_args.reserve(al, n_args);
-            ASRUtils::extract_indices(target, m_args, n_args);
-            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-            Vec<ASR::expr_t*> new_target_indices; new_target_indices.reserve(al, n_args);
-            for( size_t i = 0; i < (n_args == 0 ? var_rank : n_args); i++ ) {
-                if( m_args && m_args[i].m_left == nullptr &&
-                    m_args[i].m_right != nullptr &&
-                    m_args[i].m_step == nullptr ) {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(
-                            m_args[i].m_right)) ) {
-                        ASR::array_index_t array_index;
-                        array_index.loc = loc;
-                        array_index.m_left = nullptr;
-                        Vec<ASR::array_index_t> indices1; indices1.reserve(al, 1);
-                        ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
-                        index1.m_right = var2indices[j][0]; index1.m_step = nullptr;
-                        new_target_indices.push_back(al, index1.m_right);
-                        indices1.push_back(al, index1);
-                        array_index.m_right = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                            m_args[i].m_right, indices1.p, 1, int32_type,
-                            ASR::arraystorageType::ColMajor, nullptr));
-                        array_index.m_step = nullptr;
-                        target_array_item_args.push_back(al, array_index);
-                        j++;
-                    } else {
-                        target_array_item_args.push_back(al, m_args[i]);
-                    }
-                } else {
-                    ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
-                    index1.m_right = var2indices[0][i]; index1.m_step = nullptr;
-                    target_array_item_args.push_back(al, index1);
-                    new_target_indices.push_back(al, var2indices[0][i]);
-                }
+        #define create_array_item_array_indexed_expr(expr, expr_address, is_expr_array, var2indices_key) \
+            if( is_expr_array ) { \
+                Vec<ASR::array_index_t> array_item_args; \
+                array_item_args.reserve(al, n_args); \
+                ASRUtils::extract_indices(expr, m_args, n_args); \
+                ASRUtils::ExprStmtDuplicator expr_duplicator(al); \
+                Vec<ASR::expr_t*> new_indices; new_indices.reserve(al, n_args); \
+                for( size_t i = 0; i < (n_args == 0 ? var_rank : n_args); i++ ) { \
+                    if( m_args && m_args[i].m_left == nullptr && \
+                        m_args[i].m_right != nullptr && \
+                        m_args[i].m_step == nullptr ) { \
+                        if( ASRUtils::is_array(ASRUtils::expr_type( \
+                                m_args[i].m_right)) ) { \
+                            ASR::array_index_t array_index; \
+                            array_index.loc = loc; \
+                            array_index.m_left = nullptr; \
+                            Vec<ASR::array_index_t> indices1; indices1.reserve(al, 1); \
+                            ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr; \
+                            index1.m_right = var2indices[j][0]; index1.m_step = nullptr; \
+                            new_indices.push_back(al, index1.m_right); \
+                            indices1.push_back(al, index1); \
+                            array_index.m_right = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, \
+                                m_args[i].m_right, indices1.p, 1, int32_type, \
+                                ASR::arraystorageType::ColMajor, nullptr)); \
+                            array_index.m_step = nullptr; \
+                            array_item_args.push_back(al, array_index); \
+                            j++; \
+                        } else { \
+                            array_item_args.push_back(al, m_args[i]); \
+                        } \
+                    } else { \
+                        ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr; \
+                        index1.m_right = var2indices[var2indices_key][i]; index1.m_step = nullptr; \
+                        array_item_args.push_back(al, index1); \
+                        new_indices.push_back(al, var2indices[var2indices_key][i]); \
+                    } \
+                } \
+                var2indices[var2indices_key] = new_indices; \
+                ASR::ttype_t* expr_type = ASRUtils::type_get_past_array_pointer_allocatable( \
+                        ASRUtils::expr_type(expr)); \
+                *expr_address = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util( \
+                    al, loc, ASRUtils::extract_array_variable(expr), array_item_args.p, \
+                    array_item_args.size(), expr_type, ASR::arraystorageType::ColMajor, nullptr)); \
             }
-            var2indices[0] = new_target_indices;
 
-            ASR::ttype_t* target_type = ASRUtils::type_get_past_array_pointer_allocatable(
-                    ASRUtils::expr_type(target));
-            *target_address = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(
-                al, loc, ASRUtils::extract_array_variable(target), target_array_item_args.p,
-                target_array_item_args.size(), target_type, ASR::arraystorageType::ColMajor, nullptr));
-        }
-
-        if( is_value_array ) {
-            Vec<ASR::array_index_t> value_array_item_args;
-            value_array_item_args.reserve(al, n_args);
-            ASRUtils::extract_indices(value, m_args, n_args);
-            Vec<ASR::expr_t*> new_value_indices; new_value_indices.reserve(al, n_args);
-            for( size_t i = 0; i < (n_args == 0 ? var_rank : n_args); i++ ) {
-                if( m_args && m_args[i].m_left == nullptr &&
-                    m_args[i].m_right != nullptr &&
-                    m_args[i].m_step == nullptr ) {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(
-                            m_args[i].m_right)) ) {
-                        ASR::array_index_t array_index;
-                        array_index.loc = loc;
-                        array_index.m_left = nullptr;
-                        Vec<ASR::array_index_t> indices1; indices1.reserve(al, 1);
-                        ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
-                        index1.m_right = var2indices[j][0]; index1.m_step = nullptr;
-                        new_value_indices.push_back(al, index1.m_right);
-                        indices1.push_back(al, index1);
-                        array_index.m_right = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                            m_args[i].m_right, indices1.p, 1, int32_type,
-                            ASR::arraystorageType::ColMajor, nullptr));
-                        array_index.m_step = nullptr;
-                        value_array_item_args.push_back(al, array_index);
-                        j++;
-                    } else {
-                        value_array_item_args.push_back(al, m_args[i]);
-                    }
-                } else {
-                    ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
-                    index1.m_right = var2indices[1][i]; index1.m_step = nullptr;
-                    value_array_item_args.push_back(al, index1);
-                    new_value_indices.push_back(al, var2indices[1][i]);
-                }
-            }
-            var2indices[1] = new_value_indices;
-
-            ASR::ttype_t* value_type = ASRUtils::type_get_past_array_pointer_allocatable(
-                    ASRUtils::expr_type(value));
-            *value_address = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(
-                al, loc, ASRUtils::extract_array_variable(value), value_array_item_args.p,
-                value_array_item_args.size(), value_type, ASR::arraystorageType::ColMajor, nullptr));
-        }
+        create_array_item_array_indexed_expr(target, target_address, is_target_array, 0)
+        create_array_item_array_indexed_expr(value, value_address, is_value_array, 1)
 
         size_t vars_expr_size = vars_expr.size();
         for( size_t i = offset_for_array_indices; i < vars_expr_size; i++ ) {
