@@ -306,6 +306,9 @@ program continue_compilation_2
     real(3) :: x
     !kind2
     real(*) kind2_a
+    !type_conflict1
+    integer, parameter, target :: foo=4
+    print *,foo
 
     contains
     logical function f(x)

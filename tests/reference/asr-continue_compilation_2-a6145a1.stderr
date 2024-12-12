@@ -85,6 +85,12 @@ semantic error: Expected initialization expression for kind
 308 |     real(*) kind2_a
     |          ^ 
 
+semantic error: Parameter attribute cannot be used with Target attribute
+   --> tests/errors/continue_compilation_2.f90:310:5
+    |
+310 |     integer, parameter, target :: foo=4
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:23:14
    |
@@ -568,8 +574,14 @@ semantic error: Type mismatch in assignment, the types must be compatible
 280 |     tm2_x = 5 + "x"
     |     ^^^^^       ^^^ type mismatch (integer and string)
 
-semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:321:5
+semantic error: Variable 'foo' is not declared
+   --> tests/errors/continue_compilation_2.f90:311:13
     |
-321 |     y = 99  
+311 |     print *,foo
+    |             ^^^ 'foo' is undeclared
+
+semantic error: Cannot assign to an intent(in) variable `y`
+   --> tests/errors/continue_compilation_2.f90:324:5
+    |
+324 |     y = 99  
     |     ^ 
