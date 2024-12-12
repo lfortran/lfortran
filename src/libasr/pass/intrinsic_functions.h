@@ -431,19 +431,19 @@ create_unary_function(Erf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
 
 namespace Isnan{
-    static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,     
-            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,                           
-            diag::Diagnostics& /*diag*/) {                                      
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          
-        ASRUtils::ASRBuilder b(al, loc);                                        
-        return b.bool_t(std::isnan(rv), t);                                       
-    }  
-    static inline ASR::expr_t* instantiate_Isnan(Allocator &al,                  
-            const Location &loc, SymbolTable *scope,                            
-            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,           
-            Vec<ASR::call_arg_t> &new_args, int64_t overload_id) {              
-        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,    
-            "is_nan", arg_types[0], return_type, new_args, overload_id);     
+    static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
+            diag::Diagnostics& /*diag*/) {
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        ASRUtils::ASRBuilder b(al, loc);
+        return b.bool_t(std::isnan(rv), t);
+    }
+    static inline ASR::expr_t* instantiate_Isnan(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &new_args, int64_t overload_id) {
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "is_nan", arg_types[0], return_type, new_args, overload_id);
     }
 }
 
@@ -3318,7 +3318,7 @@ namespace Mod {
         */
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
         int kind2 = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
-        int upper_kind = std::max(kind, kind2); 
+        int upper_kind = std::max(kind, kind2);
         if (is_real(*arg_types[1])) {
             ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, upper_kind));
             ASR::expr_t* arg0 = b.r2r_t(args[0], new_type);
@@ -3336,7 +3336,7 @@ namespace Mod {
 
             body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.Div(arg0, arg1)))));
         }
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
