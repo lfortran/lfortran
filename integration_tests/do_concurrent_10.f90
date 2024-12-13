@@ -47,4 +47,3 @@ print *, a(2, 3)
 call parallel_sum(n, m, a)
 
 end program
-
