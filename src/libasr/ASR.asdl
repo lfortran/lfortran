@@ -60,7 +60,7 @@ stmt
     | IntrinsicImpureSubroutine(int sub_intrinsic_id, expr* args, int overload_id)
     | Where(expr test, stmt* body, stmt* orelse)
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
-    | Nullify(symbol* vars)
+    | Nullify(expr* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)

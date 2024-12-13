@@ -178,7 +178,7 @@
                                     []
                                     [(Var 6 de)]
                                     [(Nullify
-                                        [6 table]
+                                        [(Var 6 table)]
                                     )
                                     (Associate
                                         (StructInstanceMember

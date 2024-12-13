@@ -255,7 +255,7 @@
                                     (Var 3 ptr)
                                     (Var 3 stat)]
                                     [(Nullify
-                                        [3 ptr]
+                                        [(Var 3 ptr)]
                                     )
                                     (Assignment
                                         (Var 3 stat)
@@ -387,7 +387,7 @@
                                     (Var 4 def)
                                     (Var 4 stat)]
                                     [(Nullify
-                                        [4 ptr]
+                                        [(Var 4 ptr)]
                                     )
                                     (Assignment
                                         (Var 4 stat)

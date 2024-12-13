@@ -2890,6 +2890,14 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "../integration_tests/nullify_03.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/nullify_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/kwargs_02.f90"
 asr = true
 

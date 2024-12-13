@@ -151,7 +151,7 @@
                                     (Var 13 key)
                                     (Var 13 ptr)]
                                     [(Nullify
-                                        [13 ptr]
+                                        [(Var 13 ptr)]
                                     )
                                     (DoLoop
                                         ()
