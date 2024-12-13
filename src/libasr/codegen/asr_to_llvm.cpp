@@ -3727,10 +3727,10 @@ public:
 
                     // Make dimension length and return size compatible.(TODO : array_size should be of type int64)
                     if(ASRUtils::extract_kind_from_ttype_t(
-                        ASRUtils::expr_type(m_dims[i].m_length)) > 32){
+                        ASRUtils::expr_type(m_dims[i].m_length)) > 4){
                         tmp = builder->CreateTrunc(tmp, llvm::IntegerType::get(context, 32));
                     } else if (ASRUtils::extract_kind_from_ttype_t(
-                        ASRUtils::expr_type(m_dims[i].m_length)) < 32){
+                        ASRUtils::expr_type(m_dims[i].m_length)) < 4){
                         tmp = builder->CreateSExt(tmp, llvm::IntegerType::get(context, 32));
                     }
 
