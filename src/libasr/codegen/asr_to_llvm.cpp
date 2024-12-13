@@ -1132,12 +1132,20 @@ public:
 
     void visit_Nullify(const ASR::Nullify_t& x) {
         for( size_t i = 0; i < x.n_vars; i++ ) {
+            ASR::symbol_t* tmp_sym;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_vars[i])) {
+                tmp_sym = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_vars[i])->m_m;
+            } else if (ASR::is_a<ASR::Var_t>(*x.m_vars[i])) {
+                tmp_sym = ASR::down_cast<ASR::Var_t>(x.m_vars[i])->m_v;
+            } else {
+                throw CodeGenError("Only StructInstanceMember and Variable are supported Nullify type");
+            }
             std::uint32_t h = get_hash((ASR::asr_t*)x.m_vars[i]);
             llvm::Value *target = llvm_symtab[h];
             llvm::Type* tp = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
-                ASRUtils::symbol_type(x.m_vars[i]))), module.get());
+                ASRUtils::symbol_type(tmp_sym))), module.get());
             llvm::Value* np = builder->CreateIntToPtr(
                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                 tp->getPointerTo());
