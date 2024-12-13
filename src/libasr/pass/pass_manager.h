@@ -220,25 +220,23 @@ namespace LCompilers {
             c_skip_pass{false} {
             _passes_with_experimental_simplifier = {
                 "global_stmts",
-                "init_expr",// This pass shouldn't be needed.
+                "init_expr",
                 "function_call_in_declaration",
                 "openmp",
-                "implied_do_loops", // Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
-                "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
+                "implied_do_loops",
+                "simplifier",
                 "nested_vars",
                 "transform_optional_argument_functions",
                 "forall",
                 "class_constructor",
                 "pass_list_expr",
                 "where_simplifier",
-                "subroutine_from_function_simplifier", // To be re-written after simplifier is implemented.
-                "array_op_simplifier", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
-                "symbolic",
-                "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
-                "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
+                "subroutine_from_function_simplifier",
                 "array_op_simplifier",
-                // "subroutine_from_function", There should be no need to apply this twice
-                // "array_op", There should be no need to apply this twice
+                "symbolic",
+                "intrinsic_function",
+                "intrinsic_subroutine",
+                "array_op_simplifier",
                 "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",
@@ -255,26 +253,24 @@ namespace LCompilers {
             };
             _with_optimization_passes_for_experimental_simplifier = {
                 "global_stmts",
-                "init_expr",// This pass shouldn't be needed.
+                "init_expr",
                 "function_call_in_declaration",
                 "openmp",
-                "implied_do_loops", // Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
-                "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
+                "implied_do_loops",
+                "simplifier",
                 "nested_vars",
                 "transform_optional_argument_functions",
                 "forall",
                 "class_constructor",
                 "pass_list_expr",
                 "where_simplifier",
-                "subroutine_from_function_simplifier", // To be re-written after simplifier is implemented.
-                "array_op_simplifier", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
+                "subroutine_from_function_simplifier",
+                "array_op_simplifier",
                 "symbolic",
                 "flip_sign",
-                "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
-                "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
+                "intrinsic_function",
+                "intrinsic_subroutine",
                 "array_op_simplifier",
-                // "subroutine_from_function", There should be no need to apply this twice
-                // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",
