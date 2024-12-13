@@ -4401,50 +4401,43 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
+    bool is_expr_a_pointer(const ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return ASR::is_a<ASR::Pointer_t>(*ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_type);
+        } else if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type);
+        } else {
+            return false;
+        }
+    }
+
     void visit_Nullify(const AST::Nullify_t &x) {
-        Vec<ASR::symbol_t*> arg_vec;
+        Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
-            if( tmp_expr->type != ASR::exprType::Var ) {
-                if (tmp_expr->type == ASR::exprType::StructInstanceMember && ASR::is_a<ASR::Pointer_t>(*ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_type)) {
-                    arg_vec.push_back(al, ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_m);
-                } else {
+            if (is_expr_a_pointer(tmp_expr)) {
+                if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) || ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                    arg_vec.push_back(al, tmp_expr);
+                }
+                else {
                     diag.add(Diagnostic(
-                        "Only a pointer variable symbol "
-                        "can be nullified.",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{tmp_expr->base.loc})
-                        }));
-                    throw SemanticAbort();
+                    "Pointer must be of Variable type or StructInstanceMember type in order to get nullified.",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{tmp_expr->base.loc})
+                    }));
+                throw SemanticAbort();
                 }
             } else {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                ASR::symbol_t* tmp_sym = tmp_var->m_v;
-                if( ASRUtils::symbol_get_past_external(tmp_sym)->type
-                    != ASR::symbolType::Variable ) {
-                    diag.add(Diagnostic(
-                        "Only a pointer variable symbol "
-                        "can be nullified.",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{tmp_expr->base.loc})
-                        }));
-                    throw SemanticAbort();
-                } else {
-                    ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                    if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
-                        arg_vec.push_back(al, tmp_sym);
-                    } else {
-                        diag.add(Diagnostic(
-                            "Only a pointer variable symbol "
-                            "can be nullified.",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{tmp_expr->base.loc})
-                            }));
-                        throw SemanticAbort();
-                    }
-                }
+                diag.add(Diagnostic(
+                    "Only a pointer variable symbol "
+                    "can be nullified.",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{tmp_expr->base.loc})
+                    }));
+                throw SemanticAbort();
             }
         }
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
