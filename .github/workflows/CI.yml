@@ -511,7 +511,6 @@ jobs:
       
       - name: Test POT3D
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'macos')
         run: |
             git clone https://github.com/gxyd/pot3d.git
             FC="$(pwd)/src/bin/lfortran"
