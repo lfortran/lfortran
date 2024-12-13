@@ -94,7 +94,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "where",
-                        "nested_vars", "insert_deallocate", "openmp"] and
+                        "nested_vars", "insert_deallocate", "openmp",
+                        "simplifier", "array_op_simplifier"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
