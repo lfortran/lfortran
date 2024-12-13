@@ -248,6 +248,18 @@ char previous_nonspace_character(const std::string &s, size_t pos) {
     return '\0';
 }
 
+char next_nonspace_character(const std::string &s, size_t pos) {
+    pos++;
+    while (pos < s.size()) {
+        if (s[pos] != ' ' && s[pos] != '\t') {
+            return s[pos];
+        }
+        ++pos;
+    }
+    return '\0';
+}
+
+
 void is_within_string(
     const std::string &s,
     size_t pos,
@@ -690,7 +702,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
             newline = false;
             if (s[pos] == '!' && !in_string) in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&' && !in_string) {
+            if (!in_comment && s[pos] == '&' &&(next_nonspace_character(s,pos) == '\n' || next_nonspace_character(s,pos) == '!')) {
                 size_t pos2=pos+1;
                 bool ws_or_comment = false;
                 cont1(s, pos2, in_string, quote, ws_or_comment);
@@ -701,10 +713,10 @@ std::string prescan(const std::string &s, LocationManager &lm,
                         if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
                     }}
                     // `pos` will move by more than 1, close the old interval
-    //                lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
+                    //lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
                     // Move `pos`
                     pos = pos2;
-                    //if (s[pos] == '&') pos++;
+                    if (s[pos] == '&' &&  previous_nonspace_character(s, pos) == '\n') pos++;
                     // Start a new interval (just the starts, the size will be
                     // filled in later)
                     lm.files.back().out_start.push_back(out.size());
