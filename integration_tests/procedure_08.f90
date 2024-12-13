@@ -2,16 +2,17 @@ module procedure_08_module
 contains
     subroutine cb(x)
         implicit none
-        integer, intent(in), optional :: x(:)
+        integer, intent(inout), optional :: x(:)
     end subroutine cb
 
     subroutine calfun(x)
         implicit none
-        integer, intent(in), optional :: x(:)
+        integer, intent(inout), optional :: x(:)
         logical :: y
+        x = 2
         y = present(x)
         print *, y
-        if (y) error stop
+        if (.not. y) error stop
     end subroutine calfun
 end module procedure_08_module
 
@@ -25,7 +26,12 @@ contains
     subroutine temp(call_back)
         implicit none
         procedure(cb), optional :: call_back
-        if(present(call_back)) call call_back()   
+        integer :: x(4) 
+        if(present(call_back)) then
+            call call_back(x) 
+            print *, x
+            if(x(1) /= 2) error stop
+        end if  
     end subroutine temp
     subroutine temp2(call_back)
         implicit none
