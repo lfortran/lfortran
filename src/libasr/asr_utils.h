@@ -6249,6 +6249,7 @@ static inline ASR::asr_t* make_Associate_t_util(
 }
 
 static inline ASR::expr_t* extract_array_variable(ASR::expr_t* x) {
+    LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x)));
     if( x->type == ASR::exprType::ArrayItem ) {
         return ASR::down_cast<ASR::ArrayItem_t>(x)->m_v;
     } else if( x->type == ASR::exprType::ArraySection ) {
