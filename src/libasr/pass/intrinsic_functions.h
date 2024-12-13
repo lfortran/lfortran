@@ -5984,16 +5984,67 @@ namespace Max {
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        bool all_same_kind = true;
         for(size_t i=1; i<args.size(); i++) {
             if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
                 diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
+                all_same_kind = false;
             }
             if (ASRUtils::type_get_past_array_pointer_allocatable(arg_type)->type != ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(args[i]))->type) {
                 append_error(diag, "All arguments to max0 must be of the same type", loc);
             return nullptr;
             }
         }
+        if (!all_same_kind) {
+            // Determine the target kind (e.g., largest kind among args)
+            int target_kind = -1;
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(args.p[i]);
+                int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                if (kind > target_kind) {
+                    target_kind = kind;
+                }
+            }
+
+            // Change all arguments to the target kind
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(args.p[i]);
+                if (ASR::is_a<ASR::Real_t>(*arg_type)) {
+                    // Handle real arguments
+                    if (ASR::is_a<ASR::RealConstant_t>(*args.p[i])) {
+                        // Constant case
+                        args.p[i] = EXPR(ASR::make_RealConstant_t(
+                            al, loc, ASR::down_cast<ASR::RealConstant_t>(args.p[i])->m_r,
+                            ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
+                    } else {
+                        // Variable or other expressions
+                        args.p[i] = EXPR(ASR::make_Cast_t(
+                            al, loc, args.p[i], ASR::cast_kindType::RealToReal,
+                            ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
+                    }
+                } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+                    // Handle integer arguments
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*args.p[i])) {
+                        // Constant case
+                        args.p[i] = EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args.p[i])->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind))));
+                    } else {
+                        // Variable or other expressions
+                        args.p[i] = EXPR(ASR::make_Cast_t(
+                            al, loc, args.p[i], ASR::cast_kindType::IntegerToInteger,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
+                    }
+                } else {
+                    // Unsupported argument type
+                    diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},
+                        "help: ensure all arguments are of a convertible type");
+                }
+            }
+        }
+
+
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
         ASR::expr_t *arg_value;
