@@ -1275,11 +1275,10 @@ public:
         std::string r = indent;
         r += "nullify (";
         for (int i = 0; i < static_cast<int>(x.n_vars); i++) {
-            if(x.m_vars[i]->type == ASR::Variable) {
-                r += ASRUtils::symbol_name(x.m_vars[i]);
-                if(i != static_cast<int>(x.n_vars-1)) {
-                    r += ", ";
-                }
+            visit_expr(*x.m_vars[i]);
+            r += src;
+            if(i != static_cast<int>(x.n_vars-1)) {
+                r += ", ";
             }
         }
         r += ")";
