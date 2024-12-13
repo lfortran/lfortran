@@ -1,4 +1,4 @@
-module p
+module module_nullify_04
     implicit none
 
     type :: scaled_data_structure
@@ -7,7 +7,7 @@ module p
 end module
 
 program nullify_04
-    use p, only : scaled_data_structure
+    use module_nullify_04, only : scaled_data_structure
     implicit none
     type(scaled_data_structure) :: s
     type(scaled_data_structure) :: s2

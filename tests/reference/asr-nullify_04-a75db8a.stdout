@@ -2,6 +2,57 @@
     (SymbolTable
         1
         {
+            module_nullify_04:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            scaled_data_structure:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            one_d_real_pointer:
+                                                (Variable
+                                                    3
+                                                    one_d_real_pointer
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    scaled_data_structure
+                                    []
+                                    [one_d_real_pointer]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    module_nullify_04
+                    []
+                    .false.
+                    .false.
+                ),
             nullify_04:
                 (Program
                     (SymbolTable
@@ -58,14 +109,14 @@
                                     4
                                     scaled_data_structure
                                     2 scaled_data_structure
-                                    p
+                                    module_nullify_04
                                     []
                                     scaled_data_structure
                                     Public
                                 )
                         })
                     nullify_04
-                    [p]
+                    [module_nullify_04]
                     [(Nullify
                         [(StructInstanceMember
                             (Var 4 s)
@@ -96,57 +147,6 @@
                             ()
                         )]
                     )]
-                ),
-            p:
-                (Module
-                    (SymbolTable
-                        2
-                        {
-                            scaled_data_structure:
-                                (Struct
-                                    (SymbolTable
-                                        3
-                                        {
-                                            one_d_real_pointer:
-                                                (Variable
-                                                    3
-                                                    one_d_real_pointer
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Pointer
-                                                        (Array
-                                                            (Real 4)
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
-                                                        )
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    scaled_data_structure
-                                    []
-                                    [one_d_real_pointer]
-                                    Source
-                                    Public
-                                    .false.
-                                    .false.
-                                    []
-                                    ()
-                                    ()
-                                )
-                        })
-                    p
-                    []
-                    .false.
-                    .false.
                 )
         })
     []

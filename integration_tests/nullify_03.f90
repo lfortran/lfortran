@@ -1,4 +1,4 @@
-module p
+module module_nullify_03
     implicit none
     integer, parameter, private :: mxdim = 3
     type :: rp1d
@@ -15,7 +15,7 @@ module p
 end module
 
 program nullify_03
-    use p
+    use module_nullify_03
     implicit none
     type(sds) :: s
     ! allocate(s%scales(1)%f(2))
