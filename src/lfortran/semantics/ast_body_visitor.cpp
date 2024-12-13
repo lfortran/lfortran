@@ -4401,24 +4401,13 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
-    bool is_expr_a_pointer(const ASR::expr_t *expr) {
-        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
-            return ASR::is_a<ASR::Pointer_t>(*ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_type);
-        } else if (ASR::is_a<ASR::Var_t>(*expr)) {
-            ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(expr)->m_v);
-            return ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type);
-        } else {
-            return false;
-        }
-    }
-
     void visit_Nullify(const AST::Nullify_t &x) {
         Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
-            if (is_expr_a_pointer(tmp_expr)) {
+            if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr))) {
                 if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) || ASR::is_a<ASR::Var_t>(*tmp_expr)) {
                     arg_vec.push_back(al, tmp_expr);
                 }
