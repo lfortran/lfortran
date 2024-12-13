@@ -51,9 +51,9 @@ Then download a tarball from
 [https://lfortran.org/download/](https://lfortran.org/download/),
 e.g.:
 ```bash
-wget https://lfortran.github.io/tarballs/dev/lfortran-0.9.0.tar.gz
-tar xzf lfortran-0.9.0.tar.gz
-cd lfortran-0.9.0
+wget https://github.com/lfortran/lfortran/releases/download/v0.42.0/lfortran-0.42.0.tar.gz
+tar xzf lfortran-0.42.0.tar.gz
+cd lfortran-0.42.0.tar.gz
 ```
 And build:
 ```
