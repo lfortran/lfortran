@@ -1668,10 +1668,11 @@ namespace Cshift {
             end do
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
+            int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 2);
-            for( int idim = 0; idim < 2; idim++ ) {
+            for( int idim = 0; idim < n_dims_return_type; idim++ ) {
                 ASR::dimension_t empty_dim;
                 empty_dim.loc = loc;
                 empty_dim.m_start = nullptr;
