@@ -10,6 +10,7 @@ contains
         integer, intent(in), optional :: x(:)
         logical :: y
         y = present(x)
+        print *, y
         if (y) error stop
     end subroutine calfun
 end module procedure_08_module
