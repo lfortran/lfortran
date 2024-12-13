@@ -770,6 +770,12 @@ pass = "flip_sign"
 cumulative = true
 
 [[test]]
+filename = "array_op_simplifier_test.f90"
+asr = true
+pass = "simplifier,array_op_simplifier"
+options = "--experimental-simplifier"
+
+[[test]]
 filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
@@ -1505,7 +1511,7 @@ run = true
 
 [[test]]
 filename = "finalize_01.f90"
-pass = "insert_deallocate" 
+pass = "insert_deallocate"
 
 [[test]]
 filename = "../integration_tests/block_01.f90"
