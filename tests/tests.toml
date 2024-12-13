@@ -2881,11 +2881,13 @@ asr = true
 filename = "../integration_tests/nullify_01.f90"
 ast = true
 asr = true
+llvm = true
 
 [[test]]
 filename = "../integration_tests/nullify_02.f90"
 ast = true
 asr = true
+llvm = true
 
 [[test]]
 filename = "../integration_tests/nullify_03.f90"
