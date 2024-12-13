@@ -3724,6 +3724,16 @@ public:
                 ptr_loads = 2;
                 for( size_t i = 0; i < n_dims; i++ ) {
                     this->visit_expr_wrapper(m_dims[i].m_length, true);
+
+                    // Make dimension length and return size compatible.(TODO : array_size should be of type int64)
+                    if(ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::expr_type(m_dims[i].m_length)) > 4){
+                        tmp = builder->CreateTrunc(tmp, llvm::IntegerType::get(context, 32));
+                    } else if (ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::expr_type(m_dims[i].m_length)) < 4){
+                        tmp = builder->CreateSExt(tmp, llvm::IntegerType::get(context, 32));
+                    }
+
                     array_size = builder->CreateMul(array_size, tmp);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -10143,6 +10153,16 @@ public:
                         ptr_loads = 2;
                         for( int i = 0; i < n_dims; i++ ) {
                             visit_expr_wrapper(m_dims[i].m_length, true);
+
+                            // Make dimension length and return size compatible.
+                            if(ASRUtils::extract_kind_from_ttype_t(
+                                ASRUtils::expr_type(m_dims[i].m_length)) > kind){
+                                    tmp = builder->CreateTrunc(tmp, llvm::IntegerType::get(context, 8 * kind));
+                            } else if (ASRUtils::extract_kind_from_ttype_t(
+                                ASRUtils::expr_type(m_dims[i].m_length)) < kind){
+                                tmp = builder->CreateSExt(tmp, llvm::IntegerType::get(context, 8 * kind));
+                            }
+
                             llvm_size = builder->CreateMul(tmp, llvm_size);
                         }
                         ptr_loads = ptr_loads_copy;
