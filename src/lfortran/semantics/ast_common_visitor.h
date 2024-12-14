@@ -2617,7 +2617,7 @@ public:
                             if (s.m_name == nullptr) {
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
-                                    if (struct_type) {
+                                    if (struct_type) {  /* no name field, in an open block */
                                         is_common_variable = true;
                                         // add to existing common_block pair
                                         AST::expr_t* expr = s.m_initializer;
@@ -2628,7 +2628,7 @@ public:
                                         common_variables_hash[hash] = common_block_struct_sym;
                                         add_sym_to_struct(var_, struct_type);
                                         is_common_variable = false;
-                                    } else {
+                                    } else { /* no name field, no open block */
                                         is_common_variable = true;
                                         common_block_name = "blank_block";
                                         common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
@@ -2748,7 +2748,7 @@ public:
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
-                                        ::AttrCommon) {
+					   ::AttrCommon) { /* name field -> new block to open */
                                     is_common_variable = true;
                                     common_block_name = sym;
                                     common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
