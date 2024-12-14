@@ -528,7 +528,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_var_sym> named_constant_def_list
 %type <var_sym> named_constant_def
 %type <vec_var_sym> common_block_list
-%type <var_sym> common_block
+%type <vec_var_sym> common_block
+%type <vec_var_sym> common_block_object_list
+%type <var_sym> common_block_object
 %type <vec_ast> data_set_list
 %type <ast> data_set
 %type <vec_ast> data_object_list
@@ -1355,13 +1357,32 @@ named_constant_def
 
 common_block_list
     : common_block_list "," common_block { $$ = $1; PLIST_ADD($$, $3); }
-    | common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
+    | common_block_list common_block { $$ = $1; PLIST_ADD($$, $3); }	
+    | first_common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
+    ;
+
+/* On the first common block, the `//` notation can be omitted entirely */
+first_common_block
+    : common_block
+    | common_block_object_list { $$ = VAR_SYM_DIM_EXPR($1, None, @$); }
     ;
 
 common_block
-    : "/" id "/" expr {  $$ = VAR_SYM_DIM_INIT($2, nullptr, 0, $4, Equal, @$); }
-    | expr { $$ = VAR_SYM_DIM_EXPR($1, None, @$); }
+    : "/" id "/" common_block_object_list {
+       $$ = VAR_SYM_DIM_INIT($2, nullptr, 0, $4, Equal, @$); }
+    | "/" "/" common_block_object_list {
+       $$ = VAR_SYM_DIM_EXPR($3, None, @$); }
     ;
+
+common_block_object_list
+    : common_block_object_list "," common_block_object {
+           $$ = $1; PLIST_ADD($$, 3); }
+    | common_block_object { LIST_NEW($$); PLIST_ADD($$, $1); }
+    ;
+
+common_block_object
+    : id { $$ = VAR_SYM_NAME($1, None, @$); }
+    | id "(" array_comp_decl_list ")" { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
 
 data_set_list
     : data_set_list "," data_set { $$ = $1; LIST_ADD($$, $3); }
