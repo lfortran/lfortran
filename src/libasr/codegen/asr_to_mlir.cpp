@@ -293,16 +293,18 @@ public:
                         ASR::is_a<ASR::ArrayItem_t>(*sf->m_args[i])) {
                     tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
                 }
-                args.push_back(al, tmp);
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
                 } else if (ASRUtils::is_real(*t)) {
+                    tmp = builder->create<mlir::LLVM::FPExtOp>(loc,
+                        builder->getF64Type(), tmp);
                     fmt += " %f";
                 } else if (ASRUtils::is_character(*t)) {
                     fmt += " %s";
                 } else {
                     throw CodeGenError("Unhandled type in print statement", l);
                 }
+                args.push_back(al, tmp);
             }
         } else {
             throw CodeGenError("Unsupported expression as formatter in print", l);
