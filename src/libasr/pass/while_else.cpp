@@ -84,7 +84,7 @@ public:
             ASR::ttype_t *bool_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
             ASR::expr_t *true_expr = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true, bool_type));
             ASR::symbol_t *flag_symbol = LCompilers::ASR::down_cast<ASR::symbol_t>(
-                ASR::make_Variable_t(
+                ASRUtils::make_Variable_t_util(
                 al, loc, target_scope,
                 s.c_str(al), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                 ASR::storage_typeType::Default, bool_type, nullptr,

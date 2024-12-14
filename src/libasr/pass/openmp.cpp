@@ -1315,7 +1315,7 @@ class DoConcurrentVisitor :
                     arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
                     call_args.push_back(al, arg);
 
-                    sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+                    sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
                         loc, fn_scope, s2c(al, sym_name), nullptr, 0,
                         ASR::intentType::InOut, nullptr, nullptr,
                         ASR::storage_typeType::Default,
