@@ -65,6 +65,13 @@ public:
             llvmI8PtrTy = mlir::LLVM::LLVMPointerType::get(builder->getI8Type());
         }
 
+    void visit_expr2(ASR::expr_t &x) {
+        this->visit_expr(x);
+        if (ASR::is_a<ASR::Var_t>(x)) {
+            tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
@@ -134,7 +141,7 @@ public:
         mlir_symtab[h] = builder->create<mlir::LLVM::AllocaOp>(loc, var_type,
             size);
         if (x.m_symbolic_value) {
-            this->visit_expr(*x.m_symbolic_value);
+            this->visit_expr2(*x.m_symbolic_value);
             builder->create<mlir::LLVM::StoreOp>(loc, tmp, mlir_symtab[h]);
         }
     }
@@ -149,7 +156,7 @@ public:
         ASR::Variable_t *m_target = ASRUtils::EXPR2VAR(x.m_target);
         uint32_t h = get_hash((ASR::asr_t*) m_target);
         mlir::Value target = mlir_symtab[h];
-        this->visit_expr(*x.m_value);
+        this->visit_expr2(*x.m_value);
         mlir::Value value = tmp;
         builder->create<mlir::LLVM::StoreOp>(loc, value, target);
     }
@@ -187,9 +194,9 @@ public:
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        this->visit_expr(*x.m_left);
+        this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
-        this->visit_expr(*x.m_right);
+        this->visit_expr2(*x.m_right);
         mlir::Value right = tmp;
         switch (x.m_op) {
             case ASR::binopType::Add: {
@@ -207,9 +214,9 @@ public:
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
-        this->visit_expr(*x.m_left);
+        this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
-        this->visit_expr(*x.m_right);
+        this->visit_expr2(*x.m_right);
         mlir::Value right = tmp;
         switch (x.m_op) {
             case ASR::binopType::Add: {
@@ -226,58 +233,76 @@ public:
         }
     }
 
-    void visit_Print(const ASR::Print_t &x) {
+    void handle_Print(const Location &l, ASR::expr_t *x) {
         std::string fmt = "";
         Vec<mlir::Value> args;
-        LCOMPILERS_ASSERT(x.m_text != nullptr &&
-            ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text)));
-        if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
-            ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(
-                x.m_text);
-            args.reserve(al, sf->n_args);
+        LCOMPILERS_ASSERT(x != nullptr &&
+            ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x)));
+        if (ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(x)) {
+            args.reserve(al, sf->n_args+1);
+            args.push_back(al, nullptr); // Later used by `printf_fmt`
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
-                this->visit_expr(*sf->m_args[i]);
+                this->visit_expr2(*sf->m_args[i]);
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
-                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc,
-                        tmp));
+                    args.push_back(al, tmp);
                 } else if (ASRUtils::is_real(*t)) {
                     fmt += " %f";
-                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc,
-                        tmp));
+                    args.push_back(al, tmp);
                 } else {
-                    throw CodeGenError("Unhandled type in print statement",
-                        x.base.base.loc);
+                    throw CodeGenError("Unhandled type in print statement", l);
+
                 }
             }
         } else {
-            throw CodeGenError("Unsupported expression as formatter in print",
-                x.base.base.loc);
+            throw CodeGenError("Unsupported expression as formatter in print", l);
         }
         fmt += "\n";
 
+        static int itr = 0; ++itr;
         mlir::OpBuilder builder0(module->getBodyRegion());
+        mlir::LLVM::LLVMFuncOp printf_fn =
+            module->lookupSymbol<mlir::LLVM::LLVMFuncOp>("printf");
+        if (!printf_fn) {
+            mlir::LLVM::LLVMVoidType voidTy =
+                mlir::LLVM::LLVMVoidType::get(context.get());
+            mlir::LLVM::LLVMFunctionType llvmFnType =
+                mlir::LLVM::LLVMFunctionType::get(voidTy, llvmI8PtrTy, true);
+            printf_fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
+                loc, "printf", llvmFnType);
+        }
         mlir::LLVM::LLVMArrayType arrayI8Ty = mlir::LLVM::LLVMArrayType::get(
             builder->getI8Type(), fmt.size());
-        mlir::LLVM::GlobalOp glocal_str = builder0.create<mlir::LLVM::GlobalOp>(
-            loc, arrayI8Ty, false, mlir::LLVM::Linkage::External, "printf_fmt",
-            builder->getStringAttr(fmt));
-
-        mlir::LLVM::LLVMVoidType voidTy = mlir::LLVM::LLVMVoidType::get(context.get());
-        mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
-            voidTy, llvmI8PtrTy, true);
-        mlir::LLVM::LLVMFuncOp fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
-            loc, "printf", llvmFnType);
+        // FIXME: Add "\00" to end of `builder->getStringAttr(fmt)` string.
+        // Now, the fmt string value is " %d\n", but it needs to be " %d\n\00"
+        mlir::LLVM::GlobalOp global_str = builder0.create<mlir::LLVM::GlobalOp>(
+            loc, arrayI8Ty, false, mlir::LLVM::Linkage::Private,
+            "printf_fmt_" + std::to_string(itr), builder->getStringAttr(fmt));
 
         mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
             builder->getI64Type(), builder->getIndexAttr(0));
         mlir::Value globalPtr = builder->create<mlir::LLVM::AddressOfOp>(
-            loc, glocal_str);
+            loc, global_str);
         globalPtr = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
             globalPtr, mlir::ValueRange{zero, zero});
-        builder->create<mlir::LLVM::CallOp>(loc, fn, mlir::ValueRange{globalPtr,
-            args[0]});
+        args.p[0] = globalPtr;
+        builder->create<mlir::LLVM::CallOp>(loc, printf_fn,
+            mlir::ValueRange{args.as_vector()});
+    }
+
+    void visit_Print(const ASR::Print_t &x) {
+        handle_Print(x.base.base.loc, x.m_text);
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        if (!x.m_unit) {
+            LCOMPILERS_ASSERT(x.n_values == 1);
+            handle_Print(x.base.base.loc, x.m_values[0]);
+        } else {
+            throw CodeGenError("Only write(*, *) [...] is implemented for now",
+                    x.base.base.loc);
+        }
     }
 
 };
