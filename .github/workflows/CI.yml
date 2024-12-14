@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - Harshil
     tags:
       - 'v*'
   pull_request:
