@@ -247,20 +247,26 @@ semantic error: Variable 'test_re' is not declared
 95 | test_re = 1245.13
    | ^^^^^^^ 'test_re' is undeclared
 
-semantic error: Argument of `size` must be an array
-  --> tests/errors/continue_compilation_3.f90:98:14
+semantic error: Array reference is not allowed on scalar variable
+  --> tests/errors/continue_compilation_3.f90:96:1
    |
-98 |     print *, size(bpe)
-   |              ^^^^^^^^^ 
+96 | c(1) = 1
+   | ^^^^ 
+
+semantic error: Argument of `size` must be an array
+   --> tests/errors/continue_compilation_3.f90:100:14
+    |
+100 |     print *, size(bpe)
+    |              ^^^^^^^^^ 
 
 semantic error: Variable 'd' is not declared
-  --> tests/errors/continue_compilation_3.f90:99:11
-   |
-99 |     bpe = d
-   |           ^ 'd' is undeclared
+   --> tests/errors/continue_compilation_3.f90:101:11
+    |
+101 |     bpe = d
+    |           ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-  --> tests/errors/continue_compilation_3.f90:99:5
-   |
-99 |     bpe = d
-   |     ^^^ 
+   --> tests/errors/continue_compilation_3.f90:101:5
+    |
+101 |     bpe = d
+    |     ^^^ 
