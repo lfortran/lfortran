@@ -50,6 +50,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .true.
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
@@ -268,6 +269,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     destroy
@@ -405,6 +407,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     new_array
@@ -467,6 +470,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -555,6 +559,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -682,6 +687,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     new_keyval
@@ -743,6 +749,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_keyval
@@ -789,6 +796,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_value
@@ -834,6 +842,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -895,6 +904,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

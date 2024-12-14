@@ -28,6 +28,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             bf1:
                                 (Variable
@@ -49,6 +50,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             c1:
@@ -91,6 +93,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             td:
                                 (Variable
@@ -107,6 +110,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -122,6 +126,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             xx90:
@@ -145,6 +150,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             xx95:
                                 (Variable
@@ -166,6 +172,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             y:
@@ -189,6 +196,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -210,6 +218,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

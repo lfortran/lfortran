@@ -24,6 +24,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             p2:
                                 (Variable
@@ -42,6 +43,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -58,6 +60,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             t2:
                                 (Variable
@@ -74,6 +77,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 )
                         })
                     nullify_02

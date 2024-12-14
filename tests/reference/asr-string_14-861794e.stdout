@@ -38,6 +38,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -54,6 +55,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -69,6 +71,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             line:
@@ -88,6 +91,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -106,6 +110,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -121,6 +126,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             v_list:
@@ -142,6 +148,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -208,6 +215,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     string_type
@@ -241,6 +249,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -257,6 +266,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -272,6 +282,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             string:
@@ -291,6 +302,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -306,6 +318,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             v_list:
@@ -327,6 +340,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

@@ -27,6 +27,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             epsisp:
                                 (Variable
@@ -42,6 +43,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             epsrdp:
@@ -73,6 +75,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             epsrsp:
                                 (Variable
@@ -95,6 +98,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             ixdp:
                                 (Variable
@@ -116,6 +120,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             ixsp:
                                 (Variable
@@ -131,6 +136,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             rxdp:
@@ -162,6 +168,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             rxsp:
                                 (Variable
@@ -183,6 +190,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

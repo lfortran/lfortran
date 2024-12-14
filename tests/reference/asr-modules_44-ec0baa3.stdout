@@ -54,6 +54,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             warnwrite:
                                 (ExternalSymbol
@@ -117,6 +118,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -134,6 +136,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -221,6 +224,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -255,6 +259,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -315,6 +320,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             fname:
                                                 (Variable
@@ -330,6 +336,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

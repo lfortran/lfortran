@@ -50,6 +50,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .true.
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
@@ -207,6 +208,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     destroy
@@ -344,6 +346,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     new_array
@@ -406,6 +409,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -475,6 +479,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     destroy
@@ -535,6 +540,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

@@ -27,6 +27,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     array_02_transfer

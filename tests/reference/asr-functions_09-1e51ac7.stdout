@@ -37,6 +37,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     stdlib_quadrature
@@ -111,6 +112,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -131,6 +133,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -192,6 +195,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

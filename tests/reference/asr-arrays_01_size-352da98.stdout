@@ -27,6 +27,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -48,6 +49,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -63,6 +65,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             size_a:
@@ -80,6 +83,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             size_b:
                                 (Variable
@@ -95,6 +99,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

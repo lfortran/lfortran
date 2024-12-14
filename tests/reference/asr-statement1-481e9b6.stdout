@@ -27,6 +27,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -43,6 +44,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -58,6 +60,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -126,6 +129,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -141,6 +145,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             ifloat:
@@ -163,6 +168,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             ifloat_return_var_name:
                                                 (Variable
@@ -179,6 +185,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -194,6 +201,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -248,6 +256,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             sfloat:
                                 (Function
@@ -269,6 +278,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -285,6 +295,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             sfloat_return_var_name:
                                                 (Variable
@@ -300,6 +311,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -359,6 +371,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             ti:
                                 (Variable
@@ -374,6 +387,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

@@ -72,6 +72,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -87,6 +88,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             newshape:
@@ -109,6 +111,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -124,6 +127,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             queries2:
@@ -144,6 +148,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -170,6 +175,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -193,6 +199,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             y:
                                 (Variable
@@ -218,6 +225,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             yv:
                                 (Variable
@@ -241,6 +249,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 )
                         })
                     bindc4
