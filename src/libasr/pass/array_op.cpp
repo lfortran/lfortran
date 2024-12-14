@@ -870,7 +870,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     m_step), i32_one);
                 x_dims.push_back(al, x_dim);
             } else if (x->m_args[i].m_step == nullptr && x->m_args[i].m_right != nullptr
-                        && ASR::is_a<ASR::Array_t>(*ASRUtils::expr_type(x->m_args[i].m_right))) {
+                        && ASRUtils::is_array(ASRUtils::expr_type(x->m_args[i].m_right))) {
                 /*
                     Convert `array_1(:, array_2)` to :
 
