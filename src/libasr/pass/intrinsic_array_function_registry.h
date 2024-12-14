@@ -1901,10 +1901,10 @@ namespace Spread {
         if (ASRUtils::is_allocatable(source)) {
             is_type_allocatable = true;
         }
-        ASR::ttype_t *type_source = expr_type(source);
-        ASR::ttype_t *type_dim = expr_type(dim);
-        ASR::ttype_t *type_ncopies = expr_type(ncopies);
-        ASR::ttype_t *ret_type = expr_type(source);
+        ASR::ttype_t *type_source = ASRUtils::type_get_past_allocatable_pointer(expr_type(source));
+        ASR::ttype_t *type_dim = ASRUtils::type_get_past_allocatable_pointer(expr_type(dim));
+        ASR::ttype_t *type_ncopies = ASRUtils::type_get_past_allocatable_pointer(expr_type(ncopies));
+        ASR::ttype_t *ret_type = type_source;
 
         ASRBuilder b(al, loc);
         int overload_id = 2;
