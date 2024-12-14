@@ -530,7 +530,7 @@ public:
             if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::Struct_t>(*a.second) ||
-                ASR::is_a<ASR::UnionType_t>(*a.second) ||
+                ASR::is_a<ASR::Union_t>(*a.second) ||
                 ASR::is_a<ASR::ExternalSymbol_t>(*a.second) ||
                 ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
@@ -546,8 +546,8 @@ public:
             } else if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::EnumType_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
+            } else if( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
+                sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
@@ -640,7 +640,7 @@ public:
                                      "to Enum::m_enum_value_type");
     }
 
-    void visit_UnionType(const UnionType_t& x) {
+    void visit_Union(const Union_t& x) {
         visit_UserDefinedType(x);
     }
 
@@ -724,7 +724,7 @@ public:
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::Struct_t* sm = nullptr;
             ASR::Enum_t* em = nullptr;
-            ASR::UnionType_t* um = nullptr;
+            ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
@@ -734,15 +734,15 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::UnionType_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
                 } else if( ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ) {
                     em = ASR::down_cast<ASR::Enum_t>(asr_owner_sym);
                     asr_owner_name = em->m_name;
-                } else if( ASR::is_a<ASR::UnionType_t>(*asr_owner_sym) ) {
-                    um = ASR::down_cast<ASR::UnionType_t>(asr_owner_sym);
+                } else if( ASR::is_a<ASR::Union_t>(*asr_owner_sym) ) {
+                    um = ASR::down_cast<ASR::Union_t>(asr_owner_sym);
                     asr_owner_name = um->m_name;
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
@@ -855,8 +855,15 @@ public:
 
     void visit_ArrayItem(const ArrayItem_t &x) {
         if (ASRUtils::use_experimental_simplifier) {
-            require(!ASRUtils::is_array(x.m_type),
-                "ArrayItem::m_type cannot be array.")
+            if( check_external ) {
+                if( ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ) {
+                    require(ASRUtils::is_array(x.m_type),
+                        "ArrayItem::m_type with array indices must be an array.")
+                } else {
+                    require(!ASRUtils::is_array(x.m_type),
+                        "ArrayItem::m_type cannot be array.")
+                }
+            }
         }
         handle_ArrayItemSection(x);
     }

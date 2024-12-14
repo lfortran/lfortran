@@ -1,11 +1,11 @@
-style suggestion: Use complex(16) instead of complex*16
+style suggestion: Use complex(8) instead of complex*16
  --> tests/complex3.f90:2:1
   |
 2 | complex*16 :: x
-  | ^^^^^^^^^^ help: write this as 'complex(16)'
+  | ^^^^^^^^^^ help: write this as 'complex(8)'
 
-style suggestion: Use complex(8) instead of complex*8
+style suggestion: Use complex(4) instead of complex*8
  --> tests/complex3.f90:4:1
   |
 4 | complex*8 :: z
-  | ^^^^^^^^^ help: write this as 'complex(8)'
+  | ^^^^^^^^^ help: write this as 'complex(4)'

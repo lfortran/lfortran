@@ -20,8 +20,13 @@ The LFortran compiler consists of the following components:
 
 ## Standards
 
-The LFortran compiler is currently (mid-2023) incomplete (alpha stage) but is intended
-to support ISO Fortran 2018, ISO/IEC 1539:2018.
+The LFortran compiler is currently in the alpha stage and is actively under development. It is designed to support the following Fortran standards and modes:
+
+Supported Standards:
+
+* ISO Fortran 2023 (Provisional, `--std=f23`): Partial support for the latest Fortran 2023 features. Use this option to enable conformance to Fortran 2023 where supported.
+* Legacy Mode (`--std=legacy`): Allows compilation of older Fortran codebases that use non-standard or deprecated syntax.
+* LFortran Mode (`--std=lf`): Default mode focusing on modern Fortran features, including experimental extensions beyond the current standards.
 
 ## Extensions
 

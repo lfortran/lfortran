@@ -1,0 +1,35 @@
+style suggestion: Use integer(4) instead of integer*4
+ --> tests/implicit13.f90:2:34
+  |
+2 | implicit integer (a,b-c), integer*4 (d-e), integer*8 (f-g), real (h)
+  |                                  ^ help: write this as 'integer(4)'
+
+style suggestion: Use integer(8) instead of integer*8
+ --> tests/implicit13.f90:2:51
+  |
+2 | implicit integer (a,b-c), integer*4 (d-e), integer*8 (f-g), real (h)
+  |                                                   ^ help: write this as 'integer(8)'
+
+style suggestion: Use real(4) instead of real*4
+ --> tests/implicit13.f90:3:14
+  |
+3 | implicit real*4 (i-k), real*8 (l), complex (m, n), complex*8 (o)
+  |              ^ help: write this as 'real(4)'
+
+style suggestion: Use real(8) instead of real*8
+ --> tests/implicit13.f90:3:28
+  |
+3 | implicit real*4 (i-k), real*8 (l), complex (m, n), complex*8 (o)
+  |                            ^ help: write this as 'real(8)'
+
+style suggestion: Use complex(4) instead of complex*8
+ --> tests/implicit13.f90:3:59
+  |
+3 | implicit real*4 (i-k), real*8 (l), complex (m, n), complex*8 (o)
+  |                                                           ^ help: write this as 'complex(4)'
+
+style suggestion: Use complex(8) instead of complex*16
+ --> tests/implicit13.f90:4:17
+  |
+4 | implicit complex*16 (p), double precision (q), double precision (r)
+  |                 ^ help: write this as 'complex(8)'

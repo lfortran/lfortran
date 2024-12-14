@@ -1,10 +1,14 @@
 program continue_compilation_3
-implicit none
+use continue_compilation_3_fake_module
 
+implicit none
 integer :: a(5), b(10), x1(3,2), c, a1(3), i, k = 3, x
 character(4) :: str(3)
 integer, parameter :: x3 = 2
 character(len=8) :: s, s1 = "lfortran"
+rea :: test_real(12)
+real :: test_re()
+int ::
 
 type :: t
     integer :: xx
@@ -86,11 +90,15 @@ x = "x"
 x = 5 + "x"
 !subroutine1, subroutine2, subroutine3, subroutine5
 call bpe()
-    i = bpe()
-    contains
-    subroutine bpe()
-        print *, size(bpe)
-        bpe = d
-    end subroutine
+i = bpe()
+print *, xx
+test_re = 1245.13
+c(1) = 1
+
+contains
+subroutine bpe()
+    print *, size(bpe)
+    bpe = d
+end subroutine
     
 end program

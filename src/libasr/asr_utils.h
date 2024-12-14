@@ -10,6 +10,13 @@
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 #include <libasr/casting_utils.h>
+#include <libasr/asr_expr_stmt_duplicator_visitor.h>
+#include <libasr/asr_expr_base_replacer_visitor.h>
+#include <libasr/asr_stmt_base_replacer_visitor.h>
+#include <libasr/asr_expr_call_replacer_visitor.h>
+#include <libasr/asr_expr_type_visitor.h>
+#include <libasr/asr_expr_value_visitor.h>
+#include <libasr/asr_walk_visitor.h>
 
 #include <complex>
 
@@ -368,7 +375,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::ExternalSymbol: return "ExternalSymbol";
         case ASR::symbolType::Struct: return "Struct";
         case ASR::symbolType::Enum: return "Enum";
-        case ASR::symbolType::UnionType: return "UnionType";
+        case ASR::symbolType::Union: return "Union";
         case ASR::symbolType::Variable: return "Variable";
         case ASR::symbolType::Class: return "Class";
         case ASR::symbolType::ClassProcedure: return "ClassProcedure";
@@ -510,8 +517,8 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_name;
         }
-        case ASR::symbolType::UnionType: {
-            return ASR::down_cast<ASR::UnionType_t>(f)->m_name;
+        case ASR::symbolType::Union: {
+            return ASR::down_cast<ASR::Union_t>(f)->m_name;
         }
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_name;
@@ -623,7 +630,7 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::ClassType: {
             return ASRUtils::symbol_name(ASR::down_cast<ASR::ClassType_t>(t)->m_class_type);
         }
-        case ASR::ttypeType::Union: {
+        case ASR::ttypeType::UnionType: {
             return "union";
         }
         case ASR::ttypeType::CPtr: {
@@ -776,8 +783,8 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
             ASR::Enum_t* sym = ASR::down_cast<ASR::Enum_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
-        case ASR::symbolType::UnionType: {
-            ASR::UnionType_t* sym = ASR::down_cast<ASR::UnionType_t>(f);
+        case ASR::symbolType::Union: {
+            ASR::Union_t* sym = ASR::down_cast<ASR::Union_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
         default : throw LCompilersException("Not implemented");
@@ -816,8 +823,8 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_symtab->parent;
         }
-        case ASR::symbolType::UnionType: {
-            return ASR::down_cast<ASR::UnionType_t>(f)->m_symtab->parent;
+        case ASR::symbolType::Union: {
+            return ASR::down_cast<ASR::Union_t>(f)->m_symtab->parent;
         }
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_parent_symtab;
@@ -870,8 +877,8 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_symtab;
         }
-        case ASR::symbolType::UnionType: {
-            return ASR::down_cast<ASR::UnionType_t>(f)->m_symtab;
+        case ASR::symbolType::Union: {
+            return ASR::down_cast<ASR::Union_t>(f)->m_symtab;
         }
         case ASR::symbolType::Variable: {
             return nullptr;
@@ -1627,8 +1634,8 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             }
             break;
         }
-        case ASR::ttypeType::Union: {
-            ASR::Union_t* d = ASR::down_cast<ASR::Union_t>(t);
+        case ASR::ttypeType::UnionType: {
+            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
             res = symbol_name(d->m_union_type);
             break;
         }
@@ -1770,8 +1777,8 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
             ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);
             return "enum " + std::string(symbol_name(d->m_enum_type));
         }
-        case ASR::ttypeType::Union: {
-            ASR::Union_t* d = ASR::down_cast<ASR::Union_t>(t);
+        case ASR::ttypeType::UnionType: {
+            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
             return "union " + std::string(symbol_name(d->m_union_type));
         }
         case ASR::ttypeType::Pointer: {
@@ -2277,7 +2284,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::EnumType:
-        case ASR::ttypeType::Union:
+        case ASR::ttypeType::UnionType:
         case ASR::ttypeType::ClassType:
         case ASR::ttypeType::List:
         case ASR::ttypeType::Tuple:
@@ -2720,7 +2727,7 @@ inline bool ttype_set_dimensions(ASR::ttype_t** x,
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::EnumType:
-        case ASR::ttypeType::Union:
+        case ASR::ttypeType::UnionType:
         case ASR::ttypeType::TypeParameter: {
             *x = ASRUtils::make_Array_t_util(al,
                 (*x)->base.loc, *x, m_dims, n_dims, abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -3488,13 +3495,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                 }
                 return false;
             }
-            case (ASR::ttypeType::Union) : {
-                ASR::Union_t *a2 = ASR::down_cast<ASR::Union_t>(a);
-                ASR::Union_t *b2 = ASR::down_cast<ASR::Union_t>(b);
-                ASR::UnionType_t *a2_type = ASR::down_cast<ASR::UnionType_t>(
+            case (ASR::ttypeType::UnionType) : {
+                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
+                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
+                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     a2->m_union_type));
-                ASR::UnionType_t *b2_type = ASR::down_cast<ASR::UnionType_t>(
+                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_union_type));
                 return a2_type == b2_type;
@@ -3671,13 +3678,13 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 }
                 return false;
             }
-            case (ASR::ttypeType::Union) : {
-                ASR::Union_t *a2 = ASR::down_cast<ASR::Union_t>(a);
-                ASR::Union_t *b2 = ASR::down_cast<ASR::Union_t>(b);
-                ASR::UnionType_t *a2_type = ASR::down_cast<ASR::UnionType_t>(
+            case (ASR::ttypeType::UnionType) : {
+                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
+                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
+                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     a2->m_union_type));
-                ASR::UnionType_t *b2_type = ASR::down_cast<ASR::UnionType_t>(
+                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_union_type));
                 return a2_type == b2_type;
@@ -4418,7 +4425,8 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
     bool m_module, bool m_inline, bool m_static,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
-    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr) {
+    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
+    Location* m_end_name = nullptr) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
@@ -4426,7 +4434,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-        m_side_effect_free, m_c_header);
+        m_side_effect_free, m_c_header, m_start_name, m_end_name);
 }
 
 
@@ -6240,6 +6248,68 @@ static inline ASR::asr_t* make_Associate_t_util(
     return ASR::make_Associate_t(al, a_loc, a_target, a_value);
 }
 
+static inline ASR::expr_t* extract_array_variable(ASR::expr_t* x) {
+    LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x)));
+    if( x->type == ASR::exprType::ArrayItem ) {
+        return ASR::down_cast<ASR::ArrayItem_t>(x)->m_v;
+    } else if( x->type == ASR::exprType::ArraySection ) {
+        return ASR::down_cast<ASR::ArraySection_t>(x)->m_v;
+    }
+
+    return x;
+}
+
+static inline void extract_indices(ASR::expr_t* x,
+    ASR::array_index_t*& m_args, size_t& n_args) {
+    if( x->type == ASR::exprType::ArrayItem ) {
+        m_args = ASR::down_cast<ASR::ArrayItem_t>(x)->m_args;
+        n_args = ASR::down_cast<ASR::ArrayItem_t>(x)->n_args;
+        return ;
+    } else if( x->type == ASR::exprType::ArraySection ) {
+        m_args = ASR::down_cast<ASR::ArraySection_t>(x)->m_args;
+        n_args = ASR::down_cast<ASR::ArraySection_t>(x)->n_args;
+        return ;
+    }
+
+    m_args = nullptr;
+    n_args = 0;
+}
+
+static inline bool is_array_indexed_with_array_indices(ASR::array_index_t* m_args, size_t n_args) {
+    for( size_t i = 0; i < n_args; i++ ) {
+        if( m_args[i].m_left == nullptr &&
+            m_args[i].m_right != nullptr &&
+            m_args[i].m_step == nullptr &&
+            ASRUtils::is_array(
+                ASRUtils::expr_type(m_args[i].m_right)) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+template <typename T>
+static inline bool is_array_indexed_with_array_indices(T* x) {
+    return is_array_indexed_with_array_indices(x->m_args, x->n_args);
+}
+
+static inline ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
+    size_t value_n_dims, ASR::ttype_t* value_type) {
+    Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, value_n_dims);
+    for( size_t i = 0; i < value_n_dims; i++ ) {
+        ASR::dimension_t empty_dim;
+        Location loc; loc.first = 1, loc.last = 1;
+        empty_dim.loc = loc;
+        empty_dim.m_length = nullptr;
+        empty_dim.m_start = nullptr;
+        empty_dims.push_back(al, empty_dim);
+    }
+    return ASRUtils::make_Array_t_util(al, value_type->base.loc,
+        ASRUtils::extract_type(value_type), empty_dims.p, empty_dims.size());
+}
+
+
 static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_v, ASR::array_index_t* a_args, size_t n_args, ASR::ttype_t* a_type,
     ASR::arraystorageType a_storage_format, ASR::expr_t* a_value) {
@@ -6247,6 +6317,24 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
 
+    if( ASRUtils::use_experimental_simplifier ) {
+        if( !ASRUtils::is_array_indexed_with_array_indices(a_args, n_args) ) {
+            a_type = ASRUtils::type_get_past_array_pointer_allocatable(a_type);
+        }
+
+        if( ASRUtils::is_allocatable(a_type) ) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
+            if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
+                a_type = ASRUtils::create_array_type_with_empty_dims(
+                    al, n_dims, ASRUtils::type_get_past_array_pointer_allocatable(a_type));
+                a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, a_loc, a_type));
+            }
+        }
+    }
+
+    ASRUtils::ExprStmtDuplicator type_duplicator(al);
+    a_type = type_duplicator.duplicate_ttype(a_type);
     return ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
         n_args, a_type, a_storage_format, a_value);
 }
@@ -6312,6 +6400,9 @@ class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArra
     }
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        if( x->m_new == ASR::array_physical_typeType::SIMDArray ) {
+            return ;
+        }
         ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer>::replace_ArrayPhysicalCast(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg)) ) {
             *current_expr = x->m_arg;
@@ -6334,6 +6425,14 @@ class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVis
     }
 
     RemoveArrayProcessingNodeVisitor(Allocator& al_): replacer(al_) {}
+
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        if( x.m_new == ASR::array_physical_typeType::SIMDArray ) {
+            return ;
+        }
+
+        ASR::CallReplacerOnExpressionsVisitor<RemoveArrayProcessingNodeVisitor>::visit_ArrayPhysicalCast(x);
+    }
 
 };
 

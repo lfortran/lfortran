@@ -216,7 +216,6 @@ llvm = true
 filename = "subroutine4.f90"
 ast = true
 ast_f90 = true
-ast_openmp = true
 asr = true
 cpp = true
 julia = true
@@ -225,7 +224,6 @@ julia = true
 filename = "do_concurrent_reduce.f90"
 ast = true
 ast_f90 = true
-ast_openmp = true
 cpp = true
 
 [[test]]
@@ -248,7 +246,6 @@ julia = true
 [[test]]
 filename = "subroutine6.f90"
 ast = true
-ast_openmp = true
 cpp = true
 julia = true
 
@@ -771,6 +768,12 @@ filename = "../integration_tests/expr_13.f90"
 asr = true
 pass = "flip_sign"
 cumulative = true
+
+[[test]]
+filename = "array_op_simplifier_test.f90"
+asr = true
+pass = "simplifier,array_op_simplifier"
+options = "--experimental-simplifier"
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
@@ -1508,7 +1511,7 @@ run = true
 
 [[test]]
 filename = "finalize_01.f90"
-pass = "insert_deallocate" 
+pass = "insert_deallocate"
 
 [[test]]
 filename = "../integration_tests/block_01.f90"
@@ -2273,6 +2276,10 @@ asr = true
 extrafiles = "../integration_tests/modules_52_module3.f90, ../integration_tests/modules_52_module2.f90, ../integration_tests/modules_52_module1.f90"
 
 [[test]]
+filename = "../integration_tests/modules_60.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/modules_36.f90"
 llvm = true
 
@@ -2883,6 +2890,14 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "../integration_tests/nullify_03.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/nullify_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/kwargs_02.f90"
 asr = true
 
@@ -3344,6 +3359,10 @@ asr = true
 filename = "fixed_form_implicit2.f"
 ast = true
 asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "fixed_form_implicit3.f"
+ast = true
 
 [[test]]
 filename = "fixed_form_call1.f"
@@ -4308,6 +4327,24 @@ rename_symbol = true
 line = 10
 column = 8
 
+[[test]]
+filename = "collect_occurence2.f90"
+rename_symbol = true
+line = 7
+column = 11
+
+[[test]]
+filename = "collect_occurence3.f90"
+rename_symbol = true
+line = 6
+column = 11
+
+[[test]]
+filename = "collect_occurence4.f90"
+rename_symbol = true
+line = 9
+column = 13
+
 
 [[test]]
 filename = "../integration_tests/multiple_objects_args.f90"
@@ -4336,6 +4373,12 @@ filename = "lookup_name1.f90"
 lookup_name = true
 line = 3
 column = 12
+
+[[test]]
+filename = "lookup_name2.f90"
+lookup_name = true
+line = 5
+column = 11
 
 [[test]]
 filename = "errors/func_parameter_type.f90"
@@ -4388,3 +4431,7 @@ ast = true
 [[test]]
 filename = "../integration_tests/enum_01.f90"
 fortran = true
+
+[[test]]
+filename = "polymorphic_class_in_derived_type.f90"
+asr = true

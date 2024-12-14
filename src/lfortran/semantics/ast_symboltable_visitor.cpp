@@ -463,10 +463,18 @@ public:
             }
         }
         for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
         }
         for (size_t i=0; i<x.n_decl; i++) {
-            visit_unit_decl2(*x.m_decl[i]);
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
         }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
@@ -571,10 +579,18 @@ public:
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
         }
         for (size_t i=0; i<x.n_decl; i++) {
-            visit_unit_decl2(*x.m_decl[i]);
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
         }
         process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
@@ -590,7 +606,9 @@ public:
             current_module_dependencies.p,
             current_module_dependencies.size(),
             /* a_body */ nullptr,
-            /* n_body */ 0);
+            /* n_body */ 0, 
+            /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
+            /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr);
         std::string sym_name = to_lower(x.m_name);
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             diag.add(diag::Diagnostic(
@@ -1022,12 +1040,20 @@ public:
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
         }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
-                visit_unit_decl2(*x.m_decl[i]);
+                try {
+                    visit_unit_decl2(*x.m_decl[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
             }
             is_Function = false;
         }
@@ -1388,7 +1414,11 @@ public:
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
         }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
@@ -1650,7 +1680,8 @@ public:
             /* a_return_var */ ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, is_pure, false, false, false,
-            nullptr, 0, is_requirement, false, false);
+            nullptr, 0, is_requirement, false, false, nullptr, x.m_start_name ? x.m_start_name : nullptr,
+            x.m_end_name ? x.m_end_name : nullptr);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         // populate the external_procedures_mapping
@@ -1856,14 +1887,16 @@ public:
             if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
                 continue;
             }
-            ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
             char* aggregate_type_name = nullptr;
-            if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
+            if (item.first != "~abstract_type") {
+                ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
+                if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
+                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
+                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                }
             }
             if( aggregate_type_name ) {
                 struct_dependencies.push_back(al, aggregate_type_name);
@@ -2442,7 +2475,7 @@ public:
                 // local symbol table
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
                 std::string sym;
-                if( in_submodule ) {
+                if( in_submodule || ASR::is_a<ASR::Function_t>(*es0->m_external)) {
                     sym = item.first;
                 } else {
                     sym = to_lower(es0->m_original_name);

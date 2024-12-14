@@ -12,7 +12,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     A
                     H
@@ -33,7 +32,6 @@
                     ()
                     None
                 )
-                []
                 [(LetterSpec
                     I
                     N

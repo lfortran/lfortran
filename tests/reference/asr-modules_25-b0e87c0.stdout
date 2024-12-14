@@ -389,7 +389,7 @@
                                     []
                                     [(Var 13 de)]
                                     [(Nullify
-                                        [13 table]
+                                        [(Var 13 table)]
                                     )
                                     (Associate
                                         (StructInstanceMember

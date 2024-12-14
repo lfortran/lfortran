@@ -152,7 +152,7 @@ public:
         std::string indent, std::string name) {
         for( auto itr: der_type_t->m_symtab->get_scope() ) {
             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(itr.second);
-            if( ASR::is_a<ASR::UnionType_t>(*sym) ||
+            if( ASR::is_a<ASR::Union_t>(*sym) ||
                 ASR::is_a<ASR::Struct_t>(*sym) ) {
                 continue ;
             }
@@ -491,9 +491,9 @@ public:
                     sub = format_type_c(dims, "struct " + der_type_name + ptr_char,
                                         v.m_name, use_ref, dummy);
                 }
-            } else if (ASR::is_a<ASR::Union_t>(*v_m_type)) {
+            } else if (ASR::is_a<ASR::UnionType_t>(*v_m_type)) {
                 std::string indent(indentation_level*indentation_spaces, ' ');
-                ASR::Union_t *t = ASR::down_cast<ASR::Union_t>(v_m_type);
+                ASR::UnionType_t *t = ASR::down_cast<ASR::UnionType_t>(v_m_type);
                 std::string der_type_name = ASRUtils::symbol_name(
                     ASRUtils::symbol_get_past_external(t->m_union_type));
                 if( is_array ) {
@@ -632,7 +632,7 @@ R"(
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
                 ASR::is_a<ASR::Enum_t>(*item.second) ||
-                ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                ASR::is_a<ASR::Union_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
                 for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
@@ -754,7 +754,7 @@ R"(
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
                     ASR::is_a<ASR::Enum_t>(*item.second) ||
-                    ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
                 for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
@@ -874,8 +874,8 @@ R"(    // Initialise Numpy
         std::string body = "";
         int indendation_level_copy = indentation_level;
         for( auto itr: x.m_symtab->get_scope() ) {
-            if( ASR::is_a<ASR::UnionType_t>(*itr.second) ) {
-                visit_AggregateTypeUtil(*ASR::down_cast<ASR::UnionType_t>(itr.second),
+            if( ASR::is_a<ASR::Union_t>(*itr.second) ) {
+                visit_AggregateTypeUtil(*ASR::down_cast<ASR::Union_t>(itr.second),
                                         "union", src_dest);
             } else if( ASR::is_a<ASR::Struct_t>(*itr.second) ) {
                 std::string struct_c_type_name = get_StructTypeCTypeName(
@@ -932,7 +932,7 @@ R"(    // Initialise Numpy
         src = "";
     }
 
-    void visit_UnionType(const ASR::UnionType_t& x) {
+    void visit_Union(const ASR::Union_t& x) {
         visit_AggregateTypeUtil(x, "union", array_types_decls);
     }
 
@@ -1004,7 +1004,7 @@ R"(    // Initialise Numpy
         src = "(enum " + std::string(enum_type->m_name) + ") (" + src + ")";
     }
 
-    void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& /*x*/) {
+    void visit_UnionConstructor(const ASR::UnionConstructor_t& /*x*/) {
 
     }
 

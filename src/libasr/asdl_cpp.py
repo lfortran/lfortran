@@ -2,8 +2,10 @@
 Generate C++ AST node definitions from an ASDL description.
 """
 
-import sys
 import os
+from pathlib import Path
+import sys
+
 import asdl
 
 
@@ -114,6 +116,9 @@ def convert_type(asdl_type, seq, opt, mod_name):
         assert not seq
     elif asdl_type == "void":
         type_ = "void *"
+        assert not seq
+    elif asdl_type == "location":
+        type_ = "Location*"
         assert not seq
     else:
         type_ = asdl_type + "_t"
@@ -244,7 +249,10 @@ class ASTNodeVisitor(ASDLVisitor):
             else:
                 seq = ""
             self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-            args.append("%s a_%s" % (type_, f.name))
+            if f.type == "location":
+                args.append("%s a_%s = nullptr" % (type_, f.name))
+            else:
+                args.append("%s a_%s" % (type_, f.name))
             lines.append("n->m_%s = a_%s;" % (f.name, f.name))
             if f.name in ["global_scope", "symtab"]:
                 lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
@@ -395,8 +403,8 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((Enum_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
-        self.emit("case ASR::symbolType::UnionType: {", 3)
-        self.emit("node_to_return = ( ASR::asr_t* ) ((UnionType_t*)sym);", 4)
+        self.emit("case ASR::symbolType::Union: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Union_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
         self.emit("case ASR::symbolType::Variable: {", 3)
@@ -1485,7 +1493,8 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
             field.type == "symbol" or
             field.type == "call_arg" or
             field.type == "ttype" or
-            field.type == "dimension"):
+            field.type == "dimension" or
+            field.type == "array_index"):
             level = 2
             if field.seq:
                 self.used = True
@@ -1498,6 +1507,16 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
                     self.emit("    }", level)
                     self.current_expr_copy_variable_count += 1
+                elif field.type == "array_index":
+                    attrs = ["left", "right", "step"]
+                    for attr in attrs:
+                        self.emit("    if (x->m_%s[i].m_%s != nullptr) {" % (field.name, attr), level)
+                        self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + 1)
+                        self.emit("    current_expr = &(x->m_%s[i].m_%s);" % (field.name, attr), level + 1)
+                        self.emit("    self().replace_expr(x->m_%s[i].m_%s);"%(field.name, attr), level + 1)
+                        self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
+                        self.emit("    }", level)
+                        self.current_expr_copy_variable_count += 1
                 elif field.type == "dimension":
                     self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
                     self.emit("    current_expr = &(x->m_%s[i].m_length);" % (field.name), level)
@@ -1523,16 +1542,27 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     if field.type == "ttype":
                         self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
                     else:
-                        one_or_zero = field.name == "value"
-                        if field.name == "value" or field.name == "symbolic_value":
-                            self.emit("if (call_replacer_on_value) {", level)
-                        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-                        self.emit("current_expr = &(x->m_%s);" % (field.name), level + one_or_zero)
-                        self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level + one_or_zero)
-                        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-                        if field.name == "value" or field.name == "symbolic_value":
-                            self.emit("}", level)
-                        self.current_expr_copy_variable_count += 1
+                        if field.type == "array_index":
+                            attrs = ["left", "right", "step"]
+                            for attr in attrs:
+                                self.emit("if (x->m_%s.m_%s != nullptr) {" % (field.name, attr), level)
+                                self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + 1)
+                                self.emit("current_expr = &(x->m_%s.m_%s);" % (field.name, attr), level + 1)
+                                self.emit("self().replace_expr(x->m_%s.m_%s);"%(field.name, attr), level + 1)
+                                self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
+                                self.emit("}", level)
+                                self.current_expr_copy_variable_count += 1
+                        else:
+                            one_or_zero = field.name == "value"
+                            if field.name == "value" or field.name == "symbolic_value":
+                                self.emit("if (call_replacer_on_value) {", level)
+                            self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                            self.emit("current_expr = &(x->m_%s);" % (field.name), level + one_or_zero)
+                            self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level + one_or_zero)
+                            self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                            if field.name == "value" or field.name == "symbolic_value":
+                                self.emit("}", level)
+                            self.current_expr_copy_variable_count += 1
 
 class StmtBaseReplacerVisitor(ASDLVisitor):
 
@@ -1710,8 +1740,10 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    's.append(" ");', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if field.type == "location":
+                continue
             self.visitField(field, cons)
-            if n < len(fields) - 1 and field.type != "void":
+            if n < len(fields) - 1 and field.type != "void" and fields[n+1].type != "location":
                 if name not in symbol:
                     self.emit(    'if(indent) s.append("\\n" + indented);', 2)
                     self.emit(    'else s.append(" ");', 2)
@@ -2022,8 +2054,10 @@ class JsonVisitorVisitor(ASDLVisitor):
         if len(fields) > 0:
             self.emit('inc_indent(); s.append("\\n" + indtd);', 2)
             for n, field in enumerate(fields):
+                if field.type == "location":
+                    continue
                 self.visitField(field, cons)
-                if n < len(fields) - 1:
+                if n < len(fields) - 1 and fields[n+1].type!="location":
                     self.emit('s.append(",\\n" + indtd);', 2)
             self.emit('dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)
@@ -2370,6 +2404,14 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit('self().write_float64(x.m_%s);' % field.name, 2)
             elif field.type == "void":
                 assert True
+            elif field.type == "location":
+                # self.emit("if (x.m_%s != nullptr) {" % field.name, 2)
+                # self.emit('self().write_int64(x.m_%s->first);' % field.name, 3)
+                # self.emit('self().write_int64(x.m_%s->last);' % field.name, 3)
+                # self.emit("} else {", 2)
+                self.emit('self().write_int64(0);', 2)
+                self.emit('self().write_int64(0);', 2)
+                # self.emit("}", 2)
             elif field.type in self.data.simple_types:
                 if field.opt:
                     raise Exception("Unimplemented opt for field type: " + field.type);
@@ -2635,6 +2677,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("}")
                     elif f.type == "void":
                         lines.append("void *m_%s = self().read_void(m_n_data);" % (f.name))
+                        args.append("m_%s" % (f.name))
+                    elif f.type == "location":
+                        lines.append("Location* m_%s;"% f.name)
+                        lines.append("m_%s = al.make_new<Location>();"% f.name)
+                        lines.append("m_%s->first = self().read_int64();"% f.name)
+                        lines.append("m_%s->last = self().read_int64();"% f.name)
                         args.append("m_%s" % (f.name))
                     else:
                         print(f.type)
@@ -2944,12 +2992,68 @@ FOOT = r"""} // namespace LCompilers::%(MOD)s
 #endif // LFORTRAN_%(MOD2)s_H
 """
 
-visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
+HEAD_VISITOR = r"""#pragma once
+
+// Generated by grammar/asdl_cpp.py
+
+#include <libasr/alloc.h>
+#include <libasr/location.h>
+#include <libasr/colors.h>
+#include <libasr/containers.h>
+#include <libasr/exception.h>
+#include <libasr/asr_scopes.h>
+#include <libasr/string_utils.h>
+#include <libasr/asr_base_visitor.h>
+
+
+namespace LCompilers::%(MOD)s {
+"""
+
+HEAD_BASE_VISITOR = r"""#pragma once
+
+// Generated by grammar/asdl_cpp.py
+
+#include <libasr/alloc.h>
+#include <libasr/location.h>
+#include <libasr/colors.h>
+#include <libasr/containers.h>
+#include <libasr/exception.h>
+#include <libasr/asr_scopes.h>
+#include <libasr/string_utils.h>
+
+
+namespace LCompilers::%(MOD)s {
+"""
+
+FOOT_VISITOR = r"""}
+"""
+
+ast_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
-        JsonVisitorVisitor, SerializationVisitorVisitor, DeserializationVisitorVisitor]
+        JsonVisitorVisitor, SerializationVisitorVisitor,
+        DeserializationVisitorVisitor]
 
-asr_visitors = [DefaultLookupNameVisitor]
+asr_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor]
+
+asr_base_visitor = [ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2]
+
+asr_visitor_files = [
+        ("serialization", SerializationVisitorVisitor),
+        ("deserialization", DeserializationVisitorVisitor),
+        ("pickle", PickleVisitorVisitor),
+        ("json", JsonVisitorVisitor),
+        ("lookup_name", DefaultLookupNameVisitor),
+        ("tree", TreeVisitorVisitor),
+        ("pass_walk", ASRPassWalkVisitorVisitor),
+        ("expr_stmt_duplicator", ExprStmtDuplicatorVisitor),
+        ("expr_base_replacer", ExprBaseReplacerVisitor),
+        ("stmt_base_replacer", StmtBaseReplacerVisitor),
+        ("expr_call_replacer", CallReplacerOnExpressionsVisitor),
+        ("expr_type", ExprTypeVisitor),
+        ("expr_value", ExprValueVisitor),
+        ("walk", ASTWalkVisitorVisitor),
+    ]
 
 
 def main(argv):
@@ -2986,36 +3090,37 @@ def main(argv):
     fp = open(out_file, "w", encoding="utf-8")
     try:
         fp.write(HEAD % subs)
-        for visitor in visitors:
-            visitor(fp, data).visit(mod)
-            fp.write("\n\n")
+        if not is_asr:
+            for visitor in ast_visitors:
+                visitor(fp, data).visit(mod)
+                fp.write("\n\n")
         if is_asr:
             for visitor in asr_visitors:
                 visitor(fp, data).visit(mod)
                 fp.write("\n\n")
-        if not is_asr:
-            fp.write(FOOT % subs)
-    finally:
-        if not is_asr:
-            fp.close()
+            asr_path = Path(out_file)
 
-    try:
-        if is_asr:
-            ASRPassWalkVisitorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprStmtDuplicatorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprBaseReplacerVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            StmtBaseReplacerVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            CallReplacerOnExpressionsVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprTypeVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprValueVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            fp.write(FOOT % subs)
+            # asr_base_visitor
+            filename = "base"
+            full_filename = asr_path.with_name(
+                    f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+            with open(full_filename, "w", encoding="utf-8") as f:
+                f.write(HEAD_BASE_VISITOR % subs)
+                for Visitor in asr_base_visitor:
+                    Visitor(f, data).visit(mod)
+                    f.write("\n\n")
+                f.write(FOOT_VISITOR)
+
+            # asr_visitor_files
+            for filename, Visitor in asr_visitor_files:
+                full_filename = asr_path.with_name(
+                        f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+                with open(full_filename, "w", encoding="utf-8") as f:
+                    f.write(HEAD_VISITOR % subs)
+                    Visitor(f, data).visit(mod)
+                    f.write("\n\n")
+                    f.write(FOOT_VISITOR)
+        fp.write(FOOT % subs)
     finally:
         fp.close()
 

@@ -18,7 +18,7 @@ def run_cmd(cmd, cwd=None):
         exit(1)
 
 def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: bool,
-                skip_cpptranslate: bool, update_reference: bool, verify_hash: bool,
+                update_reference: bool, verify_hash: bool,
                 no_color: bool, specific_backends=None,
                 excluded_backends=None) -> None:
     def is_included(backend):
@@ -37,7 +37,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_f90 = is_included("ast_f90")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
-    ast_openmp = is_included("ast_openmp")
     lookup_name = is_included("lookup_name")
     rename_symbol = is_included("rename_symbol")
     line = "-1"
@@ -95,7 +94,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "where",
-                        "nested_vars", "insert_deallocate", "openmp"] and
+                        "nested_vars", "insert_deallocate", "openmp",
+                        "simplifier", "array_op_simplifier"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -211,16 +211,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
 
-    if ast_openmp:
-        if skip_cpptranslate:
-            log.info(f"{filename} * cpptranslate    SKIPPED as requested")
-        else:
-            run_test(
-                filename,
-                "ast_openmp",
-                "cpptranslate --show-ast-openmp {infile}",
-                filename,
-                update_reference)
     if lookup_name:
         run_test(
             filename,

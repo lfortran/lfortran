@@ -331,25 +331,23 @@ struct FixedFormRecursiveDescent {
     }
 
     // Are the next characters in the `cur` stream equal to `str`?
-    bool next_is(unsigned char *cur, const std::string &str) {
-        unsigned char *tok = cur;
-        unsigned char *cur2 = cur;
-        while ((size_t)(cur2-tok) < str.size()) {
-            if (*cur2 == '\0') {
-                return false;
-            }
-            cur2++;
-        }
-        std::string next_str = std::string((char *)tok, cur2 - tok);
-        return next_str == str;
+    bool next_is(unsigned char const *cur, const std::string &str) {
+	for(const char s : str) {
+	    if (!s || *cur++ != s) return false;
+	}
+	return true;
     }
 
-    bool next_is_eol(unsigned char *cur) {
-        if (*cur == '\n') {
-            return true;
-        } else {
-            return false;
-        }
+    // Are the next characters in the `cur` stream equal to `str`?
+    constexpr bool next_is(unsigned char const * cur, const char *str) {
+	while(*str) {
+	    if (*cur++ != *str++) return false;
+	}
+	return true;
+    }
+
+    constexpr bool next_is_eol(unsigned char const *cur) {
+        return (*cur == '\n');
     }
 
     bool is_integer(const std::string &s) const {
@@ -942,7 +940,7 @@ struct FixedFormRecursiveDescent {
             if (*(cur+1) == '/' && !first_slash) {
                 if (*cur != ',') {
                     cur+=1;
-                } 
+                }
                 unsigned char *end = cur;
                 // tokenize uptil here
                 tokenize_until(end);
@@ -1621,12 +1619,14 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    bool is_declaration(unsigned char *&cur, std::string declaration_type /*function, subroutine, program*/, const std::vector<std::string>& keywords) {
+    bool is_declaration(unsigned char *&cur,
+			std::string declaration_type /*function, subroutine, program*/,
+			const std::vector<std::string>& keywords) {
         unsigned char *cpy = cur;
         unsigned char *nextline = cur; next_line(nextline);
         std::string line{tostr(cur, nextline-1)};
         // current line does not contain type -> we abort
-        if (!(line.find(std::string(declaration_type)) != std::string::npos)) return false;
+        if (!(line.find(declaration_type) != std::string::npos)) return false;
         std::vector<std::string> kw_found;
         std::vector<std::string> decls{keywords.begin(), keywords.end()};
         while(decls.size() != 0) {
@@ -1634,16 +1634,32 @@ struct FixedFormRecursiveDescent {
                 if (next_is(cpy, decls[i])) {
                     kw_found.push_back(decls[i]);
                     cpy += decls[i].size();
+                    if (decls[i].back() == '*') {
+ 		        if (decls[i] == "character*" && next_is(cpy, "(*)")) {
+			    kw_found.back() += "(*)";
+			    cpy += 3;
+                        } else if (std::isdigit(*cpy)) {
+			    do {
+                                kw_found.back().push_back(*cpy++);
+                            } while(std::isdigit(*cpy));
+			} else {
+			    error(cpy, "Syntax error: expecting length "
+				  "specification after " + decls[i]);
+			}
+                    }
                     decls.erase(decls.begin() + i);
                     break;
                 }
             }
             if (next_is(cpy, declaration_type))
                 break;
-            // catching syntax errors like `recursive double precision recursive function f(...`
+            // catching syntax errors like `recursive double precision
+            // recursive function f(...`
             for (auto kw = kw_found.begin(); kw != kw_found.end(); ++kw) {
                 if (next_is(cpy, *kw)) {
-                    error(cpy, "Syntax error: keyword " + *kw + "cannot occur multiple times in " + declaration_type + "declaration");
+                    error(cpy, "Syntax error: keyword " + *kw +
+			  "cannot occur multiple times in " +
+			  declaration_type + "declaration");
                 }
             }
         }
@@ -1651,11 +1667,11 @@ struct FixedFormRecursiveDescent {
             return false;
 
         // tokenize all keywords
-        for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            if (*iter == "real*8" || *iter == "complex*8" || *iter == "complex*16" || *iter == "character*1") {
-                tokenize_until(cur+(*iter).size());
+        for(auto const &kw : kw_found) {
+            if (kw.find('*') != std::string::npos) {
+                tokenize_until(cur + kw.size());
             } else {
-                push_token_advance(cur, *iter);
+                push_token_advance(cur, kw);
             }
         }
         cur = cpy;
@@ -1687,11 +1703,15 @@ struct FixedFormRecursiveDescent {
     }
 
     bool lex_procedure(unsigned char *&cur) {
-        std::vector<std::string> subroutine_keywords{"recursive", "pure",
+	const std::vector<std::string> subroutine_keywords{"recursive", "pure",
             "elemental"};
-        std::vector<std::string> function_keywords{"recursive", "pure",
-            "elemental",
-            "real*8", "real", "character*1", "character", "complex*16", "complex*8", "complex", "integer", "logical",
+        const std::vector<std::string> function_keywords{"recursive", "pure",
+            "elemental", "real*", "real",
+	    "character*(*)",
+            "character*", "character",
+            "complex*", "complex",
+            "integer*", "integer",
+            "logical*", "logical",
             "doubleprecision", "doublecomplex"};
         if (is_declaration(cur, "subroutine", subroutine_keywords)) {
             lex_subroutine(cur);

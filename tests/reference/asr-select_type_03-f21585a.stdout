@@ -323,7 +323,7 @@
                                     (Var 8 ptr)
                                     (Var 8 stat)]
                                     [(Nullify
-                                        [8 ptr]
+                                        [(Var 8 ptr)]
                                     )
                                     (If
                                         (PointerAssociated

@@ -1,0 +1,5 @@
+style suggestion: Use real(8) instead of real*8
+ --> tests/implicit4.f90:2:15
+  |
+2 | implicit real *8 (a-h,o-z)
+  |               ^ help: write this as 'real(8)'

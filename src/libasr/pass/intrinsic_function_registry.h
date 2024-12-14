@@ -148,6 +148,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Sign)
         INTRINSIC_NAME_CASE(SignFromValue)
         INTRINSIC_NAME_CASE(Nint)
+        INTRINSIC_NAME_CASE(Idnint)
         INTRINSIC_NAME_CASE(Aint)
         INTRINSIC_NAME_CASE(Popcnt)
         INTRINSIC_NAME_CASE(Poppar)
@@ -466,6 +467,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Real::instantiate_Real, &Real::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             {&Nint::instantiate_Nint, &Nint::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Idnint),
+            {&Idnint::instantiate_Idnint, &Idnint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
             {&Anint::instantiate_Anint, &Anint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dim),
@@ -833,6 +836,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "real"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             "nint"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Idnint),
+            "idnint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
             "anint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dim),
@@ -1059,6 +1064,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"poppar", {&Poppar::create_Poppar, &Poppar::eval_Poppar}},
                 {"real", {&Real::create_Real, &Real::eval_Real}},
                 {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
+                {"idnint", {&Idnint::create_Idnint, &Idnint::eval_Idnint}},
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
                 {"dim", {&Dim::create_Dim, &Dim::eval_Dim}},
                 {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},

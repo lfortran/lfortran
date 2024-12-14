@@ -16,18 +16,18 @@ program array_indices_array_section
     arr_2_reshape = reshape([2.0, 1.0, 4.0, 3.0], shape(arr_2_reshape));
     print *, rank(arr_2)
     if (rank(arr_2) /= 2) error stop
-    if (all(arr_2 /= arr_2_reshape)) error stop
+    if (any(arr_2 /= arr_2_reshape)) error stop
 
     arr_4 = arr_3(:, :, arr_idx)
     arr_4_reshape = reshape([1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0], shape(arr_4_reshape));
     print *, rank(arr_4)
     if (rank(arr_4) /= 3) error stop
-    if (all(arr_4 /= arr_4_reshape)) error stop
+    if (any(arr_4 /= arr_4_reshape)) error stop
 
     arr_4 = arr_3(:, arr_idx, :)
     arr_4_reshape = reshape([3.0, 4.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0], shape(arr_4_reshape));
     print *, rank(arr_4)
     if (rank(arr_4) /= 3) error stop
-    if (all(arr_4 /= arr_4_reshape)) error stop
-        
+    if (any(arr_4 /= arr_4_reshape)) error stop
+
 end program array_indices_array_section

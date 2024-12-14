@@ -3064,7 +3064,8 @@ public:
                         s_intent == ASRUtils::intent_inout));
                 }
                 ASR::symbol_t *type_declaration;
-                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
+                ASR::ttype_t *type = nullptr;
+                type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
@@ -4447,6 +4448,13 @@ public:
                 } else {
                   final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
+                }
+                if ( current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                    !ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(v_Var))) {
+                    diag.add(Diagnostic("Array reference is not allowed on scalar variable",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
                 }
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), final_type,
@@ -6408,7 +6416,7 @@ public:
     }
 
     void check_specific_type_intrinsics(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
-        std::set<std::string>array_intrinsic_mapping_names = {"min0", "amin0", "min1", "amin1", "dmin1", "max0", "amax", "min1", "amax1", "dmax1"};
+        std::set<std::string>array_intrinsic_mapping_names = {"min0", "amin0", "min1", "amin1", "dmin1", "max0", "amax0", "max1", "amax1", "dmax1"};
         if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
             return;
         }
@@ -6661,6 +6669,7 @@ public:
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     fill_optional_kind_arg(var_name, args);
+                    tmp = nullptr;
                     scalar_kind_arg(var_name, args);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
@@ -9155,12 +9164,8 @@ public:
     void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
                         char* x_m_id, const Location& loc) {
         if (x_n_member == 0) {
-            try {
-                ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
-                tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
-            } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) throw a;
-            }
+            ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
+            tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
         } else if (x_n_member == 1) {
             if (x_m_member[0].n_args == 0) {
                 SymbolTable* scope = current_scope;

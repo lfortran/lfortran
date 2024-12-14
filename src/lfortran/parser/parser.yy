@@ -557,8 +557,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> implicit_spec_list
 %type <ast> implicit_none_spec
 %type <vec_ast> implicit_none_spec_star
-%type <ast> letter_spec
-%type <vec_ast> letter_spec_list
 %type <ast> procedure_decl
 %type <vec_ast> access_spec_list
 %type <ast> access_spec
@@ -1163,84 +1161,66 @@ implicit_spec_list
     ;
 
 /*
-   HERE BE DRAGONS!
-
-   The standard gives the rule:
-
-       _implicit-spec_ := _declaration-type-spec_ ( _letter-spec-list_ )
-
-   which allows for full `KIND` specifications on any
-   _intrinsic_type_spec_.  The following grammar rule attempts to
-   approximate that in three ways:
-
-      1. If no KIND parameter is given, an IMPLICIT_SPEC is constructed
-         with an ATTR_TYPE as the first parameter; or
-      2. If an integer is given as an (unlabelled) KIND parameter, then
-         an IMPLICIT_SPEC is constructed with an ATTR_TYPE_INT as the
-	 first parameter; or
-      3. If an expression that matches `letter_spec_list` is passed as
-         an (unlabelled) KIND parameter, then an IMPLICIT_SPEC_KIND
-	 is constructed with an ATTR_TYPE as the first parameter and
-	 the `letter_spec_list` result as the second.
-
-    Note that #3 accepts `id` (and `id - id`), because `letter_spec_list`
-    itself accepts an `id`, rather than just `letter`.
-
-    So, this rule accepts only a portion of the full KIND specification.
-    We should just be using the grammar `declaration_type_spec` rule
-    instead of all of these special cases, but that leads to a fundamental
-    shift/reduce conflict due to the overlap between `( kind_arg_list )`
-    and `( letter_spec_list )`.
-*/
-
+  We are using kind_arg_list rather than letter_spec_list to avoid conflicts
+  in the parser.  The kind_args are translated into letter_specs in the
+  IMPLICIT_SPEC macro.
+*/		
+   
 implicit_spec
-    : KW_INTEGER "(" letter_spec_list ")" {
+    : KW_INTEGER "(" kind_arg_list ")" "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Integer, $3, @$), $6, @$); }
+    | KW_INTEGER "*" TK_INTEGER "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $5, @$);
+	    WARN_INTEGERSTAR($3, @2);}
+    | KW_INTEGER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Integer, @$), $3, @$); }
-    | KW_INTEGER "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $5, @$); }
-    | KW_INTEGER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $6, @$); }
-    | KW_INTEGER "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Integer, @$), $3, $6, @$); }
-    | KW_CHARACTER "(" letter_spec_list ")" {
+	    
+    | KW_CHARACTER "(" kind_arg_list ")" "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Character, $3, @$), $6, @$); }
+    | KW_CHARACTER "*" TK_INTEGER "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $5, @$);
+	    WARN_CHARACTERSTAR($3, @2);}
+    | KW_CHARACTER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Character, @$), $3, @$); }
-    | KW_CHARACTER "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $5, @$); }
-    | KW_CHARACTER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $6, @$); }
-    | KW_CHARACTER "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Character, @$), $3, $6, @$); }
-    | KW_REAL "(" letter_spec_list ")" {
+
+    | KW_REAL "(" kind_arg_list ")" "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Real, $3, @$), $6, @$); }
+    | KW_REAL "*" TK_INTEGER "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $5, @$);
+	    WARN_REALSTAR($3, @2); }
+    | KW_REAL "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Real, @$), $3, @$); }
-    | KW_REAL "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $5, @$); }
-    | KW_REAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $6, @$); }
-    | KW_REAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Real, @$), $3, $6, @$); }
-    | KW_COMPLEX "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
-    | KW_COMPLEX "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, DIV2($3), @$), $5, @$); }
-    | KW_COMPLEX "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, $3, @$), $6, @$); }
-    | KW_COMPLEX "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Complex, @$), $3, $6, @$); }
-    | KW_LOGICAL "(" letter_spec_list ")" {
+
+    | KW_LOGICAL "(" kind_arg_list ")" "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Logical, $3, @$), $6, @$); }
+    | KW_LOGICAL "*" TK_INTEGER "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $5, @$);
+	    WARN_LOGICALSTAR($3, @2);}
+    | KW_LOGICAL "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Logical, @$), $3, @$); }
-    | KW_LOGICAL "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $5, @$); }
-    | KW_LOGICAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $6, @$); }
-    | KW_LOGICAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Logical, @$), $3, $6, @$); }
-    | KW_DOUBLE KW_PRECISION "(" letter_spec_list ")" {
+
+    | KW_COMPLEX "(" kind_arg_list ")" "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Complex, $3, @$), $6, @$); }
+    | KW_COMPLEX "*" TK_INTEGER "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, DIV2($3), @$), $5, @$);
+	    WARN_COMPLEXSTAR($3, @2);}
+    | KW_COMPLEX "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
+	    
+    | KW_DOUBLE KW_PRECISION "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $4, @$); }
-    | KW_TYPE "(" id ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Type, $3, @$), $6, @$); }
-    | KW_PROCEDURE "(" id ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Procedure, $3, @$), $6, @$); }
-    | KW_CLASS "(" id ")" "(" letter_spec_list ")" {
+    | KW_DOUBLE_PRECISION "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $3, @$); }
+    | KW_DOUBLE KW_COMPLEX "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(DoubleComplex, @$), $4, @$); }
+    | KW_DOUBLE_COMPLEX "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE(DoubleComplex, @$), $3, @$); }
+
+    | KW_TYPE "(" intrinsic_type_spec ")" "(" kind_arg_list ")"  %dprec 2 {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_ATTR(Type, $3, @$), $6, @$); }
+    | KW_TYPE "(" id ")" "(" kind_arg_list ")" %dprec 1 {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Type, $3, @$), $6, @$);}
+    | KW_CLASS "(" id ")"  "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Class, $3, @$), $6, @$); }
     ;
 
@@ -1254,16 +1234,6 @@ implicit_none_spec_star
 implicit_none_spec
     : KW_EXTERNAL { $$ = IMPLICIT_NONE_EXTERNAL(@$); }
     | KW_TYPE { $$ = IMPLICIT_NONE_TYPE(@$); }
-    ;
-
-letter_spec_list
-    : letter_spec_list "," letter_spec { $$ = $1; LIST_ADD($$, $3); }
-    | letter_spec { LIST_NEW($$); LIST_ADD($$, $1); }
-    ;
-
-letter_spec
-    : id           { $$ = LETTER_SPEC1($1, @$); }
-    | id "-" id    { $$ = LETTER_SPEC2($1, $3, @$); }
     ;
 
 use_statement_star

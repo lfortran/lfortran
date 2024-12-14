@@ -3,6 +3,7 @@
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
+#include <libasr/asr_pass_walk_visitor.h>
 
 #include <deque>
 
@@ -92,7 +93,7 @@ namespace LCompilers {
 
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
-            ASR::intentType var_intent=ASR::intentType::Local);
+            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
@@ -153,11 +154,25 @@ namespace LCompilers {
             return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var));
         }
 
+        /*  Checks for any non-primitive-function-return type 
+            like fixed strings or allocatables.
+            allocatable string, allocatable integer, etc.. */
+        static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
+            // TODO : Handle other allocatable types and fixed strings.
+            return ASRUtils::is_descriptorString(x);
+        }
+
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
             return (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var)) ||
                     ASRUtils::is_array(ASRUtils::expr_type(var)) ||
                     ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
+        
+        static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
+            return  is_aggregate_or_array_type(var) || 
+                    is_non_primitive_return_type(ASRUtils::expr_type(var));
+        }
+
 
         static inline bool is_symbolic_list_type(ASR::expr_t* var) {
             if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(var))) {
@@ -588,7 +603,7 @@ namespace LCompilers {
                     visit_UserDefinedType(x);
                 }
 
-                void visit_UnionType(const ASR::UnionType_t& x) {
+                void visit_Union(const ASR::Union_t& x) {
                     visit_UserDefinedType(x);
                 }
             */

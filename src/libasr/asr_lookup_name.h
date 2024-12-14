@@ -10,6 +10,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/asr_builder.h>
 #include <libasr/lsp_interface.h>
+#include <libasr/asr_lookup_name_visitor.h>
 
 namespace LCompilers::LFortran {
     class LookupNameVisitor : public ASR::DefaultLookupNameVisitor<LookupNameVisitor> {
@@ -48,7 +49,7 @@ namespace LCompilers::LFortran {
                 this->lm = lm;
             }
 
-            void populate_document_symbol_and_push(const Location& loc) {
+            void populate_document_symbol_and_push(const Location& loc, ASR::symbolType type) {
                 document_symbols loc_;
                 uint32_t first_line;
                 uint32_t last_line;
@@ -65,20 +66,73 @@ namespace LCompilers::LFortran {
                 loc_.last_line = last_line;
                 loc_.symbol_name = symbol_name;
                 loc_.filename = filename;
+                loc_.symbol_type = type;
                 symbol_lists.push_back(loc_);
             }
 
             void visit_symbol(const ASR::symbol_t& x) {
                 ASR::symbol_t* sym = const_cast<ASR::symbol_t*>(&x);
                 if ( ASRUtils::symbol_name(sym) == symbol_name ) {
-                    this->populate_document_symbol_and_push(x.base.loc);
+                    if ( ASR::is_a<ASR::Function_t>(*sym) ) {
+                        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+                        if ( f->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_start_name), x.type);
+                        }
+                        if ( f->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_end_name), x.type);
+                        }
+                    } else if ( ASR::is_a<ASR::Program_t>(*sym) ) {
+                        ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(sym);
+                        if ( p->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_start_name), x.type);
+                        }
+                        if ( p->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_end_name), x.type);
+                        }
+                    } else if ( ASR::is_a<ASR::Module_t>(*sym) ) {
+                        ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(sym);
+                        if ( m->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(m->m_start_name), x.type);
+                        }
+                        if ( m->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(m->m_end_name), x.type);
+                        }
+                    } else {
+                        this->populate_document_symbol_and_push(x.base.loc, x.type);
+                    }
                 }
                 ASR::BaseWalkVisitor<OccurenceCollector>::visit_symbol(x);
             }
 
             void visit_Var(const ASR::Var_t& x) {
                 if ( ASRUtils::symbol_name(x.m_v) == symbol_name ) {
-                    this->populate_document_symbol_and_push(x.base.base.loc);
+                    if ( ASR::is_a<ASR::Function_t>(*x.m_v) ) {
+                        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x.m_v);
+                        if ( f->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_start_name), x.m_v->type);
+                        }
+                        if ( f->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(f->m_end_name), x.m_v->type);
+                        }
+                    } else if ( ASR::is_a<ASR::Program_t>(*x.m_v) ) {
+                        ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(x.m_v);
+                        if ( p->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_start_name), x.m_v->type);
+                        }
+                        if ( p->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(p->m_end_name), x.m_v->type);
+                        }
+                    } else if ( ASR::is_a<ASR::Module_t>(*x.m_v) ) {
+                        ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(x.m_v);
+                        if ( m->m_start_name ) {
+                            this->populate_document_symbol_and_push(*(m->m_start_name), x.m_v->type);
+                        }
+                        if ( m->m_end_name ) {
+                            this->populate_document_symbol_and_push(*(m->m_end_name), x.m_v->type);
+                        }
+                    } else {
+                        this->populate_document_symbol_and_push(x.base.base.loc, x.m_v->type);
+                    }
                 }
                 ASR::BaseWalkVisitor<OccurenceCollector>::visit_Var(x);
             }
@@ -87,6 +141,11 @@ namespace LCompilers::LFortran {
             // overwritten `visit_symbol` and not `this->visit_symbol`
             // in BaseWalkVisitor we have `this->visit_symbol` which
             // prevents us from using the overwritten `visit_symbol`
+            void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+                for (auto &a : x.m_symtab->get_scope()) {
+                    visit_symbol(*a.second);
+                }
+            }
             void visit_Program(const ASR::Program_t &x) {
                 for (auto &a : x.m_symtab->get_scope()) {
                     visit_symbol(*a.second);
@@ -94,6 +153,19 @@ namespace LCompilers::LFortran {
                 for (size_t i=0; i<x.n_body; i++) {
                     visit_stmt(*x.m_body[i]);
                 }
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                for (size_t i=0; i<x.n_args; i++) {
+                    this->visit_call_arg(x.m_args[i]);
+                }
+                if ( ASRUtils::symbol_name(x.m_name) == symbol_name ) {
+                    this->populate_document_symbol_and_push(x.base.base.loc, ASR::symbolType::Function);
+                }
+                this->visit_ttype(*x.m_type);
+                if (x.m_value && visit_compile_time_value)
+                    this->visit_expr(*x.m_value);
+                if (x.m_dt)
+                    this->visit_expr(*x.m_dt);
             }
             void visit_Module(const ASR::Module_t &x) {
                 for (auto &a : x.m_symtab->get_scope()) {
@@ -130,7 +202,7 @@ namespace LCompilers::LFortran {
                 }
                 visit_ttype(*x.m_type);
             }
-            void visit_UnionType(const ASR::UnionType_t &x) {
+            void visit_Union(const ASR::Union_t &x) {
                 for (auto &a : x.m_symtab->get_scope()) {
                     this->visit_symbol(*a.second);
                 }

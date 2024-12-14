@@ -51,9 +51,9 @@ Then download a tarball from
 [https://lfortran.org/download/](https://lfortran.org/download/),
 e.g.:
 ```bash
-wget https://lfortran.github.io/tarballs/dev/lfortran-0.9.0.tar.gz
-tar xzf lfortran-0.9.0.tar.gz
-cd lfortran-0.9.0
+wget https://github.com/lfortran/lfortran/releases/download/v0.42.0/lfortran-0.42.0.tar.gz
+tar xzf lfortran-0.42.0.tar.gz
+cd lfortran-0.42.0.tar.gz
 ```
 And build:
 ```
@@ -90,10 +90,19 @@ Generate files that are needed for the build (this step depends on `re2c`, `biso
 ```bash
 ./build0.sh
 ```
-Now the process is the same as installing from the source tarball. For example to build in Debug mode:
+Now you can use our script `./build1.sh` to build in Debug mode:
+```bash
+./build1.sh
 ```
-cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
-make -j8
+
+and can use `ninja` to rebuild.
+
+To do a clean rebuild, you can use:
+```bash
+# NOTE: the below git command deletes all untracked files
+git clean -dfx  # reset repository to a clean state by removing artifacts generated during the build process
+./build0.sh
+./build1.sh
 ```
 
 Run tests:

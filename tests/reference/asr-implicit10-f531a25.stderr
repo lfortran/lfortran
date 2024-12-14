@@ -4,14 +4,14 @@ style suggestion: Use real(8) instead of real*8
 6 | real*8 :: g, h, i
   | ^^^^^^ help: write this as 'real(8)'
 
-style suggestion: Use complex(8) instead of complex*8
+style suggestion: Use complex(4) instead of complex*8
  --> tests/implicit10.f90:8:1
   |
 8 | complex*8 :: l, m
-  | ^^^^^^^^^ help: write this as 'complex(8)'
+  | ^^^^^^^^^ help: write this as 'complex(4)'
 
-style suggestion: Use complex(16) instead of complex*16
+style suggestion: Use complex(8) instead of complex*16
  --> tests/implicit10.f90:9:1
   |
 9 | complex *16 :: n
-  | ^^^^^^^^^^^ help: write this as 'complex(16)'
+  | ^^^^^^^^^^^ help: write this as 'complex(8)'

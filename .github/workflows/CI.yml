@@ -406,7 +406,6 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
               -DWITH_LSP=yes \
-              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
@@ -498,6 +497,30 @@ jobs:
         run: |
             ./build0.sh
             ./build1.sh
+
+      - name: Test PRIMA
+        shell: bash -e -l {0}
+        if: contains(matrix.llvm-version, '11') && contains(matrix.os, 'macos')
+        run: |
+            git clone https://github.com/Pranavchiku/prima.git
+            cd prima
+            git checkout -t origin/lf13
+            git checkout b3f5b55c94b3b0b2568fe9af97a8e34a48cac7b4
+            FC="$(pwd)/../src/bin/lfortran --cpp --skip-pass=pass_array_by_data" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            ./build/fortran/example_bobyqa_fortran_1_exe
+      
+      - name: Test POT3D
+        shell: bash -e -l {0}
+        run: |
+            git clone https://github.com/gxyd/pot3d.git
+            FC="$(pwd)/src/bin/lfortran"
+            cd pot3d
+            git checkout -t origin/mpi_with_workaround
+            git checkout 9fb077f667e7eef7799cf7f3a7f0a42cd2c5c85e
+            cd src
+            $FC -c mpi.f90
+            $FC -c psi_io.f90
+            $FC pot3d.F --cpp --implicit-interface --fixed-form --show-asr
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -1362,7 +1385,6 @@ jobs:
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
               -DWITH_LSP=yes \
-              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \

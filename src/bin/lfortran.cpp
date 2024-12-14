@@ -873,42 +873,17 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
 }
 
 #ifdef HAVE_LFORTRAN_MLIR
-int emit_mlir(const std::string &infile, CompilerOptions &compiler_options)
-{
-    std::string input = read_file(infile);
-
-    LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::LocationManager lm;
-    LCompilers::diag::Diagnostics diagnostics;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = infile;
-        lm.files.push_back(fl);
-        lm.file_ends.push_back(input.size());
-    }
-    LCompilers::Result<std::string> mlir = fe.get_mlir(input, lm, diagnostics);
-    std::cerr << diagnostics.render(lm, compiler_options);
-    if (mlir.ok) {
-        std::cout << mlir.result;
-        return 0;
-    } else {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 1;
-    }
-}
-
-int compile_to_object_file_mlir(const std::string &infile,
+int handle_mlir(const std::string &infile,
         const std::string &outfile,
-        CompilerOptions &compiler_options) {
+        CompilerOptions &compiler_options,
+        bool emit_mlir, bool emit_llvm) {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
 
-
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
-
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -931,18 +906,22 @@ int compile_to_object_file_mlir(const std::string &infile,
     std::unique_ptr<LCompilers::MLIRModule> m;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
-        res = fe.get_mlir2(*asr, diagnostics);
+        res = fe.get_mlir(*asr, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 5;
+        return 2;
     }
-
-    // LLVM -> Machine code (saves to an object file)
-    e.save_object_file(*(m->llvm_m), outfile);
-
+    if (emit_mlir) {
+        std::cout << m->mlir_str();
+    } else if (emit_llvm) {
+        std::cout << m->llvm_str();
+    } else {
+        // LLVM -> Machine code (saves to an object file)
+        e.save_object_file(*(m->llvm_m), outfile);
+    }
     return 0;
 }
 #endif // HAVE_LFORTRAN_MLIR
@@ -1597,8 +1576,8 @@ int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
     const std::string &runtime_library_dir, Backend backend,
     bool static_executable, bool shared_executable,
-    bool link_with_gcc, bool kokkos, bool verbose,
-    const std::vector<std::string> &lib_dirs,
+    std::string linker, std::string linker_path, bool kokkos,
+    bool verbose, const std::vector<std::string> &lib_dirs,
     const std::vector<std::string> &libraries,
     const std::vector<std::string> &linker_flags,
     CompilerOptions &compiler_options)
@@ -1731,21 +1710,35 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += runtime_library_dir + "/" + runtime_lib;
             compile_cmd +=  extra_linker_flags;
         } else {
-            std::string CC;
+            std::string CC{""};
             std::string base_path = "\"" + runtime_library_dir + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
-            if (link_with_gcc) {
-                CC = "gcc";
-            } else {
-                CC = "clang";
+            if (!linker_path.empty()) {
+                CC = linker_path;
+            } else if (char *env_path = std::getenv("LFORTRAN_LINKER_PATH")) {
+                CC = env_path;
             }
 
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
+            if (!CC.empty() && CC.back() != '/') {
+                // TODO: Fix the path usage for Windows
+                CC += "/";
+            }
 
-            if (compiler_options.target != "" && !link_with_gcc) {
+            if (!linker.empty()) {
+                CC += linker;
+            } else if (char *env_linker = std::getenv("LFORTRAN_LINKER")) {
+                CC += env_linker;
+            } else {
+                // TODO: Add support for msvc linker for Windows
+                // TODO: Add support for lld linker
+                // Default linker to be used
+                CC += "clang";
+            }
+
+            if (compiler_options.target != "" &&
+                    CC.find("clang" ) != std::string::npos) {
                 options = " -target " + compiler_options.target;
             }
 
@@ -1787,7 +1780,14 @@ int link_executable(const std::vector<std::string> &infiles,
         }
         int err = system(compile_cmd.c_str());
         if (err) {
-            std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
+            std::cerr << "The command '" + compile_cmd + "' failed." << std::endl;
+            std::cerr << "Tip: If there is a linker issue, switch the linker "
+                "using --linker=<CC> option or create an environment "
+                "variable `export LFORTRAN_LINKER=<CC>`, where CC is "
+                "clang or gcc" << std::endl;
+            std::cerr << "Also, if required use --linker-path=<PATH>, "
+                "where PATH has location to look for the linker "
+                "execuatable" << std::endl;
             return 10;
         }
 
@@ -2107,6 +2107,7 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> arg_files;
     std::string arg_standard;
     bool arg_version = false;
+    // see parser.prescan function for what 'prescanning' does
     bool show_prescan = false;
     bool show_tokens = false;
     bool show_ast = false;
@@ -2118,6 +2119,7 @@ int main_app(int argc, char *argv[]) {
     bool arg_no_prescan = false;
     bool show_llvm = false;
     bool show_mlir = false;
+    bool show_llvm_from_mlir = false;
     bool show_cpp = false;
     bool show_c = false;
     bool show_asm = false;
@@ -2130,8 +2132,9 @@ int main_app(int argc, char *argv[]) {
     std::string skip_pass;
     std::string arg_backend = "llvm";
     std::string arg_kernel_f;
+    std::string linker{""};
+    std::string linker_path{""};
     bool print_targets = false;
-    bool link_with_gcc = false;
     bool fixed_form_infer = false;
     bool cpp = false;
     bool cpp_infer = false;
@@ -2193,7 +2196,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
     app.add_option("--std", arg_standard, "Select standard conformance (lf, f23, legacy)");
     app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescanning");
-    app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
+    app.add_flag("--show-prescan", show_prescan, "Show the source code after prescanning and exit");
     app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
     app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
     app.add_flag("--show-asr", show_asr, "Show ASR for the given file and exit");
@@ -2209,6 +2212,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
     app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
     app.add_flag("--show-mlir", show_mlir, "Show MLIR for the given file and exit");
+    app.add_flag("--show-llvm-from-mlir", show_llvm_from_mlir, "Show LLVM IR translated from MLIR for the given file and exit");
     app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
     app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
     app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
@@ -2238,7 +2242,8 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
     app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
-    app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
+    app.add_flag("--linker", linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str();
+    app.add_flag("--linker-path", linker_path, "Use the linker from this path")->capture_default_str();
     app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
     app.add_flag("--print-targets", print_targets, "Print the registered targets");
     app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
@@ -2566,9 +2571,10 @@ int main_app(int argc, char *argv[]) {
         return 1;
 #endif
     }
-    if (show_mlir) {
+    if (show_mlir || show_llvm_from_mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-        return emit_mlir(arg_file, compiler_options);
+        return handle_mlir(arg_file, outfile, compiler_options,
+            show_mlir, show_llvm_from_mlir);
 #else
         std::cerr << "The `--show-mlir` option requires the MLIR backend to be "
             "enabled. Recompile with `WITH_MLIR=yes`." << std::endl;
@@ -2636,7 +2642,7 @@ int main_app(int argc, char *argv[]) {
             return compile_to_binary_fortran(arg_file, outfile, compiler_options);
         } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-            return compile_to_object_file_mlir(arg_file, outfile, compiler_options);
+            return handle_mlir(arg_file, outfile, compiler_options, false, false);
 #else
             std::cerr << "The -c option with `--backend=mlir` requires the "
                 "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
@@ -2680,7 +2686,7 @@ int main_app(int argc, char *argv[]) {
                         time_report, compiler_options);
             } else if (backend == Backend::mlir) {
     #ifdef HAVE_LFORTRAN_MLIR
-                err = compile_to_object_file_mlir(arg_file, tmp_o, compiler_options);
+                err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
     #else
                 std::cerr << "Compiling Fortran files to object files using "
                     "`--backend=mlir` requires the MLIR backend to be enabled. "
@@ -2707,11 +2713,12 @@ int main_app(int argc, char *argv[]) {
         err_ = err;
         if (!err) object_files.push_back(tmp_o);
     }
-    if (object_files.size() == 0) { 
+    if (object_files.size() == 0) {
         return err_;
     } else {
-        return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
-                           link_with_gcc, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
+        return err_ + link_executable(object_files, outfile, runtime_library_dir,
+                backend, static_link, shared_link, linker, linker_path, true,
+                arg_v, arg_L, arg_l, linker_flags, compiler_options);
     }
 }
 
