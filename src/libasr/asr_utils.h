@@ -2530,7 +2530,7 @@ static inline ASR::asr_t* make_ArraySize_t_util(
     }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
-        if (af->m_arr_intrinsic_id == 23L){
+        if ( ASRUtils::is_array(af->m_type) ){
             array_func_type = af->m_type;
         }
         for ( size_t i = 0; i < af->n_args; i++ ) {
@@ -2632,22 +2632,16 @@ static inline ASR::asr_t* make_ArraySize_t_util(
     } else {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = 0;
-        if(array_func_type == nullptr){
-            n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
-        } else {
-            n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
-        }
+        if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
+        else n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
         bool is_dimension_dependent_only_on_arguments_ = is_dimension_dependent_only_on_arguments(m_dims, n_dims);
 
         bool compute_size = (is_dimension_dependent_only_on_arguments_ &&
             (is_dimension_constant || a_dim == nullptr));
         if( compute_size && for_type ) {
             ASR::dimension_t* m_dims = nullptr;
-            if(array_func_type == nullptr){
-                n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
-            } else {
-                n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
-            }
+            if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
+            else n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
             if( a_dim == nullptr ) {
                 ASR::asr_t* size = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
                 for( size_t i = 0; i < n_dims; i++ ) {
