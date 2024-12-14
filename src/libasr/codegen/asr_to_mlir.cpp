@@ -65,6 +65,13 @@ public:
             llvmI8PtrTy = mlir::LLVM::LLVMPointerType::get(builder->getI8Type());
         }
 
+    void visit_expr2(ASR::expr_t &x) {
+        this->visit_expr(x);
+        if (ASR::is_a<ASR::Var_t>(x)) {
+            tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
@@ -134,7 +141,7 @@ public:
         mlir_symtab[h] = builder->create<mlir::LLVM::AllocaOp>(loc, var_type,
             size);
         if (x.m_symbolic_value) {
-            this->visit_expr(*x.m_symbolic_value);
+            this->visit_expr2(*x.m_symbolic_value);
             builder->create<mlir::LLVM::StoreOp>(loc, tmp, mlir_symtab[h]);
         }
     }
@@ -149,7 +156,7 @@ public:
         ASR::Variable_t *m_target = ASRUtils::EXPR2VAR(x.m_target);
         uint32_t h = get_hash((ASR::asr_t*) m_target);
         mlir::Value target = mlir_symtab[h];
-        this->visit_expr(*x.m_value);
+        this->visit_expr2(*x.m_value);
         mlir::Value value = tmp;
         builder->create<mlir::LLVM::StoreOp>(loc, value, target);
     }
@@ -187,9 +194,9 @@ public:
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        this->visit_expr(*x.m_left);
+        this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
-        this->visit_expr(*x.m_right);
+        this->visit_expr2(*x.m_right);
         mlir::Value right = tmp;
         switch (x.m_op) {
             case ASR::binopType::Add: {
@@ -207,9 +214,9 @@ public:
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
-        this->visit_expr(*x.m_left);
+        this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
-        this->visit_expr(*x.m_right);
+        this->visit_expr2(*x.m_right);
         mlir::Value right = tmp;
         switch (x.m_op) {
             case ASR::binopType::Add: {
@@ -235,19 +242,16 @@ public:
             ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(
                 x.m_text);
             args.reserve(al, sf->n_args+1);
-            // Later used by `printf_fmt`
-            args.push_back(al, nullptr);
+            args.push_back(al, nullptr); // Later used by `printf_fmt`
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
-                this->visit_expr(*sf->m_args[i]);
+                this->visit_expr2(*sf->m_args[i]);
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
-                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc,
-                        tmp));
+                    args.push_back(al, tmp);
                 } else if (ASRUtils::is_real(*t)) {
                     fmt += " %f";
-                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc,
-                        tmp));
+                    args.push_back(al, tmp);
                 } else {
                     throw CodeGenError("Unhandled type in print statement",
                         x.base.base.loc);
