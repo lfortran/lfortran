@@ -63,8 +63,18 @@
                             ()
                             [(IntrinsicElementalFunction
                                 Min
-                                [(Var 2 y)
-                                (Var 2 z)]
+                                [(Cast
+                                    (Var 2 y)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )
+                                (Cast
+                                    (Var 2 z)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )]
                                 0
                                 (Real 8)
                                 ()
