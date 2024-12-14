@@ -72,9 +72,15 @@ public:
             case ASR::ttypeType::Integer: {
                 if      (kind == 4) return builder->getI32Type();
                 else if (kind == 8) return builder->getI64Type();
+                else
+                    throw LCompilersException("Unhandled Integer kind: " +
+                        std::to_string(kind));
             } case ASR::ttypeType::Real: {
                 if      (kind == 4) return builder->getF32Type();
                 else if (kind == 8) return builder->getF64Type();
+                else
+                    throw LCompilersException("Unhandled Real kind: " +
+                        std::to_string(kind));
             } case ASR::ttypeType::Array: {
                 ASR::Array_t *arr_type = down_cast<ASR::Array_t>(asr_type);
                 return mlir::LLVM::LLVMArrayType::get(getType(arr_type->m_type),
