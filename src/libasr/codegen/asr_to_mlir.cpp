@@ -87,6 +87,21 @@ public:
         }
     }
 
+    std::string getUniqueName(std::string name = "") {
+        static int itr = 0; ++itr;
+        return name + std::to_string(itr);
+    }
+
+    mlir::Value createGlobalString(std::string value) {
+        mlir::OpBuilder builder0(module->getBodyRegion());
+        mlir::LLVM::LLVMArrayType arrayI8Ty = mlir::LLVM::LLVMArrayType::get(
+            builder->getI8Type(), value.size());
+        mlir::LLVM::GlobalOp globalStr = builder0.create<mlir::LLVM::GlobalOp>(
+            loc, arrayI8Ty, false, mlir::LLVM::Linkage::Private,
+            getUniqueName("char_const_"), builder0.getStringAttr(value));
+        return builder->create<mlir::LLVM::AddressOfOp>(loc, globalStr);
+    }
+
     void visit_expr2(ASR::expr_t &x) {
         this->visit_expr(x);
         if (ASR::is_a<ASR::Var_t>(x)) {
@@ -190,6 +205,10 @@ public:
         }
     }
 
+    void visit_StringConstant(const ASR::StringConstant_t &x) {
+        tmp = createGlobalString(x.m_s);
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
@@ -257,23 +276,26 @@ public:
     void handle_Print(const Location &l, ASR::expr_t *x) {
         std::string fmt = "";
         Vec<mlir::Value> args;
-        LCOMPILERS_ASSERT(x != nullptr &&
-            ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x)));
-        if (ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(x)) {
+        if (ASR::is_a<ASR::StringFormat_t>(*x)) {
+            ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(x);
             args.reserve(al, sf->n_args+1);
             args.push_back(al, nullptr); // Later used by `printf_fmt`
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
-                this->visit_expr2(*sf->m_args[i]);
+                this->visit_expr(*sf->m_args[i]);
+                if (ASR::is_a<ASR::Var_t>(*sf->m_args[i]) ||
+                        ASR::is_a<ASR::ArrayItem_t>(*sf->m_args[i])) {
+                    tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
+                }
+                args.push_back(al, tmp);
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
-                    args.push_back(al, tmp);
                 } else if (ASRUtils::is_real(*t)) {
                     fmt += " %f";
-                    args.push_back(al, tmp);
+                } else if (ASRUtils::is_character(*t)) {
+                    fmt += " %s";
                 } else {
                     throw CodeGenError("Unhandled type in print statement", l);
-
                 }
             }
         } else {
@@ -281,7 +303,6 @@ public:
         }
         fmt += "\n";
 
-        static int itr = 0; ++itr;
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp printf_fn =
             module->lookupSymbol<mlir::LLVM::LLVMFuncOp>("printf");
@@ -293,18 +314,11 @@ public:
             printf_fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
                 loc, "printf", llvmFnType);
         }
-        mlir::LLVM::LLVMArrayType arrayI8Ty = mlir::LLVM::LLVMArrayType::get(
-            builder->getI8Type(), fmt.size());
         // FIXME: Add "\00" to end of `builder->getStringAttr(fmt)` string.
         // Now, the fmt string value is " %d\n", but it needs to be " %d\n\00"
-        mlir::LLVM::GlobalOp global_str = builder0.create<mlir::LLVM::GlobalOp>(
-            loc, arrayI8Ty, false, mlir::LLVM::Linkage::Private,
-            "printf_fmt_" + std::to_string(itr), builder->getStringAttr(fmt));
-
+        mlir::Value globalPtr = createGlobalString(fmt);
         mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
             builder->getI64Type(), builder->getIndexAttr(0));
-        mlir::Value globalPtr = builder->create<mlir::LLVM::AddressOfOp>(
-            loc, global_str);
         globalPtr = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
             globalPtr, mlir::ValueRange{zero, zero});
         args.p[0] = globalPtr;
