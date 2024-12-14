@@ -2560,11 +2560,20 @@ public:
                             return false;
                         } else {
                             bool no_array_sections = true;
+                            bool constant_args = false;
                             for (size_t i = 0; i < func_call_or_array->n_args; i++) {
                                 if (func_call_or_array->m_args[i].m_step != nullptr) {
                                     no_array_sections = false;
                                     break;
                                 }
+                                if ( func_call_or_array->m_args[i].m_end != nullptr &&
+                                     AST::is_a<AST::Num_t>(*func_call_or_array->m_args[i].m_end) ) {
+                                    constant_args = true;
+                                    break;
+                                }
+                            }
+                            if (constant_args) {
+                                return false;
                             }
                             if (no_array_sections) {
                                 return true;

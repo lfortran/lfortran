@@ -93,6 +93,8 @@ call bpe()
 i = bpe()
 print *, xx
 test_re = 1245.13
+c(1) = 1
+
 contains
 subroutine bpe()
     print *, size(bpe)
