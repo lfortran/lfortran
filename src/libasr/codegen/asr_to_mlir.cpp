@@ -151,9 +151,8 @@ public:
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        ASR::Variable_t *m_target = ASRUtils::EXPR2VAR(x.m_target);
-        uint32_t h = get_hash((ASR::asr_t*) m_target);
-        mlir::Value target = mlir_symtab[h];
+        this->visit_expr(*x.m_target);
+        mlir::Value target = tmp;
         this->visit_expr2(*x.m_value);
         mlir::Value value = tmp;
         builder->create<mlir::LLVM::StoreOp>(loc, value, target);
@@ -230,6 +229,30 @@ public:
                     x.base.base.loc);
         }
     }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        this->visit_expr(*x.m_v);
+        mlir::Value m_v = tmp;
+
+        LCOMPILERS_ASSERT(x.n_args == 1);
+        this->visit_expr(*x.m_args[0].m_right);
+        mlir::Value idx = tmp;
+
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(
+                x.m_args[0].m_right)) != 8) {
+            idx = builder->create<mlir::LLVM::SExtOp>(loc,
+                builder->getI64Type(), idx);
+        }
+        mlir::LLVM::ConstantOp one = builder->create<mlir::LLVM::ConstantOp>(loc,
+            builder->getI64Type(), builder->getIndexAttr(1));
+
+        idx = builder->create<mlir::LLVM::SubOp>(loc, idx, one);
+        mlir::Type basePtrType = mlir::LLVM::LLVMPointerType::get(getType(
+            ASRUtils::extract_type(ASRUtils::expr_type(x.m_v))));
+        tmp = builder->create<mlir::LLVM::GEPOp>(loc, basePtrType, m_v,
+            mlir::ValueRange{idx});
+    }
+
 
     void handle_Print(const Location &l, ASR::expr_t *x) {
         std::string fmt = "";
