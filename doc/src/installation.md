@@ -213,7 +213,7 @@ cd lfortran
 ```bash
 conda activate lf
 ./build0.sh
-cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .\
+cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
 make -j8
 ```
 
