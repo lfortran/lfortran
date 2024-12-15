@@ -543,6 +543,9 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 #ifdef HAVE_LFORTRAN_MLIR
     // ASR -> MLIR
     std::unique_ptr<LCompilers::MLIRModule> m;
+    LCompilers::PassManager pass_manager;
+    pass_manager.use_default_passes();
+    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
     Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, asr, diagnostics);
     if (res.ok) {
         m = std::move(res.result);
