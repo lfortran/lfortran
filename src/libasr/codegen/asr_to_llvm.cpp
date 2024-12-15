@@ -3956,7 +3956,7 @@ public:
 
     bool is_function_variable(const ASR::Variable_t &v) {
         if (v.m_type_declaration) {
-            return ASR::is_a<ASR::Function_t>(*v.m_type_declaration);
+            return ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v.m_type_declaration));
         } else {
             return false;
         }
@@ -3984,7 +3984,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 if (is_function_variable(*v)) {
                     // * Function (callback) Variable (`procedure(fn) :: x`)
-                    s = v->m_type_declaration;
+                    s = ASRUtils::symbol_get_past_external(v->m_type_declaration);
                 } else {
                     // * Variable (`integer :: x`)
                     ASR::Variable_t *arg = EXPR2VAR(x.m_args[i]);
@@ -9307,13 +9307,8 @@ public:
             proc_sym = clss_proc->m_proc;
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
-            LCOMPILERS_ASSERT(type_decl);
-            if (ASR::is_a<ASR::Function_t>(*type_decl)) {
-                s = ASR::down_cast<ASR::Function_t>(type_decl);
-            } else {
-                proc_sym = ASRUtils::symbol_get_past_external(type_decl);
-                s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(type_decl));
-            }
+            LCOMPILERS_ASSERT(type_decl && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_decl)));
+            s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(type_decl));
         } else {
             throw CodeGenError("SubroutineCall: Symbol type not supported");
         }
