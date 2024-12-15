@@ -29,8 +29,10 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 
         inline bool is_deallocatable(ASR::symbol_t* s){
             if( ASR::is_a<ASR::Variable_t>(*s) && 
-                ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(s)) &&
-                ASRUtils::symbol_intent(s) == ASRUtils::intent_local) {
+                ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(s)) && 
+                (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(s))) ||
+                ASRUtils::is_array(ASRUtils::symbol_type(s))) &&
+                ASRUtils::symbol_intent(s) == ASRUtils::intent_local){
                 return true;
             }
             return false;
@@ -42,10 +44,11 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
             allocatable_local_variables.reserve(al, 1);
             for(auto& itr: symtab->get_scope()) {
                 if (ASR::is_a<ASR::Variable_t>(*itr.second)
+                    && ASR::down_cast<ASR::Variable_t>(itr.second)->m_intent == ASRUtils::intent_local
                     && ASR::is_a<ASR::StructType_t>(*ASRUtils::symbol_type(itr.second))) {
                     /*
                         When a variable of ttype StructType_t is found, we collect allocatable
-                       variables from the parent Struct and add deallocate nodes for them.
+                        variables from the parent Struct and add deallocate nodes for them.
 
                         For example:
 
