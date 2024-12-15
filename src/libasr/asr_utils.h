@@ -220,12 +220,10 @@ static inline ASR::ttype_t *type_get_past_array(ASR::ttype_t *f)
     }
 }
 
-static inline ASR::ttype_t* type_get_past_array_pointer_allocatable(
-    ASR::ttype_t* f
-) {
+static inline ASR::ttype_t* extract_type(ASR::ttype_t *f) {
     return type_get_past_array(
-        type_get_past_allocatable(
-            type_get_past_pointer(f)));
+            type_get_past_allocatable(
+                type_get_past_pointer(f)));
 }
 
 static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
@@ -2164,7 +2162,7 @@ static inline bool is_logical(ASR::ttype_t &x) {
 
 static inline bool is_struct(ASR::ttype_t& x) {
     return ASR::is_a<ASR::StructType_t>(
-        *type_get_past_array_pointer_allocatable(&x));
+        *extract_type(&x));
 }
 
 // Checking if the ttype 't' is a type parameter
@@ -2301,16 +2299,6 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
             throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(x) + ".");
     }
     return n_dims;
-}
-
-static inline ASR::ttype_t *extract_type(ASR::ttype_t *type) {
-    // return type_get_past_const(
-    //             type_get_past_array(
-    //                 type_get_past_allocatable(
-    //                     type_get_past_pointer(type))));
-    return type_get_past_array(
-            type_get_past_allocatable(
-                type_get_past_pointer(type)));
 }
 
 static inline bool is_fixed_size_array(ASR::dimension_t* m_dims, size_t n_dims) {
@@ -2929,7 +2917,7 @@ static inline void set_absent_optional_arguments_to_null(
 static inline bool is_descriptorString(ASR::ttype_t* t){
     return is_character(*t) &&
         ASR::down_cast<ASR::String_t>(
-        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString;
+        extract_type(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString;
 }
 
 // Create `StringPhysicalCast` node from  `PointerString` --> `DescriptorString`.
@@ -2938,7 +2926,7 @@ static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR:
         !is_descriptorString(expr_type(string)));
     ASR::ttype_t* string_type = ASRUtils::expr_type(string);
     ASR::ttype_t* stringDescriptor_type = ASRUtils::duplicate_type(al,
-        ASRUtils::type_get_past_array_pointer_allocatable(string_type));
+        ASRUtils::extract_type(string_type));
     ASR::down_cast<ASR::String_t>(stringDescriptor_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
     ASR::ttype_t* alloctable_stringDescriptor_type = ASRUtils::TYPE(
         ASR::make_Allocatable_t(al, string->base.loc, stringDescriptor_type));
@@ -6036,7 +6024,7 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
         if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
             !ASRUtils::is_fixed_size_array(a_type) &&
             !ASRUtils::is_dimension_dependent_only_on_arguments(a_type) ) {
-            ASR::ttype_t* type_ = ASRUtils::type_get_past_array_pointer_allocatable(a_type);
+            ASR::ttype_t* type_ = ASRUtils::extract_type(a_type);
             #define i32j(j) ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc, j, \
                 ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))))
             ASR::expr_t* i32one = i32j(1);
@@ -6129,9 +6117,9 @@ static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location
     if (a_fmt && ASR::is_a<ASR::Var_t>(*a_fmt)) {
         ASR::Variable_t* fmt_str = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(a_fmt)->m_v);
         if (ASR::is_a<ASR::String_t>(
-                *ASRUtils::type_get_past_array_pointer_allocatable(fmt_str->m_type))) {
+                *ASRUtils::extract_type(fmt_str->m_type))) {
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
-                ASRUtils::type_get_past_array_pointer_allocatable(fmt_str->m_type));
+                ASRUtils::extract_type(fmt_str->m_type));
             if (str_type->m_physical_type != ASR::string_physical_typeType::PointerString) {
                 a_fmt = ASRUtils::EXPR(ASR::make_StringPhysicalCast_t(
                     al,
@@ -6179,7 +6167,7 @@ static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
         if( ASRUtils::is_array(arg_type) ) {
             a_args[i] = cast_to_descriptor(al, arg);
             if( !ASRUtils::is_array(a_type) ) {
-                ASR::ttype_t* underlying_type = ASRUtils::type_get_past_array_pointer_allocatable(arg_type);
+                ASR::ttype_t* underlying_type = ASRUtils::extract_type(arg_type);
                 ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type)));
@@ -6319,7 +6307,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
 
     if( ASRUtils::use_experimental_simplifier ) {
         if( !ASRUtils::is_array_indexed_with_array_indices(a_args, n_args) ) {
-            a_type = ASRUtils::type_get_past_array_pointer_allocatable(a_type);
+            a_type = ASRUtils::extract_type(a_type);
         }
 
         if( ASRUtils::is_allocatable(a_type) ) {
@@ -6327,7 +6315,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
             if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
                 a_type = ASRUtils::create_array_type_with_empty_dims(
-                    al, n_dims, ASRUtils::type_get_past_array_pointer_allocatable(a_type));
+                    al, n_dims, ASRUtils::extract_type(a_type));
                 a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, a_loc, a_type));
             }
         }

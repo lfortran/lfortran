@@ -469,7 +469,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
                                 ASR::expr_t* arr_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                             al, x->base.base.loc, x->m_args[j].m_right, arr_dims.p, arr_dims.n,
-                                                            ASRUtils::type_get_past_array_pointer_allocatable(
+                                                            ASRUtils::extract_type(
                                                                 ASRUtils::expr_type(x->m_args[j].m_right)),
                                                             ASR::arraystorageType::ColMajor,
                                                             nullptr));
@@ -488,7 +488,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                                 ASR::make_Assignment_t(al, x->base.base.loc, res,
                                                     ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                         al, x->base.base.loc, x->m_v, x->m_args, x->n_args,
-                                                        ASRUtils::type_get_past_array_pointer_allocatable(
+                                                        ASRUtils::extract_type(
                                                             ASRUtils::expr_type(x->m_v)),
                                                         ASR::arraystorageType::ColMajor,
                                                         nullptr)),
@@ -963,7 +963,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
                                 ASR::expr_t* arr_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                             al, loc, x->m_args[j].m_right, arr_dims.p, arr_dims.n,
-                                                            ASRUtils::type_get_past_array_pointer_allocatable(
+                                                            ASRUtils::extract_type(
                                                                 ASRUtils::expr_type(x->m_args[j].m_right)),
                                                             ASR::arraystorageType::ColMajor,
                                                             nullptr));
@@ -997,7 +997,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                                 ASR::make_Assignment_t(al, loc, res,
                                                     ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                         al, loc, x->m_v, x->m_args, x->n_args,
-                                                        ASRUtils::type_get_past_array_pointer_allocatable(
+                                                        ASRUtils::extract_type(
                                                             ASRUtils::expr_type(x->m_v)),
                                                         ASR::arraystorageType::ColMajor,
                                                         nullptr)),
@@ -2062,7 +2062,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
                                 ASR::expr_t* inner_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                     al, array_section->base.base.loc, array_section->m_v, inner_arr_dims.p,
-                                    inner_arr_dims.n, ASRUtils::type_get_past_array_pointer_allocatable(
+                                    inner_arr_dims.n, ASRUtils::extract_type(
                                         ASRUtils::expr_type(array_section->m_v)),
                                     ASR::arraystorageType::ColMajor, nullptr));
 
@@ -2078,7 +2078,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
                                 ASR::expr_t* outer_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                     al, array_item->m_v->base.loc, array_item->m_v, outer_arr_dims.p,
-                                    outer_arr_dims.n, ASRUtils::type_get_past_array_pointer_allocatable(
+                                    outer_arr_dims.n, ASRUtils::extract_type(
                                         ASRUtils::expr_type(array_item->m_v)),
                                     ASR::arraystorageType::ColMajor, nullptr));
                                 
@@ -2117,7 +2117,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
                                 ASR::expr_t* inner_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                     al, array_item->m_args->m_right->base.loc, array_item->m_args->m_right, inner_arr_dims.p,
-                                    inner_arr_dims.n, ASRUtils::type_get_past_array_pointer_allocatable(
+                                    inner_arr_dims.n, ASRUtils::extract_type(
                                         ASRUtils::expr_type(array_item->m_args->m_right)),
                                     ASR::arraystorageType::ColMajor, nullptr));
 
@@ -2133,7 +2133,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
                                 ASR::expr_t* outer_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                     al, array_item->m_v->base.loc, array_item->m_v, outer_arr_dims.p,
-                                    outer_arr_dims.n, ASRUtils::type_get_past_array_pointer_allocatable(
+                                    outer_arr_dims.n, ASRUtils::extract_type(
                                         ASRUtils::expr_type(array_item->m_v)),
                                     ASR::arraystorageType::ColMajor, nullptr));
 
@@ -2469,7 +2469,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                         if (array_mask[i]) {
                             array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
                                 operands[i], array_index.p, array_index.size(),
-                                ASRUtils::type_get_past_array_pointer_allocatable(operand_type),
+                                ASRUtils::extract_type(operand_type),
                                 ASR::arraystorageType::ColMajor, nullptr)
                             );
                         } else {
