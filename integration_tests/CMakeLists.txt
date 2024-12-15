@@ -1887,6 +1887,8 @@ RUN(NAME openmp_41 LABELS llvm_omp llvm)
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME fortran_02 LABELS gfortran fortran)
 
+RUN(NAME array_init_with_scalar_main LABELS gfortran llvm)
+
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
