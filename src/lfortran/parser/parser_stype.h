@@ -86,6 +86,9 @@ union YYSTYPE {
 
     AST::equi_t *equi;
     Vec<AST::equi_t> vec_equi;
+
+    AST::common_block_t * common_block;
+    Vec<AST::common_block_t> vec_common_block;
 };
 
 static_assert(std::is_standard_layout<YYSTYPE>::value);
