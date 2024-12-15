@@ -2799,7 +2799,11 @@ public:
                         }
                     }
                     llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
-                    module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::get(arr_type, arr_elements));
+                    llvm::Constant* initializer = llvm::ConstantArray::get(arr_type, arr_elements);
+                    if (initializer->isElementWiseEqual(llvm::ConstantArray::getNullValue(arr_type))) {
+                        initializer = llvm::ConstantArray::getNullValue(type);
+                    }
+                    module->getNamedGlobal(x.m_name)->setInitializer(initializer);
                 } else {
                     module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                 }
