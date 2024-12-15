@@ -550,8 +550,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
     // Assign evaluation to `value` if possible, otherwise leave nullptr
     if (left_expr_value != nullptr && right_expr_value != nullptr) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(
-            *ASRUtils::type_get_past_array_pointer_allocatable(left_type)));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(*ASRUtils::extract_type(left_type)));
 
         if (ASR::is_a<ASR::LogicalBinOp_t>(*left)) {
             left_expr_value = ASR::down_cast<ASR::LogicalBinOp_t>(left)->m_value;
@@ -4526,7 +4525,7 @@ public:
                             // Use the actual type of lhs as the type of the resulting expr from string slicing operation.
                             char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, a_len, a_len_expr, 
                                 ASR::down_cast<ASR::String_t>(
-                                ASRUtils::type_get_past_array_pointer_allocatable(v_type))->m_physical_type));
+                                ASRUtils::extract_type(v_type))->m_physical_type));
                         } else { // resulting string is of pointerString physical type
                             char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
                                             1, a_len, a_len_expr, ASR::string_physical_typeType::PointerString));
@@ -6020,7 +6019,7 @@ public:
         ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
         LCOMPILERS_ASSERT_MSG(newshape_array_type->n_dims == 1, "newshape must be a 1D array");
         size_t newshape_dims = ASR::down_cast<ASR::IntegerConstant_t>(newshape_array_type->m_dims[0].m_length)->m_n;
-        ASR::ttype_t* arr_element_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(array));
+        ASR::ttype_t* arr_element_type = ASRUtils::extract_type(ASRUtils::expr_type(array));
 
         ASR::ttype_t* reshape_ttype = ASRUtils::TYPE(ASR::make_Array_t(al, arr_element_type->base.loc, arr_element_type,
                                                     nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray));
