@@ -508,7 +508,7 @@ jobs:
             git checkout b3f5b55c94b3b0b2568fe9af97a8e34a48cac7b4
             FC="$(pwd)/../src/bin/lfortran --cpp --skip-pass=pass_array_by_data" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
-      
+
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
@@ -521,6 +521,15 @@ jobs:
             $FC -c mpi.f90
             $FC -c psi_io.f90
             $FC pot3d.F --cpp --implicit-interface --fixed-form --show-asr
+
+            cd ..
+
+            # Test with experimental simplifier
+            cd src
+            $FC --experimental-simplifier -c mpi.f90
+            $FC --experimental-simplifier -c psi_io.f90
+            $FC --experimental-simplifier pot3d.F --cpp --implicit-interface --fixed-form --show-asr
+
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
