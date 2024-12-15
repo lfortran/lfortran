@@ -4696,11 +4696,11 @@ namespace Pack {
             is_vector_present = true;
         }
 
-        ASR::ttype_t *type_array = expr_type(array);
-        ASR::ttype_t *type_mask = expr_type(mask);
+        ASR::ttype_t *type_array = ASRUtils::type_get_past_allocatable_pointer(expr_type(array));
+        ASR::ttype_t *type_mask = ASRUtils::type_get_past_allocatable_pointer(expr_type(mask));
         ASR::ttype_t *type_vector = nullptr;
-        if (is_vector_present) type_vector = expr_type(vector);
-        ASR::ttype_t *ret_type = expr_type(array);
+        if (is_vector_present) type_vector = ASRUtils::type_get_past_allocatable_pointer(expr_type(vector));
+        ASR::ttype_t *ret_type = type_array;
         bool mask_logical = is_logical(*type_mask);
         if( !mask_logical ) {
             append_error(diag, "The argument `mask` in `pack` must be of type Logical", mask->base.loc);
