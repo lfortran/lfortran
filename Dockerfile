@@ -8,7 +8,8 @@ RUN apt install curl git build-essential binutils-dev zlib1g-dev clang libunwind
 RUN curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
 RUN bash Miniforge3-$(uname)-$(uname -m).sh -b
 
-RUN /root/miniforge3/bin/mamba init bash
+ENV MAMBA_ROOT_PREFIX="/root/miniforge3"
+RUN /root/miniforge3/bin/mamba shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX"
 
 WORKDIR /lfortran
 
