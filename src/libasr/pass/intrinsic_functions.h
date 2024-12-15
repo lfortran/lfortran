@@ -3546,11 +3546,11 @@ namespace Merge {
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
         if ( use_experimental_simplifier ) {
             tsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::type_get_past_array_pointer_allocatable(arg_types[0]));
+                ASRUtils::extract_type(arg_types[0]));
             fsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::type_get_past_array_pointer_allocatable(arg_types[1]));
+                ASRUtils::extract_type(arg_types[1]));
             mask_type = ASRUtils::duplicate_type(al,
-                ASRUtils::type_get_past_array_pointer_allocatable(arg_types[2]));
+                ASRUtils::extract_type(arg_types[2]));
         } else {
             tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
             fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
@@ -5969,13 +5969,13 @@ namespace Max {
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "Call to max0 must have at least two arguments",
             x.base.base.loc, diagnostics);
-        ASR::ttype_t* arg0_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(x.m_args[0]));
+        ASR::ttype_t* arg0_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[0]));
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*arg0_type) ||
             ASR::is_a<ASR::Integer_t>(*arg0_type) || ASR::is_a<ASR::String_t>(*arg0_type),
              "Arguments to max0 must be of real, integer or character type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
-            ASR::ttype_t* arg_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(x.m_args[i]));
+            ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i]));
             ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*arg_type) && ASR::is_a<ASR::Real_t>(*arg0_type)) ||
                                     (ASR::is_a<ASR::Integer_t>(*arg_type) && ASR::is_a<ASR::Integer_t>(*arg0_type)) ||
                                     (ASR::is_a<ASR::String_t>(*arg_type) && ASR::is_a<ASR::String_t>(*arg0_type) ),
@@ -6032,7 +6032,7 @@ namespace Max {
                 diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
             }
-            if (ASRUtils::type_get_past_array_pointer_allocatable(arg_type)->type != ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(args[i]))->type) {
+            if (ASRUtils::extract_type(arg_type)->type != ASRUtils::extract_type(ASRUtils::expr_type(args[i]))->type) {
                 append_error(diag, "All arguments to max0 must be of the same type", loc);
             return nullptr;
             }
@@ -6080,7 +6080,7 @@ namespace Max {
         } else {
             throw LCompilersException("Arguments to max0 must be of real, integer or character type");
         }
-        return_type = ASRUtils::type_get_past_array_pointer_allocatable(return_type);
+        return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
         if (ASR::is_a<ASR::Integer_t>(*return_type)) {
@@ -6119,13 +6119,13 @@ namespace Min {
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "Call to min0 must have at least two arguments",
             x.base.base.loc, diagnostics);
-        ASR::ttype_t* arg0_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(x.m_args[0]));
+        ASR::ttype_t* arg0_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[0]));
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*arg0_type) ||
             ASR::is_a<ASR::Integer_t>(*arg0_type) || ASR::is_a<ASR::String_t>(*arg0_type),
              "Arguments to min0 must be of real, integer or character type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
-            ASR::ttype_t* arg_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(x.m_args[i]));
+            ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i]));
             ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*arg_type) && ASR::is_a<ASR::Real_t>(*arg0_type)) ||
                                     (ASR::is_a<ASR::Integer_t>(*arg_type) && ASR::is_a<ASR::Integer_t>(*arg0_type)) ||
                                     (ASR::is_a<ASR::String_t>(*arg_type) && ASR::is_a<ASR::String_t>(*arg0_type) ),
@@ -6183,7 +6183,7 @@ namespace Min {
                 diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
             }
-            if (ASRUtils::type_get_past_array_pointer_allocatable(arg_type)->type != ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(args[i]))->type) {
+            if (ASRUtils::extract_type(arg_type)->type != ASRUtils::extract_type(ASRUtils::expr_type(args[i]))->type) {
                 append_error(diag, "All arguments to min0 must be of the same type", loc);
                 return nullptr;
             }
@@ -6231,7 +6231,7 @@ namespace Min {
         } else {
             throw LCompilersException("Arguments to min0 must be of real, integer or character type");
         }
-        return_type = ASRUtils::type_get_past_array_pointer_allocatable(return_type);
+        return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
         if (ASR::is_a<ASR::Integer_t>(*return_type)) {

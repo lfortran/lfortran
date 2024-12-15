@@ -3892,7 +3892,7 @@ public:
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
         if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
-            if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(test)))) {
+            if (ASR::is_a<ASR::Logical_t>(*ASRUtils::extract_type(ASRUtils::expr_type(test)))) {
                 // verify that `test` is *not* the ttype of an expression as we then
                 // are sure that it is a single standalone logical array
                 if  (!ASR::is_a<ASR::IntegerCompare_t>(*test)

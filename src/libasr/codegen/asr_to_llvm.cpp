@@ -8338,7 +8338,7 @@ public:
 
         load_non_array_non_character_pointers(v, ASRUtils::expr_type(v), tmp);
         bool is_array = ASRUtils::is_array(t) && add_type_as_int; // add (type_as_int + array_size)
-        t = ASRUtils::type_get_past_array_pointer_allocatable(t);
+        t = ASRUtils::extract_type(t);
         int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 
         int32_t number_of_type = -1;
