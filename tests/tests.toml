@@ -1514,6 +1514,10 @@ filename = "finalize_01.f90"
 pass = "insert_deallocate"
 
 [[test]]
+filename = "finalize_02.f90"
+pass = "insert_deallocate" 
+
+[[test]]
 filename = "../integration_tests/block_01.f90"
 asr = true
 

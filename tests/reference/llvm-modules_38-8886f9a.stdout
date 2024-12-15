@@ -163,6 +163,15 @@ loop.end:                                         ; preds = %loop.head
   store i8* null, i8** %54, align 8
   store i64 0, i64* %55, align 4
   store i64 0, i64* %56, align 4
+  %58 = getelementptr %compiler_t, %compiler_t* %compiler_arg, i32 0, i32 2
+  %59 = getelementptr %string_descriptor, %string_descriptor* %58, i32 0, i32 0
+  %60 = getelementptr %string_descriptor, %string_descriptor* %58, i32 0, i32 1
+  %61 = getelementptr %string_descriptor, %string_descriptor* %58, i32 0, i32 2
+  %62 = load i8*, i8** %59, align 8
+  call void @_lfortran_free(i8* %62)
+  store i8* null, i8** %59, align 8
+  store i64 0, i64* %60, align 4
+  store i64 0, i64* %61, align 4
   call void @_lpython_free_argv()
   br label %return
 
