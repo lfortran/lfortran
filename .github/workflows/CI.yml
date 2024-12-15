@@ -794,6 +794,13 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
 
+            # Test with experimental simplifier
+            git remote add czgdp1807 https://github.com/czgdp1807/fpm
+            git fetch czgdp1807 lfortran_build_4
+            git checkout c39ac028878e0d9b9e68ef1a22a7dff40a5aad9b
+            git clean -fdx
+            ./build.sh
+
       - name: Test stdlib
         shell: bash -e -x -l {0}
         run: |
