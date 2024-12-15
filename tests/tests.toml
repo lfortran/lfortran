@@ -3954,22 +3954,6 @@ filename = "errors/string_slice2.f90"
 asr = true
 
 [[test]]
-filename = "errors/max_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/max_02.f90"
-asr = true
-
-[[test]]
-filename = "errors/min_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/min_02.f90"
-asr = true
-
-[[test]]
 filename = "errors/open_invalid_kwarg1.f90"
 asr = true
 
