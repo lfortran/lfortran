@@ -508,7 +508,7 @@ jobs:
             git checkout b3f5b55c94b3b0b2568fe9af97a8e34a48cac7b4
             FC="$(pwd)/../src/bin/lfortran --cpp --skip-pass=pass_array_by_data" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
-      
+
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
@@ -521,6 +521,16 @@ jobs:
             $FC -c mpi.f90
             $FC -c psi_io.f90
             $FC pot3d.F --cpp --implicit-interface --fixed-form --show-asr
+
+            cd ..
+            git clean -fdx
+
+            # Test with experimental simplifier
+            cd src
+            $FC --experimental-simplifier -c mpi.f90
+            $FC --experimental-simplifier -c psi_io.f90
+            $FC --experimental-simplifier pot3d.F --cpp --implicit-interface --fixed-form --show-asr
+
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -785,6 +795,14 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
 
+            # Test with experimental simplifier
+            git remote add czgdp1807 https://github.com/czgdp1807/fpm
+            git fetch czgdp1807 lfortran_build_4
+            git checkout lfortran_build_4
+            git checkout c39ac028878e0d9b9e68ef1a22a7dff40a5aad9b
+            git clean -fdx
+            ./build.sh
+
       - name: Test stdlib
         shell: bash -e -x -l {0}
         run: |
@@ -795,24 +813,19 @@ jobs:
             git checkout lf20
             git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
             micromamba install -c conda-forge fypp gfortran
+
             git clean -fdx
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
             make -j8
             ctest
-            ./build_test_gf.sh
 
             # Test with experimental simplifier
-            cd ..
-            rm -rf stdlib
-            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
-            cd stdlib
-            export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout origin/lf21
-            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
             git clean -fdx
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --experimental-simplifier"
             make -j8
             ctest
+
+            # Test with GFortran
             ./build_test_gf.sh
 
       - name: Test SNAP
