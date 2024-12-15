@@ -2855,6 +2855,7 @@ public:
                 ASR::presenceType s_presence = dflt_presence;
                 ASR::storage_typeType storage_type = dflt_storage;
                 bool value_attr = false;
+                bool is_initializer_zero = false;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
@@ -3293,6 +3294,10 @@ public:
                         );
                         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
                         value = init_expr;
+                        if((ASR::is_a<ASR::IntegerConstant_t>(*tmp_init) && ASR::down_cast<ASR::IntegerConstant_t>(tmp_init)->m_n==0) ||
+                            (ASR::is_a<ASR::RealConstant_t>(*tmp_init) && ASR::down_cast<ASR::RealConstant_t>(tmp_init)->m_r==0.0)) {
+                            is_initializer_zero = true;
+                        }
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
 
@@ -3612,6 +3617,11 @@ public:
                     if ( !is_implicitly_declared && !is_external) {
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
+                        if(is_initializer_zero) {
+                            value = nullptr;
+                            init_expr = nullptr;
+                            storage_type=ASR::storage_typeType::Default;
+                        }
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
                         ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
