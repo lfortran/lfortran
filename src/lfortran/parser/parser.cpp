@@ -150,7 +150,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         } catch (const parser_local::ParserError &e) {
             Error error;
             diagnostics.diagnostics.push_back(e.d);
-            return error;
+            if (!co.continue_compilation) {
+                return error;
+            }
         }
     }
     return ast;
