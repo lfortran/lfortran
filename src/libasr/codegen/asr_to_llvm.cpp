@@ -2800,10 +2800,10 @@ public:
                         } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
                             ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
                             arr_elements.push_back(llvm::ConstantInt::get(
-                                context, llvm::APInt(1, logical_const->m_value)));
+                                llvm::Type::getInt1Ty(context), logical_const->m_value));
                         }
                     }
-                    llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
+                    llvm::ArrayType* arr_type = llvm::ArrayType::get(type->getArrayElementType(), arr_const_size);
                     llvm::Constant* initializer = nullptr;
                     if (isNullValueArray(arr_elements)) {
                         initializer = llvm::ConstantArray::getNullValue(type);
