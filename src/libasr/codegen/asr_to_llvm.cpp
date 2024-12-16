@@ -8986,6 +8986,19 @@ public:
                         if( func_subrout->type == ASR::symbolType::Function ) {
                             ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
                             orig_arg = ASRUtils::EXPR2VAR(func->m_args[i]);
+                        } else if (func_subrout->type == ASR::symbolType::ClassProcedure) {
+                            ASR::ClassProcedure_t* class_proc = down_cast<ASR::ClassProcedure_t>(func_subrout);
+                            ASR::symbol_t* func_sym = class_proc->m_proc;
+                            if (func_sym->type == ASR::symbolType::Function) {
+                                ASR::Function_t* func = down_cast<ASR::Function_t>(func_sym);
+                                orig_arg = EXPR2VAR(func->m_args[i]);
+                            } else {
+                                LCOMPILERS_ASSERT(false)
+                            }
+                        } else if( func_subrout->type == ASR::symbolType::Variable ) {
+                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(func_subrout);
+                            ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                            orig_arg = EXPR2VAR(func->m_args[i]);
                         } else {
                             throw CodeGenError("ICE: expected func_subrout->type == ASR::symbolType::Function.");
                         }
