@@ -3268,8 +3268,10 @@ public:
                     }
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
                         && (ASR::is_a<ASR::IntegerConstant_t>(*tmp_init) || ASR::is_a<ASR::RealConstant_t>(*tmp_init)
-                            || ASR::is_a<ASR::RealUnaryMinus_t>(*tmp_init) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*tmp_init)
-                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init) || ASR::is_a<ASR::LogicalConstant_t>(*tmp_init))) {
+                            || ASR::is_a<ASR::ComplexConstant_t>(*tmp_init) || ASR::is_a<ASR::RealUnaryMinus_t>(*tmp_init)
+                            || ASR::is_a<ASR::IntegerUnaryMinus_t>(*tmp_init) || ASR::is_a<ASR::StringConstant_t>(*tmp_init)
+                            || ASR::is_a<ASR::LogicalConstant_t>(*tmp_init)))
+                    {
                         /*
                             Case: integer :: x(2) = 1
                             which is equivalent to x(2) = [1,1]
