@@ -1242,6 +1242,8 @@ public:
     }
 
     void visit_Allocatable(const Allocatable_t &x) {
+        require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
+            "Allocatable can't have an Allocatable type in it");
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
         if (ASRUtils::use_experimental_simplifier) {
