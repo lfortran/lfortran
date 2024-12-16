@@ -67,6 +67,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             key:
                                                 (Variable
@@ -82,6 +83,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             ptr:
@@ -103,6 +105,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -121,6 +124,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .true.
                                                 )
                                         })
                                     find
@@ -339,6 +343,7 @@
                                                     Public
                                                     Optional
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -356,6 +361,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -461,6 +467,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_node
@@ -513,6 +520,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -528,6 +536,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -595,6 +604,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -726,6 +736,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_keyval
@@ -781,6 +792,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -840,6 +852,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             match:
                                                 (Variable
@@ -855,6 +868,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             self:
@@ -873,6 +887,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -993,6 +1008,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             match_key:

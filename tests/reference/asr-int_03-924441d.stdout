@@ -27,6 +27,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -52,6 +53,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i4:
                                 (Variable
@@ -67,6 +69,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             i8:
@@ -84,6 +87,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             w4:
                                 (Variable
@@ -100,6 +104,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             w8:
                                 (Variable
@@ -115,6 +120,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

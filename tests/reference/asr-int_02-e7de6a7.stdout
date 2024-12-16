@@ -28,6 +28,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             x2:
                                 (Variable
@@ -43,6 +44,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             y1:
@@ -66,6 +68,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             y2:
                                 (Variable
@@ -87,6 +90,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

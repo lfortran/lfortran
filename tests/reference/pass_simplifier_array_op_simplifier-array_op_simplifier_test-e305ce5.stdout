@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             __libasr_index_0_1:
                                 (Variable
@@ -37,6 +38,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             __libasr_index_0_2:
@@ -54,6 +56,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             __libasr_index_1_:
                                 (Variable
@@ -69,6 +72,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             __libasr_index_1_1:
@@ -86,6 +90,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             __libasr_index_1_2:
                                 (Variable
@@ -101,6 +106,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             a:
@@ -125,6 +131,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -148,6 +155,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -163,6 +171,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             d:
@@ -188,6 +197,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

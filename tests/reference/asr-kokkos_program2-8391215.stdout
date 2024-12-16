@@ -27,6 +27,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -47,6 +48,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             c:
@@ -69,6 +71,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -84,6 +87,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             nsize:
@@ -101,6 +105,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             scalar:
                                 (Variable
@@ -116,6 +121,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             triad:
@@ -143,6 +149,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -163,6 +170,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             c:
@@ -185,6 +193,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -200,6 +209,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             n:
@@ -217,6 +227,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             scalar:
                                                 (Variable
@@ -232,6 +243,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

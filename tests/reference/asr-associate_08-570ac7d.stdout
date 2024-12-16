@@ -84,6 +84,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     associate2
@@ -184,6 +185,7 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     associate_block
@@ -242,6 +244,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             type_1:
                                                 (Variable
@@ -259,6 +262,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -373,6 +377,7 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     associate_block
@@ -449,6 +454,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -541,6 +547,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     t_1
@@ -582,6 +589,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

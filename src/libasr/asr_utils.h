@@ -2661,6 +2661,15 @@ static inline ASR::asr_t* make_ArraySize_t_util(
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
 }
 
+inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
+    SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
+    ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
+    ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
+    bool a_value_attr, bool a_target_attr = false) {
+    return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies, n_dependencies, a_intent,
+    a_symbolic_value,  a_value,  a_storage,  a_type,  a_type_declaration,  a_abi, a_access, a_presence, a_value_attr, a_target_attr);
+}
+
 inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     ASR::ttype_t* type, ASR::dimension_t* m_dims, size_t n_dims,
     ASR::abiType abi=ASR::abiType::Source, bool is_argument=false,
@@ -4544,7 +4553,7 @@ class SymbolDuplicator {
             }
         }
         return ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, variable->base.base.loc, destination_symtab,
+            ASRUtils::make_Variable_t_util(al, variable->base.base.loc, destination_symtab,
                 variable->m_name, variable->m_dependencies, variable->n_dependencies,
                 variable->m_intent, m_symbolic_value, m_value, variable->m_storage,
                 m_type, variable->m_type_declaration, variable->m_abi, variable->m_access,
@@ -5911,7 +5920,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
 
                         std::string cast_sym_name = current_scope->get_unique_name(sym_name + "_cast", false);
-                        ASR::asr_t* cast_ = ASR::make_Variable_t(al, arg->base.loc,
+                        ASR::asr_t* cast_ = ASRUtils::make_Variable_t_util(al, arg->base.loc,
                                         current_scope, s2c(al, cast_sym_name), nullptr,
                                         0, ASR::intentType::Local, nullptr, nullptr,
                                         ASR::storage_typeType::Default, pointer_type, nullptr,

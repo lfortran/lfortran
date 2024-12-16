@@ -27,6 +27,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             datetime:
                                                 (Variable
@@ -42,6 +43,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             float:
@@ -59,6 +61,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -74,6 +77,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             invalid:
@@ -91,6 +95,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -106,6 +111,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -154,6 +160,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     derived_types_14_module
@@ -186,6 +193,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -201,6 +209,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -325,6 +334,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             vtype:
                                                 (Variable
@@ -340,6 +350,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

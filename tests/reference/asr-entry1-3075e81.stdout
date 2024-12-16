@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     entry1
@@ -71,6 +72,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })
@@ -124,6 +126,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -139,6 +142,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })
@@ -258,6 +262,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

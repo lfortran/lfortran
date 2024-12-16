@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             associate_block:
                                 (AssociateBlock
@@ -45,6 +46,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -60,6 +62,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -178,6 +181,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             theta:
                                 (Variable
@@ -193,6 +197,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -210,6 +215,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -225,6 +231,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

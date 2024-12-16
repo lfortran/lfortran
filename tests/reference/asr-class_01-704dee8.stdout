@@ -44,6 +44,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             circle:
                                 (ExternalSymbol
@@ -146,6 +147,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -189,6 +191,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -206,6 +209,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -304,6 +308,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -321,6 +326,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -412,6 +418,7 @@
                                     Source
                                     Private
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

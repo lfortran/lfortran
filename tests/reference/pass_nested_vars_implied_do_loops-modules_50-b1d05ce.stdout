@@ -31,6 +31,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             int_t:
                                 (ExternalSymbol
@@ -107,6 +108,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -197,6 +199,7 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             __1_t:
                                                                 (Variable
@@ -212,6 +215,7 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             __lcompilers_created__nested_context__prune_build_targets_modules_used:
@@ -247,6 +251,7 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -406,6 +411,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

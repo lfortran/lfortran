@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i2:
                                 (Variable
@@ -37,6 +38,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             i3:
@@ -54,6 +56,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             int32:
                                 (Variable
@@ -70,6 +73,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             int64:
                                 (Variable
@@ -85,6 +89,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

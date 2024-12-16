@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             __libasr_created_variable_1:
                                 (Variable
@@ -37,6 +38,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             __libasr_created_variable_2:
@@ -54,6 +56,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             __libasr_created_variable_3:
                                 (Variable
@@ -69,6 +72,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             __libasr_created_variable_4:
@@ -86,6 +90,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -102,6 +107,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -117,6 +123,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             f:
@@ -139,6 +146,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_x_present_:
                                                 (Variable
@@ -155,6 +163,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -170,6 +179,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -437,6 +447,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -452,6 +463,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             c:
@@ -469,6 +481,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -484,6 +497,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             e:
@@ -501,6 +515,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -516,6 +531,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_d_present_:
@@ -533,6 +549,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_e_present_:
                                                 (Variable
@@ -548,6 +565,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
