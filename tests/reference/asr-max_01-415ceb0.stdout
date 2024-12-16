@@ -1,0 +1,216 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            max_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    max_01
+                    []
+                    [(Assignment
+                        (Var 2 y)
+                        (RealConstant
+                            5.200000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (RealConstant
+                            9.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Max
+                                [(Cast
+                                    (Var 2 y)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )
+                                (Cast
+                                    (Var 2 z)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (IntrinsicElementalFunction
+                                        Max
+                                        [(Cast
+                                            (Var 2 y)
+                                            RealToReal
+                                            (Real 8)
+                                            ()
+                                        )
+                                        (Cast
+                                            (Var 2 z)
+                                            RealToReal
+                                            (Real 8)
+                                            ()
+                                        )]
+                                        0
+                                        (Real 8)
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        9.000000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect value of max"
+                                (String 1 22 () PointerString)
+                            )
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Kind of max:"
+                                (String 1 12 () PointerString)
+                            )
+                            (TypeInquiry
+                                Kind
+                                (Real 8)
+                                (IntrinsicElementalFunction
+                                    Max
+                                    [(Cast
+                                        (Var 2 y)
+                                        RealToReal
+                                        (Real 8)
+                                        ()
+                                    )
+                                    (Cast
+                                        (Var 2 z)
+                                        RealToReal
+                                        (Real 8)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 8)
+                                    ()
+                                )
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Real 8)
+                                (IntrinsicElementalFunction
+                                    Max
+                                    [(Cast
+                                        (Var 2 y)
+                                        RealToReal
+                                        (Real 8)
+                                        ()
+                                    )
+                                    (Cast
+                                        (Var 2 z)
+                                        RealToReal
+                                        (Real 8)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 8)
+                                    ()
+                                )
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-min_01-aa661b0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/min_01.f90",
+    "infile_hash": "c6d012a1308434691af09d27ed83f1186d481914b5bbbd9cfa73110c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-min_01-aa661b0.stdout",
+    "stdout_hash": "71da6d9e96d22116ba3e3375afd1c5450b015543a776369363316ce8",
+    "stderr": "asr-min_01-aa661b0.stderr",
+    "stderr_hash": "a02531d479d1f7f30892cce7008c18cfd36a995138e153c4e24dc068",
+    "returncode": 0
+}

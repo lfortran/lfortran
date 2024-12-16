@@ -1,0 +1,23 @@
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/max_01.f90:6:14
+  |
+6 |     print *, max(y, z)
+  |              ^^^^^^^^^ help: ensure all arguments have the same kind to make it standard
+
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/max_01.f90:7:14
+  |
+7 |     if (abs (max(y, z) - 9.0d0) > 1d-16) error stop "Incorrect value of max"
+  |              ^^^^^^^^^ help: ensure all arguments have the same kind to make it standard
+
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/max_01.f90:8:36
+  |
+8 |     print *, "Kind of max:", kind( max( y, z))
+  |                                    ^^^^^^^^^^ help: ensure all arguments have the same kind to make it standard
+
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/max_01.f90:9:16
+  |
+9 |     if ( kind( max( y, z)) /= 8 ) error stop
+  |                ^^^^^^^^^^ help: ensure all arguments have the same kind to make it standard

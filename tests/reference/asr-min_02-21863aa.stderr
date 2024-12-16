@@ -1,0 +1,17 @@
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/min_02.f90:4:14
+  |
+4 |     print *, min(y, z)
+  |              ^^^^^^^^^ help: ensure all arguments have the same kind to make it standard
+
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/min_02.f90:5:40
+  |
+5 |     print *, "kind of min(y,z):", kind(min(y,z))
+  |                                        ^^^^^^^^ help: ensure all arguments have the same kind to make it standard
+
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/min_02.f90:6:14
+  |
+6 |     if (kind(min(y,z)) /= 8) error stop "Incorrect kind for min"
+  |              ^^^^^^^^ help: ensure all arguments have the same kind to make it standard
