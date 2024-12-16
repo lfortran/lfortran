@@ -1,4 +1,4 @@
-program test
+program arrays_65
 integer :: A(2) = [1,2]
 integer :: n = 2
 integer :: dim = 1
