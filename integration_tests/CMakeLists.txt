@@ -1911,3 +1911,4 @@ RUN(NAME procedure_decl_01_a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA
 RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array passed in ArrayInitializer
 
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c wasm)
