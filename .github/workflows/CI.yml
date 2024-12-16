@@ -1153,6 +1153,10 @@ jobs:
             make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
             ./tests/atom_U/F_atom_U
 
+            git clean -dfx
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast --experimental-simplifier"
+            ./tests/atom_U/F_atom_U
+
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu')
