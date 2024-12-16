@@ -2695,6 +2695,11 @@ public:
         }
     }
 
+    bool isNullValueArray(const std::vector<llvm::Constant*>& elements) {
+        return std::all_of(elements.begin(), elements.end(),
+            [](llvm::Constant* elem) { return elem->isNullValue(); });
+    }
+
     void visit_Variable(const ASR::Variable_t &x) {
         if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -2799,9 +2804,11 @@ public:
                         }
                     }
                     llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
-                    llvm::Constant* initializer = llvm::ConstantArray::get(arr_type, arr_elements);
-                    if (initializer->isElementWiseEqual(llvm::ConstantArray::getNullValue(arr_type))) {
+                    llvm::Constant* initializer = nullptr;
+                    if (isNullValueArray(arr_elements)) {
                         initializer = llvm::ConstantArray::getNullValue(type);
+                    } else {
+                        initializer = llvm::ConstantArray::get(arr_type, arr_elements);
                     }
                     module->getNamedGlobal(x.m_name)->setInitializer(initializer);
                 } else {
