@@ -1451,33 +1451,28 @@ public:
     // void visit_UnionConstructor(const ASR::UnionConstructor_t &x) {}
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
-    std::string r = "("; 
-
-    
-    for (size_t i = 0; i < x.n_values; i++) {
-        visit_expr(*x.m_values[i]);
-        r += src;
-        if (i != x.n_values - 1) {
-            r += ", "; 
+        std::string r = "("; 
+        for (size_t i = 0; i < x.n_values; i++) {
+            visit_expr(*x.m_values[i]);
+            r += src;
+            if (i != x.n_values - 1) r += ", "; 
         }
-    }
-    r += ", ";
-    visit_expr(*x.m_var);  
-    r += src;
-    r += " = ";
-    visit_expr(*x.m_start);
-    r += src;
-    r += ", ";
-    visit_expr(*x.m_end); 
-    r += src;
-    if (x.m_increment) {
         r += ", ";
-        visit_expr(*x.m_increment);
+        visit_expr(*x.m_var);   
         r += src;
-    }
-
-    r += ")"; 
-    src = r;  
+        r += " = ";
+        visit_expr(*x.m_start);
+        r += src;
+        r += ", ";
+        visit_expr(*x.m_end); 
+        r += src;
+        if (x.m_increment) {   
+            r += ", ";
+            visit_expr(*x.m_increment);
+            r += src;
+            }
+        r += ")"; 
+        src = r;  
         return;
     }
 
