@@ -541,14 +541,11 @@ bool set_allocation_size(
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread): {
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
-                        ASRUtils::expr_type(intrinsic_array_function->m_args[0])
-                    );
-                    LCOMPILERS_ASSERT(intrinsic_array_function->n_args = 3);
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
                     ASR::expr_t* ncopies = intrinsic_array_function->m_args[2];
-                    allocate_dims.reserve(al, n_dims + 1);
+                    allocate_dims.reserve(al, n_dims);
 
-                    for (size_t i = 1; i <= n_dims + 1; i++) {
+                    for (size_t i = 0; i < n_dims; i++) {
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
