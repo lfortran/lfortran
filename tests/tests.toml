@@ -3810,6 +3810,10 @@ filename = "errors/program_without_line_01.f90"
 ast = true
 
 [[test]]
+filename = "errors/program_without_line_cc.f90"
+syntax_only_cc = true
+
+[[test]]
 filename = "errors/program_without_line_02.f90"
 ast = true
 
