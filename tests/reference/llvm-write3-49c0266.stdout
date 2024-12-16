@@ -13,7 +13,6 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %nwrite1 = alloca i32, align 4
   store i32 6, i32* %nwrite1, align 4
-  store i32 6, i32* %nwrite1, align 4
   %2 = load i32, i32* %nwrite1, align 4
   %3 = alloca i32*, align 8
   store i32* null, i32** %3, align 8
