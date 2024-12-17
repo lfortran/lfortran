@@ -6,6 +6,9 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %array_bound18 = alloca i32, align 4
+  %array_bound14 = alloca i32, align 4
+  %array_bound10 = alloca i32, align 4
   %call_arg_value9 = alloca i32, align 4
   %call_arg_value8 = alloca i32, align 4
   %call_arg_value7 = alloca i32, align 4
@@ -71,21 +74,66 @@ loop.end:                                         ; preds = %ifcont6
   store i32 1, i32* %call_arg_value8, align 4
   store i32 3, i32* %call_arg_value9, align 4
   call void @f_integer____0_integer____1(i32* %15, i32* %call_arg_value, i32* %call_arg_value7, i32* %16, i32* %call_arg_value8, i32* %call_arg_value9)
-  %17 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 0
-  %18 = load i32, i32* %17, align 4
-  %19 = sext i32 %18 to i64
-  %20 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 1
-  %21 = load i32, i32* %20, align 4
-  %22 = sext i32 %21 to i64
-  %23 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 2
-  %24 = load i32, i32* %23, align 4
-  %25 = sext i32 %24 to i64
-  %26 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 %19, i32 2, i64 %22, i32 2, i64 %25)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  br i1 true, label %then11, label %else12
+
+then11:                                           ; preds = %loop.end
+  store i32 1, i32* %array_bound10, align 4
+  br label %ifcont13
+
+else12:                                           ; preds = %loop.end
+  br label %ifcont13
+
+ifcont13:                                         ; preds = %else12, %then11
+  %17 = load i32, i32* %array_bound10, align 4
+  %18 = sub i32 %17, 1
+  %19 = mul i32 1, %18
+  %20 = add i32 0, %19
+  %21 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 %20
+  %22 = load i32, i32* %21, align 4
+  %23 = sext i32 %22 to i64
+  br i1 true, label %then15, label %else16
+
+then15:                                           ; preds = %ifcont13
+  store i32 1, i32* %array_bound14, align 4
+  br label %ifcont17
+
+else16:                                           ; preds = %ifcont13
+  br label %ifcont17
+
+ifcont17:                                         ; preds = %else16, %then15
+  %24 = load i32, i32* %array_bound14, align 4
+  %25 = add i32 %24, 1
+  %26 = sub i32 %25, 1
+  %27 = mul i32 1, %26
+  %28 = add i32 0, %27
+  %29 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 %28
+  %30 = load i32, i32* %29, align 4
+  %31 = sext i32 %30 to i64
+  br i1 true, label %then19, label %else20
+
+then19:                                           ; preds = %ifcont17
+  store i32 1, i32* %array_bound18, align 4
+  br label %ifcont21
+
+else20:                                           ; preds = %ifcont17
+  br label %ifcont21
+
+ifcont21:                                         ; preds = %else20, %then19
+  %32 = load i32, i32* %array_bound18, align 4
+  %33 = add i32 %32, 1
+  %34 = add i32 %33, 1
+  %35 = sub i32 %34, 1
+  %36 = mul i32 1, %35
+  %37 = add i32 0, %36
+  %38 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 %37
+  %39 = load i32, i32* %38, align 4
+  %40 = sext i32 %39 to i64
+  %41 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 %23, i32 2, i64 %31, i32 2, i64 %40)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %loop.end
+return:                                           ; preds = %ifcont21
   ret i32 0
 }
 
