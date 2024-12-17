@@ -1,4 +1,7 @@
 #!/bin/sh
+# You can run this script as follows from the current directory:
+# ./test_cmake_integration.sh $(pwd)/../../bin $(pwd)
+
 set -e
 set -x
 
