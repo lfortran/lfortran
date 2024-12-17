@@ -11,5 +11,6 @@ program string_42
     read(line, *) c ! Test reading from allocatable string.
     
     print *, c
- 
+    if(c /= "ab") error stop
+    
  end program string_42
