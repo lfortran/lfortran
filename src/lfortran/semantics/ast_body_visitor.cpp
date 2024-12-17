@@ -151,7 +151,16 @@ public:
         items.reserve(al, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             tmp = nullptr;
-            visit_ast(*x.m_items[i]);
+            try {
+                visit_ast(*x.m_items[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                } else {
+                    tmp = nullptr;
+                    tmp_vec.clear();
+                }
+            }
             if (tmp) {
                 items.push_back(al, tmp);
             } else if (!tmp_vec.empty()) {

@@ -1,0 +1,13 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            
+        })
+    [(Print
+        (StringConstant
+            "OK"
+            (String 1 2 () PointerString)
+        )
+    )]
+)
