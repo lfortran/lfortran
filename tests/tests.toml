@@ -3958,19 +3958,19 @@ filename = "errors/string_slice2.f90"
 asr = true
 
 [[test]]
-filename = "warnings/max_01.f90"
+filename = "../integration_tests/max_01.f90"
 asr = true
 
 [[test]]
-filename = "warnings/max_02.f90"
+filename = "../integration_tests/max_02.f90"
 asr = true
 
 [[test]]
-filename = "warnings/min_01.f90"
+filename = "../integration_tests/min_01.f90"
 asr = true
 
 [[test]]
-filename = "warnings/min_02.f90"
+filename = "../integration_tests/min_02.f90"
 asr = true
 
 [[test]]

@@ -1,13 +1,13 @@
 {
-    "basename": "asr-max_01-f41ed04",
+    "basename": "asr-max_01-415ceb0",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
-    "infile": "tests/warnings/max_01.f90",
+    "infile": "tests/../integration_tests/max_01.f90",
     "infile_hash": "96c2be2ccab6e4a1ed29b0d707ac35303f33d40c3f1fd2aace27dc62",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "asr-max_01-f41ed04.stdout",
+    "stdout": "asr-max_01-415ceb0.stdout",
     "stdout_hash": "7e3aa28519842e8b663f3e38f923727379770936ff123ee2fb10bbd0",
-    "stderr": "asr-max_01-f41ed04.stderr",
-    "stderr_hash": "34a12e6b311fae6ff61b221aeb02ec8b30a6faec3467139e69cd4044",
+    "stderr": "asr-max_01-415ceb0.stderr",
+    "stderr_hash": "1f989072f5c997289f323424f4c36e74085a65b04506fffae9cb88fa",
     "returncode": 0
 }
