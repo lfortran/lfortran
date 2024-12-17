@@ -124,6 +124,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i4_to_c4:
                                 (Variable
@@ -184,6 +185,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             i4_to_c8:
@@ -246,6 +248,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i4_to_i1:
                                 (Variable
@@ -306,6 +309,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             i4_to_r4:
@@ -368,6 +372,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i4_to_r8:
                                 (Variable
@@ -428,6 +433,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             r4_to_c4:
@@ -490,6 +496,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             r4_to_c8:
                                 (Variable
@@ -550,6 +557,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

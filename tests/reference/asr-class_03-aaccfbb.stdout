@@ -27,6 +27,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             hire_date:
                                                 (Variable
@@ -42,6 +43,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             person:
@@ -60,6 +62,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -96,6 +99,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             first:
                                                 (Variable
@@ -111,6 +115,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             last:
@@ -128,6 +133,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             sgender:
                                                 (Variable
@@ -143,6 +149,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -268,6 +275,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             jill:
                                 (Variable
@@ -285,6 +293,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             person:

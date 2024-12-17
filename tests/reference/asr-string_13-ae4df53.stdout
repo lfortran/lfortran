@@ -29,6 +29,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             ia5:
                                 (Variable
@@ -52,6 +53,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             ia9:
                                 (Variable
@@ -74,6 +76,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

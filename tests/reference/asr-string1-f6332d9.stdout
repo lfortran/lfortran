@@ -71,6 +71,7 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -87,6 +88,7 @@
                                                                     Public
                                                                     Required
                                                                     .true.
+                                                                    .false.
                                                                 )
                                                         })
                                                     c_strlen
@@ -128,6 +130,7 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -145,6 +148,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -235,6 +239,7 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -251,6 +256,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -266,6 +272,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -324,6 +331,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             f_string:
                                                 (Variable
@@ -341,6 +349,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -396,6 +405,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

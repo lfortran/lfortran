@@ -74,6 +74,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             type_2:
                                 (Variable
@@ -91,6 +92,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })
@@ -196,6 +198,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     t_1
@@ -228,6 +231,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

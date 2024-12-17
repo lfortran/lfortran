@@ -108,6 +108,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             e:
                                                 (Variable
@@ -124,6 +125,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -139,6 +141,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -172,6 +175,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_b
@@ -204,6 +208,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             g:
                                                 (Variable
@@ -219,6 +224,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             h:
@@ -236,6 +242,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -251,6 +258,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -285,6 +293,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_c
@@ -317,6 +326,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -332,6 +342,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             i:
@@ -353,6 +364,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -385,6 +397,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })
@@ -432,6 +445,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             sample:

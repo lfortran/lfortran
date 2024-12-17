@@ -27,6 +27,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
                     char_arr_assignment

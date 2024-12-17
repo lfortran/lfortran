@@ -43,6 +43,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     build_target_ptr
@@ -78,6 +79,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             version:
                                                 (Variable
@@ -95,6 +97,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -133,6 +136,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

@@ -592,7 +592,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             for( size_t j = 0; j < (i >= offset_for_array_indices ? 1 : var_rank); j++ ) {
                 std::string index_var_name = current_scope->get_unique_name(
                     "__libasr_index_" + std::to_string(j) + "_");
-                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, loc, current_scope, s2c(al, index_var_name), nullptr, 0, ASR::intentType::Local,
                     nullptr, nullptr, ASR::storage_typeType::Default, int32_type, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
@@ -698,7 +698,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             for( size_t j = 0; j < var_ranks[i]; j++ ) {
                 std::string index_var_name = current_scope->get_unique_name(
                     "__libasr_index_" + std::to_string(j) + "_");
-                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, loc, current_scope, s2c(al, index_var_name), nullptr, 0, ASR::intentType::Local,
                     nullptr, nullptr, ASR::storage_typeType::Default, int32_type, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));

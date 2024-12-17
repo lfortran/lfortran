@@ -104,6 +104,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -119,6 +120,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -181,6 +183,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             next_token:
@@ -269,6 +272,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -284,6 +288,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -347,6 +352,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .true.
                                                 ),
                                             table:
                                                 (Variable
@@ -366,6 +372,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -436,6 +443,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -484,6 +492,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             next_token:

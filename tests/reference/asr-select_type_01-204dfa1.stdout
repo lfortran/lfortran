@@ -47,6 +47,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     base
@@ -84,6 +85,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             bptr:
                                 (Variable
@@ -103,6 +105,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             child:
@@ -124,6 +127,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -155,6 +159,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             perform_select_type:
                                 (Function
@@ -179,6 +184,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~select_type_block_:

@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             p1:
                                 (Variable
@@ -40,6 +41,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -56,6 +58,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             t2:
                                 (Variable
@@ -72,6 +75,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 )
                         })
                     associate_03

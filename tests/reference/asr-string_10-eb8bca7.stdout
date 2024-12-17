@@ -28,6 +28,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             is_alpha:
                                 (Variable
@@ -44,6 +45,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             num:
                                 (Variable
@@ -59,6 +61,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

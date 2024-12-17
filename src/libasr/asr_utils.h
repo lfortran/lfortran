@@ -2518,11 +2518,15 @@ static inline ASR::asr_t* make_ArraySize_t_util(
     int dim = -1;
     bool is_dimension_constant = (a_dim != nullptr) && ASRUtils::extract_value(
         ASRUtils::expr_value(a_dim), dim);
+    ASR::ttype_t* array_func_type = nullptr;
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) ) {
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
+        if ( ASRUtils::is_array(af->m_type) ){
+            array_func_type = af->m_type;
+        }
         for ( size_t i = 0; i < af->n_args; i++ ) {
             if ( ASRUtils::is_array(ASRUtils::expr_type(af->m_args[i])) ) {
                 a_v = af->m_args[i];
@@ -2621,14 +2625,17 @@ static inline ASR::asr_t* make_ArraySize_t_util(
         return &(get_ArrayConstructor_size(al, array_constructor)->base);
     } else {
         ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
+        size_t n_dims = 0;
+        if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
+        else n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
         bool is_dimension_dependent_only_on_arguments_ = is_dimension_dependent_only_on_arguments(m_dims, n_dims);
 
         bool compute_size = (is_dimension_dependent_only_on_arguments_ &&
             (is_dimension_constant || a_dim == nullptr));
         if( compute_size && for_type ) {
             ASR::dimension_t* m_dims = nullptr;
-            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
+            if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
+            else n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
             if( a_dim == nullptr ) {
                 ASR::asr_t* size = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
                 for( size_t i = 0; i < n_dims; i++ ) {
@@ -2652,6 +2659,15 @@ static inline ASR::asr_t* make_ArraySize_t_util(
     }
 
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+}
+
+inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
+    SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
+    ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
+    ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
+    bool a_value_attr, bool a_target_attr = false) {
+    return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies, n_dependencies, a_intent,
+    a_symbolic_value,  a_value,  a_storage,  a_type,  a_type_declaration,  a_abi, a_access, a_presence, a_value_attr, a_target_attr);
 }
 
 inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
@@ -4537,7 +4553,7 @@ class SymbolDuplicator {
             }
         }
         return ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, variable->base.base.loc, destination_symtab,
+            ASRUtils::make_Variable_t_util(al, variable->base.base.loc, destination_symtab,
                 variable->m_name, variable->m_dependencies, variable->n_dependencies,
                 variable->m_intent, m_symbolic_value, m_value, variable->m_storage,
                 m_type, variable->m_type_declaration, variable->m_abi, variable->m_access,
@@ -5904,7 +5920,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
 
                         std::string cast_sym_name = current_scope->get_unique_name(sym_name + "_cast", false);
-                        ASR::asr_t* cast_ = ASR::make_Variable_t(al, arg->base.loc,
+                        ASR::asr_t* cast_ = ASRUtils::make_Variable_t_util(al, arg->base.loc,
                                         current_scope, s2c(al, cast_sym_name), nullptr,
                                         0, ASR::intentType::Local, nullptr, nullptr,
                                         ASR::storage_typeType::Default, pointer_type, nullptr,
