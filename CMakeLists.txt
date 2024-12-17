@@ -99,6 +99,8 @@ set(WITH_ZLIB yes
 set(WITH_LCOMPILERS_FAST_ALLOC yes
     CACHE BOOL "Compile with fast allocator")
 
+set(WITH_CCACHE no CACHE BOOL "Build with ccache support")
+
 # Build to wasm
 set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
@@ -128,6 +130,12 @@ if (WITH_LCOMPILERS_FAST_ALLOC)
     add_definitions("-DLCOMPILERS_FAST_ALLOC=1")
 endif()
 
+
+if (WITH_CCACHE)
+    find_program(CCACHE_PROGRAM ccache REQUIRED)
+    set(CMAKE_C_COMPILER_LAUNCHER ccache)
+    set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+endif()
 
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
@@ -406,6 +414,7 @@ message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 message("WITH_KOKKOS: ${WITH_KOKKOS}")
+message("WITH_CCACHE: ${WITH_CCACHE}")
 message("CXXFLAGS: ${CMAKE_CXX_FLAGS}")
 message("CFLAGS: ${CMAKE_C_FLAGS}")
 
