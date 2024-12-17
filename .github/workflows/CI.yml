@@ -506,7 +506,7 @@ jobs:
             cd prima
             git checkout -t origin/lf13
             git checkout b3f5b55c94b3b0b2568fe9af97a8e34a48cac7b4
-            FC="$(pwd)/../src/bin/lfortran --cpp --skip-pass=pass_array_by_data" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            FC="$(pwd)/../src/bin/lfortran --cpp --skip-pass=pass_array_by_data --experimental-simplifier" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
 
       - name: Test POT3D
