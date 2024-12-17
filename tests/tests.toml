@@ -3816,6 +3816,7 @@ ast = true
 [[test]]
 filename = "errors/program_without_line_cc.f90"
 syntax_only_cc = true
+show_asr_with_cc = true
 
 [[test]]
 filename = "errors/program_without_line_02.f90"
