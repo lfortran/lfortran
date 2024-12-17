@@ -1,0 +1,5 @@
+warning: Different kinds of args in max0 is a non-standard extension
+ --> tests/../integration_tests/max_01.f90:6:14
+  |
+6 |     print *, max(y, z)
+  |              ^^^^^^^^^ help: ensure all arguments have the same kind to make it standard
