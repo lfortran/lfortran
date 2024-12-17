@@ -657,6 +657,10 @@ public:
         for( std::uint32_t i = 0; i < n_args; i++ ) {
             if( m_args[i].m_value != nullptr ) {
                 this->visit_expr(*m_args[i].m_value);
+                if( _type == AST::stmtType::Read && 
+                    ASRUtils::is_descriptorString(ASRUtils::expr_type(ASRUtils::EXPR(tmp)))){
+                    tmp = (ASR::asr_t*)ASRUtils::cast_string_descriptor_to_pointer(al, ASRUtils::EXPR(tmp));
+                }
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
