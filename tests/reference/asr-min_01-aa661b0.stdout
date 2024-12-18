@@ -799,12 +799,7 @@
                         (Var 2 output_min_different_kinds)
                         (IntrinsicElementalFunction
                             Min
-                            [(Cast
-                                (Var 2 real_inp5)
-                                RealToReal
-                                (Real 8)
-                                ()
-                            )
+                            [(Var 2 real_inp5)
                             (Cast
                                 (Var 2 real_inp6)
                                 RealToReal

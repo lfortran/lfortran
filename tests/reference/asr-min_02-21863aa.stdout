@@ -49,12 +49,7 @@
                             ()
                             [(IntrinsicElementalFunction
                                 Min
-                                [(Cast
-                                    (Var 2 y)
-                                    IntegerToInteger
-                                    (Integer 8)
-                                    ()
-                                )
+                                [(Var 2 y)
                                 (Cast
                                     (Var 2 z)
                                     IntegerToInteger

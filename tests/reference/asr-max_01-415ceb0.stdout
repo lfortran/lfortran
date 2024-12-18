@@ -65,12 +65,7 @@
                             ()
                             [(IntrinsicElementalFunction
                                 Max
-                                [(Cast
-                                    (Var 2 y)
-                                    RealToReal
-                                    (Real 8)
-                                    ()
-                                )
+                                [(Var 2 y)
                                 (Cast
                                     (Var 2 z)
                                     RealToReal
