@@ -2845,7 +2845,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         form = "formatted";
     }
     bool file_exists[1] = {false};
-    _lfortran_inquire(f_name, file_exists, -1, NULL);
+    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL);
     char *access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -2922,7 +2922,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     fflush(filep);
 }
 
-LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened) {
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened, int32_t *size) {
     if (f_name && unit_num != -1) {
         printf("File name and file unit number cannot be specifed together.\n");
         exit(1);
@@ -2931,6 +2931,10 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num
         FILE *fp = fopen(f_name, "r");
         if (fp != NULL) {
             *exists = true;
+            if (size != NULL) {
+                fseek(fp, 0, SEEK_END);
+                *size = ftell(fp);
+            }
             fclose(fp); // close the file
             return;
         }
