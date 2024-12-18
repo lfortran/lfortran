@@ -1566,6 +1566,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
     }
 
+    void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
+        replace_current_expr("_integer_binop_")
+    }
+
     void replace_StructStaticMember(ASR::StructStaticMember_t* x) {
         replace_current_expr("_struct_static_member_")
     }

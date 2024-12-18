@@ -3846,12 +3846,6 @@ public:
                     reinterpret_cast<llvm::AllocaInst*>(ptr)->setAlignment(align);
                 }
             }
-            if( v->m_type_declaration && ASR::is_a<ASR::FunctionType_t>(*v->m_type) ){
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
-                llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
-                llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, v->m_name, module.get());
-                llvm_symtab_fn[h] = fn;
-            }
             llvm_symtab[h] = ptr;
             if( (ASRUtils::is_array(v->m_type) &&
                 ((ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray) ||
@@ -9478,16 +9472,19 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
-        } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-            throw CodeGenError("Subroutine code not generated for '"
-                + std::string(s->m_name) + "'");
-        } else if (ASR::is_a<ASR::Variable_t>(proc_sym)) {
+        } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) && 
+                llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
             fn = llvm_utils->CreateLoad(fn);
-            llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(proc_sym);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(
+                                ASR::down_cast<ASR::FunctionType_t>(v->m_type), module.get());
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
+        } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+            throw CodeGenError("Subroutine code not generated for '"
+                + std::string(s->m_name) + "'");
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = ASRUtils::symbol_name(x.m_name);

@@ -55,6 +55,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     continue_compilation = is_included("continue_compilation")
     semantics_only_cc = is_included("semantics_only_cc")
     syntax_only_cc = is_included("syntax_only_cc")
+    show_asr_with_cc = is_included("show_asr_with_cc")
     asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
@@ -345,6 +346,13 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     
     if syntax_only_cc:
         run_test(filename, "asr", "lfortran --continue-compilation --show-ast --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+        
+    if show_asr_with_cc:
+        run_test(filename, "asr", "lfortran --continue-compilation --show-asr --no-color {infile}",
             filename,
             update_reference,
             verify_hash,

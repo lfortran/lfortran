@@ -112,9 +112,10 @@ public:
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
         ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+        ASR::expr_t* lbound = PassUtils::get_bound(arr_expr, 1, "lbound", al);
         for (int n = 0; n < n_dims; n++) {
             ASR::expr_t* idx_var = idx_vars[n];
-            idx_var = one;
+            idx_var = lbound;
             for (int m = 0; m < m_dim_length; m++) {
                 ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_var, al, current_scope);
                 print_body.push_back(ref);

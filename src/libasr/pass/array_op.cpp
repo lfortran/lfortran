@@ -2036,6 +2036,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                     resultvar2value[replacer.result_var] = *current_expr;
                 } else {
                     if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                        this->visit_expr(*x.m_target);
                         ASR::ArrayItem_t *array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
                         for (size_t i=0;i<array_item->n_args;i++) {
                             if (ASR::is_a<ASR::ArraySection_t>(*array_item->m_args->m_right)){

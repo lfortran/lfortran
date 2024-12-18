@@ -1,0 +1,5 @@
+warning: Different kinds of args in max0 is a non-standard extension
+  --> tests/../integration_tests/min_01.f90:58:34
+   |
+58 |     output_min_different_kinds = min(real_inp5, real_inp6)
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^ help: ensure all arguments have the same kind to make it standard

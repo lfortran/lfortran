@@ -1,0 +1,13 @@
+{
+    "basename": "asr-max_02-646ff6d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/max_02.f90",
+    "infile_hash": "bd78accf5e71c42d049416709f9c7e4f8e68f8f78e66bb1a5a47834a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-max_02-646ff6d.stdout",
+    "stdout_hash": "6ce45c6ef1e993b49977499796671f0250882934a9ac29ce009fe5a4",
+    "stderr": "asr-max_02-646ff6d.stderr",
+    "stderr_hash": "64e91c42f66a3935616bfc089e1051357881a0b8abc49c7a30b8f46b",
+    "returncode": 0
+}
