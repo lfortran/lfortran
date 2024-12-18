@@ -495,8 +495,8 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
             return ASRUtils::expr_abi(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
         }
         default:
-            throw LCompilersException("Cannot extract the ABI of " +
-                    ASRUtils::type_to_str_python(ASRUtils::expr_type(e)) + " expression.");
+            throw LCompilersException(std::string("Cannot extract the ABI of ") +
+                "ASR::exprType::" + std::to_string(e->type) + " expression.");
     }
 }
 
