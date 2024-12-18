@@ -456,7 +456,9 @@ bool set_allocation_size(
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity):
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxVal):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
