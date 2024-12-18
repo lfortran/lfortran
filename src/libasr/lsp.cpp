@@ -69,15 +69,15 @@ enum LFortranJSONType {
 };
 
 class LFortranJSON {
-
 private:
     LFortranJSONType type;
     std::string json_value;
     std::vector<std::pair<std::string, std::string>> object_members;
     std::vector<std::string> array_values;
+    bool rebuild_needed; 
 
 public:
-    LFortranJSON(LFortranJSONType type) : type(type) {
+    LFortranJSON(LFortranJSONType type) : type(type), rebuild_needed(true) {
         if (type == kArrayType) {
             json_value = "[]";
         } else {
@@ -88,55 +88,63 @@ public:
         type = kObjectType;
         object_members.clear();
         json_value = "{}";
+        rebuild_needed = false;
     }
     void SetArray() {
         type = kArrayType;
         array_values.clear();
         json_value = "[]";
+        rebuild_needed = false;
     }
     void AddMember(std::string key, int v) {
         object_members.push_back({key, std::to_string(v)});
-        RebuildObject();
+        rebuild_needed = true;
     }
     void AddMember(std::string key, uint32_t v) {
         object_members.push_back({key, std::to_string(v)});
-        RebuildObject();
+        rebuild_needed = true;
     }
     void AddMember(std::string key, std::string v) {
         object_members.push_back({key, "\"" + v + "\""});
-        RebuildObject();
+        rebuild_needed = true;
     }
     void AddMember(std::string key, LFortranJSON v) {
         object_members.push_back({key, v.GetValue()});
-        RebuildObject();
+        rebuild_needed = true;
     }
     void PushBack(LFortranJSON v) {
         array_values.push_back(v.GetValue());
-        RebuildArray();
+        rebuild_needed = true;
     }
     std::string GetValue() {
+        if (rebuild_needed) {
+            RebuildJSON();
+            rebuild_needed = false;
+        }
         return json_value;
     }
+
 private:
-    void RebuildObject() {
-        json_value = "{";
-        for (size_t i = 0; i < object_members.size(); i++) {
-            json_value += "\"" + object_members[i].first + "\":" + object_members[i].second;
-            if (i < object_members.size() - 1) {
-                json_value += ",";
+    void RebuildJSON() {
+        if (type == kObjectType) {
+            json_value = "{";
+            for (size_t i = 0; i < object_members.size(); i++) {
+                json_value += "\"" + object_members[i].first + "\":" + object_members[i].second;
+                if (i < object_members.size() - 1) {
+                    json_value += ",";
+                }
             }
-        }
-        json_value += "}";
-    }
-    void RebuildArray() {
-        json_value = "[";
-        for (size_t i = 0; i < array_values.size(); i++) {
-            json_value += array_values[i];
-            if (i < array_values.size() - 1) {
-                json_value += ",";
+            json_value += "}";
+        } else if (type == kArrayType) {
+            json_value = "[";
+            for (size_t i = 0; i < array_values.size(); i++) {
+                json_value += array_values[i];
+                if (i < array_values.size() - 1) {
+                    json_value += ",";
+                }
             }
+            json_value += "]";
         }
-        json_value += "]";
     }
 };
 
