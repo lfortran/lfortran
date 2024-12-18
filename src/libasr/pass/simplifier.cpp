@@ -1445,7 +1445,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
         if( is_current_expr_linked_to_target && ASRUtils::is_array(x->m_type) ) {
             targetType target_Type = exprs_with_target[*current_expr].second;
-            if( target_Type == targetType::OriginalTarget && realloc_lhs ) {
+            ASR::expr_t* target = exprs_with_target[*current_expr].first;
+            ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
+            ASRUtils::extract_indices(target, m_args, n_args);
+            if( target_Type == targetType::OriginalTarget && (realloc_lhs ||
+                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args)) ) {
                 force_replace_current_expr_for_array(std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
@@ -1535,11 +1539,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
-            if( exprs_with_target.find(*current_expr) == exprs_with_target.end() ) {
+            if( exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
+                !is_assignment_target_array_section_item ) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
-                    x->m_v, "_array_section_", al, current_body,
+                    *current_expr, "_array_section_", al, current_body,
                     current_scope, exprs_with_target);
             }
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
             return ;
         }
 
