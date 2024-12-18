@@ -1,5 +1,9 @@
 #include <iostream>
 #include <stdint.h>
+#include <string>
+#include <vector>
+#include <map>
+#include <sstream>
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
@@ -11,6 +15,8 @@
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/lsp_interface.h>
 #include <libasr/asr_lookup_name.h>
+
+
 
 namespace LCompilers {
 
@@ -63,89 +69,83 @@ enum LFortranJSONType {
 };
 
 class LFortranJSON {
-    public:
-        std::string value;
-        LFortranJSONType type;
+private:
+    LFortranJSONType type;
+    std::string json_value;
+    std::vector<std::pair<std::string, std::string>> object_members;
+    std::vector<std::string> array_values;
+    bool rebuild_needed; 
 
-        LFortranJSON(LFortranJSONType type) : type(type) {}
+public:
+    LFortranJSON(LFortranJSONType type) : type(type), rebuild_needed(true) {
+        if (type == kArrayType) {
+            json_value = "[]";
+        } else {
+            json_value = "{}";
+        }
+    }
+    void SetObject() {
+        type = kObjectType;
+        object_members.clear();
+        json_value = "{}";
+        rebuild_needed = false;
+    }
+    void SetArray() {
+        type = kArrayType;
+        array_values.clear();
+        json_value = "[]";
+        rebuild_needed = false;
+    }
+    void AddMember(std::string key, int v) {
+        object_members.push_back({key, std::to_string(v)});
+        rebuild_needed = true;
+    }
+    void AddMember(std::string key, uint32_t v) {
+        object_members.push_back({key, std::to_string(v)});
+        rebuild_needed = true;
+    }
+    void AddMember(std::string key, std::string v) {
+        object_members.push_back({key, "\"" + v + "\""});
+        rebuild_needed = true;
+    }
+    void AddMember(std::string key, LFortranJSON v) {
+        object_members.push_back({key, v.GetValue()});
+        rebuild_needed = true;
+    }
+    void PushBack(LFortranJSON v) {
+        array_values.push_back(v.GetValue());
+        rebuild_needed = true;
+    }
+    std::string GetValue() {
+        if (rebuild_needed) {
+            RebuildJSON();
+            rebuild_needed = false;
+        }
+        return json_value;
+    }
 
-        void SetObject() {
-            if (type == LFortranJSONType::kArrayType) {
-                value = "[";
-            } else {
-                value = "{";
+private:
+    void RebuildJSON() {
+        if (type == kObjectType) {
+            json_value = "{";
+            for (size_t i = 0; i < object_members.size(); i++) {
+                json_value += "\"" + object_members[i].first + "\":" + object_members[i].second;
+                if (i < object_members.size() - 1) {
+                    json_value += ",";
+                }
             }
-        }
-
-        void SetArray() {
-            value = "[";
-        }
-
-        void AddMember(std::string key, int v) {
-            // find `{` and add key value pair
-            int end_pos = value.find_last_of("}");
-            // If '}' is not found, then add key value pair at the end and add '}'
-            // If '}' is found, then add `, "key": value` before '}'
-            if (end_pos == -1) {
-                value.insert(value.length(), "\"" + key + "\":" + std::to_string(v) + "}");
-            } else {
-                value.insert(end_pos, ",\"" + key + "\":" + std::to_string(v));
+            json_value += "}";
+        } else if (type == kArrayType) {
+            json_value = "[";
+            for (size_t i = 0; i < array_values.size(); i++) {
+                json_value += array_values[i];
+                if (i < array_values.size() - 1) {
+                    json_value += ",";
+                }
             }
+            json_value += "]";
         }
-
-        void AddMember(std::string key, uint32_t v) {
-            // find `{` and add key value pair
-            int end_pos = value.find_last_of("}");
-            // If '}' is not found, then add key value pair at the end and add '}'
-            // If '}' is found, then add `, "key": value` before '}'
-            if (end_pos == -1) {
-                value.insert(value.length(), "\"" + key + "\":" + std::to_string(v) + "}");
-            } else {
-                value.insert(end_pos, ",\"" + key + "\":" + std::to_string(v));
-            }
-        }
-
-        void AddMember(std::string key, std::string v) {
-            // find `{` and add key value pair
-            int end_pos = value.find_last_of("}");
-            // If '}' is not found, then add key value pair at the end and add '}'
-            // If '}' is found, then add `, "key": value` before '}'
-            if (end_pos == -1) {
-                value.insert(value.length(), "\"" + key + "\":\"" + v + "\"}");
-            } else {
-                value.insert(end_pos, ",\"" + key + "\":\"" + v + "\"");
-            }
-        }
-
-        void AddMember(std::string key, LFortranJSON v) {
-            // find `{` and add key value pair
-            int end_pos = value.find_last_of("}");
-            // If '}' is not found, then add key value pair at the end and add '}'
-            // If '}' is found, then add `, "key": value` before '}'
-            if (end_pos == -1) {
-                value.insert(value.length(), "\"" + key + "\":" + v.GetValue() + "}");
-            } else {
-                value.insert(end_pos, ",\"" + key + "\":" + v.GetValue());
-            }
-        }
-
-        void PushBack(LFortranJSON v) {
-            // find `[` and add value
-            int end_pos = value.find_last_of("]");
-            // If ']' is not found, then add value at the end and add ']'
-            // If ']' is found, then add `, value` before ']'
-            if (end_pos == -1) {
-                value.insert(value.length(), v.GetValue() + "]");
-            } else {
-                value.insert(end_pos, "," + v.GetValue());
-            }
-        }
-
-        std::string GetValue() {
-            return value;
-        }
-
-
+    }
 };
 
 template <typename T>
