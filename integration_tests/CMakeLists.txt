@@ -1280,6 +1280,9 @@ RUN(NAME allocate_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
+RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
+
 RUN(NAME block_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME block_02 LABELS gfortran llvm)
 RUN(NAME block_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
