@@ -325,7 +325,10 @@ RUN(NAME data_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME data_11 LABELS gfortran llvmImplicit)
 RUN(NAME data_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME data_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-
+RUN(NAME max_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran NOFAST)
+RUN(NAME max_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran NOFAST)
+RUN(NAME min_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran NOFAST)
+RUN(NAME min_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran NOFAST)
 RUN(NAME minmax_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c) # arithmetic tests use goto
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
@@ -1779,8 +1782,6 @@ RUN(NAME equivalence_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-
-RUN(NAME min_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
