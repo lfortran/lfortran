@@ -13,6 +13,34 @@
 
 namespace LCompilers {
 
+bool is_vectorise_able(ASR::expr_t* x) {
+    switch( x->type ) {
+        case ASR::exprType::FunctionCall: {
+            return ASRUtils::is_elemental(ASR::down_cast<ASR::FunctionCall_t>(x)->m_name);
+        }
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp:
+        case ASR::exprType::LogicalBinOp:
+        case ASR::exprType::UnsignedIntegerBinOp:
+        case ASR::exprType::IntegerCompare:
+        case ASR::exprType::RealCompare:
+        case ASR::exprType::ComplexCompare:
+        case ASR::exprType::LogicalCompare:
+        case ASR::exprType::UnsignedIntegerCompare:
+        case ASR::exprType::StringCompare:
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::ComplexUnaryMinus:
+        case ASR::exprType::Var: {
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 enum targetType {
     GeneratedTarget,
     OriginalTarget
@@ -1155,6 +1183,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
         xx.m_arg = visit_BinOp_expr(x.m_arg, "logical_not_", ASR::exprType::LogicalNot);
         CallReplacerOnExpressionsVisitor::visit_LogicalNot(x);
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x) {
+        ASR::RealUnaryMinus_t& xx = const_cast<ASR::RealUnaryMinus_t&>(x);
+        // Replace only when the x.m_arg i.e., the operand of RealUnaryMinus
+        // must need evaluation. For example -some_function_call, here some_function_call
+        // needs temporary if it is non-elemental and returns an array. -(a + b) doesn't
+        // need a temporary because it can be vectorised as -(a(i) + b(i))
+        if( !is_vectorise_able(xx.m_arg) ) {
+            xx.m_arg = visit_BinOp_expr(x.m_arg, "real_unary_minus_", ASR::exprType::RealUnaryMinus);
+        }
+        CallReplacerOnExpressionsVisitor::visit_RealUnaryMinus(x);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t& x) {
