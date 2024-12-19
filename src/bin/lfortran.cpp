@@ -2340,6 +2340,7 @@ int main_app(int argc, char *argv[]) {
         compiler_options.implicit_interface = true;
         compiler_options.print_leading_space = true;
         compiler_options.logical_casting = false;
+        compiler_options.po.realloc_lhs = true;
     } else if (arg_standard == "legacy") {
         // f23
         compiler_options.disable_style = true;

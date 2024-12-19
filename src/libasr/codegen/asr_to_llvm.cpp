@@ -8048,7 +8048,7 @@ public:
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
-        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr;
+        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr, *size_val = nullptr;
 
         if (x.m_file) {
             this->visit_expr_wrapper(x.m_file, true);
@@ -8085,6 +8085,18 @@ public:
                             llvm::Type::getInt1Ty(context));
         }
 
+        if (x.m_size) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_size, true);
+            size_val = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            size_val = llvm_utils->CreateAlloca(*builder,
+                            llvm::Type::getInt32Ty(context));
+            print_util(size_val);
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -8094,11 +8106,12 @@ public:
                         llvm::Type::getInt1Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt1Ty(context)->getPointerTo(),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val});
+        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val, size_val});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
@@ -8985,6 +8998,19 @@ public:
                         if( func_subrout->type == ASR::symbolType::Function ) {
                             ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
                             orig_arg = ASRUtils::EXPR2VAR(func->m_args[i]);
+                        } else if (func_subrout->type == ASR::symbolType::ClassProcedure) {
+                            ASR::ClassProcedure_t* class_proc = down_cast<ASR::ClassProcedure_t>(func_subrout);
+                            ASR::symbol_t* func_sym = class_proc->m_proc;
+                            if (func_sym->type == ASR::symbolType::Function) {
+                                ASR::Function_t* func = down_cast<ASR::Function_t>(func_sym);
+                                orig_arg = EXPR2VAR(func->m_args[i]);
+                            } else {
+                                LCOMPILERS_ASSERT(false)
+                            }
+                        } else if( func_subrout->type == ASR::symbolType::Variable ) {
+                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(func_subrout);
+                            ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                            orig_arg = EXPR2VAR(func->m_args[i]);
                         } else {
                             throw CodeGenError("ICE: expected func_subrout->type == ASR::symbolType::Function.");
                         }

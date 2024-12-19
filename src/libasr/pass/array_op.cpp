@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <utility>
+#include<iostream>
 
 /*
 This ASR pass replaces operations over arrays with do loops.
@@ -870,7 +871,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     m_step), i32_one);
                 x_dims.push_back(al, x_dim);
             } else if (x->m_args[i].m_step == nullptr && x->m_args[i].m_right != nullptr
-                        && ASR::is_a<ASR::Array_t>(*ASRUtils::expr_type(x->m_args[i].m_right))) {
+                        && ASRUtils::is_array(ASRUtils::expr_type(x->m_args[i].m_right))) {
                 /*
                     Convert `array_1(:, array_2)` to :
 
@@ -908,9 +909,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 m_step), i32_one);
                         } else if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
                             ASR::dimension_t* arg_dim = nullptr;
-                            LCOMPILERS_ASSERT(
-                                ASRUtils::extract_dimensions_from_ttype(
-                                    ASRUtils::expr_type(x->m_args[j].m_right), arg_dim) == 1);
+                            [[maybe_unused]] size_t right_index_size = ASRUtils::extract_dimensions_from_ttype(
+                                    ASRUtils::expr_type(x->m_args[j].m_right), arg_dim);
+                            LCOMPILERS_ASSERT( right_index_size == 1);
                             res_dims_vec.p[j] = arg_dim[0];
                         } else if (x->m_args[j].m_right != nullptr || x->m_args[j].m_left != nullptr) {
                             ASR::expr_t* m_left = x->m_args[j].m_left;
