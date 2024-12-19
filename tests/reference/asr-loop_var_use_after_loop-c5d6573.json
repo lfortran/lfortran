@@ -1,0 +1,13 @@
+{
+    "basename": "asr-loop_var_use_after_loop-c5d6573",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/loop_var_use_after_loop.f90",
+    "infile_hash": "7155c67c016a79ec0de4c65637bdec02203cd567e2d20a7676393d09",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-loop_var_use_after_loop-c5d6573.stdout",
+    "stdout_hash": "e342f9bcf29763e81f54488299bc02f16bfcc4825649cceab88be21d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

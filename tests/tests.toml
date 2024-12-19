@@ -4444,3 +4444,8 @@ fortran = true
 [[test]]
 filename = "polymorphic_class_in_derived_type.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/loop_var_use_after_loop.f90"
+asr = true
+options = "--use-loop-variable-after-loop"
