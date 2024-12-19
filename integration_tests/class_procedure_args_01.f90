@@ -29,12 +29,11 @@ program main
 
    use class_procedure_args_01
 
-   !  TODO: Uncomment test case after fixing #5741
-   !  procedure(sub), pointer :: toc
+   procedure(sub), pointer :: toc
    call clk%toc("5")
 
-   !  toc => sub
-   !  call toc("6")
+   toc => sub
+   call toc("6")
 
 end program main
 

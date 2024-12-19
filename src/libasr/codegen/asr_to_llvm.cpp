@@ -3846,7 +3846,6 @@ public:
                     reinterpret_cast<llvm::AllocaInst*>(ptr)->setAlignment(align);
                 }
             }
-
             llvm_symtab[h] = ptr;
             if( (ASRUtils::is_array(v->m_type) &&
                 ((ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray) ||
@@ -9496,6 +9495,16 @@ public:
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
+            std::string m_name = ASRUtils::symbol_name(x.m_name);
+            args = convert_call_args(x, is_method);
+            tmp = builder->CreateCall(fntype, fn, args);
+        } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) && 
+                llvm_symtab.find(h) != llvm_symtab.end()) {
+            llvm::Value* fn = llvm_symtab[h];
+            fn = llvm_utils->CreateLoad(fn);
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(proc_sym);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(
+                                ASR::down_cast<ASR::FunctionType_t>(v->m_type), module.get());
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
