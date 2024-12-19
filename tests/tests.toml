@@ -4461,3 +4461,8 @@ show_errors = true
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
+
+[[test]]
+filename = "../integration_tests/loop_var_use_after_loop.f90"
+pass = "do_loops"
+options = "--use-loop-variable-after-loop"
