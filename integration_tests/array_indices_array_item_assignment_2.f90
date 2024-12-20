@@ -8,9 +8,10 @@ S = [3, 2, 1, 4]
 Q = 5.0
 
 Q(trueloc(R < S)) = Q(trueloc(R < S)) + 1.0
+Q(trueloc(R >= S)) = -Q(trueloc(R >= S)) - 1.0
 
 print *, Q
-if( any(Q /= [6.0, 5.0, 5.0, 6.0]) ) error stop
+if( any(Q /= [6.0, -6.0, -6.0, 6.0]) ) error stop
 
 contains
 
