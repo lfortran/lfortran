@@ -515,8 +515,8 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             FC="$(pwd)/src/bin/lfortran"
             cd pot3d
-            git checkout -t origin/lf2
-            git checkout db7edd3a493ae4650c1942f257a60dd29958b6c1
+            git checkout -t origin/lf3
+            git checkout 81ff23264eb31860dbc0e156050e877f03696d2d
             cd src
             $FC -c mpi.f90
             $FC -c psi_io.f90
