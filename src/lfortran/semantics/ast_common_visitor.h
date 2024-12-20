@@ -2975,6 +2975,9 @@ public:
                                 }
                                 // Do nothing for now
                             } else if (sa->m_attr == AST::simple_attributeType
+                                    ::AttrAllocatable) {
+                                // TODO
+                            } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrValue) {
                                 value_attr = true;
                             } else if(sa->m_attr == AST::simple_attributeType
@@ -3028,8 +3031,7 @@ public:
 
                     if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
                         diag.add((Diagnostic( 
-
-                            "`PARAMETER` attribute conflicts with `ALLOCABLE` attribute",
+                            "`parameter` attribute conflicts with `allocatable` attribute",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }
@@ -3039,8 +3041,7 @@ public:
 
                     if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
                         diag.add((Diagnostic( 
-
-                            "`PARAMETER` attribute conflicts with `POINTER` attribute",
+                            "`parameter` attribute conflicts with `pointer` attribute",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }

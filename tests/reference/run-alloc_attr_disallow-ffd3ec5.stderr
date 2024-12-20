@@ -1,4 +1,4 @@
-semantic error: `PARAMETER` attribute conflicts with `ALLOCABLE` attribute
+semantic error: `parameter` attribute conflicts with `allocatable` attribute
  --> tests/./errors/alloc_attr_disallow.f90:4:4
   |
 4 |    integer, allocatable, parameter :: v=1
