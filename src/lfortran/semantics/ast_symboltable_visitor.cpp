@@ -560,6 +560,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -586,6 +587,29 @@ public:
             }
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                if(decl->m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl->m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
+        }
+        for (size_t i : procedure_decl_indices) {
             try {
                 visit_unit_decl2(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
@@ -593,12 +617,6 @@ public:
             }
         }
         process_simd_variables();
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            visit_program_unit(*x.m_contains[i]);
-            default_storage_save = current_storage_save;
-        }
         tmp = ASR::make_Program_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
