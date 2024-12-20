@@ -734,6 +734,14 @@ obj = true
 x86 = true
 
 [[test]]
+filename = "./errors/ptr_attr_disallow.f90"
+run = true
+
+[[test]]
+filename = "./errors/alloc_attr_disallow.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/print_01.f90"
 llvm = true
 

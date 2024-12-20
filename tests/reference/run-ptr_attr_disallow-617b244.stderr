@@ -1,0 +1,5 @@
+semantic error: `PARAMETER` attribute conflicts with `POINTER` attribute
+ --> tests/./errors/ptr_attr_disallow.f90:3:5
+  |
+3 |     integer, pointer, parameter :: v => null()
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
