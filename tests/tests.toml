@@ -4444,3 +4444,7 @@ fortran = true
 [[test]]
 filename = "polymorphic_class_in_derived_type.f90"
 asr = true
+
+[[test]]
+filename = "errors/show_errors1.f90"
+show_errors = true

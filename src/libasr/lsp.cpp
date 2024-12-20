@@ -305,6 +305,11 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
     LFortranJSON diag_results(LFortranJSONType::kArrayType);
     LFortranJSON diag_capture(LFortranJSONType::kObjectType);
     LFortranJSON message_send(LFortranJSONType::kObjectType);
+    LFortranJSON all_errors(LFortranJSONType::kArrayType);
+    all_errors.SetArray();
+
+    message_send.SetObject();
+    message_send.AddMember("uri", "uri");
 
     for (auto diag : diag_lists) {
         uint32_t start_line = diag.first_line;
@@ -326,19 +331,15 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
         end_detail.AddMember("character", end_column);
         range_obj.AddMember("end", end_detail);
 
-        diag_results.SetArray();
-
         diag_capture.SetObject();
         diag_capture.AddMember("source", "lpyth");
         diag_capture.AddMember("range", range_obj);
         diag_capture.AddMember("message", msg);
         diag_capture.AddMember("severity", severity);
-        diag_results.PushBack(diag_capture);
 
-        message_send.SetObject();
-        message_send.AddMember("uri", "uri");
-        message_send.AddMember("diagnostics", diag_results);
+        all_errors.PushBack(diag_capture);
     }
+    message_send.AddMember("diagnostics", all_errors);
     std::cout << message_send.GetValue();
 
     return 0;

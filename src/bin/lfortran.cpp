@@ -2555,12 +2555,7 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (show_errors) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_errors(arg_file, compiler_options);
-#else
-        std::cerr << "Compiler was not configured with LSP support (-DWITH_LSP), please build it again." << std::endl;
-        return 1;
-#endif
     }
     lfortran_pass_manager.use_default_passes();
     if (show_llvm) {
