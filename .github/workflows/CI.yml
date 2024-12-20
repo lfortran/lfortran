@@ -500,7 +500,6 @@ jobs:
 
       - name: Test PRIMA
         shell: bash -e -l {0}
-        if: contains(matrix.llvm-version, '11')
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
