@@ -9474,7 +9474,7 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
-        } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) && 
+        } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
             fn = llvm_utils->CreateLoad(fn);

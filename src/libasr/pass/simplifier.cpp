@@ -402,7 +402,7 @@ bool set_allocation_size(
                 if( start == nullptr && step == nullptr && end != nullptr ) {
                     if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
                         allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                            al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr));
+                            al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 } else {
@@ -436,7 +436,7 @@ bool set_allocation_size(
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = int32_one;
                 allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                    al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr));
+                    al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
                 allocate_dims.push_back(al, allocate_dim);
             }
             break;
@@ -1032,7 +1032,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
-        CallReplacerOnExpressionsVisitor::visit_Assignment(x);
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
     }
 
     void visit_Print(const ASR::Print_t& x) {
@@ -1770,8 +1770,10 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
+        ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
         if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
             ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ) {
+            ASRUtils::extract_indices(x.m_target, m_args, n_args);
             bool is_assignment_target_array_section_item = replacer.is_assignment_target_array_section_item;
             replacer.is_assignment_target_array_section_item = true;
             ASR::expr_t** current_expr_copy_8 = current_expr;
@@ -1787,6 +1789,12 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.simd_type = ASRUtils::expr_type(x.m_value);
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         call_replacer();
+        if( ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            !is_elemental_expr(x.m_value) ) {
+            bool is_assignment_target_array_section_item = true;
+            force_replace_current_expr_for_array("_assignment_value_")
+        }
         current_expr = current_expr_copy_9;
         replacer.is_simd_expression = is_simd_expr_copy;
         replacer.simd_type = simd_type_copy;
