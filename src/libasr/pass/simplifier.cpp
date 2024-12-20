@@ -43,7 +43,8 @@ bool is_vectorise_able(ASR::expr_t* x) {
 
 enum targetType {
     GeneratedTarget,
-    OriginalTarget
+    OriginalTarget,
+    GeneratedTargetPointerForArraySection
 };
 
 typedef std::map<ASR::expr_t*, std::pair<ASR::expr_t*, targetType>> ExprsWithTargetType;
@@ -748,7 +749,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
         al, allocate_size_reference, current_scope, name_hint, is_pointer_required);
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
-        exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTarget);
+        exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTargetPointerForArraySection);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, array_var_temporary, array_expr)));
     } else {
@@ -1395,10 +1396,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     bool is_assignment_target_array_section_item;
     bool is_simd_expression;
     ASR::ttype_t* simd_type;
+    ASR::expr_t* parent_expr;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
-        is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr) {}
+        is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
+        parent_expr(nullptr) {}
 
     #define is_current_expr_linked_to_target exprs_with_target.find(*current_expr) != exprs_with_target.end()
 
@@ -1448,8 +1451,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::expr_t* target = exprs_with_target[*current_expr].first;
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             ASRUtils::extract_indices(target, m_args, n_args);
-            if( target_Type == targetType::OriginalTarget && (realloc_lhs ||
-                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args)) ) {
+            if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
+                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args))) ||
+                 target_Type == targetType::GeneratedTargetPointerForArraySection ) {
                 force_replace_current_expr_for_array(std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
@@ -1538,6 +1542,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item ) {
@@ -1545,7 +1550,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     *current_expr, "_array_section_", al, current_body,
                     current_scope, exprs_with_target);
             }
-            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
             return ;
         }
 
@@ -1615,7 +1619,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
-        replace_current_expr("_integer_binop_")
+        ASR::expr_t* parent_expr_copy = parent_expr;
+        parent_expr = *current_expr;
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_IntegerBinOp(x);
+        parent_expr = parent_expr_copy;
+        if( parent_expr == nullptr ) {
+            replace_current_expr("_integer_binop_")
+        }
     }
 
     void replace_StructStaticMember(ASR::StructStaticMember_t* x) {
@@ -1777,10 +1787,14 @@ class ReplaceExprWithTemporaryVisitor:
             bool is_assignment_target_array_section_item = replacer.is_assignment_target_array_section_item;
             replacer.is_assignment_target_array_section_item = true;
             ASR::expr_t** current_expr_copy_8 = current_expr;
+            ASR::expr_t* original_target = x.m_target;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
             call_replacer();
             current_expr = current_expr_copy_8;
             replacer.is_assignment_target_array_section_item = is_assignment_target_array_section_item;
+            if( x.m_target != original_target ) {
+                exprs_with_target[x.m_value] = std::make_pair(x.m_target, targetType::GeneratedTargetPointerForArraySection);
+            }
         }
         ASR::expr_t** current_expr_copy_9 = current_expr;
         bool is_simd_expr_copy = replacer.is_simd_expression;
@@ -1807,7 +1821,6 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_Associate(const ASR::Associate_t& /*x*/) {
-        return ;
     }
 
 };
