@@ -1,4 +1,4 @@
-program arrays_67
+program arrays_68
     integer :: A(4) = [1,2,3,4]
     A([1,2]) = [5,5]
     print *, A
