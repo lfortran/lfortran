@@ -1615,6 +1615,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "reshape_param_shape.f90"
+run = true
+
+
+[[test]]
 filename = "../integration_tests/interface_01.f90"
 ast = true
 asr = true
