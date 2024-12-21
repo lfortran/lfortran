@@ -175,7 +175,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     array_size = builder.Add(array_section_size, array_size);
                 }
             } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*element) &&
-                        ASRUtils::is_array(ASRUtils::expr_type(element)) ) {
+                       ASRUtils::is_array(ASRUtils::expr_type(element)) &&
+                       ASRUtils::use_experimental_simplifier ) {
                 ASR::IntrinsicElementalFunction_t* intrinsic_element_t = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(element);
                 if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
@@ -189,7 +190,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     }
                 }
             } else if( ASR::is_a<ASR::FunctionCall_t>(*element)  &&
-                        ASRUtils::is_array(ASRUtils::expr_type(element)) ) {
+                       ASRUtils::is_array(ASRUtils::expr_type(element)) &&
+                       ASRUtils::use_experimental_simplifier ) {
                 ASR::FunctionCall_t* fc_element_t = ASR::down_cast<ASR::FunctionCall_t>(element);
                 if( ASRUtils::is_fixed_size_array(fc_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(fc_element_t->m_type);

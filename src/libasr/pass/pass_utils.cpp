@@ -1364,7 +1364,8 @@ namespace LCompilers {
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
                 } else {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) ) {
+                    if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) &&
+                        ASRUtils::use_experimental_simplifier ) {
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                             al, loc, 1, ASRUtils::expr_type(idx_var)));
