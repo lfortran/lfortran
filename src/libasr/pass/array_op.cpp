@@ -2018,6 +2018,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         inline void visit_AssignmentUtil(const ASR::Assignment_t& x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            bool remove_original_statement_value = false;
             ASR::expr_t* original_value = x.m_value;
             if( ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) ) {
                 ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_value);
@@ -2261,6 +2262,170 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                                     b.Assignment(outer_target_index, value_index),
                                 }, nullptr)
                             );
+
+                            remove_original_statement_value = true;
+                        }
+                    }
+                }
+                resultvar2value[replacer.result_var] = original_value;
+            } else if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_value) ) {
+                ASR::ArrayItem_t* array_item_value = ASR::down_cast<ASR::ArrayItem_t>(x.m_value);
+                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                    ASR::ArrayItem_t* array_item_target = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                    for (size_t i=0;i<array_item_target->n_args;i++) {
+                        if(ASR::is_a<ASR::ArrayConstant_t>(*array_item_target->m_args->m_right)){
+                            ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(array_item_target->m_args[i].m_right);
+                            ASRUtils::ASRBuilder b(al, array_item_target->base.base.loc);
+
+                            ASR::ttype_t* integer_type = ASR::down_cast<ASR::ttype_t>(
+                                ASR::make_Integer_t(al, array_item_target->base.base.loc, 4));
+                            ASR::expr_t* itr = PassUtils::create_var(
+                                0, "itr", array_item_target->base.base.loc, integer_type, al, current_scope);
+
+                            ASR::ttype_t* temporary_array_type = ASRUtils::expr_type(array_item_value->m_v);
+                            ASR::dimension_t* m_dims =nullptr;
+                            ASRUtils::extract_dimensions_from_ttype(temporary_array_type, m_dims);
+                            ASR::expr_t* temporary_array = PassUtils::create_var(
+                                0, "_temporary_value", array_item_value->m_v->base.loc,
+                                ASRUtils::duplicate_type(al, temporary_array_type), al, current_scope);
+
+                            ASR::expr_t* temporary_array_size = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                al, array_item_value->m_v->base.loc, array_item_value->m_v,
+                                nullptr, integer_type, nullptr));
+
+                            Vec<ASR::expr_t*> temporary_idx_vars;
+                            PassUtils::create_idx_vars(temporary_idx_vars, 1, array_item_value->m_v->base.loc, al, current_scope);
+
+                            ASR::stmt_t* temporary_copy_loop = b.DoLoop(
+                                temporary_idx_vars[0], b.i32(1), temporary_array_size,
+                                {
+                                    b.Assignment(
+                                        PassUtils::create_array_ref(temporary_array, temporary_idx_vars[0], al, current_scope),
+                                        PassUtils::create_array_ref(array_item_value->m_v, temporary_idx_vars[0], al, current_scope)
+                                    ),
+                                },
+                                nullptr
+                            );
+
+                            pass_result.push_back(al, temporary_copy_loop);
+
+                            ASR::expr_t* array_constant_size = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                al,
+                                array_item_target->m_args[i].m_right->base.loc,
+                                array_item_target->m_args[i].m_right,
+                                nullptr,
+                                integer_type,
+                                nullptr
+                            ));
+
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+
+                            ASR::dimension_t dim;
+                            dim.loc = array_constant->base.base.loc;
+                            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, array_constant->base.base.loc, 1, integer_type));
+                            dim.m_length = array_constant_size;
+                            dims.push_back(al, dim);
+
+                            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(
+                                al, array_constant->base.base.loc, integer_type, dims.p, dims.size(), ASR::array_physical_typeType::PointerToDataArray));
+
+                            ASR::expr_t* array_constant_var = PassUtils::create_var(
+                                1, "array_constant", array_constant->base.base.loc, array_type, al, current_scope);
+
+                            Vec<ASR::expr_t*> idx_vars;
+                            PassUtils::create_idx_vars(idx_vars, 1, array_constant->base.base.loc, al, current_scope);
+                            ASR::expr_t* idx_var = idx_vars[0];
+                            ASR::expr_t* lb = PassUtils::get_bound(array_constant_var, 1, "lbound", al);
+                            ASR::stmt_t* lb_assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                                            array_constant->base.base.loc, idx_var, lb, nullptr));
+
+                            pass_result.push_back(al,lb_assign_stmt);
+
+                            for( size_t k = 0; k < (size_t) ASRUtils::get_fixed_size_of_array(array_constant->m_type); k++ ) {
+                                ASR::expr_t* curr_init = ASRUtils::fetch_ArrayConstant_value(al, array_constant, k);
+                                ASR::expr_t* res = PassUtils::create_array_ref(array_constant_var, idx_var,
+                                    al, current_scope);
+                                ASR::stmt_t* assign = b.Assignment(res, curr_init);
+                                pass_result.push_back(al, assign);
+                                ASR::expr_t* inc_by_one = b.Add(idx_var , b.i32(1));
+                                ASR::stmt_t* assign_inc = b.Assignment(idx_var, inc_by_one);
+                                pass_result.push_back(al , assign_inc);
+                            }
+
+                            Vec<ASR::array_index_t> inner_arr_target_dims;
+                            inner_arr_target_dims.reserve(al, 1);
+
+                            ASR::array_index_t inner_target_ai;
+                            inner_target_ai.loc = array_constant_var->base.loc;
+                            inner_target_ai.m_left = nullptr;
+                            inner_target_ai.m_right = itr;
+                            inner_target_ai.m_step = nullptr;
+                            inner_arr_target_dims.push_back(al, inner_target_ai);
+
+                            ASR::expr_t* inner_target_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                    al, array_constant->base.base.loc, array_constant_var, inner_arr_target_dims.p,
+                                    inner_arr_target_dims.n, ASRUtils::extract_type(
+                                        ASRUtils::expr_type(array_constant_var)),
+                                    ASR::arraystorageType::ColMajor, nullptr));
+
+                            Vec<ASR::array_index_t> outer_arr_target_dims;
+                            outer_arr_target_dims.reserve(al, 1);
+
+                            ASR::array_index_t outer_target_ai;
+                            outer_target_ai.loc = array_item_target->m_v->base.loc;
+                            outer_target_ai.m_left = nullptr;
+                            outer_target_ai.m_right = inner_target_index;
+                            outer_target_ai.m_step = nullptr;
+                            outer_arr_target_dims.push_back(al, outer_target_ai);
+
+                            ASR::expr_t* outer_target_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                al, array_item_target->m_v->base.loc, array_item_target->m_v, outer_arr_target_dims.p,
+                                outer_arr_target_dims.n, ASRUtils::extract_type(
+                                    ASRUtils::expr_type(array_item_target->m_v)),
+                                ASR::arraystorageType::ColMajor, nullptr));
+
+                            Vec<ASR::array_index_t> inner_arr_value_dims;
+                            inner_arr_value_dims.reserve(al, 1);
+
+                            ASR::array_index_t inner_value_ai;
+                            inner_value_ai.loc = array_item_value->m_args[i].m_right->base.loc;
+                            inner_value_ai.m_left = nullptr;
+                            inner_value_ai.m_right = itr;
+                            inner_value_ai.m_step = nullptr;
+                            inner_arr_value_dims.push_back(al, inner_value_ai);
+
+                            ASR::expr_t* inner_value_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                    al, array_item_value->m_args[i].m_right->base.loc, array_item_value->m_args[i].m_right, inner_arr_value_dims.p,
+                                    inner_arr_value_dims.n, ASRUtils::extract_type(
+                                        ASRUtils::expr_type(array_item_value->m_args[i].m_right)),
+                                    ASR::arraystorageType::ColMajor, nullptr));
+
+                            Vec<ASR::array_index_t> outer_arr_value_dims;
+                            outer_arr_value_dims.reserve(al, 1);
+
+                            ASR::array_index_t outer_value_ai;
+                            outer_value_ai.loc = temporary_array->base.loc;
+                            outer_value_ai.m_left = nullptr;
+                            outer_value_ai.m_right = inner_value_index;
+                            outer_value_ai.m_step = nullptr;
+                            outer_arr_value_dims.push_back(al, outer_value_ai);
+
+                            ASR::expr_t* outer_value_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                al, temporary_array->base.loc, temporary_array, outer_arr_value_dims.p,
+                                outer_arr_value_dims.n, ASRUtils::extract_type(
+                                    ASRUtils::expr_type(temporary_array)),
+                                ASR::arraystorageType::ColMajor, nullptr));
+
+                            pass_result.push_back(al,
+                                b.DoLoop(itr, b.i32(1), array_constant_size, {
+                                    b.Assignment(outer_target_index, outer_value_index),
+                                }, nullptr)
+                            );
+                            
+                            remove_original_statement_value = true;
+                            current_expr = const_cast<ASR::expr_t**>(&(array_item_value->m_v));
                         }
                     }
                 }
@@ -2275,11 +2440,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 replacer.result_var = nullptr;
                 this->visit_expr(*x.m_value);
                 replacer.result_var = result_var_copy;
-                if (PassUtils::is_array(x.m_value) && ASR::is_a<ASR::ArrayItem_t>(*x.m_target)){
-                    remove_original_statement = true;
-                } else {
-                    remove_original_statement = false;
-                }
+                remove_original_statement = remove_original_statement_value;
             } else if( x.m_value ) {
                 if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value)) {
                     remove_original_statement = false;
