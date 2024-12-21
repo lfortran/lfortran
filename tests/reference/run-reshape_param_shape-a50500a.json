@@ -1,0 +1,13 @@
+{
+    "basename": "run-reshape_param_shape-a50500a",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/reshape_param_shape.f90",
+    "infile_hash": "d10d4d2e33664b5c8ed9f96cc5c6c2ff59f1f21f8d984202ecfbe705",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-reshape_param_shape-a50500a.stdout",
+    "stdout_hash": "2aa086130af3eee8e92305afb94fb312c8024b0d31d52aac0a2d44c3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
