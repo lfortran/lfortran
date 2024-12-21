@@ -3027,6 +3027,26 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    
+
+                    if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic( 
+                            "`parameter` attribute conflicts with `allocatable` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    } else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic( 
+                            "`parameter` attribute conflicts with `pointer` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
+
                     if (s_intent == ASRUtils::intent_out && value_attr) {
                         diag.add(Diagnostic(
                             "`value` attribute conflicts with `intent(out)` attribute",

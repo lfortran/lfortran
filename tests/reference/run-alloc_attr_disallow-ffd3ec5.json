@@ -1,0 +1,13 @@
+{
+    "basename": "run-alloc_attr_disallow-ffd3ec5",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/./errors/alloc_attr_disallow.f90",
+    "infile_hash": "beb68fd1ef8ad1bbd5360f661d90066389c3f6781c28c418108cceeb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-alloc_attr_disallow-ffd3ec5.stderr",
+    "stderr_hash": "7a17ec4d60429ed2d765550c95851b62625559c186c9ae753f5c6e40",
+    "returncode": 1
+}
