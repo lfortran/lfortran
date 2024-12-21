@@ -291,7 +291,7 @@ public:
         mlir::Value m_v = tmp;
 
         LCOMPILERS_ASSERT(x.n_args == 1);
-        this->visit_expr(*x.m_args[0].m_right);
+        this->visit_expr2(*x.m_args[0].m_right);
         mlir::Value idx = tmp;
 
         if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(
@@ -303,10 +303,11 @@ public:
             builder->getI64Type(), builder->getIndexAttr(1));
 
         idx = builder->create<mlir::LLVM::SubOp>(loc, idx, one);
-        mlir::Type basePtrType = mlir::LLVM::LLVMPointerType::get(getType(
-            ASRUtils::extract_type(ASRUtils::expr_type(x.m_v))));
-        tmp = builder->create<mlir::LLVM::GEPOp>(loc, basePtrType, m_v,
-            mlir::ValueRange{idx});
+        mlir::Type baseType = mlir::LLVM::LLVMPointerType::get(getType(x.m_type));
+        mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+            builder->getI64Type(), builder->getIndexAttr(0));
+        tmp = builder->create<mlir::LLVM::GEPOp>(loc, baseType, m_v,
+            mlir::ValueRange{zero, idx});
     }
 
 
