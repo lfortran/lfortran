@@ -101,10 +101,13 @@ public:
     mlir::Value createGlobalString(std::string value) {
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMArrayType arrayI8Ty = mlir::LLVM::LLVMArrayType::get(
-            builder->getI8Type(), value.size());
+            builder->getI8Type(), value.size()+1);
+
+        llvm::SmallVector<char> vecValue(value.begin(), value.end());
+        vecValue.push_back('\0');
         mlir::LLVM::GlobalOp globalStr = builder0.create<mlir::LLVM::GlobalOp>(
             loc, arrayI8Ty, false, mlir::LLVM::Linkage::Private,
-            getUniqueName("char_const_"), builder0.getStringAttr(value));
+            getUniqueName("char_const_"), builder0.getStringAttr(vecValue));
         return builder->create<mlir::LLVM::AddressOfOp>(loc, globalStr);
     }
 
@@ -322,14 +325,10 @@ public:
             printf_fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
                 loc, "printf", llvmFnType);
         }
-        // FIXME: Add "\00" to end of `builder->getStringAttr(fmt)` string.
-        // Now, the fmt string value is " %d\n", but it needs to be " %d\n\00"
-        mlir::Value globalPtr = createGlobalString(fmt);
         mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
             builder->getI64Type(), builder->getIndexAttr(0));
-        globalPtr = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
-            globalPtr, mlir::ValueRange{zero, zero});
-        args.p[0] = globalPtr;
+        args.p[0] = builder->create<mlir::LLVM::GEPOp>(loc,
+            llvmI8PtrTy, createGlobalString(fmt), zero);
         builder->create<mlir::LLVM::CallOp>(loc, printf_fn,
             mlir::ValueRange{args.as_vector()});
     }
