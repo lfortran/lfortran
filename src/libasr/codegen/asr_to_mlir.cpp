@@ -218,6 +218,34 @@ public:
         tmp = createGlobalString(x.m_s);
     }
 
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        int bound_value = -1;
+        ASR::ttype_t *arr_type = ASRUtils::expr_type(x.m_v);
+        if (is_a<ASR::Array_t>(*arr_type)) {
+            ASR::Array_t *arr = down_cast<ASR::Array_t>(arr_type);
+            int dim = -1;
+            if (ASRUtils::extract_value(x.m_dim, dim)) {
+                if (x.m_bound == ASR::arrayboundType::LBound) {
+                    ASRUtils::extract_value(arr->m_dims[dim-1].m_start,
+                        bound_value);
+                } else {
+                    ASRUtils::extract_value(arr->m_dims[dim-1].m_length,
+                        bound_value);
+                }
+            } else {
+                throw CodeGenError("Runtime `dim` in ArrayBound is not "
+                    "supported yet", x.base.base.loc);
+            }
+        } else {
+            throw CodeGenError("The type `"+
+                ASRUtils::type_to_str_python(arr_type)
+                +"` is not supported yet", x.base.base.loc);
+        }
+        tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                    builder->getI32Type(),
+                    builder->getI32IntegerAttr(bound_value)).getResult();
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
