@@ -560,6 +560,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -586,6 +587,29 @@ public:
             }
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                if(decl->m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl->m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
+        }
+        for (size_t i : procedure_decl_indices) {
             try {
                 visit_unit_decl2(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
@@ -593,12 +617,6 @@ public:
             }
         }
         process_simd_variables();
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            visit_program_unit(*x.m_contains[i]);
-            default_storage_save = current_storage_save;
-        }
         tmp = ASR::make_Program_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -1046,8 +1064,20 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0); 
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+                if(decl.m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
+                           type->m_name == sym_name) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
                     visit_unit_decl2(*x.m_decl[i]);
@@ -1202,6 +1232,15 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+        // Self referencing procedure declarations 
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         if( update_gp ) {
             LCOMPILERS_ASSERT(gp_index_to_be_updated >= 0);
             ASR::GenericProcedure_t* f1_gp = ASR::down_cast<ASR::GenericProcedure_t>(f1_);
@@ -1420,8 +1459,20 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0); 
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+                if(decl.m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
+                           type->m_name == sym_name) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
@@ -1684,6 +1735,15 @@ public:
             x.m_end_name ? x.m_end_name : nullptr);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        
+        // Self referencing procedure declarations 
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
