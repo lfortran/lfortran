@@ -316,11 +316,11 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 
 ast_t* fn_VAR_DECL1c(Allocator &al,
     ast_t *vartype, const Vec<var_sym_t> &varsym, ast_t *trivia,
-            Location l) {
+            Location l, LCompilers::diag::Diagnostics &diagnostics) {
     for (size_t i=0; i<varsym.size(); i++) {
         if (varsym[i].m_sym == symbolType::Equal) {
-            throw LCompilers::LFortran::parser_local::ParserError(
-                "Invalid syntax for variable initialization (try inserting '::' after the type)", l);
+            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+                "Invalid syntax for variable initialization (try inserting '::' after the type)", {l}).d);
         }
     }
     return make_Declaration_t(al, l,
@@ -330,7 +330,7 @@ ast_t* fn_VAR_DECL1c(Allocator &al,
 }
 
 #define VAR_DECL1c(vartype, varsym, trivia, l) \
-    fn_VAR_DECL1c(p.m_a, vartype, varsym, trivia, l)
+    fn_VAR_DECL1c(p.m_a, vartype, varsym, trivia, l, p.diag)
 
 decl_attribute_t** VAR_DECL2b(Allocator &al,
             ast_t *xattr0) {
