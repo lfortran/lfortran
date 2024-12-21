@@ -2018,6 +2018,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         inline void visit_AssignmentUtil(const ASR::Assignment_t& x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            bool remove_original_statement_value = false;
             ASR::expr_t* original_value = x.m_value;
             if( ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) ) {
                 ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_value);
@@ -2261,6 +2262,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                                     b.Assignment(outer_target_index, value_index),
                                 }, nullptr)
                             );
+
+                            remove_original_statement_value = true;
                         }
                     }
                 }
@@ -2420,7 +2423,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                                     b.Assignment(outer_target_index, outer_value_index),
                                 }, nullptr)
                             );
-
+                            
+                            remove_original_statement_value = true;
                             current_expr = const_cast<ASR::expr_t**>(&(array_item_value->m_v));
                         }
                     }
@@ -2436,11 +2440,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 replacer.result_var = nullptr;
                 this->visit_expr(*x.m_value);
                 replacer.result_var = result_var_copy;
-                if (PassUtils::is_array(x.m_value) && ASR::is_a<ASR::ArrayItem_t>(*x.m_target)){
-                    remove_original_statement = true;
-                } else {
-                    remove_original_statement = false;
-                }
+                remove_original_statement = remove_original_statement_value;
             } else if( x.m_value ) {
                 if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value)) {
                     remove_original_statement = false;
