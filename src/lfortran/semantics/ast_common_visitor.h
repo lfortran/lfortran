@@ -3037,8 +3037,7 @@ public:
                             }
                         )));
                         throw SemanticAbort();
-                    }
-                    else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
+                    } else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
                         diag.add((Diagnostic( 
                             "`parameter` attribute conflicts with `pointer` attribute",
                             Level::Error, Stage::Semantic, {
