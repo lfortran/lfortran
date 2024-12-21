@@ -3343,6 +3343,21 @@ namespace FindLoc {
                         }
                     }
                 }
+            } else if (is_complex(*expr_type(args[0]))) {
+                double re, im;
+                re = ASR::down_cast<ASR::ComplexConstant_t>(args[1])->m_re;
+                im = ASR::down_cast<ASR::ComplexConstant_t>(args[1])->m_im;
+                for (int i = element_idx; i < arr_size; i++) {
+                    if (((bool*)mask->m_data)[i] != 0) {
+                        double re2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_re;
+                        double im2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_im;
+                        if (re == re2 && im == im2) {
+                            element_found = 1;
+                            element_idx = i;
+                            if (!(back && back->m_value)) break;
+                        }
+                    }
+                }
             } else {
                 double ele = 0;
                 if (is_integer(*ASRUtils::expr_type(args[1]))) {
@@ -3384,14 +3399,14 @@ namespace FindLoc {
         ASR::expr_t* value = args[1];
         ASR::ttype_t *array_type = expr_type(array);
         ASR::ttype_t *value_type = expr_type(value);
-        if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type)) {
+        if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type) && !is_complex(*array_type)) {
             append_error(diag, "`array` argument of `findloc` must be an array of integer, "
-                "real, logical or character type", loc);
+                "real, complex, logical or character type", loc);
             return nullptr;
         }
-        if (is_array(value_type) || ( !is_integer(*value_type) && !is_real(*value_type) && !is_character(*value_type) && !is_logical(*value_type) )) {
+        if (is_array(value_type) || ( !is_integer(*value_type) && !is_real(*value_type) && !is_character(*value_type) && !is_logical(*value_type) && !is_complex(*array_type))) {
             append_error(diag, "`value` argument of `findloc` must be a scalar of integer, "
-                "real, logical or character type", loc);
+                "real, complex, logical or character type", loc);
             return nullptr;
         }
         ASR::ttype_t *return_type = nullptr;
