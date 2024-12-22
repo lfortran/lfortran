@@ -406,12 +406,53 @@ decl_attribute_t** ATTRCOMMON(Allocator &al,
         varsym.p, varsym.n, \
         trivia_cast(trivia))
 
+
+static inline bool has_num_val(expr_t const * const expr, int64_t val) {
+
+    if (is_a<Num_t>(*expr)) {
+	Num_t const *num = down_cast<Num_t>(expr);
+	return (num->m_n == val);
+    }
+    return false;
+}
+
+/* Convert a var_sym_t to an expr_t*.  This is used to mimic the old way that common block
+ objects were stored as an expr, and decoded in ast_common_visitor. */
+static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
+    if (vs.n_dim == 0) {
+	// There aren't any dimensions, just make a name
+	return EXPR(make_Name_t(al, vs.loc, vs.m_name, nullptr, 0));
+    } else {
+	// Convert each dimension_t to fnarg_t
+	fnarg_t* args = al.allocate<fnarg_t>(vs.n_dim);
+	fnarg_t* ca = args;
+	for (size_t i = 0; i < vs.n_dim; ++i) {
+	    dimension_t const &d = vs.m_dim[i];
+	    ca->loc = d.loc;
+	    if (has_num_val(d.m_start, 1))
+		ca->m_start = nullptr;
+	    else
+		ca->m_start = d.m_start;
+	    ca->m_end = d.m_end;
+	    ca->m_step = nullptr;
+	    ca->m_label = 0;
+	    ++ca;
+	}
+	return EXPR(make_FuncCallOrArray_t(al, vs.loc, vs.m_name,
+					   nullptr, 0, /* member */
+					   args, vs.n_dim,
+					   nullptr, 0, /* keywords */
+					   nullptr, 0, /* subargs */
+					   nullptr, 0 /* temp_args */ ));
+    }
+}
+
 static inline ast_t* make_common_decl(Allocator &al, const Location &a_loc,
         decl_attribute_t** a_attributes, Vec<common_block_t> const &blks, trivia_t* a_trivia) {
 
     /* Flatten the blks into a single Vec<var_sym_t> that alternates between
        block names (with m_sym==Slash) and common-block-object var_sym's
-       (with m_sym == None */
+       (with m_sym == None) */
     size_t n{blks.size()};
     for(common_block_t const &b : blks) {
 	n += b.n_objects;
@@ -442,7 +483,10 @@ static inline ast_t* make_common_decl(Allocator &al, const Location &a_loc,
 	    r->m_codim = nullptr;
 	    r->n_codim = 0;
 	    r->m_length = nullptr;
-	    r->m_initializer = nullptr;
+	    /* This next line is required because we are using the existing machinery in
+	       ast_common_visitor to create the common block object entry. This is duplicate
+	       work for what we already have in the r->m_dim field. */
+	    r->m_initializer = dims2expr(al, *curr_obj);
 	    r->m_sym = LCompilers::LFortran::AST::symbolType::None;
 	    r->m_spec = nullptr;
 	    ++r;
