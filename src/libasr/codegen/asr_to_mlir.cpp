@@ -391,6 +391,28 @@ public:
         builder->setInsertionPointToStart(contBlock);
     }
 
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        mlir::Block *thisBlock = builder->getBlock();
+        mlir::Block *headBlock = builder->createBlock(thisBlock->getParent());
+        mlir::Block *bodyBlock = builder->createBlock(thisBlock->getParent());
+        mlir::Block *contBlock = builder->createBlock(thisBlock->getParent());
+
+        builder->setInsertionPointToEnd(thisBlock);
+        builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, headBlock);
+
+        builder->setInsertionPointToStart(headBlock);
+        this->visit_expr(*x.m_test);
+        builder->create<mlir::LLVM::CondBrOp>(loc, tmp, bodyBlock, contBlock);
+
+        builder->setInsertionPointToStart(bodyBlock);
+        for (size_t i=0; i<x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, headBlock);
+
+        builder->setInsertionPointToStart(contBlock);
+    }
+
     void visit_ErrorStop(const ASR::ErrorStop_t &) {
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp printf_fn =
