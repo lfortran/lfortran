@@ -3334,7 +3334,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     char** arg = va_arg(args, char**);
 
     int n = strlen(*arg);
-    *arg = (char*)malloc(n * sizeof(char));
+    *arg = (char*)malloc((n + 1) * sizeof(char));
     const char SPACE = ' ';
 
     if (unit_num == -1) {
@@ -3352,12 +3352,11 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
                 *iostat = 0;
             }
 
-            (buffer)[strcspn(buffer, "\n")] = 0;
+            size_t input_length = strcspn(buffer, "\n");
 
-            size_t input_length = strlen(buffer);
             *chunk = input_length;
             while (input_length < n) {
-                strncat(buffer, &SPACE, 1);
+                buffer[input_length] = SPACE;
                 input_length++;
             }
             strcpy(*arg, buffer);
