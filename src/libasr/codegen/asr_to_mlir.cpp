@@ -218,6 +218,34 @@ public:
         tmp = createGlobalString(x.m_s);
     }
 
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        int bound_value = -1;
+        ASR::ttype_t *arr_type = ASRUtils::expr_type(x.m_v);
+        if (is_a<ASR::Array_t>(*arr_type)) {
+            ASR::Array_t *arr = down_cast<ASR::Array_t>(arr_type);
+            int dim = -1;
+            if (ASRUtils::extract_value(x.m_dim, dim)) {
+                if (x.m_bound == ASR::arrayboundType::LBound) {
+                    ASRUtils::extract_value(arr->m_dims[dim-1].m_start,
+                        bound_value);
+                } else {
+                    ASRUtils::extract_value(arr->m_dims[dim-1].m_length,
+                        bound_value);
+                }
+            } else {
+                throw CodeGenError("Runtime `dim` in ArrayBound is not "
+                    "supported yet", x.base.base.loc);
+            }
+        } else {
+            throw CodeGenError("The type `"+
+                ASRUtils::type_to_str_python(arr_type)
+                +"` is not supported yet", x.base.base.loc);
+        }
+        tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                    builder->getI32Type(),
+                    builder->getI32IntegerAttr(bound_value)).getResult();
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
@@ -263,7 +291,7 @@ public:
         mlir::Value m_v = tmp;
 
         LCOMPILERS_ASSERT(x.n_args == 1);
-        this->visit_expr(*x.m_args[0].m_right);
+        this->visit_expr2(*x.m_args[0].m_right);
         mlir::Value idx = tmp;
 
         if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(
@@ -275,10 +303,11 @@ public:
             builder->getI64Type(), builder->getIndexAttr(1));
 
         idx = builder->create<mlir::LLVM::SubOp>(loc, idx, one);
-        mlir::Type basePtrType = mlir::LLVM::LLVMPointerType::get(getType(
-            ASRUtils::extract_type(ASRUtils::expr_type(x.m_v))));
-        tmp = builder->create<mlir::LLVM::GEPOp>(loc, basePtrType, m_v,
-            mlir::ValueRange{idx});
+        mlir::Type baseType = mlir::LLVM::LLVMPointerType::get(getType(x.m_type));
+        mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+            builder->getI64Type(), builder->getIndexAttr(0));
+        tmp = builder->create<mlir::LLVM::GEPOp>(loc, baseType, m_v,
+            mlir::ValueRange{zero, idx});
     }
 
 
