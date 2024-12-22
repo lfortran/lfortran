@@ -2058,8 +2058,14 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
     ASSERT_MSG(((*x != NULL) && (*x_string_size <= (*x_string_capacity - 1))) ||
         (*x == NULL && *x_string_size == 0 && *x_string_capacity == 0) , "%s",
     "compiler-behavior error : string x_string_capacity < string size");
+    
+    if(y == NULL){
+        fprintf(stderr,
+        "Runtime Error : RHS allocatable-character variable must be allocated before assignment.\n");
+        exit(1);
+    }
     size_t y_len, x_len; 
-    y_len= strlen(y); 
+    y_len = strlen(y); 
     x_len = y_len;
 
     if (*x == NULL) {
@@ -2080,13 +2086,19 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
 
 LFORTRAN_API void _lfortran_strcpy_pointer_string(char** x, char *y)
 {
-    size_t y_len = strlen(y);
+    if(y == NULL){
+        fprintf(stderr,
+        "Runtime Error : RHS allocatable-character variable must be allocated before assignment.\n");
+        exit(1);
+    }
+    size_t y_len;
+    y_len = strlen(y); 
     // A workaround :
     // every LHS string that's not allocatable should have been
     // allocated a fixed-size-memory space that stays there for the whole life time of the program.
     if( *x == NULL ) {
         *x = (char*) malloc((y_len + 1) * sizeof(char));
-        _lfortran_string_init(strlen(y) + 1, *x);
+        _lfortran_string_init(y_len + 1, *x);
     }
     for (size_t i = 0; i < strlen(*x); i++) {
         if (i < y_len) {
