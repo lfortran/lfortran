@@ -2232,9 +2232,10 @@ public:
         struct_type->n_members = members.size();
     }
 
-    ASR::Variable_t* extract_common_variable(AST::expr_t* expr, Location loc, Location var_loc) {
+
+    ASR::Variable_t* extract_common_variable(AST::expr_t const* expr, Location loc, Location var_loc) {
         this->visit_expr(*expr);
-        ASR::Variable_t* var_;
+        ASR::Variable_t* var_{nullptr};
         if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
             ASR::expr_t* array = array_item->m_v;
@@ -2287,8 +2288,9 @@ public:
         return var_;
     }
 
-    void populate_common_dictionary(const AST::Declaration_t &x, ASR::symbol_t* common_block_struct_sym, ASR::Struct_t* struct_type, std::string common_block_name, size_t &i) {
-        AST::var_sym_t& s = x.m_syms[i];
+    void populate_common_dictionary(const AST::Declaration_t &x, ASR::symbol_t* common_block_struct_sym,
+				    ASR::Struct_t* struct_type, std::string common_block_name, size_t &i) {
+        AST::var_sym_t & s = x.m_syms[i];
         if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
             // create a new common_block pair
             std::vector<ASR::expr_t*> common_block_variables;
@@ -2366,9 +2368,10 @@ public:
                     i-=1;
                 }
             } else {
+		// Not previously declared in a different program, create a new entry.
                 AST::expr_t* expr = s.m_initializer;
-                this->visit_expr(*expr);
-                ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+		this->visit_expr(*expr);
+		ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
                 uint64_t hash = get_hash((ASR::asr_t*) var_);
                 common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
                 common_variables_hash[hash] = common_block_struct_sym;
@@ -2609,7 +2612,7 @@ public:
                     } else {
                         // Example:
                         // private :: x, y, z
-                        std::string common_block_name = "";
+                        std::string common_block_name;
                         ASR::symbol_t* common_block_struct_sym = nullptr;
                         ASR::Struct_t* struct_type = nullptr;
                         for (size_t i=0; i<x.n_syms; i++) {
@@ -2617,60 +2620,47 @@ public:
                             if (s.m_name == nullptr) {
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
-                                    if (struct_type) {  /* no name field, in an open block */
-                                        is_common_variable = true;
-                                        // add to existing common_block pair
-                                        AST::expr_t* expr = s.m_initializer;
-                                        this->visit_expr(*expr);
-                                        ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
-                                        uint64_t hash = get_hash((ASR::asr_t*) var_);
-                                        common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
-                                        common_variables_hash[hash] = common_block_struct_sym;
-                                        add_sym_to_struct(var_, struct_type);
-                                        is_common_variable = false;
-                                    } else { /* no name field, no open block */
-                                        is_common_variable = true;
-                                        common_block_name = "blank_block";
-                                        common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
-                                        struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
-                                        populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
-                                        is_common_variable = false;
-                                    }
-                                } else {
-                                    if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
-                                        // Operator Overloading Encountered
-                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                            overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-                                        } else {
-                                            overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-                                        }
-                                    } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
-                                        // Assignment Overloading Encountered
-                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                            assgn[current_scope] = ASR::Public;
-                                        } else {
-                                            assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
-                                        }
-                                        } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
-                                        //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
-                                        // Custom Operator Overloading Encountered
-                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                            overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-                                        } else {
-                                            overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-                                        }
-                                    } else {
-                                        diag.add(Diagnostic(
-                                            "Attribute type not implemented yet.",
-                                            Level::Error, Stage::Semantic, {
-                                                Label("",{x.base.base.loc})
-                                            }));
-                                        throw SemanticAbort();
-                                    }
-                                }
+				    is_common_variable = true;
+				    LCOMPILERS_ASSERT(s.m_sym == AST::symbolType::Slash);
+				    common_block_name = "blank#block";
+				    common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
+				    struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
+				    is_common_variable = false;
+				} else {
+				    if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
+					// Operator Overloading Encountered
+					if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+					} else {
+					    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+					}
+				    } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
+					// Assignment Overloading Encountered
+					if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					    assgn[current_scope] = ASR::Public;
+					} else {
+					    assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
+					}
+				    } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
+					//std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
+					// Custom Operator Overloading Encountered
+					if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+					} else {
+					    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+					}
+				    } else {
+					diag.add(Diagnostic(
+						     "Attribute type not implemented yet.",
+						     Level::Error, Stage::Semantic, {
+							 Label("",{x.base.base.loc})
+						     }));
+					throw SemanticAbort();
+				    }
+				}
                             } else {
                                 std::string sym = to_lower(s.m_name);
                                 if (sa->m_attr == AST::simple_attributeType
@@ -2748,13 +2738,19 @@ public:
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
-					   ::AttrCommon) { /* name field -> new block to open */
-                                    is_common_variable = true;
-                                    common_block_name = sym;
-                                    common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
-                                    struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
-                                    // populate common_block_dictionary
-                                    populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
+					   ::AttrCommon) {
+				    is_common_variable = true;
+				    if (s.m_sym == AST::symbolType::Slash) { /* new block name */
+					if (s.m_name)
+					    common_block_name = sym;
+					else
+					    common_block_name = "blank#block";
+                                        common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
+                                        struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
+				    } else { /* common-block-object */
+					LCOMPILERS_ASSERT(struct_type);
+                                        populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
+   				    }
                                     is_common_variable = false;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
