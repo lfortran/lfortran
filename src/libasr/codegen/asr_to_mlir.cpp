@@ -280,6 +280,33 @@ public:
         }
     }
 
+    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+        this->visit_expr2(*x.m_left);
+        mlir::Value left = tmp;
+        this->visit_expr2(*x.m_right);
+        mlir::Value right = tmp;
+        mlir::LLVM::ICmpPredicate op;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq: {
+                op = mlir::LLVM::ICmpPredicate::eq; break;
+            } case ASR::cmpopType::Lt: {
+                op = mlir::LLVM::ICmpPredicate::slt; break;
+            } case ASR::cmpopType::LtE: {
+                op = mlir::LLVM::ICmpPredicate::sle; break;
+            } case ASR::cmpopType::Gt: {
+                op = mlir::LLVM::ICmpPredicate::sgt; break;
+            } case ASR::cmpopType::GtE: {
+                op = mlir::LLVM::ICmpPredicate::sge; break;
+            } case ASR::cmpopType::NotEq: {
+                op = mlir::LLVM::ICmpPredicate::ne; break;
+            }
+            default:
+                throw CodeGenError("Compare operator not supported yet",
+                    x.base.base.loc);
+        }
+        tmp = builder->create<mlir::LLVM::ICmpOp>(loc, op, left, right);
+    }
+
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
         this->visit_expr(*x.m_v);
         mlir::Value m_v = tmp;
