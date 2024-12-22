@@ -2954,6 +2954,31 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
         al, loc, type, m_dims, n_dims, physical_type));
 }
 
+static inline ASR::asr_t* make_StructType_t_util(Allocator& al,
+                                                 Location loc,
+                                                 ASR::symbol_t* derived_type_sym)
+{
+    ASR::Struct_t* derived_type = ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(derived_type_sym));
+
+    Vec<ASR::ttype_t*> member_types;
+    member_types.reserve(al, derived_type->m_symtab->get_scope().size());
+
+    for (auto const& sym : derived_type->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Variable_t>(*sym.second)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(sym.second));
+            member_types.push_back(al, var->m_type);
+        } else if (ASR::is_a<ASR::ClassProcedure_t>(*sym.second)) {
+            ASR::ClassProcedure_t* c_proc = ASR::down_cast<ASR::ClassProcedure_t>(
+                ASRUtils::symbol_get_past_external(sym.second));
+            member_types.push_back(
+                al, ASR::down_cast<ASR::Function_t>(c_proc->m_proc)->m_function_signature);
+        }
+    }
+    return ASR::make_StructType_t(al, loc, member_types.p, member_types.n, derived_type_sym);
+}
+
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
 // Returns `false` if the `ttype_t` does not have a dimension member.
 inline bool ttype_set_dimensions(ASR::ttype_t** x,
