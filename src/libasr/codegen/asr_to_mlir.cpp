@@ -184,11 +184,15 @@ public:
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        mlir::Type type; mlir::IntegerAttr attr;
         switch (kind) {
             case 4: {
-                tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
-                    builder->getI32Type(),
-                    builder->getI32IntegerAttr(x.m_n)).getResult();
+                type = builder->getI32Type();
+                attr = builder->getI32IntegerAttr(x.m_n);
+                break;
+            } case 8: {
+                type = builder->getI64Type();
+                attr = builder->getI64IntegerAttr(x.m_n);
                 break;
             }
             default:
@@ -196,15 +200,21 @@ public:
                     std::to_string(kind) +"` is not supported yet",
                     x.base.base.loc);
         }
+        tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, attr).getResult();
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        mlir::Type type; mlir::FloatAttr attr;
         switch (kind) {
             case 4: {
-                tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
-                    builder->getF32Type(),
-                    builder->getF32FloatAttr(x.m_r)).getResult();
+                type = builder->getF32Type();
+                attr = builder->getF32FloatAttr(x.m_r);
+                break;
+            } case 8: {
+                type = builder->getF64Type();
+                attr = builder->getF64FloatAttr(x.m_r);
                 break;
             }
             default:
@@ -212,6 +222,8 @@ public:
                     std::to_string(kind) +"` is not supported yet",
                     x.base.base.loc);
         }
+        tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, attr).getResult();
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
