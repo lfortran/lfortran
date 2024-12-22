@@ -31,7 +31,7 @@ program continue_compilation_2
 
     integer, pointer, parameter :: v => null()
     integer, allocatable, parameter :: v=1
-    integer x = 1
+    integer init_x = 1
 
     ! Variable declarations
     type(c_ptr) :: queries_1
