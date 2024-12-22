@@ -239,9 +239,14 @@ public:
             case ASR::binopType::Add: {
                 tmp = builder->create<mlir::LLVM::AddOp>(loc, left, right);
                 break;
-            }
-            case ASR::binopType::Mul: {
+            } case ASR::binopType::Sub: {
+                tmp = builder->create<mlir::LLVM::SubOp>(loc, left, right);
+                break;
+            } case ASR::binopType::Mul: {
                 tmp = builder->create<mlir::LLVM::MulOp>(loc, left, right);
+                break;
+            } case ASR::binopType::Div: {
+                tmp = builder->create<mlir::LLVM::SDivOp>(loc, left, right);
                 break;
             }
             default:
@@ -259,9 +264,14 @@ public:
             case ASR::binopType::Add: {
                 tmp = builder->create<mlir::LLVM::FAddOp>(loc, left, right);
                 break;
-            }
-            case ASR::binopType::Mul: {
+            } case ASR::binopType::Sub: {
+                tmp = builder->create<mlir::LLVM::FSubOp>(loc, left, right);
+                break;
+            } case ASR::binopType::Mul: {
                 tmp = builder->create<mlir::LLVM::FMulOp>(loc, left, right);
+                break;
+            } case ASR::binopType::Div: {
+                tmp = builder->create<mlir::LLVM::FDivOp>(loc, left, right);
                 break;
             }
             default:
