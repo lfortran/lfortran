@@ -330,6 +330,38 @@ public:
             mlir::ValueRange{idx});
     }
 
+    void visit_If(const ASR::If_t &x) {
+        this->visit_expr(*x.m_test);
+        mlir::Value test = tmp;
+
+        mlir::Block *thisBlock = builder->getBlock();
+        mlir::Block *thenBlock = builder->createBlock(thisBlock->getParent());
+        mlir::Block *elseBlock = builder->createBlock(thisBlock->getParent());
+        mlir::Block *contBlock = builder->createBlock(thisBlock->getParent());
+
+        builder->setInsertionPointToEnd(thisBlock);
+        builder->create<mlir::LLVM::CondBrOp>(loc, test, thenBlock, elseBlock);
+        builder->setInsertionPointToStart(thenBlock);
+        for (size_t i=0; i<x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        if (!(!thenBlock->empty() &&
+                mlir::isa<mlir::LLVM::UnreachableOp>(thenBlock->back()))) {
+            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, contBlock);
+        }
+
+        builder->setInsertionPointToStart(elseBlock);
+        for (size_t i=0; i<x.n_orelse; i++) {
+            this->visit_stmt(*x.m_orelse[i]);
+        }
+        if (!(!elseBlock->empty() &&
+            mlir::isa<mlir::LLVM::UnreachableOp>(elseBlock->back()))) {
+            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, contBlock);
+        }
+
+        builder->setInsertionPointToStart(contBlock);
+    }
+
     void visit_ErrorStop(const ASR::ErrorStop_t &) {
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp printf_fn =
