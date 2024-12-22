@@ -330,6 +330,40 @@ public:
             mlir::ValueRange{idx});
     }
 
+    void visit_ErrorStop(const ASR::ErrorStop_t &) {
+        mlir::OpBuilder builder0(module->getBodyRegion());
+        mlir::LLVM::LLVMFuncOp printf_fn =
+            module->lookupSymbol<mlir::LLVM::LLVMFuncOp>("printf");
+        if (!printf_fn) {
+            mlir::LLVM::LLVMVoidType voidTy =
+                mlir::LLVM::LLVMVoidType::get(context.get());
+            mlir::LLVM::LLVMFunctionType llvmFnType =
+                mlir::LLVM::LLVMFunctionType::get(voidTy, llvmI8PtrTy, true);
+            printf_fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
+                loc, "printf", llvmFnType);
+        }
+        mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+            builder->getI64Type(), builder->getIndexAttr(0));
+        tmp = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
+            createGlobalString("ERROR STOP\n"), zero);
+        builder->create<mlir::LLVM::CallOp>(loc, printf_fn, tmp);
+
+        mlir::LLVM::LLVMFuncOp exit_fn =
+            module->lookupSymbol<mlir::LLVM::LLVMFuncOp>("exit");
+        if (!exit_fn) {
+            mlir::LLVM::LLVMVoidType voidTy =
+                mlir::LLVM::LLVMVoidType::get(context.get());
+            mlir::LLVM::LLVMFunctionType llvmFnType =
+                mlir::LLVM::LLVMFunctionType::get(voidTy, builder->getI32Type());
+            exit_fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
+                loc, "exit", llvmFnType);
+        }
+        mlir::LLVM::ConstantOp one = builder->create<mlir::LLVM::ConstantOp>(
+            loc, builder->getI32Type(), builder->getI32IntegerAttr(1));
+        builder->create<mlir::LLVM::CallOp>(loc, exit_fn, one.getResult());
+
+        builder->create<mlir::LLVM::UnreachableOp>(loc);
+    }
 
     void handle_Print(const Location &l, ASR::expr_t *x) {
         std::string fmt = "";
