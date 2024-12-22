@@ -2282,16 +2282,29 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                             ASR::expr_t* itr = PassUtils::create_var(
                                 0, "itr", array_item_target->base.base.loc, integer_type, al, current_scope);
 
-                            ASR::ttype_t* temporary_array_type = ASRUtils::expr_type(array_item_value->m_v);
-                            ASR::dimension_t* m_dims =nullptr;
-                            ASRUtils::extract_dimensions_from_ttype(temporary_array_type, m_dims);
+                            ASR::expr_t* temporary_array_size = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                al, array_item_value->m_v->base.loc, array_item_value->m_v,
+                                nullptr, integer_type, nullptr));
+
+                            Vec<ASR::dimension_t> temporary_array_dims;
+                            temporary_array_dims.reserve(al, 1);
+
+                            ASR::dimension_t temporary_array_dim;
+                            temporary_array_dim.loc = array_item_value->m_v->base.loc;
+                            temporary_array_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, array_item_value->m_v->base.loc, 1, integer_type));
+                            temporary_array_dim.m_length = temporary_array_size;
+                            temporary_array_dims.push_back(al, temporary_array_dim);
+
+                            ASR::ttype_t* temporary_array_type = ASRUtils::TYPE(ASR::make_Array_t(
+                                al, array_item_value->m_v->base.loc, integer_type,
+                                temporary_array_dims.p, temporary_array_dims.size(),
+                                ASR::array_physical_typeType::PointerToDataArray));
+
                             ASR::expr_t* temporary_array = PassUtils::create_var(
                                 0, "_temporary_value", array_item_value->m_v->base.loc,
                                 ASRUtils::duplicate_type(al, temporary_array_type), al, current_scope);
 
-                            ASR::expr_t* temporary_array_size = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                                al, array_item_value->m_v->base.loc, array_item_value->m_v,
-                                nullptr, integer_type, nullptr));
 
                             Vec<ASR::expr_t*> temporary_idx_vars;
                             PassUtils::create_idx_vars(temporary_idx_vars, 1, array_item_value->m_v->base.loc, al, current_scope);
