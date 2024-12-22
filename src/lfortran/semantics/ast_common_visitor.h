@@ -2305,13 +2305,26 @@ public:
             // add variable to struct
             add_sym_to_struct(var_, struct_type);
         } else {
+	    /* Count the number of common-block-objects.  This isn't correct: it basically
+	       assumes that (1) there is only one common-block definition per COMMON
+	       statement, and (2) all common-block-objects are listed in a single
+	       common-block definition. Neither of those is a requirement from the standard,
+	       but that's what was implemented previously. */
+	    size_t num_cb_objs{0};
+	    for (size_t j = i; j < x.n_syms; ++j) {
+		if (x.m_syms[j].m_sym != AST::symbolType::Slash) {
+		    num_cb_objs += 1;
+		}
+	    }
             // check if it has been already declared in any other program
             if (!common_block_dictionary[common_block_name].first) {
                 // already declared in some other program, verify the order of variables
-                std::vector<ASR::expr_t*> common_block_variables = common_block_dictionary[common_block_name].second;
-                if (common_block_variables.size() != x.n_syms) {
+                std::vector<ASR::expr_t*> common_block_variables =
+		    common_block_dictionary[common_block_name].second;
+                if (common_block_variables.size() != num_cb_objs) {
                     diag.add(Diagnostic(
-                        "The order of variables in common block must be same in all programs",
+                        "The number of variables in a common block must be the"
+			" same in all programs",
                         Level::Error, Stage::Semantic, {
                             Label("",{x.base.base.loc})
                         }));
