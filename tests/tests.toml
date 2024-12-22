@@ -1367,6 +1367,10 @@ filename = "derived_types_09.f90"
 ast = true
 
 [[test]]
+filename = "derived_types_10.f90"
+asr = true
+
+[[test]]
 filename = "modules1.f90"
 asr = true
 extrafiles = "modules1_module1.f90, modules1_module2.f90"
