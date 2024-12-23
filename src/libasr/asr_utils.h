@@ -1188,6 +1188,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
                     ASRUtils::symbol_get_past_external(var_t->m_v));
                 return variable_t->m_storage == ASR::storage_typeType::Parameter;
+            } else if(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(var_t->m_v))){
+                return true;
             } else {
                 return false;
             }
