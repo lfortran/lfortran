@@ -1378,7 +1378,7 @@ namespace LCompilers {
                         Vec<ASR::expr_t*> temp_idx_vars;
                         Vec<ASR::stmt_t*> doloop_body;
                         create_do_loop(al, loc, array_item, idx_vars, temp_idx_vars, doloop_body,
-                            [=, &idx_vars, &doloop_body, &builder, &al, &perform_cast, &cast_kind, &casted_type, &temp_idx_vars] () {
+                            [=, &temp_idx_vars, &doloop_body, &builder, &al, &perform_cast, &cast_kind, &casted_type] () {
                             ASR::expr_t* ref = PassUtils::create_array_ref(array_item->m_v, temp_idx_vars, al,
                                 current_scope, perform_cast, cast_kind, casted_type);
                             ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
