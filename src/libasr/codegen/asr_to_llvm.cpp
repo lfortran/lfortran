@@ -8167,7 +8167,7 @@ public:
     void visit_FileClose(const ASR::FileClose_t &x) {
         llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
-        unit_val = tmp;
+        unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         std::string runtime_func_name = "_lfortran_close";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
