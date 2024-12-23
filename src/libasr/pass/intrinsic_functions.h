@@ -3971,7 +3971,9 @@ namespace Real {
         else{
             ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
             int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-            set_kind_to_ttype_t(return_type, kind);
+            if (kind == 4 || kind == 8){  // As real is only supported for kind 4 and 8
+                set_kind_to_ttype_t(return_type, kind);
+            }
         }
         ASR::expr_t *m_value = nullptr;
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
