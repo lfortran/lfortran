@@ -2719,11 +2719,6 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         self.emit(    'Location loc;', 2)
         self.emit(    'loc.first = self().read_int64();', 2)
         self.emit(    'loc.last = self().read_int64();', 2)
-        if subs["lcompiler"] == "lfortran":
-            # Set the location to 0 for now, since we do not yet
-            # support multiple files
-            self.emit(    'loc.first = 0;', 2)
-            self.emit(    'loc.last = 0;', 2)
         for line in lines:
             self.emit(line, 2)
         self.emit(    'return %s::make_%s_t(%s);' % (subs["MOD"], name, ", ".join(args)), 2)
