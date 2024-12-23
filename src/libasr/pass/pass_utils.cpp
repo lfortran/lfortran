@@ -1363,6 +1363,40 @@ namespace LCompilers {
                         doloop_body.push_back(al, assign);
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
+                } 
+                else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) { 
+                    bool contains_array = false;
+                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(curr_init);
+                    for(size_t i = 0; i < array_item->n_args; i++) {
+                        ASR::expr_t* curr_arg = array_item->m_args[i].m_right;
+                        if(curr_arg && ASRUtils::is_array(ASRUtils::expr_type(curr_arg))) {
+                            contains_array = true;
+                        }
+                    }
+                    if(contains_array) {
+                        Vec<ASR::expr_t*> idx_vars;
+                        Vec<ASR::expr_t*> temp_idx_vars;
+                        Vec<ASR::stmt_t*> doloop_body;
+                        create_do_loop(al, loc, array_item, idx_vars, temp_idx_vars, doloop_body,
+                            [=, &idx_vars, &doloop_body, &builder, &al, &perform_cast, &cast_kind, &casted_type, &temp_idx_vars] () {
+                            ASR::expr_t* ref = PassUtils::create_array_ref(array_item->m_v, temp_idx_vars, al,
+                                current_scope, perform_cast, cast_kind, casted_type);
+                            ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
+                            ASR::stmt_t* assign = builder.Assignment(res, ref);
+                            doloop_body.push_back(al, assign);
+                            increment_by_one(idx_var, (&doloop_body))
+                        }, current_scope, result_vec);
+                    } else {
+                        ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
+                            al, current_scope);
+                        if( perform_cast ) {
+                            curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                        }
+                        ASR::stmt_t* assign = builder.Assignment(res, curr_init);
+                        result_vec->push_back(al, assign);
+                        increment_by_one(idx_var, result_vec)
+                    }
                 } else {
                     if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) &&
                         ASRUtils::use_experimental_simplifier ) {
