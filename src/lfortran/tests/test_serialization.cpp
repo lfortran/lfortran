@@ -110,10 +110,17 @@ void asr_mod(const std::string &src) {
     LCompilers::CompilerOptions compiler_options;
     ast0 = TRY(LCompilers::LFortran::parse(al, src, diagnostics, compiler_options));
     LCompilers::LocationManager lm;
+    lm.file_ends.push_back(0);
+    LCompilers::LocationManager::FileLocations file;
+    file.out_start.push_back(0); file.in_start.push_back(0); file.in_newlines.push_back(0);
+    file.in_filename = "test"; file.current_line = 1; file.preprocessor = false; file.out_start0.push_back(0);
+    file.in_start0.push_back(0); file.in_size0.push_back(0); file.interval_type0.push_back(0);
+    file.in_newlines0.push_back(0);
+    lm.files.push_back(file);
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast0,
         diagnostics, nullptr, false, compiler_options, lm));
 
-    std::string modfile = LCompilers::save_modfile(*asr, LCompilers::LocationManager());
+    std::string modfile = LCompilers::save_modfile(*asr, lm);
     LCompilers::SymbolTable symtab(nullptr);
     LCompilers::ASR::TranslationUnit_t *asr2 = LCompilers::load_modfile(al,
             modfile, true, symtab, lm);
