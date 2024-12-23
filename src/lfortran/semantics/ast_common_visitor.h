@@ -3027,6 +3027,26 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    
+
+                    if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic( 
+                            "`parameter` attribute conflicts with `allocatable` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    } else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic( 
+                            "`parameter` attribute conflicts with `pointer` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
+
                     if (s_intent == ASRUtils::intent_out && value_attr) {
                         diag.add(Diagnostic(
                             "`value` attribute conflicts with `intent(out)` attribute",
@@ -4552,7 +4572,7 @@ public:
                 }
                 if (args.p[i].m_step != nullptr
                     || (args.p[i].m_step == nullptr && args.p[i].m_right != nullptr
-                        && ASR::is_a<ASR::Array_t>(*ASRUtils::expr_type(args.p[i].m_right)))) {
+                        && ASRUtils::is_array(ASRUtils::expr_type(args.p[i].m_right)))) {
                     ASR::dimension_t empty_dim;
                     empty_dim.loc = loc;
                     empty_dim.m_start = nullptr;

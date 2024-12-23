@@ -500,12 +500,12 @@ jobs:
 
       - name: Test PRIMA
         shell: bash -e -l {0}
-        if: contains(matrix.llvm-version, '11') && contains(matrix.os, 'macos')
+        if: contains(matrix.llvm-version, '11')
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf13
-            git checkout b3f5b55c94b3b0b2568fe9af97a8e34a48cac7b4
+            git checkout -t origin/lf20
+            git checkout 6e61b35d4530ebc7e4ed3c5cc1c1594f25b4570b
             FC="$(pwd)/../src/bin/lfortran --cpp --skip-pass=pass_array_by_data" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
 
@@ -515,12 +515,12 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             FC="$(pwd)/src/bin/lfortran"
             cd pot3d
-            git checkout -t origin/lf1
-            git checkout 64f542d8ba3a58114fd1e995a1cd639965374b37
+            git checkout -t origin/lf3
+            git checkout 81ff23264eb31860dbc0e156050e877f03696d2d
             cd src
             $FC -c mpi.f90
             $FC -c psi_io.f90
-            $FC pot3d.F --cpp --implicit-interface --fixed-form --show-asr
+            $FC pot3d.F --cpp --implicit-interface --fixed-form --show-llvm
 
             cd ..
             git clean -fdx
@@ -529,7 +529,7 @@ jobs:
             cd src
             $FC --experimental-simplifier -c mpi.f90
             $FC --experimental-simplifier -c psi_io.f90
-            $FC --experimental-simplifier pot3d.F --cpp --implicit-interface --fixed-form --show-asr
+            $FC --experimental-simplifier pot3d.F --cpp --implicit-interface --fixed-form --show-llvm
 
 
       - name: Test Legacy Minpack (SciPy)

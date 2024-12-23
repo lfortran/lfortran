@@ -1,0 +1,13 @@
+{
+    "basename": "asr-show_errors1-cc473c3",
+    "cmd": "lfortran --show-errors --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/show_errors1.f90",
+    "infile_hash": "8170b98a784b460b9353a740f0f117160e3070b0f88fd4d9c98ebcaf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-show_errors1-cc473c3.stdout",
+    "stdout_hash": "543dfe881df4cfd9dcdfeecc321a67fe86bdd7f7a321d2e1ef00fd7e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

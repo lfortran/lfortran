@@ -2340,6 +2340,7 @@ int main_app(int argc, char *argv[]) {
         compiler_options.implicit_interface = true;
         compiler_options.print_leading_space = true;
         compiler_options.logical_casting = false;
+        compiler_options.po.realloc_lhs = true;
     } else if (arg_standard == "legacy") {
         // f23
         compiler_options.disable_style = true;
@@ -2554,12 +2555,7 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (show_errors) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_errors(arg_file, compiler_options);
-#else
-        std::cerr << "Compiler was not configured with LSP support (-DWITH_LSP), please build it again." << std::endl;
-        return 1;
-#endif
     }
     lfortran_pass_manager.use_default_passes();
     if (show_llvm) {

@@ -495,8 +495,8 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
             return ASRUtils::expr_abi(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
         }
         default:
-            throw LCompilersException("Cannot extract the ABI of " +
-                    ASRUtils::type_to_str_python(ASRUtils::expr_type(e)) + " expression.");
+            throw LCompilersException(std::string("Cannot extract the ABI of ") +
+                "ASR::exprType::" + std::to_string(e->type) + " expression.");
     }
 }
 
@@ -5060,9 +5060,9 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
                                                 int32_type, nullptr));
 }
 
-static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al) {
+static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al, bool for_type=true) {
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
-    return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr));
+    return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr, for_type));
 }
 
 static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {

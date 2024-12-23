@@ -919,7 +919,7 @@ namespace LCompilers {
         }
 
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
-            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type, 
+            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent, ASR::symbol_t* var_decl) {
             ASRUtils::import_struct_t(al, loc, var_type, var_intent, current_scope);
             ASR::asr_t* expr_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name), nullptr, 0,
@@ -1364,15 +1364,61 @@ namespace LCompilers {
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
                 } else {
-                    ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
-                        al, current_scope);
-                    if( perform_cast ) {
-                        curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
-                            al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                    if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) &&
+                        ASRUtils::use_experimental_simplifier ) {
+                        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                        ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, 1, ASRUtils::expr_type(idx_var)));
+                        ASR::expr_t* step = int32_one;
+                        ASR::expr_t* start = idx_var;
+                        ASR::expr_t* curr_init_array_size = ASRUtils::get_size(
+                            expr_duplicator.duplicate_expr(curr_init), al, false);
+                        Vec<ASR::array_index_t> array_section_index;
+                        array_section_index.reserve(al, 1);
+                        ASR::array_index_t index; index.loc = loc;
+                        ASR::expr_t* start_plus_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, loc, start, ASR::binopType::Add, curr_init_array_size,
+                            ASRUtils::expr_type(idx_var), nullptr));
+                        index.m_left = start; index.m_right = start_plus_size;
+                        index.m_step = step;
+                        array_section_index.push_back(al, index);
+
+                        ASR::ttype_t* type = nullptr;
+                        ASR::dimension_t dimension;
+                        dimension.loc = loc;
+                        dimension.m_start = int32_one;
+                        if( (ASRUtils::is_allocatable(ASRUtils::expr_type(curr_init)) ||
+                            ASRUtils::is_pointer(ASRUtils::expr_type(curr_init))) &&
+                            ASR::is_a<ASR::FunctionCall_t>(*curr_init) ) {
+                            dimension.m_length = nullptr;
+                        } else {
+                            ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, false);
+                            dimension.m_length = curr_init_array_size_for_type;
+                        }
+                        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+                        dims.push_back(al, dimension);
+                        type = ASRUtils::make_Array_t_util(al, loc,
+                            ASRUtils::type_get_past_array(
+                                ASRUtils::type_get_past_allocatable_pointer(
+                                    ASRUtils::expr_type(arr_var))),
+                            dims.p, dims.size());
+                        ASR::expr_t* res = ASRUtils::EXPR(ASR::make_ArraySection_t(
+                            al, loc, arr_var, array_section_index.p, 1, type, nullptr));
+                        ASR::stmt_t* assign = builder.Assignment(res, curr_init);
+                        result_vec->push_back(al, assign);
+                        ASR::stmt_t* inc_stmt = builder.Assignment(idx_var, expr_duplicator.duplicate_expr(start_plus_size));
+                        result_vec->push_back(al, inc_stmt);
+                    } else {
+                        ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
+                            al, current_scope);
+                        if( perform_cast ) {
+                            curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                        }
+                        ASR::stmt_t* assign = builder.Assignment(res, curr_init);
+                        result_vec->push_back(al, assign);
+                        increment_by_one(idx_var, result_vec)
                     }
-                    ASR::stmt_t* assign = builder.Assignment(res, curr_init);
-                    result_vec->push_back(al, assign);
-                    increment_by_one(idx_var, result_vec)
                 }
             }
         }

@@ -1029,6 +1029,10 @@ filename = "array15.f90"
 pass = "array_op"
 
 [[test]]
+filename = "array16.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
@@ -3812,6 +3816,7 @@ ast = true
 [[test]]
 filename = "errors/program_without_line_cc.f90"
 syntax_only_cc = true
+show_asr_with_cc = true
 
 [[test]]
 filename = "errors/program_without_line_02.f90"
@@ -4405,6 +4410,14 @@ filename = "errors/string_negative_start_index.f90"
 asr = true
 
 [[test]]
+filename = "errors/string_assignment_01.f90"
+run = true
+
+[[test]]
+filename = "errors/string_assignment_02.f90"
+run = true
+
+[[test]]
 filename = "errors/dimension_01.f90"
 asr = true
 
@@ -4439,3 +4452,7 @@ fortran = true
 [[test]]
 filename = "polymorphic_class_in_derived_type.f90"
 asr = true
+
+[[test]]
+filename = "errors/show_errors1.f90"
+show_errors = true
