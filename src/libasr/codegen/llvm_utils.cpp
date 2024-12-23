@@ -2197,6 +2197,19 @@ namespace LCompilers {
             }
         }
     }
+    llvm::Value* LLVMUtils::convert_kind(llvm::Value* val, llvm::Type* target_type){
+        LCOMPILERS_ASSERT(
+            (val->getType()->isIntegerTy() && target_type->isIntegerTy()) || 
+            (val->getType()->isFloatingPointTy() && target_type->isFloatingPointTy()));
+
+        if(val->getType()->getPrimitiveSizeInBits() == target_type->getPrimitiveSizeInBits()){
+            return val;
+        } else if(val->getType()->getPrimitiveSizeInBits() > target_type->getPrimitiveSizeInBits()){
+            return builder->CreateTrunc(val, target_type);
+        } else {
+            return builder->CreateSExt(val, target_type);
+        }
+    }
 
     LLVMList::LLVMList(llvm::LLVMContext& context_,
         LLVMUtils* llvm_utils_,

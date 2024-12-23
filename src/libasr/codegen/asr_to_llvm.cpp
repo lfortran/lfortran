@@ -7868,6 +7868,10 @@ public:
             is_string = ASRUtils::is_character(*expr_type(x.m_unit));
             this->visit_expr_wrapper(x.m_unit, true);
             unit_val = tmp;
+            if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_unit))){
+                // Convert the unit to 32 bit integer (We only support unit number up to 1000).
+                unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+            }
         }
 
         if (x.m_iostat) {
@@ -8009,7 +8013,7 @@ public:
         llvm::Value *unit_val = nullptr, *f_name = nullptr;
         llvm::Value *status = nullptr, *form = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
-        unit_val = tmp;
+        unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         int ptr_copy = ptr_loads;
         if (x.m_filename) {
             ptr_loads = 1;
@@ -8094,7 +8098,6 @@ public:
         } else {
             size_val = llvm_utils->CreateAlloca(*builder,
                             llvm::Type::getInt32Ty(context));
-            print_util(size_val);
         }
 
         std::string runtime_func_name = "_lfortran_inquire";
