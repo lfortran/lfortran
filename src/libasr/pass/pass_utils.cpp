@@ -1379,7 +1379,9 @@ namespace LCompilers {
                         ASR::expr_t* start_plus_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                             al, loc, start, ASR::binopType::Add, curr_init_array_size,
                             ASRUtils::expr_type(idx_var), nullptr));
-                        index.m_left = start; index.m_right = start_plus_size;
+                        index.m_left = start; index.m_right = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, loc, start_plus_size, ASR::binopType::Sub, int32_one,
+                            ASRUtils::expr_type(idx_var), nullptr));
                         index.m_step = step;
                         array_section_index.push_back(al, index);
 
@@ -1392,7 +1394,7 @@ namespace LCompilers {
                             ASR::is_a<ASR::FunctionCall_t>(*curr_init) ) {
                             dimension.m_length = nullptr;
                         } else {
-                            ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, false);
+                            ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, true);
                             dimension.m_length = curr_init_array_size_for_type;
                         }
                         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);

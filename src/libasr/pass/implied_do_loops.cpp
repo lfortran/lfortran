@@ -204,6 +204,21 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                                         element_array_size);
                     }
                 }
+            } else if( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*element)  &&
+                       ASRUtils::is_array(ASRUtils::expr_type(element)) &&
+                       ASRUtils::use_experimental_simplifier ) {
+                ASR::IntrinsicArrayFunction_t* intrinsic_element_t = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(element);
+                if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
+                    constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
+                } else {
+                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    if( array_size == nullptr ) {
+                        array_size = element_array_size;
+                    } else {
+                        array_size = builder.Add(array_size,
+                                        element_array_size);
+                    }
+                }
             } else {
                 constant_size += 1;
             }
