@@ -330,6 +330,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
             pass_result.push_back(al, allocate_stmt);
         }
+        for (size_t i = 0; i < x->n_args; i++) {
+            if(ASR::is_a<ASR::ArrayItem_t>(*x->m_args[i])){
+                ASR::expr_t** temp = current_expr;
+                current_expr = &(x->m_args[i]);
+                self().replace_expr(x->m_args[i]);
+                current_expr = temp;
+            }
+        }
         LCOMPILERS_ASSERT(result_var != nullptr);
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
         if (ASRUtils::use_experimental_simplifier) {
