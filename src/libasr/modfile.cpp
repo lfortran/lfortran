@@ -11,7 +11,7 @@ namespace LCompilers {
 
 const std::string lfortran_modfile_type_string = "LCompilers Modfile";
 
-inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string) {
+inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string, LCompilers::LocationManager lm) {
     #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryWriter b;
 #else
@@ -33,6 +33,71 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string) {
     // Export ASR:
     // Currently empty.
 
+    // Full LocationManager:
+    b.write_int32(lm.files.size());
+    for(auto file: lm.files) {
+        // std::vector<FileLocations> files;
+        b.write_string(file.in_filename);
+        b.write_int32(file.current_line);
+
+        // std::vector<uint32_t> out_start
+        b.write_int32(file.out_start.size());
+        for(auto i: file.out_start) {
+            b.write_int32(i);
+        }
+
+        // std::vector<uint32_t> in_start
+        b.write_int32(file.in_start.size());
+        for(auto i: file.in_start) {
+            b.write_int32(i);
+        }
+
+        // std::vector<uint32_t> in_newlines
+        b.write_int32(file.in_newlines.size());
+        for(auto i: file.in_newlines) {
+            b.write_int32(i);
+        }
+
+        // bool preprocessor
+        b.write_int32(file.preprocessor);
+
+        // std::vector<uint32_t> out_start0
+        b.write_int32(file.out_start0.size());
+        for(auto i: file.out_start0) {
+            b.write_int32(i);
+        }
+
+        // std::vector<uint32_t> in_start0
+        b.write_int32(file.in_start0.size());
+        for(auto i: file.in_start0) {
+            b.write_int32(i);
+        }
+
+        // std::vector<uint32_t> in_size0
+        b.write_int32(file.in_size0.size());
+        for(auto i: file.in_size0) {
+            b.write_int32(i);
+        }
+
+        // std::vector<uint32_t> interval_type0
+        b.write_int32(file.interval_type0.size());
+        for(auto i: file.interval_type0) {
+            b.write_int32(i);
+        }
+
+        // std::vector<uint32_t> in_newlines0
+        b.write_int32(file.in_newlines0.size());
+        for(auto i: file.in_newlines0) {
+            b.write_int32(i);
+        }
+    }
+
+    // std::vector<uint32_t> file_ends
+    b.write_int32(lm.file_ends.size());
+    for(auto i: lm.file_ends) {
+        b.write_int32(i);
+    }
+
     // Full ASR:
     b.write_string(serialize(m));
 
@@ -51,7 +116,7 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string) {
 
     Comments below show some possible future improvements to the mod format.
 */
-std::string save_modfile(const ASR::TranslationUnit_t &m) {
+std::string save_modfile(const ASR::TranslationUnit_t &m, LCompilers::LocationManager lm) {
     LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
     for (auto &a : m.m_symtab->get_scope()) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
