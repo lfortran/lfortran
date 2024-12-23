@@ -496,10 +496,12 @@ namespace LCompilers {
             // We tell `load_module` not to run verify, since the ASR might
             // not be in valid state. We run verify at the end of this pass
             // anyway, so verify will be run no matter what.
+            LCompilers::LocationManager loc_manager;
             ASR::Module_t *m = ASRUtils::load_module(al, current_scope,
                                             module_name, loc, true,
                                             pass_options, false,
-                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); }
+                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); },
+                                            loc_manager
                                             );
             ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
 
@@ -534,10 +536,12 @@ namespace LCompilers {
             // We tell `load_module` not to run verify, since the ASR might
             // not be in valid state. We run verify at the end of this pass
             // anyway, so verify will be run no matter what.
+            LCompilers::LocationManager loc_manager;
             ASR::Module_t *m = ASRUtils::load_module(al, current_scope,
                                             module_name, loc, true,
                                             pass_options, false,
-                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); });
+                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); },
+                                            loc_manager);
 
             ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
             ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);

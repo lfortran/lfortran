@@ -629,9 +629,10 @@ class DoConcurrentVisitor :
             }
             SetChar module_dependencies; module_dependencies.reserve(al, 1);
             module_dependencies.push_back(al, s2c(al, module_name));
+            LCompilers::LocationManager loc_manager;
             ASR::symbol_t* module_sym = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope,
                 module_name, loc, false, pass_options, true,
-                [&](const std::string &/*msg*/, const Location &/*loc*/) { }
+                [&](const std::string &/*msg*/, const Location &/*loc*/) { }, loc_manager
                 ));
             LCOMPILERS_ASSERT(module_sym != nullptr && ASR::is_a<ASR::Module_t>(*module_sym));
             current_scope = current_scope_copy;
@@ -645,9 +646,10 @@ class DoConcurrentVisitor :
             }
             SetChar module_dependencies; module_dependencies.reserve(al, 1);
             module_dependencies.push_back(al, s2c(al, "iso_c_binding"));
+            LCompilers::LocationManager loc_manager;
             ASR::symbol_t* iso_c_binding = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope,
                 "iso_c_binding", loc, false, pass_options, true,
-                [&](const std::string &/*msg*/, const Location &/*loc*/) { }
+                [&](const std::string &/*msg*/, const Location &/*loc*/) { }, loc_manager
                 ));
             LCOMPILERS_ASSERT(iso_c_binding != nullptr && ASR::is_a<ASR::Module_t>(*iso_c_binding));
             current_scope = al.make_new<SymbolTable>(current_scope);

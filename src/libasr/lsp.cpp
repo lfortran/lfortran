@@ -245,6 +245,7 @@ int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
         test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
+        test_capture.AddMember("filename", symbol.filename);
         test_output.PushBack(test_capture);
     }
     std::cout << test_output.GetValue();

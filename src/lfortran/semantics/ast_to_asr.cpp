@@ -31,7 +31,8 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure);
+        std::vector<ASR::stmt_t*> &data_structure,
+        LCompilers::LocationManager &lm);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
@@ -45,7 +46,8 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure);
+        std::vector<ASR::stmt_t*> &data_structure,
+        LCompilers::LocationManager &lm);
 
 void load_rtlib() {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
@@ -55,7 +57,7 @@ void load_rtlib() {
 Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
     SymbolTable *symbol_table, bool symtab_only,
-    CompilerOptions &compiler_options)
+    CompilerOptions &compiler_options, LCompilers::LocationManager &lm)
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
@@ -68,7 +70,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -98,7 +100,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
             implicit_mapping, common_variables_hash, external_procedures_mapping,
-            instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+            instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
         if (res.ok) {
             tu = res.result;
         } else {

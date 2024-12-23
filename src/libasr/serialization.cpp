@@ -61,13 +61,13 @@ class ASRDeserializationVisitor :
 {
 public:
     ASRDeserializationVisitor(Allocator &al, const std::string &s,
-        bool load_symtab_id) :
+        bool load_symtab_id, uint32_t offset) :
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
             BinaryReader(s),
 #else
             TextReader(s),
 #endif
-            DeserializationBaseVisitor(al, load_symtab_id) {}
+            DeserializationBaseVisitor(al, load_symtab_id, offset) {}
 
     bool read_bool() {
         uint8_t b = read_int8();
@@ -412,13 +412,13 @@ void fix_external_symbols(ASR::TranslationUnit_t &unit,
 }
 
 ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id, SymbolTable & /*external_symtab*/) {
-    return deserialize_asr(al, s, load_symtab_id);
+        bool load_symtab_id, SymbolTable & /*external_symtab*/, uint32_t offset) {
+    return deserialize_asr(al, s, load_symtab_id, offset);
 }
 
 ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id) {
-    ASRDeserializationVisitor v(al, s, load_symtab_id);
+        bool load_symtab_id, uint32_t offset) {
+    ASRDeserializationVisitor v(al, s, load_symtab_id, offset);
     ASR::asr_t *node = v.deserialize_node();
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(node);
 
