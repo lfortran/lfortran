@@ -1614,7 +1614,6 @@ filename = "builtin1.f90"
 ast = true
 ast_f90 = true
 
-
 [[test]]
 filename = "../integration_tests/interface_01.f90"
 ast = true
