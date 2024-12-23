@@ -2435,8 +2435,9 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         self.emit("public:")
         self.emit(  "Allocator &al;", 1)
         self.emit(  "bool load_symtab_id;", 1)
+        self.emit(  "uint32_t offset = 0;", 1)
         self.emit(  "std::map<uint64_t,SymbolTable*> id_symtab_map;", 1)
-        self.emit(  r"DeserializationBaseVisitor(Allocator &al, bool load_symtab_id) : al{al}, load_symtab_id{load_symtab_id} {}", 1)
+        self.emit(  r"DeserializationBaseVisitor(Allocator &al, bool load_symtab_id, uint32_t offset) : al{al}, load_symtab_id{load_symtab_id}, offset{offset} {}", 1)
         self.emit_deserialize_node();
         self.mod = mod
         super(DeserializationVisitorVisitor, self).visitModule(mod)
@@ -2717,8 +2718,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     args.append("m_%s" % (f.name))
 
         self.emit(    'Location loc;', 2)
-        self.emit(    'loc.first = self().read_int64();', 2)
-        self.emit(    'loc.last = self().read_int64();', 2)
+        self.emit(    'loc.first = self().read_int64() + offset;', 2)
+        self.emit(    'loc.last = self().read_int64() + offset;', 2)
         for line in lines:
             self.emit(line, 2)
         self.emit(    'return %s::make_%s_t(%s);' % (subs["MOD"], name, ", ".join(args)), 2)

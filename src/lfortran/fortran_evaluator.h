@@ -76,7 +76,7 @@ public:
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<ASR::TranslationUnit_t*> get_asr3(
         LCompilers::LFortran::AST::TranslationUnit_t &ast,
-        diag::Diagnostics &diagnostics);
+        diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm);
     Result<std::string> get_llvm(const std::string &code,
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
