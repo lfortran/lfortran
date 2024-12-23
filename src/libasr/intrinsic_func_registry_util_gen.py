@@ -850,13 +850,6 @@ intrinsic_funcs_args = {
             "return": "int32",
         },
     ],
-    "Real": [
-        {
-            "args": [("int",), ("real",), ("complex",)],
-            "return": "real32",
-            "kind_arg": True,
-        },
-    ],
     "Int": [
         {
             "args": [("int",), ("real",), ("complex",)],

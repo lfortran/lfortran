@@ -3919,6 +3919,17 @@ namespace Poppar {
 
 namespace Real {
 
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args == 1)  {
+            ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for Real expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+            ASRUtils::require_impl((is_integer(*arg_type0)) || (is_real(*arg_type0)) || (is_complex(*arg_type0)), "Unexpected args, Real expects (int) or (real) or (complex) as arguments", x.base.base.loc, diagnostics);
+        }
+        else {
+            ASRUtils::require_impl(false, "Unexpected number of args, Real takes 1 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
     static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
@@ -3934,6 +3945,64 @@ namespace Real {
             append_error(diag, "Invalid argument to `real` intrinsic", loc);
             return nullptr;
         }
+    }
+
+    static inline ASR::asr_t* create_Real(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() == 2)  {
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+            if(!((is_integer(*arg_type0)) || (is_real(*arg_type0)) || (is_complex(*arg_type0)))) {
+                append_error(diag, "Unexpected args, Real expects (int) or (real) or (complex) as arguments", loc);
+                return nullptr;
+            }
+        }
+        else {
+            append_error(diag, "Unexpected number of args, Real takes 2 arguments, found " + std::to_string(args.size()), loc);
+            return nullptr;
+        }
+        ASR::ttype_t *return_type = real32;
+        if ( args[1] != nullptr ) {
+            int kind = -1;
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(ASRUtils::expr_value(args[1]), kind)) {
+                append_error(diag, "`kind` argument of the `Real` function must be a scalar Integer constant", args[1]->base.loc);
+                return nullptr;
+            }
+            set_kind_to_ttype_t(return_type, kind);
+        }
+        else{
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            set_kind_to_ttype_t(return_type, kind);
+        }
+        ASR::expr_t *m_value = nullptr;
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        if (use_experimental_simplifier) {
+            for( size_t i = 0; i < 1; i++ ) {
+                ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
+                if (ASRUtils::is_array(type)) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                    return_type = ASRUtils::make_Array_t_util(al, type->base.loc, return_type, m_dims, n_dims, ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, true);
+                    break;
+                }
+            }
+        }
+        else {
+            ASR::ttype_t* type = ASRUtils::expr_type(args[0]);
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);
+                return_type = TYPE(ASR::make_Array_t(al, type->base.loc,  return_type, e->m_dims, e->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+            }
+        }
+        if (all_args_evaluated(m_args)) {
+            Vec<ASR::expr_t*> args_values; args_values.reserve(al, 1);
+            args_values.push_back(al, expr_value(m_args[0]));
+            m_value = eval_Real(al, loc, return_type, args_values, diag);
+            if (diag.has_error()) {
+                return nullptr;
+            }
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Real), m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Real(Allocator &al, const Location &loc,
