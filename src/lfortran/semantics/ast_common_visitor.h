@@ -1058,6 +1058,7 @@ public:
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
     std::vector<ASR::stmt_t*> &data_structure;
+    LCompilers::LocationManager &lm;
 
     // global save variable
     bool is_global_save_enabled = false;
@@ -1074,13 +1075,14 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
             std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-            std::vector<ASR::stmt_t*> &data_structure)
+            std::vector<ASR::stmt_t*> &data_structure,
+            LCompilers::LocationManager &lm)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols}, data_structure{data_structure} {
+          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -7895,7 +7897,7 @@ public:
                 [&](const std::string &msg, const Location &loc) { 
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
-                    }
+                    }, lm
                 );
 
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);

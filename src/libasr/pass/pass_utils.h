@@ -810,6 +810,48 @@ namespace LCompilers {
 
         template <typename LOOP_BODY>
         static inline void create_do_loop(Allocator& al, const Location& loc,
+            ASR::ArrayItem_t* array_item, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars, 
+            Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
+            Vec<ASR::stmt_t*>* result_vec) {
+            int value_rank = array_item->n_args;
+            PassUtils::create_idx_vars(idx_vars, value_rank, loc, al, current_scope, "_t");
+            LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
+            temp_idx_vars.reserve(al, array_item->n_args);
+            for( int i = 0; i < value_rank; i++ ) {
+                if(ASRUtils::is_array(ASRUtils::expr_type(array_item->m_args[i].m_right))){
+                    ASR::expr_t* ref = PassUtils::create_array_ref(array_item->m_args[i].m_right, idx_vars[i], al, current_scope);
+                    temp_idx_vars.push_back(al, ref);
+                } else { 
+                    temp_idx_vars.push_back(al, array_item->m_args[i].m_right);
+                }
+            }
+            ASR::stmt_t* doloop = nullptr;
+            for( int i = 0; i < value_rank; i++ ) {
+                ASR::do_loop_head_t head;
+                head.m_v = idx_vars[i];
+                if(ASRUtils::is_array(ASRUtils::expr_type(array_item->m_args[i].m_right))) {
+                    head.m_start = PassUtils::get_bound(array_item->m_args[i].m_right, 1, "lbound", al);
+                    head.m_end = PassUtils::get_bound(array_item->m_args[i].m_right, 1, "ubound", al);
+                    head.m_increment = nullptr;
+                } else {
+                    continue;
+                } 
+                head.loc = head.m_v->base.loc;
+
+                doloop_body.reserve(al, 1);
+                if( doloop == nullptr ) {
+                    loop_body();
+                } else {
+                    doloop_body.push_back(al, doloop);
+                }
+                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                    doloop_body.p, doloop_body.size(), nullptr, 0));
+            }
+            if(doloop != nullptr) result_vec->push_back(al, doloop);
+        }
+
+        template <typename LOOP_BODY>
+        static inline void create_do_loop(Allocator& al, const Location& loc,
             ASR::ArraySection_t* array_section, Vec<ASR::expr_t*>& idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {

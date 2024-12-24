@@ -496,10 +496,12 @@ namespace LCompilers {
             // We tell `load_module` not to run verify, since the ASR might
             // not be in valid state. We run verify at the end of this pass
             // anyway, so verify will be run no matter what.
+            LCompilers::LocationManager loc_manager;
             ASR::Module_t *m = ASRUtils::load_module(al, current_scope,
                                             module_name, loc, true,
                                             pass_options, false,
-                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); }
+                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); },
+                                            loc_manager
                                             );
             ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
 
@@ -534,10 +536,12 @@ namespace LCompilers {
             // We tell `load_module` not to run verify, since the ASR might
             // not be in valid state. We run verify at the end of this pass
             // anyway, so verify will be run no matter what.
+            LCompilers::LocationManager loc_manager;
             ASR::Module_t *m = ASRUtils::load_module(al, current_scope,
                                             module_name, loc, true,
                                             pass_options, false,
-                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); });
+                                            [&](const std::string &msg, const Location &) { throw LCompilersException(msg); },
+                                            loc_manager);
 
             ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
             ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
@@ -1363,6 +1367,40 @@ namespace LCompilers {
                         doloop_body.push_back(al, assign);
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
+                } 
+                else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) { 
+                    bool contains_array = false;
+                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(curr_init);
+                    for(size_t i = 0; i < array_item->n_args; i++) {
+                        ASR::expr_t* curr_arg = array_item->m_args[i].m_right;
+                        if(curr_arg && ASRUtils::is_array(ASRUtils::expr_type(curr_arg))) {
+                            contains_array = true;
+                        }
+                    }
+                    if(contains_array) {
+                        Vec<ASR::expr_t*> idx_vars;
+                        Vec<ASR::expr_t*> temp_idx_vars;
+                        Vec<ASR::stmt_t*> doloop_body;
+                        create_do_loop(al, loc, array_item, idx_vars, temp_idx_vars, doloop_body,
+                            [=, &temp_idx_vars, &doloop_body, &builder, &al, &perform_cast, &cast_kind, &casted_type] () {
+                            ASR::expr_t* ref = PassUtils::create_array_ref(array_item->m_v, temp_idx_vars, al,
+                                current_scope, perform_cast, cast_kind, casted_type);
+                            ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
+                            ASR::stmt_t* assign = builder.Assignment(res, ref);
+                            doloop_body.push_back(al, assign);
+                            increment_by_one(idx_var, (&doloop_body))
+                        }, current_scope, result_vec);
+                    } else {
+                        ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
+                            al, current_scope);
+                        if( perform_cast ) {
+                            curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
+                                al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
+                        }
+                        ASR::stmt_t* assign = builder.Assignment(res, curr_init);
+                        result_vec->push_back(al, assign);
+                        increment_by_one(idx_var, result_vec)
+                    }
                 } else {
                     if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) &&
                         ASRUtils::use_experimental_simplifier ) {
@@ -1379,7 +1417,9 @@ namespace LCompilers {
                         ASR::expr_t* start_plus_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                             al, loc, start, ASR::binopType::Add, curr_init_array_size,
                             ASRUtils::expr_type(idx_var), nullptr));
-                        index.m_left = start; index.m_right = start_plus_size;
+                        index.m_left = start; index.m_right = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, loc, start_plus_size, ASR::binopType::Sub, int32_one,
+                            ASRUtils::expr_type(idx_var), nullptr));
                         index.m_step = step;
                         array_section_index.push_back(al, index);
 
@@ -1392,7 +1432,7 @@ namespace LCompilers {
                             ASR::is_a<ASR::FunctionCall_t>(*curr_init) ) {
                             dimension.m_length = nullptr;
                         } else {
-                            ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, false);
+                            ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, true);
                             dimension.m_length = curr_init_array_size_for_type;
                         }
                         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);

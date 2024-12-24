@@ -96,7 +96,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     // AST -> ASR
-    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
+    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics, lm);
     ASR::TranslationUnit_t* asr;
     if (res2.ok) {
         asr = res2.result;
@@ -272,7 +272,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
         return res.error;
     }
     // AST -> ASR
-    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
+    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics, lm);
     if (res2.ok) {
         return res2.result;
     } else {
@@ -282,7 +282,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
 }
 
 Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
-    LFortran::AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics)
+    LFortran::AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm)
 {
     ASR::TranslationUnit_t* asr;
     // AST -> ASR
@@ -294,7 +294,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         symbol_table->mark_all_variables_external(al);
     }
     auto res = LFortran::ast_to_asr(al, ast, diagnostics, symbol_table,
-        compiler_options.symtab_only, compiler_options);
+        compiler_options.symtab_only, compiler_options, lm);
     if (res.ok) {
         asr = res.result;
     } else {
