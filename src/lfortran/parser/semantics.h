@@ -73,13 +73,15 @@ static inline bool streql(const char *s1, const char *s2)
 }
 
 static inline char* name2char_with_check(const ast_t *n1, const ast_t *n2,
-        Location &loc, std::string unit) {
+        Location &loc, std::string unit, LCompilers::diag::Diagnostics &diagnostics) {
     char* n1c = name2char(n1);
     if(n2) {
         char* n2c = name2char(n2);
         if (!streql(n1c, n2c)) {
-            throw LCompilers::LFortran::parser_local::ParserError(
-                "End " + unit + " name does not match " + unit + " name", loc);
+        //     throw LCompilers::LFortran::parser_local::ParserError(
+        //         "End " + unit + " name does not match " + unit + " name", loc);
+            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+                "End " + unit + " name does not match " + unit + " name", {loc}).d);
         }
     }
     return n1c;
@@ -1321,7 +1323,7 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 
 #define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) \
     make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "subroutine"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1346,7 +1348,7 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*end_name*/ &(name_opt->loc))
 #define SUBROUTINE1(fn_mod, name, args, bind, trivia, use, import, implicit, \
         decl, stmts, contains, name_opt, l) make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "subroutine"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
@@ -1399,7 +1401,7 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 }
 
 #define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1424,7 +1426,7 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*start_name*/ &(name->loc), \
         /*end_name*/ &(name_opt->loc))
 #define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*return_type*/ nullptr, \
@@ -1451,7 +1453,7 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1477,7 +1479,7 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*end_name*/ &(name_opt->loc))
 #define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1616,7 +1618,7 @@ return make_Program_t(al, a_loc,
 
 #define PROGRAM(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
     PROGRAM2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "program"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "program", p.diag), \
         trivia_cast(trivia), \
         /*use*/ USES(use), \
         /*n_use*/ use.size(), \
@@ -2293,7 +2295,7 @@ return make_Module_t(al, a_loc,
 
 #define MODULE(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
     MODULE2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "module"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "module", p.diag), \
         trivia_cast(trivia), \
         /*use*/ USES(use), \
         /*n_use*/ use.size(), \
@@ -2350,7 +2352,7 @@ return make_Submodule_t(al, a_loc,
     SUBMODULE2(p.m_a, l, \
         name2char(id), \
         nullptr, \
-        /*name*/ name2char_with_check(name, name_opt, l, "submodule"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "submodule", p.diag), \
         trivia_cast(trivia), \
         /*use*/ USES(use), \
         /*n_use*/ use.size(), \
@@ -2366,7 +2368,7 @@ return make_Submodule_t(al, a_loc,
     SUBMODULE2(p.m_a, l, \
         name2char(id), \
         name2char(parent_name), \
-        /*name*/ name2char_with_check(name, name_opt, l, "submodule"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "submodule", p.diag), \
         trivia_cast(trivia), \
         /*use*/ USES(use), \
         /*n_use*/ use.size(), \
