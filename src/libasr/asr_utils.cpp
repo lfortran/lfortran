@@ -1977,13 +1977,16 @@ ASR::asr_t* make_ArraySize_t_util(
             }
         } else {
             if( a_dim == nullptr ) {
+                LCOMPILERS_ASSERT(m_dims[0].m_length);
                 ASR::expr_t* result = m_dims[0].m_length;
                 for( size_t i = 1; i < n_dims; i++ ) {
+                    LCOMPILERS_ASSERT(m_dims[i].m_length);
                     result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
                         result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
                 }
                 return &(result->base);
             } else if( is_dimension_constant ) {
+                LCOMPILERS_ASSERT(m_dims[dim - 1].m_length);
                 return &(m_dims[dim - 1].m_length->base);
             }
         }
@@ -2038,6 +2041,29 @@ ASR::asr_t* make_ArraySize_t_util(
                 al, a_loc, endminusstart, ASR::binopType::Div, d, a_type, nullptr));
             return ASR::make_IntegerBinOp_t(al, a_loc, byd, ASR::binopType::Add,
                 ASRUtils::EXPR(const1), a_type, nullptr);
+        }
+    }
+    if( ASR::is_a<ASR::ArrayItem_t>(*a_v) ) {
+        ASR::ArrayItem_t* array_item_t = ASR::down_cast<ASR::ArrayItem_t>(a_v);
+        LCOMPILERS_ASSERT(ASRUtils::is_array(array_item_t->m_type));
+        if( for_type ) {
+            LCOMPILERS_ASSERT(!ASRUtils::is_allocatable(array_item_t->m_type) &&
+                              !ASRUtils::is_pointer(array_item_t->m_type));
+        }
+        if( a_dim == nullptr ) {
+            ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
+            ASR::asr_t* size = const1;
+            for( size_t i = 0; i < array_item_t->n_args; i++ ) {
+                ASR::expr_t* end = ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc,
+                    array_item_t->m_args[i].m_right, a_dim, a_type, nullptr, for_type));
+                size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
+                    ASR::binopType::Mul, end, a_type, nullptr);
+            }
+            return size;
+        } else if( is_dimension_constant ) {
+            return make_ArraySize_t_util(al, a_loc,
+                array_item_t->m_args[dim].m_right,
+                nullptr, a_type, nullptr, for_type);
         }
     }
     if( is_binop_expr(a_v) && for_type ) {
