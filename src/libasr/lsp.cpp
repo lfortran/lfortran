@@ -448,6 +448,7 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
         test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
+        test_capture.AddMember("filename", symbol.filename);
         test_output.PushBack(test_capture);
     }
 
