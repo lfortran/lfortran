@@ -408,8 +408,7 @@ decl_attribute_t** ATTRCOMMON(Allocator &al,
 
 
 static inline bool has_num_val(expr_t const * const expr, int64_t val) {
-
-    if (is_a<Num_t>(*expr)) {
+    if (expr && is_a<Num_t>(*expr)) {
 	Num_t const *num = down_cast<Num_t>(expr);
 	return (num->m_n == val);
     }
