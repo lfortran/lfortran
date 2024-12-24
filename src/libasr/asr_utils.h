@@ -2374,6 +2374,12 @@ static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
     return false;
 }
 
+static inline bool is_dimension_empty(ASR::ttype_t* type) {
+    ASR::dimension_t* dims = nullptr;
+    size_t n = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    return is_dimension_empty(dims, n);
+}
+
 static inline bool is_only_upper_bound_empty(ASR::dimension_t& dim) {
     return (dim.m_start != nullptr && dim.m_length == nullptr);
 }

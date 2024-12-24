@@ -1367,8 +1367,8 @@ namespace LCompilers {
                         doloop_body.push_back(al, assign);
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
-                } 
-                else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) { 
+                }
+                else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) {
                     bool contains_array = false;
                     ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(curr_init);
                     for(size_t i = 0; i < array_item->n_args; i++) {
@@ -1428,8 +1428,10 @@ namespace LCompilers {
                         dimension.loc = loc;
                         dimension.m_start = int32_one;
                         if( (ASRUtils::is_allocatable(ASRUtils::expr_type(curr_init)) ||
-                            ASRUtils::is_pointer(ASRUtils::expr_type(curr_init))) &&
-                            ASR::is_a<ASR::FunctionCall_t>(*curr_init) ) {
+                            ASRUtils::is_pointer(ASRUtils::expr_type(curr_init)) ||
+                            ASRUtils::is_dimension_empty(ASRUtils::expr_type(curr_init))) &&
+                            (ASR::is_a<ASR::FunctionCall_t>(*curr_init) ||
+                             ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
                             dimension.m_length = nullptr;
                         } else {
                             ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, true);
