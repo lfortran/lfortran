@@ -57,10 +57,17 @@
             []
             []
             ()
-            A
-            Equal
+            ()
+            Slash
             ())
-            (()
+            (A
+            []
+            []
+            ()
+            A
+            None
+            ())
+            (B
             []
             []
             ()
@@ -78,24 +85,38 @@
             []
             []
             ()
+            ()
+            Slash
+            ())
+            (c
+            []
+            []
+            ()
             c
-            Equal
+            None
             ())
             (b
             []
             []
             ()
-            d
-            Equal
+            ()
+            Slash
             ())
-            (()
+            (d
+            []
+            []
+            ()
+            d
+            None
+            ())
+            (e
             []
             []
             ()
             e
             None
             ())
-            (()
+            (f
             []
             []
             ()
@@ -106,18 +127,27 @@
             []
             []
             ()
-            g
-            Equal
+            ()
+            Slash
             ())
-            (()
+            (g
+            []
+            []
+            ()
+            g
+            None
+            ())
+            (h
             []
             []
             ()
             h
             None
             ())
-            (()
-            []
+            (i
+            [(1
+            5
+            DimensionExpr)]
             []
             ()
             (FuncCallOrArray
@@ -144,18 +174,27 @@
             []
             []
             ()
+            ()
+            Slash
+            ())
+            (x
+            []
+            []
+            ()
             x
             None
             ())
-            (()
+            (y
             []
             []
             ()
             y
             None
             ())
-            (()
-            []
+            (z
+            [(1
+            10
+            DimensionExpr)]
             []
             ()
             (FuncCallOrArray
@@ -245,10 +284,17 @@
             []
             []
             ()
-            A
-            Equal
+            ()
+            Slash
             ())
-            (()
+            (A
+            []
+            []
+            ()
+            A
+            None
+            ())
+            (B
             []
             []
             ()
