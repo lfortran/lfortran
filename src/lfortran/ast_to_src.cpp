@@ -1370,16 +1370,29 @@ public:
         r += "common ";
         r += syn();
         for (size_t i=0; i<x.n_syms; i++) {
-            if(x.m_syms[i].m_name){
-                r += "/";
-                r.append(x.m_syms[i].m_name);
-                r += "/ ";
-            }
-            if (x.m_syms[i].m_initializer) {
-                visit_expr(*x.m_syms[i].m_initializer);
-                r += s;
-            }
-            if (i < x.n_syms-1) r.append(", ");
+            if (x.m_syms[i].m_sym == Slash){
+		if (i > 0 || x.m_syms[i].m_name) {
+		    r += "/";
+		    if (x.m_syms[i].m_name) {
+			r.append(x.m_syms[i].m_name);
+		    }
+		    r += "/ ";
+		}
+            } else {
+		/* We're not using visit_var_sym here because we need to
+		   suppress the duplicate m_initializer entry */
+		r.append(x.m_syms[i].m_name);
+		if (x.m_syms[i].n_dim > 0) {
+		    r.append("(");
+		    for (size_t j=0; j<x.m_syms[i].n_dim; j++) {
+			visit_dimension(x.m_syms[i].m_dim[j]);
+			r += s;
+			if (j < x.m_syms[i].n_dim-1) r.append(",");
+		    }
+		    r.append(")");
+		}
+		if (i < x.n_syms-1) r.append(", ");
+	    }
         }
         s = r;
     }
