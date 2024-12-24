@@ -2204,7 +2204,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                         }
 
                         ASR::ttype_t* temporary_array_type = ASRUtils::TYPE(ASR::make_Array_t(
-                            al, array_item_value->m_v->base.loc, integer_type,
+                            al, array_item_value->m_v->base.loc, ASRUtils::extract_type(
+                            ASRUtils::expr_type(array_item_value->m_v)),
                             temporary_array_dims.p, temporary_array_dims.size(),
                             ASR::array_physical_typeType::PointerToDataArray));
 
