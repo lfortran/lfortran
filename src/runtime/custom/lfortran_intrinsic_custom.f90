@@ -9,13 +9,15 @@ interface  newunit
 end interface 
 
 contains
-    function get_valid_newunit() result(lun)
+    function get_valid_newunit() result(unit)
         integer, parameter :: LUN_MIN=0, LUN_MAX=1000
         logical :: opened
-        integer(4) :: lun ! no need for kind 8, we have limit of 1000 for now.
+        integer(4) :: lun 
+        integer(4) :: unit ! no need for kind 8, we have limit of 1000 for now.
         do lun=LUN_MIN,LUN_MAX
             inquire(unit=lun,opened=opened)
             if (.not. opened) then
+                unit = lun
                 return
             end if
         end do
