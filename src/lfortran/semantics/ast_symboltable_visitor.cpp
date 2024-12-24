@@ -2754,7 +2754,7 @@ public:
             Str name;
             name.from_str(al, local_sym);
             ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                al, msub->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ name.c_str(al),
                 (ASR::symbol_t*)msub,
@@ -2795,7 +2795,7 @@ public:
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                al, mfn->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mfn,
@@ -2829,7 +2829,7 @@ public:
                 throw SemanticAbort();
             }
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, mv->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
@@ -2861,7 +2861,7 @@ public:
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, mv->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
@@ -2872,7 +2872,7 @@ public:
         } else if (ASR::is_a<ASR::Requirement_t>(*t)) {
             ASR::Requirement_t *mreq = ASR::down_cast<ASR::Requirement_t>(t);
             ASR::asr_t *req = ASR::make_ExternalSymbol_t(
-                al, mreq->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mreq,
@@ -2882,7 +2882,7 @@ public:
         } else if (ASR::is_a<ASR::Template_t>(*t)) {
             ASR::Template_t *mtemp = ASR::down_cast<ASR::Template_t>(t);
             ASR::asr_t *temp = ASR::make_ExternalSymbol_t(
-                al, mtemp->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mtemp,
@@ -2892,7 +2892,7 @@ public:
         } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(t);
             ASR::asr_t* temp = ASR::make_ExternalSymbol_t(
-                al, ext_sym->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 ext_sym->m_external,
@@ -3019,7 +3019,7 @@ public:
                     local_sym = remote_sym;
                 }
                 import_symbols_util(m, msym, remote_sym, local_sym,
-                                    to_be_imported_later, x.base.base.loc);
+                                    to_be_imported_later, x.m_symbols[i]->base.loc);
             }
 
             // Importing procedures defined for overloaded operators like assignment
