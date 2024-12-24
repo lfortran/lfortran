@@ -4,6 +4,46 @@ syntax error: Invalid syntax for variable initialization (try inserting '::' aft
 34 |     integer init_x = 1
    |     ^^^^^^^^^^^^^^^^^^ 
 
+syntax error: End module name does not match module name
+   --> tests/errors/continue_compilation_2.f90:331:1 - 333:28
+    |
+331 |    module my_module
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+333 |    end module wrong_module_name 
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: End subroutine name does not match subroutine name
+   --> tests/errors/continue_compilation_2.f90:335:1 - 337:29
+    |
+335 |    subroutine my_subroutine1()
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+337 |    end subroutine different_name
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: End function name does not match function name
+   --> tests/errors/continue_compilation_2.f90:339:1 - 342:28
+    |
+339 |    function my_function() result(res)
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+342 |    end function not_my_function
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: End subroutine name does not match subroutine name
+   --> tests/errors/continue_compilation_2.f90:344:1 - 346:29
+    |
+344 |    subroutine my_subroutine2()
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+346 |    end subroutine different_name 
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Duplicate DIMENSION attribute specified
   --> tests/errors/continue_compilation_2.f90:22:12
    |
