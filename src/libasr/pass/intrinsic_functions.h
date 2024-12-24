@@ -3972,7 +3972,7 @@ namespace Real {
             ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
             if (is_complex(*arg_type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                set_kind_to_ttype_t(return_type, 2*kind);
+                set_kind_to_ttype_t(return_type, kind);
             }
         }
         ASR::expr_t *m_value = nullptr;
