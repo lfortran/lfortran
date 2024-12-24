@@ -327,3 +327,20 @@ subroutine try_to_change(y)
     integer, intent(in) :: y
     y = 99  
 end subroutine
+
+module my_module
+    integer :: x = 10
+end module wrong_module_name 
+
+subroutine my_subroutine1()
+    print *, "Inside subroutine"
+end subroutine different_name
+
+function my_function() result(res)
+    integer :: res
+    res = 42
+end function not_my_function
+
+subroutine my_subroutine2()
+    print *, "Inside subroutine"
+end subroutine different_name 
