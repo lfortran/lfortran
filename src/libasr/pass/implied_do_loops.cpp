@@ -575,6 +575,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             ASR::expr_t** current_expr_copy_9 = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
+            this->call_replacer();
             current_expr = current_expr_copy_9;
             if( !remove_original_statement ) {
                 this->visit_expr(*x.m_value);
