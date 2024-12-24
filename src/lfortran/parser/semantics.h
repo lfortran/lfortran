@@ -404,12 +404,130 @@ decl_attribute_t** ATTRCOMMON(Allocator &al,
         varsym.p, varsym.n, \
         trivia_cast(trivia))
 
+
+static inline bool has_num_val(expr_t const * const expr, int64_t val) {
+
+    if (is_a<Num_t>(*expr)) {
+	Num_t const *num = down_cast<Num_t>(expr);
+	return (num->m_n == val);
+    }
+    return false;
+}
+
+/* Convert a var_sym_t to an expr_t*.  This is used to mimic the old way that common block
+ objects were stored as an expr, and decoded in ast_common_visitor. */
+static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
+    if (vs.n_dim == 0) {
+	// There aren't any dimensions, just make a name
+	return EXPR(make_Name_t(al, vs.loc, vs.m_name, nullptr, 0));
+    } else {
+	// Convert each dimension_t to fnarg_t
+	fnarg_t* args = al.allocate<fnarg_t>(vs.n_dim);
+	fnarg_t* ca = args;
+	for (size_t i = 0; i < vs.n_dim; ++i) {
+	    dimension_t const &d = vs.m_dim[i];
+	    ca->loc = d.loc;
+	    if (has_num_val(d.m_start, 1))
+		ca->m_start = nullptr;
+	    else
+		ca->m_start = d.m_start;
+	    ca->m_end = d.m_end;
+	    ca->m_step = nullptr;
+	    ca->m_label = 0;
+	    ++ca;
+	}
+	return EXPR(make_FuncCallOrArray_t(al, vs.loc, vs.m_name,
+					   nullptr, 0, /* member */
+					   args, vs.n_dim,
+					   nullptr, 0, /* keywords */
+					   nullptr, 0, /* subargs */
+					   nullptr, 0 /* temp_args */ ));
+    }
+}
+
+static inline ast_t* make_common_decl(Allocator &al, const Location &a_loc,
+        decl_attribute_t** a_attributes, Vec<common_block_t> const &blks, trivia_t* a_trivia) {
+
+    /* Flatten the blks into a single Vec<var_sym_t> that alternates between
+       block names (with m_sym==Slash) and common-block-object var_sym's
+       (with m_sym == None) */
+    size_t n{blks.size()};
+    for(common_block_t const &b : blks) {
+	n += b.n_objects;
+    }
+    var_sym_t* vs = al.allocate<var_sym_t>(n);
+
+    var_sym_t* r = vs;
+    for(common_block_t const &b : blks) {
+	/* Add an entry for the common-block-name */
+	r->loc = b.loc;
+	r->m_name = b.m_name;
+	r->m_dim = nullptr;
+	r->n_dim = 0;
+	r->m_codim = nullptr;
+	r->n_codim = 0;
+	r->m_length = nullptr;
+	r->m_initializer = nullptr;
+	r->m_sym = LCompilers::LFortran::AST::symbolType::Slash;
+	r->m_spec = nullptr;
+	++r;
+	/* Now add the common-block-object-list for that name */
+	for(size_t curr_obj_idx = 0; curr_obj_idx < b.n_objects; ++curr_obj_idx) {
+	    var_sym_t const * curr_obj = b.m_objects + curr_obj_idx;
+	    r->loc = curr_obj->loc;
+	    r->m_name = curr_obj->m_name;
+	    r->m_dim = curr_obj->m_dim;
+	    r->n_dim = curr_obj->n_dim;
+	    r->m_codim = nullptr;
+	    r->n_codim = 0;
+	    r->m_length = nullptr;
+	    /* This next line is required because we are using the existing machinery in
+	       ast_common_visitor to create the common block object entry. This is duplicate
+	       work for what we already have in the r->m_dim field. */
+	    r->m_initializer = dims2expr(al, *curr_obj);
+	    r->m_sym = LCompilers::LFortran::AST::symbolType::None;
+	    r->m_spec = nullptr;
+	    ++r;
+	}
+    }
+    return make_Declaration_t(al, a_loc, nullptr, a_attributes, 1, vs, n, a_trivia);
+}
+
 #define VAR_DECL_COMMON(varsym, trivia, l) \
-        make_Declaration_t(p.m_a, l, \
-        nullptr, \
-        ATTRCOMMON(p.m_a, l), 1, \
-        varsym.p, varsym.n, \
+        make_common_decl(p.m_a, l, \
+        ATTRCOMMON(p.m_a, l),  \
+	    varsym, \
         trivia_cast(trivia))
+
+static inline common_block_t *make_common_block(Allocator &al, Location const &loc,
+        ast_t const *name, Vec<var_sym_t> const & varsym) {
+    common_block_t * r = al.allocate<common_block_t>(1);
+    r->loc = loc;
+    if (name)
+	r->m_name = name2char(name);
+    else
+	r->m_name = nullptr;
+    r->m_objects = varsym.p;
+    r->n_objects = varsym.n;
+    return r;
+}
+
+#define COMMON_BLOCK(name, varsym, l) \
+    make_common_block(p.m_a, l, name, varsym)
+
+/* Add (name,varsym) to curr_list, then append other_list */
+static inline void  merge_common_block_lists(Allocator &al, Location const &loc,
+        Vec<common_block_t> &curr_list, ast_t const *name, Vec<var_sym_t> const & varsym,
+	Vec<common_block_t> const &other_list) {
+    curr_list.reserve(al, 1+other_list.size());
+    curr_list.push_back(al, *make_common_block(al, loc, name, varsym));
+    for(common_block_t const & o : other_list) {
+	curr_list.push_back(al, o);
+    }
+}
+
+#define COMMON_BLOCK_MERGE(list, name, varsym, other_list, loc) \
+    merge_common_block_lists(p.m_a, loc, list, name, varsym, other_list)
 
 ast_t* data_implied_do(Allocator &al, Location &loc,
         Vec<ast_t*> obj_list,
