@@ -78,8 +78,6 @@ static inline char* name2char_with_check(const ast_t *n1, const ast_t *n2,
     if(n2) {
         char* n2c = name2char(n2);
         if (!streql(n1c, n2c)) {
-        //     throw LCompilers::LFortran::parser_local::ParserError(
-        //         "End " + unit + " name does not match " + unit + " name", loc);
             diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
                 "End " + unit + " name does not match " + unit + " name", {loc}).d);
         }
@@ -458,7 +456,7 @@ static inline char * id_if_Name_t(expr_t const * exprNode) {
   return id;
 }
 
-Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items) {
+Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items, LCompilers::diag::Diagnostics &diagnostics) {
     Vec<ast_t*> ast_nodes;
     ast_nodes.reserve(al, kind_items.size());
 
@@ -488,8 +486,8 @@ Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items)
       if (ls_node) {
 	ast_nodes.push_back(al, ls_node);
       } else {
-	throw LCompilers::LFortran::parser_local::ParserError(
-           "Bad implicit letter specification", loc);
+        diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+            "Bad implicit letter specification", {loc}).d);
       }
     }
 
@@ -499,7 +497,7 @@ Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items)
 	VEC_CAST(specs, implicit_spec), specs.size(), trivia_cast(trivia))
 #define IMPLICIT_SPEC(t, specs, l) make_ImplicitSpec_t(p.m_a, l, \
         down_cast<decl_attribute_t>(t), \
-        VEC_CAST(vec_kind_item2ast(p.m_a, specs), letter_spec), specs.size())
+        VEC_CAST(vec_kind_item2ast(p.m_a, specs, p.diag), letter_spec), specs.size())
 
 static inline var_sym_t* VARSYM(Allocator &al, Location &l,
         char* name, dimension_t* dim, size_t n_dim,
