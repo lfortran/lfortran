@@ -2151,7 +2151,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                         resultvar2value[replacer.result_var] = array_broadcast->m_array;
                     }
                 }
-            } else if ( ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) ) {
+            } else if ( PassUtils::is_array(x.m_value) || ASR::is_a<ASR::ArrayItem_t>(*x.m_value))  {
                 size_t n_rhs_dim = 0; 
                 ASR::expr_t* rhs_array_var = nullptr;
                 if (ASR::is_a<ASR::ArrayItem_t>(*x.m_value)) {
@@ -2165,7 +2165,6 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                     n_rhs_dim = ASR::down_cast<ASR::ArraySection_t>(x.m_value)->n_args;
                 }
                 if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
-                    LCOMPILERS_ASSERT(rhs_array_var != nullptr);
                     ASR::ArrayItem_t* array_item_target = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
                     bool is_array_index = false;
                     for (size_t i=0; i<array_item_target->n_args; i++) {
