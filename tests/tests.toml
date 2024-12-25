@@ -4410,6 +4410,14 @@ filename = "errors/string_negative_start_index.f90"
 asr = true
 
 [[test]]
+filename = "errors/string_assignment_01.f90"
+run = true
+
+[[test]]
+filename = "errors/string_assignment_02.f90"
+run = true
+
+[[test]]
 filename = "errors/dimension_01.f90"
 asr = true
 
@@ -4448,3 +4456,13 @@ asr = true
 [[test]]
 filename = "errors/show_errors1.f90"
 show_errors = true
+
+[[test]]
+filename = "document_symbols1.f90"
+document_symbols = true
+extrafiles = "document_symbols1_module.f90"
+
+[[test]]
+filename = "../integration_tests/loop_var_use_after_loop.f90"
+pass = "do_loops"
+options = "--use-loop-variable-after-loop"
