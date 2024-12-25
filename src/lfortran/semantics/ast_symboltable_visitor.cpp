@@ -521,6 +521,7 @@ public:
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -571,6 +572,7 @@ public:
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                 }
             }
         }
@@ -981,6 +983,7 @@ public:
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -1375,6 +1378,7 @@ public:
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
                 }
             }
         }
