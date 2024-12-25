@@ -885,62 +885,112 @@ namespace LCompilers {
 
         template <typename LOOP_BODY>
         static inline void create_do_loop_assign(Allocator& al, const Location& loc,
-            ASR::ArrayItem_t* lhs, ASR::ArrayItem_t* rhs, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars_lhs, 
+            ASR::expr_t* lhs, ASR::expr_t* rhs, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars_lhs, 
             Vec<ASR::expr_t*>& temp_idx_vars_rhs, Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, 
             SymbolTable* current_scope, Vec<ASR::stmt_t*>* result_vec) {
-            int n_array_indices = 0;
-            for( size_t i = 0; i < rhs->n_args; i++ ) {
-                if(ASRUtils::is_array(ASRUtils::expr_type(rhs->m_args[i].m_right))){
-                    n_array_indices++;
+            if (ASR::is_a<ASR::ArrayItem_t>(*lhs) && ASR::is_a<ASR::ArrayItem_t>(*rhs)) {
+                // Case : A([1,2,3]) = B([1,2,3])
+                ASR::ArrayItem_t* lhs_array = ASR::down_cast<ASR::ArrayItem_t>(lhs);
+                ASR::ArrayItem_t* rhs_array = ASR::down_cast<ASR::ArrayItem_t>(rhs);
+                int n_array_indices = 0;
+                for( size_t i = 0; i < rhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(rhs_array->m_args[i].m_right))) {
+                        n_array_indices++;
+                    }
                 }
-            }
-            if(n_array_indices == 0) return;
-            PassUtils::create_idx_vars(idx_vars, n_array_indices, loc, al, current_scope, "_t");
-            temp_idx_vars_rhs.reserve(al, rhs->n_args);
-            temp_idx_vars_lhs.reserve(al, rhs->n_args);
-            for( size_t i = 0, j = 0; i < rhs->n_args; i++ ) {
-                if(ASRUtils::is_array(ASRUtils::expr_type(rhs->m_args[i].m_right))){
-                    ASR::expr_t* ref = PassUtils::create_array_ref(rhs->m_args[i].m_right, idx_vars[j], al, current_scope);
-                    temp_idx_vars_rhs.push_back(al, ref);
-                    j++;
-                } else { 
-                    temp_idx_vars_rhs.push_back(al, rhs->m_args[i].m_right);
+                if(n_array_indices == 0) return;
+                PassUtils::create_idx_vars(idx_vars, n_array_indices, loc, al, current_scope, "_t");
+                temp_idx_vars_rhs.reserve(al, rhs_array->n_args);
+                temp_idx_vars_lhs.reserve(al, lhs_array->n_args);
+                for( size_t i = 0, j = 0; i < rhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(rhs_array->m_args[i].m_right))) {
+                        ASR::expr_t* ref = PassUtils::create_array_ref(rhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
+                        temp_idx_vars_rhs.push_back(al, ref);
+                        j++;
+                    } else { 
+                        temp_idx_vars_rhs.push_back(al, rhs_array->m_args[i].m_right);
+                    }
                 }
-            }
-            for( size_t i = 0, j = 0; i < lhs->n_args; i++ ) {
-                if(ASRUtils::is_array(ASRUtils::expr_type(lhs->m_args[i].m_right))){
-                    ASR::expr_t* ref = PassUtils::create_array_ref(lhs->m_args[i].m_right, idx_vars[j], al, current_scope);
-                    temp_idx_vars_lhs.push_back(al, ref);
-                    j++;
-                } else { 
-                    temp_idx_vars_lhs.push_back(al, lhs->m_args[i].m_right);
+                for( size_t i = 0, j = 0; i < lhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(lhs_array->m_args[i].m_right))) {
+                        ASR::expr_t* ref = PassUtils::create_array_ref(lhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
+                        temp_idx_vars_lhs.push_back(al, ref);
+                        j++;
+                    } else { 
+                        temp_idx_vars_lhs.push_back(al, lhs_array->m_args[i].m_right);
+                    }
                 }
-            }
 
-            ASR::stmt_t* doloop = nullptr;
-            for( size_t i = 0, j = 0; i < rhs->n_args; i++ ) {
-                ASR::do_loop_head_t head;
-                head.m_v = idx_vars[j];
-                if(ASRUtils::is_array(ASRUtils::expr_type(rhs->m_args[i].m_right))) {
-                    head.m_start = PassUtils::get_bound(rhs->m_args[i].m_right, 1, "lbound", al);
-                    head.m_end = PassUtils::get_bound(rhs->m_args[i].m_right, 1, "ubound", al);
-                    head.m_increment = nullptr;
-                    j++;
-                } else {
-                    continue;
-                } 
-                head.loc = head.m_v->base.loc;
+                ASR::stmt_t* doloop = nullptr;
+                for( size_t i = 0, j = 0; i < rhs_array->n_args; i++ ) {
+                    ASR::do_loop_head_t head;
+                    head.m_v = idx_vars[j];
+                    if (ASRUtils::is_array(ASRUtils::expr_type(rhs_array->m_args[i].m_right))) {
+                        head.m_start = PassUtils::get_bound(rhs_array->m_args[i].m_right, 1, "lbound", al);
+                        head.m_end = PassUtils::get_bound(rhs_array->m_args[i].m_right, 1, "ubound", al);
+                        head.m_increment = nullptr;
+                        j++;
+                    } else {
+                        continue;
+                    } 
+                    head.loc = head.m_v->base.loc;
 
-                doloop_body.reserve(al, 1);
-                if( doloop == nullptr ) {
-                    loop_body();
-                } else {
-                    doloop_body.push_back(al, doloop);
+                    doloop_body.reserve(al, 1);
+                    if( doloop == nullptr ) {
+                        loop_body();
+                    } else {
+                        doloop_body.push_back(al, doloop);
+                    }
+                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                        doloop_body.p, doloop_body.size(), nullptr, 0));
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
-                    doloop_body.p, doloop_body.size(), nullptr, 0));
+                result_vec->push_back(al, doloop);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*lhs) && ASR::is_a<ASR::Var_t>(*rhs)) {
+                // Case : A([1,2,3]) = A2
+                ASR::ArrayItem_t* lhs_array = ASR::down_cast<ASR::ArrayItem_t>(lhs);
+                int n_array_indices = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(rhs));
+                if(n_array_indices == 0) return;
+                PassUtils::create_idx_vars(idx_vars, n_array_indices, loc, al, current_scope, "_t");
+                temp_idx_vars_rhs.reserve(al, n_array_indices);
+                temp_idx_vars_lhs.reserve(al, lhs_array->n_args);
+                for( int i = 0; i < n_array_indices; i++ ) {
+                    temp_idx_vars_rhs.push_back(al, idx_vars[i]);
+                }
+                for( size_t i = 0, j = 0; i < lhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(lhs_array->m_args[i].m_right))) {
+                        ASR::expr_t* ref = PassUtils::create_array_ref(lhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
+                        temp_idx_vars_lhs.push_back(al, ref);
+                        j++;
+                    } else { 
+                        temp_idx_vars_lhs.push_back(al, lhs_array->m_args[i].m_right);
+                    }
+                }
+
+                ASR::stmt_t* doloop = nullptr;
+                for( size_t i = 0, j = 0; i < lhs_array->n_args; i++ ) {
+                    ASR::do_loop_head_t head;
+                    head.m_v = idx_vars[j];
+                    if (ASRUtils::is_array(ASRUtils::expr_type(lhs_array->m_args[i].m_right))) {
+                        head.m_start = PassUtils::get_bound(lhs_array->m_args[i].m_right, 1, "lbound", al);
+                        head.m_end = PassUtils::get_bound(lhs_array->m_args[i].m_right, 1, "ubound", al);
+                        head.m_increment = nullptr;
+                        j++;
+                    } else {
+                        continue;
+                    } 
+                    head.loc = head.m_v->base.loc;
+
+                    doloop_body.reserve(al, 1);
+                    if( doloop == nullptr ) {
+                        loop_body();
+                    } else {
+                        doloop_body.push_back(al, doloop);
+                    }
+                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                        doloop_body.p, doloop_body.size(), nullptr, 0));
+                }
+                result_vec->push_back(al, doloop);
             }
-            if(doloop != nullptr) result_vec->push_back(al, doloop);
         }
 
         void visit_ArrayConstant(ASR::ArrayConstant_t* x, Allocator& al,
