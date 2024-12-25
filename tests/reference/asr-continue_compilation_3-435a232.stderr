@@ -10,6 +10,12 @@ syntax error: Token ')' is unexpected here
 10 | real :: test_re()
    |                 ^ 
 
+syntax error: The LFortran pragma !LF$ must be followed by a space
+  --> tests/errors/continue_compilation_3.f90:99:5
+   |
+99 |     !LF$unroll 4  ! Error: Missing space after `!LF$`
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Module 'continue_compilation_3_fake_module' not declared in the current source and the modfile was not found
  --> tests/errors/continue_compilation_3.f90:2:1
   |
@@ -254,19 +260,19 @@ semantic error: Array reference is not allowed on scalar variable
    | ^^^^ 
 
 semantic error: Argument of `size` must be an array
-   --> tests/errors/continue_compilation_3.f90:100:14
+   --> tests/errors/continue_compilation_3.f90:106:14
     |
-100 |     print *, size(bpe)
+106 |     print *, size(bpe)
     |              ^^^^^^^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:101:11
+   --> tests/errors/continue_compilation_3.f90:107:11
     |
-101 |     bpe = d
+107 |     bpe = d
     |           ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:101:5
+   --> tests/errors/continue_compilation_3.f90:107:5
     |
-101 |     bpe = d
+107 |     bpe = d
     |     ^^^ 
