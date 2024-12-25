@@ -222,7 +222,7 @@ static inline LCompilers::LFortran::IntSuffix divide_int_by_2(
 }
 
 static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
-        const LCompilers::Str &text, trivia_t *trivia)
+        const LCompilers::Str &text, trivia_t *trivia, LCompilers::diag::Diagnostics &diagnostics)
 {
     std::string t = text.str();
     if (LCompilers::startswith(t, "!LF$")) {
@@ -232,8 +232,9 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
                 LCompilers::LFortran::AST::LFortranPragma, LCompilers::s2c(al, t),
                 trivia);
         } else {
-            throw LCompilers::LFortran::parser_local::ParserError(
-                "The LFortran pragma !LF$ must be followed by a space", loc);
+            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+                "The LFortran pragma !LF$ must be followed by a space", {loc}).d);
+            return nullptr;
         }
     } else {
         throw LCompilers::LFortran::parser_local::ParserError(
@@ -242,7 +243,7 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 }
 
 #define VAR_DECL_PRAGMA(text, trivia, l) \
-        VAR_DECL_PRAGMA2(p.m_a, l, text, trivia_cast(trivia))
+        VAR_DECL_PRAGMA2(p.m_a, l, text, trivia_cast(trivia), p.diag)
 
 #define VAR_DECL_EQUIVALENCE(args, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, EQUIVALENCE(p.m_a, l, args.p, args.n), 1, \
@@ -1587,9 +1588,9 @@ Vec<ast_t*> stmt;
 decl.reserve(al, decl_stmts.size());
 stmt.reserve(al, decl_stmts.size());
 for (size_t i=0; i<decl_stmts.size(); i++) {
-    if (is_a<unit_decl2_t>(*decl_stmts[i])) {
+    if (decl_stmts[i] && is_a<unit_decl2_t>(*decl_stmts[i])) {
         decl.push_back(al, decl_stmts[i]);
-    } else {
+    } else if (decl_stmts[i]) {
         LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
         stmt.push_back(al, decl_stmts[i]);
     }
