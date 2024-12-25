@@ -852,23 +852,39 @@ namespace LCompilers {
 
         template <typename LOOP_BODY>
         static inline void create_do_loop(Allocator& al, const Location& loc,
-            ASR::ArraySection_t* array_section, Vec<ASR::expr_t*>& idx_vars,
+            ASR::ArraySection_t* array_section, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {
             PassUtils::create_idx_vars(idx_vars, array_section->n_args, loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(array_section->n_args == idx_vars.size())
+            temp_idx_vars.reserve(al, array_section->n_args);
+            for( size_t i = 0; i < array_section->n_args; i++ ) {
+                if ( ASRUtils::is_array(ASRUtils::expr_type(array_section->m_args[i].m_right)) ) {
+                    ASR::expr_t* ref = PassUtils::create_array_ref(array_section->m_args[i].m_right, idx_vars[i], al, current_scope);
+                    temp_idx_vars.push_back(al, ref);
+                } else if ( array_section->m_args[i].m_step != nullptr ) { 
+                    temp_idx_vars.push_back(al, idx_vars[i]);
+                } else {
+                    temp_idx_vars.push_back(al, array_section->m_args[i].m_right);
+                }
+            }
 
             ASR::stmt_t* doloop = nullptr;
             for( size_t i = 0; i < array_section->n_args; i++ ) {
-                if( array_section->m_args[i].m_step == nullptr ) {
-                    continue ;
-                }
                 // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
                 ASR::do_loop_head_t head;
                 head.m_v = idx_vars[i];
-                head.m_start = array_section->m_args[i].m_left;
-                head.m_end = array_section->m_args[i].m_right;
-                head.m_increment = array_section->m_args[i].m_step;
+                if( ASRUtils::is_array(ASRUtils::expr_type(array_section->m_args[i].m_right)) ) {
+                    head.m_start = PassUtils::get_bound(array_section->m_args[i].m_right, 1, "lbound", al);
+                    head.m_end = PassUtils::get_bound(array_section->m_args[i].m_right, 1, "ubound", al);
+                    head.m_increment = nullptr;
+                } else if ( array_section->m_args[i].m_step == nullptr ) {
+                    continue ;
+                } else {
+                    head.m_start = array_section->m_args[i].m_left;
+                    head.m_end = array_section->m_args[i].m_right;
+                    head.m_increment = array_section->m_args[i].m_step;
+                }
                 head.loc = head.m_v->base.loc;
 
                 doloop_body.reserve(al, 1);
