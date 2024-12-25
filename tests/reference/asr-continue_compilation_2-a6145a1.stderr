@@ -5,43 +5,43 @@ syntax error: Invalid syntax for variable initialization (try inserting '::' aft
    |     ^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End module name does not match module name
-   --> tests/errors/continue_compilation_2.f90:331:1 - 333:28
+   --> tests/errors/continue_compilation_2.f90:335:1 - 337:28
     |
-331 |    module my_module
+335 |    module my_module
     |    ^^^^^^^^^^^^^^^^...
 ...
     |
-333 |    end module wrong_module_name 
+337 |    end module wrong_module_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:335:1 - 337:29
+   --> tests/errors/continue_compilation_2.f90:339:1 - 341:29
     |
-335 |    subroutine my_subroutine1()
+339 |    subroutine my_subroutine1()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-337 |    end subroutine different_name
+341 |    end subroutine different_name
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End function name does not match function name
-   --> tests/errors/continue_compilation_2.f90:339:1 - 342:28
+   --> tests/errors/continue_compilation_2.f90:343:1 - 346:28
     |
-339 |    function my_function() result(res)
+343 |    function my_function() result(res)
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-342 |    end function not_my_function
+346 |    end function not_my_function
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:344:1 - 346:29
+   --> tests/errors/continue_compilation_2.f90:348:1 - 350:29
     |
-344 |    subroutine my_subroutine2()
+348 |    subroutine my_subroutine2()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-346 |    end subroutine different_name 
+350 |    end subroutine different_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate DIMENSION attribute specified
@@ -49,6 +49,16 @@ semantic error: Duplicate DIMENSION attribute specified
    |
 22 |     common /rowns/ rowns(209)
    |            ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+  --> tests/errors/continue_compilation_2.f90:30:5 - 31:1
+   |
+30 |        implicit real(a-z)
+   |        ^^^^^^^^^^^^^^^^^^...
+...
+   |
+31 |    
+   | ...^ 
 
 semantic error: `parameter` attribute conflicts with `pointer` attribute
   --> tests/errors/continue_compilation_2.f90:32:5
@@ -639,7 +649,7 @@ semantic error: Variable 'foo' is not declared
     |             ^^^ 'foo' is undeclared
 
 semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:328:5
+   --> tests/errors/continue_compilation_2.f90:332:5
     |
-328 |     y = 99  
+332 |     y = 99  
     |     ^ 
