@@ -423,7 +423,8 @@ public:
         }
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+    template<typename T>
+    void visit_Compare(const T &x) {
         this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
         this->visit_expr2(*x.m_right);
@@ -448,6 +449,14 @@ public:
                     x.base.base.loc);
         }
         tmp = builder->create<mlir::LLVM::ICmpOp>(loc, op, left, right);
+    }
+
+    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+        visit_Compare(x);
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t &x) {
+        visit_Compare(x);
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
