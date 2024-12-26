@@ -792,18 +792,18 @@ jobs:
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu')
         run: |
-            git clone https://github.com/certik/fpm.git
+            git clone https://github.com/czgdp1807/fpm.git
             cd fpm
-            git checkout lfortran_build_3
-            git checkout a63eb805747f717d420c12de1984e5e15cdb6984
+            git fetch origin lfortran_build_4
+            git checkout lfortran_build_4
+            git checkout 910c461f04506bf87a05a8fbaf7d1b0a79f0bd48
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
 
             # Test without simplifier
-            git remote add czgdp1807 https://github.com/czgdp1807/fpm
-            git fetch czgdp1807 lfortran_build_4
-            git checkout lfortran_build_4
-            git checkout c39ac028878e0d9b9e68ef1a22a7dff40a5aad9b
+            git fetch origin lfortran_build_5
+            git checkout lfortran_build_5
+            git checkout ac56f53824257e088fdf23746d261237e1598715
             git clean -fdx
             ./build.sh
 
