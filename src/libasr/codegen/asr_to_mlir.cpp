@@ -123,9 +123,24 @@ public:
         module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
 
-        // Visit Program
+        // Visit all the Modules
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Module_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+        // Finally, visit Program
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+    }
+
+    void visit_Module(const ASR::Module_t &x) {
+        // Visit all the Functions
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
         }
@@ -197,7 +212,7 @@ public:
         mlir::LLVM::LLVMFuncOp function = builder0.create<mlir::LLVM::LLVMFuncOp>(
             loc, "main", llvmFnType);
 
-        // Visit all the function symbols
+        // Visit all the Functions
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -208,7 +223,7 @@ public:
         builder = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
             &entryBlock));
 
-        // Visit all the Variable symbols
+        // Visit all the Variables
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 visit_symbol(*item.second);
