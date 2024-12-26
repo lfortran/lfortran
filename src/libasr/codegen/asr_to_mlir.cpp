@@ -131,19 +131,88 @@ public:
         }
     }
 
+    void visit_Function(const ASR::Function_t &x) {
+        ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
+            x.m_function_signature);
+        Vec<mlir::Type> argsType; argsType.reserve(al, fnType->n_arg_types);
+        // Collect all the arguments type
+        for (size_t i=0; i<fnType->n_arg_types; i++) {
+            mlir::Type argType = getType(fnType->m_arg_types[i]);
+            argsType.push_back(al, mlir::LLVM::LLVMPointerType::get(argType));
+        }
+        mlir::Type returnType;
+        // Collect the return type
+        if (fnType->m_return_var_type) {
+            returnType = getType(fnType->m_return_var_type);
+        } else {
+            returnType = mlir::LLVM::LLVMVoidType::get(context.get());
+        }
+
+        mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
+            returnType, argsType.as_vector(), false);
+        mlir::OpBuilder builder0(module->getBodyRegion());
+        // Create function
+        mlir::LLVM::LLVMFuncOp fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
+            loc, x.m_name, llvmFnType);
+
+        mlir::Block &entryBlock = *fn.addEntryBlock();
+        builder = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
+            &entryBlock));
+
+        // Store all the argument symbols in the mlir_symtab
+        // Later, this is used in the function's body
+        for (size_t i=0; i<x.n_args; i++) {
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_args[i]);
+            uint32_t h = get_hash((ASR::asr_t*) v);
+            mlir_symtab[h] = fn.getArgument(i);
+        }
+
+        // Declare only the Local and ReturnVar symbols
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
+                if (v->m_intent == ASR::intentType::Local ||
+                        v->m_intent == ASR::intentType::ReturnVar) {
+                    visit_symbol(*item.second);
+                }
+            }
+        }
+
+        // Visit the function body
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+        }
+        if (x.m_return_var) {
+            this->visit_expr2(*x.m_return_var);
+            builder->create<mlir::LLVM::ReturnOp>(loc, tmp);
+        } else {
+            builder->create<mlir::LLVM::ReturnOp>(loc, mlir::ValueRange{});
+        }
+    }
+
     void visit_Program(const ASR::Program_t &x) {
         mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
-            builder->getI32Type(), llvmI8PtrTy, true);
+            builder->getI32Type(), {}, false);
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp function = builder0.create<mlir::LLVM::LLVMFuncOp>(
             loc, "main", llvmFnType);
+
+        // Visit all the function symbols
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
 
         mlir::Block &entryBlock = *function.addEntryBlock();
         builder = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
             &entryBlock));
 
+        // Visit all the Variable symbols
         for (auto &item : x.m_symtab->get_scope()) {
-            visit_symbol(*item.second);
+            if (is_a<ASR::Variable_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
         }
 
         for (size_t i = 0; i < x.n_body; i++) {
@@ -171,7 +240,53 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         ASR::Variable_t *v = ASRUtils::EXPR2VAR(&x.base);
         uint32_t h = get_hash((ASR::asr_t*) v);
-        tmp = mlir_symtab[h];
+        if (mlir_symtab.find(h) != mlir_symtab.end()) {
+            tmp = mlir_symtab[h];
+        } else {
+            throw CodeGenError("Symbol '"+
+                std::string(v->m_name)
+                +"' not found", x.base.base.loc);
+        }
+    }
+
+    template<typename T>
+    void visit_Call(const T &x) {
+        mlir::LLVM::LLVMFuncOp fn = module->lookupSymbol<mlir::LLVM::LLVMFuncOp>(
+            ASRUtils::symbol_name(x.m_name));
+        if (!fn) {
+            throw CodeGenError("Function '"+
+                std::string(ASRUtils::symbol_name(x.m_name))
+                +"' not found", x.base.base.loc);
+        }
+        Vec<mlir::Value> args; args.reserve(al, x.n_args);
+        for (size_t i=0; i<x.n_args; i++) {
+            this->visit_expr(*x.m_args[i].m_value);
+            if (!is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                // Constant, BinOp, etc would have the type i32, but not i32*
+                // So, We create an `alloca` here, store the value and
+                // then, pass the alloca as an argument
+                mlir::Type argType = mlir::LLVM::LLVMPointerType::get(
+                    getType(ASRUtils::expr_type(x.m_args[i].m_value)));
+                mlir::Value size = builder->create<mlir::LLVM::ConstantOp>(loc,
+                    builder->getI32Type(), builder->getI64IntegerAttr(1));
+                mlir::Value alloca = builder->create<mlir::LLVM::AllocaOp>(
+                    loc, argType, size);
+                builder->create<mlir::LLVM::StoreOp>(loc, tmp, alloca);
+                args.push_back(al, alloca);
+            } else {
+                args.push_back(al, tmp);
+            }
+        }
+        tmp = builder->create<mlir::LLVM::CallOp>(loc, fn,
+            args.as_vector()).getResult(0);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        visit_Call(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        visit_Call(x);
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
