@@ -184,10 +184,10 @@
                                                                     i
                                                                     Public
                                                                 ),
-                                                            __1_k:
+                                                            __1__libasr_index_:
                                                                 (Variable
                                                                     6
-                                                                    __1_k
+                                                                    __1__libasr_index_
                                                                     []
                                                                     Local
                                                                     ()
@@ -311,7 +311,7 @@
                                                         ()
                                                     )
                                                     (Assignment
-                                                        (Var 6 __1_k)
+                                                        (Var 6 __1__libasr_index_)
                                                         (ArrayBound
                                                             (Var 6 __libasr__created__var__0__array_constructor_)
                                                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -343,7 +343,7 @@
                                                             (ArrayItem
                                                                 (Var 6 __libasr__created__var__0__array_constructor_)
                                                                 [(()
-                                                                (Var 6 __1_k)
+                                                                (Var 6 __1__libasr_index_)
                                                                 ())]
                                                                 (StructType
                                                                     4 int_t
@@ -365,9 +365,9 @@
                                                             ()
                                                         )
                                                         (Assignment
-                                                            (Var 6 __1_k)
+                                                            (Var 6 __1__libasr_index_)
                                                             (IntegerBinOp
-                                                                (Var 6 __1_k)
+                                                                (Var 6 __1__libasr_index_)
                                                                 Add
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)

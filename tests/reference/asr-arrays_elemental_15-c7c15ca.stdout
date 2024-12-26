@@ -168,7 +168,7 @@
                                                     (IntegerConstant 256 (Integer 4) Decimal))
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 64 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    DescriptorArray
                                                 )
                                                 ()
                                             )
@@ -200,7 +200,7 @@
                                                     (IntegerConstant 256 (Integer 4) Decimal))
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 64 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    DescriptorArray
                                                 )
                                                 ()
                                             )
@@ -210,7 +210,7 @@
                                                 (IntegerConstant 256 (Integer 4) Decimal))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 64 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
                                             ()
                                         )
@@ -466,7 +466,7 @@
                                                     (Real 8)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 256 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    DescriptorArray
                                                 )
                                                 ()
                                             )]
@@ -475,7 +475,7 @@
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 256 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
                                             ()
                                         )
@@ -586,7 +586,7 @@
                                                     (IntegerConstant 64 (Integer 4) Decimal))
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 16 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    DescriptorArray
                                                 )
                                                 ()
                                             )
@@ -620,7 +620,7 @@
                                                     (IntegerConstant 64 (Integer 4) Decimal))
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 16 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    DescriptorArray
                                                 )
                                                 ()
                                             )
@@ -632,7 +632,7 @@
                                                 (IntegerConstant 64 (Integer 4) Decimal))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 16 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
                                             ()
                                         )
@@ -1003,7 +1003,7 @@
                                                         (IntegerConstant 8 (Integer 4) Decimal))
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                 )
@@ -1039,7 +1039,7 @@
                                                         (IntegerConstant 8 (Integer 4) Decimal))
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                 )
@@ -1053,7 +1053,7 @@
                                                     (IntegerConstant 8 (Integer 4) Decimal))
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 4 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    DescriptorArray
                                                 )
                                                 ()
                                             )
@@ -1073,7 +1073,7 @@
                                                         (IntegerConstant 8 (Integer 4) Decimal))
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                 )
@@ -1109,7 +1109,7 @@
                                                         (IntegerConstant 8 (Integer 4) Decimal))
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                 )
@@ -1123,7 +1123,7 @@
                                                     (IntegerConstant 8 (Integer 4) Decimal))
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 4 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    DescriptorArray
                                                 )
                                                 ()
                                             )
@@ -1137,7 +1137,7 @@
                                                 (IntegerConstant 8 (Integer 4) Decimal))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 4 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
                                             ()
                                         )

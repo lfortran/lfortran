@@ -711,7 +711,7 @@
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 3 (Integer 4) Decimal))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
                                 ()
                             )]
@@ -733,7 +733,7 @@
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            DescriptorArray
                                         )
                                         ()
                                     )
@@ -1999,7 +1999,7 @@
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 3 (Integer 4) Decimal))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
                                 ()
                             )]
@@ -2021,7 +2021,7 @@
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            DescriptorArray
                                         )
                                         ()
                                     )
