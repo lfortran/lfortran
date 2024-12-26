@@ -194,9 +194,9 @@ macro(RUN)
         set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
     endif()
 
-    if (EXPERIMENTAL_SIMPLIFIER AND (NOT RUN_NO_EXPERIMENTAL_SIMPLIFIER))
-        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --experimental-simplifier)
-        set(RUN_NAME "${RUN_NAME}_simplifier")
+    if (NOT EXPERIMENTAL_SIMPLIFIER OR RUN_NO_EXPERIMENTAL_SIMPLIFIER)
+        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --no-experimental-simplifier)
+        set(RUN_NAME "${RUN_NAME}_no_simplifier")
     endif()
 
     if (NOT FAST)
