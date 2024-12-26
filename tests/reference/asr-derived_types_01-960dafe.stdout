@@ -84,6 +84,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -101,6 +102,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             derived_types_01_m_01_y:
@@ -528,6 +530,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     set
@@ -598,6 +601,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -613,6 +617,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -648,6 +653,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -665,6 +671,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -721,6 +728,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             l:
                                                 (Variable
@@ -738,6 +746,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

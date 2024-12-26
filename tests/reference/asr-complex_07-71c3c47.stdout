@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -37,6 +38,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             img_part:
@@ -60,6 +62,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             real_part:
                                 (Variable
@@ -75,6 +78,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -116,6 +120,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             x1:
                                 (Variable
@@ -138,6 +143,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             x2:
                                 (Variable
@@ -153,6 +159,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             y:
@@ -186,6 +193,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             y2:
                                 (Variable
@@ -201,6 +209,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             z:
@@ -240,6 +249,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             z1:
                                 (Variable
@@ -256,6 +266,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             z2:
                                 (Variable
@@ -271,6 +282,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

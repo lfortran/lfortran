@@ -67,6 +67,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             cpath:
                                                 (Variable
@@ -90,6 +91,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -108,6 +110,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -123,6 +126,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -216,6 +220,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             bufsize:
                                                 (Variable
@@ -232,6 +237,7 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -247,6 +253,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

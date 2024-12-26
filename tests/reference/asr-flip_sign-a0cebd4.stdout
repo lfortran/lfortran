@@ -28,6 +28,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             number:
                                 (Variable
@@ -44,6 +45,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -59,6 +61,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

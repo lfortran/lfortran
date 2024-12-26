@@ -24,6 +24,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             file_scope_flag:
                                 (ExternalSymbol
@@ -70,6 +71,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             os_valid:
                                 (Variable
@@ -85,6 +87,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             profile_config_t:
@@ -114,6 +117,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             profiles:
                                 (Variable
@@ -139,6 +143,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             profindex:
                                 (Variable
@@ -154,6 +159,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })
@@ -242,6 +248,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             c_flags:
                                                 (Variable
@@ -259,6 +266,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             compiler_name:
@@ -278,6 +286,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -295,6 +304,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             err_message:
@@ -314,6 +324,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             file_flags:
                                                 (Variable
@@ -332,6 +343,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -349,6 +361,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -375,6 +388,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -393,6 +407,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             ifile:
                                                 (Variable
@@ -408,6 +423,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             ikey:
@@ -425,6 +441,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_valid:
                                                 (Variable
@@ -440,6 +457,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             key_name:
@@ -459,6 +477,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -477,6 +496,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -493,6 +513,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_valid:
                                                 (Variable
@@ -508,6 +529,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             profile_name:
@@ -526,6 +548,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             profiles:
@@ -552,6 +575,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             profindex:
                                                 (Variable
@@ -568,6 +592,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -583,6 +608,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -859,6 +885,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -875,6 +902,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -890,6 +918,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -914,6 +943,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -929,6 +959,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_built_in:
@@ -946,6 +977,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_c_flags_present_:
                                                 (Variable
@@ -961,6 +993,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_cxx_flags_present_:
@@ -978,6 +1011,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_file_scope_flags_present_:
                                                 (Variable
@@ -993,6 +1027,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_flags_present_:
@@ -1010,6 +1045,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_is_built_in_present_:
                                                 (Variable
@@ -1025,6 +1061,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_link_time_flags_present_:
@@ -1042,6 +1079,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1058,6 +1096,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1073,6 +1112,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             profile:
@@ -1092,6 +1132,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1107,6 +1148,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1193,6 +1235,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1211,6 +1254,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1228,6 +1272,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -1254,6 +1299,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1272,6 +1318,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1287,6 +1334,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             link_time_flags:
@@ -1306,6 +1354,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1321,6 +1370,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             profile_name:
@@ -1339,6 +1389,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

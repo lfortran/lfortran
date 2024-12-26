@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             f2:
                                 (Variable
@@ -37,6 +38,7 @@
                                     BindC
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             f3:
@@ -54,6 +56,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             f4:
                                 (Variable
@@ -69,6 +72,7 @@
                                     BindC
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             f5:
@@ -86,6 +90,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             f6:
                                 (Variable
@@ -101,6 +106,7 @@
                                     BindC
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

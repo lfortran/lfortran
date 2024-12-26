@@ -27,6 +27,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -42,6 +43,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             string_local:
@@ -62,6 +64,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -96,6 +99,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

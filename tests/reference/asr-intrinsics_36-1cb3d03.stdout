@@ -37,6 +37,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             empty:
                                 (Variable
@@ -67,6 +68,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             simple:
@@ -99,6 +101,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             space_at_end:
                                 (Variable
@@ -129,6 +132,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             space_at_start:
@@ -161,6 +165,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             space_in_between:
                                 (Variable
@@ -192,6 +197,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             spaces_with_symbols:
                                 (Variable
@@ -222,6 +228,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

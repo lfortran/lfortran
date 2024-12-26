@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -37,6 +38,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             l1:
@@ -54,6 +56,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             l2:
                                 (Variable
@@ -69,6 +72,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             m:
@@ -86,6 +90,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             nq:
                                 (Variable
@@ -101,6 +106,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             v:
@@ -127,6 +133,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             ve:
                                 (Variable
@@ -152,6 +159,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             vev:
                                 (Variable
@@ -175,6 +183,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             wrk5:
                                 (Variable
@@ -196,6 +205,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             zero:
                                 (Variable
@@ -211,6 +221,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

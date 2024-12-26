@@ -82,7 +82,7 @@ end program
     FortranEvaluator e(compiler_options);
     AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
     ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
-        diagnostics, nullptr, false, compiler_options));
+        diagnostics, nullptr, false, compiler_options, lm));
 
     CHECK(asr_verify(*asr, true, diagnostics)); // Passes
 

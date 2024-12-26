@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             msg:
                                 (Variable
@@ -44,6 +45,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -64,6 +66,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             q:
@@ -86,6 +89,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -102,6 +106,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             u_ptr:
                                 (Variable
@@ -119,6 +124,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -141,6 +147,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -161,6 +168,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

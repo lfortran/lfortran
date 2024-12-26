@@ -79,6 +79,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -98,6 +99,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             fpm_dependency_modules_31_dependency_node_t:
@@ -125,6 +127,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -142,6 +145,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -262,6 +266,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             working_dir:
                                                 (Variable
@@ -279,6 +284,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -314,6 +320,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             fetch_only:
                                                 (Variable
@@ -329,6 +336,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             name:
@@ -352,6 +360,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -401,6 +410,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -418,6 +428,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -459,6 +470,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             proj_dir:
                                                 (Variable
@@ -477,6 +489,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             revision:
                                                 (Variable
@@ -494,6 +507,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             update:
@@ -516,6 +530,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -555,6 +570,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             dep:
                                                 (Variable
@@ -580,6 +596,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             dep_dir:
                                                 (Variable
@@ -598,6 +615,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             ndep:
                                                 (Variable
@@ -614,6 +632,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -629,6 +648,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             update:
@@ -663,6 +683,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -704,6 +725,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     error_t
@@ -741,6 +763,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -756,6 +779,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             self:
@@ -774,6 +798,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

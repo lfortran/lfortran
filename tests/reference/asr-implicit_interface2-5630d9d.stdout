@@ -27,6 +27,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             f_return_var_name:
                                                 (Variable
@@ -42,6 +43,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -89,6 +91,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             g_arg_1:
                                                 (Variable
@@ -105,6 +108,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             g_return_var_name:
                                                 (Variable
@@ -120,6 +124,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

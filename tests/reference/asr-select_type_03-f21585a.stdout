@@ -31,6 +31,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             success:
                                                 (Variable
@@ -46,6 +47,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -85,6 +87,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })
@@ -129,6 +132,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -197,6 +201,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -212,6 +217,7 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
                                                     .false.
                                                 ),
                                             table:
@@ -230,6 +236,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             tmp:
@@ -250,6 +257,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~select_type_block_:
@@ -411,6 +419,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -432,6 +441,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -467,6 +477,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -482,6 +493,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

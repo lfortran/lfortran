@@ -28,6 +28,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i64:
                                 (Variable
@@ -49,6 +50,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             y:
@@ -81,6 +83,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -111,6 +114,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

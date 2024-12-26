@@ -109,9 +109,9 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
+        std::vector<ASR::stmt_t*> &data_structure, LCompilers::LocationManager &lm)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
+                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -454,7 +454,7 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}
+                                                    throw SemanticAbort();}, lm
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -560,6 +560,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -571,7 +572,7 @@ public:
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_implicit[i]->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                 }
             }
         }
@@ -586,6 +587,29 @@ public:
             }
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                if(decl->m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl->m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
+        }
+        for (size_t i : procedure_decl_indices) {
             try {
                 visit_unit_decl2(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
@@ -593,12 +617,6 @@ public:
             }
         }
         process_simd_variables();
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            visit_program_unit(*x.m_contains[i]);
-            default_storage_save = current_storage_save;
-        }
         tmp = ASR::make_Program_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -767,7 +785,7 @@ public:
         if (is_master) {
             // Create integer variable "entry__lcompilers"
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            ASR::symbol_t* entry_lcompilers_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+            ASR::symbol_t* entry_lcompilers_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
                                                 loc, current_scope, s2c(al, "entry__lcompilers"), nullptr, 0,
                                                 ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
                                                 int_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
@@ -835,7 +853,7 @@ public:
             // create return variable, with same type as parent function
             ASR::symbol_t* parent_func_sym = current_scope->resolve_symbol(parent_function_name);
             ASR::ttype_t* return_type = ASRUtils::symbol_type(parent_func_sym);
-            ASR::symbol_t* return_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+            ASR::symbol_t* return_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
                                                 loc, current_scope, s2c(al, function_name), nullptr, 0,
                                                 ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
                                                 return_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
@@ -1046,8 +1064,20 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0); 
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+                if(decl.m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
+                           type->m_name == sym_name) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
                     visit_unit_decl2(*x.m_decl[i]);
@@ -1202,6 +1232,15 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+        // Self referencing procedure declarations 
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         if( update_gp ) {
             LCOMPILERS_ASSERT(gp_index_to_be_updated >= 0);
             ASR::GenericProcedure_t* f1_gp = ASR::down_cast<ASR::GenericProcedure_t>(f1_);
@@ -1420,8 +1459,20 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0); 
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+                if(decl.m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
+                           type->m_name == sym_name) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
@@ -1571,7 +1622,7 @@ public:
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             // Add it as a local variable:
-            return_var = ASR::make_Variable_t(al, x.base.base.loc,
+            return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
@@ -1684,6 +1735,15 @@ public:
             x.m_end_name ? x.m_end_name : nullptr);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        
+        // Self referencing procedure declarations 
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
@@ -1840,7 +1900,7 @@ public:
         }
         if ((is_requirement || is_template) && is_deferred) {
             ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, dt_name));
-            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, dt_name),
+            tmp = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, dt_name),
                 nullptr, 0, ASRUtils::intent_in, nullptr, nullptr, ASR::storage_typeType::Default,
                 ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
             current_scope->add_symbol(dt_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -2694,7 +2754,7 @@ public:
             Str name;
             name.from_str(al, local_sym);
             ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                al, msub->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ name.c_str(al),
                 (ASR::symbol_t*)msub,
@@ -2735,7 +2795,7 @@ public:
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                al, mfn->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mfn,
@@ -2769,7 +2829,7 @@ public:
                 throw SemanticAbort();
             }
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, mv->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
@@ -2801,7 +2861,7 @@ public:
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, mv->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
@@ -2812,7 +2872,7 @@ public:
         } else if (ASR::is_a<ASR::Requirement_t>(*t)) {
             ASR::Requirement_t *mreq = ASR::down_cast<ASR::Requirement_t>(t);
             ASR::asr_t *req = ASR::make_ExternalSymbol_t(
-                al, mreq->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mreq,
@@ -2822,7 +2882,7 @@ public:
         } else if (ASR::is_a<ASR::Template_t>(*t)) {
             ASR::Template_t *mtemp = ASR::down_cast<ASR::Template_t>(t);
             ASR::asr_t *temp = ASR::make_ExternalSymbol_t(
-                al, mtemp->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mtemp,
@@ -2832,7 +2892,7 @@ public:
         } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(t);
             ASR::asr_t* temp = ASR::make_ExternalSymbol_t(
-                al, ext_sym->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 ext_sym->m_external,
@@ -2877,7 +2937,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }));
+            }, lm));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
@@ -2959,7 +3019,7 @@ public:
                     local_sym = remote_sym;
                 }
                 import_symbols_util(m, msym, remote_sym, local_sym,
-                                    to_be_imported_later, x.base.base.loc);
+                                    to_be_imported_later, x.m_symbols[i]->base.loc);
             }
 
             // Importing procedures defined for overloaded operators like assignment
@@ -3484,7 +3544,7 @@ public:
                     args.reserve(al, 2);
                     for (size_t i=0; i<2; i++) {
                         std::string var_name = "arg" + std::to_string(i);
-                        ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
+                        ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope,
                             s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr,
                             nullptr, ASR::storage_typeType::Default,
                             (i == 0 ? ASRUtils::duplicate_type(al, left_type)
@@ -3530,7 +3590,7 @@ public:
                         value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, left, right, left_type));
                     }
 
-                    ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,
+                    ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                         current_scope, s2c(al, "ret"), nullptr, 0,
                         ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
                         return_type, nullptr, ASR::abiType::Source,
@@ -3644,7 +3704,7 @@ public:
                     t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                         t, tp_m_dims, tp_n_dims);
                 }
-                ASR::asr_t* new_v = ASR::make_Variable_t(al, v->base.base.loc,
+                ASR::asr_t* new_v = ASRUtils::make_Variable_t_util(al, v->base.base.loc,
                     current_scope, s2c(al, name), v->m_dependencies,
                     v->n_dependencies, v->m_intent,
                     v->m_symbolic_value, v->m_value, v->m_storage, t,
@@ -3700,7 +3760,7 @@ public:
                     SetChar variable_dependencies_vec;
                     variable_dependencies_vec.reserve(al, 1);
                     ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, param_type);
-                    ASR::asr_t *v = ASR::make_Variable_t(al, loc, new_scope,
+                    ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, loc, new_scope,
                         s2c(al, var_name), variable_dependencies_vec.p,
                         variable_dependencies_vec.size(),
                         s_intent, init_expr, value, storage_type, param_type,
@@ -3740,7 +3800,7 @@ public:
                     SetChar variable_dependencies_vec;
                     variable_dependencies_vec.reserve(al, 1);
                     ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_type);
-                    ASR::asr_t *new_return_var = ASR::make_Variable_t(al, return_var->base.base.loc,
+                    ASR::asr_t *new_return_var = ASRUtils::make_Variable_t_util(al, return_var->base.base.loc,
                         new_scope, s2c(al, return_var_name),
                         variable_dependencies_vec.p,
                         variable_dependencies_vec.size(),
@@ -3864,10 +3924,10 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
+        std::vector<ASR::stmt_t*> &data_structure, LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {

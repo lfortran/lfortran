@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            min_02:
+            max_01:
                 (Program
                     (SymbolTable
                         2
@@ -16,11 +16,12 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8)
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             z:
@@ -32,25 +33,47 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
-                    min_02
+                    max_01
                     []
-                    [(Print
+                    [(Assignment
+                        (Var 2 y)
+                        (RealConstant
+                            5.200000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (RealConstant
+                            9.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (Print
                         (StringFormat
                             ()
                             [(IntrinsicElementalFunction
-                                Min
+                                Max
                                 [(Var 2 y)
-                                (Var 2 z)]
+                                (Cast
+                                    (Var 2 z)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )]
                                 0
-                                (Integer 8)
+                                (Real 8)
                                 ()
                             )]
                             FormatFortran

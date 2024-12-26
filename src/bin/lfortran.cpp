@@ -829,7 +829,8 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
 }
 
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
-    const LCompilers::CompilerOptions &compiler_options)
+    const LCompilers::CompilerOptions &compiler_options,
+    LCompilers::LocationManager lm)
 {
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
@@ -854,7 +855,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             LCompilers::diag::Diagnostics diagnostics;
             LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, true, diagnostics));
 
-            std::string modfile_binary = LCompilers::save_modfile(*tu);
+            std::string modfile_binary = LCompilers::save_modfile(*tu, lm);
 
             m->m_symtab->parent = orig_symtab;
 
@@ -1015,7 +1016,7 @@ int compile_src_to_object_file(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -1167,7 +1168,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-            result = fe.get_asr3(*ast, diagnostics);
+            result = fe.get_asr3(*ast, diagnostics, lm);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1268,7 +1269,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-            result = fe.get_asr3(*ast, diagnostics);
+            result = fe.get_asr3(*ast, diagnostics, lm);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1349,7 +1350,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -1460,7 +1461,7 @@ int compile_to_object_file_c(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -2340,6 +2341,7 @@ int main_app(int argc, char *argv[]) {
         compiler_options.implicit_interface = true;
         compiler_options.print_leading_space = true;
         compiler_options.logical_casting = false;
+        compiler_options.po.realloc_lhs = true;
     } else if (arg_standard == "legacy") {
         // f23
         compiler_options.disable_style = true;
@@ -2554,12 +2556,7 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (show_errors) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_errors(arg_file, compiler_options);
-#else
-        std::cerr << "Compiler was not configured with LSP support (-DWITH_LSP), please build it again." << std::endl;
-        return 1;
-#endif
     }
     lfortran_pass_manager.use_default_passes();
     if (show_llvm) {

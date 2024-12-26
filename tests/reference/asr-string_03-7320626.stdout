@@ -22,6 +22,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             intro:
                                 (ExternalSymbol
@@ -48,6 +49,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             posit:
                                 (Variable
@@ -63,6 +65,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             title:
@@ -80,6 +83,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             verb:
                                 (Variable
@@ -95,6 +99,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })
@@ -194,6 +199,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

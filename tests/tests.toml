@@ -1029,6 +1029,10 @@ filename = "array15.f90"
 pass = "array_op"
 
 [[test]]
+filename = "array16.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
@@ -3814,6 +3818,11 @@ filename = "errors/program_without_line_01.f90"
 ast = true
 
 [[test]]
+filename = "errors/program_without_line_cc.f90"
+syntax_only_cc = true
+show_asr_with_cc = true
+
+[[test]]
 filename = "errors/program_without_line_02.f90"
 ast = true
 
@@ -3958,19 +3967,19 @@ filename = "errors/string_slice2.f90"
 asr = true
 
 [[test]]
-filename = "errors/max_01.f90"
+filename = "../integration_tests/max_01.f90"
 asr = true
 
 [[test]]
-filename = "errors/max_02.f90"
+filename = "../integration_tests/max_02.f90"
 asr = true
 
 [[test]]
-filename = "errors/min_01.f90"
+filename = "../integration_tests/min_01.f90"
 asr = true
 
 [[test]]
-filename = "errors/min_02.f90"
+filename = "../integration_tests/min_02.f90"
 asr = true
 
 [[test]]
@@ -4405,6 +4414,14 @@ filename = "errors/string_negative_start_index.f90"
 asr = true
 
 [[test]]
+filename = "errors/string_assignment_01.f90"
+run = true
+
+[[test]]
+filename = "errors/string_assignment_02.f90"
+run = true
+
+[[test]]
 filename = "errors/dimension_01.f90"
 asr = true
 
@@ -4439,3 +4456,17 @@ fortran = true
 [[test]]
 filename = "polymorphic_class_in_derived_type.f90"
 asr = true
+
+[[test]]
+filename = "errors/show_errors1.f90"
+show_errors = true
+
+[[test]]
+filename = "document_symbols1.f90"
+document_symbols = true
+extrafiles = "document_symbols1_module.f90"
+
+[[test]]
+filename = "../integration_tests/loop_var_use_after_loop.f90"
+pass = "do_loops"
+options = "--use-loop-variable-after-loop"

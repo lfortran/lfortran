@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            min_01:
+            min_02:
                 (Program
                     (SymbolTable
                         2
@@ -16,11 +16,12 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             z:
@@ -32,41 +33,31 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4)
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 )
                         })
-                    min_01
+                    min_02
                     []
-                    [(Assignment
-                        (Var 2 y)
-                        (RealConstant
-                            5.200000
-                            (Real 8)
-                        )
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 z)
-                        (RealConstant
-                            9.000000
-                            (Real 4)
-                        )
-                        ()
-                    )
-                    (Print
+                    [(Print
                         (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Min
                                 [(Var 2 y)
-                                (Var 2 z)]
+                                (Cast
+                                    (Var 2 z)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                )]
                                 0
-                                (Real 8)
+                                (Integer 8)
                                 ()
                             )]
                             FormatFortran

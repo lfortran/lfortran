@@ -41,6 +41,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             fullhex_digits:
                                 (Variable
@@ -62,6 +63,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             hex_digits:
@@ -98,6 +100,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             letters:
                                 (Variable
@@ -119,6 +122,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             lowercase:
@@ -155,6 +159,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             lowerhex_digits:
                                 (Variable
@@ -176,6 +181,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             octal_digits:
@@ -212,6 +218,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             string:
                                 (Variable
@@ -243,6 +250,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             uppercase:
@@ -278,6 +286,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

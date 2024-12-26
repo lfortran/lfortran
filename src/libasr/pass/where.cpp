@@ -259,7 +259,7 @@ public:
                                         arr_section->m_v,
                                         args.p,
                                         args.size(),
-                                        ASRUtils::type_get_past_array_pointer_allocatable(
+                                        ASRUtils::extract_type(
                                             ASRUtils::expr_type((arr_section_var))),
                                         ASR::arraystorageType::ColMajor,
                                         nullptr));

@@ -44,9 +44,10 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
             std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-            std::vector<ASR::stmt_t*> &data_structure)
+            std::vector<ASR::stmt_t*> &data_structure,
+            LCompilers::LocationManager &lm)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure),
+                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -151,7 +152,16 @@ public:
         items.reserve(al, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             tmp = nullptr;
-            visit_ast(*x.m_items[i]);
+            try {
+                visit_ast(*x.m_items[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                } else {
+                    tmp = nullptr;
+                    tmp_vec.clear();
+                }
+            }
             if (tmp) {
                 items.push_back(al, tmp);
             } else if (!tmp_vec.empty()) {
@@ -248,11 +258,11 @@ public:
                 a_newunit = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_newunit_type = ASRUtils::expr_type(a_newunit);
                 if( ( m_arg_str == std::string("newunit") &&
-                      a_newunit->type != ASR::exprType::Var ) ||
+                     !ASRUtils::is_variable(a_newunit) ) ||
                     ( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))
                     ) ) {
                         diag.add(Diagnostic(
-                            "`newunit`/`unit` must be a variable of type, Integer or IntegerPointer",
+                            "`newunit`/`unit` must be a mutable variable of type, Integer or IntegerPointer",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }));
@@ -657,6 +667,10 @@ public:
         for( std::uint32_t i = 0; i < n_args; i++ ) {
             if( m_args[i].m_value != nullptr ) {
                 this->visit_expr(*m_args[i].m_value);
+                if( _type == AST::stmtType::Read && 
+                    ASRUtils::is_descriptorString(ASRUtils::expr_type(ASRUtils::EXPR(tmp)))){
+                    tmp = (ASR::asr_t*)ASRUtils::cast_string_descriptor_to_pointer(al, ASRUtils::EXPR(tmp));
+                }
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
@@ -1105,10 +1119,10 @@ public:
             {"nextrec", 16}, {"blank", 17}, {"position", 18}, {"action", 19},
             {"read", 20}, {"write", 21}, {"readwrite", 22}, {"delim", 23},
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
-            {"carriagecontrol", 28}, {"iolength", 29}};
+            {"carriagecontrol", 28}, {"size", 29}, {"iolength", 30}};
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Inquire";
-        fill_args_for_rewind_inquire_flush(x, 29, args, 30, argname2idx, node_name);
+        fill_args_for_rewind_inquire_flush(x, 30, args, 31, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -1116,7 +1130,7 @@ public:
         ASR::expr_t *nextrec = args[16], *blank = args[17], *position = args[18], *action = args[19];
         ASR::expr_t *read = args[20], *write = args[21], *readwrite = args[22], *delim = args[23];
         ASR::expr_t *pad = args[24], *flen = args[25], *blocksize = args[26], *convert = args[27];
-        ASR::expr_t *carriagecontrol = args[28], *iolength = args[29];
+        ASR::expr_t *carriagecontrol = args[28], *size = args[29], *iolength = args[30];
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
             if( is_iolength_present && args[i] ) {
@@ -1148,7 +1162,7 @@ public:
                                   nextrec, blank, position, action,
                                   read, write, readwrite, delim,
                                   pad, flen, blocksize, convert,
-                                  carriagecontrol, iolength);
+                                  carriagecontrol, size, iolength);
     }
 
     void visit_Flush(const AST::Flush_t& x) {
@@ -1239,7 +1253,7 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type);
-            ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, new_scope,
+            ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, new_scope,
                                                  name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                  ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, nullptr,
                                                  ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
@@ -1665,7 +1679,7 @@ public:
             ASR::Variable_t* assoc_variable = nullptr;
             ASR::symbol_t* assoc_sym = nullptr;
             if( x.m_assoc_name ) {
-                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, x.base.base.loc, current_scope, x.m_assoc_name,
                     nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
@@ -2106,7 +2120,7 @@ public:
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(master_function_arg);
                         sym_name = ASRUtils::symbol_name(var->m_v);
                     }
-                    ASR::asr_t* var_asr = ASR::make_Variable_t(al, master_function_arg->base.loc,
+                    ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, master_function_arg->base.loc,
                                             entry_function->m_symtab, s2c(al,sym_name), nullptr, 0, ASR::intentType::Local,
                                             nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, ASR::abiType::Source,
                                             ASR::accessType::Public, ASR::presenceType::Required, false);
@@ -2490,7 +2504,7 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, int_type);
-            ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
+            ASR::asr_t* a_variable = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
                                                           variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                           ASR::intentType::Local, nullptr, nullptr,
                                                           ASR::storage_typeType::Default, int_type, nullptr,
@@ -2626,7 +2640,7 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, ASRUtils::expr_type(end));
-            ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
+            ASR::asr_t *arg_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                 current_scope, s2c(al, arg_name),
                 variable_dependencies_vec.p, variable_dependencies_vec.size(),
                 ASRUtils::intent_in, nullptr, nullptr,
@@ -2667,7 +2681,7 @@ public:
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-        ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
+        ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
             current_scope, s2c(al, return_var_name),
             variable_dependencies_vec.p, variable_dependencies_vec.size(),
             ASRUtils::intent_return_var, nullptr, nullptr,
@@ -3892,7 +3906,7 @@ public:
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
         if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
-            if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(test)))) {
+            if (ASR::is_a<ASR::Logical_t>(*ASRUtils::extract_type(ASRUtils::expr_type(test)))) {
                 // verify that `test` is *not* the ttype of an expression as we then
                 // are sure that it is a single standalone logical array
                 if  (!ASR::is_a<ASR::IntegerCompare_t>(*test)
@@ -4625,10 +4639,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
+        std::vector<ASR::stmt_t*> &data_structure,
+        LCompilers::LocationManager &lm)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);

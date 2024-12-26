@@ -29,6 +29,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             c_associated:
                                 (ExternalSymbol
@@ -301,6 +302,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

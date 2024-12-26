@@ -150,7 +150,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         } catch (const parser_local::ParserError &e) {
             Error error;
             diagnostics.diagnostics.push_back(e.d);
-            return error;
+            if (!co.continue_compilation) {
+                return error;
+            }
         }
     }
     return ast;
@@ -247,6 +249,18 @@ char previous_nonspace_character(const std::string &s, size_t pos) {
     }
     return '\0';
 }
+
+char next_nonspace_character(const std::string &s, size_t pos) {
+    pos++;
+    while (pos < s.size()) {
+        if (s[pos] != ' ' && s[pos] != '\t') {
+            return s[pos];
+        }
+        ++pos;
+    }
+    return '\0';
+}
+
 
 void is_within_string(
     const std::string &s,
@@ -664,7 +678,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
         lm.files.back().out_start.push_back(out.size());
         return out;
     } else {
-        // `pos` is the position in the original code `s`
+         // `pos` is the position in the original code `s`
         // `out` is the final code (outcome)
         lm.files.back().out_start.push_back(0);
         lm.files.back().in_start.push_back(0);
@@ -688,28 +702,28 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 process_include(out, s, lm, pos, fixed_form, include_dirs, col);
             }
             newline = false;
-            if (s[pos] == '!') in_comment = true;
+            if (s[pos] == '!' && !in_string) in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&') {
+            if (!in_comment && s[pos] == '&' &&(next_nonspace_character(s,pos) == '\n' || next_nonspace_character(s,pos) == '!')) {
                 size_t pos2=pos+1;
-                bool ws_or_comment;
+                bool ws_or_comment = false;
                 cont1(s, pos2, in_string, quote, ws_or_comment);
                 if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
                 if (ws_or_comment) {
                     while (ws_or_comment) {
                         cont1(s, pos2, in_string, quote, ws_or_comment);
                         if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
-                    }
+                    }}
                     // `pos` will move by more than 1, close the old interval
-    //                lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
+                    //lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
                     // Move `pos`
                     pos = pos2;
-                    if (s[pos] == '&') pos++;
+                    if (s[pos] == '&' &&  previous_nonspace_character(s, pos) == '\n') pos++;
                     // Start a new interval (just the starts, the size will be
                     // filled in later)
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                }
+                
             } else {
                 if (s[pos] == '\n') {
                     lm.files.back().in_newlines.push_back(pos);

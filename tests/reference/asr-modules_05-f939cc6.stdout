@@ -27,6 +27,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -43,6 +44,7 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             print_vars:
                                                 (Variable
@@ -58,6 +60,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -138,6 +141,7 @@
                                     Private
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             publ:
                                 (Variable
@@ -159,6 +163,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

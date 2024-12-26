@@ -135,7 +135,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntrinsicElementalFunction(x);
         ASR::IntrinsicElementalFunction_t& xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0])) ) {
-            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(xx.m_type);
+            xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
     }
@@ -147,7 +147,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         }
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
-            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(xx.m_type);
+            xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
     }
@@ -157,7 +157,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         T& xx = const_cast<T&>(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_left)) &&
             !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) ) {
-            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(xx.m_type);
+            xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
     }
@@ -200,7 +200,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_v)) &&
             !ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) ) {
             ASR::StructInstanceMember_t& xx = const_cast<ASR::StructInstanceMember_t&>(x);
-            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(x.m_type);
+            xx.m_type = ASRUtils::extract_type(x.m_type);
         }
     }
 };
@@ -235,7 +235,7 @@ class ReplaceArrayOpSimplifier: public ASR::BaseExprReplacer<ReplaceArrayOpSimpl
         const Location& loc = x->base.base.loc;
         LCOMPILERS_ASSERT(result_expr != nullptr);
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
-        ASR::ttype_t* result_element_type = ASRUtils::type_get_past_array_pointer_allocatable(result_type);
+        ASR::ttype_t* result_element_type = ASRUtils::extract_type(result_type);
         for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(x->m_type); i++ ) {
             ASR::expr_t* x_i = ASRUtils::fetch_ArrayConstant_value(al, x, i);
             Vec<ASR::array_index_t> array_index_args;
@@ -300,7 +300,7 @@ class ReplaceArrayOpSimplifier: public ASR::BaseExprReplacer<ReplaceArrayOpSimpl
 
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASRUtils::ExprStmtDuplicator duplicator(al);
-        ASR::ttype_t* result_element_type = ASRUtils::type_get_past_array_pointer_allocatable(result_type);
+        ASR::ttype_t* result_element_type = ASRUtils::extract_type(result_type);
         result_element_type = duplicator.duplicate_ttype(result_element_type);
 
         FixTypeVisitor fix_type_visitor(al);
@@ -549,7 +549,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
                 }
             }
             var2indices[var2indices_key] = new_indices;
-            ASR::ttype_t* expr_type = ASRUtils::type_get_past_array_pointer_allocatable(
+            ASR::ttype_t* expr_type = ASRUtils::extract_type(
                     ASRUtils::expr_type(expr));
             *expr_address = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(
                 al, loc, ASRUtils::extract_array_variable(expr), array_item_args.p,
@@ -592,7 +592,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             for( size_t j = 0; j < (i >= offset_for_array_indices ? 1 : var_rank); j++ ) {
                 std::string index_var_name = current_scope->get_unique_name(
                     "__libasr_index_" + std::to_string(j) + "_");
-                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, loc, current_scope, s2c(al, index_var_name), nullptr, 0, ASR::intentType::Local,
                     nullptr, nullptr, ASR::storage_typeType::Default, int32_type, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
@@ -698,7 +698,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             for( size_t j = 0; j < var_ranks[i]; j++ ) {
                 std::string index_var_name = current_scope->get_unique_name(
                     "__libasr_index_" + std::to_string(j) + "_");
-                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                ASR::symbol_t* index = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, loc, current_scope, s2c(al, index_var_name), nullptr, 0, ASR::intentType::Local,
                     nullptr, nullptr, ASR::storage_typeType::Default, int32_type, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
@@ -720,7 +720,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
                 array_index.m_step = nullptr;
                 indices.push_back(al, array_index);
             }
-            ASR::ttype_t* var_i_type = ASRUtils::type_get_past_array_pointer_allocatable(
+            ASR::ttype_t* var_i_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(*vars[i]));
             *vars[i] = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, *vars[i], indices.p,
                 indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));

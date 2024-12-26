@@ -41,6 +41,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -106,6 +107,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -126,6 +128,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 ),
                                             sources:
@@ -152,6 +155,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .true.
                                                 )
                                         })
                                     add_sources_from_dir
@@ -382,6 +386,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -400,6 +405,7 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -417,6 +423,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                 )
                                         })

@@ -30,6 +30,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i1:
                                 (Variable
@@ -46,6 +47,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i2:
                                 (Variable
@@ -61,6 +63,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             i32:
@@ -84,6 +87,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             i64:
                                 (Variable
@@ -106,6 +110,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             l:
                                 (Variable
@@ -121,6 +126,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             l_knd:
@@ -147,6 +153,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -163,6 +170,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             r2:
                                 (Variable
@@ -178,6 +186,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             sp:
@@ -202,6 +211,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

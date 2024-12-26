@@ -28,6 +28,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             pi:
                                 (Variable
@@ -49,6 +50,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -72,6 +74,7 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -87,6 +90,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                 )
                         })

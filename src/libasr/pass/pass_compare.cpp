@@ -59,7 +59,7 @@ public:
 
     #define create_args(x, type, symtab, vec_exprs) { \
         ASR::symbol_t* arg = ASR::down_cast<ASR::symbol_t>( \
-            ASR::make_Variable_t(al, loc, symtab, \
+            ASRUtils::make_Variable_t_util(al, loc, symtab, \
             s2c(al, x), nullptr, 0, ASR::intentType::In, nullptr, nullptr, \
             ASR::storage_typeType::Default, type, nullptr, \
             ASR::abiType::Source, ASR::accessType::Public, \
@@ -182,7 +182,7 @@ public:
 
         // Declare `result`
         ASR::symbol_t* arg = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, tup_compare_symtab,
+            ASRUtils::make_Variable_t_util(al, loc, tup_compare_symtab,
             s2c(al, "result"), nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
             ASR::storage_typeType::Default, bool_type, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
@@ -354,7 +354,7 @@ public:
 
         // Declare `result`
         ASR::symbol_t* res_arg = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, list_compare_symtab,
+            ASRUtils::make_Variable_t_util(al, loc, list_compare_symtab,
             s2c(al, "result"), nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
             ASR::storage_typeType::Default, bool_type, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
