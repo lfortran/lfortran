@@ -403,6 +403,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> id_or_star
 %type <ast> function
 %type <ast> end_function
+%type <ast> generic_type_param
 %type <ast> use_statement
 %type <ast> use_statement1
 %type <vec_ast> use_statement_star
@@ -998,13 +999,13 @@ procedure
     ;
 
 function
-    : KW_FUNCTION id "(" id_list_opt ")"
+    : KW_FUNCTION id generic_type_param "(" id_list_opt ")"
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @12); $$ = FUNCTION0($2, $4, nullptr, nullptr,
-                TRIVIA($6, $13, @$), $7, $8, $9, SPLIT_DECL(p.m_a, $10),
-                SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
+            LLOC(@$, @13); $$ = FUNCTION0($2, $5, nullptr, nullptr,
+                TRIVIA($7, $14, @$), $8, $9, $10, SPLIT_DECL(p.m_a, $11),
+                SPLIT_STMT(p.m_a, $11), $12, $13, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
@@ -1072,6 +1073,12 @@ fn_mod
     | KW_MODULE { $$ = SIMPLE_ATTR(Module, @$); }
     | KW_PURE { $$ = SIMPLE_ATTR(Pure, @$); }
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
+    ;
+
+generic_type_param
+    : "{" id "::" id "}" {
+        $$ = nullptr; // GENERIC_TYPE_PARAM(p.m_a, $2, $4, @$);
+    }
     ;
 
 temp_decl_star
