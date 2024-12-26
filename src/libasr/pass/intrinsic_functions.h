@@ -658,7 +658,7 @@ namespace Aimag {
         std::complex<double> crv;
         if( ASRUtils::extract_value(args[0], crv) ) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
-            return make_ConstantWithType(make_RealConstant_t, c->m_re, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, c->m_im, t, loc);
         } else {
             return nullptr;
         }
