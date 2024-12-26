@@ -614,6 +614,12 @@ public:
                 }
                 args.push_back(al, tmp);
             }
+        } else if (ASRUtils::is_character(*ASRUtils::expr_type(x))) {
+            this->visit_expr(*x);
+            args.reserve(al, 2);
+            args.push_back(al, nullptr); // Later used by `printf_fmt`
+            args.push_back(al, tmp);
+            fmt += " %s";
         } else {
             throw CodeGenError("Unsupported expression as formatter in print", l);
         }
