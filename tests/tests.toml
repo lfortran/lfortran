@@ -4324,6 +4324,12 @@ line = 5
 column = 11
 
 [[test]]
+filename = "lookup_name3.f90"
+lookup_name = true
+line = 6
+column = 2
+
+[[test]]
 filename = "errors/func_parameter_type.f90"
 asr = true
 
