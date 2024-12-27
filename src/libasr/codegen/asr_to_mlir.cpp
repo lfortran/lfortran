@@ -81,6 +81,8 @@ public:
                 else
                     throw LCompilersException("Unhandled Real kind: " +
                         std::to_string(kind));
+            } case ASR::ttypeType::Logical : {
+                return builder->getI1Type();
             } case ASR::ttypeType::Array: {
                 ASR::Array_t *arr_type = down_cast<ASR::Array_t>(asr_type);
                 return mlir::LLVM::LLVMArrayType::get(getType(arr_type->m_type),
@@ -340,6 +342,22 @@ public:
                 type, attr).getResult();
     }
 
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        mlir::Type type = getType(x.m_type);
+        int unaryMinus = 0;
+        if (ASRUtils::extract_value(x.m_value, unaryMinus)) {
+            mlir::IntegerAttr attr = builder->getIntegerAttr(type, unaryMinus);
+            tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                            type, attr).getResult();
+        } else {
+            mlir::IntegerAttr attr = builder->getIntegerAttr(type, unaryMinus);
+            mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, attr);
+            this->visit_expr2(*x.m_arg);
+            tmp = builder->create<mlir::LLVM::SubOp>(loc, zero, tmp);
+        }
+    }
+
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         mlir::Type type; mlir::FloatAttr attr;
@@ -360,6 +378,49 @@ public:
         }
         tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
                 type, attr).getResult();
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        mlir::Type type = getType(x.m_type);
+        double unaryMinus = 0.0;
+        if (ASRUtils::extract_value(x.m_value, unaryMinus)) {
+            mlir::FloatAttr attr = builder->getFloatAttr(type, unaryMinus);
+            tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                            type, attr).getResult();
+        } else {
+            mlir::FloatAttr attr = builder->getFloatAttr(type, unaryMinus);
+            mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, attr);
+            this->visit_expr2(*x.m_arg);
+            tmp = builder->create<mlir::LLVM::FSubOp>(loc, zero, tmp);
+        }
+    }
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        this->visit_expr2(*x.m_arg);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        switch (x.m_kind) {
+            case (ASR::cast_kindType::IntegerToReal): {
+                mlir::Type type;
+                switch (kind) {
+                    case 4: {
+                        type = builder->getF32Type(); break;
+                    } case 8: {
+                        type = builder->getF64Type(); break;
+                    }
+                    default:
+                        throw CodeGenError("Integer constant of kind: `"+
+                            std::to_string(kind) +"` is not supported yet",
+                            x.base.base.loc);
+                }
+                tmp = builder->create<mlir::LLVM::SIToFPOp>(loc, type, tmp);
+                break;
+            } default: {
+                throw CodeGenError("Cast of kind: `"+
+                    std::to_string(x.m_kind) +"` is not supported yet",
+                    x.base.base.loc);
+            }
+        }
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
@@ -444,8 +505,7 @@ public:
         }
     }
 
-    template<typename T>
-    void visit_Compare(const T &x) {
+    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
         this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
         this->visit_expr2(*x.m_right);
@@ -472,12 +532,32 @@ public:
         tmp = builder->create<mlir::LLVM::ICmpOp>(loc, op, left, right);
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
-        visit_Compare(x);
-    }
-
     void visit_RealCompare(const ASR::RealCompare_t &x) {
-        visit_Compare(x);
+        this->visit_expr2(*x.m_left);
+        mlir::Value left = tmp;
+        this->visit_expr2(*x.m_right);
+        mlir::Value right = tmp;
+        mlir::LLVM::FCmpPredicate op;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq: {
+                op = mlir::LLVM::FCmpPredicate::oeq; break;
+            } case ASR::cmpopType::Lt: {
+                op = mlir::LLVM::FCmpPredicate::olt; break;
+            } case ASR::cmpopType::LtE: {
+                op = mlir::LLVM::FCmpPredicate::ole; break;
+            } case ASR::cmpopType::Gt: {
+                op = mlir::LLVM::FCmpPredicate::ogt; break;
+            } case ASR::cmpopType::GtE: {
+                op = mlir::LLVM::FCmpPredicate::oge; break;
+            } case ASR::cmpopType::NotEq: {
+                op = mlir::LLVM::FCmpPredicate::one; break;
+            }
+            default:
+                throw CodeGenError("Compare operator not supported yet",
+                    x.base.base.loc);
+        }
+        tmp = builder->create<mlir::LLVM::FCmpOp>(loc, getType(x.m_type),
+            op, left, right);
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
