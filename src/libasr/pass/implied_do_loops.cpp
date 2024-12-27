@@ -346,7 +346,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             pass_result.push_back(al, allocate_stmt);
         }
         for (size_t i = 0; i < x->n_args; i++) {
-            if(ASR::is_a<ASR::ArrayItem_t>(*x->m_args[i])){
+            if(ASR::is_a<ASR::ArrayItem_t>(*x->m_args[i]) || ASR::is_a<ASR::ArraySection_t>(*x->m_args[i])){
                 ASR::expr_t** temp = current_expr;
                 current_expr = &(x->m_args[i]);
                 self().replace_expr(x->m_args[i]);
@@ -574,6 +574,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             resultvar2value[replacer.result_var] = x.m_value;
             ASR::expr_t** current_expr_copy_9 = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            this->call_replacer();
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
             this->call_replacer();
             current_expr = current_expr_copy_9;
             if( !remove_original_statement ) {

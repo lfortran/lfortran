@@ -657,9 +657,9 @@
                                                     ))]
                                                     (Array
                                                         (Integer 4)
-                                                        [(()
-                                                        ())]
-                                                        DescriptorArray
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     ()
@@ -2034,8 +2034,8 @@
                                                                         (TypeParameter
                                                                             t
                                                                         )
-                                                                        [(()
-                                                                        ())]
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                                                         DescriptorArray
                                                                     )
                                                                     ()

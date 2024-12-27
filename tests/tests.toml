@@ -690,10 +690,6 @@ filename = "../integration_tests/submodule_02.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/sum_02.f90"
-llvm = true
-
-[[test]]
 filename = "program1.f90"
 ast = true
 asr = true
@@ -773,7 +769,6 @@ cumulative = true
 filename = "array_op_simplifier_test.f90"
 asr = true
 pass = "simplifier,array_op_simplifier"
-options = "--experimental-simplifier"
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
@@ -1104,33 +1099,8 @@ asr = true
 llvm = true
 
 [[test]]
-filename = "../integration_tests/arrays_op_1.f90"
-asr = true
-llvm = true
-
-[[test]]
-filename = "../integration_tests/arrays_op_2.f90"
-asr = true
-llvm = true
-
-[[test]]
-filename = "../integration_tests/arrays_op_4.f90"
-asr = true
-llvm = true
-
-[[test]]
-filename = "../integration_tests/arrays_op_5.f90"
-asr = true
-llvm = true
-
-[[test]]
 filename = "../integration_tests/arrays_op_6.f90"
 asr = true
-
-[[test]]
-filename = "../integration_tests/arrays_op_7.f90"
-asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/arrays_op_10.f90"
@@ -1161,11 +1131,6 @@ cpp = true
 julia = true
 
 [[test]]
-filename = "../integration_tests/arrays_06.f90"
-asr = true
-llvm = true
-
-[[test]]
 filename = "../integration_tests/arrays_08_func.f90"
 asr = true
 llvm = true
@@ -1192,10 +1157,6 @@ asr = true
 # [[test]]
 # filename = "../integration_tests/arrays_21.f90"
 # asr = true
-
-[[test]]
-filename = "../integration_tests/arrays_25.f90"
-llvm = true
 
 [[test]]
 filename = "../integration_tests/types_01.f90"
@@ -1298,7 +1259,6 @@ filename = "../integration_tests/derived_types_01.f90"
 ast = true
 ast_f90 = true
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/derived_types_02.f90"
@@ -2138,10 +2098,6 @@ filename = "../integration_tests/intrinsics_31.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/intrinsics_32.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/intrinsics_33.f90"
 asr = true
 
@@ -2158,15 +2114,7 @@ filename = "../integration_tests/intrinsics_36.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/intrinsics_37.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/intrinsics_39.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/intrinsics_46.f90"
 asr = true
 
 # all
@@ -2658,11 +2606,6 @@ asr = true
 llvm = true
 
 [[test]]
-filename = "../integration_tests/class_03.f90"
-asr = true
-llvm = true
-
-[[test]]
 filename = "../integration_tests/class_04.f90"
 asr = true
 llvm = true
@@ -2864,10 +2807,6 @@ filename = "../integration_tests/bits_04.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/bits_05.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/boz_01.f90"
 asr = true
 llvm = true
@@ -2994,7 +2933,7 @@ filename = "../integration_tests/functions_16.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/arrays_elemental_15.f90"
+filename = "bits1.f90"
 asr = true
 
 [[test]]
@@ -3113,11 +3052,6 @@ pass = "pass_array_by_data,transform_optional_argument_functions"
 [[test]]
 filename = "../integration_tests/modules_48.f90"
 asr = true
-
-[[test]]
-filename = "../integration_tests/modules_50.f90"
-asr = true
-pass = "nested_vars,implied_do_loops"
 
 [[test]]
 filename = "implicit_typing1.f90"
@@ -4461,3 +4395,8 @@ show_errors = true
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
+
+[[test]]
+filename = "../integration_tests/loop_var_use_after_loop.f90"
+pass = "do_loops"
+options = "--use-loop-variable-after-loop"

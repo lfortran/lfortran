@@ -195,6 +195,23 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+        )
+        (Print
+            0
+            ()
+            [(String "*t")
+            (String "")]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (Comment
+                    "!!     call set_args ( \\'  &"
+                )
+                (Comment
+                    "!! & \\n"
+                )
+                (EndOfLine)]
+            )
         )]
         []
     )]

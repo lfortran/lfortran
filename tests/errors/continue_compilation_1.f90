@@ -1,5 +1,5 @@
 program continue_compilation_1
-    implicit none
+    implicit integer(a-f), real(e-z)
 
     integer :: a(3), b(3), b1(3, 3), a3(3, 3, 3), b4(3, 3, 3, 3), a5, c5, i
     character :: a1(3, 3)

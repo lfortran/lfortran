@@ -830,14 +830,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
+    Vec<ASR::stmt_t*>* parent_body_for_where;
     ExprsWithTargetType& exprs_with_target;
     bool realloc_lhs;
+    bool inside_where;
 
     public:
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
-        al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_),
-        realloc_lhs(realloc_lhs_) {(void)realloc_lhs; /*Silence-Warning*/}
+        al(al_), current_body(nullptr), parent_body_for_where(nullptr),
+            exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
+            inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl
@@ -1034,6 +1037,32 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             }
         }
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
+    }
+
+    void visit_Where(const ASR::Where_t &x) {
+        bool inside_where_copy = inside_where;
+        if( !inside_where ) {
+            inside_where = true;
+            parent_body_for_where = current_body;
+        }
+        Vec<ASR::stmt_t*>* current_body_copy_ = current_body;
+        current_body = parent_body_for_where;
+        ASR::expr_t** current_expr_copy_86 = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_test));
+        call_replacer();
+        current_expr = current_expr_copy_86;
+        if( x.m_test && visit_expr_after_replacement )
+        visit_expr(*x.m_test);
+        current_body = current_body_copy_;
+
+        ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_orelse, xx.n_orelse);
+
+        if( !inside_where_copy ) {
+            inside_where = false;
+            parent_body_for_where = nullptr;
+        }
     }
 
     void visit_Print(const ASR::Print_t& x) {
@@ -1453,7 +1482,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASRUtils::extract_indices(target, m_args, n_args);
             if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args))) ||
-                 target_Type == targetType::GeneratedTargetPointerForArraySection ) {
+                 target_Type == targetType::GeneratedTargetPointerForArraySection ||
+                (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
                 force_replace_current_expr_for_array(std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name))
                 return ;

@@ -33,7 +33,7 @@ class CreateFunctionFromSubroutineSimplifier: public ASR::BaseWalkVisitor<Create
 
 class ReplaceFunctionCallWithSubroutineCallSimplifier:
     public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCallSimplifier> {
-private : 
+private :
 public :
     Allocator & al;
     int result_counter = 0;
@@ -54,7 +54,7 @@ public :
     void replace_FunctionCall(ASR::FunctionCall_t* x){
         traverse_functionCall_args(x->m_args, x->n_args);
         if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the simplifier. No need to check for them here.
-            // Create variable in current_scope to be holding the return + Deallocate. 
+            // Create variable in current_scope to be holding the return + Deallocate.
             ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
                 "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
             if(ASRUtils::is_allocatable(result_var)){
@@ -75,7 +75,7 @@ public :
                                                 nullptr, false, false));
             // replace functionCall with `result_var` + push subroutineCall into the body.
             *current_expr = result_var;
-            pass_result.push_back(al, subrout_call); 
+            pass_result.push_back(al, subrout_call);
         }
     }
 };
@@ -160,7 +160,8 @@ class ReplaceFunctionCallWithSubroutineCallSimplifierVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
             }
-            if(ASRUtils::is_allocatable(x.m_value)){ // Make sure to deallocate the argument that will hold the return of function.
+            if(ASRUtils::is_allocatable(x.m_value) &&
+               ASRUtils::is_allocatable(x.m_target)){ // Make sure to deallocate the argument that will hold the return of function.
                 Vec<ASR::expr_t*> to_be_deallocated;
                 to_be_deallocated.reserve(al, 1);
                 to_be_deallocated.push_back(al, x.m_target);

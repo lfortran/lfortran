@@ -164,8 +164,8 @@ void populate_symbol_lists(T* x, LCompilers::LocationManager lm, std::vector<LCo
             last_column, filename);
         loc.first_column = first_column;
         loc.last_column = last_column;
-        loc.first_line = first_line-1;
-        loc.last_line = last_line-1;
+        loc.first_line = first_line;
+        loc.last_line = last_line;
         loc.symbol_name = symbol_name;
         loc.filename = filename;
         loc.symbol_type = a.second->type;
@@ -292,8 +292,8 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
                     filename);
                 h.first_column = first_column;
                 h.last_column = last_column;
-                h.first_line = first_line-1;
-                h.last_line = last_line-1;
+                h.first_line = first_line;
+                h.last_line = last_line;
                 h.filename = filename;
                 diag_lists.push_back(h);
             }
@@ -399,8 +399,8 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
                 last_column, filename);
             loc.first_column = first_column;
             loc.last_column = last_column;
-            loc.first_line = first_line-1;
-            loc.last_line = last_line-1;
+            loc.first_line = first_line;
+            loc.last_line = last_line;
             loc.symbol_name = symbol_name;
             loc.filename = filename;
             loc.symbol_type = s->type;
@@ -448,6 +448,7 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
         test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
+        test_capture.AddMember("filename", symbol.filename);
         test_output.PushBack(test_capture);
     }
 

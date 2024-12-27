@@ -258,11 +258,11 @@ public:
                 a_newunit = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_newunit_type = ASRUtils::expr_type(a_newunit);
                 if( ( m_arg_str == std::string("newunit") &&
-                      a_newunit->type != ASR::exprType::Var ) ||
+                     !ASRUtils::is_variable(a_newunit) ) ||
                     ( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))
                     ) ) {
                         diag.add(Diagnostic(
-                            "`newunit`/`unit` must be a variable of type, Integer or IntegerPointer",
+                            "`newunit`/`unit` must be a mutable variable of type, Integer or IntegerPointer",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }));

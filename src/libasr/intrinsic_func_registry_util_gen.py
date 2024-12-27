@@ -1100,7 +1100,7 @@ def add_create_func_return_src(func_name):
         src += indent * 5 +             "size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);\n"
         src += indent * 5 +             "return_type = ASRUtils::make_Array_t_util(al, type->base.loc, "
         src +=                              "return_type, m_dims, n_dims, ASR::abiType::Source, false, "
-        src +=                              "ASR::array_physical_typeType::DescriptorArray, true);\n"
+        src +=                              "ASR::array_physical_typeType::DescriptorArray);\n"
         src += indent * 5 +             "break;\n"
         src += indent * 4 +         "}\n"
         src += indent * 3 +     "}\n"

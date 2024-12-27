@@ -81,6 +81,8 @@ public:
                 else
                     throw LCompilersException("Unhandled Real kind: " +
                         std::to_string(kind));
+            } case ASR::ttypeType::Logical : {
+                return builder->getI1Type();
             } case ASR::ttypeType::Array: {
                 ASR::Array_t *arr_type = down_cast<ASR::Array_t>(asr_type);
                 return mlir::LLVM::LLVMArrayType::get(getType(arr_type->m_type),
@@ -123,7 +125,19 @@ public:
         module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
 
-        // Visit Program
+        // Visit all the Functions
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+        // Visit all the Modules
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Module_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+        // Finally, visit Program
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -131,19 +145,97 @@ public:
         }
     }
 
+    void visit_Module(const ASR::Module_t &x) {
+        // Visit all the Functions
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
+            x.m_function_signature);
+        Vec<mlir::Type> argsType; argsType.reserve(al, fnType->n_arg_types);
+        // Collect all the arguments type
+        for (size_t i=0; i<fnType->n_arg_types; i++) {
+            mlir::Type argType = getType(fnType->m_arg_types[i]);
+            argsType.push_back(al, mlir::LLVM::LLVMPointerType::get(argType));
+        }
+        mlir::Type returnType;
+        // Collect the return type
+        if (fnType->m_return_var_type) {
+            returnType = getType(fnType->m_return_var_type);
+        } else {
+            returnType = mlir::LLVM::LLVMVoidType::get(context.get());
+        }
+
+        mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
+            returnType, argsType.as_vector(), false);
+        mlir::OpBuilder builder0(module->getBodyRegion());
+        // Create function
+        mlir::LLVM::LLVMFuncOp fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
+            loc, x.m_name, llvmFnType);
+
+        mlir::Block &entryBlock = *fn.addEntryBlock();
+        builder = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
+            &entryBlock));
+
+        // Store all the argument symbols in the mlir_symtab
+        // Later, this is used in the function's body
+        for (size_t i=0; i<x.n_args; i++) {
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_args[i]);
+            uint32_t h = get_hash((ASR::asr_t*) v);
+            mlir_symtab[h] = fn.getArgument(i);
+        }
+
+        // Declare only the Local and ReturnVar symbols
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
+                if (v->m_intent == ASR::intentType::Local ||
+                        v->m_intent == ASR::intentType::ReturnVar) {
+                    visit_symbol(*item.second);
+                }
+            }
+        }
+
+        // Visit the function body
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+        }
+        if (x.m_return_var) {
+            this->visit_expr2(*x.m_return_var);
+            builder->create<mlir::LLVM::ReturnOp>(loc, tmp);
+        } else {
+            builder->create<mlir::LLVM::ReturnOp>(loc, mlir::ValueRange{});
+        }
+    }
+
     void visit_Program(const ASR::Program_t &x) {
         mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
-            builder->getI32Type(), llvmI8PtrTy, true);
+            builder->getI32Type(), {}, false);
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp function = builder0.create<mlir::LLVM::LLVMFuncOp>(
             loc, "main", llvmFnType);
+
+        // Visit all the Functions
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
 
         mlir::Block &entryBlock = *function.addEntryBlock();
         builder = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
             &entryBlock));
 
+        // Visit all the Variables
         for (auto &item : x.m_symtab->get_scope()) {
-            visit_symbol(*item.second);
+            if (is_a<ASR::Variable_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
         }
 
         for (size_t i = 0; i < x.n_body; i++) {
@@ -171,7 +263,53 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         ASR::Variable_t *v = ASRUtils::EXPR2VAR(&x.base);
         uint32_t h = get_hash((ASR::asr_t*) v);
-        tmp = mlir_symtab[h];
+        if (mlir_symtab.find(h) != mlir_symtab.end()) {
+            tmp = mlir_symtab[h];
+        } else {
+            throw CodeGenError("Symbol '"+
+                std::string(v->m_name)
+                +"' not found", x.base.base.loc);
+        }
+    }
+
+    template<typename T>
+    void visit_Call(const T &x) {
+        mlir::LLVM::LLVMFuncOp fn = module->lookupSymbol<mlir::LLVM::LLVMFuncOp>(
+            ASRUtils::symbol_name(x.m_name));
+        if (!fn) {
+            throw CodeGenError("Function '"+
+                std::string(ASRUtils::symbol_name(x.m_name))
+                +"' not found", x.base.base.loc);
+        }
+        Vec<mlir::Value> args; args.reserve(al, x.n_args);
+        for (size_t i=0; i<x.n_args; i++) {
+            this->visit_expr(*x.m_args[i].m_value);
+            if (!is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                // Constant, BinOp, etc would have the type i32, but not i32*
+                // So, We create an `alloca` here, store the value and
+                // then, pass the alloca as an argument
+                mlir::Type argType = mlir::LLVM::LLVMPointerType::get(
+                    getType(ASRUtils::expr_type(x.m_args[i].m_value)));
+                mlir::Value size = builder->create<mlir::LLVM::ConstantOp>(loc,
+                    builder->getI32Type(), builder->getI64IntegerAttr(1));
+                mlir::Value alloca = builder->create<mlir::LLVM::AllocaOp>(
+                    loc, argType, size);
+                builder->create<mlir::LLVM::StoreOp>(loc, tmp, alloca);
+                args.push_back(al, alloca);
+            } else {
+                args.push_back(al, tmp);
+            }
+        }
+        tmp = builder->create<mlir::LLVM::CallOp>(loc, fn,
+            args.as_vector()).getResult(0);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        visit_Call(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        visit_Call(x);
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -204,6 +342,22 @@ public:
                 type, attr).getResult();
     }
 
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        mlir::Type type = getType(x.m_type);
+        int unaryMinus = 0;
+        if (ASRUtils::extract_value(x.m_value, unaryMinus)) {
+            mlir::IntegerAttr attr = builder->getIntegerAttr(type, unaryMinus);
+            tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                            type, attr).getResult();
+        } else {
+            mlir::IntegerAttr attr = builder->getIntegerAttr(type, unaryMinus);
+            mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, attr);
+            this->visit_expr2(*x.m_arg);
+            tmp = builder->create<mlir::LLVM::SubOp>(loc, zero, tmp);
+        }
+    }
+
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         mlir::Type type; mlir::FloatAttr attr;
@@ -224,6 +378,49 @@ public:
         }
         tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
                 type, attr).getResult();
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        mlir::Type type = getType(x.m_type);
+        double unaryMinus = 0.0;
+        if (ASRUtils::extract_value(x.m_value, unaryMinus)) {
+            mlir::FloatAttr attr = builder->getFloatAttr(type, unaryMinus);
+            tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                            type, attr).getResult();
+        } else {
+            mlir::FloatAttr attr = builder->getFloatAttr(type, unaryMinus);
+            mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, attr);
+            this->visit_expr2(*x.m_arg);
+            tmp = builder->create<mlir::LLVM::FSubOp>(loc, zero, tmp);
+        }
+    }
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        this->visit_expr2(*x.m_arg);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        switch (x.m_kind) {
+            case (ASR::cast_kindType::IntegerToReal): {
+                mlir::Type type;
+                switch (kind) {
+                    case 4: {
+                        type = builder->getF32Type(); break;
+                    } case 8: {
+                        type = builder->getF64Type(); break;
+                    }
+                    default:
+                        throw CodeGenError("Integer constant of kind: `"+
+                            std::to_string(kind) +"` is not supported yet",
+                            x.base.base.loc);
+                }
+                tmp = builder->create<mlir::LLVM::SIToFPOp>(loc, type, tmp);
+                break;
+            } default: {
+                throw CodeGenError("Cast of kind: `"+
+                    std::to_string(x.m_kind) +"` is not supported yet",
+                    x.base.base.loc);
+            }
+        }
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
@@ -333,6 +530,34 @@ public:
                     x.base.base.loc);
         }
         tmp = builder->create<mlir::LLVM::ICmpOp>(loc, op, left, right);
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t &x) {
+        this->visit_expr2(*x.m_left);
+        mlir::Value left = tmp;
+        this->visit_expr2(*x.m_right);
+        mlir::Value right = tmp;
+        mlir::LLVM::FCmpPredicate op;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq: {
+                op = mlir::LLVM::FCmpPredicate::oeq; break;
+            } case ASR::cmpopType::Lt: {
+                op = mlir::LLVM::FCmpPredicate::olt; break;
+            } case ASR::cmpopType::LtE: {
+                op = mlir::LLVM::FCmpPredicate::ole; break;
+            } case ASR::cmpopType::Gt: {
+                op = mlir::LLVM::FCmpPredicate::ogt; break;
+            } case ASR::cmpopType::GtE: {
+                op = mlir::LLVM::FCmpPredicate::oge; break;
+            } case ASR::cmpopType::NotEq: {
+                op = mlir::LLVM::FCmpPredicate::one; break;
+            }
+            default:
+                throw CodeGenError("Compare operator not supported yet",
+                    x.base.base.loc);
+        }
+        tmp = builder->create<mlir::LLVM::FCmpOp>(loc, getType(x.m_type),
+            op, left, right);
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
@@ -475,6 +700,12 @@ public:
                 }
                 args.push_back(al, tmp);
             }
+        } else if (ASRUtils::is_character(*ASRUtils::expr_type(x))) {
+            this->visit_expr(*x);
+            args.reserve(al, 2);
+            args.push_back(al, nullptr); // Later used by `printf_fmt`
+            args.push_back(al, tmp);
+            fmt += " %s";
         } else {
             throw CodeGenError("Unsupported expression as formatter in print", l);
         }

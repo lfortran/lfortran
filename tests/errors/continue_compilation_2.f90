@@ -27,7 +27,7 @@ program continue_compilation_2
     use iso_fortran_env
     use iso_c_binding, only: c_ptr, c_f_pointer
     use Geometry
-    implicit none
+    implicit real(a-z)
 
     integer, pointer, parameter :: v => null()
     integer, allocatable, parameter :: v=1
@@ -314,6 +314,10 @@ program continue_compilation_2
     integer, parameter, target :: foo=4
     print *,foo
 
+    integer :: x_bad_implicit
+    x_bad_implicit = 10
+    print *, x_bad_implicit
+
     contains
     logical function f(x)
         integer, intent(in), optional :: x
@@ -327,3 +331,20 @@ subroutine try_to_change(y)
     integer, intent(in) :: y
     y = 99  
 end subroutine
+
+module my_module
+    integer :: x = 10
+end module wrong_module_name 
+
+subroutine my_subroutine1()
+    print *, "Inside subroutine"
+end subroutine different_name
+
+function my_function() result(res)
+    integer :: res
+    res = 42
+end function not_my_function
+
+subroutine my_subroutine2()
+    print *, "Inside subroutine"
+end subroutine different_name 

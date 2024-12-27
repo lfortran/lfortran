@@ -12,4 +12,9 @@ y = [z, x2([1,2],1)]
 if(y(1) /= 2 .or. y(2) /= 1 .or. y(3) /= 10) error stop
 y2 = [z, x2([1,2],[1,2])]
 if(y2(1) /= 2 .or. y2(2) /= 1 .or. y2(3) /= 10 .or. y2(4) /= 22 .or. y2(5) /= 1) error stop
+y2 = [z, x2(2:3,2:3)]
+if(y2(1) /= 2 .or. y2(2) /= 1 .or. y2(3) /= 2 .or. y2(4) /= 1 .or. y2(5) /= 2) error stop
+y2 = [z, x2(1:2,[1,2])]
+if(y2(1) /= 2 .or. y2(2) /= 1 .or. y2(3) /= 10 .or. y2(4) /= 22 .or. y2(5) /= 1) error stop
+
 end program

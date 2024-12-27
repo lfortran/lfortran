@@ -4052,10 +4052,7 @@ namespace MoveAlloc {
         declare_basic_variables(new_name);
         fill_func_arg("from", arg_types[0]);
         fill_func_arg("to", arg_types[1]);
-        auto result = declare(new_name, ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, arg_types[0])), ReturnVar);
-        LCompilers::ASR::dimension_t *m_dims = nullptr;
-        int n_dims = extract_dimensions_from_ttype(arg_types[0], m_dims);
-        body.push_back(al, b.Allocate(result, m_dims, n_dims));
+        auto result = declare(new_name, arg_types[0], ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
