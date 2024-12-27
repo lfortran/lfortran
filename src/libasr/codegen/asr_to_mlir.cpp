@@ -123,9 +123,30 @@ public:
         module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
 
-        // Visit Program
+        // Visit all the Functions
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+        // Visit all the Modules
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Module_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+        // Finally, visit Program
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+    }
+
+    void visit_Module(const ASR::Module_t &x) {
+        // Visit all the Functions
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
         }
@@ -197,7 +218,7 @@ public:
         mlir::LLVM::LLVMFuncOp function = builder0.create<mlir::LLVM::LLVMFuncOp>(
             loc, "main", llvmFnType);
 
-        // Visit all the function symbols
+        // Visit all the Functions
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -208,7 +229,7 @@ public:
         builder = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
             &entryBlock));
 
-        // Visit all the Variable symbols
+        // Visit all the Variables
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -423,7 +444,8 @@ public:
         }
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+    template<typename T>
+    void visit_Compare(const T &x) {
         this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
         this->visit_expr2(*x.m_right);
@@ -448,6 +470,14 @@ public:
                     x.base.base.loc);
         }
         tmp = builder->create<mlir::LLVM::ICmpOp>(loc, op, left, right);
+    }
+
+    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+        visit_Compare(x);
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t &x) {
+        visit_Compare(x);
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
@@ -590,6 +620,12 @@ public:
                 }
                 args.push_back(al, tmp);
             }
+        } else if (ASRUtils::is_character(*ASRUtils::expr_type(x))) {
+            this->visit_expr(*x);
+            args.reserve(al, 2);
+            args.push_back(al, nullptr); // Later used by `printf_fmt`
+            args.push_back(al, tmp);
+            fmt += " %s";
         } else {
             throw CodeGenError("Unsupported expression as formatter in print", l);
         }
