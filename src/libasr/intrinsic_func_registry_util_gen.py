@@ -854,8 +854,9 @@ intrinsic_funcs_args = {
         {
             "args": [("int",), ("real",), ("complex",)],
             "return": "real32",
-            "kind_arg": True,
-        },
+            "kind_arg": True, 
+            "real_32_except_complex": True
+        },   
     ],
     "Int": [
         {
@@ -1067,6 +1068,15 @@ def add_create_func_return_src(func_name):
         src += indent * 3 +     "}\n"
         src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
         src += indent * 2 + "}\n"
+    real_32_except_complex = arg_infos[0].get("real_32_except_complex", False)
+    if real_32_except_complex:
+        src += indent * 2 + "else { \n"
+        src += indent * 3 + "ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);\n"
+        src += indent * 3 + "if (is_complex(*arg_type)) { \n"
+        src += indent * 4 + "int kind = ASRUtils::extract_kind_from_ttype_t(arg_type); \n"
+        src += indent * 4 + "set_kind_to_ttype_t(return_type, kind); \n"
+        src += indent * 3 + "} \n"
+        src += indent * 2 + "} \n"
     src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):

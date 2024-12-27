@@ -976,7 +976,7 @@ RUN(NAME intrinsics_331 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cshift
 RUN(NAME intrinsics_332 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc ONLY_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME intrinsics_333 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc ONLY_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME intrinsics_334 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) #move_alloc
-
+RUN(NAME intrinsics_335 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) 
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 
