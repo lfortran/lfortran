@@ -33,7 +33,7 @@ program continue_compilation_2
     integer, allocatable, parameter :: v=1
     integer init_x = 1
 
-    ! Variable declarations
+    ! Variable declarations 
     type(c_ptr) :: queries_1
     integer, pointer :: y_1
     type(c_ptr) :: queries_2
@@ -317,6 +317,9 @@ program continue_compilation_2
     integer :: x_bad_implicit
     x_bad_implicit = 10
     print *, x_bad_implicit
+
+    !unsupported kind
+    real*16 :: unsupported_kind
 
     contains
     logical function f(x)
