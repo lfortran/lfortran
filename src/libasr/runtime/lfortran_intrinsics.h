@@ -209,7 +209,7 @@ LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size);
 LFORTRAN_API void _lfortran_free(char* ptr);
 LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t len, int64_t* size, int64_t* capacity);
 LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s);
-LFORTRAN_API char* _lfortran_str_item(char* s, int32_t idx);
+LFORTRAN_API char* _lfortran_str_item(char* s, int64_t idx);
 LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2); // idx1 and idx2 both start from 1
 LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
                         bool idx1_present, bool idx2_present);

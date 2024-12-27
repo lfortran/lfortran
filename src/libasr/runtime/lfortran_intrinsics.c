@@ -2292,13 +2292,14 @@ LFORTRAN_API char* _lfortran_strrepeat_c(char* s, int32_t n)
 }
 
 // idx starts from 1
-LFORTRAN_API char* _lfortran_str_item(char* s, int32_t idx) {
+LFORTRAN_API char* _lfortran_str_item(char* s, int64_t idx) {
 
     int s_len = strlen(s);
-    int original_idx = idx - 1;
+    // TODO: Remove bound check in Release mode
+    int64_t original_idx = idx - 1;
     if (idx < 1) idx += s_len;
     if (idx < 1 || idx >= s_len + 1) {
-        printf("String index: %d is out of Bounds\n", original_idx);
+        printf("String index: %ld is out of Bounds\n", original_idx);
         exit(1);
     }
     char* res = (char*)malloc(2);
