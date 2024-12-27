@@ -15,8 +15,9 @@
 namespace LCompilers::LFortran {
     class LookupNameVisitor : public ASR::DefaultLookupNameVisitor<LookupNameVisitor> {
         public:
-            LookupNameVisitor(uint16_t pos) {
+            LookupNameVisitor(uint16_t pos, int delta = 0) {
                 this->pos = pos;
+                this->delta = delta;
             }
             void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
                 if ((bool&)x) { } // Suppress unused warning

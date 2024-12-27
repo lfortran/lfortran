@@ -380,7 +380,9 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
                 // pos is to the right of the word boundary
                 pos--;
             }
-            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
+            uint64_t output_pos = lm.output_to_input_pos(pos, false);
+            int delta = abs((int)output_pos - (int)pos);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos, delta);
             LCompilers::document_symbols loc;
             if (!ASR::is_a<ASR::symbol_t>(*asr)) {
                 std::cout << "[]";
@@ -393,9 +395,9 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             uint32_t first_column;
             uint32_t last_column;
             std::string filename;
-            lm.pos_to_linecol(asr->loc.first, first_line,
+            lm.pos_to_linecol(lm.output_to_input_pos(asr->loc.first, false), first_line,
                 first_column, filename);
-            lm.pos_to_linecol(asr->loc.last, last_line,
+            lm.pos_to_linecol(lm.output_to_input_pos(asr->loc.last, true), last_line,
                 last_column, filename);
             loc.first_column = first_column;
             loc.last_column = last_column;
@@ -442,7 +444,7 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
 
         location_object.SetObject();
         location_object.AddMember("range", range_object);
-        location_object.AddMember("uri", "uri");
+        location_object.AddMember("uri", symbol.filename);
 
         test_capture.SetObject();
         test_capture.AddMember("kind", kind);
@@ -479,7 +481,9 @@ int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &c
             uint16_t l = std::stoi(compiler_options.line);
             uint16_t c = std::stoi(compiler_options.column);
             uint64_t pos = lm.linecol_to_pos(l, c);
-            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
+            uint64_t output_pos = lm.output_to_input_pos(pos, false);
+            int delta = abs((int)output_pos - (int)pos);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos, delta);
             LCompilers::document_symbols loc;
             if (!ASR::is_a<ASR::symbol_t>(*asr)) {
                 std::cout << "[]";
