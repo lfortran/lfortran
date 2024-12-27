@@ -694,12 +694,14 @@ public:
 
     llvm::Value* lfortran_str_item(llvm::Value* str, llvm::Value* idx1)
     {
-        std::string runtime_func_name = "_lfortran_str_item";
-        llvm::Function *fn = module->getFunction(runtime_func_name);
+        std::string runtime_func_name = std::string("_lfortran_str_item_") + "int"
+                                        + std::to_string(idx1->getType()->getIntegerBitWidth())
+                                        + "_t";
+        llvm::Function* fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
-                        character_type, llvm::Type::getInt32Ty(context)
+                        character_type, idx1->getType()
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
