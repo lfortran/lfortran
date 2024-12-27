@@ -852,7 +852,7 @@ intrinsic_funcs_args = {
     ],
     "Real": [
         {
-            "args": [("real",), ("int",), ("complex",)],
+            "args": [("int",), ("real",), ("complex",)],
             "return": "real32",
             "kind_arg": True, 
             "real_32_except_complex": True
