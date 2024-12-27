@@ -341,26 +341,16 @@ public:
     }
 
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
-        mlir::Type type;
-        switch (int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type)) {
-            case 4: {
-                type = builder->getI32Type(); break;
-            } case 8: {
-                type = builder->getI64Type(); break;
-            } default: {
-                throw CodeGenError("IntegerUnaryMinus of kind: `"+
-                    std::to_string(kind) +"` is not supported yet",
-                    x.base.base.loc);
-            }
-        }
+        mlir::Type type = getType(x.m_type);
         int unaryMinus = 0;
         if (ASRUtils::extract_value(x.m_value, unaryMinus)) {
-            mlir::IntegerAttr attr = builder->getI32IntegerAttr(unaryMinus);
+            mlir::IntegerAttr attr = builder->getIntegerAttr(type, unaryMinus);
             tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
                             type, attr).getResult();
         } else {
+            mlir::IntegerAttr attr = builder->getIntegerAttr(type, unaryMinus);
             mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
-                type, builder->getIndexAttr(0));
+                type, attr);
             this->visit_expr2(*x.m_arg);
             tmp = builder->create<mlir::LLVM::SubOp>(loc, zero, tmp);
         }
@@ -386,6 +376,22 @@ public:
         }
         tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
                 type, attr).getResult();
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        mlir::Type type = getType(x.m_type);
+        double unaryMinus = 0.0;
+        if (ASRUtils::extract_value(x.m_value, unaryMinus)) {
+            mlir::FloatAttr attr = builder->getFloatAttr(type, unaryMinus);
+            tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                            type, attr).getResult();
+        } else {
+            mlir::FloatAttr attr = builder->getFloatAttr(type, unaryMinus);
+            mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, attr);
+            this->visit_expr2(*x.m_arg);
+            tmp = builder->create<mlir::LLVM::FSubOp>(loc, zero, tmp);
+        }
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
