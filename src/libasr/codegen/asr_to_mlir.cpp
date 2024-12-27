@@ -470,8 +470,7 @@ public:
         }
     }
 
-    template<typename T>
-    void visit_Compare(const T &x) {
+    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
         this->visit_expr2(*x.m_left);
         mlir::Value left = tmp;
         this->visit_expr2(*x.m_right);
@@ -498,12 +497,32 @@ public:
         tmp = builder->create<mlir::LLVM::ICmpOp>(loc, op, left, right);
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
-        visit_Compare(x);
-    }
-
     void visit_RealCompare(const ASR::RealCompare_t &x) {
-        visit_Compare(x);
+        this->visit_expr2(*x.m_left);
+        mlir::Value left = tmp;
+        this->visit_expr2(*x.m_right);
+        mlir::Value right = tmp;
+        mlir::LLVM::FCmpPredicate op;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq: {
+                op = mlir::LLVM::FCmpPredicate::oeq; break;
+            } case ASR::cmpopType::Lt: {
+                op = mlir::LLVM::FCmpPredicate::olt; break;
+            } case ASR::cmpopType::LtE: {
+                op = mlir::LLVM::FCmpPredicate::ole; break;
+            } case ASR::cmpopType::Gt: {
+                op = mlir::LLVM::FCmpPredicate::ogt; break;
+            } case ASR::cmpopType::GtE: {
+                op = mlir::LLVM::FCmpPredicate::oge; break;
+            } case ASR::cmpopType::NotEq: {
+                op = mlir::LLVM::FCmpPredicate::one; break;
+            }
+            default:
+                throw CodeGenError("Compare operator not supported yet",
+                    x.base.base.loc);
+        }
+        tmp = builder->create<mlir::LLVM::FCmpOp>(loc, getType(x.m_type),
+            op, left, right);
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
