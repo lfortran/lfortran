@@ -81,6 +81,8 @@ public:
                 else
                     throw LCompilersException("Unhandled Real kind: " +
                         std::to_string(kind));
+            } case ASR::ttypeType::Logical : {
+                return builder->getI1Type();
             } case ASR::ttypeType::Array: {
                 ASR::Array_t *arr_type = down_cast<ASR::Array_t>(asr_type);
                 return mlir::LLVM::LLVMArrayType::get(getType(arr_type->m_type),
@@ -391,6 +393,33 @@ public:
                 type, attr);
             this->visit_expr2(*x.m_arg);
             tmp = builder->create<mlir::LLVM::FSubOp>(loc, zero, tmp);
+        }
+    }
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        this->visit_expr2(*x.m_arg);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        switch (x.m_kind) {
+            case (ASR::cast_kindType::IntegerToReal): {
+                mlir::Type type;
+                switch (kind) {
+                    case 4: {
+                        type = builder->getF32Type(); break;
+                    } case 8: {
+                        type = builder->getF64Type(); break;
+                    }
+                    default:
+                        throw CodeGenError("Integer constant of kind: `"+
+                            std::to_string(kind) +"` is not supported yet",
+                            x.base.base.loc);
+                }
+                tmp = builder->create<mlir::LLVM::SIToFPOp>(loc, type, tmp);
+                break;
+            } default: {
+                throw CodeGenError("Cast of kind: `"+
+                    std::to_string(x.m_kind) +"` is not supported yet",
+                    x.base.base.loc);
+            }
         }
     }
 
