@@ -340,6 +340,32 @@ public:
                 type, attr).getResult();
     }
 
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        mlir::Type type;
+        switch (int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type)) {
+            case 4: {
+                type = builder->getI32Type(); break;
+            } case 8: {
+                type = builder->getI64Type(); break;
+            } default: {
+                throw CodeGenError("IntegerUnaryMinus of kind: `"+
+                    std::to_string(kind) +"` is not supported yet",
+                    x.base.base.loc);
+            }
+        }
+        int unaryMinus = 0;
+        if (ASRUtils::extract_value(x.m_value, unaryMinus)) {
+            mlir::IntegerAttr attr = builder->getI32IntegerAttr(unaryMinus);
+            tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                            type, attr).getResult();
+        } else {
+            mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                type, builder->getIndexAttr(0));
+            this->visit_expr2(*x.m_arg);
+            tmp = builder->create<mlir::LLVM::SubOp>(loc, zero, tmp);
+        }
+    }
+
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         mlir::Type type; mlir::FloatAttr attr;
