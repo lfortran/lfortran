@@ -247,8 +247,8 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     }
 }
 
-LCompilers::ASR::asr_t* FortranEvaluator::handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos, int delta) {
-    LCompilers::LFortran::LookupNameVisitor lnv(pos, delta);
+LCompilers::ASR::asr_t* FortranEvaluator::handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos) {
+    LCompilers::LFortran::LookupNameVisitor lnv(pos);
     lnv.visit_TranslationUnit(*tu);
     if (lnv.node_to_return != nullptr) {
         return lnv.node_to_return;

@@ -71,7 +71,7 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::string> get_asr(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
-    ASR::asr_t* handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos, int delta);
+    ASR::asr_t* handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos);
     Result<ASR::TranslationUnit_t*> get_asr2(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<ASR::TranslationUnit_t*> get_asr3(

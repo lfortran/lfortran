@@ -375,14 +375,13 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             // populate_symbol_lists(x.result, lm, symbol_lists);
             uint16_t l = std::stoi(compiler_options.line);
             uint16_t c = std::stoi(compiler_options.column);
-            uint64_t pos = lm.linecol_to_pos(l, c);
-            if (c > 0 && pos > 0 && !is_id_chr(input[pos]) && is_id_chr(input[pos - 1])) {
-                // pos is to the right of the word boundary
-                pos--;
+            uint64_t input_pos = lm.linecol_to_pos(l, c);
+            if (c > 0 && input_pos > 0 && !is_id_chr(input[input_pos]) && is_id_chr(input[input_pos - 1])) {
+                // input_pos is to the right of the word boundary
+                input_pos--;
             }
-            uint64_t output_pos = lm.output_to_input_pos(pos, false);
-            int delta = abs((int)output_pos - (int)pos);
-            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos, delta);
+            uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
             LCompilers::document_symbols loc;
             if (!ASR::is_a<ASR::symbol_t>(*asr)) {
                 std::cout << "[]";
@@ -480,10 +479,9 @@ int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &c
             // populate_symbol_lists(x.result, lm, symbol_lists);
             uint16_t l = std::stoi(compiler_options.line);
             uint16_t c = std::stoi(compiler_options.column);
-            uint64_t pos = lm.linecol_to_pos(l, c);
-            uint64_t output_pos = lm.output_to_input_pos(pos, false);
-            int delta = abs((int)output_pos - (int)pos);
-            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos, delta);
+            uint64_t input_pos = lm.linecol_to_pos(l, c);
+            uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
             LCompilers::document_symbols loc;
             if (!ASR::is_a<ASR::symbol_t>(*asr)) {
                 std::cout << "[]";

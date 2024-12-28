@@ -664,10 +664,9 @@ int python_wrapper(const std::string &infile, std::string array_order,
         // convert string to uint16_t
         uint16_t l = std::stoi(compiler_options.line);
         uint16_t c = std::stoi(compiler_options.column);
-        uint64_t pos = lm.linecol_to_pos(l, c);
-        uint64_t output_pos = lm.output_to_input_pos(pos, false);
-        int delta = abs((int)output_pos - (int)pos);
-        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, pos, delta);
+        uint64_t input_pos = lm.linecol_to_pos(l, c);
+        uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, output_pos);
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 compiler_options.po.with_intrinsic_mods) << std::endl;
         return 0;
