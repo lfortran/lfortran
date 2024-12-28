@@ -134,7 +134,8 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         var_type = value_type;
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
-        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required ) {
+        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required && 
+              !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(value))) {
             if( ASRUtils::is_simd_array(value) ) {
                 var_type = ASRUtils::expr_type(value);
             } else {
