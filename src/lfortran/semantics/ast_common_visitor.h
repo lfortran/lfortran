@@ -8664,14 +8664,30 @@ public:
             ASR::is_a<ASR::String_t>(*right_type) ) {
             ASR::String_t *left_type2 = ASR::down_cast<ASR::String_t>(left_type);
             ASR::String_t *right_type2 = ASR::down_cast<ASR::String_t>(right_type);
-            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(left_type_) == 0);
-            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(right_type_) == 0);
+            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(left_type) == 0);
+            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(right_type) == 0);
             int a_len = -1;
             if (left_type2->m_len > -1 && right_type2->m_len > -1) {
                 a_len = left_type2->m_len + right_type2->m_len;
             }
             ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_String_t(
                 al, x.base.base.loc, left_type2->m_kind, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+
+            if( (ASRUtils::is_array(right_type_) || ASRUtils::is_array(left_type_)) &&
+                !ASRUtils::is_array(dest_type) ) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = 0;
+                if( ASRUtils::is_array(left_type_) ) {
+                    n_dims = ASRUtils::extract_dimensions_from_ttype(left_type_, m_dims);
+                } else if( ASRUtils::is_array(right_type_) ) {
+                    n_dims = ASRUtils::extract_dimensions_from_ttype(right_type_, m_dims);
+                }
+                dest_type = ASRUtils::make_Array_t_util(al, dest_type->base.loc,
+                    ASRUtils::type_get_past_pointer(dest_type), m_dims, n_dims);
+                if( ASR::is_a<ASR::Allocatable_t>(*left_type_) || ASR::is_a<ASR::Allocatable_t>(*right_type_) ) {
+                    dest_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, dest_type->base.loc, dest_type));
+                }
+            }
 
             ASR::expr_t *value = nullptr;
             // Assign evaluation to `value` if possible, otherwise leave nullptr
