@@ -115,7 +115,7 @@ public:
 
     void visit_expr2(ASR::expr_t &x) {
         this->visit_expr(x);
-        if (ASR::is_a<ASR::Var_t>(x)) {
+        if (ASR::is_a<ASR::Var_t>(x) || ASR::is_a<ASR::ArrayItem_t>(x)) {
             tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
         }
     }
@@ -717,11 +717,7 @@ public:
             args.push_back(al, nullptr); // Later used by `printf_fmt`
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
-                this->visit_expr(*sf->m_args[i]);
-                if (ASR::is_a<ASR::Var_t>(*sf->m_args[i]) ||
-                        ASR::is_a<ASR::ArrayItem_t>(*sf->m_args[i])) {
-                    tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
-                }
+                this->visit_expr2(*sf->m_args[i]);
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
                 } else if (ASRUtils::is_real(*t)) {
