@@ -65,6 +65,14 @@ typedef double _Complex double_complex_t;
     }
 #endif
 
+#define DECLARE_LFORTRAN_STR_ITEM(type)                                                            \
+    LFORTRAN_API char* _lfortran_str_item_##type(char* s, type idx);
+
+DECLARE_LFORTRAN_STR_ITEM(int8_t)
+DECLARE_LFORTRAN_STR_ITEM(int16_t)
+DECLARE_LFORTRAN_STR_ITEM(int32_t)
+DECLARE_LFORTRAN_STR_ITEM(int64_t)
+
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
@@ -209,7 +217,6 @@ LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size);
 LFORTRAN_API void _lfortran_free(char* ptr);
 LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t len, int64_t* size, int64_t* capacity);
 LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s);
-LFORTRAN_API char* _lfortran_str_item(char* s, int32_t idx);
 LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2); // idx1 and idx2 both start from 1
 LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
                         bool idx1_present, bool idx2_present);

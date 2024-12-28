@@ -2292,20 +2292,26 @@ LFORTRAN_API char* _lfortran_strrepeat_c(char* s, int32_t n)
 }
 
 // idx starts from 1
-LFORTRAN_API char* _lfortran_str_item(char* s, int32_t idx) {
-
-    int s_len = strlen(s);
-    int original_idx = idx - 1;
-    if (idx < 1) idx += s_len;
-    if (idx < 1 || idx >= s_len + 1) {
-        printf("String index: %d is out of Bounds\n", original_idx);
-        exit(1);
+#define DEFINE_LFORTRAN_STR_ITEM(type)                                                             \
+    LFORTRAN_API char* _lfortran_str_item_##type(char* s, type idx)                                \
+    {                                                                                              \
+        int s_len = strlen(s);                                                                     \
+        int original_idx = idx - 1;                                                                \
+        if (idx < 1) idx += s_len;                                                                 \
+        if (idx < 1 || idx >= s_len + 1) {                                                         \
+            printf("String index: %d is out of Bounds\n", original_idx);                           \
+            exit(1);                                                                               \
+        }                                                                                          \
+        char* res = (char*) malloc(2);                                                             \
+        res[0] = s[idx - 1];                                                                       \
+        res[1] = '\0';                                                                             \
+        return res;                                                                                \
     }
-    char* res = (char*)malloc(2);
-    res[0] = s[idx-1];
-    res[1] = '\0';
-    return res;
-}
+
+DEFINE_LFORTRAN_STR_ITEM(int8_t)
+DEFINE_LFORTRAN_STR_ITEM(int16_t)
+DEFINE_LFORTRAN_STR_ITEM(int32_t)
+DEFINE_LFORTRAN_STR_ITEM(int64_t)
 
 // idx1 and idx2 both start from 1
 LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2) {
