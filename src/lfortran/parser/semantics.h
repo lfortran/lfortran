@@ -237,8 +237,9 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             return nullptr;
         }
     } else {
-        throw LCompilers::LFortran::parser_local::ParserError(
-            "Unsupported compiler directive (pragma)", loc);
+            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+                "Unsupported compiler directive (pragma)", {loc}).d);
+            return nullptr;
     }
 }
 
@@ -1789,8 +1790,8 @@ void add_ws_warning(const Location &loc,
                         {loc},
                         "help: write this as 'real(8)'");
                 } else {
-                        throw LCompilers::LFortran::parser_local::ParserError(
-                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc});
+                        diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc}).d);
                 }
         } else if (end_token == yytokentype::KW_INTEGER) {
                 if (a_kind == 4){
@@ -2124,20 +2125,20 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         args, empty1(), temp_args, l)
 
 ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
-        const Vec<FnArg> &args, Location &l) {
+        const Vec<FnArg> &args, Location &l, LCompilers::diag::Diagnostics &diagnostics) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
     for (auto &item : args) {
         if(item.keyword) {
-            throw LCompilers::LFortran::parser_local::ParserError(
-                "Keyword Assignment is not allowed in Character Substring", l);
+            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
+                "Keyword Assignment is not allowed in Character Substring", {l}).d);
         }
         v.push_back(al, item.arg);
     }
     return make_Substring_t(al, l, str.c_str(al), v.p, v.size());
 }
 
-#define SUBSTRING(str, args, l) SUBSTRING_(p.m_a, str, args, l)
+#define SUBSTRING(str, args, l) SUBSTRING_(p.m_a, str, args, l, p.diag)
 
 ast_t* COARRAY(Allocator &al, const ast_t *id,
         const Vec<struct_member_t> &member,

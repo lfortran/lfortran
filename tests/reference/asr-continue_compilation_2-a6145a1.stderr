@@ -4,44 +4,50 @@ syntax error: Invalid syntax for variable initialization (try inserting '::' aft
 34 |     integer init_x = 1
    |     ^^^^^^^^^^^^^^^^^^ 
 
-syntax error: End module name does not match module name
-   --> tests/errors/continue_compilation_2.f90:335:1 - 337:28
+syntax error: kind 16 is not supported yet.
+   --> tests/errors/continue_compilation_2.f90:322:5
     |
-335 |    module my_module
+322 |     real*16 :: unsupported_kind
+    |     ^^^^^^^ 
+
+syntax error: End module name does not match module name
+   --> tests/errors/continue_compilation_2.f90:338:1 - 340:28
+    |
+338 |    module my_module
     |    ^^^^^^^^^^^^^^^^...
 ...
     |
-337 |    end module wrong_module_name 
+340 |    end module wrong_module_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:339:1 - 341:29
+   --> tests/errors/continue_compilation_2.f90:342:1 - 344:29
     |
-339 |    subroutine my_subroutine1()
+342 |    subroutine my_subroutine1()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-341 |    end subroutine different_name
+344 |    end subroutine different_name
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End function name does not match function name
-   --> tests/errors/continue_compilation_2.f90:343:1 - 346:28
+   --> tests/errors/continue_compilation_2.f90:346:1 - 349:28
     |
-343 |    function my_function() result(res)
+346 |    function my_function() result(res)
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-346 |    end function not_my_function
+349 |    end function not_my_function
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:348:1 - 350:29
+   --> tests/errors/continue_compilation_2.f90:351:1 - 353:29
     |
-348 |    subroutine my_subroutine2()
+351 |    subroutine my_subroutine2()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-350 |    end subroutine different_name 
+353 |    end subroutine different_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate DIMENSION attribute specified
@@ -158,6 +164,12 @@ semantic error: Parameter attribute cannot be used with Target attribute
     |
 314 |     integer, parameter, target :: foo=4
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind 16 is not supported for Real
+   --> tests/errors/continue_compilation_2.f90:322:5
+    |
+322 |     real*16 :: unsupported_kind
+    |     ^^^^^^^ 
 
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:23:14
@@ -649,7 +661,7 @@ semantic error: Variable 'foo' is not declared
     |             ^^^ 'foo' is undeclared
 
 semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:332:5
+   --> tests/errors/continue_compilation_2.f90:335:5
     |
-332 |     y = 99  
+335 |     y = 99  
     |     ^ 
