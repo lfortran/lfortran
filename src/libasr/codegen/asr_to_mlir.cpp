@@ -115,7 +115,7 @@ public:
 
     void visit_expr2(ASR::expr_t &x) {
         this->visit_expr(x);
-        if (ASR::is_a<ASR::Var_t>(x)) {
+        if (ASR::is_a<ASR::Var_t>(x) || ASR::is_a<ASR::ArrayItem_t>(x)) {
             tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
         }
     }
@@ -160,7 +160,8 @@ public:
         Vec<mlir::Type> argsType; argsType.reserve(al, fnType->n_arg_types);
         // Collect all the arguments type
         for (size_t i=0; i<fnType->n_arg_types; i++) {
-            mlir::Type argType = getType(fnType->m_arg_types[i]);
+            mlir::Type argType = getType(ASRUtils::extract_type(
+                fnType->m_arg_types[i]));
             argsType.push_back(al, mlir::LLVM::LLVMPointerType::get(argType));
         }
         mlir::Type returnType;
@@ -284,12 +285,14 @@ public:
         Vec<mlir::Value> args; args.reserve(al, x.n_args);
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i].m_value);
-            if (!is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+            if (!is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(
+                    x.m_args[i].m_value))) {
                 // Constant, BinOp, etc would have the type i32, but not i32*
                 // So, We create an `alloca` here, store the value and
                 // then, pass the alloca as an argument
                 mlir::Type argType = mlir::LLVM::LLVMPointerType::get(
-                    getType(ASRUtils::expr_type(x.m_args[i].m_value)));
+                    getType(ASRUtils::extract_type(ASRUtils::expr_type(
+                    x.m_args[i].m_value))));
                 mlir::Value size = builder->create<mlir::LLVM::ConstantOp>(loc,
                     builder->getI32Type(), builder->getI64IntegerAttr(1));
                 mlir::Value alloca = builder->create<mlir::LLVM::AllocaOp>(
@@ -425,6 +428,31 @@ public:
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         tmp = createGlobalString(x.m_s);
+    }
+
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+        this->visit_expr(*x.m_arg);
+        switch (x.m_old) {
+            case (ASR::array_physical_typeType::FixedSizeArray): {
+                if (x.m_new == ASR::array_physical_typeType::PointerToDataArray) {
+                    mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                        builder->getI64Type(), builder->getIndexAttr(0));
+                    mlir::Type type = mlir::LLVM::LLVMPointerType::get(
+                        getType(ASRUtils::extract_type(x.m_type)));
+                    tmp = builder->create<mlir::LLVM::GEPOp>(loc, type, tmp,
+                        mlir::ValueRange{zero, zero});
+                } else {
+                    throw CodeGenError("ArrayPhysicalCast to of kind: `"+
+                        std::to_string(x.m_old) +"` is not supported yet",
+                        x.base.base.loc);
+                }
+                break;
+            } default: {
+                throw CodeGenError("ArrayPhysicalCast from of kind: `"+
+                    std::to_string(x.m_old) +"` is not supported yet",
+                    x.base.base.loc);
+            }
+        }
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
@@ -578,10 +606,17 @@ public:
 
         idx = builder->create<mlir::LLVM::SubOp>(loc, idx, one);
         mlir::Type baseType = mlir::LLVM::LLVMPointerType::get(getType(x.m_type));
-        mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
-            builder->getI64Type(), builder->getIndexAttr(0));
-        tmp = builder->create<mlir::LLVM::GEPOp>(loc, baseType, m_v,
-            mlir::ValueRange{zero, idx});
+        mlir::ValueRange gepIdx;
+        if (ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_v))
+                == ASR::array_physical_typeType::PointerToDataArray) {
+            gepIdx = {idx};
+        } else {
+            mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+                builder->getI64Type(), builder->getIndexAttr(0));
+            gepIdx = {zero, idx};
+        }
+        tmp = builder->create<mlir::LLVM::GEPOp>(loc, baseType, m_v, gepIdx);
+
     }
 
     void visit_If(const ASR::If_t &x) {
@@ -682,11 +717,7 @@ public:
             args.push_back(al, nullptr); // Later used by `printf_fmt`
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
-                this->visit_expr(*sf->m_args[i]);
-                if (ASR::is_a<ASR::Var_t>(*sf->m_args[i]) ||
-                        ASR::is_a<ASR::ArrayItem_t>(*sf->m_args[i])) {
-                    tmp = builder->create<mlir::LLVM::LoadOp>(loc, tmp);
-                }
+                this->visit_expr2(*sf->m_args[i]);
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
                 } else if (ASRUtils::is_real(*t)) {

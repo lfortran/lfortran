@@ -1631,7 +1631,7 @@ RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it
 RUN(NAME do_loop_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
-RUN(NAME array_op_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
+RUN(NAME array_op_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm mlir)
 RUN(NAME array_op_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME array_op_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME array_op_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -1821,7 +1821,7 @@ RUN(NAME selected_int_kind_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fort
 
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
-RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc mlir)
 RUN(NAME do_concurrent_02 LABELS llvm_omp llvm)
 RUN(NAME do_concurrent_03 LABELS llvm_omp)
 RUN(NAME do_concurrent_04 LABELS llvm_omp)
