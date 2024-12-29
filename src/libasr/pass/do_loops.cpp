@@ -37,14 +37,19 @@ class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {
 public:
     bool use_loop_variable_after_loop = false;
-    DoLoopVisitor(Allocator &al) : StatementWalkVisitor(al) {
-    }
+    PassOptions pass_options;
+    DoLoopVisitor(Allocator &al, PassOptions pass_options_) :
+        StatementWalkVisitor(al), pass_options(pass_options_) { }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        if (pass_options.enable_gpu_offloading) {
+            // DoConcurrentLoop is handled in the MLIR backend
+            return;
+        }
         Vec<ASR::stmt_t*> body;body.reserve(al,1);
         for (int i = 0; i < static_cast<int>(x.n_body); i++) {
             body.push_back(al,x.m_body[i]);
@@ -62,7 +67,7 @@ public:
 
 void pass_replace_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
                            const LCompilers::PassOptions& pass_options) {
-    DoLoopVisitor v(al);
+    DoLoopVisitor v(al, pass_options);
     // Each call transforms only one layer of nested loops, so we call it twice
     // to transform doubly nested loops:
     v.asr_changed = true;

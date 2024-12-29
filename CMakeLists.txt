@@ -212,6 +212,8 @@ if (WITH_LLVM)
                 MLIRIR
                 MLIRLLVMToLLVMIRTranslation
                 MLIRLLVMDialect
+                MLIROpenMPToLLVMIRTranslation
+                MLIROpenMPDialect
             )
         set_property(TARGET p::mlir PROPERTY INTERFACE_LINK_LIBRARIES ${mlir_libs})
         set(HAVE_LFORTRAN_MLIR yes)
