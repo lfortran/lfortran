@@ -50,7 +50,7 @@ program_unit
     | Procedure(identifier name, arg* args, decl_attribute* attributes, trivia? trivia,
         unit_decl1* use, import_statement* import, implicit_statement* implicit,
         unit_decl2* decl, stmt* body, program_unit* contains)
-    | Function(identifier name, arg* args, decl_attribute* attributes,
+    | Function(identifier name, type_param* type_params, arg* args, decl_attribute* attributes,
         expr? return_var, bind? bind, trivia? trivia, unit_decl1* use, import_statement* import,
         implicit_statement* implicit, unit_decl2* decl, stmt* body,
         program_unit* contains, identifier* temp_args)
@@ -81,12 +81,14 @@ interface_header
     | InterfaceHeaderOperator(intrinsicop op)
     | InterfaceHeaderDefinedOperator(string operator_name)
     | AbstractInterfaceHeader()
+    | AbstractInterfaceHeaderName(identifier name)
     | InterfaceHeaderWrite(identifier id)
     | InterfaceHeaderRead(identifier id)
 
 interface_item
     = InterfaceProc(program_unit proc)
     | InterfaceModuleProcedure(identifier* names, decl_attribute* attributes, trivia? trivia)
+    | InterfaceTypeList(decl_attribute* types)
 
 import_statement
     = Import(identifier* symbols, import_modifier mod, trivia? trivia)
@@ -259,6 +261,8 @@ intrinsicop
     | EQ | NOTEQ | LT | LTE | GT | GTE
     | CONCAT
 
+type_param = TypeParameter(identifier name, decl_type type_name)
+
 procedure_decl
     = DerivedTypeProc(identifier? name, decl_attribute* attr,
         use_symbol* symbols, trivia? trivia)
@@ -333,6 +337,7 @@ decl_type
     | TypeProcedure
     | TypeReal
     | TypeType
+    | TypeInterface
 
 event_attribute
     = AttrStat(identifier variable)

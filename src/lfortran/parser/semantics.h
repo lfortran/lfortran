@@ -1331,8 +1331,10 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
-#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+#define FUNCTION(fn_type, name, type_params, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
+        /*type_params*/ ,\
+        /*n_type_params*/ type_params.size(),\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -2220,6 +2222,8 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define INTERFACE_HEADER_DEFOP(op, l) make_InterfaceHeaderDefinedOperator_t( \
         p.m_a, l, def_op_to_str(p.m_a, op))
 #define ABSTRACT_INTERFACE_HEADER(l) make_AbstractInterfaceHeader_t(p.m_a, l)
+#define ABSTRACT_INTERFACE_HEADER_NAME(id, l) make_AbstractInterfaceHeaderName_t(p.m_a, l, \
+        name2char(id))
 #define INTERFACE_HEADER_WRITE(x, l) make_InterfaceHeaderWrite_t(p.m_a, l, name2char(x))
 #define INTERFACE_HEADER_READ(x, l) make_InterfaceHeaderRead_t(p.m_a, l, name2char(x))
 
