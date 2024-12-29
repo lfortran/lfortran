@@ -1,8 +1,10 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <mlir/Dialect/OpenMP/OpenMPDialect.h>
 #include <mlir/IR/Verifier.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
 
 #include <libasr/codegen/asr_to_mlir.h>
 #include <libasr/containers.h>
@@ -60,6 +62,7 @@ public:
         {
             // Load MLIR Dialects
             context->getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+            context->getOrLoadDialect<mlir::omp::OpenMPDialect>();
 
             // Initialize values
             llvmI8PtrTy = mlir::LLVM::LLVMPointerType::get(builder->getI8Type());
@@ -673,6 +676,69 @@ public:
         builder->setInsertionPointToStart(contBlock);
     }
 
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        //
+        // The following source code:
+        //
+        // do concurrent (i = 1: 10)
+        //   x(i) = i
+        // end do
+        //
+        // becomes:
+        //
+        // %i = llvm.alloca %0 x i32 : (i32) -> !llvm.ptr<i32>
+        // omp.parallel {
+        // %c1 = llvm.mlir.constant(1 : index) : i32
+        // %c10 = llvm.mlir.constant(10 : index) : i32
+        // %1 = llvm.add %c10, %c1  : i32
+        //   omp.wsloop for (%arg0) : i32 = (%c1) to (%1) step (%c1) {
+        //     llvm.store %arg0, %i : !llvm.ptr<i32>
+        //     [...] // x(i) = i
+        //     omp.terminator
+        //   }
+        //   omp.terminator
+        // }
+        mlir::OpBuilder::InsertionGuard ipGuard(*builder);
+
+        mlir::omp::ParallelOp pOp{builder->create<mlir::omp::ParallelOp>(loc)};
+        mlir::Block *pOpBlock{builder->createBlock(&pOp.getRegion())};
+        builder->setInsertionPointToStart(pOpBlock);
+
+        this->visit_expr2(*x.m_head->m_start);
+        mlir::ValueRange lowerBound{tmp};
+
+        this->visit_expr2(*x.m_head->m_end);
+        mlir::Type type{getType(ASRUtils::expr_type(x.m_head->m_v))};
+        mlir::Value one = builder->create<mlir::LLVM::ConstantOp>(
+            loc, type, builder->getIndexAttr(1)).getResult();
+        mlir::ValueRange upperBound{builder->create<mlir::LLVM::AddOp>(
+            loc, tmp, one)};
+        mlir::ValueRange step{};
+
+        if (x.m_head->m_increment) {
+            this->visit_expr2(*x.m_head->m_increment);
+            step = tmp;
+        } else {
+            step = one;
+        }
+
+        mlir::omp::WsLoopOp wslOp{builder->create<mlir::omp::WsLoopOp>(
+            loc, lowerBound, upperBound, step)};
+        builder->create<mlir::omp::TerminatorOp>(loc);
+
+        mlir::Block *wslOpBlock{builder->createBlock(&wslOp.getRegion())};
+        builder->setInsertionPointToStart(wslOpBlock);
+
+        wslOpBlock->addArgument(getType(ASRUtils::expr_type(x.m_head->m_v)), loc);
+        this->visit_expr(*x.m_head->m_v);
+        builder->create<mlir::LLVM::StoreOp>(loc, wslOpBlock->getArgument(0), tmp);
+
+        for (size_t i=0; i<x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        builder->create<mlir::omp::TerminatorOp>(loc);
+    }
+
     void visit_ErrorStop(const ASR::ErrorStop_t &) {
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp printf_fn =
@@ -788,6 +854,7 @@ Result<std::unique_ptr<MLIRModule>> asr_to_mlir(Allocator &al,
     }
 
     mlir::registerLLVMDialectTranslation(*v.context);
+    mlir::registerOpenMPDialectTranslation(*v.context);
 
     if (mlir::failed(mlir::verify(*v.module))) {
         std::string mlir_str;
