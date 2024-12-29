@@ -175,7 +175,7 @@ void MLIRModule::mlir_to_llvm() {
     if (llvmModule) {
         llvm_m = std::move(llvmModule);
     } else {
-        throw std::runtime_error("Failed to generate LLVM IR");
+        throw LCompilersException("Failed to generate LLVM IR");
     }
 }
 #endif
