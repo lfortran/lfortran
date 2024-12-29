@@ -57,10 +57,10 @@ syntax error: End subroutine name does not match subroutine name
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate DIMENSION attribute specified
-  --> tests/errors/continue_compilation_2.f90:22:12
+  --> tests/errors/continue_compilation_2.f90:22:20
    |
 22 |     common /rowns/ rowns(209)
-   |            ^^^^^^^^^^^^^^^^^^ 
+   |                    ^^^^^^^^^^ 
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
   --> tests/errors/continue_compilation_2.f90:30:5 - 31:1
