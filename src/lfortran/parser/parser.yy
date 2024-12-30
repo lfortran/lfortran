@@ -616,8 +616,8 @@ script_unit
     | var_decl           %dprec 9
     | derived_type_decl
     | enum_decl
-    | statement          %dprec 7
-    | expr sep           %dprec 8
+    | statement          %dprec 8
+    | expr sep           %dprec 7
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
     ;
 

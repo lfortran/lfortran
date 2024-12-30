@@ -4412,3 +4412,8 @@ extrafiles = "document_symbols1_module.f90"
 filename = "../integration_tests/loop_var_use_after_loop.f90"
 pass = "do_loops"
 options = "--use-loop-variable-after-loop"
+
+[[test]]
+filename = "allocate_statement_without_program_line.f90"
+ast = true
+run = true

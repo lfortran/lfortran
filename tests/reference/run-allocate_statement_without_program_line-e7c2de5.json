@@ -1,0 +1,13 @@
+{
+    "basename": "run-allocate_statement_without_program_line-e7c2de5",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/allocate_statement_without_program_line.f90",
+    "infile_hash": "d6a9a7e4c23a6d49848ed9df023888409c8b48ad1db913c11a743b57",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-allocate_statement_without_program_line-e7c2de5.stdout",
+    "stdout_hash": "c95ada6e63d31455b05d4a555303a19bf8781d23a6e6162c23fd43f7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
