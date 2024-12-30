@@ -691,9 +691,12 @@ public:
         // %c1 = llvm.mlir.constant(1 : index) : i32
         // %c10 = llvm.mlir.constant(10 : index) : i32
         // %1 = llvm.add %c10, %c1  : i32
-        //   omp.wsloop for (%arg0) : i32 = (%c1) to (%1) step (%c1) {
-        //     llvm.store %arg0, %i : !llvm.ptr<i32>
-        //     [...] // x(i) = i
+        //   omp.wsloop {
+        //     omp.loop_nest(%arg0) : i32 = (%c1) to (%1) inclusive step (%c1) {
+        //       llvm.store %arg0, %i : !llvm.ptr<i32>
+        //       [...] // x(i) = i
+        //       omp.yield
+        //     }
         //     omp.terminator
         //   }
         //   omp.terminator
@@ -705,38 +708,42 @@ public:
         builder->setInsertionPointToStart(pOpBlock);
 
         this->visit_expr2(*x.m_head->m_start);
-        mlir::ValueRange lowerBound{tmp};
+        mlir::Value lowerBound{tmp};
 
         this->visit_expr2(*x.m_head->m_end);
-        mlir::Type type{getType(ASRUtils::expr_type(x.m_head->m_v))};
-        mlir::Value one = builder->create<mlir::LLVM::ConstantOp>(
-            loc, type, builder->getIndexAttr(1)).getResult();
-        mlir::ValueRange upperBound{builder->create<mlir::LLVM::AddOp>(
-            loc, tmp, one)};
-        mlir::ValueRange step{};
+        mlir::Value upperBound{tmp};
+        mlir::Value step{};
 
         if (x.m_head->m_increment) {
             this->visit_expr2(*x.m_head->m_increment);
             step = tmp;
         } else {
+            mlir::Type type{getType(ASRUtils::expr_type(x.m_head->m_v))};
+            mlir::Value one = builder->create<mlir::LLVM::ConstantOp>(
+                loc, type, builder->getIndexAttr(1)).getResult();
             step = one;
         }
 
-        mlir::omp::WsLoopOp wslOp{builder->create<mlir::omp::WsLoopOp>(
-            loc, lowerBound, upperBound, step)};
+        mlir::omp::WsloopOp wslOp{builder->create<mlir::omp::WsloopOp>(loc)};
         builder->create<mlir::omp::TerminatorOp>(loc);
 
         mlir::Block *wslOpBlock{builder->createBlock(&wslOp.getRegion())};
         builder->setInsertionPointToStart(wslOpBlock);
 
-        wslOpBlock->addArgument(getType(ASRUtils::expr_type(x.m_head->m_v)), loc);
+        mlir::omp::LoopNestOp lnOp{builder->create<mlir::omp::LoopNestOp>(loc,
+            lowerBound, upperBound, step, true)};
+        builder->create<mlir::omp::TerminatorOp>(loc);
+        mlir::Block *lnOpBlock{builder->createBlock(&lnOp.getRegion())};
+        builder->setInsertionPointToStart(lnOpBlock);
+
+        lnOpBlock->addArgument(getType(ASRUtils::expr_type(x.m_head->m_v)), loc);
         this->visit_expr(*x.m_head->m_v);
-        builder->create<mlir::LLVM::StoreOp>(loc, wslOpBlock->getArgument(0), tmp);
+        builder->create<mlir::LLVM::StoreOp>(loc, lnOpBlock->getArgument(0), tmp);
 
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
-        builder->create<mlir::omp::TerminatorOp>(loc);
+        builder->create<mlir::omp::YieldOp>(loc);
     }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &) {
