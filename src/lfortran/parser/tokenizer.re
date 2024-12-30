@@ -255,8 +255,15 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             * { token_loc(loc);
                 std::string t = token();
-                diagnostics.add(parser_local::TokenizerError(
-                        "Token '" + t + "' is not recognized", {loc}).d);
+
+
+                diagnostics.add(diag::Diagnostic(
+                    "Token '" + t + "' is not recognized",
+                        diag::Level::Error, diag::Stage::Tokenizer, {
+                            diag::Label("token not recognized", {loc})
+                        }
+                    )
+                );
             }
             end { RET(END_OF_FILE); }
             whitespace { continue; }

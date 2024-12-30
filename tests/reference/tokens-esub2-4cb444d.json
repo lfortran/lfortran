@@ -5,9 +5,9 @@
     "infile_hash": "fb45951fe73ff1605633612371af0d19b7036b3aef93d6b084c33823",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
+    "stdout": "tokens-esub2-4cb444d.stdout",
+    "stdout_hash": "05d41be4204381e675738d1b79481732fc929863f86d2dc72ece65cc",
     "stderr": "tokens-esub2-4cb444d.stderr",
     "stderr_hash": "f34c7ceeeaa22d1c9075e3ff71d51db6bdcd53ddb1f0b3c39e05fc33",
-    "returncode": 1
+    "returncode": 0
 }
