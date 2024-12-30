@@ -1,4 +1,4 @@
-program openmp_38
+program openmp_42
     use omp_lib
 ! declare variables as required
     integer :: ny, nx, nz  , i,j

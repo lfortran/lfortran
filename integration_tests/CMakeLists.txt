@@ -1930,6 +1930,7 @@ RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_40 LABELS llvm_omp llvm)
 RUN(NAME openmp_41 LABELS llvm_omp llvm)
+RUN(NAME openmp_42 LABELS llvm_omp llvm)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
