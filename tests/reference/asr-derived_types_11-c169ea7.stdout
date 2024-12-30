@@ -143,16 +143,6 @@
                                     backslash
                                     Public
                                 ),
-                            backslash:
-                                (ExternalSymbol
-                                    4
-                                    backslash
-                                    3 backslash
-                                    y
-                                    []
-                                    backslash
-                                    Public
-                                ),
                             type_y:
                                 (ExternalSymbol
                                     4
