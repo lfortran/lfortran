@@ -4063,7 +4063,7 @@ public:
                 do_concurrent->m_head = do_concurrent_head.p;
                 do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
-            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - 1 - static_cast<int>(omp_constructs.size()) + 1) {
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - static_cast<int>(omp_constructs.size()) - pragma_nesting_level) {
                 collapse_value--;
                 do_loop_heads_for_collapse.push_back(al, head);
                 Vec<ASR::stmt_t*> temp;
