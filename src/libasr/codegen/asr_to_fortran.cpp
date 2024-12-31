@@ -1640,7 +1640,11 @@ public:
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         src = "\"";
-        src.append(x.m_s);
+        if(std::strcmp(x.m_s, "\n") == 0) {
+            src.append("\\n");
+        } else {
+            src.append(x.m_s);
+        }
         src += "\"";
         last_expr_precedence = Precedence::Ext;
     }
