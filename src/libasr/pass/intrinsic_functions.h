@@ -4563,7 +4563,7 @@ namespace NewLine {
     static ASR::expr_t *eval_NewLine(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         char* new_line_str = (char*)"\n";
-        return make_ConstantWithType(make_StringConstant_t, new_line_str, ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString)), loc);
+        return make_ConstantWithType(make_StringConstant_t, new_line_str, ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString)), loc);
     }
 
 } // namespace NewLine
