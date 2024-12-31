@@ -1,3 +1,4 @@
+!! Test to check if actual function is called instead of its m_type_declaration 
 module procedure_08_module
 contains
     subroutine cb(x)
@@ -36,5 +37,17 @@ contains
     subroutine temp2(call_back)
         implicit none
         procedure(cb), optional :: call_back
+        if(present(call_back)) then
+            call temp3(call_back) 
+        end if 
     end subroutine
+    subroutine temp3(call_back)
+        implicit none
+        procedure(cb) :: call_back
+        integer :: x(4) 
+        call call_back(x) 
+        print *, x
+        if(x(1) /= 2) error stop
+    end subroutine
+
 end program procedure_08
