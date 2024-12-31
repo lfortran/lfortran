@@ -8854,18 +8854,9 @@ public:
                                     tmp = llvm_utils->CreateLoad2(arg->m_type, tmp);
                                 }
                             } else {
-                                if(arg->m_type_declaration && ASR::is_a<ASR::Function_t>(
-                                        *ASRUtils::symbol_get_past_external(arg->m_type_declaration))){
-                                    // (FunctionType)** --> (FunctionType)*
-                                    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
-                                        symbol_get_past_external(arg->m_type_declaration));
-                                    uint32_t h = get_hash((ASR::asr_t*)fn);
-                                    if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
-                                        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                                        tmp = llvm_symtab_fn[h];
-                                    } else if(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
-                                        tmp = llvm_symtab_fn_arg[h];
-                                    }
+                                if( arg->m_intent == intent_local && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) ) {
+                                    // (FunctionType**) --> (FunctionType*)
+                                    tmp = llvm_utils->CreateLoad2(arg->m_type, tmp);
                                 }
                                 if( orig_arg &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
