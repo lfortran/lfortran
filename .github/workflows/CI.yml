@@ -1523,9 +1523,9 @@ jobs:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=3.10
-            mlir=15.0.7
-            llvm=15.0.7
-            llvm-openmp=15.0.7
+            mlir=19.1.6
+            llvm=19.1.6
+            llvm-openmp=19.1.6
 
       - uses: hendrikmuhs/ccache-action@main
         with:
