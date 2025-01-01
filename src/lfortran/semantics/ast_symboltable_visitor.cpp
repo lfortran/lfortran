@@ -2534,22 +2534,16 @@ public:
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
-                std::string sym;
-                if( in_submodule || ASR::is_a<ASR::Function_t>(*es0->m_external)) {
-                    sym = item.first;
-                } else {
-                    sym = to_lower(es0->m_original_name);
-                }
                 ASR::asr_t *es = ASR::make_ExternalSymbol_t(
                     al, es0->base.base.loc,
                     /* a_symtab */ current_scope,
-                    /* a_name */ s2c(al, sym),
+                    /* a_name */ s2c(al, item.first),
                     es0->m_external,
                     es0->m_module_name, nullptr, 0,
                     es0->m_original_name,
                     dflt_access
                     );
-                current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
+                current_scope->add_or_overwrite_symbol(item.first, ASR::down_cast<ASR::symbol_t>(es));
             } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
                 ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct

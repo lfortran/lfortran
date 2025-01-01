@@ -520,6 +520,16 @@
                     (SymbolTable
                         2
                         {
+                            1_enum_stat:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_stat
+                                    11 enum_stat
+                                    class_default_select_type
+                                    []
+                                    enum_stat
+                                    Public
+                                ),
                             check_table:
                                 (ExternalSymbol
                                     2
@@ -528,16 +538,6 @@
                                     class_default_select_type_user
                                     []
                                     check_table
-                                    Public
-                                ),
-                            enum_stat:
-                                (ExternalSymbol
-                                    2
-                                    enum_stat
-                                    11 enum_stat
-                                    class_default_select_type
-                                    []
-                                    enum_stat
                                     Public
                                 ),
                             get_table:

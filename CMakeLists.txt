@@ -211,6 +211,7 @@ if (WITH_LLVM)
         set(mlir_libs
                 MLIRIR
                 MLIRLLVMToLLVMIRTranslation
+                MLIRBuiltinToLLVMIRTranslation
                 MLIRLLVMDialect
                 MLIROpenMPToLLVMIRTranslation
                 MLIROpenMPDialect

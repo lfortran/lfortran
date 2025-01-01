@@ -40,7 +40,7 @@ The source tarball of LFortran depends on:
 
 * Python
 * cmake
-* LLVM 10-16 (versions 17 and 18 not supported yet)
+* LLVM 10-19
 * zstd-static
 * zlib
 
