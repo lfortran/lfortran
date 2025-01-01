@@ -83,6 +83,12 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
         }
     }
 
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        if( ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) ) {
+            vars.push_back(al, const_cast<ASR::expr_t*>(&(x.base)));
+        }
+    }
+
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
 
     }
@@ -134,7 +140,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         var_type = value_type;
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
-        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required && 
+        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required &&
               !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(value))) {
             if( ASRUtils::is_simd_array(value) ) {
                 var_type = ASRUtils::expr_type(value);
@@ -1131,6 +1137,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
             !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
             !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr)) &&
+            !ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::get_past_array_physical_cast(expr)) &&
             (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
@@ -1734,7 +1741,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayBound(ASR::ArrayBound_t* x) {
-        replace_current_expr("_array_bound_")
+        ASR::expr_t** current_expr_copy_149 = current_expr;
+        current_expr = &(x->m_v);
+        if( !ASR::is_a<ASR::Var_t>(*x->m_v) &&
+            !ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
+            force_replace_current_expr_for_array("_array_bound_v")
+        }
+        current_expr = current_expr_copy_149;
     }
 
     void replace_ArraySize(ASR::ArraySize_t* x) {
