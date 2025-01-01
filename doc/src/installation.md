@@ -40,7 +40,7 @@ The source tarball of LFortran only depends on:
 
 * Python
 * cmake
-* LLVM 10-16 (versions 17 and 18 not supported yet)
+* LLVM 10-19
 
 First we have to install dependencies, for example using Conda:
 ```bash
