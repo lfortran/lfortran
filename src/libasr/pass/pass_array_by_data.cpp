@@ -707,6 +707,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             for( auto& item: current_scope->get_scope() ) {
                 if (ASR::is_a<ASR::Function_t>(*item.second)) {
                     ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(item.second);
+                    SymbolTable* current_scope_copy = current_scope;
+                    visit_symbol(*item.second);
+                    current_scope = current_scope_copy;
                     if (func_type->n_arg_types >= 1 && ASR::is_a<ASR::ClassType_t>(*func_type->m_arg_types[0])) {
                         continue;
                     }
