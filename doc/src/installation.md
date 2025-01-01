@@ -42,10 +42,11 @@ The source tarball of LFortran depends on:
 * cmake
 * LLVM 10-16 (versions 17 and 18 not supported yet)
 * zstd-static
+* zlib
 
 First we have to install dependencies, for example using Conda:
 ```bash
-conda create -n lf python cmake llvmdev zstd-static
+conda create -n lf python cmake llvmdev zstd-static zlib
 conda activate lf
 ```
 Then download a tarball from
