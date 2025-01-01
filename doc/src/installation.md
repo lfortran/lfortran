@@ -49,6 +49,12 @@ First we have to install dependencies, for example using Conda:
 conda create -n lf python cmake llvmdev zstd-static zlib
 conda activate lf
 ```
+
+On a Linux system, we additionally need to install `libunwind`:
+```bash
+conda install libunwind
+```
+
 Then download a tarball from
 [https://lfortran.org/download/](https://lfortran.org/download/),
 e.g.:
