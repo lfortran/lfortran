@@ -1280,6 +1280,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASRUtils::symbol_name(x.m_dt_sym));
     }
 
+    void visit_TypeInquiry(const ASR::TypeInquiry_t& x) {
+        Vec<ASR::expr_t*> x_m_args_; x_m_args_.reserve(al, 1);
+        x_m_args_.push_back(al, x.m_arg);
+        Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, 1);
+        traverse_args(x_m_args, x_m_args_.p, x_m_args_.size(), std::string("_type_inquiry_"));
+        ASR::TypeInquiry_t& xx = const_cast<ASR::TypeInquiry_t&>(x);
+        xx.m_arg = x_m_args[0];
+    }
+
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t& x) {
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
         traverse_args(x_m_args, x.m_args, x.n_args, std::string("_array_constructor_"));
