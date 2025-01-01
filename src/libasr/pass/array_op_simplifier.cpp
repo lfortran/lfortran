@@ -123,6 +123,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     }
 
     void visit_Cast(const ASR::Cast_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_Cast(x);
         ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
         if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_arg)) &&
              ASRUtils::is_array(x.m_type) ) {
@@ -633,8 +634,8 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         if( index2var[do_loop_head.m_v].second == IndexType::ArrayIndex ) {
             bound_dim = 1;
         }
-        if( n_array_indices_args > -1 && array_indices_args[n_array_indices_args].m_right != nullptr && 
-                array_indices_args[n_array_indices_args].m_left != nullptr && 
+        if( n_array_indices_args > -1 && array_indices_args[n_array_indices_args].m_right != nullptr &&
+                array_indices_args[n_array_indices_args].m_left != nullptr &&
                 array_indices_args[n_array_indices_args].m_step != nullptr) {
             do_loop_head.m_start = array_indices_args[n_array_indices_args].m_left;
             do_loop_head.m_end = array_indices_args[n_array_indices_args].m_right;
@@ -673,8 +674,8 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             if( index2var[do_loop_head.m_v].second == IndexType::ArrayIndex ) {
                 bound_dim = 1;
             }
-            if( n_array_indices_args > -1 && array_indices_args[n_array_indices_args].m_right != nullptr && 
-                    array_indices_args[n_array_indices_args].m_left != nullptr && 
+            if( n_array_indices_args > -1 && array_indices_args[n_array_indices_args].m_right != nullptr &&
+                    array_indices_args[n_array_indices_args].m_left != nullptr &&
                     array_indices_args[n_array_indices_args].m_step != nullptr) {
                 do_loop_head.m_start = array_indices_args[n_array_indices_args].m_left;
                 do_loop_head.m_end = array_indices_args[n_array_indices_args].m_right;

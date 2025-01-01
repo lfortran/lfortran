@@ -393,7 +393,9 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
     ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
     ASR::ttype_t* output_type = x.m_type;
     ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-        "The input and output type of elemental intrinsics must exactly match, input type: " +
+        "The input and output type of elemental intrinsic, " +
+        std::to_string(static_cast<int64_t>(x.m_intrinsic_id)) +
+        " must exactly match, input type: " +
         ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
         loc, diagnostics);
 }
@@ -765,7 +767,7 @@ namespace Abs {
                 loc, diagnostics);
         } else {
             ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-                "The input and output type of elemental intrinsics must exactly match, input type: " +
+                "The input and output type of Abs intrinsic must exactly match, input type: " +
                 input_type_str + " output type: " + output_type_str, loc, diagnostics);
         }
     }
@@ -5961,7 +5963,7 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 
 } // namespace SetRemove
 
-static inline void promote_arguments_kinds(Allocator &al, const Location &loc, 
+static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
         Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
     int target_kind = -1;
     for (size_t i = 0; i < args.size(); i++) {
@@ -6242,7 +6244,7 @@ namespace Min {
         if (!all_args_same_kind){
             promote_arguments_kinds(al, loc, args, diag);
         }
-        
+
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
         ASR::expr_t *arg_value;
