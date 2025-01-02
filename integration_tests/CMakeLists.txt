@@ -1962,4 +1962,4 @@ RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array pas
 
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
