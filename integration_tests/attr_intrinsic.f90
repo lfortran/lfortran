@@ -1,4 +1,4 @@
-! this program tests to make sure that 'intrinsic' attribute
+! this program tests 'intrinsic' attribute used in declarations
 program attr_intrinsic
     implicit none
     ! variable 'abs' with same name as intrinsic elemental
