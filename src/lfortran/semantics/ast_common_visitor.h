@@ -1211,9 +1211,15 @@ public:
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
+    // mapping of hash int's of scope to 'explicit_intrinsic_procedures'
+    std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping;
     std::map<std::string, ASR::symbol_t*> changed_external_function_symbol;
     std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
+    // procedures explicitly declared with 'intrinsic' attribute
+    // e.g. a declaration like: 'intrinsic abs' for an intrinsic
+    // elemental function 'abs'
+    std::vector<std::string> explicit_intrinsic_procedures;
     std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions;
     std::map<std::string, std::vector<int>> &entry_function_arguments_mapping;
     Vec<char*> data_member_names;
@@ -1245,22 +1251,26 @@ public:
     int idl_nesting_level = 0;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
-            diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
-            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-            std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
-            std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-            std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-            std::vector<ASR::stmt_t*> &data_structure,
-            LCompilers::LocationManager &lm)
-        : diag{diagnostics}, al{al}, compiler_options{compiler_options},
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
+        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure,
+            LCompilers::LocationManager &lm
+    ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
-          common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
+          common_variables_hash{common_variables_hash},
+          external_procedures_mapping{external_procedures_mapping},
+          explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm} {
+          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm}
+    {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -2446,12 +2456,34 @@ public:
         return ( std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end() );
     }
 
+    bool check_is_explicit_intrinsic(std::string sym, SymbolTable* scope=nullptr) {
+        if (scope) {
+            explicit_intrinsic_procedures = explicit_intrinsic_procedures_mapping[get_hash(scope->asr_owner)];
+        } else if (current_scope->asr_owner) {
+            explicit_intrinsic_procedures = explicit_intrinsic_procedures_mapping[get_hash(current_scope->asr_owner)];
+        }
+        return (
+            std::find(explicit_intrinsic_procedures.begin(), explicit_intrinsic_procedures.end(), sym) != explicit_intrinsic_procedures.end()
+        );
+    }
+
     void erase_from_external_mapping(std::string sym) {
         uint64_t hash = get_hash(current_scope->asr_owner);
         external_procedures_mapping[hash].erase(
             std::remove(external_procedures_mapping[hash].begin(),
             external_procedures_mapping[hash].end(), sym),
             external_procedures_mapping[hash].end());
+    }
+
+    void erase_from_explicit_intrinsic_mapping(std::string sym) {
+        uint64_t hash = get_hash(current_scope->asr_owner);
+        explicit_intrinsic_procedures_mapping[hash].erase(
+            std::remove(
+                explicit_intrinsic_procedures_mapping[hash].begin(),
+                explicit_intrinsic_procedures_mapping[hash].end(),
+                sym
+            )
+        );
     }
 
     // pad (with ' ') or trim character string 'value'
@@ -2685,7 +2717,7 @@ public:
                                     }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
-                                    // Ignore Intrinsic attribute
+                                    explicit_intrinsic_procedures.push_back(sym);
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
@@ -7503,6 +7535,7 @@ public:
         ASR::symbol_t *v = nullptr;
         ASR::expr_t *v_expr = nullptr;
         bool is_external_procedure = check_is_external(var_name);
+        bool is_explicit_intrinsic = check_is_explicit_intrinsic(var_name);
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -7527,7 +7560,7 @@ public:
         } else {
             v = current_scope->resolve_symbol(var_name);
         }
-        if (!v || (v && is_external_procedure)) {
+        if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
             if (var_name == "dble") {
                 Vec<ASR::call_arg_t> args;

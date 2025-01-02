@@ -103,15 +103,23 @@ public:
     ASR::ttype_t *tmp_type;
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::vector<ASR::stmt_t*> &data_structure, LCompilers::LocationManager &lm)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm) {}
+      : CommonVisitor(
+            al, symbol_table, diagnostics, compiler_options, implicit_mapping,
+            common_variables_hash, external_procedures_mapping,
+            explicit_intrinsic_procedures_mapping,
+            instantiate_types, instantiate_symbols, entry_functions,
+            entry_function_arguments_mapping, data_structure, lm
+        ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -652,6 +660,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
 
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
         mark_common_blocks_as_declared();
@@ -1250,6 +1259,8 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         external_procedures.clear();
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
@@ -1747,6 +1758,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
@@ -3914,6 +3926,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
@@ -3921,6 +3934,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::vector<ASR::stmt_t*> &data_structure, LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
+                         explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
     try {
         v.visit_TranslationUnit(ast);
