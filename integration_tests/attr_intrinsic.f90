@@ -43,8 +43,8 @@ program attr_intrinsic
         ! dummy result output
         integer :: i
         intrinsic char
-        ! the 'char' here is the variable 'char' not the intrinsic
-        ! function
+        ! the 'char' here is the intrinsic function 'char' not
+        ! the variable 'char'
         print *, 'intrinsic elemental char(65): ', char(65)
         if (char(65) /= 'A') error stop
     end function fun2
