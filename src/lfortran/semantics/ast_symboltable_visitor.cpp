@@ -624,7 +624,7 @@ public:
             current_module_dependencies.p,
             current_module_dependencies.size(),
             /* a_body */ nullptr,
-            /* n_body */ 0, 
+            /* n_body */ 0,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr);
         std::string sym_name = to_lower(x.m_name);
@@ -1064,7 +1064,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0); 
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
@@ -1233,7 +1233,7 @@ public:
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
-        // Self referencing procedure declarations 
+        // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
             try {
                 visit_unit_decl2(*x.m_decl[i]);
@@ -1459,7 +1459,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0); 
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
@@ -1735,8 +1735,8 @@ public:
             x.m_end_name ? x.m_end_name : nullptr);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        
-        // Self referencing procedure declarations 
+
+        // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
             try {
                 visit_unit_decl2(*x.m_decl[i]);
