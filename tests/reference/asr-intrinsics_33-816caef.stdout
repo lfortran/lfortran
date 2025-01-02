@@ -28,7 +28,7 @@
                                     (String 1 -1 () PointerString)
                                     (StringConstant
                                         "\n"
-                                        (String 1 0 () PointerString)
+                                        (String 1 1 () PointerString)
                                     )
                                 )
                                 (String 1 -1 () PointerString)

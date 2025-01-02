@@ -258,11 +258,11 @@ public:
                 a_newunit = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_newunit_type = ASRUtils::expr_type(a_newunit);
                 if( ( m_arg_str == std::string("newunit") &&
-                      a_newunit->type != ASR::exprType::Var ) ||
+                     !ASRUtils::is_variable(a_newunit) ) ||
                     ( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))
                     ) ) {
                         diag.add(Diagnostic(
-                            "`newunit`/`unit` must be a variable of type, Integer or IntegerPointer",
+                            "`newunit`/`unit` must be a mutable variable of type, Integer or IntegerPointer",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }));
@@ -1631,6 +1631,17 @@ public:
                 a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(tmp));
             }
         }
+
+        if (ASR::is_a<ASR::Var_t>(*a_test)) {
+            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(a_test);
+            if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
+                ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(variable->m_type)) && ASRUtils::is_allocatable(variable->m_type)) {
+                    a_test = ASRUtils::cast_string_descriptor_to_pointer(al, a_test);
+                }
+            }
+        }
+
         tmp = ASR::make_Select_t(al, x.base.base.loc, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
     }
@@ -4052,7 +4063,7 @@ public:
                 do_concurrent->m_head = do_concurrent_head.p;
                 do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
-            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - 1 - static_cast<int>(omp_constructs.size()) + 1) {
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - static_cast<int>(omp_constructs.size()) - pragma_nesting_level) {
                 collapse_value--;
                 do_loop_heads_for_collapse.push_back(al, head);
                 Vec<ASR::stmt_t*> temp;

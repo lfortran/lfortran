@@ -7868,6 +7868,10 @@ public:
             is_string = ASRUtils::is_character(*expr_type(x.m_unit));
             this->visit_expr_wrapper(x.m_unit, true);
             unit_val = tmp;
+            if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_unit))){
+                // Convert the unit to 32 bit integer (We only support unit number up to 1000).
+                unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+            }
         }
 
         if (x.m_iostat) {
@@ -8009,7 +8013,7 @@ public:
         llvm::Value *unit_val = nullptr, *f_name = nullptr;
         llvm::Value *status = nullptr, *form = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
-        unit_val = tmp;
+        unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         int ptr_copy = ptr_loads;
         if (x.m_filename) {
             ptr_loads = 1;
@@ -8094,7 +8098,6 @@ public:
         } else {
             size_val = llvm_utils->CreateAlloca(*builder,
                             llvm::Type::getInt32Ty(context));
-            print_util(size_val);
         }
 
         std::string runtime_func_name = "_lfortran_inquire";
@@ -8164,7 +8167,7 @@ public:
     void visit_FileClose(const ASR::FileClose_t &x) {
         llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
-        unit_val = tmp;
+        unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         std::string runtime_func_name = "_lfortran_close";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -8851,18 +8854,9 @@ public:
                                     tmp = llvm_utils->CreateLoad2(arg->m_type, tmp);
                                 }
                             } else {
-                                if(arg->m_type_declaration && ASR::is_a<ASR::Function_t>(
-                                        *ASRUtils::symbol_get_past_external(arg->m_type_declaration))){
-                                    // (FunctionType)** --> (FunctionType)*
-                                    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
-                                        symbol_get_past_external(arg->m_type_declaration));
-                                    uint32_t h = get_hash((ASR::asr_t*)fn);
-                                    if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
-                                        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                                        tmp = llvm_symtab_fn[h];
-                                    } else if(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
-                                        tmp = llvm_symtab_fn_arg[h];
-                                    }
+                                if( arg->m_intent == intent_local && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) ) {
+                                    // (FunctionType**) --> (FunctionType*)
+                                    tmp = llvm_utils->CreateLoad2(arg->m_type, tmp);
                                 }
                                 if( orig_arg &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&

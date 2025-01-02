@@ -133,7 +133,10 @@ end program
     FortranEvaluator e(compiler_options);
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = e.get_asr2(src, lm, diagnostics);
-    ASR::asr_t* asr2 = e.handle_lookup_name(r.result, lm.linecol_to_pos(2, 12));
+    uint64_t input_pos = lm.linecol_to_pos(2, 12);
+    uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+    CHECK(lm.output_to_input_pos(output_pos, false) == input_pos);
+    ASR::asr_t* asr2 = e.handle_lookup_name(r.result, output_pos);
     std::vector<diag::Span> spans2 = diag::Label("", {asr2->loc}).spans;
     for( auto it: spans2 ) {
         populate_span(it, lm);

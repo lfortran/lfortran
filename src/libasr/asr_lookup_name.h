@@ -18,6 +18,16 @@ namespace LCompilers::LFortran {
             LookupNameVisitor(uint16_t pos) {
                 this->pos = pos;
             }
+            void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+                if ((bool&)x) { } // Suppress unused warning
+                if (test_loc_and_set_span(x.base.base.loc)) {
+                    const ASR::symbol_t* sym = this->symbol_get_past_external_(x.m_external);
+                    this->handle_symbol(sym);
+                    if ( ASR::is_a<ASR::ClassProcedure_t>(*sym) ) {
+                        this->handle_symbol(ASR::down_cast<ASR::ClassProcedure_t>(sym)->m_proc);
+                    }
+                }
+            }
             void visit_FunctionCall(const ASR::FunctionCall_t &x) {
                 for (size_t i=0; i<x.n_args; i++) {
                     this->visit_call_arg(x.m_args[i]);

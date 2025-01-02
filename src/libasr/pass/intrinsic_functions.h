@@ -393,7 +393,9 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
     ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
     ASR::ttype_t* output_type = x.m_type;
     ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-        "The input and output type of elemental intrinsics must exactly match, input type: " +
+        "The input and output type of elemental intrinsic, " +
+        std::to_string(static_cast<int64_t>(x.m_intrinsic_id)) +
+        " must exactly match, input type: " +
         ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
         loc, diagnostics);
 }
@@ -765,7 +767,7 @@ namespace Abs {
                 loc, diagnostics);
         } else {
             ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-                "The input and output type of elemental intrinsics must exactly match, input type: " +
+                "The input and output type of Abs intrinsic must exactly match, input type: " +
                 input_type_str + " output type: " + output_type_str, loc, diagnostics);
         }
     }
@@ -4052,10 +4054,7 @@ namespace MoveAlloc {
         declare_basic_variables(new_name);
         fill_func_arg("from", arg_types[0]);
         fill_func_arg("to", arg_types[1]);
-        auto result = declare(new_name, ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, arg_types[0])), ReturnVar);
-        LCompilers::ASR::dimension_t *m_dims = nullptr;
-        int n_dims = extract_dimensions_from_ttype(arg_types[0], m_dims);
-        body.push_back(al, b.Allocate(result, m_dims, n_dims));
+        auto result = declare(new_name, arg_types[0], ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -4566,7 +4565,7 @@ namespace NewLine {
     static ASR::expr_t *eval_NewLine(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         char* new_line_str = (char*)"\n";
-        return make_ConstantWithType(make_StringConstant_t, new_line_str, ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString)), loc);
+        return make_ConstantWithType(make_StringConstant_t, new_line_str, ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString)), loc);
     }
 
 } // namespace NewLine
@@ -5964,7 +5963,7 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 
 } // namespace SetRemove
 
-static inline void promote_arguments_kinds(Allocator &al, const Location &loc, 
+static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
         Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
     int target_kind = -1;
     for (size_t i = 0; i < args.size(); i++) {
@@ -6245,7 +6244,7 @@ namespace Min {
         if (!all_args_same_kind){
             promote_arguments_kinds(al, loc, args, diag);
         }
-        
+
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
         ASR::expr_t *arg_value;

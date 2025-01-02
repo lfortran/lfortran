@@ -36,24 +36,32 @@ and selecting `New->Fortran`.
 
 This method is the recommended method if you just want to install LFortran, either yourself or in a package manager (Spack, Conda, Debian, etc.). The source tarball has all the generated files included and has minimal dependencies.
 
-The source tarball of LFortran only depends on:
+The source tarball of LFortran depends on:
 
 * Python
 * cmake
-* LLVM 10-16 (versions 17 and 18 not supported yet)
+* LLVM 10-19
+* zstd-static
+* zlib
 
 First we have to install dependencies, for example using Conda:
 ```bash
-conda create -n lf python cmake llvmdev
+conda create -n lf python cmake llvmdev zstd-static zlib
 conda activate lf
 ```
+
+On a Linux system, we additionally need to install `libunwind`:
+```bash
+conda install libunwind
+```
+
 Then download a tarball from
 [https://lfortran.org/download/](https://lfortran.org/download/),
 e.g.:
 ```bash
 wget https://github.com/lfortran/lfortran/releases/download/v0.42.0/lfortran-0.42.0.tar.gz
 tar xzf lfortran-0.42.0.tar.gz
-cd lfortran-0.42.0.tar.gz
+cd lfortran-0.42.0
 ```
 And build:
 ```

@@ -664,8 +664,9 @@ int python_wrapper(const std::string &infile, std::string array_order,
         // convert string to uint16_t
         uint16_t l = std::stoi(compiler_options.line);
         uint16_t c = std::stoi(compiler_options.column);
-        uint64_t pos = lm.linecol_to_pos(l, c);
-        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, pos);
+        uint64_t input_pos = lm.linecol_to_pos(l, c);
+        uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, output_pos);
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 compiler_options.po.with_intrinsic_mods) << std::endl;
         return 0;
@@ -2162,6 +2163,7 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> O_flags;
 
     CompilerOptions compiler_options;
+    bool no_experimental_simplifier = false;
     compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
@@ -2268,7 +2270,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
-    app.add_flag("--experimental-simplifier", compiler_options.po.experimental_simplifier, "Use experimental simplifier pass");
+    app.add_flag("--no-experimental-simplifier", no_experimental_simplifier, "Do not use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
     app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
 
@@ -2308,6 +2310,8 @@ int main_app(int argc, char *argv[]) {
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
+
+    compiler_options.po.experimental_simplifier = !no_experimental_simplifier;
     LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 

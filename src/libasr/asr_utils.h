@@ -2374,6 +2374,12 @@ static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
     return false;
 }
 
+static inline bool is_dimension_empty(ASR::ttype_t* type) {
+    ASR::dimension_t* dims = nullptr;
+    size_t n = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    return is_dimension_empty(dims, n);
+}
+
 static inline bool is_only_upper_bound_empty(ASR::dimension_t& dim) {
     return (dim.m_start != nullptr && dim.m_length == nullptr);
 }
@@ -6126,6 +6132,30 @@ static inline ASR::expr_t* extract_array_variable(ASR::expr_t* x) {
     }
 
     return x;
+}
+
+static inline void extract_array_indices(ASR::expr_t* x, Allocator &al,
+    Vec<ASR::array_index_t>& m_args, int& n_args) {
+    if( x->type == ASR::exprType::ArrayItem ) {
+        ASR::ArrayItem_t* arr = ASR::down_cast<ASR::ArrayItem_t>(x);
+        for(size_t i = 0; i < arr->n_args; i++){
+            if((arr->m_args[i].m_left && arr->m_args[i].m_right && arr->m_args[i].m_step) ||
+                  (arr->m_args[i].m_right && ASRUtils::is_array(ASRUtils::expr_type(arr->m_args[i].m_right)))){
+                m_args.push_back(al, arr->m_args[i]);
+                n_args++;
+            }
+        }
+        return ;
+    } else if( x->type == ASR::exprType::ArraySection ) {
+        ASR::ArraySection_t* arr = ASR::down_cast<ASR::ArraySection_t>(x);
+        for(size_t i = 0; i < arr->n_args; i++){
+            if((arr->m_args[i].m_left && arr->m_args[i].m_right && arr->m_args[i].m_step) ||
+                  (arr->m_args[i].m_right && ASRUtils::is_array(ASRUtils::expr_type(arr->m_args[i].m_right)))){
+                m_args.push_back(al, arr->m_args[i]);
+                n_args++;
+            }
+        }
+    }
 }
 
 static inline void extract_indices(ASR::expr_t* x,

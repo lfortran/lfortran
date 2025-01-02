@@ -18,6 +18,9 @@ bool is_vectorise_able(ASR::expr_t* x) {
         case ASR::exprType::FunctionCall: {
             return ASRUtils::is_elemental(ASR::down_cast<ASR::FunctionCall_t>(x)->m_name);
         }
+        case ASR::exprType::IntrinsicElementalFunction: {
+            return true;
+        }
         case ASR::exprType::IntegerBinOp:
         case ASR::exprType::RealBinOp:
         case ASR::exprType::ComplexBinOp:
@@ -83,6 +86,12 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
         }
     }
 
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        if( ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) ) {
+            vars.push_back(al, const_cast<ASR::expr_t*>(&(x.base)));
+        }
+    }
+
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
 
     }
@@ -134,7 +143,8 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         var_type = value_type;
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
-        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required ) {
+        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required &&
+              !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(value))) {
             if( ASRUtils::is_simd_array(value) ) {
                 var_type = ASRUtils::expr_type(value);
             } else {
@@ -830,14 +840,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
+    Vec<ASR::stmt_t*>* parent_body_for_where;
     ExprsWithTargetType& exprs_with_target;
     bool realloc_lhs;
+    bool inside_where;
 
     public:
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
-        al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_),
-        realloc_lhs(realloc_lhs_) {(void)realloc_lhs; /*Silence-Warning*/}
+        al(al_), current_body(nullptr), parent_body_for_where(nullptr),
+            exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
+            inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl
@@ -1036,6 +1049,32 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
     }
 
+    void visit_Where(const ASR::Where_t &x) {
+        bool inside_where_copy = inside_where;
+        if( !inside_where ) {
+            inside_where = true;
+            parent_body_for_where = current_body;
+        }
+        Vec<ASR::stmt_t*>* current_body_copy_ = current_body;
+        current_body = parent_body_for_where;
+        ASR::expr_t** current_expr_copy_86 = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_test));
+        call_replacer();
+        current_expr = current_expr_copy_86;
+        if( x.m_test && visit_expr_after_replacement )
+        visit_expr(*x.m_test);
+        current_body = current_body_copy_;
+
+        ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_orelse, xx.n_orelse);
+
+        if( !inside_where_copy ) {
+            inside_where = false;
+            parent_body_for_where = nullptr;
+        }
+    }
+
     void visit_Print(const ASR::Print_t& x) {
         ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
         std::string name_hint = "print";
@@ -1100,7 +1139,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
             !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
-            !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr)) &&
+            !is_vectorise_able(expr) &&
             (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
@@ -1241,6 +1280,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASRUtils::symbol_name(x.m_dt_sym));
     }
 
+    void visit_TypeInquiry(const ASR::TypeInquiry_t& x) {
+        Vec<ASR::expr_t*> x_m_args_; x_m_args_.reserve(al, 1);
+        x_m_args_.push_back(al, x.m_arg);
+        Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, 1);
+        traverse_args(x_m_args, x_m_args_.p, x_m_args_.size(), std::string("_type_inquiry_"));
+        ASR::TypeInquiry_t& xx = const_cast<ASR::TypeInquiry_t&>(x);
+        xx.m_arg = x_m_args[0];
+    }
+
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t& x) {
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
         traverse_args(x_m_args, x.m_args, x.n_args, std::string("_array_constructor_"));
@@ -1374,9 +1422,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
         ASR::ArrayBound_t& xx = const_cast<ASR::ArrayBound_t&>(x);
 
-        replace_expr_with_temporary_variable(v, "_array_bound_")
-        if (x.m_dim) {
-            replace_expr_with_temporary_variable(dim, "_array_bound_dim_")
+        if( is_temporary_needed(xx.m_v) ) {
+            replace_expr_with_temporary_variable(v, "_array_bound_v")
+        }
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t& x) {
+        ASR::ArraySize_t& xx = const_cast<ASR::ArraySize_t&>(x);
+        if( is_temporary_needed(xx.m_v) ) {
+            replace_expr_with_temporary_variable(v, "_array_size_v")
         }
     }
 };
@@ -1453,7 +1507,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASRUtils::extract_indices(target, m_args, n_args);
             if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args))) ||
-                 target_Type == targetType::GeneratedTargetPointerForArraySection ) {
+                 target_Type == targetType::GeneratedTargetPointerForArraySection ||
+                (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
                 force_replace_current_expr_for_array(std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
@@ -1487,11 +1542,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
         replace_current_expr(std::string("_intrinsic_impure_function_") +
             ASRUtils::get_impure_intrinsic_name(x->m_impure_intrinsic_id))
-    }
-
-    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
-        replace_current_expr(std::string("_intrinsic_elemental_function_") +
-            ASRUtils::get_intrinsic_name(x->m_intrinsic_id))
     }
 
     void replace_StructConstructor(ASR::StructConstructor_t* x) {
@@ -1703,14 +1753,18 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayBound(ASR::ArrayBound_t* x) {
-        replace_current_expr("_array_bound_")
+        ASR::expr_t** current_expr_copy_149 = current_expr;
+        current_expr = &(x->m_v);
+        if( is_temporary_needed(x->m_v) ) {
+            force_replace_current_expr_for_array("_array_bound_v")
+        }
+        current_expr = current_expr_copy_149;
     }
 
     void replace_ArraySize(ASR::ArraySize_t* x) {
         ASR::expr_t** current_expr_copy_149 = current_expr;
         current_expr = &(x->m_v);
-        if( !ASR::is_a<ASR::Var_t>(*x->m_v) &&
-            !ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
+        if( is_temporary_needed(x->m_v) ) {
             force_replace_current_expr_for_array("_array_size_v")
         }
         current_expr = current_expr_copy_149;

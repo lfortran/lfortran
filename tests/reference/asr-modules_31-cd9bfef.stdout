@@ -847,6 +847,16 @@
                     (SymbolTable
                         2
                         {
+                            1_dependency_config_t:
+                                (ExternalSymbol
+                                    2
+                                    1_dependency_config_t
+                                    9 dependency_config_t
+                                    fpm_dependency_modules_31
+                                    []
+                                    dependency_config_t
+                                    Public
+                                ),
                             cmd_update:
                                 (ExternalSymbol
                                     2
@@ -855,16 +865,6 @@
                                     fpm_cmd_update_modules_31
                                     []
                                     cmd_update
-                                    Public
-                                ),
-                            dependency_config_t:
-                                (ExternalSymbol
-                                    2
-                                    dependency_config_t
-                                    9 dependency_config_t
-                                    fpm_dependency_modules_31
-                                    []
-                                    dependency_config_t
                                     Public
                                 ),
                             dependency_tree_t:
