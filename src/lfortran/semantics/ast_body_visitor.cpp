@@ -38,17 +38,24 @@ public:
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
-            std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-            std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-            std::vector<ASR::stmt_t*> &data_structure,
-            LCompilers::LocationManager &lm)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm),
-        asr{unit}, from_block{false} {}
+        CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
+        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure,
+        LCompilers::LocationManager &lm
+    ) : CommonVisitor(
+            al, nullptr, diagnostics, compiler_options, implicit_mapping,
+            common_variables_hash, external_procedures_mapping,
+            explicit_intrinsic_procedures_mapping, instantiate_types,
+            instantiate_symbols, entry_functions, entry_function_arguments_mapping,
+            data_structure, lm
+        ), asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {
@@ -4646,6 +4653,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
@@ -4653,8 +4661,12 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::vector<ASR::stmt_t*> &data_structure,
         LCompilers::LocationManager &lm)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
+        common_variables_hash, external_procedures_mapping,
+        explicit_intrinsic_procedures_mapping,
+        instantiate_types, instantiate_symbols, entry_functions,
+        entry_function_arguments_mapping, data_structure, lm
+    );
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
