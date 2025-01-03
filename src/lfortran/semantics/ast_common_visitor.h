@@ -94,8 +94,8 @@ struct IntrinsicSignature {
     std::vector<std::string> kwarg_names;
     int positional_args, max_args;
 
-    IntrinsicSignature(std::vector<std::string> kwarg_names_,
-        int positional_args_, int max_args_): kwarg_names(kwarg_names_),
+    IntrinsicSignature(std::vector<std::string> kwarg_names_ = {},
+        int positional_args_ = 0, int max_args_ = 0): kwarg_names(kwarg_names_),
         positional_args(positional_args_), max_args(max_args_) {}
 };
 
@@ -108,11 +108,37 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     T value;
     ASR::ttype_t* type;
     diag::Diagnostics& diag;
-    std::map<std::string, std::vector<IntrinsicSignature>> name2signature;
+    const std::map<ASRUtils::IntrinsicElementalFunctions, size_t> name2signature_varargs = {
+        // max0 can accept any arbitrary number of arguments 2<=x<=100
+        {ASRUtils::IntrinsicElementalFunctions::Max, 100},
+        // min0 can accept any arbitrary number of arguments 2<=x<=100
+        {ASRUtils::IntrinsicElementalFunctions::Min, 100},
+        {ASRUtils::IntrinsicElementalFunctions::Aint, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Nint, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Anint, 2},
+        {ASRUtils::IntrinsicElementalFunctions::StringContainsSet, 4},
+        {ASRUtils::IntrinsicElementalFunctions::StringFindSet, 4},
+        {ASRUtils::IntrinsicElementalFunctions::SubstrIndex, 4},
+        {ASRUtils::IntrinsicElementalFunctions::Floor, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Ceiling, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Maskr, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Maskl, 2},
+        {ASRUtils::IntrinsicElementalFunctions::SelectedRealKind, 3},
+        {ASRUtils::IntrinsicElementalFunctions::Ishftc, 3},
+        {ASRUtils::IntrinsicElementalFunctions::Ichar, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Char, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Achar, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Logical, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Real, 2},
+        {ASRUtils::IntrinsicElementalFunctions::StorageSize, 2},
+        {ASRUtils::IntrinsicElementalFunctions::OutOfRange, 3},
+        {ASRUtils::IntrinsicElementalFunctions::StringLenTrim, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Int, 2},
+    };
 
     ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int>& loop_indices, T value_,
-        ASR::ttype_t* type, std::map<std::string, std::vector<IntrinsicSignature>> name2signature, diag::Diagnostics& diag) :
-        al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value_), type(type), diag(diag), name2signature(name2signature) {}
+        ASR::ttype_t* type, diag::Diagnostics& diag) :
+        al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value_), type(type), diag(diag) {}
 
     void visit_Var(const ASR::Var_t &x) {
         int loop_var_index = std::find(loop_vars.begin(), loop_vars.end(), x.m_v) - loop_vars.begin();
@@ -240,11 +266,11 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         }
     }
 
-    std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
-        if( name2signature.find(var_name) == name2signature.end() ) {
-            return {IntrinsicSignature({}, 1, 1)};
+     inline size_t get_max_args(ASRUtils::IntrinsicElementalFunctions id) {
+        if( name2signature_varargs.find(id) == name2signature_varargs.end() ) {
+            return 1;
         }
-        return name2signature[var_name];
+        return name2signature_varargs.at(id);
     }
     // handle intrinsic elemental function
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
@@ -266,8 +292,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             }
         }
         std::string intrinsic_name = to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
-        std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(intrinsic_name);
-        size_t max_args = signatures[0].max_args;
+        size_t max_args = get_max_args(static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id));
         for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
         ASRUtils::create_intrinsic_function create_func =
                 ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
@@ -975,112 +1000,112 @@ public:
         {AST::intrinsicopType::CONCAT, "~concat"}
     };
 
-
-    std::map<std::string, std::vector<IntrinsicSignature>> name2signature = {
-        {"any", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
-        {"all", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
-        {"iany", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
-        {"iall", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
-        {"norm2", {IntrinsicSignature({"array", "dim"}, 1, 2)}},
-        {"sum", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
-        {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
-        {"iparity", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
-        {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
-        {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
-        {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},
-        {"unpack", {IntrinsicSignature({"vector", "mask", "field"}, 3, 3)}},
-        {"count", {IntrinsicSignature({"mask", "dim", "kind"}, 1, 3)}},
-        {"parity", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
-        {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
-        {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5)}},
-        {"minval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
-        {"minloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5)}},
-        {"findloc", {IntrinsicSignature({"array", "value", "dim", "mask", "kind", "back"}, 2, 6)}},
+    std::map<std::string, IntrinsicSignature> name2signature = {
+        {"any", IntrinsicSignature({"mask", "dim"}, 1, 2)},
+        {"all", IntrinsicSignature({"mask", "dim"}, 1, 2)},
+        {"iany", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"iall", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"norm2", IntrinsicSignature({"array", "dim"}, 1, 2)},
+        {"sum", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"product", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"iparity", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"matmul", IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)},
+        {"dot_product", IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)},
+        {"pack", IntrinsicSignature({"array", "mask", "vector"}, 2, 3)},
+        {"unpack", IntrinsicSignature({"vector", "mask", "field"}, 3, 3)},
+        {"count", IntrinsicSignature({"mask", "dim", "kind"}, 1, 3)},
+        {"parity", IntrinsicSignature({"mask", "dim"}, 1, 2)},
+        {"maxval", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"maxloc", IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5)},
+        {"minval", IntrinsicSignature({"array", "dim", "mask"}, 1, 3)},
+        {"minloc", IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5)},
+        {"findloc", IntrinsicSignature({"array", "value", "dim", "mask", "kind", "back"}, 2, 6)},
         // max0 can accept any arbitrary number of arguments 2<=x<=100
-        {"max0", {IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)}},
+        {"max0", IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)},
         // min0 can accept any arbitrary number of arguments 2<=x<=100
-        {"min0", {IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)}},
-        {"min", {IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)}},
-        {"max", {IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)}},
-        {"merge", {IntrinsicSignature({"tsource", "fsource", "mask"}, 3, 3)}},
-        {"sign", {IntrinsicSignature({"a", "b"}, 2, 2)}},
-        {"aint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"nint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"anint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"atan2", {IntrinsicSignature({"y", "x"}, 2, 2)}},
-        {"shape", {IntrinsicSignature({"source", "kind"}, 1, 2)}},
-        {"mod", {IntrinsicSignature({"a", "p"}, 2, 2)}},
-        {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
-        {"verify", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
-        {"scan", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
-        {"index", {IntrinsicSignature({"string", "substring", "back", "kind"}, 2, 4)}},
-        {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
-        {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
-        {"rshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
-        {"shiftl", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
-        {"lshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
-        {"ishft", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
-        {"bgt", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"blt", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"bge", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"ble", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"lgt", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
-        {"llt", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
-        {"lge", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
-        {"lle", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
-        {"iand", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"and", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"ior", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"or", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"ieor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"xor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
-        {"ibclr", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
-        {"ibset", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
-        {"btest", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
-        {"ibits", {IntrinsicSignature({"i", "pos", "len"}, 3, 3)}},
-        {"floor", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"ceiling", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"scale", {IntrinsicSignature({"X", "I"}, 2, 2)}},
-        {"dprod", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
-        {"maskr", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
-        {"maskl", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
-        {"dim", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
-        {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
-        {"nearest", {IntrinsicSignature({"x", "s"}, 2, 2)}},
-        {"compiler_version", {IntrinsicSignature({}, 0, 0)}},
-        {"command_argument_count", {IntrinsicSignature({}, 0, 0)}},
-        {"ishftc", {IntrinsicSignature({"i", "shift", "size"}, 2, 3)}},
-        {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
-        {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
-        {"achar", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
-        {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
-        {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
-        {"dshiftr", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
-        {"random_init", {IntrinsicSignature({"repeatable", "image"}, 2, 2)}},
-        {"random_seed", {IntrinsicSignature({"size", "put", "get"}, 0, 3)}},
-        {"get_command", {IntrinsicSignature({"command", "length", "status"}, 0, 3)}},
-        {"get_command_argument", {IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)}},
-        {"system_clock", {IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)}},
-        {"date_and_time", {IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)}},
-        {"get_environment_variable", {IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)}},
-        {"execute_command_line", {IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)}},
-        {"move_alloc", {IntrinsicSignature({"from", "to"}, 2, 2)}},
-        {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
-        {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
-        {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
-        {"bessel_yn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
-        {"merge_bits", {IntrinsicSignature({"i", "j", "mask"}, 3, 3)}},
-        {"logical", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
-        {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
-        {"eoshift", {IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)}},
-        {"real", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"storage_size", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
-        {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
-        {"same_type_as", {IntrinsicSignature({"a", "b"}, 2, 2)}},
-        {"len_trim", {IntrinsicSignature({"String", "Kind"}, 1, 2)}},
-        {"int", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
+        {"min0", IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)},
+        {"min", IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)},
+        {"max", IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)},
+        {"merge", IntrinsicSignature({"tsource", "fsource", "mask"}, 3, 3)},
+        {"sign", IntrinsicSignature({"a", "b"}, 2, 2)},
+        {"aint", IntrinsicSignature({"a", "kind"}, 1, 2)},
+        {"nint", IntrinsicSignature({"a", "kind"}, 1, 2)},
+        {"anint", IntrinsicSignature({"a", "kind"}, 1, 2)},
+        {"atan2", IntrinsicSignature({"y", "x"}, 2, 2)},
+        {"shape", IntrinsicSignature({"source", "kind"}, 1, 2)},
+        {"mod", IntrinsicSignature({"a", "p"}, 2, 2)},
+        {"repeat", IntrinsicSignature({"string", "ncopies"}, 2, 2)},
+        {"verify", IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)},
+        {"scan", IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)},
+        {"index", IntrinsicSignature({"string", "substring", "back", "kind"}, 2, 4)},
+        {"hypot", IntrinsicSignature({"x", "y"}, 2, 2)},
+        {"shiftr", IntrinsicSignature({"i", "shift"}, 2, 2)},
+        {"rshift", IntrinsicSignature({"i", "shift"}, 2, 2)},
+        {"shiftl", IntrinsicSignature({"i", "shift"}, 2, 2)},
+        {"lshift", IntrinsicSignature({"i", "shift"}, 2, 2)},
+        {"ishft", IntrinsicSignature({"i", "shift"}, 2, 2)},
+        {"bgt", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"blt", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"bge", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"ble", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"lgt", IntrinsicSignature({"string_A", "string_B"}, 2, 2)},
+        {"llt", IntrinsicSignature({"string_A", "string_B"}, 2, 2)},
+        {"lge", IntrinsicSignature({"string_A", "string_B"}, 2, 2)},
+        {"lle", IntrinsicSignature({"string_A", "string_B"}, 2, 2)},
+        {"iand", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"and", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"ior", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"or", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"ieor", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"xor", IntrinsicSignature({"i", "j"}, 2, 2)},
+        {"ibclr", IntrinsicSignature({"i", "pos"}, 2, 2)},
+        {"ibset", IntrinsicSignature({"i", "pos"}, 2, 2)},
+        {"btest", IntrinsicSignature({"i", "pos"}, 2, 2)},
+        {"ibits", IntrinsicSignature({"i", "pos", "len"}, 3, 3)},
+        {"floor", IntrinsicSignature({"a", "kind"}, 1, 2)},
+        {"ceiling", IntrinsicSignature({"a", "kind"}, 1, 2)},
+        {"scale", IntrinsicSignature({"X", "I"}, 2, 2)},
+        {"dprod", IntrinsicSignature({"X", "Y"}, 2, 2)},
+        {"maskr", IntrinsicSignature({"i", "kind"}, 1, 2)},
+        {"maskl", IntrinsicSignature({"i", "kind"}, 1, 2)},
+        {"dim", IntrinsicSignature({"X", "Y"}, 2, 2)},
+        {"selected_real_kind", IntrinsicSignature({"p", "r", "radix"}, 0, 3)},
+        {"nearest", IntrinsicSignature({"x", "s"}, 2, 2)},
+        {"compiler_version", IntrinsicSignature({}, 0, 0)},
+        {"command_argument_count", IntrinsicSignature({}, 0, 0)},
+        {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
+        {"ichar", IntrinsicSignature({"C", "kind"}, 1, 2)},
+        {"char", IntrinsicSignature({"I", "kind"}, 1, 2)},
+        {"achar", IntrinsicSignature({"I", "kind"}, 1, 2)},
+        {"set_exponent", IntrinsicSignature({"X", "I"}, 2, 2)},
+        {"dshiftl", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
+        {"dshiftr", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
+        {"random_init", IntrinsicSignature({"repeatable", "image"}, 2, 2)},
+        {"random_seed", IntrinsicSignature({"size", "put", "get"}, 0, 3)},
+        {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
+        {"get_command_argument", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
+        {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
+        {"date_and_time", IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)},
+        {"get_environment_variable", IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)},
+        {"execute_command_line", IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)},
+        {"move_alloc", IntrinsicSignature({"from", "to"}, 2, 2)},
+        {"mvbits", IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)},
+        {"modulo", IntrinsicSignature({"a", "p"}, 2, 2)},
+        {"bessel_jn", IntrinsicSignature({"n", "x"}, 2, 2)},
+        {"bessel_yn", IntrinsicSignature({"n", "x"}, 2, 2)},
+        {"merge_bits", IntrinsicSignature({"i", "j", "mask"}, 3, 3)},
+        {"logical", IntrinsicSignature({"i", "kind"}, 1, 2)},
+        {"cshift", IntrinsicSignature({"array", "shift", "dim"}, 2, 3)},
+        {"eoshift", IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)},
+        {"real", IntrinsicSignature({"a", "kind"}, 1, 2)},
+        {"storage_size", IntrinsicSignature({"a", "kind"}, 1, 2)},
+        {"spread", IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)},
+        {"out_of_range", IntrinsicSignature({"value", "mold", "round"}, 2, 3)},
+        {"same_type_as", IntrinsicSignature({"a", "b"}, 2, 2)},
+        {"len_trim", IntrinsicSignature({"String", "Kind"}, 1, 2)},
+        {"int", IntrinsicSignature({"i", "kind"}, 1, 2)},
     };
+
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
         {"iabs", {"abs", {"int4"}}},
@@ -6508,9 +6533,9 @@ public:
         return ASR::make_ComplexConstructor_t(al, loc, re, im, ret_type, value);
     }
 
-    std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
+    IntrinsicSignature get_intrinsic_signature(std::string& var_name) {
         if( name2signature.find(var_name) == name2signature.end() ) {
-            return {IntrinsicSignature({}, 1, 1)};
+            return IntrinsicSignature({}, 1, 1);
         }
         return name2signature[var_name];
     }
@@ -6882,19 +6907,13 @@ public:
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
-                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
+                IntrinsicSignature signature = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
                 bool signature_matched = false;
-                for( auto& signature: signatures ) {
-                    signature_matched = handle_intrinsic_node_args(
-                        x, args, signature.kwarg_names,
-                        signature.positional_args, signature.max_args,
-                        var_name, false);
-                    if( signature_matched ) {
-                        break ;
-                    }
-                    args.n = 0;
-                }
+                signature_matched = handle_intrinsic_node_args(
+                    x, args, signature.kwarg_names,
+                    signature.positional_args, signature.max_args,
+                    var_name, false);
                 check_specific_type_intrinsics(specific_var_name, args, x.base.base.loc);
                 if( !signature_matched ) {
                     diag.add(Diagnostic("No matching signature found for intrinsic " + var_name,
@@ -7384,7 +7403,7 @@ public:
             }
         }
         */
-        ImpliedDoLoopValuesVisitor<T> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, name2signature, diag);
+        ImpliedDoLoopValuesVisitor<T> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
         int end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
         int start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_start))->m_n;
         int increment = idl->m_increment ? ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_increment))->m_n : 1;
