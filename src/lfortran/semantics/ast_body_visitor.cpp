@@ -3166,19 +3166,14 @@ public:
     ASR::asr_t* intrinsic_subroutine_as_node(const AST::SubroutineCall_t &x, std::string var_name) {
         if (is_intrinsic_registry_subroutine(var_name)) {
             if ( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name)) {
-                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
+                IntrinsicSignature signature = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
                 bool signature_matched = false;
-                for( auto& signature: signatures ) {
-                    signature_matched = handle_intrinsic_node_args(
-                        x, args, signature.kwarg_names,
-                        signature.positional_args, signature.max_args,
-                        var_name, true);
-                    if( signature_matched ) {
-                        break ;
-                    }
-                    args.n = 0;
-                }
+                signature_matched = handle_intrinsic_node_args(
+                    x, args, signature.kwarg_names,
+                    signature.positional_args, signature.max_args,
+                    var_name, true);
+
                 if( !signature_matched ) {
                     diag.add(Diagnostic(
                         "No matching signature found for intrinsic " + var_name,
@@ -3203,19 +3198,13 @@ public:
     ASR::asr_t* handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "mvbits") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
-                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
+                IntrinsicSignature signature = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
                 bool signature_matched = false;
-                for( auto& signature: signatures ) {
-                    signature_matched = handle_intrinsic_node_args(
-                        x, args, signature.kwarg_names,
-                        signature.positional_args, signature.max_args,
-                        var_name, true);
-                    if( signature_matched ) {
-                        break ;
-                    }
-                    args.n = 0;
-                }
+                signature_matched = handle_intrinsic_node_args(
+                    x, args, signature.kwarg_names,
+                    signature.positional_args, signature.max_args,
+                    var_name, true);
                 if( !signature_matched ) {
                     diag.add(Diagnostic(
                         "No matching signature found for intrinsic " + var_name,
@@ -3249,19 +3238,13 @@ public:
     ASR::asr_t* handle_MoveAlloc(const AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "move_alloc") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
-                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
+                IntrinsicSignature signature = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
                 bool signature_matched = false;
-                for( auto& signature: signatures ) {
-                    signature_matched = handle_intrinsic_node_args(
-                        x, args, signature.kwarg_names,
-                        signature.positional_args, signature.max_args,
-                        var_name, true);
-                    if( signature_matched ) {
-                        break ;
-                    }
-                    args.n = 0;
-                }
+                signature_matched = handle_intrinsic_node_args(
+                    x, args, signature.kwarg_names,
+                    signature.positional_args, signature.max_args,
+                    var_name, true);
                 if( !signature_matched ) {
                     diag.add(Diagnostic(
                         "No matching signature found for intrinsic " + var_name,
@@ -3465,13 +3448,13 @@ public:
                         diags, x.n_member);
                     if( !diags.has_error() ) {
                         if( ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
-                            [&](const std::string &msg, const Location &loc) { 
+                            [&](const std::string &msg, const Location &loc) {
                                 diag.add(Diagnostic(
                                     msg,
                                     Level::Error, Stage::Semantic, {
                                         Label("",{loc})
                                     }));
-                                throw SemanticAbort(); 
+                                throw SemanticAbort();
                                 },
                             false) != -1 ) {
                             function_found = true;
