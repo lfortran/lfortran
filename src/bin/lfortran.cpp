@@ -908,7 +908,7 @@ int handle_mlir(const std::string &infile,
     std::unique_ptr<LCompilers::MLIRModule> m;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
-        res = fe.get_mlir(*asr, diagnostics);
+        res = fe.get_mlir(*(LCompilers::ASR::asr_t *)asr, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -983,7 +983,7 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 }
 
 int compile_src_to_object_file(const std::string &infile,
-        const std::string &outfile,
+        const std::vector<std::string> &outfile,
         bool assembly,
         CompilerOptions &compiler_options,
         LCompilers::PassManager& lpm)
@@ -1028,7 +1028,7 @@ int compile_src_to_object_file(const std::string &infile,
             && !LCompilers::ASRUtils::main_program_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
-        e.create_empty_object_file(outfile);
+        e.create_empty_object_file(outfile[0]);
         return 0;
     }
 
@@ -1063,9 +1063,37 @@ int compile_src_to_object_file(const std::string &infile,
 
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
-        e.save_asm_file(*(m->m_m), outfile);
+        e.save_asm_file(*(m->m_m), outfile[0]);
     } else {
-        e.save_object_file(*(m->m_m), outfile);
+        e.save_object_file(*(m->m_m), outfile[0]);
+    }
+
+    if(compiler_options.po.enable_gpu_offloading) {
+#ifdef HAVE_LFORTRAN_MLIR
+        for (auto &item : asr->m_symtab->get_scope()) {
+            if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second) &&
+                item.first.find("_lcompilers_mlir_gpu_offloading")
+                    != std::string::npos) {
+                LCompilers::ASR::Module_t &mod = *LCompilers::ASR::down_cast
+                    <LCompilers::ASR::Module_t>(item.second);
+                LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
+                    mlir_res = fe.get_mlir((LCompilers::ASR::asr_t &)mod, diagnostics);
+
+                std::cerr << diagnostics.render(lm, compiler_options);
+                if (result.ok) {
+                    mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
+                    e.save_object_file(*(mlir_res.result->llvm_m), outfile[1]);
+                } else {
+                    LCOMPILERS_ASSERT(diagnostics.has_error())
+                    return 1;
+                }
+            }
+        }
+#endif
+
+
+
+
     }
 
     return has_error_w_cc;
@@ -1088,7 +1116,7 @@ int compile_to_assembly_file(const std::string &infile,
     const std::string &outfile, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
 {
-    return compile_src_to_object_file(infile, outfile, true, compiler_options, lpm);
+    return compile_src_to_object_file(infile, {outfile}, true, compiler_options, lpm);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -2623,7 +2651,7 @@ int main_app(int argc, char *argv[]) {
     if (arg_c) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_src_to_object_file(arg_file, outfile, false,
+            return compile_src_to_object_file(arg_file, {outfile}, false,
                 compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2659,7 +2687,7 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> object_files;
     for (const auto &arg_file : arg_files) {
         int err = 0;
-        std::string tmp_o = std::filesystem::path(arg_file).replace_extension(".tmp.o").string();
+        object_files.push_back(std::filesystem::path(arg_file).replace_extension(".tmp.o").string());
         if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
             if (backend == Backend::x86) {
@@ -2668,26 +2696,31 @@ int main_app(int argc, char *argv[]) {
             }
             if (backend == Backend::llvm) {
     #ifdef HAVE_LFORTRAN_LLVM
-                err = compile_src_to_object_file(arg_file, tmp_o, false,
+                if (compiler_options.po.enable_gpu_offloading) {
+                    std::string mlir_tmp_o = std::filesystem::path(arg_file).
+                        replace_extension(".mlir.tmp.o").string();
+                    object_files.push_back(mlir_tmp_o);
+                }
+                err = compile_src_to_object_file(arg_file, object_files, false,
                     compiler_options, lfortran_pass_manager);
     #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
     #endif
             } else if (backend == Backend::cpp) {
-                err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
+                err = compile_to_object_file_cpp(arg_file, object_files[0], arg_v, false,
                         true, rtlib_header_dir, compiler_options);
             } else if (backend == Backend::c) {
-                err = compile_to_object_file_c(arg_file, tmp_o, arg_v,
+                err = compile_to_object_file_c(arg_file, object_files[0], arg_v,
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::fortran) {
-                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+                err = compile_to_binary_fortran(arg_file, object_files[0], compiler_options);
             } else if (backend == Backend::wasm) {
                 err = compile_to_binary_wasm(arg_file, outfile,
                         time_report, compiler_options);
             } else if (backend == Backend::mlir) {
     #ifdef HAVE_LFORTRAN_MLIR
-                err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
+                err = handle_mlir(arg_file, object_files[0], compiler_options, false, false);
     #else
                 std::cerr << "Compiling Fortran files to object files using "
                     "`--backend=mlir` requires the MLIR backend to be enabled. "
@@ -2700,7 +2733,7 @@ int main_app(int argc, char *argv[]) {
         } else if (endswith(arg_file, ".ll")) {
             // this way we can execute LLVM IR files directly
     #ifdef HAVE_LFORTRAN_LLVM
-            err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
+            err = compile_llvm_to_object_file(arg_file, object_files[0], compiler_options);
             if (err) return err;
     #else
             std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2708,11 +2741,10 @@ int main_app(int argc, char *argv[]) {
     #endif
         } else {
             // assume it's an object file
-            tmp_o = arg_file;
+            object_files[0] = arg_file;
         }
         if (err && !compiler_options.continue_compilation) return err;
         err_ = err;
-        if (!err) object_files.push_back(tmp_o);
     }
     if (object_files.size() == 0) {
         return err_;

@@ -178,14 +178,99 @@
                         2
                         {
                             _lcompilers_doconcurrent_replacer_func:
-                                (ExternalSymbol
-                                    2
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            i:
+                                                (Variable
+                                                    5
+                                                    i
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    5
+                                                    n
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
                                     _lcompilers_doconcurrent_replacer_func
-                                    3 _lcompilers_doconcurrent_replacer_func
-                                    _lcompilers_mlir_gpu_offloading
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
                                     []
-                                    _lcompilers_doconcurrent_replacer_func
+                                    [(Var 5 i)
+                                    (Var 5 n)
+                                    (Var 5 x)]
+                                    []
+                                    ()
                                     Public
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             i:
                                 (Variable

@@ -147,6 +147,7 @@ MLIRModule::MLIRModule(std::unique_ptr<mlir::ModuleOp> m,
         std::unique_ptr<mlir::MLIRContext> ctx) {
     mlir_m = std::move(m);
     mlir_ctx = std::move(ctx);
+    llvm_ctx = std::make_unique<llvm::LLVMContext>();
 }
 
 MLIRModule::~MLIRModule() {
@@ -168,10 +169,9 @@ std::string MLIRModule::llvm_str() {
     return mlir_str;
 }
 
-void MLIRModule::mlir_to_llvm() {
-    llvm_ctx = std::make_unique<llvm::LLVMContext>();
+void MLIRModule::mlir_to_llvm(llvm::LLVMContext &ctx) {
     std::unique_ptr<llvm::Module> llvmModule = mlir::translateModuleToLLVMIR(
-        *mlir_m, *llvm_ctx);
+        *mlir_m, ctx);
     if (llvmModule) {
         llvm_m = std::move(llvmModule);
     } else {

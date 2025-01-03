@@ -48,6 +48,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/codegen/asr_to_mlir.h>
 
 namespace LCompilers {
 
@@ -969,6 +970,7 @@ public:
         std::vector<std::string> build_order
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
+            if (!item.compare("_lcompilers_mlir_gpu_offloading")) continue;
             LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item)
                 != nullptr);
             ASR::symbol_t *mod = x.m_symtab->get_symbol(item);

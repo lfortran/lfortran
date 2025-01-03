@@ -270,6 +270,9 @@ public:
         remove_unused_fn(x.m_symtab);
     }
     void visit_Module(const ASR::Module_t &x) {
+        if (! std::strcmp(x.m_name, "_lcompilers_mlir_gpu_offloading")) {
+            return;
+        }
         remove_unused_fn(x.m_symtab);
     }
     void visit_Function(const ASR::Function_t &x) {
