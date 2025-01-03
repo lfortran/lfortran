@@ -209,7 +209,7 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
                  {x->base.loc},"Invalid label in this statement");
-            } else { 
+            } else {
                 // To Do :: after refactoring write, change process_format_statement() to tackle stringformat instead.
                 if (AST::is_a<AST::Print_t>(*x)) {
                     ASR::Print_t* print_stmt = ASR::down_cast2<ASR::Print_t>(old_tmp);
@@ -345,7 +345,7 @@ public:
                             Label("",{x.base.base.loc})
                         }));
                     throw SemanticAbort();
-                    
+
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_form = ASRUtils::EXPR(tmp);
@@ -674,7 +674,7 @@ public:
         for( std::uint32_t i = 0; i < n_args; i++ ) {
             if( m_args[i].m_value != nullptr ) {
                 this->visit_expr(*m_args[i].m_value);
-                if( _type == AST::stmtType::Read && 
+                if( _type == AST::stmtType::Read &&
                     ASRUtils::is_descriptorString(ASRUtils::expr_type(ASRUtils::EXPR(tmp)))){
                     tmp = (ASR::asr_t*)ASRUtils::cast_string_descriptor_to_pointer(al, ASRUtils::EXPR(tmp));
                 }
@@ -967,7 +967,7 @@ public:
         if( n_values > 0 && ASRUtils::use_overloaded_file_read_write(read_write, overload_args,
             current_scope, asr, al, read_write_stmt.base.loc, current_function_dependencies,
             current_module_dependencies,
-            [&](const std::string &msg, const Location &loc) { 
+            [&](const std::string &msg, const Location &loc) {
                 diag.add(Diagnostic(
                     msg,
                     Level::Error, Stage::Semantic, {
@@ -999,10 +999,10 @@ public:
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
         // Don't use stringFormat with single character argument
-        if (!a_fmt 
-            && _type == AST::stmtType::Write 
-            && a_values_vec.size() == 1  
-            && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){ 
+        if (!a_fmt
+            && _type == AST::stmtType::Write
+            && a_values_vec.size() == 1
+            && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
             a_values_vec.size(), a_separator, a_end, overloaded_stmt);
@@ -2025,7 +2025,7 @@ public:
                     }
                     // Check struct-type members
                     if(ASR::is_a<ASR::StructType_t>(*ASRUtils::symbol_type(sym)) &&
-                        ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out){   
+                        ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out){
                         ASR::StructType_t* struct_type_instance = ASR::down_cast<ASR::StructType_t>(var->m_type);
                         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(struct_type_instance->m_derived_type));
@@ -2799,7 +2799,7 @@ public:
                         } else {
                             flat_size += 1;
                         }
-                    }  
+                    }
                 }
                 if(!is_array_concat){
                     for (size_t i = 0; i < target_rank; i++) {
@@ -2816,8 +2816,8 @@ public:
                         ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
                         if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
                             diag.add(diag::Diagnostic(
-                                "Different shape for array assignment on dimension " 
-                                + std::to_string(i + 1) + "(" + std::to_string(dim_a_int) 
+                                "Different shape for array assignment on dimension "
+                                + std::to_string(i + 1) + "(" + std::to_string(dim_a_int)
                                 + " and " + std::to_string(dim_b_int) + ")",
                                 diag::Level::Error, diag::Stage::Semantic, {
                                     diag::Label("", {x.base.base.loc})}));
@@ -2858,12 +2858,12 @@ public:
             if (!compiler_options.continue_compilation) throw e;
         }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
-        if( ASRUtils::is_character(*ASRUtils::expr_type(target)) && 
+        if( ASRUtils::is_character(*ASRUtils::expr_type(target)) &&
             ASRUtils::is_character(*ASRUtils::expr_type(value))){ // string assignment.
-            if( ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&  
+            if( ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&
                 !ASRUtils::is_descriptorString(ASRUtils::expr_type(value))){
                 value = ASRUtils::cast_string_pointer_to_descriptor(al ,value);
-            } else if ( !ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&  
+            } else if ( !ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&
                         ASRUtils::is_descriptorString(ASRUtils::expr_type(value))) {
                 value = ASRUtils::cast_string_descriptor_to_pointer(al, value);
             }
@@ -2915,7 +2915,7 @@ public:
         if( ASRUtils::use_overloaded_assignment(target, value,
             current_scope, asr, al, x.base.base.loc, current_function_dependencies,
             current_module_dependencies,
-            [&](const std::string &msg, const Location &loc) { 
+            [&](const std::string &msg, const Location &loc) {
                 diag.add(Diagnostic(
                     msg,
                     Level::Error, Stage::Semantic, {
@@ -3528,7 +3528,7 @@ public:
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
-                            [&](const std::string &msg, const Location &loc) { 
+                            [&](const std::string &msg, const Location &loc) {
                                 diag.add(Diagnostic(
                                     msg,
                                     Level::Error, Stage::Semantic, {
@@ -3538,7 +3538,7 @@ public:
                                 });
                 } else {
                     idx = ASRUtils::select_generic_procedure(args, *p, x.base.base.loc,
-                            [&](const std::string &msg, const Location &loc) { 
+                            [&](const std::string &msg, const Location &loc) {
                                 diag.add(Diagnostic(
                                     msg,
                                     Level::Error, Stage::Semantic, {
@@ -3569,7 +3569,7 @@ public:
                 if (ASR::is_a<ASR::GenericProcedure_t>(*final_sym)) {
                     ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(final_sym);
                     int idx = ASRUtils::select_generic_procedure(args, *g, x.base.base.loc,
-                                [&](const std::string &msg, const Location &loc) { 
+                                [&](const std::string &msg, const Location &loc) {
                                     diag.add(Diagnostic(
                                         msg,
                                         Level::Error, Stage::Semantic, {
@@ -4043,7 +4043,7 @@ public:
                 do_concurrent_head.reserve(al, 1);
                 do_concurrent_head.push_back(al, head);
                 if (openmp_collapse == true) {
-                    for (size_t i=0;i<do_loop_heads_for_collapse.size();i++) {  
+                    for (size_t i=0;i<do_loop_heads_for_collapse.size();i++) {
                         do_concurrent_head.push_back(al, do_loop_heads_for_collapse[do_loop_heads_for_collapse.size()-1-i]);
                     }
                     do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
@@ -4586,7 +4586,7 @@ public:
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                 ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
                 m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
-                
+
             } else if ( to_lower(x.m_construct_name) == "do" ) {
                 // pass
             } else {
