@@ -1,4 +1,4 @@
-program elemental_02
+program elemental_10
     implicit none
 
     real, dimension(1) :: array_param
@@ -89,4 +89,4 @@ contains
         res = x * y + z
     end function func3
 
-end program elemental_02
+end program elemental_10
