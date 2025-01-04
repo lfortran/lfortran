@@ -159,11 +159,6 @@ set(WITH_MACHO no
     CACHE BOOL "Build with mach-o support")
 set(WITH_STACKTRACE no
     CACHE BOOL "Build with stacktrace support (requires binutils-dev)")
-set(WITH_LIBUNWIND no
-    CACHE BOOL "Build with libunwind (required libunwind-dev)")
-if (WITH_LIBUNWIND_FORCE)
-    set(WITH_LIBUNWIND yes)
-endif()
 set(WITH_LLVM_STACKTRACE no
     CACHE BOOL "Build with LLVM stacktrace support")
 if (WITH_STACKTRACE)
@@ -370,6 +365,12 @@ endif()
 
 set(WITH_BENCHMARKS no
     CACHE BOOL "Build benchmarks")
+
+set(WITH_LIBUNWIND no
+    CACHE BOOL "Build with libunwind (required libunwind-dev)")
+if (WITH_LIBUNWIND_FORCE)
+    set(WITH_LIBUNWIND yes)
+endif()
 
 set(WITH_KOKKOS no CACHE BOOL "Detect Kokkos location for cpp backend")
 if (WITH_KOKKOS)
