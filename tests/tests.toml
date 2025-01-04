@@ -4416,3 +4416,7 @@ options = "--use-loop-variable-after-loop"
 [[test]]
 filename = "../integration_tests/use_02.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/polymorphic_arguments_02.f90"
+asr = true

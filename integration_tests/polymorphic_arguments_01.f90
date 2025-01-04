@@ -1,4 +1,4 @@
-program polymorphic_argument
+program polymorphic_argument_01
     implicit none
 
     type :: MyStruct
@@ -23,4 +23,4 @@ program polymorphic_argument
         end select
     end subroutine
 
-end program polymorphic_argument
+end program polymorphic_argument_01
