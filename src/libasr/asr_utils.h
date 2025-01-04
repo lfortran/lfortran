@@ -3277,6 +3277,20 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
         a = ASRUtils::type_get_past_array(a);
         b = ASRUtils::type_get_past_array(b);
     }
+    // If either argument is a polymorphic type, return true.
+    if (ASR::is_a<ASR::ClassType_t>(*a)) {
+        if (ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::ClassType_t>(a)->m_class_type)) == std::string("~abstract_type")) {
+            return true;
+        }
+    } else if (ASR::is_a<ASR::ClassType_t>(*b)) {
+        if (ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::ClassType_t>(b)->m_class_type)) == std::string("~abstract_type")) {
+            return true;
+        }
+    }
     if (a->type == b->type) {
         // TODO: check dims
         // TODO: check all types
@@ -3401,8 +3415,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             }
             default : return false;
         }
-    } else if( a->type == ASR::ttypeType::StructType &&
-               b->type == ASR::ttypeType::ClassType ) {
+    } else if (a->type == ASR::ttypeType::StructType && b->type == ASR::ttypeType::ClassType) {
         ASR::StructType_t *a2 = ASR::down_cast<ASR::StructType_t>(a);
         ASR::ClassType_t *b2 = ASR::down_cast<ASR::ClassType_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_derived_type);
@@ -3419,8 +3432,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(b2_typesym);
             return is_derived_type_similar(a2_type, b2_type);
         }
-    } else if( a->type == ASR::ttypeType::ClassType &&
-               b->type == ASR::ttypeType::StructType ) {
+    } else if (a->type == ASR::ttypeType::ClassType && b->type == ASR::ttypeType::StructType) {
         ASR::ClassType_t *a2 = ASR::down_cast<ASR::ClassType_t>(a);
         ASR::StructType_t *b2 = ASR::down_cast<ASR::StructType_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
