@@ -945,7 +945,7 @@ jobs:
             nodejs=18.20.2
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: "!(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))"
+        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -1029,7 +1029,7 @@ jobs:
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
       - name: Build Linux
-        if: "!( (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')) )"
+        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
         shell: bash -e -l {0}
         run: |
             ./build0.sh
