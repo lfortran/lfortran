@@ -38,7 +38,7 @@ contains
     subroutine temp2(call_back)
         implicit none
         procedure(cb), optional :: call_back
-        integer, parameter :: x(4) = 0 
+        integer, save :: x(4) = 0 
         if(present(call_back)) then
             call temp3(call_back, x) 
         end if 
@@ -48,7 +48,7 @@ contains
     subroutine temp3(call_back, x)
         implicit none
         procedure(cb) :: call_back
-        integer :: x(:) 
+        integer, intent(inout) :: x(:) 
         call call_back(x) 
         print *, x
         if(x(1) /= 2) error stop
