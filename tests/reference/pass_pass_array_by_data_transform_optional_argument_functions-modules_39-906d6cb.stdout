@@ -17,6 +17,16 @@
                                     build_model
                                     Public
                                 ),
+                            filewrite:
+                                (ExternalSymbol
+                                    8
+                                    filewrite
+                                    4 filewrite_string____1
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    filewrite_string____1
+                                    Public
+                                ),
                             join_path:
                                 (ExternalSymbol
                                     8
@@ -123,8 +133,8 @@
                                     []
                                     []
                                     [(SubroutineCall
-                                        2 filewrite_string____1
-                                        2 filewrite_string____1
+                                        2 filewrite
+                                        ()
                                         [((StringPhysicalCast
                                             (FunctionCall
                                                 2 join_path
@@ -197,10 +207,10 @@
                                     .false.
                                     ()
                                 ),
-                            filewrite_string____1:
+                            filewrite:
                                 (ExternalSymbol
                                     2
-                                    filewrite_string____1
+                                    filewrite
                                     4 filewrite_string____1
                                     modules_39_module_fpm_filesystem_39
                                     []

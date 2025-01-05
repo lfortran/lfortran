@@ -55,6 +55,16 @@
                                     Required
                                     .false.
                                     .false.
+                                ),
+                            warnwrite:
+                                (ExternalSymbol
+                                    9
+                                    warnwrite
+                                    4 warnwrite_string____1
+                                    modules_44_module_fpm_filesystem
+                                    []
+                                    warnwrite_string____1
+                                    Public
                                 )
                         })
                     modules_44
@@ -165,8 +175,8 @@
                                         ()
                                     )
                                     (SubroutineCall
-                                        2 warnwrite_string____1
-                                        2 warnwrite_string____1
+                                        2 warnwrite
+                                        ()
                                         [((StringPhysicalCast
                                             (StructInstanceMember
                                                 (Var 8 settings)
@@ -290,10 +300,10 @@
                                     ()
                                     2 fpm_cmd_settings
                                 ),
-                            warnwrite_string____1:
+                            warnwrite:
                                 (ExternalSymbol
                                     2
-                                    warnwrite_string____1
+                                    warnwrite
                                     4 warnwrite_string____1
                                     modules_44_module_fpm_filesystem
                                     []
