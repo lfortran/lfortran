@@ -571,8 +571,20 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
-                if (orig_args[i].m_value == nullptr ||
-                    std::find(indices.begin(), indices.end(), i) == indices.end()) {
+                if (orig_args[i].m_value == nullptr) {
+                    new_args.push_back(al, orig_args[i]);
+                    continue;
+                } else if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
+                    ASR::expr_t* expr = orig_args[i].m_value;    
+                    if (ASR::is_a<ASR::Var_t>(*expr)) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
+                        ASR::symbol_t* sym = var->m_v;
+                        if ( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
+                            ASR::symbol_t* new_var_sym = v.proc2newproc[sym].first;
+                            ASR::expr_t* new_var = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_var_sym));
+                            orig_args[i].m_value = new_var;
+                        }
+                    }
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 }
