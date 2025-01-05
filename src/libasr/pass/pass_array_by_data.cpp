@@ -638,15 +638,18 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
                 if ( v.proc2newproc.find(subrout_sym) != v.proc2newproc.end() ) {
                     ASR::symbol_t* new_x_name = resolve_new_proc(x.m_name);
-                    ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(resolve_new_proc(subrout_sym));
-                    ASR::down_cast<ASR::Variable_t>(x.m_name)->m_type = new_func->m_function_signature;
-                    xx.m_name = new_x_name;
-                    xx.m_original_name = new_x_name;
-                    std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-                    Vec<ASR::call_arg_t> new_args = construct_new_args(x.n_args, x.m_args, indices);
-                    xx.m_args = new_args.p;
-                    xx.n_args = new_args.size();
-                    return;
+                    if ( new_x_name != nullptr ) {
+                        ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(resolve_new_proc(subrout_sym));
+                        ASR::down_cast<ASR::Variable_t>(x.m_name)->m_type = new_func->m_function_signature;
+                        xx.m_name = new_x_name;
+                        xx.m_original_name = new_x_name;
+                        std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
+                        Vec<ASR::call_arg_t> new_args = construct_new_args(x.n_args, x.m_args, indices);
+                        xx.m_args = new_args.p;
+                        xx.n_args = new_args.size();
+                        return;
+                    }
+
                 }
             }
             if( !can_edit_call(x.m_args, x.n_args) ) {
