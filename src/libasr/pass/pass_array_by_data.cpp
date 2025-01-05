@@ -651,13 +651,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
             if( !can_edit_call(x.m_args, x.n_args) ) {
                 not_to_be_erased.insert(subrout_sym);
-                return;
-
-                // if (v.proc2newproc.find(x.m_name) == v.proc2newproc.end()) {
-                //     return;
-                // } else {
-                //     subrout_sym = x.m_name;
-                // }
+                return ;
             }
 
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
