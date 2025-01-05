@@ -313,11 +313,72 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
     EditProcedureReplacer(PassArrayByDataProcedureVisitor& v_):
      v(v_), current_scope(nullptr) {}
 
+    /*
+        We need this for the cases where pass array by data is possible for parent function and also
+        for the child function. Let's take the following example:
+        ```fortran
+        subroutine cobyla(x)
+            implicit none
+
+            real, intent(inout) :: x(:)
+            call evaluate(calcfc_internal)
+            contains
+
+            subroutine calcfc_internal(x_internal)
+                implicit none
+                real, intent(in) :: x_internal(:)
+            end subroutine calcfc_internal
+
+            subroutine evaluate(calcfc)
+                use, non_intrinsic :: pintrf_mod, only : OBJCON
+                implicit none
+                procedure(OBJCON) :: calcfc
+            end subroutine evaluate
+
+        end subroutine
+        ```
+
+        Here, cobyla is parent and calcfc_internal is child. What happens is by `bfs` we first
+        create `cobyla_real____0` and add it as a symbol in global scope. Then we visit `cobyla`,
+        create `calcfc_internal_real____0` as replacement of `calcfc_internal` and add it as a symbol
+        in scope of `cobyla`. Now, we visit `cobyla_real____0` and replace `calcfc_internal` with
+        `calcfc_internal_real____0`
+        
+        This means both symbols `cobyla` and `cobyla_real____0` have `calcfc_internal_real____0` as a symbol
+        but eventually `cobyla` is removed from scope.
+
+        In `proc2newproc` we map `cobyla(1) -> cobyla_real____0(2)` and `calcfc_internal(1.1) -> calcfc_internal_real____0(1.2)`
+        and also have `calcfc_internal(2.1) -> calcfc_internal_real____0(2.2)`. Where `(x)` represents symtab counter.
+
+        When it comes to replace `call evaluate(calcfc_internal(1.1))`, it gets replaced with `call evaluate(calcfc_internal_real____0(1.2))`
+        which eventually gets deleted. We need to actually replace it with `call evaluate(calcfc_internal_real____0(2.2))`, so what we do is
+        we resolve the symbol to the latest symbol in the scope.
+
+        From `calcfc_internal(1.1)`, we get `calcfc_internal_real____0(1.2)` and then we get the parent of `calcfc_internal_real____0(1.2)`,
+        i.e. `cobyla(1)`, resolve it to `cobyla_real____0(2)` and then get the symbol `calcfc_internal_real____0(2.2)` from it.
+    */
+    ASR::symbol_t* resolve_new_proc(ASR::symbol_t* old_sym) {
+        ASR::symbol_t* ext_sym = ASRUtils::symbol_get_past_external(old_sym);
+        if( v.proc2newproc.find(ext_sym) != v.proc2newproc.end() ) {
+            ASR::symbol_t* new_sym = v.proc2newproc[ext_sym].first;
+            ASR::asr_t* new_sym_parent = ASRUtils::symbol_parent_symtab(new_sym)->asr_owner;
+            if ( ASR::is_a<ASR::symbol_t>(*new_sym_parent) ) {
+                ASR::symbol_t* resolved_parent_sym = resolve_new_proc(ASR::down_cast<ASR::symbol_t>(new_sym_parent));
+                if ( resolved_parent_sym != nullptr ) {
+                    ASR::symbol_t* sym_to_return = ASRUtils::symbol_symtab(resolved_parent_sym)->get_symbol(ASRUtils::symbol_name(new_sym));
+                    return sym_to_return ? sym_to_return : new_sym;
+                }
+            }
+            return new_sym;
+        }
+        return nullptr;
+    }
+
     void replace_Var(ASR::Var_t* x) {
         ASR::symbol_t* x_sym_ = x->m_v;
         bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*x_sym_);
         if ( v.proc2newproc.find(ASRUtils::symbol_get_past_external(x_sym_)) != v.proc2newproc.end() ) {
-            x->m_v = v.proc2newproc[ASRUtils::symbol_get_past_external(x_sym_)].first;
+            x->m_v = resolve_new_proc(x_sym_);
             if( is_external ) {
                 ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(x_sym_);
                 std::string new_func_sym_name = current_scope->get_unique_name(ASRUtils::symbol_name(
@@ -432,6 +493,24 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             std::set<ASR::symbol_t*>& not_to_be_erased_):
         al(al_), v(v_), not_to_be_erased(not_to_be_erased_) {}
 
+        // this is exactly the same as the one in EditProcedureReplacer
+        ASR::symbol_t* resolve_new_proc(ASR::symbol_t* old_sym) {
+            ASR::symbol_t* ext_sym = ASRUtils::symbol_get_past_external(old_sym);
+            if( v.proc2newproc.find(ext_sym) != v.proc2newproc.end() ) {
+                ASR::symbol_t* new_sym = v.proc2newproc[ext_sym].first;
+                ASR::asr_t* new_sym_parent = ASRUtils::symbol_parent_symtab(new_sym)->asr_owner;
+                if ( ASR::is_a<ASR::symbol_t>(*new_sym_parent) ) {
+                    ASR::symbol_t* resolved_parent_sym = resolve_new_proc(ASR::down_cast<ASR::symbol_t>(new_sym_parent));
+                    if ( resolved_parent_sym != nullptr ) {
+                        ASR::symbol_t* sym_to_return = ASRUtils::symbol_symtab(resolved_parent_sym)->get_symbol(ASRUtils::symbol_name(new_sym));
+                        return sym_to_return ? sym_to_return : new_sym;
+                    }
+                }
+                return new_sym;
+            }
+            return nullptr;
+        }
+
         template <typename T>
         void update_args_for_pass_arr_by_data_funcs_passed_as_callback(const T& x) {
             bool args_updated = false;
@@ -445,7 +524,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
                         ASR::symbol_t* sym = var->m_v;
                         if ( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
-                            ASR::symbol_t* new_var_sym = v.proc2newproc[sym].first;
+                            ASR::symbol_t* new_var_sym = resolve_new_proc(sym);
                             ASR::expr_t* new_var = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_var_sym));
                             {
                                 // update exisiting arg
@@ -502,7 +581,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASR::ttype_t* orig_arg_type = ASRUtils::expr_type(orig_arg_i);
                 if( ASRUtils::is_array(orig_arg_type) ) {
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
-                        ASRUtils::type_get_past_allocatable(orig_arg_type));
+                        ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(orig_arg_type)));
                     if( array_t->m_physical_type != ASR::array_physical_typeType::PointerToDataArray ) {
                         ASR::expr_t* physical_cast = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                             al, orig_arg_i->base.loc, orig_arg_i, array_t->m_physical_type,
@@ -546,6 +625,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
         template <typename T>
         void visit_Call(const T& x) {
+            T& xx = const_cast<T&>(x);
             ASR::symbol_t* subrout_sym = x.m_name;
             bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
             subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
@@ -555,10 +635,29 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x.m_name);
                 ASR::symbol_t* type_dec = variable->m_type_declaration;
                 subrout_sym = ASRUtils::symbol_get_past_external(type_dec);
+
+                if ( v.proc2newproc.find(subrout_sym) != v.proc2newproc.end() ) {
+                    ASR::symbol_t* new_x_name = resolve_new_proc(x.m_name);
+                    ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(resolve_new_proc(subrout_sym));
+                    ASR::down_cast<ASR::Variable_t>(x.m_name)->m_type = new_func->m_function_signature;
+                    xx.m_name = new_x_name;
+                    xx.m_original_name = new_x_name;
+                    std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
+                    Vec<ASR::call_arg_t> new_args = construct_new_args(x.n_args, x.m_args, indices);
+                    xx.m_args = new_args.p;
+                    xx.n_args = new_args.size();
+                    return;
+                }
             }
             if( !can_edit_call(x.m_args, x.n_args) ) {
                 not_to_be_erased.insert(subrout_sym);
-                return ;
+                return;
+
+                // if (v.proc2newproc.find(x.m_name) == v.proc2newproc.end()) {
+                //     return;
+                // } else {
+                //     subrout_sym = x.m_name;
+                // }
             }
 
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
@@ -566,7 +665,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 return;
             }
 
-            ASR::symbol_t* new_func_sym = v.proc2newproc[subrout_sym].first;
+            ASR::symbol_t* new_func_sym = resolve_new_proc(subrout_sym);
             std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
 
             Vec<ASR::call_arg_t> new_args = construct_new_args(x.n_args, x.m_args, indices);
@@ -610,13 +709,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     new_func_sym_ = current_scope->resolve_symbol(new_func_sym_name);
                 }
             }
-            T& xx = const_cast<T&>(x);
             if(!ASR::is_a<ASR::Variable_t>(*x.m_name)){
                 xx.m_name = new_func_sym_;
                 xx.m_original_name = new_func_sym_;
             } else if(v.proc2newproc.find(x.m_name) != v.proc2newproc.end()){
-                xx.m_name = v.proc2newproc[x.m_name].first;
-                xx.m_original_name = v.proc2newproc[x.m_name].first;
+                xx.m_name = resolve_new_proc(x.m_name);
+                xx.m_original_name = resolve_new_proc(x.m_name);
             }
             xx.m_args = new_args.p;
             xx.n_args = new_args.size();
@@ -639,7 +737,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASR::symbol_t* type_dec = variable->m_type_declaration;
                 if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() && 
                         v.proc2newproc.find(type_dec) == v.proc2newproc.end()){
-                    ASR::symbol_t* new_func = v.proc2newproc[ASRUtils::symbol_get_past_external(type_dec)].first;
+                    ASR::symbol_t* new_func = resolve_new_proc(ASRUtils::symbol_get_past_external(type_dec));
                     ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(type_dec);
                     std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(
                         ASRUtils::symbol_get_past_external(type_dec)));
@@ -653,7 +751,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() && 
                     ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_dec))){
-                    ASR::symbol_t* new_sym = v.proc2newproc[type_dec].first;
+                    ASR::symbol_t* new_sym = resolve_new_proc(type_dec);
                     ASR::Function_t * subrout = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(new_sym));
                     std::string new_sym_name = current_scope->get_unique_name(ASRUtils::symbol_name(x.m_v));
                     ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
