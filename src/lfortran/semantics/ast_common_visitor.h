@@ -3303,6 +3303,21 @@ public:
                         throw SemanticAbort();
                     }
                 }
+
+                bool is_class_type = sym_type->m_type == AST::decl_typeType::TypeClass; 
+                // Assert class declaration variable is dummy, pointer or allocatable
+                if (is_class_type) {
+                    if (!(is_argument | is_pointer | is_allocatable)) {
+                        diag.add((Diagnostic(
+                            "Class variable must be a dummy argument, allocatable, or pointer.",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
+                }
+
                 if (s.n_dim > 0) {
                     if (dims.size() > 0) {
                         // This happens for:

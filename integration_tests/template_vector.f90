@@ -59,7 +59,7 @@ contains
 
     subroutine main()
         instantiate vector_t(integer), only: IntVector => Vector
-        class(IntVector) :: v
+        type(IntVector) :: v
         integer :: i
         v = IntVector()
         ! call v%push_back(v, 1)
