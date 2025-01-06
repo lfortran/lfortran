@@ -4867,6 +4867,7 @@ public:
         check_if_type_spec_has_asterisk(type);
 
         bool implied_do_loops_present = false;
+        bool use_descriptorArray = false; // Set to true if any argument has no fixed size (array arguments).
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
@@ -4877,6 +4878,15 @@ public:
             }
 
             ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
+            if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){ // Check physicalType of the array.
+                ASR::array_physical_typeType arr_physicalType =  ASR::down_cast<ASR::Array_t>(
+                                            ASRUtils::type_get_past_allocatable_pointer(expr_type))->m_physical_type;
+                if( arr_physicalType == ASR::array_physical_typeType::DescriptorArray || 
+                    arr_physicalType == ASR::array_physical_typeType::PointerToDataArray){
+
+                    use_descriptorArray = true;
+                }
+            }     
             if (type == nullptr) {
                 type = expr_type;
                 extracted_type = ASRUtils::extract_type(type);
@@ -4917,7 +4927,12 @@ public:
             dim.m_length = x_n_args;
         }
         dims.push_back(al, dim);
-        type = ASRUtils::duplicate_type(al, type, &dims);
+        if (use_descriptorArray){
+            type = ASRUtils::duplicate_type(al, type, &dims, 
+                    ASR::array_physical_typeType::DescriptorArray, true);
+        } else {
+            type = ASRUtils::duplicate_type(al, type, &dims);
+        }
         tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
             body.size(), type, ASR::arraystorageType::ColMajor);
     }
