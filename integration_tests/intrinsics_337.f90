@@ -69,7 +69,7 @@ CONTAINS
 end module intrinsics_337_mod
 
 program intrinsics_337
-    use M_strings
+    use intrinsics_337_mod
     implicit none
     ! this call matches with intrinsic 'dble'
     print *, dble(1)
