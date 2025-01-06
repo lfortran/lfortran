@@ -7066,6 +7066,9 @@ public:
         return nullptr;
     }
 
+    // special handling of 'dble', 'float', 'dfloat', 'shifta' intrinsics
+    // maybe once those are moved to IntrinsicElementalFunction, this might
+    // not be needed
     ASR::asr_t* handle_intrinsics_dble_float_dfloat_shifta(
         const AST::FuncCallOrArray_t &x,
         Allocator &al
@@ -7664,6 +7667,16 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_interface) {
+
+                bool is_function = true;
+                // NOTE: ideally this shouldn't be needed, this is only to handle
+                // 'dble', 'shifta', 'float', 'dfloat', which aren't currently
+                // implemented as intrinsic elemental function
+                intrinsic_as_node(x, is_function);
+                if (!is_function) {
+                    return;
+                }
+
                 // If implicit interface is allowed, we have to handle the
                 // following case here:
                 // real :: x
