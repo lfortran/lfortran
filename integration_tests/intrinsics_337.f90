@@ -1,4 +1,4 @@
-MODULE M_strings
+MODULE intrinsics_337_mod
 implicit none
 
 ! interface with same name as intrinsic 'dble'
@@ -66,9 +66,9 @@ CONTAINS
     double precision function interface_shifta_fun()
         interface_shifta_fun = 5.0D0
     end function interface_shifta_fun
-end module M_strings
+end module intrinsics_337_mod
 
-program main
+program intrinsics_337
     use M_strings
     implicit none
     ! this call matches with intrinsic 'dble'
@@ -101,4 +101,4 @@ program main
     call sub2()
     call sub3()
     call sub4()
-end program main
+end program intrinsics_337
