@@ -16,6 +16,9 @@ program intrinsics_301
     integer(4), parameter :: i13 = findloc([1, 3, 2, 3], 3, 1, mask = [.true., .true., .false., .true.], back = .true., kind = 4)
 
     integer :: x1(5) = [1, 3, 2, 4, 2], y1 = 2
+    integer, parameter :: x1_param(5) = [1, 3, 2, 4, 2]
+    integer, parameter :: y1_param = 2
+    integer, parameter :: i14(1) = findloc(x1_param, y1_param)
     real :: x2(5) = [1.0, 3.0, 2.0, 4.0, 2.0], y2 = 2.0
     character(len=2) :: x3(3) = ["aa", "db", "ca"], y3 = "aa"
     logical :: mask1(5) = [.true., .true., .false., .true., .true.]
@@ -78,5 +81,11 @@ program intrinsics_301
     
     print *, kind(findloc(["aa", "db", "ca"], "aa", 1, mask = [.false., .false., .false.], kind = 8))
     if (kind(findloc(["aa", "db", "ca"], "db", 1, mask = [.false., .false., .false.], kind = 8)) /= 8) error stop
+
+    print *, i14
+    if (any(i14 /= 3)) error stop
+
+    print *, findloc(x1_param, y1)
+    if (any(findloc(x1_param, y1) /= 3)) error stop
     
 end program intrinsics_301
