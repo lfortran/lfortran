@@ -1,7 +1,7 @@
 ! https://github.com/lfortran/lfortran/issues/5872
-program main
+program continue_compilation_4
    type tt
    end type tt
    ! Class declaration must be dummy, allocatable, or pointer
    class(tt) :: inst_tt
- end program main
+ end program continue_compilation_4
