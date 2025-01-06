@@ -23,11 +23,3 @@ contains
 
 
 end module m_class_declarations
-
-program class_declarations
-
-    use m_class_declarations
-
-    call some_subroutine()
-
-end program class_declarations

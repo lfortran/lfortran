@@ -4153,7 +4153,7 @@ asr = true
 
 [[test]]
 filename = "class_declarations.f90"
-llvm = false
+asr = true
 
 [[test]]
 filename = "errors/type_casting_01.f90"
