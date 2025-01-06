@@ -5141,10 +5141,6 @@ public:
                     false);
         if( idx == -1 ) {
             bool is_function = true;
-            if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
-                tmp = result;
-                return tmp;
-            }
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
                 return tmp;
@@ -5259,10 +5255,6 @@ public:
                     false);
             if( idx == -1 ) {
                 bool is_function = true;
-                if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
-                    tmp = result;
-                    return tmp;
-                }
                 v = intrinsic_as_node(x, is_function);
                 if( !is_function ) {
                     return tmp;
@@ -6905,6 +6897,11 @@ public:
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
+        if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
+            is_function = false;
+            tmp = result;
+            return nullptr;
+        }
         std::string specific_var_name = var_name;
         bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
@@ -7612,10 +7609,6 @@ public:
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
-            if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
-                tmp = result;
-                return;
-            }
             bool is_function = true;
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
@@ -7671,10 +7664,6 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_interface) {
-                if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
-                    tmp = result;
-                    return;
-                }
                 // If implicit interface is allowed, we have to handle the
                 // following case here:
                 // real :: x
