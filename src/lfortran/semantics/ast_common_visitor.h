@@ -5141,6 +5141,10 @@ public:
                     false);
         if( idx == -1 ) {
             bool is_function = true;
+            if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
+                tmp = result;
+                return tmp;
+            }
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
                 return tmp;
@@ -5255,6 +5259,10 @@ public:
                     false);
             if( idx == -1 ) {
                 bool is_function = true;
+                if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
+                    tmp = result;
+                    return tmp;
+                }
                 v = intrinsic_as_node(x, is_function);
                 if( !is_function ) {
                     return tmp;
@@ -7061,6 +7069,29 @@ public:
         return nullptr;
     }
 
+    ASR::asr_t* handle_intrinsics_dble_float_dfloat_shifta(
+        const AST::FuncCallOrArray_t &x,
+        Allocator &al
+    ) {
+        ASR::asr_t* asr_node { nullptr };
+        std::string var_name = to_lower(x.m_func);
+        Vec<ASR::call_arg_t> args;
+        if (var_name == "dble") {
+            visit_expr_list(x.m_args, x.n_args, args);
+            asr_node = handle_intrinsic_dble(al, args, x.base.base.loc);
+        } else if (var_name == "float" ) {
+            visit_expr_list(x.m_args, x.n_args, args);
+            asr_node = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 4);
+        } else if (var_name == "dfloat" ) {
+            visit_expr_list(x.m_args, x.n_args, args);
+            asr_node = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
+        } else if (var_name == "shifta") {
+            visit_expr_list(x.m_args, x.n_args, args);
+            asr_node = create_Shifta(x.base.base.loc, args);
+        }
+        return asr_node;
+    }
+
     ASR::asr_t* handle_intrinsic_dble(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
@@ -7581,25 +7612,8 @@ public:
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
-            if (var_name == "dble") {
-                Vec<ASR::call_arg_t> args;
-                visit_expr_list(x.m_args, x.n_args, args);
-                tmp = handle_intrinsic_dble(al, args, x.base.base.loc);
-                return;
-            } else if (var_name == "float" ) {
-                Vec<ASR::call_arg_t> args;
-                visit_expr_list(x.m_args, x.n_args, args);
-                tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 4);
-                return;
-            } else if (var_name == "dfloat" ) {
-                Vec<ASR::call_arg_t> args;
-                visit_expr_list(x.m_args, x.n_args, args);
-                tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
-                return;
-            } else if (var_name == "shifta") {
-                Vec<ASR::call_arg_t> args;
-                visit_expr_list(x.m_args, x.n_args, args);
-                tmp = create_Shifta(x.base.base.loc, args);
+            if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
+                tmp = result;
                 return;
             }
             bool is_function = true;
@@ -7657,20 +7671,8 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_interface) {
-                if (var_name == "dble") {
-                    Vec<ASR::call_arg_t> args;
-                    visit_expr_list(x.m_args, x.n_args, args);
-                    tmp = handle_intrinsic_dble(al, args, x.base.base.loc);
-                    return;
-                } else if (var_name == "float" ) {
-                    Vec<ASR::call_arg_t> args;
-                    visit_expr_list(x.m_args, x.n_args, args);
-                    tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 4);
-                    return;
-                } else if (var_name == "dfloat" ) {
-                    Vec<ASR::call_arg_t> args;
-                    visit_expr_list(x.m_args, x.n_args, args);
-                    tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
+                if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
+                    tmp = result;
                     return;
                 }
                 // If implicit interface is allowed, we have to handle the
