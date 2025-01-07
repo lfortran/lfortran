@@ -9,7 +9,7 @@ NO_OF_THREADS = 8 # default no of threads is 8
 SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'gfortran', 'llvmImplicit', 'llvmStackArray', 'fortran',
                       'c_nopragma', 'llvm_nopragma', 'llvm_wasm', 'llvm_wasm_emcc',
-                      'llvm_omp', 'mlir']
+                      'llvm_omp', 'mlir', 'mlir_omp']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 
@@ -82,7 +82,7 @@ def get_args():
                 help="Run supported tests with --fast")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
-    parser.add_argument("--experimental-simplifier",
+    parser.add_argument("--no-experimental-simplifier",
                         action='store_true', help="Use simplifier ASR pass")
     return parser.parse_args()
 
@@ -102,7 +102,7 @@ def main():
 
     NO_OF_THREADS = args.no_of_threads or NO_OF_THREADS
     fast_tests = "yes" if args.fast else "no"
-    experimental_simplifier = "yes" if args.experimental_simplifier else "no"
+    experimental_simplifier = "no" if args.no_experimental_simplifier else "yes"
     for backend in args.backends:
         test_backend(backend)
 

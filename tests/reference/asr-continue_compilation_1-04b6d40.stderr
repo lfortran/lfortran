@@ -4,6 +4,16 @@ syntax error: Token 'print' is unexpected here
 73 |     print*, nint(1e12_8)
    |     ^^^^^ 
 
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+ --> tests/errors/continue_compilation_1.f90:2:5 - 3:1
+  |
+2 |        implicit integer(a-f), real(e-z)
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+3 |    
+  | ...^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
   --> tests/errors/continue_compilation_1.f90:18:8
    |

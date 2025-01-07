@@ -718,7 +718,6 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     //lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
                     // Move `pos`
                     pos = pos2;
-                    if (s[pos] == '&' &&  previous_nonspace_character(s, pos) == '\n') pos++;
                     // Start a new interval (just the starts, the size will be
                     // filled in later)
                     lm.files.back().out_start.push_back(out.size());
@@ -730,7 +729,9 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     newline = true;
                 }
             }
-            out += s[pos];
+            if (!(s[pos] == '&' &&  previous_nonspace_character(s, pos) == '\n')){
+                out += s[pos];
+            }
             pos++;
         }
         // set the size of the last interval

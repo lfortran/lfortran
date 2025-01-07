@@ -8,7 +8,7 @@ subroutine test_falseloc_pack()
     print *, lvec
     if (any(.not. lvec)) error stop
 end subroutine
-    
+
 program logical_not_01
     call test_falseloc_pack()
 end program

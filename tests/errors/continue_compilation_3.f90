@@ -95,6 +95,12 @@ print *, xx
 test_re = 1245.13
 c(1) = 1
 
+integer :: i_incorrect_pragma
+    !LF$unroll 4  ! Error: Missing space after `!LF$`
+    do i_incorrect_pragma = 1, 10
+      print *, i_incorrect_pragma
+end do
+
 contains
 subroutine bpe()
     print *, size(bpe)

@@ -103,15 +103,23 @@ public:
     ASR::ttype_t *tmp_type;
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
+        std::vector<ASR::stmt_t*> &data_structure, LCompilers::LocationManager &lm)
+      : CommonVisitor(
+            al, symbol_table, diagnostics, compiler_options, implicit_mapping,
+            common_variables_hash, external_procedures_mapping,
+            explicit_intrinsic_procedures_mapping,
+            instantiate_types, instantiate_symbols, entry_functions,
+            entry_function_arguments_mapping, data_structure, lm
+        ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -454,7 +462,7 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}
+                                                    throw SemanticAbort();}, lm
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -559,7 +567,9 @@ public:
     void visit_Program(const AST::Program_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        generic_procedures.clear();
         current_module_dependencies.reserve(al, 4);
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -571,7 +581,7 @@ public:
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_implicit[i]->base.loc})}));
-                    throw SemanticAbort();
+                    if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                 }
             }
         }
@@ -586,6 +596,29 @@ public:
             }
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                if(decl->m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl->m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
+        }
+        for (size_t i : procedure_decl_indices) {
             try {
                 visit_unit_decl2(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
@@ -593,12 +626,6 @@ public:
             }
         }
         process_simd_variables();
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            visit_program_unit(*x.m_contains[i]);
-            default_storage_save = current_storage_save;
-        }
         tmp = ASR::make_Program_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -606,7 +633,7 @@ public:
             current_module_dependencies.p,
             current_module_dependencies.size(),
             /* a_body */ nullptr,
-            /* n_body */ 0, 
+            /* n_body */ 0,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr);
         std::string sym_name = to_lower(x.m_name);
@@ -618,6 +645,7 @@ public:
             throw SemanticAbort();
         }
         handle_save();
+        add_generic_procedures();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -634,6 +662,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
 
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
         mark_common_blocks_as_declared();
@@ -1046,8 +1075,20 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+                if(decl.m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
+                           type->m_name == sym_name) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
                     visit_unit_decl2(*x.m_decl[i]);
@@ -1202,6 +1243,15 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+        // Self referencing procedure declarations
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         if( update_gp ) {
             LCOMPILERS_ASSERT(gp_index_to_be_updated >= 0);
             ASR::GenericProcedure_t* f1_gp = ASR::down_cast<ASR::GenericProcedure_t>(f1_);
@@ -1211,6 +1261,8 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         external_procedures.clear();
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
@@ -1420,8 +1472,20 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+                if(decl.m_vartype) {
+                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
+                           type->m_name == sym_name) {
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
@@ -1684,9 +1748,19 @@ public:
             x.m_end_name ? x.m_end_name : nullptr);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+        // Self referencing procedure declarations
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_unit_decl2(*x.m_decl[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
@@ -2474,22 +2548,16 @@ public:
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
-                std::string sym;
-                if( in_submodule || ASR::is_a<ASR::Function_t>(*es0->m_external)) {
-                    sym = item.first;
-                } else {
-                    sym = to_lower(es0->m_original_name);
-                }
                 ASR::asr_t *es = ASR::make_ExternalSymbol_t(
                     al, es0->base.base.loc,
                     /* a_symtab */ current_scope,
-                    /* a_name */ s2c(al, sym),
+                    /* a_name */ s2c(al, item.first),
                     es0->m_external,
                     es0->m_module_name, nullptr, 0,
                     es0->m_original_name,
                     dflt_access
                     );
-                current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
+                current_scope->add_or_overwrite_symbol(item.first, ASR::down_cast<ASR::symbol_t>(es));
             } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
                 ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
@@ -2694,7 +2762,7 @@ public:
             Str name;
             name.from_str(al, local_sym);
             ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                al, msub->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ name.c_str(al),
                 (ASR::symbol_t*)msub,
@@ -2735,7 +2803,7 @@ public:
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                al, mfn->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mfn,
@@ -2769,7 +2837,7 @@ public:
                 throw SemanticAbort();
             }
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, mv->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
@@ -2801,7 +2869,7 @@ public:
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                al, mv->base.base.loc,
+                al, loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mv,
@@ -2812,7 +2880,7 @@ public:
         } else if (ASR::is_a<ASR::Requirement_t>(*t)) {
             ASR::Requirement_t *mreq = ASR::down_cast<ASR::Requirement_t>(t);
             ASR::asr_t *req = ASR::make_ExternalSymbol_t(
-                al, mreq->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mreq,
@@ -2822,7 +2890,7 @@ public:
         } else if (ASR::is_a<ASR::Template_t>(*t)) {
             ASR::Template_t *mtemp = ASR::down_cast<ASR::Template_t>(t);
             ASR::asr_t *temp = ASR::make_ExternalSymbol_t(
-                al, mtemp->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 (ASR::symbol_t*) mtemp,
@@ -2832,7 +2900,7 @@ public:
         } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(t);
             ASR::asr_t* temp = ASR::make_ExternalSymbol_t(
-                al, ext_sym->base.base.loc,
+                al, loc,
                 current_scope,
                 s2c(al, local_sym),
                 ext_sym->m_external,
@@ -2877,7 +2945,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }));
+            }, lm));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
@@ -2959,7 +3027,7 @@ public:
                     local_sym = remote_sym;
                 }
                 import_symbols_util(m, msym, remote_sym, local_sym,
-                                    to_be_imported_later, x.base.base.loc);
+                                    to_be_imported_later, x.m_symbols[i]->base.loc);
             }
 
             // Importing procedures defined for overloaded operators like assignment
@@ -3860,14 +3928,16 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
+        std::vector<ASR::stmt_t*> &data_structure, LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+                         explicit_intrinsic_procedures_mapping,
+                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {

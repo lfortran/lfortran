@@ -378,6 +378,8 @@ namespace LCompilers {
                 ASR::ttype_t* asr_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
+            llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
+
 
             // Note: `llvm_utils->create_if_else` and `create_loop` are optional APIs
             // that do not have to be used. Many times, for more complicated

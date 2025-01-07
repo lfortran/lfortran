@@ -664,8 +664,9 @@ int python_wrapper(const std::string &infile, std::string array_order,
         // convert string to uint16_t
         uint16_t l = std::stoi(compiler_options.line);
         uint16_t c = std::stoi(compiler_options.column);
-        uint64_t pos = lm.linecol_to_pos(l, c);
-        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, pos);
+        uint64_t input_pos = lm.linecol_to_pos(l, c);
+        uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, output_pos);
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 compiler_options.po.with_intrinsic_mods) << std::endl;
         return 0;
@@ -829,7 +830,8 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
 }
 
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
-    const LCompilers::CompilerOptions &compiler_options)
+    const LCompilers::CompilerOptions &compiler_options,
+    LCompilers::LocationManager lm)
 {
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
@@ -854,7 +856,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             LCompilers::diag::Diagnostics diagnostics;
             LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, true, diagnostics));
 
-            std::string modfile_binary = LCompilers::save_modfile(*tu);
+            std::string modfile_binary = LCompilers::save_modfile(*tu, lm);
 
             m->m_symtab->parent = orig_symtab;
 
@@ -1015,7 +1017,7 @@ int compile_src_to_object_file(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -1167,7 +1169,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-            result = fe.get_asr3(*ast, diagnostics);
+            result = fe.get_asr3(*ast, diagnostics, lm);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1268,7 +1270,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-            result = fe.get_asr3(*ast, diagnostics);
+            result = fe.get_asr3(*ast, diagnostics, lm);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1349,7 +1351,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -1460,7 +1462,7 @@ int compile_to_object_file_c(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -2161,6 +2163,7 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> O_flags;
 
     CompilerOptions compiler_options;
+    bool no_experimental_simplifier = false;
     compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
@@ -2267,7 +2270,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
-    app.add_flag("--experimental-simplifier", compiler_options.po.experimental_simplifier, "Use experimental simplifier pass");
+    app.add_flag("--no-experimental-simplifier", no_experimental_simplifier, "Do not use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
     app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
 
@@ -2307,6 +2310,8 @@ int main_app(int argc, char *argv[]) {
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
+
+    compiler_options.po.experimental_simplifier = !no_experimental_simplifier;
     LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
@@ -2555,12 +2560,7 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (show_errors) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_errors(arg_file, compiler_options);
-#else
-        std::cerr << "Compiler was not configured with LSP support (-DWITH_LSP), please build it again." << std::endl;
-        return 1;
-#endif
     }
     lfortran_pass_manager.use_default_passes();
     if (show_llvm) {

@@ -721,6 +721,9 @@ public:
         if (x.m_value_attr) {
             r += ", value";
         }
+        if (x.m_target_attr) {
+            r += ", target";
+        }
         r += " :: ";
         r.append(x.m_name);
         if (x.m_symbolic_value && x.m_value && ASR::is_a<ASR::StringChr_t>(*x.m_symbolic_value) && ASR::is_a<ASR::StringConstant_t>(*x.m_value)) {
@@ -1271,7 +1274,21 @@ public:
         src = r;
     }
 
-    // void visit_Nullify(const ASR::Nullify_t &x) {}
+    void visit_Nullify(const ASR::Nullify_t &x) {
+        std::string r = indent;
+        r += "nullify (";
+        for (int i = 0; i < static_cast<int>(x.n_vars); i++) {
+            visit_expr(*x.m_vars[i]);
+            r += src;
+            if(i != static_cast<int>(x.n_vars-1)) {
+                r += ", ";
+            }
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
 
     // void visit_Flush(const ASR::Flush_t &x) {}
 
@@ -1383,6 +1400,7 @@ public:
         else if(intrinsic_func_name == "Mergebits") intrinsic_func_name = "merge_bits";
         else if(intrinsic_func_name == "StringLenTrim") intrinsic_func_name = "len_trim";
         else if(intrinsic_func_name == "StringTrim") intrinsic_func_name = "trim";
+        else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 
@@ -1623,7 +1641,11 @@ public:
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         src = "\"";
-        src.append(x.m_s);
+        if(std::strcmp(x.m_s, "\n") == 0) {
+            src.append("\\n");
+        } else {
+            src.append(x.m_s);
+        }
         src += "\"";
         last_expr_precedence = Precedence::Ext;
     }

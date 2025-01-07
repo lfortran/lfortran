@@ -487,7 +487,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 new_args.size(), x->m_dt, nullptr, false, false)));
             ASR::expr_t* subroutineCall_res = new_args.p[new_args.size() - 1].m_value;
             // Avoid ArrayPhysicalCasting. Use actual argument.
-            // intrinsicArrayFunction has a return that's handled be the super expression. Don't use casted expr created by `make_SubroutineCall_t_uti()`. 
+            // intrinsicArrayFunction has a return that's handled be the super expression. Don't use casted expr created by `make_SubroutineCall_t_uti()`.
             while(ASR::is_a<ASR::ArrayPhysicalCast_t>(*subroutineCall_res)){
                 subroutineCall_res = ASRUtils::get_past_array_physical_cast(subroutineCall_res);
             }
@@ -499,7 +499,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 // Do Nothing
             } else {
                 ASR::ttype_t* arrayPhysicalCast_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(subroutineCall_res));
-                ASR::down_cast<ASR::Array_t>(arrayPhysicalCast_type)->m_physical_type = original_functionCall_array_ret_phsyical_type; 
+                ASR::down_cast<ASR::Array_t>(arrayPhysicalCast_type)->m_physical_type = original_functionCall_array_ret_phsyical_type;
                 subroutineCall_res = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc, subroutineCall_res,
                     subroutineCall_res_array__physical_type, original_functionCall_array_ret_phsyical_type,
                     arrayPhysicalCast_type, nullptr));

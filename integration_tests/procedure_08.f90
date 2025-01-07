@@ -1,8 +1,10 @@
+!! Test to check if actual function is called instead of its m_type_declaration 
 module procedure_08_module
 contains
     subroutine cb(x)
         implicit none
         integer, intent(inout), optional :: x(:)
+        x = 1
     end subroutine cb
 
     subroutine calfun(x)
@@ -36,5 +38,20 @@ contains
     subroutine temp2(call_back)
         implicit none
         procedure(cb), optional :: call_back
+        integer, save :: x(4) = 0 
+        if(present(call_back)) then
+            call temp3(call_back, x) 
+        end if 
     end subroutine
+
+    !! Check: call_back is updated in `pass_array_by_data` pass
+    subroutine temp3(call_back, x)
+        implicit none
+        procedure(cb) :: call_back
+        integer, intent(inout) :: x(:) 
+        call call_back(x) 
+        print *, x
+        if(x(1) /= 2) error stop
+    end subroutine
+
 end program procedure_08

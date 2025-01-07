@@ -298,7 +298,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const Location &loc, bool intrinsic,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
-                            const std::function<void (const std::string &, const Location &)> err) {
+                            const std::function<void (const std::string &, const Location &)> err,
+                            LCompilers::LocationManager &lm) {
     LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -310,14 +311,14 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     }
     LCOMPILERS_ASSERT(symtab->parent == nullptr);
     ASR::TranslationUnit_t *mod1 = find_and_load_module(al, module_name,
-            *symtab, intrinsic, pass_options);
+            *symtab, intrinsic, pass_options, lm);
     if (mod1 == nullptr && !intrinsic) {
         // Module not found as a regular module. Try intrinsic module
         if (module_name == "iso_c_binding"
             ||module_name == "iso_fortran_env"
             ||module_name == "ieee_arithmetic") {
             mod1 = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
-                *symtab, true, pass_options);
+                *symtab, true, pass_options, lm);
         }
     }
     if (mod1 == nullptr) {
@@ -354,13 +355,13 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 bool is_intrinsic = startswith(item, "lfortran_intrinsic");
                 ASR::TranslationUnit_t *mod1 = find_and_load_module(al,
                         item,
-                        *symtab, is_intrinsic, pass_options);
+                        *symtab, is_intrinsic, pass_options, lm);
                 if (mod1 == nullptr && !is_intrinsic) {
                     // Module not found as a regular module. Try intrinsic module
                     if (item == "iso_c_binding"
                         ||item == "iso_fortran_env") {
                         mod1 = find_and_load_module(al, "lfortran_intrinsic_" + item,
-                            *symtab, true, pass_options);
+                            *symtab, true, pass_options, lm);
                     }
                 }
 
@@ -443,7 +444,8 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
-                                                LCompilers::PassOptions& pass_options) {
+                                                LCompilers::PassOptions& pass_options,
+                                                LCompilers::LocationManager &lm) {
     std::filesystem::path runtime_library_dir { pass_options.runtime_library_dir };
     std::filesystem::path filename {msym + ".mod"};
     std::vector<std::filesystem::path> mod_files_dirs;
@@ -458,7 +460,7 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
         std::string modfile;
         std::filesystem::path full_path = path / filename;
         if (read_file(full_path.string(), modfile)) {
-            ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
+            ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab, lm);
             if (intrinsic) {
                 set_intrinsic(asr);
             }
@@ -1885,6 +1887,233 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
     return array_size;
 }
 
+ASR::asr_t* make_ArraySize_t_util(
+    Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
+    ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
+    bool for_type) {
+    int dim = -1;
+    bool is_dimension_constant = (a_dim != nullptr) && ASRUtils::extract_value(
+        ASRUtils::expr_value(a_dim), dim);
+    ASR::ttype_t* array_func_type = nullptr;
+    if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) ) {
+        a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+    }
+    if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
+        ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
+        int64_t dim_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_index(
+            static_cast<ASRUtils::IntrinsicArrayFunctions>(af->m_arr_intrinsic_id));
+        ASR::expr_t* af_dim = nullptr;
+        if( dim_index == 1 && (size_t) dim_index < af->n_args && af->m_args[dim_index] != nullptr ) {
+            af_dim = af->m_args[dim_index];
+        }
+        if ( ASRUtils::is_array(af->m_type) ) {
+            array_func_type = af->m_type;
+        }
+        for ( size_t i = 0; i < af->n_args; i++ ) {
+            if ( ASRUtils::is_array(ASRUtils::expr_type(af->m_args[i])) ) {
+                a_v = af->m_args[i];
+                if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v)) {
+                    a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+                }
+                break;
+            }
+        }
+
+        if( af_dim != nullptr ) {
+            ASRBuilder builder(al, a_loc);
+            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+            if( a_dim == nullptr ) {
+                size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(a_v));
+                Vec<ASR::expr_t*> array_sizes; array_sizes.reserve(al, rank);
+                for( size_t i = 1; i <= rank; i++ ) {
+                    ASR::expr_t* i_a_dim = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, a_loc, i, int32_type));
+                    ASR::expr_t* i_dim_size = ASRUtils::EXPR(make_ArraySize_t_util(
+                        al, a_loc, a_v, i_a_dim, a_type, nullptr, for_type));
+                    array_sizes.push_back(al, i_dim_size);
+                }
+
+                rank--;
+                Vec<ASR::expr_t*> merged_sizes; merged_sizes.reserve(al, rank);
+                for( size_t i = 0; i < rank; i++ ) {
+                    Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+                    merge_args.push_back(al, array_sizes[i]);
+                    merge_args.push_back(al, array_sizes[i + 1]);
+                    merge_args.push_back(al, builder.Lt(builder.i32(i+1), af_dim));
+                    diag::Diagnostics diag;
+                    merged_sizes.push_back(al, ASRUtils::EXPR(
+                        ASRUtils::Merge::create_Merge(al, a_loc, merge_args, diag)));
+                }
+
+                ASR::expr_t* size = merged_sizes[0];
+                for( size_t i = 1; i < rank; i++ ) {
+                    size = builder.Mul(merged_sizes[i], size);
+                }
+
+                return &(size->base);
+            } else {
+                ASR::expr_t *dim_size_lt = ASRUtils::EXPR(make_ArraySize_t_util(
+                    al, a_loc, a_v, a_dim, a_type, nullptr, for_type));
+                ASR::expr_t *dim_size_gte = ASRUtils::EXPR(make_ArraySize_t_util(
+                    al, a_loc, a_v, builder.Add(a_dim, builder.i_t(1, ASRUtils::expr_type(a_dim))),
+                    a_type, nullptr, for_type));
+                Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+                merge_args.push_back(al, dim_size_lt); merge_args.push_back(al, dim_size_gte);
+                merge_args.push_back(al, builder.Lt(a_dim, af_dim));
+                diag::Diagnostics diag;
+                return ASRUtils::Merge::create_Merge(al, a_loc, merge_args, diag);
+            }
+        }
+    } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
+        ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(a_v);
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(function_call->m_type, m_dims);
+        if( ASRUtils::is_fixed_size_array(function_call->m_type) ) {
+            if( a_dim == nullptr ) {
+                return ASR::make_IntegerConstant_t(al, a_loc,
+                    ASRUtils::get_fixed_size_of_array(function_call->m_type), a_type);
+            } else if( is_dimension_constant ) {
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        } else {
+            if( a_dim == nullptr ) {
+                LCOMPILERS_ASSERT(m_dims[0].m_length);
+                ASR::expr_t* result = m_dims[0].m_length;
+                for( size_t i = 1; i < n_dims; i++ ) {
+                    LCOMPILERS_ASSERT(m_dims[i].m_length);
+                    result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
+                        result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
+                }
+                return &(result->base);
+            } else if( is_dimension_constant ) {
+                LCOMPILERS_ASSERT(m_dims[dim - 1].m_length);
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        }
+    } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*a_v) && for_type ) {
+        ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
+        for( size_t i = 0; i < elemental->n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(elemental->m_args[i])) ) {
+                a_v = elemental->m_args[i];
+                break;
+            }
+        }
+    }
+    if( ASR::is_a<ASR::ArraySection_t>(*a_v) ) {
+        ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(a_v);
+        if( a_dim == nullptr ) {
+            ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
+            ASR::asr_t* size = const1;
+            for( size_t i = 0; i < array_section_t->n_args; i++ ) {
+                ASR::expr_t* start = array_section_t->m_args[i].m_left;
+                ASR::expr_t* end = array_section_t->m_args[i].m_right;
+                ASR::expr_t* d = array_section_t->m_args[i].m_step;
+                if( start == nullptr || end == nullptr || d == nullptr ){
+                    continue;
+                }
+                start = CastingUtil::perform_casting(start, a_type, al, a_loc);
+                end = CastingUtil::perform_casting(end, a_type, al, a_loc);
+                d = CastingUtil::perform_casting(d, a_type, al, a_loc);
+                ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
+                ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, a_loc, endminusstart, ASR::binopType::Div, d, a_type, nullptr));
+                ASR::expr_t* plus1 = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, a_loc, byd, ASR::binopType::Add, ASRUtils::EXPR(const1), a_type, nullptr));
+                size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
+                    ASR::binopType::Mul, plus1, a_type, nullptr);
+            }
+            return size;
+        } else if( is_dimension_constant ) {
+            ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
+            ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
+            ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
+            ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
+            if( start == nullptr && d == nullptr ) {
+                return const1;
+            }
+            start = CastingUtil::perform_casting(start, a_type, al, a_loc);
+            end = CastingUtil::perform_casting(end, a_type, al, a_loc);
+            d = CastingUtil::perform_casting(d, a_type, al, a_loc);
+            ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
+            ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, a_loc, endminusstart, ASR::binopType::Div, d, a_type, nullptr));
+            return ASR::make_IntegerBinOp_t(al, a_loc, byd, ASR::binopType::Add,
+                ASRUtils::EXPR(const1), a_type, nullptr);
+        }
+    }
+    if( ASR::is_a<ASR::ArrayItem_t>(*a_v) ) {
+        ASR::ArrayItem_t* array_item_t = ASR::down_cast<ASR::ArrayItem_t>(a_v);
+        LCOMPILERS_ASSERT(ASRUtils::is_array(array_item_t->m_type));
+        if( for_type ) {
+            LCOMPILERS_ASSERT(!ASRUtils::is_allocatable(array_item_t->m_type) &&
+                              !ASRUtils::is_pointer(array_item_t->m_type));
+        }
+        if( a_dim == nullptr ) {
+            ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
+            ASR::asr_t* size = const1;
+            for( size_t i = 0; i < array_item_t->n_args; i++ ) {
+                ASR::expr_t* end = ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc,
+                    array_item_t->m_args[i].m_right, a_dim, a_type, nullptr, for_type));
+                size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
+                    ASR::binopType::Mul, end, a_type, nullptr);
+            }
+            return size;
+        } else if( is_dimension_constant ) {
+            return make_ArraySize_t_util(al, a_loc,
+                array_item_t->m_args[dim].m_right,
+                nullptr, a_type, nullptr, for_type);
+        }
+    }
+    if( is_binop_expr(a_v) && for_type ) {
+        if( ASR::is_a<ASR::Var_t>(*extract_member_from_binop(a_v, 1)) ) {
+            return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 1), a_dim, a_type, a_value, for_type);
+        } else {
+            return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 0), a_dim, a_type, a_value, for_type);
+        }
+    } else if( is_unaryop_expr(a_v) && for_type ) {
+        return make_ArraySize_t_util(al, a_loc, extract_member_from_unaryop(a_v), a_dim, a_type, a_value, for_type);
+    } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
+        ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
+        return &(get_ArrayConstructor_size(al, array_constructor)->base);
+    } else {
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = 0;
+        if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
+        else n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
+        bool is_dimension_dependent_only_on_arguments_ = is_dimension_dependent_only_on_arguments(m_dims, n_dims);
+
+        bool compute_size = (is_dimension_dependent_only_on_arguments_ &&
+            (is_dimension_constant || a_dim == nullptr));
+        if( compute_size && for_type ) {
+            ASR::dimension_t* m_dims = nullptr;
+            if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
+            else n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
+            if( a_dim == nullptr ) {
+                ASR::asr_t* size = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
+                        ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr);
+                }
+                return size;
+            } else if( is_dimension_constant ) {
+                return (ASR::asr_t*) m_dims[dim - 1].m_length;
+            }
+        }
+    }
+
+
+    if( for_type ) {
+        LCOMPILERS_ASSERT_MSG(
+            ASR::is_a<ASR::Var_t>(*a_v) ||
+            ASR::is_a<ASR::StructInstanceMember_t>(*a_v) ||
+            ASR::is_a<ASR::FunctionParam_t>(*a_v),
+            "Found ASR::exprType::" + std::to_string(a_v->type));
+    }
+
+    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+}
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;

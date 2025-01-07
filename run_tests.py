@@ -54,6 +54,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     continue_compilation = is_included("continue_compilation")
     semantics_only_cc = is_included("semantics_only_cc")
+    show_errors = is_included("show_errors")
+    document_symbols = is_included("document_symbols")
     syntax_only_cc = is_included("syntax_only_cc")
     show_asr_with_cc = is_included("show_asr_with_cc")
     asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
@@ -339,6 +341,35 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
 
     if semantics_only_cc:
         run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if document_symbols:
+        skip_test = False
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.rstrip().lstrip()
+
+            if no_llvm and len(extrafile_) > 0:
+                log.info(f"{filename} * asr   SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
+
+            if len(extrafile_) > 0:
+                extrafile_ = os.path.join("tests", extrafile_)
+                modfile = extrafile_[:-4] + ".mod"
+                if not os.path.exists(modfile):
+                    run_cmd("lfortran -c {}".format(extrafile_))
+        if not skip_test:
+            run_test(filename, "asr", "lfortran --show-document-symbols --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+
+    if show_errors:
+        run_test(filename, "asr", "lfortran --show-errors --continue-compilation --no-color {infile}",
             filename,
             update_reference,
             verify_hash,

@@ -164,8 +164,8 @@ void populate_symbol_lists(T* x, LCompilers::LocationManager lm, std::vector<LCo
             last_column, filename);
         loc.first_column = first_column;
         loc.last_column = last_column;
-        loc.first_line = first_line-1;
-        loc.last_line = last_line-1;
+        loc.first_line = first_line;
+        loc.last_line = last_line;
         loc.symbol_name = symbol_name;
         loc.filename = filename;
         loc.symbol_type = a.second->type;
@@ -245,6 +245,7 @@ int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
         test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
+        test_capture.AddMember("filename", symbol.filename);
         test_output.PushBack(test_capture);
     }
     std::cout << test_output.GetValue();
@@ -291,8 +292,8 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
                     filename);
                 h.first_column = first_column;
                 h.last_column = last_column;
-                h.first_line = first_line-1;
-                h.last_line = last_line-1;
+                h.first_line = first_line;
+                h.last_line = last_line;
                 h.filename = filename;
                 diag_lists.push_back(h);
             }
@@ -305,6 +306,11 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
     LFortranJSON diag_results(LFortranJSONType::kArrayType);
     LFortranJSON diag_capture(LFortranJSONType::kObjectType);
     LFortranJSON message_send(LFortranJSONType::kObjectType);
+    LFortranJSON all_errors(LFortranJSONType::kArrayType);
+    all_errors.SetArray();
+
+    message_send.SetObject();
+    message_send.AddMember("uri", "uri");
 
     for (auto diag : diag_lists) {
         uint32_t start_line = diag.first_line;
@@ -326,19 +332,15 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
         end_detail.AddMember("character", end_column);
         range_obj.AddMember("end", end_detail);
 
-        diag_results.SetArray();
-
         diag_capture.SetObject();
         diag_capture.AddMember("source", "lpyth");
         diag_capture.AddMember("range", range_obj);
         diag_capture.AddMember("message", msg);
         diag_capture.AddMember("severity", severity);
-        diag_results.PushBack(diag_capture);
 
-        message_send.SetObject();
-        message_send.AddMember("uri", "uri");
-        message_send.AddMember("diagnostics", diag_results);
+        all_errors.PushBack(diag_capture);
     }
+    message_send.AddMember("diagnostics", all_errors);
     std::cout << message_send.GetValue();
 
     return 0;
@@ -373,12 +375,13 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             // populate_symbol_lists(x.result, lm, symbol_lists);
             uint16_t l = std::stoi(compiler_options.line);
             uint16_t c = std::stoi(compiler_options.column);
-            uint64_t pos = lm.linecol_to_pos(l, c);
-            if (c > 0 && pos > 0 && !is_id_chr(input[pos]) && is_id_chr(input[pos - 1])) {
-                // pos is to the right of the word boundary
-                pos--;
+            uint64_t input_pos = lm.linecol_to_pos(l, c);
+            if (c > 0 && input_pos > 0 && !is_id_chr(input[input_pos]) && is_id_chr(input[input_pos - 1])) {
+                // input_pos is to the right of the word boundary
+                input_pos--;
             }
-            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
+            uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
             LCompilers::document_symbols loc;
             if (!ASR::is_a<ASR::symbol_t>(*asr)) {
                 std::cout << "[]";
@@ -391,14 +394,14 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             uint32_t first_column;
             uint32_t last_column;
             std::string filename;
-            lm.pos_to_linecol(asr->loc.first, first_line,
+            lm.pos_to_linecol(lm.output_to_input_pos(asr->loc.first, false), first_line,
                 first_column, filename);
-            lm.pos_to_linecol(asr->loc.last, last_line,
+            lm.pos_to_linecol(lm.output_to_input_pos(asr->loc.last, true), last_line,
                 last_column, filename);
             loc.first_column = first_column;
             loc.last_column = last_column;
-            loc.first_line = first_line-1;
-            loc.last_line = last_line-1;
+            loc.first_line = first_line;
+            loc.last_line = last_line;
             loc.symbol_name = symbol_name;
             loc.filename = filename;
             loc.symbol_type = s->type;
@@ -440,12 +443,13 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
 
         location_object.SetObject();
         location_object.AddMember("range", range_object);
-        location_object.AddMember("uri", "uri");
+        location_object.AddMember("uri", symbol.filename);
 
         test_capture.SetObject();
         test_capture.AddMember("kind", kind);
         test_capture.AddMember("location", location_object);
         test_capture.AddMember("name", name);
+        test_capture.AddMember("filename", symbol.filename);
         test_output.PushBack(test_capture);
     }
 
@@ -475,8 +479,9 @@ int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &c
             // populate_symbol_lists(x.result, lm, symbol_lists);
             uint16_t l = std::stoi(compiler_options.line);
             uint16_t c = std::stoi(compiler_options.column);
-            uint64_t pos = lm.linecol_to_pos(l, c);
-            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
+            uint64_t input_pos = lm.linecol_to_pos(l, c);
+            uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
             LCompilers::document_symbols loc;
             if (!ASR::is_a<ASR::symbol_t>(*asr)) {
                 std::cout << "[]";
