@@ -5893,10 +5893,23 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
                     + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
-                physical_cast_arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                    al, arg->base.loc, arg, arg_array_t->m_physical_type, orig_arg_array_t->m_physical_type,
-                    ASRUtils::duplicate_type(al, ASRUtils::expr_type(arg), dimensions, orig_arg_array_t->m_physical_type, true),
-                    nullptr));
+                physical_cast_arg.m_value = ASRUtils::EXPR(
+                                            ASRUtils::make_ArrayPhysicalCast_t_util(
+                                                al,
+                                                arg->base.loc,
+                                                arg,
+                                                arg_array_t->m_physical_type,
+                                                orig_arg_array_t->m_physical_type,
+                                                ASRUtils::duplicate_type(
+                                                    al,
+                                                    use_experimental_simplifier
+                                                        ? ASRUtils::type_get_past_allocatable(
+                                                            ASRUtils::expr_type(arg))
+                                                        : ASRUtils::expr_type(arg),
+                                                    dimensions,
+                                                    orig_arg_array_t->m_physical_type,
+                                                    true),
+                                                nullptr));
                 a_args[i] = physical_cast_arg;
             }
         }
