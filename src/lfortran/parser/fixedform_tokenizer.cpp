@@ -719,7 +719,7 @@ struct FixedFormRecursiveDescent {
         ptrdiff_t len;
         while (t.cur < end) {
             YYSTYPE y2;
-            auto token = t.lex(m_a, y2, loc, diag);
+            auto token = t.lex(m_a, y2, loc, diag, false);
             len = t.cur - t.tok;
             tokens.push_back(token);
             if (token == yytokentype::TK_INTEGER) {
@@ -1791,7 +1791,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
 }
 
 int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
-        Location &loc, diag::Diagnostics &/*diagnostics*/)
+        Location &loc, diag::Diagnostics &/*diagnostics*/, bool /*continue_compilation*/)
 {
     if (!tokens.empty()) {
         auto tok = tokens[token_pos];
