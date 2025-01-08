@@ -3275,6 +3275,72 @@ public:
         return nullptr;
     }
 
+    /*
+        Function to convert 'FLUSH' subroutine call to 'FLUSH' ASR node
+    */
+    ASR::asr_t* flush_subroutine_to_flush_statement(const AST::SubroutineCall_t &x) {
+        LCOMPILERS_ASSERT(to_lower(x.m_name) == "flush")
+        // encourage users to use `FLUSH` statement instead,
+        // as 'FLUSH' subroutine call isn't in Fortran standard
+        diag.semantic_warning_label(
+            "`FLUSH` statement should be preferred over the `FLUSH` intrinsic",
+            {x.base.base.loc},
+            ""
+        );
+
+        // for FLUSH subroutine call, the only argument 'unit' is optional
+        ASR::expr_t* unit_flush = nullptr;
+        if (x.n_args == 1 && x.n_keywords == 0) {
+            visit_expr(*x.m_args[0].m_end);
+            unit_flush = ASRUtils::EXPR(tmp);
+        } else if (x.n_args == 0 && x.n_keywords == 1) {
+            visit_expr(*x.m_keywords[0].m_value);
+            unit_flush = ASRUtils::EXPR(tmp);
+        } else if (x.n_args == 0 && x.n_keywords == 0) {
+            // when no argument to 'FLUSH' subroutine call is specified,
+            // we assign `OUTPUT_UNIT` from 'iso_fortran_env'
+            std::string output_unit_str = "output_unit";
+            std::string iso_fortran_env_module_str = "lfortran_intrinsic_iso_fortran_env";
+            SymbolTable *tu_symtab = current_scope;
+            while (tu_symtab->parent != nullptr) {
+                tu_symtab = tu_symtab->parent;
+            }
+            ASR::symbol_t* module_sym = (ASR::symbol_t*)(ASRUtils::load_module(
+                al, tu_symtab, iso_fortran_env_module_str, x.base.base.loc,
+                true, compiler_options.po, true,
+                [&](const std::string &/*msg*/, const Location &/*loc*/) { }, lm
+            ));
+
+            // symbol table of 'iso_fortran_env' module
+            SymbolTable* module_symtab = ASR::down_cast<ASR::Module_t>(module_sym)->m_symtab;
+            ASR::symbol_t* module_output_unit_sym = module_symtab->resolve_symbol(output_unit_str);
+
+            ASR::symbol_t* output_unit_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ExternalSymbol_t(
+                    al, x.base.base.loc, current_scope, s2c(al, output_unit_str),
+                    module_output_unit_sym, s2c(al, iso_fortran_env_module_str), nullptr,
+                    0, s2c(al, output_unit_str), ASR::accessType::Private // should this be private?
+                )
+            );
+            current_scope->add_symbol(output_unit_str, output_unit_sym);
+            ASR::expr_t* output_unit_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, x.base.base.loc, output_unit_sym)
+            );
+            unit_flush = output_unit_expr;
+        } else {
+            diag.add(Diagnostic(
+                "Expected 0 or 1 argument, instead got " + std::to_string(x.n_args + x.n_keywords),
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        return ASR::make_Flush_t(
+            al, x.base.base.loc, 0, unit_flush, nullptr,
+            nullptr, nullptr
+        );
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
@@ -3335,6 +3401,10 @@ public:
                     arg = ASRUtils::EXPR(tmp);
                 }
                 tmp = ASR::make_Stop_t( al, x.base.base.loc, arg );
+                return;
+            }
+            if (to_lower(sub_name) == "flush") {
+                tmp = flush_subroutine_to_flush_statement(x);
                 return;
             }
             ASR::symbol_t* external_sym = is_external ? original_sym : nullptr;

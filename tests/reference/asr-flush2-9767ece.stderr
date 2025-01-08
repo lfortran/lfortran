@@ -1,0 +1,11 @@
+warning: `FLUSH` statement should be preferred over the `FLUSH` intrinsic
+ --> tests/flush2.f90:3:5
+  |
+3 |     call flush()
+  |     ^^^^^^^^^^^^ 
+
+warning: `FLUSH` statement should be preferred over the `FLUSH` intrinsic
+ --> tests/flush2.f90:5:5
+  |
+5 |     call flush(10)
+  |     ^^^^^^^^^^^^^^ 
