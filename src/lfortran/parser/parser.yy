@@ -37,9 +37,9 @@ int yylex(LCompilers::LFortran::YYSTYPE *yylval, YYLTYPE *yyloc,
     LCompilers::LFortran::Parser &p)
 {
     if (p.fixed_form) {
-        return p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+        return p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag, false);
     } else {
-        return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+        return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag, p.continue_compilation);
     }
 } // ylex
 
