@@ -438,7 +438,8 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
             compiler_options.fixed_form, include_dirs);
     }
     auto res = LCompilers::LFortran::tokens(al, input, diagnostics, &stypes, &locations,
-        compiler_options.fixed_form);
+        compiler_options.fixed_form, compiler_options.continue_compilation);
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     lm.init_simple(input);
     lm.file_ends.push_back(input.size());
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -456,7 +457,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
         }
         std::cout << std::endl;
     }
-    return 0;
+    return has_error_w_cc;
 }
 
 int emit_ast(const std::string &infile, CompilerOptions &compiler_options)

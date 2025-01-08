@@ -128,7 +128,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
     } catch (const parser_local::TokenizerError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
-        return error;
+        if (!co.continue_compilation) return error;
     } catch (const parser_local::ParserError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
@@ -197,7 +197,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
         std::vector<YYSTYPE> *stypes,
         std::vector<Location> *locations,
-        bool fixed_form)
+        bool fixed_form,
+        bool continue_compilation)
 {
     if (fixed_form) {
         FixedFormTokenizer t;
@@ -230,7 +231,9 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
                 token = t.lex(al, y, l, diagnostics);
             } catch (const parser_local::TokenizerError &e) {
                 diagnostics.diagnostics.push_back(e.d);
-                return Error();
+                if (!continue_compilation) { 
+                    return Error();
+                }
             }
             tst.push_back(token);
             if (stypes) stypes->push_back(y);

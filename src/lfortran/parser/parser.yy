@@ -36,10 +36,19 @@
 int yylex(LCompilers::LFortran::YYSTYPE *yylval, YYLTYPE *yyloc,
     LCompilers::LFortran::Parser &p)
 {
+    LCompilers::CompilerOptions co;
+    bool continue_compilation = co.continue_compilation;
     if (p.fixed_form) {
         return p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
     } else {
-        return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+        int res_yylex;
+      try {
+        res_yylex = p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+      } catch (const LCompilers::LFortran::parser_local::TokenizerError &e) {
+        p.diag.diagnostics.push_back(e.d);
+        if (!continue_compilation) throw e;
+      }
+      return res_yylex;
     }
 } // ylex
 
