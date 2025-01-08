@@ -241,13 +241,11 @@
                             (Var 2 r_g)
                             DescriptorArray
                             PointerToDataArray
-                            (Allocatable
-                                (Array
-                                    (Real 4)
-                                    [(()
-                                    ())]
-                                    PointerToDataArray
-                                )
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                PointerToDataArray
                             )
                             ()
                         ))]
