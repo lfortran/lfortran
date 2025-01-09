@@ -59,6 +59,7 @@
 #endif
 
 extern std::string lcompilers_unique_ID;
+extern std::string lcompilers_commandline_options;
 
 namespace {
 
@@ -2310,6 +2311,13 @@ int main_app(int argc, char *argv[]) {
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
+    lcompilers_commandline_options = "";
+    for (int i=0; i<argc; i++) {
+        std::string option = std::string(argv[i]);
+        if (option != "lfortran" && (option.size() < 4 || option.substr(option.size() - 4) != ".f90")) {
+            lcompilers_commandline_options += option + " ";
+        }
+    }
 
     compiler_options.po.experimental_simplifier = !no_experimental_simplifier;
     LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
