@@ -293,18 +293,30 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         ASR::symbol_t* m_derived_type = current_scope->get_symbol(
                             ASRUtils::symbol_name(struct_t->m_derived_type));
                         if( m_derived_type == nullptr ) {
-                            char* fn_name = ASRUtils::symbol_name(struct_t->m_derived_type);
-                            ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
-                            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                                al, struct_t->m_derived_type->base.loc,
-                                /* a_symtab */ current_scope,
-                                /* a_name */ fn_name,
-                                original_symbol,
-                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_symbol)),
-                                nullptr, 0, fn_name, ASR::accessType::Public
-                            );
-                            m_derived_type = ASR::down_cast<ASR::symbol_t>(fn);
-                            current_scope->add_symbol(fn_name, m_derived_type);
+                            if (!ASR::is_a<ASR::Program_t>(
+                                    *ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
+                                        struct_t->m_derived_type)))) {
+                                char* fn_name = ASRUtils::symbol_name(struct_t->m_derived_type);
+                                ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
+                                ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+                                    al, struct_t->m_derived_type->base.loc,
+                                    /* a_symtab */ current_scope,
+                                    /* a_name */ fn_name,
+                                    original_symbol,
+                                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_symbol)),
+                                    nullptr, 0, fn_name, ASR::accessType::Public
+                                );
+                                m_derived_type = ASR::down_cast<ASR::symbol_t>(fn);
+                                current_scope->add_symbol(fn_name, m_derived_type);
+                            } else {
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(struct_t->m_derived_type, current_scope);
+                                ASR::down_cast<ASR::Program_t>(
+                                    ASRUtils::get_asr_owner(&var->base))->m_symtab->erase_symbol(
+                                        ASRUtils::symbol_name(struct_t->m_derived_type));
+                                m_derived_type = current_scope->get_symbol(
+                                    ASRUtils::symbol_name(struct_t->m_derived_type));
+                            }
                         }
                         var_type_ = ASRUtils::TYPE(ASR::make_StructType_t(al, struct_t->base.base.loc,
                                     m_derived_type));
@@ -500,6 +512,34 @@ public:
                             );
                             ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
                             current_scope->add_symbol(sym_name_ext, ext_sym);
+                        } else if (ASR::is_a<ASR::Variable_t>(
+                                       *ASRUtils::symbol_get_past_external(ext_sym))
+                                   && ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(
+                                       ASRUtils::type_get_past_allocatable_pointer(
+                                           ASR::down_cast<ASR::Variable_t>(
+                                               ASRUtils::symbol_get_past_external(ext_sym))->m_type)))
+                                   && ASR::is_a<ASR::Program_t>(*ASRUtils::get_asr_owner((ext_sym)))) {
+                            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(ASRUtils::type_get_past_array(
+                                                    ASRUtils::type_get_past_allocatable_pointer(
+                                                        ASR::down_cast<ASR::Variable_t>(
+                                                            ASRUtils::symbol_get_past_external(ext_sym))->m_type)));
+                            // Import the Struct as an `ExternalSymbol` into `Program`
+                            ASR::symbol_t* st_sym = ASR::down_cast<ASR::symbol_t>(
+                                                    ASR::make_ExternalSymbol_t(
+                                                        al,
+                                                        st->m_derived_type->base.loc,
+                                                        current_scope,
+                                                        ASRUtils::symbol_name(st->m_derived_type),
+                                                        st->m_derived_type,
+                                                        ASR::down_cast<ASR::ExternalSymbol_t>(
+                                                            ext_sym)->m_module_name,
+                                                        nullptr,
+                                                        0,
+                                                        ASRUtils::symbol_name(st->m_derived_type),
+                                                        ASR::accessType::Public));
+                            if (!current_scope->get_symbol(ASRUtils::symbol_name(st->m_derived_type))) {
+                                current_scope->add_symbol(ASRUtils::symbol_name(st->m_derived_type), st_sym);
+                            }
                         }
                         ASR::symbol_t* sym_ = sym;
                         if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(sym_)->get_counter() ) {
@@ -605,6 +645,22 @@ public:
             if (ASR::is_a<ASR::Block_t>(*item.second)) {
                 ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
                 visit_Block(*s);
+            }
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable_pointer(v->m_type)))) {
+                    // Fix the ttype of variables to point to the imported Struct (as ExternalSymbol)
+                    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(
+                                                ASRUtils::type_get_past_array(
+                                                    ASRUtils::type_get_past_allocatable_pointer(
+                                                        v->m_type)));
+                    ASR::down_cast<ASR::StructType_t>(
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                v->m_type)))->m_derived_type = current_scope->get_symbol(
+                                                                ASRUtils::symbol_name(st->m_derived_type));
+                }
             }
         }
         current_scope = current_scope_copy;
