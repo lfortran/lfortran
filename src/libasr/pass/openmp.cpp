@@ -360,6 +360,27 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(func_sym);
             new_func->m_body = nullptr; new_func->n_body = 0;
             ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature)->m_deftype = ASR::deftypeType::Interface;
+            // Steps:
+            // Create a module add it to current scope->parent symtab
+            // Add func to that module symtab
+            // add External symbol to current_symtab symtab
+            char* module_name = strdup((std::string(func->m_name) + "_m").c_str());
+            ASR::asr_t *mo = ASR::make_Module_t(al,func->base.base.loc, current_scope->parent,module_name, nullptr,0,false,false);
+            current_scope->parent->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(mo));
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(mo));
+            module->m_symtab->add_symbol(func->m_name, current_scope->get_symbol(func->m_name));
+            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+                al, func->base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ func->m_name,
+                (ASR::symbol_t*)func,
+                module_name, nullptr, 0, func->m_name,
+                ASR::accessType::Public
+                );
+            std::string sym = to_lower(func->m_name);
+            sym += "_t";
+            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
+            std::cout<<"visit_FunctionCall 25"<<std::endl;
         }
         LCOMPILERS_ASSERT(func_sym != nullptr);
         x_copy->m_name = func_sym;
