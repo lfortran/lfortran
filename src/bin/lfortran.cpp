@@ -2313,9 +2313,12 @@ int main_app(int argc, char *argv[]) {
     CLI11_PARSE(app, argc, argv);
     lcompilers_commandline_options = "";
     for (int i=0; i<argc; i++) {
-        lcompilers_commandline_options += std::string(argv[i]) + " ";
+        std::string option = std::string(argv[i]);
+        if (option != "lfortran" && (option.size() < 4 || option.substr(option.size() - 4) != ".f90")) {
+            lcompilers_commandline_options += option + " ";
+        }
     }
-    
+
     compiler_options.po.experimental_simplifier = !no_experimental_simplifier;
     LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";

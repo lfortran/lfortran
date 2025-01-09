@@ -1231,16 +1231,6 @@ namespace CompilerOptions {
     static ASR::expr_t *eval_CompilerOptions(Allocator &al, const Location &loc,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
-
-        // const std::vector<std::string>& options = CompilerOptionsState::instance().get_options();
-        // std::string options_str = "";
-        // for (const auto& option : options) {
-        //     if (!options_str.empty()) options_str += " ";
-        //     if (option != "lfortran" && (option.size() < 4 || option.substr(option.size() - 4) != ".f90")) {
-        //         options_str += option;
-        //     } 
-        // }
-
         return b.StringConstant(lcompilers_commandline_options, character(-1));
     }
 
