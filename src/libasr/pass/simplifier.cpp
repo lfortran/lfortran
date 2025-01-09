@@ -1506,7 +1506,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             ASRUtils::extract_indices(target, m_args, n_args);
             if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
-                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args))) ||
+                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
+                 ASRUtils::is_array(x->m_type))) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
                 (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
                 force_replace_current_expr_for_array(std::string("_function_call_") +
