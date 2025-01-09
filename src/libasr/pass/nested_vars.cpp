@@ -293,7 +293,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         ASR::symbol_t* m_derived_type = current_scope->get_symbol(
                             ASRUtils::symbol_name(struct_t->m_derived_type));
                         if( m_derived_type == nullptr ) {
-                            if (!ASR::is_a<ASR::Program_t>(*ASRUtils::get_asr_owner(&var->base))) {
+                            if (!ASR::is_a<ASR::Program_t>(
+                                    *ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
+                                        struct_t->m_derived_type)))) {
                                 char* fn_name = ASRUtils::symbol_name(struct_t->m_derived_type);
                                 ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
                                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
