@@ -59,6 +59,7 @@
 #endif
 
 extern std::string lcompilers_unique_ID;
+extern std::string lcompilers_commandline_options;
 
 namespace {
 
@@ -2310,7 +2311,11 @@ int main_app(int argc, char *argv[]) {
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
-
+    lcompilers_commandline_options = "";
+    for (int i=0; i<argc; i++) {
+        lcompilers_commandline_options += std::string(argv[i]) + " ";
+    }
+    
     compiler_options.po.experimental_simplifier = !no_experimental_simplifier;
     LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";

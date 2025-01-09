@@ -142,6 +142,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Range,
     Sign,
     CompilerVersion,
+    CompilerOptions,
     CommandArgumentCount,
     SignFromValue,
     Logical,
@@ -1202,7 +1203,8 @@ namespace CompilerVersion {
     static ASR::expr_t *eval_CompilerVersion(Allocator &al, const Location &loc,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
-        return b.StringConstant(LFORTRAN_VERSION, character(-1));
+        std::string version = LFORTRAN_VERSION;
+        return b.StringConstant("LFortran version " + version, character(-1));
     }
 
     static inline ASR::asr_t* create_CompilerVersion(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
@@ -1217,6 +1219,43 @@ namespace CompilerVersion {
                 nullptr, 0, 0, return_type, m_value);
     }
 } // namespace CompilerVersion
+
+namespace CompilerOptions {
+    
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "compiler_options() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_CompilerOptions(Allocator &al, const Location &loc,
+            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        ASRUtils::ASRBuilder b(al, loc);
+
+        // const std::vector<std::string>& options = CompilerOptionsState::instance().get_options();
+        // std::string options_str = "";
+        // for (const auto& option : options) {
+        //     if (!options_str.empty()) options_str += " ";
+        //     if (option != "lfortran" && (option.size() < 4 || option.substr(option.size() - 4) != ".f90")) {
+        //         options_str += option;
+        //     } 
+        // }
+
+        return b.StringConstant(lcompilers_commandline_options, character(-1));
+    }
+
+    static inline ASR::asr_t* create_CompilerOptions(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = character(-1);
+        ASR::expr_t *m_value = nullptr;
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = eval_CompilerOptions(al, loc, return_type, args, diag);
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CompilerOptions),
+                nullptr, 0, 0, return_type, m_value);
+    }
+} // namespace CompilerOptions
 
 namespace CommandArgumentCount {
 
