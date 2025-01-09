@@ -855,6 +855,27 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --no-experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
+      # The below projects are tested with a higher CMake version, so replace the current installed version
+      - name: Override cmake version to 3.31.2
+        run: micromamba install -y -n lf cmake=3.31.2
+
+      - name: Test Examples/Project 1
+        shell: bash -e -l {0}
+        run: |
+            cd ./examples/project1
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./project1
+
+      - name: Test Examples/Project 2
+        shell: bash -e -l {0}
+        run: |
+            cd ./examples/project2
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./doconcurrent
+
+
 # Commented out to save CI runners:
 #  test-pixi:
 #    name: Pixi Build (${{ matrix.os }})
