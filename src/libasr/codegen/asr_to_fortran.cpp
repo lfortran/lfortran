@@ -1374,8 +1374,9 @@ public:
     }
 
     void visit_IntrinsicElementalFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicElementalFunction_t &x) {
+        src = "";
         out += func_name;
-        visit_expr(*x.m_args[0]);
+        if (x.n_args > 0) visit_expr(*x.m_args[0]);
         out += "(" + src;
         for (size_t i = 1; i < x.n_args; i++) {
             out += ", ";
@@ -1401,6 +1402,8 @@ public:
         else if(intrinsic_func_name == "StringLenTrim") intrinsic_func_name = "len_trim";
         else if(intrinsic_func_name == "StringTrim") intrinsic_func_name = "trim";
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
+        else if(intrinsic_func_name == "CompilerOptions") intrinsic_func_name = "compiler_options";
+        else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 
