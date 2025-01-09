@@ -7,10 +7,20 @@
                     (SymbolTable
                         2
                         {
-                            output_unit:
+                            __external_output_unit_flush2:
                                 (ExternalSymbol
                                     2
+                                    __external_output_unit_flush2
+                                    4 output_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
                                     output_unit
+                                    Private
+                                ),
+                            __external_output_unit_flush21:
+                                (ExternalSymbol
+                                    2
+                                    __external_output_unit_flush21
                                     4 output_unit
                                     lfortran_intrinsic_iso_fortran_env
                                     []
@@ -22,7 +32,7 @@
                     []
                     [(Flush
                         0
-                        (Var 2 output_unit)
+                        (Var 2 __external_output_unit_flush2)
                         ()
                         ()
                         ()
@@ -40,6 +50,13 @@
                     (Flush
                         0
                         (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        ()
+                        ()
+                    )
+                    (Flush
+                        0
+                        (Var 2 __external_output_unit_flush21)
                         ()
                         ()
                         ()
