@@ -1025,8 +1025,8 @@ int compile_src_to_object_file(const std::string &infile,
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
-    if (!compiler_options.generate_object_code
-            && !LCompilers::ASRUtils::main_program_present(*asr)) {
+    if (!compiler_options.generate_object_code && !LCompilers::ASRUtils::main_program_present(*asr)
+        && !LCompilers::ASRUtils::global_function_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
