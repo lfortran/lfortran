@@ -2926,13 +2926,23 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
 
 LFORTRAN_API void _lfortran_flush(int32_t unit_num)
 {
-    bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
-    if( filep == NULL ) {
-        printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
-        exit(1);
+    // special case: flush all open units
+    if (unit_num == -1) {
+        for (int i = 0; i <= last_index_used; i++) {
+            if (unit_to_file[i].filep != NULL) {
+                fflush(unit_to_file[i].filep);
+            }
+        }
+    } else {
+        bool unit_file_bin;
+        FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+        get_file_pointer_from_unit(unit_num, &unit_file_bin);
+        if( filep == NULL ) {
+            printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
+            exit(1);
+        }
+        fflush(filep);
     }
-    fflush(filep);
 }
 
 LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened, int32_t *size) {
