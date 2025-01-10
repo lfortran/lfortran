@@ -938,7 +938,6 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
-            cmake=3.31.1
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
@@ -976,6 +975,10 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.llvm-version }}
+
+      - name: Override cmake version in LLVM 15
+        if: contains(matrix.llvm-version, '15')
+        run: micromamba install -y -n lf cmake=3.31.1
 
       - name: Setup WASI SDK
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')

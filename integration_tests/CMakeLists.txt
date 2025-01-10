@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 project(lfort C Fortran)
-set(CMAKE_Fortran_COMPILE_OBJECT "<CMAKE_Fortran_COMPILER> --cpp-infer <DEFINES> <INCLUDES> <FLAGS> -c <SOURCE> -o <OBJECT>")
+string(REPLACE "--generate-object-code" "" CMAKE_Fortran_COMPILE_OBJECT "${CMAKE_Fortran_COMPILE_OBJECT}")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug
