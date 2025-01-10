@@ -114,6 +114,25 @@ public:
         nesting_depth++;
         bool is_func_visited = false;
         for (auto &item : x.m_symtab->get_scope()) {
+            if ( ASR::is_a<ASR::Variable_t>(*item.second) ) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if ( ASRUtils::is_array(v->m_type) ) {
+                    ASR::dimension_t* m_dims;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
+                    for( size_t i = 0; i < n_dims; i++ ) {
+                        if (m_dims[i].m_start) {
+                            if ( ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_start)) {
+                                visit_expr(*m_dims[i].m_start);
+                            }
+                        }
+                        if (m_dims[i].m_length) {
+                            if ( ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length)) {
+                                visit_expr(*m_dims[i].m_length);
+                            }
+                        }
+                    }
+                }
+            }
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 par_func_sym = cur_func_sym;
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
@@ -374,6 +393,35 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         transform_stmts(xx.m_body, xx.n_body);
         current_scope = current_scope_copy;
         nesting_depth--;
+    }
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+        if ( ASRUtils::is_array(xx.m_type) ) {
+            ASR::dimension_t* m_dims;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(xx.m_type, m_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                if (m_dims[i].m_start) {
+                    if ( ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_start)) {
+                        ASR::expr_t** current_expr_copy_1 = current_expr;
+                        current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_start));
+                        call_replacer();
+                        current_expr = current_expr_copy_1;
+                        visit_expr(*m_dims[i].m_start);
+                    }
+                }
+                if (m_dims[i].m_length) {
+                    if ( ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length)) {
+                        ASR::expr_t** current_expr_copy_2 = current_expr;
+                        current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_length));
+                        call_replacer();
+                        current_expr = current_expr_copy_2;
+                        visit_expr(*m_dims[i].m_length);
+                    }
+                }
+            }
+        }
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceNestedVisitor>::visit_Variable(x);
     }
 
     void visit_Function(const ASR::Function_t &x) {
