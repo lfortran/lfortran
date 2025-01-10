@@ -3275,6 +3275,63 @@ public:
         return nullptr;
     }
 
+    /*
+        Function to convert 'FLUSH' subroutine call to 'FLUSH' ASR node
+    */
+    void flush_subroutine_to_flush_statement(const AST::SubroutineCall_t &x) {
+        LCOMPILERS_ASSERT(to_lower(x.m_name) == "flush")
+
+        // for FLUSH subroutine call, the only argument 'unit' is optional
+        ASR::expr_t* unit_flush = nullptr;
+        if (x.n_args == 1 && x.n_keywords == 0) {
+            visit_expr(*x.m_args[0].m_end);
+            unit_flush = ASRUtils::EXPR(tmp);
+        } else if (x.n_args == 0 && x.n_keywords == 1) {
+            visit_expr(*x.m_keywords[0].m_value);
+            unit_flush = ASRUtils::EXPR(tmp);
+        } else if (x.n_args == 0 && x.n_keywords == 0) {
+            // when 'FLUSH' intrinsic is called with no argument,
+            // then all open units need to be 'FLUSH'ed
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            ASR::expr_t* one = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(
+                    al, x.base.base.loc, 1, int_type
+                )
+            );
+            ASR::expr_t* minus_one = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(
+                    al, x.base.base.loc, -1, int_type
+                )
+            );
+            // we assign an integer -1 unit to that
+            unit_flush = ASRUtils::EXPR(
+                ASR::make_IntegerUnaryMinus_t(
+                    al, x.base.base.loc, one, int_type, minus_one
+                )
+            );
+        } else {
+            diag.add(Diagnostic(
+                "Expected 0 or 1 arguments, got " + std::to_string(x.n_args + x.n_keywords) +
+                " arguments instead.",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                })
+            );
+            throw SemanticAbort();
+        }
+        tmp = ASR::make_Flush_t(
+            al, x.base.base.loc, 0, unit_flush, nullptr,
+            nullptr, nullptr
+        );
+        // encourage users to use `FLUSH` statement instead,
+        // as 'FLUSH' subroutine call isn't in Fortran standard
+        diag.semantic_warning_label(
+            "The 'flush' intrinsic function is an LFortran extension",
+            {x.base.base.loc},
+            "help: use the 'flush' statement instead"
+        );
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
@@ -3335,6 +3392,11 @@ public:
                     arg = ASRUtils::EXPR(tmp);
                 }
                 tmp = ASR::make_Stop_t( al, x.base.base.loc, arg );
+                return;
+            }
+            if (to_lower(sub_name) == "flush") {
+                // assigns 'tmp' to an ASR node
+                flush_subroutine_to_flush_statement(x);
                 return;
             }
             ASR::symbol_t* external_sym = is_external ? original_sym : nullptr;

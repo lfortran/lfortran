@@ -130,3 +130,9 @@ semantic error: Cannot assign to a constant variable
    |
 10 |     integer, parameter :: i1 = 2
    |                           ~~~~~~ declared as constant
+
+semantic error: Expected 0 or 1 arguments, got 2 arguments instead.
+  --> tests/errors/continue_compilation_1.f90:80:5
+   |
+80 |     call FLUSH(1, 2)
+   |     ^^^^^^^^^^^^^^^^ 
