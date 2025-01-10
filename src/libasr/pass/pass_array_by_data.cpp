@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_by_data.h>
+#include <libasr/pickle.h>
 
 #include <vector>
 #include <utility>
@@ -729,9 +730,54 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             xx.n_args = new_args.size();
         }
 
+        void visit_Function(const ASR::Function_t &x) {
+            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+            std::cout << "\033[1;31m"<<"visit_Function: "<<xx.m_name<<"\033[0m\n";
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = x.m_symtab;
+            for (auto &a : x.m_symtab->get_scope()) {
+                this->visit_symbol(*a.second);
+                if ( ASR::is_a<ASR::Variable_t>(*a.second) ) {
+                    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(a.second);
+                    ASR::symbol_t* type_dec = variable->m_type_declaration;
+                    if ( type_dec ) {
+                        std::cout<<"type_dec: "<<ASRUtils::symbol_name(type_dec)<<std::endl;
+                    }
+                    if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() && 
+                        ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_dec))){
+                        std::cout<<"in here"<<std::endl;
+                        ASR::symbol_t* new_sym = resolve_new_proc(type_dec);
+                        std::cout<<"new_sym: "<<ASRUtils::symbol_name(new_sym)<<std::endl;
+                        ASR::Function_t * subrout = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(new_sym));
+                        std::string new_sym_name = current_scope->get_unique_name(a.first);
+                        std::cout<<"new_sym_name: "<<new_sym_name<<std::endl;
+                        ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(v.al, subrout->base.base.loc, current_scope, s2c(v.al, new_sym_name), 
+                                variable->m_dependencies, variable->n_dependencies, variable->m_intent, 
+                                variable->m_symbolic_value, variable->m_value, variable->m_storage, subrout->m_function_signature, 
+                                new_sym, variable->m_abi, variable->m_access, variable->m_presence, variable->m_value_attr));
+                        v.proc2newproc[a.second] = {new_func_sym_, {}};
+                        current_scope->add_symbol(new_sym_name, new_func_sym_);
+                        not_to_be_erased.insert(new_func_sym_);
+                    }
+                }
+            }
+            this->visit_ttype(*x.m_function_signature);
+            for (size_t i=0; i<x.n_args; i++) {
+                this->visit_expr(*x.m_args[i]);
+            }
+            this->transform_stmts(xx.m_body, xx.n_body);
+            if (x.m_return_var)
+                this->visit_expr(*x.m_return_var);
+            current_scope = current_scope_copy;
+            std::cout << "\033[1;31m"<<"done visit_Function: "<<xx.m_name<<"\033[0m\n";
+        }
+
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            std::cout<<"\033[1;34m"<<"visit_SubroutineCall to: "<<ASRUtils::symbol_name(x.m_name)<<"\033[0m\n";
             visit_Call(x);
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_SubroutineCall(x);
+            std::cout<<"\033[1;34m"<<"done visit_SubroutineCall"<<"\033[0m\n";
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
@@ -740,12 +786,18 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         void visit_Var(const ASR::Var_t &x) {
+            std::cout<<"visit_Var: "<<ASRUtils::symbol_name(x.m_v)<<std::endl;
             if(ASR::is_a<ASR::Variable_t>(*x.m_v)){
                 // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x.m_v);
+                std::cout<<"variable->m_name: "<<variable->m_name<<std::endl;
                 ASR::symbol_t* type_dec = variable->m_type_declaration;
+                if ( type_dec ) {
+                    std::cout<<"type_dec: "<<ASRUtils::symbol_name(type_dec)<<std::endl;
+                }
                 if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() && 
                         v.proc2newproc.find(type_dec) == v.proc2newproc.end()){
+                    std::cout<<"type_dec: "<<ASRUtils::symbol_name(type_dec)<<std::endl;
                     ASR::symbol_t* new_func = resolve_new_proc(ASRUtils::symbol_get_past_external(type_dec));
                     ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(type_dec);
                     std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(
@@ -760,9 +812,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() && 
                     ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_dec))){
+                    std::cout<<"in here"<<std::endl;
                     ASR::symbol_t* new_sym = resolve_new_proc(type_dec);
+                    std::cout<<"new_sym: "<<ASRUtils::symbol_name(new_sym)<<std::endl;
                     ASR::Function_t * subrout = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(new_sym));
                     std::string new_sym_name = current_scope->get_unique_name(ASRUtils::symbol_name(x.m_v));
+                    std::cout<<"new_sym_name: "<<new_sym_name<<std::endl;
                     ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                         ASRUtils::make_Variable_t_util(v.al, x.m_v->base.loc, current_scope, s2c(v.al, new_sym_name), 
                             variable->m_dependencies, variable->n_dependencies, variable->m_intent, 
@@ -880,11 +935,17 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& /*pass_options*/) {
     PassArrayByDataProcedureVisitor v(al);
     v.visit_TranslationUnit(unit);
+    std::cout<<"PassArrayByDataProcedureVisitor done"<<std::endl;
+    std::cout << LCompilers::pickle(unit, true, true, false) << std::endl;
     EditProcedureVisitor e(v);
     e.visit_TranslationUnit(unit);
+    std::cout<<"EditProcedureVisitor done"<<std::endl;
+    std::cout << LCompilers::pickle(unit, true, true, false) << std::endl;
     std::set<ASR::symbol_t*> not_to_be_erased;
     EditProcedureCallsVisitor u(al, v, not_to_be_erased);
     u.visit_TranslationUnit(unit);
+    std::cout<<"EditProcedureCallsVisitor done"<<std::endl;
+    std::cout << LCompilers::pickle(unit, true, true, false) << std::endl;
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
     x.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor y(al);
