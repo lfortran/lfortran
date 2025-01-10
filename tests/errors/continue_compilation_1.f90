@@ -77,5 +77,6 @@ program continue_compilation_1
     !parameter_01
     i1 = 3
     print*,i1
+    call FLUSH(1, 2)
 
 end program

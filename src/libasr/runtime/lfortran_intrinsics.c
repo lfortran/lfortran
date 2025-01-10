@@ -2936,7 +2936,6 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     } else {
         bool unit_file_bin;
         FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
-        get_file_pointer_from_unit(unit_num, &unit_file_bin);
         if( filep == NULL ) {
             printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
             exit(1);

@@ -3280,13 +3280,6 @@ public:
     */
     void flush_subroutine_to_flush_statement(const AST::SubroutineCall_t &x) {
         LCOMPILERS_ASSERT(to_lower(x.m_name) == "flush")
-        // encourage users to use `FLUSH` statement instead,
-        // as 'FLUSH' subroutine call isn't in Fortran standard
-        diag.semantic_warning_label(
-            "The 'flush' intrinsic function is an LFortran extension",
-            {x.base.base.loc},
-            "help: use the 'flush' statement instead"
-        );
 
         // for FLUSH subroutine call, the only argument 'unit' is optional
         ASR::expr_t* unit_flush = nullptr;
@@ -3318,7 +3311,7 @@ public:
             );
         } else {
             diag.add(Diagnostic(
-                "Expected 0 or 1 argument, instead got " + std::to_string(x.n_args + x.n_keywords) +
+                "Expected 0 or 1 arguments, got " + std::to_string(x.n_args + x.n_keywords) +
                 " arguments instead.",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
@@ -3329,6 +3322,13 @@ public:
         tmp = ASR::make_Flush_t(
             al, x.base.base.loc, 0, unit_flush, nullptr,
             nullptr, nullptr
+        );
+        // encourage users to use `FLUSH` statement instead,
+        // as 'FLUSH' subroutine call isn't in Fortran standard
+        diag.semantic_warning_label(
+            "The 'flush' intrinsic function is an LFortran extension",
+            {x.base.base.loc},
+            "help: use the 'flush' statement instead"
         );
     }
 
