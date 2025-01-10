@@ -1493,6 +1493,41 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_complex_constructor_")
     }
 
+    ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
+        switch( expr->type ) {
+            case ASR::exprType::Var: {
+                return ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                return ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            }
+            default: {
+                return nullptr;
+            }
+        }
+    }
+
+    bool is_common_symbol_present_in_lhs_and_rhs(ASR::expr_t* lhs, ASR::expr_t* rhs) {
+        Vec<ASR::expr_t*> lhs_vars, rhs_vars;
+        lhs_vars.reserve(al, 1); rhs_vars.reserve(al, 1);
+        ArrayVarCollector lhs_collector(al, lhs_vars);
+        ArrayVarCollector rhs_collector(al, rhs_vars);
+        lhs_collector.visit_expr(*lhs);
+        rhs_collector.visit_expr(*rhs);
+
+        for( size_t i = 0; i < lhs_vars.size(); i++ ) {
+            ASR::symbol_t* lhs_sym = extract_symbol(lhs_vars[i]);
+            for( size_t j = 0; j < rhs_vars.size(); j++ ) {
+                if( extract_symbol(rhs_vars[j]) == lhs_sym ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( PassUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
@@ -1506,7 +1541,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             ASRUtils::extract_indices(target, m_args, n_args);
             if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
-                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args))) ||
+                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
+                 ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
+                   ASRUtils::is_array(x->m_type)) &&
+                   is_common_symbol_present_in_lhs_and_rhs(target, *current_expr))) ) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
                 (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
                 force_replace_current_expr_for_array(std::string("_function_call_") +

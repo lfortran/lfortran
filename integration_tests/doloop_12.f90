@@ -15,9 +15,8 @@ program p
     implicit none
     integer, allocatable :: inp(:)
     integer :: i =77
-    
+
     do i= 1, 3
         inp = func_arr3(i)
-    end do 
-end program  
-  
+    end do
+end program
