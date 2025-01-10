@@ -2008,6 +2008,23 @@ static inline bool main_program_present(const ASR::TranslationUnit_t &unit)
     return false;
 }
 
+static inline bool global_function_present(const ASR::TranslationUnit_t &unit)
+{
+    bool contains_global_function = false;
+
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*a.second)) {
+            contains_global_function = true;
+        } else if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            // If the ASR contains a module, then the global
+            // function is not the only symbol present.
+            return false;
+        }
+    }
+
+    return contains_global_function;
+}
+
 // Accepts dependencies in the form A -> [B, D, ...], B -> [C, D]
 // Returns a list of dependencies in the order that they should be built:
 // [D, C, B, A]
