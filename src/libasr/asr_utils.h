@@ -4477,14 +4477,16 @@ class SymbolDuplicator {
         SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
         duplicate_SymbolTable(function->m_symtab, function_symtab);
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, function->n_body);
-        ASRUtils::ExprStmtDuplicator node_duplicator(al);
-        node_duplicator.allow_procedure_calls = true;
-        node_duplicator.allow_reshape = false;
+        new_body.reserve(al, function->n_body);        
+
+        ASRUtils::ExprStmtWithScopeDuplicator scoped_node_duplicator(al, function_symtab);
+        scoped_node_duplicator.allow_procedure_calls = true;
+        scoped_node_duplicator.allow_reshape = false;
+
         for( size_t i = 0; i < function->n_body; i++ ) {
-            node_duplicator.success = true;
-            ASR::stmt_t* new_stmt = node_duplicator.duplicate_stmt(function->m_body[i]);
-            if( !node_duplicator.success ) {
+            scoped_node_duplicator.success = true;
+            ASR::stmt_t* new_stmt = scoped_node_duplicator.duplicate_stmt(function->m_body[i]);
+            if (!scoped_node_duplicator.success) {
                 return nullptr;
             }
             new_body.push_back(al, new_stmt);
@@ -4493,17 +4495,9 @@ class SymbolDuplicator {
         Vec<ASR::expr_t*> new_args;
         new_args.reserve(al, function->n_args);
         for( size_t i = 0; i < function->n_args; i++ ) {
-            node_duplicator.success = true;
-            ASR::expr_t* new_arg = node_duplicator.duplicate_expr(function->m_args[i]);
-            if (ASR::is_a<ASR::Var_t>(*new_arg)) {
-                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(new_arg);
-                if (ASR::is_a<ASR::Variable_t>(*(var->m_v))) {
-                    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                    ASR::symbol_t* arg_symbol = function_symtab->get_symbol(variable->m_name);
-                    new_arg = ASRUtils::EXPR(make_Var_t(al, var->base.base.loc, arg_symbol));
-                }
-            }
-            if( !node_duplicator.success ) {
+            scoped_node_duplicator.success = true;
+            ASR::expr_t* new_arg = scoped_node_duplicator.duplicate_expr(function->m_args[i]);
+            if (!scoped_node_duplicator.success) {
                 return nullptr;
             }
             new_args.push_back(al, new_arg);
@@ -4511,14 +4505,9 @@ class SymbolDuplicator {
 
         ASR::expr_t* new_return_var = function->m_return_var;
         if( new_return_var ) {
-            node_duplicator.success = true;
-            new_return_var = node_duplicator.duplicate_expr(function->m_return_var);
-            if (ASR::is_a<ASR::Var_t>(*new_return_var)) {
-                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(new_return_var);
-                std::string var_sym_name = ASRUtils::symbol_name(var->m_v);
-                new_return_var = ASRUtils::EXPR(make_Var_t(al, var->base.base.loc, function_symtab->get_symbol(var_sym_name)));
-            }
-            if( !node_duplicator.success ) {
+            scoped_node_duplicator.success = true;
+            new_return_var = scoped_node_duplicator.duplicate_expr(function->m_return_var);
+            if (!scoped_node_duplicator.success) {
                 return nullptr;
             }
         }
