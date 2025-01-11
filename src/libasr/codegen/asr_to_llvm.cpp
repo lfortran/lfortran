@@ -61,6 +61,7 @@ using ASRUtils::EXPR2VAR;
 using ASRUtils::EXPR2FUN;
 using ASRUtils::intent_local;
 using ASRUtils::intent_return_var;
+using ASRUtils::intent_unspecified;
 using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
@@ -3681,7 +3682,9 @@ public:
     void process_Variable(ASR::symbol_t* var_sym, T& x, uint32_t &debug_arg_count) {
         llvm::Value *target_var = nullptr;
         ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
+        std::cout<<"processing Variable: "<<v->m_name<<std::endl;
         uint32_t h = get_hash((ASR::asr_t*)v);
+        std::cout<<"hash: "<<h<<std::endl;
         llvm::Type *type;
         int n_dims = 0, a_kind = 4;
         ASR::dimension_t* m_dims = nullptr;
@@ -3690,6 +3693,7 @@ public:
         bool is_list = false;
         if (v->m_intent == intent_local ||
             v->m_intent == intent_return_var ||
+            v->m_intent == intent_unspecified ||
             !v->m_intent) {
             type = llvm_utils->get_type_from_ttype_t(
                 v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
@@ -3801,7 +3805,9 @@ public:
                     ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
                         v->m_name, is_llvm_ptr);
 #else
-                    ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+                    if ( array_size != nullptr ) {
+                        ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+                    }
 #endif
                 }
             }
@@ -3814,6 +3820,14 @@ public:
                 } else {
                     allocate_array_members_of_struct(ptr, v->m_type);
                 }
+            }
+            if ( ASR::is_a<ASR::FunctionType_t>(*v->m_type) ) {
+                // procedure variable, create a function pointer
+                ASR::Function_t* v_fn = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                llvm::FunctionType* fntype = llvm_utils->get_function_type(*v_fn, module.get());
+                llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, v->m_name, module.get());
+                llvm_symtab_fn[h] = fn;
+                return;
             }
             if (compiler_options.emit_debug_info) {
                 // Reset the debug location
@@ -3963,6 +3977,11 @@ public:
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
+        std::cout<<"at end of declare_vars\n";
+        std::cout<<"llvm_symtab size: "<<llvm_symtab.size()<<std::endl;
+        for (auto &item : llvm_symtab) {
+            std::cout<<"Here llvm_symtab: "<<item.first<<std::endl;
+        }
     }
 
     bool is_function_variable(const ASR::Variable_t &v) {
@@ -4057,6 +4076,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        std::cout << "\033[1;31m"<<"visit_Function: "<<x.m_name<<"\033[0m\n";
         loop_head.clear();
         loop_head_names.clear();
         loop_or_block_end.clear();
@@ -4078,6 +4098,7 @@ public:
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
             // Interface does not have an implementation and it is already
             // declared, so there is nothing to do here
+            std::cout << "\033[1;31m"<<"done from here visit_Function: "<<x.m_name<<"\033[0m\n";
             return;
         }
         visit_procedures(x);
@@ -4097,6 +4118,7 @@ public:
         loop_or_block_end_names.clear();
         heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
+        std::cout << "\033[1;31m"<<"done visit_Function: "<<x.m_name<<"\033[0m\n";
     }
 
     void instantiate_function(const ASR::Function_t &x){
@@ -4184,6 +4206,7 @@ public:
     }
 
     inline void define_function_entry(const ASR::Function_t& x) {
+        std::cout<<"define_function_entry: "<<x.m_name<<"\n";
         uint32_t h = get_hash((ASR::asr_t*)&x);
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
@@ -4195,6 +4218,7 @@ public:
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         declare_args(x, *F);
         declare_local_vars(x);
+        std::cout<<"done define_function_entry: "<<x.m_name<<"\n";
     }
 
 
@@ -4260,6 +4284,7 @@ public:
     }
 
     void generate_function(const ASR::Function_t &x) {
+        std::cout<<"generate_function: "<<x.m_name<<"\n";
         bool interactive = (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Interactive);
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Implementation ) {
 
@@ -4317,6 +4342,7 @@ public:
                 define_function_exit(x);
             }
         }
+        std::cout<<"done generate_function: "<<x.m_name<<"\n";
     }
 
 
@@ -9259,6 +9285,7 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        std::cout<<"SubroutineCall to: "<<ASRUtils::symbol_name(x.m_name)<<std::endl;
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
@@ -9316,6 +9343,7 @@ public:
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_decl)));
             s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(type_decl));
+            // proc_sym = type_decl;
         } else {
             throw CodeGenError("SubroutineCall: Symbol type not supported");
         }
@@ -9461,7 +9489,10 @@ public:
         } else {
             throw CodeGenError("ABI type not implemented yet in SubroutineCall.");
         }
-
+        for(auto it: llvm_symtab) {
+            std::cout<<"llvm_symtab: "<<it.first<<std::endl;
+        }
+        std::cout<<"ASR::is_a<ASR::Variable_t>(*proc_sym): "<<ASR::is_a<ASR::Variable_t>(*proc_sym)<<std::endl;
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
