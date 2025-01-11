@@ -1021,8 +1021,12 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
         ASR::LogicalConstant_t *back = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[4]));
         int index = 0;
         int flag = 0;
-        if (((bool*)mask->m_data)[0] != 0) {
-            flag = 1;
+        for (int i = 0; i < arr_size; i++) {
+            if (((bool*)mask->m_data)[i] != 0) {
+                flag = 1;
+                index = i;
+                break;
+            }
         }
         if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
             if (is_character(*expr_type(args[0]))) {
@@ -1089,6 +1093,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                     }
                 }
             } else {
+                std::cout<<"here1"<<'\n';
                 double ele = 0;
                 if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, index), ele)) {
                     for (int i = index+1; i < arr_size; i++) {
@@ -1289,7 +1294,14 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         b.generate_reduction_intrinsic_stmts_for_scalar_output(
             loc, args[0], fn_symtab, body, idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-                body.push_back(al, b.Assignment(result, b.i_t(1, type)));
+                ASR::expr_t *i = declare("i", type, Local);
+                ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
+                body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                    b.If(b.Eq(maskval, b.bool_t(1, logical)), {
+                        b.Assignment(result, i),
+                        b.Exit()
+                    }, {})
+                }, nullptr));
             }, [=, &al, &b, &idx_vars, &doloop_body] () {
                 std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
                 Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
@@ -1343,7 +1355,14 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-                body.push_back(al, b.Assignment(result, b.i_t(1, type)));
+               ASR::expr_t *i = declare("i", type, Local);
+                ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
+                body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                    b.If(b.Eq(maskval, b.bool_t(1, logical)), {
+                        b.Assignment(result, i),
+                        b.Exit()
+                    }, {})
+                }, nullptr));
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
                 ASR::expr_t *result_ref, *array_ref_02;
                 bool condition = is_array(return_type);
