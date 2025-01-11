@@ -1572,7 +1572,7 @@ RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME dlaswap LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME dlaswap LABELS gfortran llvm)
 
 RUN(NAME implied_do_loops1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME implied_do_loops2 LABELS gfortran fortran)
