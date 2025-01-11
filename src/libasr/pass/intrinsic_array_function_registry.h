@@ -1093,7 +1093,6 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                     }
                 }
             } else {
-                std::cout<<"here1"<<'\n';
                 double ele = 0;
                 if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, index), ele)) {
                     for (int i = index+1; i < arr_size; i++) {
