@@ -367,11 +367,9 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
                 "The `emit_debug_line_column` is not enabled; please use the "
                 "`--debug-with-line-column` option to get the correct "
                 "location information",
-                LCompilers::diag::Level::Error,
+                LCompilers::diag::Level::Warning,
                 LCompilers::diag::Stage::Semantic, {})
             );
-            Error err;
-            return err;
         }
     }
     // ASR -> LLVM
