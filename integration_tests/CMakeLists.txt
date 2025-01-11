@@ -989,6 +989,7 @@ RUN(NAME intrinsics_335 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_336 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran ONLY_EXPERIMENTAL_SIMPLIFIER) #any
 RUN(NAME intrinsics_337 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dble, dfloat, float, shifta
 RUN(NAME intrinsics_338 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # compiler_options
+RUN(NAME intrinsics_339 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 
