@@ -53,7 +53,7 @@ subroutine dlaswp(n, a, lda, k1, k2, ipiv, incx)
 end subroutine
 
 PROGRAM test_dlaswp
-   INTEGER :: n, lda, k1, k2, incx
+   INTEGER :: n, lda, k1, k2, incx, i
    INTEGER, ALLOCATABLE :: ipiv(:)
    DOUBLE PRECISION, ALLOCATABLE :: a(:,:)
 
@@ -69,13 +69,13 @@ PROGRAM test_dlaswp
    ALLOCATE(a(lda, n))
 
     ! Initialize the matrix 'a' in column-major order
-    a = RESHAPE((/ 1.0D0, 2.0D0, 3.0D0, 4.0D0, &
+    a = RESHAPE([ 1.0D0, 2.0D0, 3.0D0, 4.0D0, &
                  5.0D0, 6.0D0, 7.0D0, 8.0D0, &
                  9.0D0, 10.0D0, 11.0D0, 12.0D0, &
-                 13.0D0, 14.0D0, 15.0D0, 16.0D0 /), (/ lda, n /))
+                 13.0D0, 14.0D0, 15.0D0, 16.0D0 ], [ lda, n ])
 
     ! Initialize the pivot array
-    ipiv = (/ 4, 1, 2, 3 /)
+    ipiv = [4, 1, 2, 3]
 
    ! Print the original matrix
    PRINT *, "Original matrix A:"
