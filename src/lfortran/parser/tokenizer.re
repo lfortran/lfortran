@@ -144,7 +144,7 @@ void Tokenizer::add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form,
     }
 }
 
-int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics)
+int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics, bool continue_compilation)
 {
     if (enddo_state == 1) {
         enddo_state = 2;
@@ -255,12 +255,21 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             * { token_loc(loc);
                 std::string t = token();
-                throw parser_local::TokenizerError(diag::Diagnostic(
-                    "Token '" + t + "' is not recognized",
-                    diag::Level::Error, diag::Stage::Tokenizer, {
+                diagnostics.add(diag::Diagnostic(
+                        "Token '" + t + "' is not recognized",
+                        diag::Level::Error, diag::Stage::Tokenizer, {
                         diag::Label("token not recognized", {loc})
-                    })
-                );
+                    }));
+
+                if(!continue_compilation) {
+                    throw parser_local::TokenizerError(diag::Diagnostic(
+                        "Token '" + t + "' is not recognized",
+                        diag::Level::Error, diag::Stage::Tokenizer, {
+                        diag::Label("token not recognized", {loc})
+                    }));
+                } else {
+                    continue;
+                }
             }
             end { RET(END_OF_FILE); }
             whitespace { continue; }
