@@ -8436,7 +8436,7 @@ public:
             }
             args.push_back(tmp);
         } else if (ASRUtils::is_real(*t)) {
-            llvm::Value *d;
+            llvm::Value *d = tmp;
             switch( a_kind ) {
                 case 4 : {
                     // Cast float to double as a workaround for the fact that
