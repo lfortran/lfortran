@@ -4178,6 +4178,50 @@ public:
                     if (!interface_as_arg) {
                         instantiate_function(*v);
                     }
+                } else if ( ASR::is_a<ASR::Variable_t>(*item.second) && is_function_variable(item.second) ) {
+                    ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
+                    bool interface_as_arg = false;
+                    for (size_t i=0; i<x.n_args; i++) {
+                        if (is_a<ASR::Var_t>(*x.m_args[i])) {
+                            ASR::Var_t *arg = down_cast<ASR::Var_t>(x.m_args[i]);
+                            if ( arg->m_v == item.second ) {
+                                interface_as_arg = true;
+                            }
+                        }
+                    }
+                    if ( interface_as_arg ) {
+                        continue;
+                    }
+                    ASR::Function_t *var = ASR::down_cast<ASR::Function_t>(
+                            ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                    uint32_t h = get_hash((ASR::asr_t*)v);
+                    if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
+                        continue;
+                    }
+                    llvm::FunctionType* function_type = llvm_utils->get_function_type(*var, module.get());
+                    std::string fn_name;
+                    std::string sym_name = v->m_name;
+                    if (ASRUtils::get_FunctionType(*var)->m_abi == ASR::abiType::BindC) {
+                        if (ASRUtils::get_FunctionType(*var)->m_bindc_name) {
+                            fn_name = ASRUtils::get_FunctionType(*var)->m_bindc_name;
+                        } else {
+                            fn_name = sym_name;
+                        }
+                    } else if (ASRUtils::get_FunctionType(*var)->m_deftype == ASR::deftypeType::Interface &&
+                        ASRUtils::get_FunctionType(*var)->m_abi != ASR::abiType::Intrinsic) {
+                        fn_name = sym_name;
+                    } else {
+                        fn_name = mangle_prefix + sym_name;
+                    }
+                    if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
+                        llvm_symtab_fn_names[fn_name] = h;
+                        llvm::Function* F = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, fn_name, module.get());
+                        llvm_symtab_fn[h] = F;
+                    } else {
+                        uint32_t old_h = llvm_symtab_fn_names[fn_name];
+                        llvm_symtab_fn[h] = llvm_symtab_fn[old_h];
+                    }
                 }
             }
         }
@@ -9482,6 +9526,7 @@ public:
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
+            return;
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = ASRUtils::symbol_name(x.m_name);
