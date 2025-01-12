@@ -473,6 +473,10 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
+      - name: Install libunwind
+        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
+        run: micromamba install -y -n lf libunwind
+  
       - name: Build Linux
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu')
@@ -987,6 +991,10 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.llvm-version }}
+      
+      - name: Install libunwind
+        if: matrix.llvm-version > 11
+        run: micromamba install -y -n lf libunwind
 
       - name: Setup WASI SDK
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
@@ -1548,6 +1556,7 @@ jobs:
             mlir=19.1.6
             llvm=19.1.6
             llvm-openmp=19.1.6
+            libunwind
 
       - uses: hendrikmuhs/ccache-action@main
         with:

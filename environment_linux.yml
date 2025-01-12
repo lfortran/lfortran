@@ -22,3 +22,5 @@ dependencies:
   - zstd-static
   - cmake=3.29.1
   - make
+  # install libunwind if building with llvmdev > 11
+  # - libunwind
