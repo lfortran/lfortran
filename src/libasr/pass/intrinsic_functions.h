@@ -4168,6 +4168,7 @@ namespace Leadz {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t leading_zeros = ASRUtils::compute_leading_zeros(a, kind);
+        set_kind_to_ttype_t(t1, 4);
         return make_ConstantWithType(make_IntegerConstant_t, leading_zeros, t1, loc);
     }
 
