@@ -4180,6 +4180,18 @@ public:
                     }
                 } else if ( ASR::is_a<ASR::Variable_t>(*item.second) && is_function_variable(item.second) ) {
                     ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
+                    bool interface_as_arg = false;
+                    for (size_t i=0; i<x.n_args; i++) {
+                        if (is_a<ASR::Var_t>(*x.m_args[i])) {
+                            ASR::Var_t *arg = down_cast<ASR::Var_t>(x.m_args[i]);
+                            if ( arg->m_v == item.second ) {
+                                interface_as_arg = true;
+                            }
+                        }
+                    }
+                    if ( interface_as_arg ) {
+                        continue;
+                    }
                     ASR::Function_t *var = ASR::down_cast<ASR::Function_t>(
                             ASRUtils::symbol_get_past_external(v->m_type_declaration));
                     uint32_t h = get_hash((ASR::asr_t*)v);
