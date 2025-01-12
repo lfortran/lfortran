@@ -346,50 +346,90 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         replacer.replace_expr(*current_expr);
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        ASR::FunctionCall_t* x_copy = const_cast<ASR::FunctionCall_t*>(&x);
+    template <typename T>
+    void visit_Call(const T &x) {
+        T* x_copy = const_cast<T*>(&x);
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                            ASRUtils::symbol_get_past_external(x_copy->m_name));
+        ASR::asr_t* asr_owner = ASRUtils::symbol_parent_symtab(x.m_name)->asr_owner;
+        ASR::symbol_t* fun_sym_for_module = nullptr;
+        char* module_name = nullptr;
+        // Steps:
+        // Create a module add it to current_scope->parent symtab
+        // Add func to that module symtab
+        // Overwrite External symbol to x's asr_owner's symtab
+        if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+            ASRUtils::SymbolDuplicator duplicator(al);
+            SymbolTable* module_scope = al.make_new<SymbolTable>(current_scope->parent);
+
+            module_name = s2c(al, current_scope->parent->get_unique_name("lcompilers_user_defined_functions"));
+            ASR::asr_t* mo = ASR::make_Module_t(
+                                al, x.base.base.loc, module_scope, 
+                                s2c(al, module_name), nullptr,
+                                0, false, false);
+            if (current_scope->parent->get_symbol(module_name) == nullptr) {
+                current_scope->parent->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(mo));
+            }
+
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(mo));
+            fun_sym_for_module = duplicator.duplicate_Function(fn, module_scope);
+            module->m_symtab->add_symbol(fn->m_name, fun_sym_for_module);
+
+            ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
+                                al,
+                                x.base.base.loc,
+                                ASRUtils::symbol_parent_symtab(x.m_name),
+                                fn->m_name,
+                                fun_sym_for_module,
+                                s2c(al, module_name),
+                                nullptr,
+                                0,
+                                x_copy->m_original_name
+                                    ? ASRUtils::symbol_name(x_copy->m_original_name)
+                                    : ASRUtils::symbol_name(x_copy->m_name),
+                                ASR::accessType::Public);
+            ASR::Program_t* program = ASR::down_cast<ASR::Program_t>(
+                                    ASR::down_cast<ASR::symbol_t>(asr_owner));
+            program->m_symtab->add_or_overwrite_symbol(fn->m_name,
+                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
+        }
+
         ASR::symbol_t* func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
         if (func_sym == nullptr) {
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(x.m_name);
-            // this means we have a user defined function and need to create an interface for it
-            ASRUtils::SymbolDuplicator duplicator(al);
-            // This will create trouble when we have something like x(n) inside function
-            // duplicator does not duplicate type of variables inside function
-            func_sym = duplicator.duplicate_Function(func, current_scope);
-            current_scope->add_symbol(ASRUtils::symbol_name(func_sym), func_sym);
-            ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(func_sym);
-            new_func->m_body = nullptr; new_func->n_body = 0;
-            ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature)->m_deftype = ASR::deftypeType::Interface;
-            // Steps:
-            // Create a module add it to current_scope->parent symtab
-            // Add func to that module symtab
-            // Overwrite External symbol to x's asr_owner's symtab
-            SymbolTable* module_scope = al.make_new<SymbolTable>(current_scope->parent);
-            ASR::asr_t* asr_owner = ASRUtils::symbol_parent_symtab(x.m_name)->asr_owner;
-            char* module_name = s2c(al, current_scope->parent->get_unique_name("lcompilers_user_defined_functions"));
-            ASR::asr_t *mo = ASR::make_Module_t(al,func->base.base.loc, module_scope,s2c(al,module_name), nullptr,0,false,false);
-            current_scope->parent->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(mo));
-            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(mo));
-            ASR::symbol_t* fun_sym_for_module = duplicator.duplicate_Function(func, module_scope);
-            module->m_symtab->add_symbol(func->m_name, fun_sym_for_module);
-            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                al, func->base.base.loc,
-                ASRUtils::symbol_parent_symtab(x.m_name),
-                func->m_name,
-                fun_sym_for_module,
-                s2c(al,module_name), nullptr, 0, func->m_name,
-                ASR::accessType::Public
-                );
-            if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))){
-                ASR::Program_t* program = ASR::down_cast<ASR::Program_t>(ASR::down_cast<ASR::symbol_t>(asr_owner));
-                program->m_symtab->add_or_overwrite_symbol(func->m_name, ASR::down_cast<ASR::symbol_t>(fn));
+            if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+                ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
+                                        al,
+                                        x.base.base.loc,
+                                        current_scope,
+                                        fn->m_name,
+                                        fun_sym_for_module,
+                                        s2c(al, module_name),
+                                        nullptr,
+                                        0,
+                                        x_copy->m_original_name
+                                            ? ASRUtils::symbol_name(x_copy->m_original_name)
+                                            : ASRUtils::symbol_name(x_copy->m_name),
+                                        ASR::accessType::Public);
+                current_scope->add_or_overwrite_symbol(fn->m_name,
+                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
+                func_sym = current_scope->get_symbol(fn->m_name);
+            } else if (ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+                func_sym = current_scope->resolve_symbol(fn->m_name);
             }
-            func_sym = ASR::down_cast<ASR::symbol_t>(fn);
         }
         LCOMPILERS_ASSERT(func_sym != nullptr);
         x_copy->m_name = func_sym;
         x_copy->m_original_name = func_sym;
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        visit_Call(x);
         CallReplacerOnExpressionsVisitor::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        visit_Call(x);
+        CallReplacerOnExpressionsVisitor::visit_SubroutineCall(x);
     }
 };
 
@@ -420,21 +460,56 @@ public:
     void replace_Var(ASR::Var_t *x) {
         x->m_v = fn_scope.get_symbol(ASRUtils::symbol_name(x->m_v));
     }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        x->m_name = fn_scope.get_symbol(ASRUtils::symbol_name(x->m_name));
+        if (x->m_original_name) x->m_original_name = fn_scope.get_symbol(ASRUtils::symbol_name(x->m_original_name));
+    }
 };
 
 // Expression visitor to call the replacer
-class DoConcurrentBodyVisitor:
-    public ASR::CallReplacerOnExpressionsVisitor<DoConcurrentBodyVisitor> {
+class ReplaceSymbolsVisitor:
+    public ASR::CallReplacerOnExpressionsVisitor<ReplaceSymbolsVisitor> {
 
 private:
     ReplaceSymbols replacer;
 
 public:
-    DoConcurrentBodyVisitor(SymbolTable &fn_scope): replacer(fn_scope) { }
+    ReplaceSymbolsVisitor(SymbolTable &fn_scope): replacer(fn_scope) { }
 
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        replacer.replace_expr(&const_cast<ASR::FunctionCall_t*>(&x)->base);
+    }
+};
+
+class ReplaceStatements: public ASR::BaseStmtReplacer<ReplaceStatements> {
+private:
+    SymbolTable &scope;
+
+public:
+    ReplaceStatements(SymbolTable &scope) : scope(scope) {}
+
+    void replace_SubroutineCall(ASR::SubroutineCall_t* x) {
+        x->m_name = scope.get_symbol(ASRUtils::symbol_name(x->m_name));
+        if (x->m_original_name) x->m_original_name = scope.get_symbol(ASRUtils::symbol_name(x->m_original_name));
+    }
+
+};
+
+class ReplaceStatementsVisitor: public ASR::CallReplacerOnExpressionsVisitor<ReplaceStatements> {
+private:
+    ReplaceStatements replacer;
+
+public:
+    ReplaceStatementsVisitor(SymbolTable &scope) : replacer(scope) {}
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        replacer.replace_stmt(&const_cast<ASR::SubroutineCall_t*>(&x)->base);
     }
 
 };
@@ -1367,7 +1442,7 @@ class DoConcurrentVisitor :
                     fn_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
                 }
 
-                DoConcurrentBodyVisitor v(*fn_scope);
+                ReplaceSymbolsVisitor v(*fn_scope);
                 v.visit_DoConcurrentLoop(x);
 
                 Vec<ASR::stmt_t *> fn_body; fn_body.reserve(al, 1);
@@ -1624,6 +1699,26 @@ class DoConcurrentVisitor :
             }
 
             transform_stmts(xx.m_body, xx.n_body);
+            current_scope = current_scope_copy;
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = ASRUtils::symbol_parent_symtab(x.m_name);
+
+            ReplaceSymbolsVisitor sym_replacer(*current_scope);
+            sym_replacer.visit_FunctionCall(x);
+
+            current_scope = current_scope_copy;
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = ASRUtils::symbol_parent_symtab(x.m_name);
+
+            ReplaceStatementsVisitor stmt_replacer(*current_scope);
+            stmt_replacer.visit_SubroutineCall(x);
+
             current_scope = current_scope_copy;
         }
 
