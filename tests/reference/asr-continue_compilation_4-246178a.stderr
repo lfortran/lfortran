@@ -1,0 +1,5 @@
+semantic error: Class variable must be a dummy argument, allocatable, or pointer.
+ --> tests/errors/continue_compilation_4.f90:6:4
+  |
+6 |    class(tt) :: inst_tt
+  |    ^^^^^^^^^^^^^^^^^^^^ 

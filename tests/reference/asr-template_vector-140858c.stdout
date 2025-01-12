@@ -639,7 +639,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
                                                         7 intvector
                                                     )
                                                     ()

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-class_declarations-2d5bda4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/class_declarations.f90",
+    "infile_hash": "4e1deda931cd5eb3e999888938793c1b8de870f0246b5a06dbe44c0f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-class_declarations-2d5bda4.stdout",
+    "stdout_hash": "e0a6e9f8171865cf87ea88d87c91e7a2d704a8d9c333b0aafa03b3b6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
