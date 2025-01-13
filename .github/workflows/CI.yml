@@ -408,8 +408,6 @@ jobs:
             # FIXME: Using the below flag generates many warnings.
             # export CXXFLAGS="-Werror"
             # export CFLAGS="-Werror"
-            export LFORTRAN_LINKER_PATH=$CONDA_PREFIX/bin
-            export LFORTRAN_LINKER="ld"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
@@ -431,8 +429,8 @@ jobs:
       - name: Test Linux
         shell: bash -e -l {0}
         run: |
-            echo "Printing the value of LFORTRAN_LINKER_PATH:"
-            echo $LFORTRAN_LINKER_PATH
+            export LFORTRAN_LINKER_PATH=$CONDA_PREFIX/bin
+            export LFORTRAN_LINKER="ld"
             echo "Printing the value of LFORTRAN_LINKER:"
             echo $LFORTRAN_LINKER
             ctest
