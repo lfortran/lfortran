@@ -37,7 +37,7 @@ stmt
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
     | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)
-    | OMPDirective(expr* constructs, expr* shared, expr* local, stmt* body)
+    | OMPDirective(expr* constructs, expr* shared, reduction_expr* reduction, expr* local, stmt* body)
     | ErrorStop(expr? code)
     | Exit(identifier? stmt_name)
     | ForAllSingle(do_loop_head head, stmt assign_stmt)
