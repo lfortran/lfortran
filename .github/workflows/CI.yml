@@ -431,8 +431,7 @@ jobs:
         run: |
             export LFORTRAN_LINKER_PATH=$CONDA_PREFIX/bin
             export LFORTRAN_LINKER="ld"
-            echo "Printing the value of LFORTRAN_LINKER:"
-            echo $LFORTRAN_LINKER
+            echo $CONDA_PREFIX/bin/ld --version
             ctest
             ./run_tests.py
             ./run_tests.py -vh
