@@ -392,6 +392,8 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
+            gcc=11
+            gxx_linux-64=11
 
       - uses: hendrikmuhs/ccache-action@main
         with:
