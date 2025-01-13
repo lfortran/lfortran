@@ -428,6 +428,10 @@ jobs:
       - name: Test Linux
         shell: bash -e -l {0}
         run: |
+            echo "Printing the value of LFORTRAN_LINKER_PATH:"
+            echo $LFORTRAN_LINKER_PATH
+            echo "Printing the value of LFORTRAN_LINKER:"
+            echo $LFORTRAN_LINKER
             ctest
             ./run_tests.py
             ./run_tests.py -vh
