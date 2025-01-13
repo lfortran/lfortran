@@ -4660,18 +4660,35 @@ public:
                 } else { //only parallel region
                     ASR::expr_t* construct = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al,loc, s2c(al,"parallel"), ASRUtils::TYPE(ASR::make_String_t(
                                             al, loc, 1, 8, nullptr, ASR::string_physical_typeType::PointerString))));
-                    Vec<ASR::expr_t*> constructs;constructs.push_back(al, construct);
-                    omp_constructs.push_back(ASR::down_cast<ASR::stmt_t>(ASR::make_OMPDirective_t(al,loc, constructs.p, constructs.n, m_shared.p, m_shared.n, m_local.p, m_local.n, {}, 0)));
+                    Vec<ASR::expr_t*> constructs;constructs.reserve(al,1);constructs.push_back(al, construct);
+                    omp_constructs.push_back(ASR::down_cast<ASR::stmt_t>(ASR::make_OMPDirective_t(al,loc, constructs.p, constructs.n, m_shared.p, m_shared.n, m_reduction.p, m_reduction.n, m_local.p, m_local.n, {}, 0)));
                 }
 
             } else if (to_lower(x.m_construct_name) == "target") {
                 // Target Block's OMP Construct
                 ASR::expr_t* target = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al,loc, s2c(al,"target"), ASRUtils::TYPE(ASR::make_String_t(
                                             al, loc, 1, 6, nullptr, ASR::string_physical_typeType::PointerString))));
-                Vec<ASR::expr_t*> constructs;constructs.push_back(al, target);
-                omp_constructs.push_back(ASR::down_cast<ASR::stmt_t>(ASR::make_OMPDirective_t(al,loc, constructs.p, constructs.n, {}, 0, {}, 0, {}, 0)));
+                Vec<ASR::expr_t*> constructs; constructs.reserve(al,1);constructs.push_back(al, target);
+                omp_constructs.push_back(ASR::down_cast<ASR::stmt_t>(ASR::make_OMPDirective_t(al,loc, constructs.p, constructs.n, {}, 0, {}, 0, {}, 0, {}, 0)));
             } else if ( to_lower(x.m_construct_name) == "do" ) {
-                // pass
+                /*
+                For This example
+                !$omp parallel
+                !$omp do
+                */ 
+                ASR::stmt_t* stmt = omp_constructs.back();
+                if (stmt->type == ASR::stmtType::OMPDirective) {
+                    Vec<ASR::do_loop_head_t> heads;
+                    heads.reserve(al,1);
+                    ASR::do_loop_head_t head{};
+                    heads.push_back(al, head);
+                    ASR::OMPDirective_t* omp_directive = ASR::down_cast<ASR::OMPDirective_t>(stmt);
+                    omp_constructs.pop_back();
+                    ASR::stmt_t* do_con = ASR::down_cast<ASR::stmt_t>(ASR::make_DoConcurrentLoop_t(al, loc, heads.p, heads.n, 
+                                            omp_directive->m_shared, omp_directive->n_shared, omp_directive->m_local, omp_directive->n_local,
+                                             omp_directive->m_reduction, omp_directive->n_reduction, omp_directive->m_body, omp_directive->n_body));
+                    omp_constructs.push_back(do_con);
+                }
             } else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
