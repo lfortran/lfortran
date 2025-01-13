@@ -334,14 +334,22 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
+    std::cout<<"func_sym: "<<ASRUtils::symbol_name(func_sym)<<std::endl;
+    // std::cout<<"owning_function: "<<owning_function->m_name<<std::endl;
     if (ASR::is_a<ASR::Variable_t>(*x.m_name)) {
         // possible it is a `procedure(cb) :: call_back`
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(x.m_name);
+        std::cout<<"v->m_name: "<<v->m_name<<std::endl;
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
         v->m_type = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature;
-        scope->add_or_overwrite_symbol(v->m_name, (ASR::symbol_t*)v);
+        ASRUtils::SymbolDuplicator sd(al);
+        if ( scope->get_symbol(v->m_name) ) {
+            scope->add_or_overwrite_symbol(v->m_name, (ASR::symbol_t*)v);
+        } else {
+            sd.duplicate_symbol((ASR::symbol_t*)v, scope);
+        }
     }
     bool is_nopass { false };
     bool is_class_procedure { false };
