@@ -57,23 +57,30 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
             return Vec<ASR::expr_t*>();
         }
 
-        void visit_body_and_insert_ImplicitDeallocate(ASR::stmt_t** &m_body, size_t &n_body){ // Insert `ImplicitDeallocate` before return.
-            if(implicitDeallocate_stmt_stack.top() == nullptr){
+        // Insert `ImplicitDeallocate` before construct terminating statements.
+        void visit_body_and_insert_ImplicitDeallocate(ASR::stmt_t** &m_body, size_t &n_body,
+            const std::vector<ASR::stmtType> &construct_terminating_stmts = {ASR::stmtType::Return}){ 
+            if(implicitDeallocate_stmt_stack.top() == nullptr){ // No variables to deallocate.
                 return;
             }
 
             Vec<ASR::stmt_t*> new_body; // Final body after inserting finalization nodes.
             new_body.reserve(al, 1);
-            bool return_or_exit_encounterd = false; 
-
+            bool return_or_exit_encounterd = false; // No need to insert finaliztion node once we encounter a `return` or `exit` stmt in signle body (Unreachable code).
             for(size_t i = 0; i < n_body; i++){
-                if( ( ASR::is_a<ASR::Return_t>(*m_body[i]) || 
-                      ASR::is_a<ASR::Exit_t>(*m_body[i]) ) &&
-                    !return_or_exit_encounterd){
-                    new_body.push_back(al, implicitDeallocate_stmt_stack.top());
-                    return_or_exit_encounterd = true; // No need to insert finaliztion node once we encounter a return or exit stmt in signle body (dead code).
+                for(ASR::stmtType statement_type : construct_terminating_stmts){
+                    if( !return_or_exit_encounterd && 
+                        (statement_type == m_body[i]->type)){
+                        new_body.push_back(al, implicitDeallocate_stmt_stack.top());
+                    }
                 }
-                if(!return_or_exit_encounterd) { visit_stmt(*(m_body[i])); }
+                if( ASR::is_a<ASR::Exit_t>(*m_body[i]) || 
+                    ASR::is_a<ASR::Return_t>(*m_body[i])){
+                    return_or_exit_encounterd = true; // Next statements are 'Unreachable Code'.
+                }
+                if(!return_or_exit_encounterd){
+                    visit_stmt(*(m_body[i]));
+                }
                 new_body.push_back(al, m_body[i]);
             }
             m_body = new_body.p;
@@ -137,7 +144,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
             for (auto &a : x.m_symtab->get_scope()) {
                 visit_symbol(*a.second);
             }
-            visit_body_and_insert_ImplicitDeallocate(xx.m_body, xx.n_body);
+            visit_body_and_insert_ImplicitDeallocate(xx.m_body, xx.n_body,{ASR::stmtType::Return, ASR::stmtType::Exit});
             insert_ImplicitDeallocate_at_end(xx);
             implicitDeallocate_stmt_stack.pop(); 
         }
