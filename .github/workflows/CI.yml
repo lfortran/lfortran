@@ -487,7 +487,7 @@ jobs:
 
       - name: Install libunwind
         if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
-        run: micromamba install -y -n lf libunwind
+        run: micromamba install -y -n lf libunwind=1.7.2
   
       - name: Build Linux
         shell: bash -e -l {0}
@@ -1006,7 +1006,7 @@ jobs:
       
       - name: Install libunwind
         if: matrix.llvm-version > 11
-        run: micromamba install -y -n lf libunwind
+        run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Setup WASI SDK
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
@@ -1569,7 +1569,7 @@ jobs:
             mlir=19.1.6
             llvm=19.1.6
             llvm-openmp=19.1.6
-            libunwind
+            libunwind=1.7.2
 
       - uses: hendrikmuhs/ccache-action@main
         with:
