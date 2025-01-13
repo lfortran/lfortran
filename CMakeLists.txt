@@ -369,7 +369,7 @@ if (WITH_LIBUNWIND_FORCE)
     set(WITH_LIBUNWIND yes)
 endif()
 if (WITH_LIBUNWIND)
-    find_library(LIBUNWIND_LIBRARY unwind)
+    find_package(libunwind REQUIRED)
 endif()
 
 set(WITH_KOKKOS no CACHE BOOL "Detect Kokkos location for cpp backend")
