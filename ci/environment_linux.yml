@@ -19,3 +19,5 @@ dependencies:
   - pandoc=3.1.13
   - kokkos=4.4.01
   - cmake=3.29.1
+  - zlib
+  - zstd-static
