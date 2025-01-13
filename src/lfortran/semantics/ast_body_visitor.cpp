@@ -35,7 +35,7 @@ public:
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
-    std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
+    std::vector<ASR::stmt_t*> omp_constructs;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
         CompilerOptions &compiler_options,
@@ -4099,8 +4099,8 @@ public:
         head.m_increment = increment;
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
-            if (loop_nesting - 1 == pragma_nesting_level && !omp_constructs.empty()) {
-                ASR::DoConcurrentLoop_t* do_concurrent = omp_constructs.back();
+            if (loop_nesting - 1 == pragma_nesting_level && !omp_constructs.empty() && ASR::is_a<ASR::DoConcurrentLoop_t>(*omp_constructs.back())) {
+                ASR::DoConcurrentLoop_t* do_concurrent = ASR::down_cast<ASR::DoConcurrentLoop_t>(omp_constructs.back());
                 Vec<ASR::do_loop_head_t> do_concurrent_head;
                 do_concurrent_head.reserve(al, 1);
                 do_concurrent_head.push_back(al, head);
@@ -4115,7 +4115,8 @@ public:
                 do_concurrent->m_head = do_concurrent_head.p;
                 do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
-            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - static_cast<int>(omp_constructs.size()) - pragma_nesting_level) {
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - static_cast<int>(omp_constructs.size()) - pragma_nesting_level 
+                        && ASR::is_a<ASR::DoConcurrentLoop_t>(*omp_constructs.back())) {
                 collapse_value--;
                 do_loop_heads_for_collapse.push_back(al, head);
                 Vec<ASR::stmt_t*> temp;
@@ -4542,6 +4543,9 @@ public:
                         openmp_collapse = false;
                     }
                     return;
+                } else if (LCompilers::startswith(x.m_construct_name, "target")) {
+                    omp_constructs.pop_back();
+                    //pass
                 }
             }
 
@@ -4641,14 +4645,31 @@ public:
                         }
                     }
                 }
-                Vec<ASR::do_loop_head_t> heads;
-                heads.reserve(al,1);
-                ASR::do_loop_head_t head{};
-                heads.push_back(al, head);
-                omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
-                ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
-                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
+                if (name == "do") {
+                    Vec<ASR::do_loop_head_t> heads;
+                    heads.reserve(al,1);
+                    ASR::do_loop_head_t head{};
+                    heads.push_back(al, head);
+                    omp_constructs.push_back(ASR::down_cast<ASR::stmt_t>(
+                    ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
+                    m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
+                } else if (name  == "sections") {
+                    //pass
+                } else if (name == "workshare") {
+                    //pass
+                } else { //only parallel region
+                    ASR::expr_t* construct = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al,loc, s2c(al,"parallel"), ASRUtils::TYPE(ASR::make_String_t(
+                                            al, loc, 1, 8, nullptr, ASR::string_physical_typeType::PointerString))));
+                    Vec<ASR::expr_t*> constructs;constructs.push_back(al, construct);
+                    omp_constructs.push_back(ASR::down_cast<ASR::stmt_t>(ASR::make_OMPDirective_t(al,loc, constructs.p, constructs.n, m_shared.p, m_shared.n, m_local.p, m_local.n, {}, 0)));
+                }
 
+            } else if (to_lower(x.m_construct_name) == "target") {
+                // Target Block's OMP Construct
+                ASR::expr_t* target = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al,loc, s2c(al,"target"), ASRUtils::TYPE(ASR::make_String_t(
+                                            al, loc, 1, 6, nullptr, ASR::string_physical_typeType::PointerString))));
+                Vec<ASR::expr_t*> constructs;constructs.push_back(al, target);
+                omp_constructs.push_back(ASR::down_cast<ASR::stmt_t>(ASR::make_OMPDirective_t(al,loc, constructs.p, constructs.n, {}, 0, {}, 0, {}, 0)));
             } else if ( to_lower(x.m_construct_name) == "do" ) {
                 // pass
             } else {
