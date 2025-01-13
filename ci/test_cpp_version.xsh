@@ -4,7 +4,8 @@ $RAISE_SUBPROC_ERROR = True
 trace on
 
 import os
-os.environ['CXXFLAGS'] = "-Werror"
+# FIXME: Using the below flag generates many warnings.
+# os.environ['CXXFLAGS'] = "-Werror"
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 

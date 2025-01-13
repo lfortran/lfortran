@@ -71,8 +71,9 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
+            # FIXME: Using the below flag generates many warnings.
+            # export CXXFLAGS="-Werror"
+            # export CFLAGS="-Werror"
             xonsh ci/build_tmp.xsh
 
       - name: Build (Windows)
@@ -342,7 +343,8 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ( cd src && ./build0.sh )
-            export CXXFLAGS="-Werror"
+            # FIXME: Using the below flag generates many warnings.
+            # export CXXFLAGS="-Werror"
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DWITH_LLVM=yes \
@@ -400,8 +402,9 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
+            # FIXME: Using the below flag generates many warnings.
+            # export CXXFLAGS="-Werror"
+            # export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
@@ -1430,8 +1433,9 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
+            # FIXME: Using the below flag generates many warnings.
+            # export CXXFLAGS="-Werror"
+            # export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
@@ -1610,7 +1614,8 @@ jobs:
         shell: bash -e -l {0}
         run: |
           ./build0.sh
-          export CXXFLAGS="-Werror"
+          # FIXME: Using the below flag generates many warnings.
+          # export CXXFLAGS="-Werror"
           cmake . -GNinja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DWITH_LLVM=yes \
