@@ -392,13 +392,20 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
-            gcc=11
-            gxx_linux-64=11
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Install GCC and G++ version 11
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-11 g++-11
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+          gcc --version
+          g++ --version
 
       - name: Build Linux
         shell: bash -e -l {0}
