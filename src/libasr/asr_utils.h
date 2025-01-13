@@ -4150,7 +4150,10 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
 
     ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
         ASR::symbol_t* m_v = current_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
-        LCOMPILERS_ASSERT(m_v != nullptr);
+        if (m_v == nullptr) {
+            // we are dealing with an external/statement function, duplicate node with same symbol
+            return ASR::make_Var_t(al, x->base.base.loc, x->m_v);
+        }
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
     }
 
