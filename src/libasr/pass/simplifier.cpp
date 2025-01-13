@@ -55,6 +55,19 @@ typedef std::map<ASR::expr_t*, std::pair<ASR::expr_t*, targetType>> ExprsWithTar
 const std::vector<ASR::exprType>& exprs_with_no_type = {
 };
 
+// Helper function to create ArraySize_t expressions
+ASR::expr_t* create_array_size(Allocator& al, const Location& loc, ASR::expr_t* source, size_t idx) {
+    ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    return ASRUtils::EXPR(ASR::make_ArraySize_t(
+        al, loc, source,
+        ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, idx, ASRUtils::expr_type(int32_one)
+        )),
+        ASRUtils::expr_type(int32_one), nullptr
+    ));
+}
+
 static inline ASR::asr_t* make_Assignment_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_target,
     ASR::expr_t* a_value, ASR::stmt_t* a_overloaded,
@@ -564,25 +577,22 @@ bool set_allocation_size(
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
+                    ASR::expr_t* array = intrinsic_array_function->m_args[0];
                     allocate_dims.reserve(al, n_dims);
                     for (size_t i = 0; i < n_dims; i++) {
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
 
-                        ASR::expr_t* size_i = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                            al, loc, intrinsic_array_function->m_args[0],
-                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                            ASRUtils::expr_type(int32_one), nullptr));
-
-                        allocate_dim.m_length = size_i;
+                        allocate_dim.m_length = create_array_size(al, loc, array, i + 1);
                         allocate_dims.push_back(al, allocate_dim);
                     }
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
+                    ASR::expr_t* source = intrinsic_array_function->m_args[0];
+                    ASR::expr_t* dim = intrinsic_array_function->m_args[1];
                     ASR::expr_t* ncopies = intrinsic_array_function->m_args[2];
                     allocate_dims.reserve(al, n_dims);
 
@@ -590,7 +600,36 @@ bool set_allocation_size(
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
-                        allocate_dim.m_length = ncopies;
+
+                        Vec<ASR::expr_t*> merge_i_args; merge_i_args.reserve(al, 3);
+                        merge_i_args.push_back(al, ncopies);
+                        merge_i_args.push_back(
+                            al,
+                            ASRUtils::EXPR(
+                                ASRUtils::make_ArraySize_t_util(al, loc, source, int32_one,
+                                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr
+                                )
+                            )
+                        );
+                        merge_i_args.push_back(
+                            al,
+                            ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                                al, loc, dim, ASR::cmpopType::Eq,
+                                ASRUtils::EXPR(
+                                    ASR::make_IntegerConstant_t(al, loc, i + 1, ASRUtils::expr_type(int32_one))
+                                ),
+                                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
+                                nullptr
+                            )
+                        ));
+                        ASR::expr_t* merge_i = ASRUtils::EXPR(
+                            ASRUtils::make_IntrinsicElementalFunction_t_util(
+                                al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge),
+                                merge_i_args.p, merge_i_args.size(), 0, ASRUtils::expr_type(int32_one),
+                                nullptr
+                            )
+                        );
+                        allocate_dim.m_length = merge_i;
                         allocate_dims.push_back(al, allocate_dim);
                     }
                     break;
