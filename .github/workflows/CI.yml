@@ -394,7 +394,6 @@ jobs:
             python=3.10
             gcc=11
             gxx_linux-64=11
-            binutils
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -429,9 +428,6 @@ jobs:
       - name: Test Linux
         shell: bash -e -l {0}
         run: |
-            export LFORTRAN_LINKER_PATH=$CONDA_PREFIX/bin
-            export LFORTRAN_LINKER="ld"
-            echo $CONDA_PREFIX/bin/ld --version
             ctest
             ./run_tests.py
             ./run_tests.py -vh
