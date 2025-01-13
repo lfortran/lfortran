@@ -404,8 +404,6 @@ jobs:
           sudo apt-get install -y gcc-11 g++-11
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
-          gcc --version
-          g++ --version
 
       - name: Build Linux
         shell: bash -e -l {0}
