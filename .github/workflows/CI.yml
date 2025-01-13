@@ -394,6 +394,7 @@ jobs:
             python=3.10
             gcc=11
             gxx_linux-64=11
+            binutils
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -407,6 +408,8 @@ jobs:
             # FIXME: Using the below flag generates many warnings.
             # export CXXFLAGS="-Werror"
             # export CFLAGS="-Werror"
+            export LFORTRAN_LINKER_PATH=$CONDA_PREFIX/bin
+            export LFORTRAN_LINKER="ld"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
