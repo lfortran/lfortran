@@ -1,22 +1,23 @@
 program openmp_43
    implicit none
 
-   integer :: i,sum_fun,sum_sub
-   
-   do concurrent (i = 1:4) reduce(+:sum_fun)
-      sum_fun = sum_fun + FUN(i)
+   integer :: i,fun_sum,sub_sum,x
+   fun_sum = 0
+   do concurrent (i = 1:4) reduce(+:fun_sum)
+      fun_sum = fun_sum + FUN(i)
    end do
 
-   print *,"FUN sum->", sum_fun
-
-   do concurrent (i = 1:4) reduce(+:sum_sub)
-      call SUB(i)
-      sum_sub = sum_sub + i
+   print *,"FUN sum->", fun_sum
+   sub_sum = 0
+   do concurrent (i = 1:4) reduce(+:sub_sum)
+      x=i
+      call SUB(x)
+      sub_sum = sub_sum + x
    end do
 
-   print *,"SUB sum->", sum_sub
-   if(sum_sub /= 30) error stop
-   if(sum_fun /= 30) error stop
+   print *,"SUB sum->", sub_sum
+   if(sub_sum /= 30) error stop
+   if(fun_sum /= 30) error stop
 
 contains
 
