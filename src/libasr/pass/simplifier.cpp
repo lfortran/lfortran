@@ -288,7 +288,9 @@ void set_allocation_size_elemental_function(
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
     Vec<ASR::dimension_t>& allocate_dims,
-    size_t target_n_dims
+    size_t target_n_dims,
+    Vec<ASR::stmt_t*>* current_body=nullptr,
+    SymbolTable* scope=nullptr
 ) {
     if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -621,14 +623,64 @@ bool set_allocation_size(
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
+                    ASR::expr_t* source = intrinsic_array_function->m_args[0];
+                    ASR::expr_t* dim = intrinsic_array_function->m_args[1];
                     ASR::expr_t* ncopies = intrinsic_array_function->m_args[2];
+                    // create temporary variable for j and assign it an initial value of 1
+                    ASR::expr_t* j = create_temporary_variable_for_scalar(
+                        al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                        scope, "j");
+                    current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                        al, loc, j, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))), nullptr)));
                     allocate_dims.reserve(al, n_dims);
 
-                    for (size_t i = 0; i < n_dims; i++) {
+                    SymbolTable* global_scope = scope;
+                    while (global_scope->parent) {
+                        global_scope = global_scope->parent;
+                    }
+
+                    for (size_t i = 1; i <= n_dims; i++) {
                         ASR::dimension_t allocate_dim;
+                        Vec<ASR::call_arg_t> new_shape_args; new_shape_args.reserve(al, 5);
+                        Vec<ASR::ttype_t*> new_shape_arg_types; new_shape_arg_types.reserve(al, 5);
+                        ASR::expr_t* i_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, i, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))
+                        ));
+                        ASR::call_arg_t source_call_arg;
+                        source_call_arg.loc = source->base.loc;
+                        source_call_arg.m_value = source;
+                        new_shape_args.push_back(al, source_call_arg);
+                        new_shape_arg_types.push_back(al, ASRUtils::expr_type(source));
+                        ASR::call_arg_t j_call_arg;
+                        j_call_arg.loc = j->base.loc;
+                        j_call_arg.m_value = j;
+                        new_shape_args.push_back(al, j_call_arg);
+                        new_shape_arg_types.push_back(al, ASRUtils::expr_type(j));
+                        ASR::call_arg_t ncopies_call_arg;
+                        ncopies_call_arg.loc = ncopies->base.loc;
+                        ncopies_call_arg.m_value = ncopies;
+                        new_shape_args.push_back(al, ncopies_call_arg);
+                        new_shape_arg_types.push_back(al, ASRUtils::expr_type(ncopies));
+                        ASR::call_arg_t i_call_arg;
+                        i_call_arg.loc = i_expr->base.loc;
+                        i_call_arg.m_value = i_expr;
+                        new_shape_args.push_back(al, i_call_arg);
+                        new_shape_arg_types.push_back(al, ASRUtils::expr_type(i_expr));
+                        ASR::call_arg_t dim_call_arg;
+                        dim_call_arg.loc = dim->base.loc;
+                        dim_call_arg.m_value = dim;
+                        new_shape_args.push_back(al, dim_call_arg);
+                        new_shape_arg_types.push_back(al, ASRUtils::expr_type(dim));
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
-                        allocate_dim.m_length = ncopies;
+
+                        allocate_dim.m_length = ASRUtils::Spread::generate_new_shape(
+                            al, intrinsic_array_function->base.base.loc, global_scope,
+                            new_shape_arg_types, ASRUtils::extract_type(intrinsic_array_function->m_type),
+                            new_shape_args, intrinsic_array_function->m_overload_id
+                        );
                         allocate_dims.push_back(al, allocate_dim);
                     }
                     break;
@@ -708,13 +760,14 @@ bool set_allocation_size(
 }
 
 void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
-    ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body) {
+    ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body,
+    SymbolTable* scope=nullptr) {
     if( !ASRUtils::is_allocatable(temporary_var) ) {
         return ;
     }
     Vec<ASR::dimension_t> allocate_dims;
     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var));
-    if( !set_allocation_size(al, value, allocate_dims, target_n_dims) ) {
+    if( !set_allocation_size(al, value, allocate_dims, target_n_dims, current_body, scope) ) {
         return ;
     }
     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
@@ -801,7 +854,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, array_var_temporary, array_expr)));
     } else {
-        insert_allocate_stmt_for_array(al, array_var_temporary, allocate_size_reference, current_body);
+        insert_allocate_stmt_for_array(al, array_var_temporary, allocate_size_reference, current_body, current_scope);
         array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
         if( !is_pointer_required &&
             !ASRUtils::is_simd_array(array_expr) &&

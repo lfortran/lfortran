@@ -2006,6 +2006,36 @@ namespace Spread {
             m_args.p, m_args.n, overload_id, ret_type, value);
     }
 
+    static inline ASR::expr_t* generate_new_shape(
+        Allocator &al,
+        const Location &loc,
+        SymbolTable *scope,
+        Vec<ASR::ttype_t*> &arg_types,
+        ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/
+    ) {
+        declare_basic_variables("new_shape");
+        fill_func_arg("input_array", duplicate_type_with_empty_dims(al, arg_types[0]));
+        fill_func_arg_sub("j", arg_types[1], Out);
+        fill_func_arg("ncopies", arg_types[2]);
+        fill_func_arg("i", arg_types[3]);
+        fill_func_arg("dim", arg_types[4]);
+        // ASR::expr_t *result = declare("result", return_type, Out);
+        ASR::expr_t* return_var = declare("new_shape", return_type, ReturnVar);
+        // args.push_back(al, return_var);
+        body.push_back(al, b.If(b.NotEq(args[3], args[4]), {
+            b.Assignment(return_var, b.ArraySize(args[0], args[1], int32)),
+            b.Assignment(args[1], b.Add(args[1], b.i32(1)))
+        }, {
+            b.Assignment(return_var, args[2])
+        }
+        ));
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, return_var, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, nullptr);
+    }
+
     static inline ASR::expr_t* instantiate_Spread(Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
