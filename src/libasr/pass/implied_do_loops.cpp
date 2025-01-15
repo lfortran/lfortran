@@ -122,6 +122,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     array_size = builder.Add(array_size,
                                     element_array_size);
                 }
+            } else if ( ASR::is_a<ASR::ArrayItem_t>(*element) ) {
+                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(element);
+                if ( ASR::is_a<ASR::Array_t>(*array_item->m_type) ) {
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_item->m_type);
+                    constant_size += ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+                } else {
+                    constant_size += 1;
+                }
             } else if( ASR::is_a<ASR::Var_t>(*element) ) {
                 ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::expr_type(element));
