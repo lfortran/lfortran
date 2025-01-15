@@ -2,11 +2,11 @@
     "basename": "llvm-execute_command_line-0e9cd63",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/execute_command_line.f90",
-    "infile_hash": "d222e60a30758f6c26c97ba2bb69772e3801c416d9a717e3a408627c",
+    "infile_hash": "7a0db461a1008c62034590b9709aea78a170f8cfe3b3d9181dddee66",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-execute_command_line-0e9cd63.stdout",
-    "stdout_hash": "14883a2eea022662d63acfdd3c1321dcf565b626aaf2d211d23a4309",
+    "stdout_hash": "dbfa4d47b9e7eb56262d809a0837be74941e4f1d6b4ca2a1fe535ed5",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
