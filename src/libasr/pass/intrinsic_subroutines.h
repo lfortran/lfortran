@@ -688,7 +688,7 @@ namespace ExecuteCommandLine {
     static inline ASR::stmt_t* instantiate_ExecuteCommandLine(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-                
+
         std::string c_func_name = "_lfortran_exec_command";
         std::string new_name = "_lcompilers_execute_command_line_";
         declare_basic_variables(new_name);
@@ -712,7 +712,7 @@ namespace ExecuteCommandLine {
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
            ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-           
+
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -724,7 +724,7 @@ namespace ExecuteCommandLine {
         call_args.push_back(al, args[0]);
         body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            body, nullptr, ASR::abiType::Intrinsic, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
         return b.SubroutineCall(new_symbol, new_args);
     }
