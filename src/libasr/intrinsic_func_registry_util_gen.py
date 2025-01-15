@@ -1052,7 +1052,7 @@ def add_create_func_return_src(func_name):
         else:
             src += indent * 2 + "ASR::ttype_t* type_ = nullptr;\n"
             src += indent * 2 + "if (use_experimental_simplifier) {\n"
-            src += indent * 2 +     f"type_ = expr_duplicator.duplicate_ttype(ASRUtils::extract_type(expr_type(args[{ret_type_arg_idx}])));\n"
+            src += indent * 3 +     f"type_ = expr_duplicator.duplicate_ttype(ASRUtils::extract_type(expr_type(args[{ret_type_arg_idx}])));\n"
             src += indent * 2 + "} else {\n"
             src += indent * 3 +     f"type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
             src += indent * 2 + "}\n"

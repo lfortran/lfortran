@@ -1919,10 +1919,10 @@ namespace Spread {
         if (ASRUtils::is_allocatable(source)) {
             is_type_allocatable = true;
         }
-        ASR::ttype_t *type_source = expr_type(source);
-        ASR::ttype_t *type_dim = expr_type(dim);
-        ASR::ttype_t *type_ncopies = expr_type(ncopies);
-        ASR::ttype_t *ret_type = expr_type(source);
+        ASR::ttype_t *type_source = ASRUtils::type_get_past_allocatable_pointer(expr_type(source));
+        ASR::ttype_t *type_dim = ASRUtils::type_get_past_allocatable_pointer(expr_type(dim));
+        ASR::ttype_t *type_ncopies = ASRUtils::type_get_past_allocatable_pointer(expr_type(ncopies));
+        ASR::ttype_t *ret_type = ASRUtils::type_get_past_allocatable_pointer(expr_type(source));
 
         ASRBuilder b(al, loc);
         int overload_id = 2;
@@ -1935,7 +1935,7 @@ namespace Spread {
             ASR::ttype_t *fixed_size_type = b.Array({(int64_t) 1}, type_source);
             source = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,m_eles.p,
                           m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
-            type_source = ASRUtils::expr_type(source);
+            type_source = ASRUtils::type_get_past_allocatable_pointer(expr_type(source));
             overload_id = -1;
         }
 
@@ -2036,10 +2036,11 @@ namespace Spread {
             end if
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
+            int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
             Vec<ASR::dimension_t> empty_dims;
-            empty_dims.reserve(al, 2);
-            for( int idim = 0; idim < 2; idim++ ) {
+            empty_dims.reserve(al, n_dims_return_type);
+            for( int idim = 0; idim < n_dims_return_type; idim++ ) {
                 ASR::dimension_t empty_dim;
                 empty_dim.loc = loc;
                 empty_dim.m_start = nullptr;
@@ -2061,30 +2062,18 @@ namespace Spread {
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
         ASR::expr_t *k = declare("k", int32, Local);
-        ASR::expr_t *ele = nullptr;
-        int arg0_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
-        ASR::ttype_t* ele_type = nullptr;
-        if (is_integer(*arg_types[0])) ele_type = int32;
-        else if (is_real(*arg_types[0])) ele_type = real32;
-        else if (is_logical(*arg_types[0])) ele_type = logical;
-        else if (is_complex(*arg_types[0])) ele_type = complex32 ;
-        else if (is_character(*arg_types[0])) ele_type = character(1); // TODO: rectify this later
-        set_kind_to_ttype_t(ele_type, arg0_kind);
-        ele = declare("ele", ele_type, Local);
         body.push_back(al, b.Assignment(i, b.i32(1)));
         body.push_back(al, b.If(b.Eq(args[1], b.i32(1)), {
             b.DoLoop(j, b.i32(1), UBound(args[0], 1), {
-                b.Assignment(ele, b.ArrayItem_01(args[0], {j})),
                 b.DoLoop(k, b.i32(1), args[2], {
-                    b.Assignment(b.ArrayItem_01(result, {i}), ele),
+                    b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
                     b.Assignment(i, b.Add(i, b.i32(1))),
                 }, nullptr),
             }, nullptr),
         }, {
             b.DoLoop(j, b.i32(1), args[2], {
                 b.DoLoop(k, b.i32(1), UBound(args[0], 1), {
-                    b.Assignment(ele, b.ArrayItem_01(args[0], {k})),
-                    b.Assignment(b.ArrayItem_01(result, {i}), ele),
+                    b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {k})),
                     b.Assignment(i, b.Add(i, b.i32(1))),
                 }, nullptr),
             }, nullptr),
