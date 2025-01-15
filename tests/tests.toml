@@ -603,6 +603,10 @@ pass = "global_stmts"
 llvm = true
 
 [[test]]
+filename = "execute_command_line.f90"
+llvm = true
+
+[[test]]
 filename = "expr7.f90"
 interactive = true
 tokens = true

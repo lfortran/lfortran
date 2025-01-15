@@ -9486,7 +9486,7 @@ public:
                 if (args.size() > 1)
                     builder->CreateStore(tmp, args[1]);
                 return;
-            } else if (sub_name == "execute_command_line") {
+            } else if (sub_name == "_lcompilers_execute_command_line_") {
                 llvm::Function *fn = module->getFunction("_lfortran_exec_command");
                 if (!fn) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
