@@ -691,42 +691,48 @@ namespace ExecuteCommandLine {
 
         std::string c_func_name = "_lfortran_exec_command";
         std::string new_name = "_lcompilers_execute_command_line_";
-        declare_basic_variables(new_name);
-        fill_func_arg_sub("command", arg_types[0], InOut);
-        if (arg_types.size() == 2) {
-            fill_func_arg_sub("wait", arg_types[1], InOut);
-        } else if (arg_types.size() == 3) {
-            fill_func_arg_sub("exitstat", arg_types[2], InOut);
-        } else if (arg_types.size() == 4) {
-            fill_func_arg_sub("cmdstat", arg_types[3], InOut);
-        } else if (arg_types.size() == 5) {
-            fill_func_arg_sub("cmdmsg", arg_types[4], InOut);
+        ASR::symbol_t* s = scope->get_symbol(new_name);
+        if (s) {
+            ASRBuilder b(al, loc);
+            return b.SubroutineCall(s, new_args);
+        } else {
+            declare_basic_variables(new_name);
+            fill_func_arg_sub("command", arg_types[0], InOut);
+            if (arg_types.size() == 2) {
+                fill_func_arg_sub("wait", arg_types[1], InOut);
+            } else if (arg_types.size() == 3) {
+                fill_func_arg_sub("exitstat", arg_types[2], InOut);
+            } else if (arg_types.size() == 4) {
+                fill_func_arg_sub("cmdstat", arg_types[3], InOut);
+            } else if (arg_types.size() == 5) {
+                fill_func_arg_sub("cmdmsg", arg_types[4], InOut);
+            }
+
+            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+            Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
+            ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
+                ASR::intentType::InOut, ASR::abiType::BindC, true);
+            args_1.push_back(al, arg);
+
+            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+            ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+
+            SetChar dep_1; dep_1.reserve(al, 1);
+            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+                body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+
+            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+            call_args.push_back(al, args[0]);
+            body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
+            ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, nullptr, ASR::abiType::Intrinsic, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, new_symbol);
+            return b.SubroutineCall(new_symbol, new_args);
         }
-
-        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
-        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
-            ASR::intentType::InOut, ASR::abiType::BindC, true);
-        args_1.push_back(al, arg);
-
-        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-
-        SetChar dep_1; dep_1.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-        fn_symtab->add_symbol(c_func_name, s);
-        dep.push_back(al, s2c(al, c_func_name));
-
-        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-        call_args.push_back(al, args[0]);
-        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, nullptr, ASR::abiType::Intrinsic, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.SubroutineCall(new_symbol, new_args);
     }
 
 } // namespace ExecuteCommandLine
