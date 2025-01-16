@@ -9449,11 +9449,7 @@ public:
         } else if (s_func_type->m_abi == ASR::abiType::Interactive) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Source) {
-            h = get_hash((ASR::asr_t*)proc_sym);
-        } else if (s_func_type->m_abi == ASR::abiType::BindC) {
-            h = get_hash((ASR::asr_t*)proc_sym);
-        } else if (s_func_type->m_abi == ASR::abiType::Intrinsic) {
-            if (sub_name == "get_command_argument") {
+            if (sub_name == "_lcompilers_get_command_argument_") {
                 llvm::Function *fn = module->getFunction("_lpython_get_argv");
                 if (!fn) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -9470,7 +9466,7 @@ public:
                 if (args.size() > 1)
                     builder->CreateStore(tmp, args[1]);
                 return;
-            } else if (sub_name == "get_environment_variable") {
+            } else if (sub_name == "_lcompilers_get_environment_variable_") {
                 llvm::Function *fn = module->getFunction("_lfortran_get_env_variable");
                 if (!fn) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -9501,6 +9497,10 @@ public:
                 tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad(args[0])});
                 return;
             }
+            h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::BindC) {
+            h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::Intrinsic) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else {
             throw CodeGenError("ABI type not implemented yet in SubroutineCall.");

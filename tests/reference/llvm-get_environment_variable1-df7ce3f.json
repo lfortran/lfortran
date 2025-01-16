@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-get_environment_variable1-df7ce3f",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/get_environment_variable1.f90",
+    "infile_hash": "dd19c975b3c9cc0d525bd7a162c48807d38a90d6c9cabee5006ff04b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-get_environment_variable1-df7ce3f.stdout",
+    "stdout_hash": "8b383a475c6b1545e795dbe4f3f93f55bdc6cda4c14fba5fbf98355c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -607,6 +607,10 @@ filename = "execute_command_line.f90"
 llvm = true
 
 [[test]]
+filename = "get_environment_variable1.f90"
+llvm = true
+
+[[test]]
 filename = "expr7.f90"
 interactive = true
 tokens = true
