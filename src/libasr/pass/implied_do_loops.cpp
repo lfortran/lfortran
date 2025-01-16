@@ -460,10 +460,15 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     }
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        [[maybe_unused]] bool is_arr_construct_arg = ASR::is_a<ASR::ArrayConstructor_t>(*x->m_arg);
         ASR::BaseExprReplacer<ReplaceArrayConstant>::replace_ArrayPhysicalCast(x);
         if( ASRUtils::use_experimental_simplifier ) {
             if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
                 x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+            }
+            if( (is_arr_construct_arg && ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x->m_arg))) ){
+                *current_expr = x->m_arg;
+                return;
             }
         }
 
