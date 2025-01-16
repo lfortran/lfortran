@@ -8,6 +8,8 @@ program continue_compilation_1
     real(8) :: y1
     real :: z1
     integer, parameter :: i1 = 2
+    character(len=5) :: string = "hello"
+	character(len=1) :: set(2) = ["l", "h"]
 
     a5 = 8
     b5 = 12_8
@@ -79,4 +81,6 @@ program continue_compilation_1
     print*,i1
     call FLUSH(1, 2)
 
+    print*, verify(string, set, kind= [4, 4] )
+    print *, and([1, 2, 3], [1, 2, 3])
 end program
