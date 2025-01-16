@@ -6001,7 +6001,16 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i].m_end);
             args.p[i] = ASRUtils::EXPR(tmp);
-            if(ASRUtils::is_descriptorString(ASRUtils::expr_type(args.p[i]))){
+            if (intrinsic_name == "and" || intrinsic_name == "or" || intrinsic_name == "xor") {
+                if( ASRUtils::is_array(ASRUtils::expr_type(args[i]))) {
+                    diag.add(diag::Diagnostic(
+                    "arguments of `" + intrinsic_name + "` intrinsic must be scalar",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if( ASRUtils::is_descriptorString(ASRUtils::expr_type(args.p[i])) ) {
                 // Any compile-time intrinsic function doesn't need a cast from
                 // descriptorString to pointerString. Only runtime ones need a cast.
                 if(intrinsic_name != "present" && intrinsic_name != "len"){
@@ -6589,15 +6598,25 @@ public:
     }
 
     void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
-        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor",
-            "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real", "int"};
-        if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
-            if (args[1]) {
-                if (ASRUtils::is_array(ASRUtils::expr_type(args[1]))) {
+        std::unordered_map<std::string, int> kind_arg_index_map = {
+            {"logical", 1}, {"storage_size", 1}, {"anint", 1}, {"nint", 1}, {"aint", 1},
+            {"floor", 1}, {"ceiling", 1}, {"aimag", 1}, {"maskl", 1}, {"maskr", 1},
+            {"ichar", 1}, {"char", 1}, {"achar", 1}, {"iachar", 1}, {"real", 1},
+            {"int", 1}, {"cmplx", 1}, {"len_trim", 1}, {"len", 1}, {"shape", 1},
+            {"ieee_real", 1}, {"ieee_int", 2}, {"lbound", 2}, {"ubound", 2}, {"size", 2},
+            {"verify", 3}, {"index", 3}, {"scan", 3}
+        };
+
+        auto it = kind_arg_index_map.find(name);
+        if (it != kind_arg_index_map.end()) {
+            int kind_arg_index = it->second;
+
+            if (args[kind_arg_index]) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(args[kind_arg_index]))) {
                     diag.add(Diagnostic(
-                        "kind argument of `" + name + "` intrinsic must be a scalar",
+                        "`kind` argument of `" + name + "` intrinsic must be a scalar",
                         Level::Error, Stage::Semantic, {
-                            Label("",{args[1]->base.loc})
+                            Label("", {args[kind_arg_index]->base.loc})
                         }));
                     throw SemanticAbort();
                 }

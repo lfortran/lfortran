@@ -78,13 +78,13 @@ semantic error: `parameter` attribute conflicts with `allocatable` attribute
 33 |     integer, allocatable, parameter :: v=1
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: kind argument of `int` intrinsic must be a scalar
+semantic error: `kind` argument of `int` intrinsic must be a scalar
    --> tests/errors/continue_compilation_2.f90:286:54
     |
 286 |     integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
     |                                                      ^^^^^^^^^ 
 
-semantic error: kind argument of `int` intrinsic must be a scalar
+semantic error: `kind` argument of `int` intrinsic must be a scalar
    --> tests/errors/continue_compilation_2.f90:288:54
     |
 288 |     integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
@@ -630,7 +630,7 @@ semantic error: The first argument of `cmplx` intrinsic is of complex type, the 
 276 |     print *, cmplx(complex_z , 1)
     |              ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: kind argument of `aint` intrinsic must be a scalar
+semantic error: `kind` argument of `aint` intrinsic must be a scalar
    --> tests/errors/continue_compilation_2.f90:278:36
     |
 278 |     print *, aint([1.0, 2.0, 3.0], [4, 4])
