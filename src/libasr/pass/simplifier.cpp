@@ -1604,7 +1604,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             exprs_with_target[*current_expr].second == targetType::OriginalTarget) ||
             (is_current_expr_linked_to_target &&
                 exprs_with_target[*current_expr].second ==
-                    targetType::GeneratedTargetPointerForArraySection)
+                    targetType::GeneratedTargetPointerForArraySection) ||
+            (is_current_expr_linked_to_target && ((
+             ASRUtils::is_array(ASRUtils::expr_type(exprs_with_target[*current_expr].first)) ||
+             ASRUtils::is_array(x->m_type)) &&
+             is_common_symbol_present_in_lhs_and_rhs(exprs_with_target[*current_expr].first, *current_expr)))
         ) {
             // x = transpose(x), where 'x' is user-variable
             // needs have a temporary, there might be more
