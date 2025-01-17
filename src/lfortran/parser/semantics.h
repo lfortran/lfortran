@@ -108,6 +108,7 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 #define CONCURRENT_CONTROLS(x) VEC_CAST(x, concurrent_control)
 #define CONCURRENT_LOCALITIES(x) VEC_CAST(x, concurrent_locality)
 #define INTERFACE_ITEMS(x) VEC_CAST(x, interface_item)
+#define TYPE_PARAMS(x) VEC_CAST(x, type_param)
 
 Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
     Vec<ast_t*> v;
@@ -1331,10 +1332,10 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
-#define FUNCTION(fn_type, name, type_params, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
-        /*type_params*/ ,\
-        /*n_type_params*/ type_params.size(),\
+        /*type_params*/ nullptr, \
+        /*n_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1358,6 +1359,34 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*n_temp_args*/ 0)
 #define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
+        /*type_params*/ nullptr, \
+        /*n_type_params*/ 0,\
+        /*args*/ ARGS(p.m_a, l, args), \
+        /*n_args*/ args.size(), \
+        /*return_type*/ nullptr, \
+        /*return_type*/ 0, \
+        /*return_var*/ EXPR_OPT(return_var), \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ USES(use), \
+        /*n_use*/ use.size(), \
+        /*m_import*/ VEC_CAST(import, import_statement), \
+        /*n_import*/ import.size(), \
+        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
+        /*n_implicit*/ implicit.size(), \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ CONTAINS(contains), \
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
+
+#define GENERIC_FUNCTION0(name, type_params, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
+        /*type_params*/ TYPE_PARAMS(type_params), \
+        /*n_type_params*/ type_params.size(),\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*return_type*/ nullptr, \
