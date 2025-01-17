@@ -4428,3 +4428,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/polymorphic_arguments_02.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/test_ieee_arithmetic_02.f90"
+asr = true
