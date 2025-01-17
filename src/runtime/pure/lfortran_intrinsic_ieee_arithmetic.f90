@@ -1,5 +1,4 @@
 module lfortran_intrinsic_ieee_arithmetic
-    use, intrinsic :: iso_fortran_env, only: real32, real64
     implicit none
 
     type ieee_class_type
@@ -64,28 +63,33 @@ module lfortran_intrinsic_ieee_arithmetic
     contains
 
     elemental function spieee_class(x) result(y)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         type(ieee_class_type) :: y
     end function
 
     elemental function dpieee_class(x) result(y)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         type(ieee_class_type) :: y
     end function
 
     elemental function spieee_value(x, cls) result(y)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         type(ieee_class_type), intent(in) :: cls
         real(real32) :: y
     end function
 
     elemental function dpieee_value(x, cls) result(y)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         type(ieee_class_type), intent(in) :: cls
         real(real64) :: y
     end function
 
     elemental function spieee_is_nan(x) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
         interface
@@ -98,6 +102,7 @@ module lfortran_intrinsic_ieee_arithmetic
     end function
 
     elemental function dpieee_is_nan(x) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
         interface
@@ -110,96 +115,112 @@ module lfortran_intrinsic_ieee_arithmetic
     end function
 
     elemental function spieee_is_finite(x) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
         r = x == x .and. abs(x) /= huge(x)
     end function
 
     elemental function dpieee_is_finite(x) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
         r = x == x .and. abs(x) /= huge(x)
     end function
 
     elemental function spieee_is_negative(x) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
         r = x < 0.0_real32
     end function
 
     elemental function dpieee_is_negative(x) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
         r = x < 0.0_real64
     end function
 
     elemental function spieee_copy_sign(x, y) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x, y
         real(real32) :: r
         r = abs(x) * sign(1.0_real32, y)
     end function
 
     elemental function dpieee_copy_sign(x, y) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x, y
         real(real64) :: r
         r = abs(x) * sign(1.0_real64, y)
     end function
 
     elemental function spieee_support_datatype(x) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
         r = .true.
     end function
 
     elemental function dpieee_support_datatype(x) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
         r = .true.
     end function
 
     elemental function spieee_is_normal(x) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
         r = abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
     end function
 
     elemental function dpieee_is_normal(x) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
         r = abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
     end function
 
     elemental function spieee_unordered(x, y) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x, y
         logical :: r
         r = x /= x .or. y /= y
     end function
 
     elemental function dpieee_unordered(x, y) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x, y
         logical :: r
         r = x /= x .or. y /= y
     end function
 
     elemental function spieee_logb(x) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         real(real32) :: r
         r = floor(log(abs(x)) / log(2.0_real32))
     end function
 
     elemental function dpieee_logb(x) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         real(real64) :: r
         r = floor(log(abs(x)) / log(2.0_real64))
     end function
 
     elemental function spieee_rem(x, y) result(r)
+        use iso_fortran_env, only: real32
         real(real32), intent(in) :: x, y
         real(real32) :: r
         r = modulo(x, y)
     end function
 
     elemental function dpieee_rem(x, y) result(r)
+        use iso_fortran_env, only: real64
         real(real64), intent(in) :: x, y
         real(real64) :: r
         r = modulo(x, y)
