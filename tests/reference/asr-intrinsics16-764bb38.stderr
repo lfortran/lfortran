@@ -1,5 +1,0 @@
-semantic error: arguments of `repeat` intrinsic must be scalar
- --> tests/errors/intrinsics16.f90:2:38
-  |
-2 |     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
-  |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
