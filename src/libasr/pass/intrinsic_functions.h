@@ -1464,7 +1464,11 @@ namespace Dshiftl {
             append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", loc);
             return nullptr;
         }
-        int k_val = (kind == 8) ? 64: 32;
+        int k_val = kind * 8;
+        if (shift > k_val) {
+            append_error(diag, "The shift argument of 'dshiftl' intrinsic must be less than or equal to the bit size of the integer", loc);
+            return nullptr;
+        }
         int64_t val = (val1 << shift) | (val2 >> (k_val - shift));
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
