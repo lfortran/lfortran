@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 project(lfort C Fortran)
+string(REPLACE "--generate-object-code" "" CMAKE_Fortran_COMPILE_OBJECT "${CMAKE_Fortran_COMPILE_OBJECT}")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug
@@ -21,6 +22,8 @@ message("Fortran compiler: ${CMAKE_Fortran_COMPILER}")
 message("C compiler      : ${CMAKE_C_COMPILER}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" BTYPE)
+set(cmake_fortran_flags_btype "CMAKE_Fortran_FLAGS_${BTYPE}")
+set(${cmake_fortran_flags_btype} "")
 message("Fortran compiler flags: ${CMAKE_Fortran_FLAGS_${BTYPE}}")
 message("C compiler flags      : ${CMAKE_C_FLAGS_${BTYPE}}")
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
