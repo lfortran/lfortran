@@ -1332,10 +1332,13 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
+// Allocator &al, const Location &a_loc, char* a_name, decl_typeType a_type_name
+#define GENERIC_TYPE_PARAM(a_name, a_type_name, l) make_GenericTypeParameter_t(p.m_a, l, name2char(a_name), name2char(a_type_name))
+
 #define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
-        /*type_params*/ nullptr, \
-        /*n_type_params*/ 0,\
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1359,8 +1362,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*n_temp_args*/ 0)
 #define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
-        /*type_params*/ nullptr, \
-        /*n_type_params*/ 0,\
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*return_type*/ nullptr, \
@@ -1385,8 +1388,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 
 #define GENERIC_FUNCTION0(name, type_params, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
-        /*type_params*/ TYPE_PARAMS(type_params), \
-        /*n_type_params*/ type_params.size(),\
+        /*generic_type_params*/ GENERIC_TYPE_PARAMS(type_params), \
+        /*n_generic_type_params*/ type_params.size(),\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*return_type*/ nullptr, \
@@ -1412,8 +1415,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
-        /*type_params*/ nullptr, \
-        /*n_type_params*/ 0,\
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1438,8 +1441,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 #define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
-        /*type_params*/ nullptr, \
-        /*n_type_params*/ 0,\
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
@@ -2484,6 +2487,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         default : { throw LCompilers::LCompilersException("Not implemented"); }
     }
 }
+
 
 ast_t* set_trivia(Allocator &al, Location &l,
         trivia_node_t** m_t1, size_t n_t1,

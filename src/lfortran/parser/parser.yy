@@ -1087,7 +1087,7 @@ generic_type_param_list
     | generic_type_param { LIST_NEW($$); LIST_ADD($$, $1); }
 
 generic_type_param
-    : id "::" id { $$ = GENERIC_TYPE_PARAM(p.m_a, $1, $3, @$); }
+    : id "::" id { $$ = GENERIC_TYPE_PARAM($1, $3, @$); }
     ;
 
 temp_decl_star
