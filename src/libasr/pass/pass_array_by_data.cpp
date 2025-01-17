@@ -740,6 +740,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         void visit_Var(const ASR::Var_t &x) {
+            if (v.proc2newproc.find(x.m_v) != v.proc2newproc.end()){
+                ASR::symbol_t* new_sym = v.proc2newproc[x.m_v].first;
+                ASR::Var_t& vv = const_cast<ASR::Var_t&>(x);
+                vv.m_v = new_sym;
+                return;
+            }
             if(ASR::is_a<ASR::Variable_t>(*x.m_v)){
                 // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x.m_v);
