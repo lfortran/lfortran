@@ -1083,7 +1083,7 @@ fn_mod
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
 
 generic_type_param_list
-    : generic_type_param_list "," generic_type_param { $$ = $1; LIST_ADD($$, $3) }
+    : generic_type_param_list "," generic_type_param { $$ = $1; LIST_ADD($$, $3); }
     | generic_type_param { LIST_NEW($$); LIST_ADD($$, $1); }
 
 generic_type_param
