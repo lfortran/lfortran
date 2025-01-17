@@ -14,6 +14,12 @@ semantic error: Implicit typing is not allowed, enable it by using --implicit-ty
 3 |    
   | ...^ 
 
+semantic error: arguments of `repeat` intrinsic must be scalar
+  --> tests/errors/continue_compilation_1.f90:86:38
+   |
+86 |     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
   --> tests/errors/continue_compilation_1.f90:20:8
    |

@@ -101,6 +101,14 @@ jobs:
         run: |
             ./test_lfortran_cmdline
 
+      - name: Test with specific Fortran standard
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            cd ./integration_tests
+            ./run_tests.py -b llvm --std=f23
+            ./run_tests.py -b llvm -f --std=f23
+
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
@@ -507,8 +515,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf-b_1-b_2-n_1-n_2-u_1-u_2-1
-            git checkout 6d8e0a560db09312122f43cb98248ae571f88133
+            git checkout -t origin/lf-b_1-b_2-n_1-n_2-u_1-u_2-c_1-2
+            git checkout 61f3ff030a7c76be4d731ff1362e95898e4b6dee
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
@@ -516,6 +524,7 @@ jobs:
             ./build/fortran/example_bobyqa_fortran_2_exe
             ./build/fortran/example_uobyqa_fortran_1_exe
             ./build/fortran/example_uobyqa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_1_exe
 
       - name: Test POT3D
         shell: bash -e -l {0}
@@ -1412,25 +1421,6 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Upload Tarball
-        shell: bash -e -l {0}
-        run: |
-          ./build0.sh
-          lfortran_version=$(<version)
-          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
-          ci/create_source_tarball.sh $lfortran_version
-          ci/upload_tarball.sh
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
-
-      - name: Upload Tarball to Release
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        shell: bash -e -l {0}
-        run: |
-          ci/upload_tarball_to_release.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Test integration_tests with GFortran
         shell: bash -e -l {0}
         run: |
@@ -1529,6 +1519,39 @@ jobs:
             ./run_tests.py -b wasm --no-experimental-simplifier
             ./run_tests.py -b wasm -f --no-experimental-simplifier
 
+  upload_tarball:
+    name: Upload Tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - name: Upload Tarball
+        shell: bash -e -l {0}
+        run: |
+          ./build0.sh
+          lfortran_version=$(<version)
+          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
+          ci/create_source_tarball.sh $lfortran_version
+          ci/upload_tarball.sh
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+      - name: Upload Tarball to Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash -e -l {0}
+        run: |
+          ci/upload_tarball_to_release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test_without_llvm:
     name: Test without LLVM Backend
