@@ -1007,6 +1007,8 @@ RUN(NAME intrinsics_342 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc ONLY_EXPER
 RUN(NAME intrinsics_343 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc ONLY_EXPERIMENTAL_SIMPLIFIER) # cshift
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 
+RUN(NAME test_dshiftr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
 RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME passing_array_03 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
