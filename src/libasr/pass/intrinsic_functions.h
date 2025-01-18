@@ -1461,12 +1461,12 @@ namespace Dshiftl {
         int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         if(shift < 0){
-            append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", loc);
+            append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", args[2]->base.loc);
             return nullptr;
         }
         int k_val = kind * 8;
         if (shift > k_val) {
-            append_error(diag, "The shift argument of 'dshiftl' intrinsic must be less than or equal to the bit size of the integer", loc);
+            append_error(diag, "The shift argument of 'dshiftl' intrinsic must be less than or equal to the bit size of the integer", args[2]->base.loc);
             return nullptr;
         }
         int64_t val = (val1 << shift) | (val2 >> (k_val - shift));
@@ -1517,12 +1517,12 @@ namespace Dshiftr {
             return nullptr;
         }
         if(shift < 0){
-            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be non-negative integer", loc);
+            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be non-negative integer", args[2]->base.loc);
             return nullptr;
         }
         int64_t k_val = kind1 * 8;
         if (shift > k_val) {
-            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer", loc);
+            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer", args[2]->base.loc);
             return nullptr;
         }
         int64_t rightmostI = val1 & ((1LL << shift) - 1);
