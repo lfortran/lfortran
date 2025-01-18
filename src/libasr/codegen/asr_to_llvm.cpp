@@ -5941,7 +5941,7 @@ public:
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                tmp = builder->CreateFCmpONE(left, right);
+                tmp = builder->CreateFCmpUNE(left, right);
                 break;
             }
             default : {
