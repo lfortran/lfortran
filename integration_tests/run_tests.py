@@ -53,11 +53,9 @@ def run_test(backend, std):
 
 def test_backend(backend, std):
     if backend not in SUPPORTED_BACKENDS:
-        print(f"Unsupported Backend: {backend}\n")
-        return
+        raise Exception(f"Unsupported Backend: {backend}\n")
     if std not in SUPPORTED_STANDARDS:
-        print(f"Unsupported Standard: {std}\n")
-        return
+        raise Exception(f"Unsupported Backend: {std}\n")
 
     run_test(backend, std)
 
