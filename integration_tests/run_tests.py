@@ -29,8 +29,10 @@ def run_test(backend, std):
         std_string = "-DSTD_F23=yes"
     elif std == "legacy":
         std_string = "-DSTD_LEGACY=yes"
-    else:
+    elif std == "lf":
         std_string = ""
+    else:
+        raise Exception("Unsupported standard")
 
     cwd=f"{BASE_DIR}/test-{backend}"
     common=f" -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
@@ -53,11 +55,9 @@ def run_test(backend, std):
 
 def test_backend(backend, std):
     if backend not in SUPPORTED_BACKENDS:
-        print(f"Unsupported Backend: {backend}\n")
-        return
+        raise Exception(f"Unsupported Backend: {backend}\n")
     if std not in SUPPORTED_STANDARDS:
-        print(f"Unsupported Standard: {std}\n")
-        return
+        raise Exception(f"Unsupported Backend: {std}\n")
 
     run_test(backend, std)
 
@@ -90,7 +90,7 @@ def get_args():
     parser.add_argument("-b", "--backends", nargs="*", default=["llvm"], type=str,
                 help="Test the requested backends (%s)" % \
                         ", ".join(SUPPORTED_BACKENDS))
-    parser.add_argument("--std", type=str, default=["lf"],
+    parser.add_argument("--std", type=str, default="lf",
                 help="Run tests with the requested Fortran standard: ".join(SUPPORTED_STANDARDS))
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
@@ -118,11 +118,7 @@ def main():
     fast_tests = "yes" if args.fast else "no"
     experimental_simplifier = "no" if args.no_experimental_simplifier else "yes"
     for backend in args.backends:
-        if len(args.std) == 0:
-            std = "lf"
-        else:
-            std = args.std[0]
-        test_backend(backend, std)
+        test_backend(backend, args.std)
 
 if __name__ == "__main__":
     main()
