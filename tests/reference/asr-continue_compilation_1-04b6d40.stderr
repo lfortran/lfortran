@@ -178,3 +178,21 @@ semantic error: The shift argument of 'dshiftr' intrinsic must be non-negative i
    |
 92 |     print *, dshiftr(1, 2, -2)
    |                            ^^ 
+
+semantic error: arguments of `selected_int_kind` intrinsic must be scalar
+  --> tests/errors/continue_compilation_1.f90:94:14
+   |
+94 |     print *, selected_int_kind([1,2,3])
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments of `selected_real_kind` intrinsic must be scalar
+  --> tests/errors/continue_compilation_1.f90:95:14
+   |
+95 |     print *, selected_real_kind([1,2,3])
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments of `selected_char_kind` intrinsic must be scalar
+  --> tests/errors/continue_compilation_1.f90:96:14
+   |
+96 |     print *, selected_char_kind(['c', 'a', 'b'])
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

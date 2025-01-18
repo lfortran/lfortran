@@ -90,4 +90,8 @@ program continue_compilation_1
 
     print *, dshiftr(1, 2, 34)
     print *, dshiftr(1, 2, -2)
+
+    print *, selected_int_kind([1,2,3])
+    print *, selected_real_kind([1,2,3])
+    print *, selected_char_kind(['c', 'a', 'b'])
 end program
