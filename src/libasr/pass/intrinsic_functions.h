@@ -1520,7 +1520,7 @@ namespace Dshiftr {
             append_error(diag, "The shift argument of 'dshiftr' intrinsic must be non-negative integer", loc);
             return nullptr;
         }
-        int64_t k_val = (kind1 == 8) ? 64 : 32;
+        int64_t k_val = kind1 * 8;
         if (shift > k_val) {
             append_error(diag, "The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer", loc);
             return nullptr;
@@ -1529,9 +1529,9 @@ namespace Dshiftr {
         int64_t result = rightmostI << (k_val - shift);
         int64_t leftmostJ;
         if (val2 < 0) {
-            leftmostJ = (val2 >> (k_val - shift)) & ((1LL << (k_val - shift)) - 1LL);
+            leftmostJ = (val2 >> shift) & ((1LL << (k_val - shift)) - 1LL);
         } else {
-            leftmostJ = val2 >> (k_val - shift);
+            leftmostJ = val2 >> shift;
         }
         result |= leftmostJ;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);

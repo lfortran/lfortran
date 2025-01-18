@@ -576,6 +576,7 @@ RUN(NAME arrays_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran ONLY_EX
 RUN(NAME arrays_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran ONLY_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME arrays_75 LABELS gfortran llvm)
 RUN(NAME arrays_76 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME arrays_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_array_pointer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
@@ -1006,6 +1007,8 @@ RUN(NAME intrinsics_342 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc ONLY_EXPER
 RUN(NAME intrinsics_343 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc ONLY_EXPERIMENTAL_SIMPLIFIER) # cshift
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 
+RUN(NAME test_dshiftr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
 RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME passing_array_03 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
@@ -1354,6 +1357,8 @@ RUN(NAME associate_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME real_dp_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME bin_op_real_dp LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME bin_op_real_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME bin_op_real_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME const_real_dp LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME real_dp_param LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME int_dp LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
