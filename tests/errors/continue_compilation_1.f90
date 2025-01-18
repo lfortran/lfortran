@@ -84,4 +84,10 @@ program continue_compilation_1
     print*, verify(string, set, kind= [4, 4] )
     print *, and([1, 2, 3], [1, 2, 3])
     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+
+    print *, dshiftl(1, 2, 34)
+    print *, dshiftl(1, 2, -2)
+
+    print *, dshiftr(1, 2, 34)
+    print *, dshiftr(1, 2, -2)
 end program

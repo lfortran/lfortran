@@ -154,3 +154,27 @@ semantic error: arguments of `and` intrinsic must be scalar
    |
 85 |     print *, and([1, 2, 3], [1, 2, 3])
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The shift argument of 'dshiftl' intrinsic must be less than or equal to the bit size of the integer
+  --> tests/errors/continue_compilation_1.f90:88:28
+   |
+88 |     print *, dshiftl(1, 2, 34)
+   |                            ^^ 
+
+semantic error: The shift argument of 'dshiftl' intrinsic must be non-negative integer
+  --> tests/errors/continue_compilation_1.f90:89:28
+   |
+89 |     print *, dshiftl(1, 2, -2)
+   |                            ^^ 
+
+semantic error: The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer
+  --> tests/errors/continue_compilation_1.f90:91:28
+   |
+91 |     print *, dshiftr(1, 2, 34)
+   |                            ^^ 
+
+semantic error: The shift argument of 'dshiftr' intrinsic must be non-negative integer
+  --> tests/errors/continue_compilation_1.f90:92:28
+   |
+92 |     print *, dshiftr(1, 2, -2)
+   |                            ^^ 
