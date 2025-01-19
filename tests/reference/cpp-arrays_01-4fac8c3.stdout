@@ -50,12 +50,12 @@ namespace {
 namespace {
 
 void main2() {
-    Kokkos::View<int32_t*> a_data("a_data", 3);
+    const Kokkos::View<const int32_t*> &a_data;
     i32_3_1 a_value(&a_data);
     i32_3_1* a = &a_value;
     a->dims[0].lower_bound = 1;
     a->dims[0].length = 3;
-    Kokkos::View<int32_t*> b_data("b_data", 4);
+    const Kokkos::View<const int32_t*> &b_data;
     i32_4_1 b_value(&b_data);
     i32_4_1* b = &b_value;
     b->dims[0].lower_bound = 1;

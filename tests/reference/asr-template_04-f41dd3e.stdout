@@ -427,7 +427,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 198 n))]
-                                                        DescriptorArray
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     ()
@@ -1132,7 +1132,7 @@
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 200 n))]
-                                                        DescriptorArray
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     ()
@@ -2777,7 +2777,7 @@
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 165 n))]
-                                                                        DescriptorArray
+                                                                        PointerToDataArray
                                                                     )
                                                                     ()
                                                                     ()
@@ -5744,7 +5744,7 @@
                                                 (Var 163 n))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (Var 163 n))]
-                                                DescriptorArray
+                                                PointerToDataArray
                                             )
                                             ()
                                             ()
@@ -7020,7 +7020,7 @@
                                                                         (Real 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 190 n))]
-                                                                        DescriptorArray
+                                                                        PointerToDataArray
                                                                     )
                                                                     ()
                                                                     ()
@@ -9987,7 +9987,7 @@
                                                 (Var 188 n))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (Var 188 n))]
-                                                DescriptorArray
+                                                PointerToDataArray
                                             )
                                             ()
                                             ()

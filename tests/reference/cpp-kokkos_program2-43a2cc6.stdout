@@ -55,17 +55,17 @@ void triad(T0* a, T1* b, float scalar, T2* c)
 
 
 void main2() {
-    Kokkos::View<float*> a_data("a_data", 10000);
+    const Kokkos::View<const float*> &a_data;
     f32_10000_1 a_value(&a_data);
     f32_10000_1* a = &a_value;
     a->dims[0].lower_bound = 1;
     a->dims[0].length = 10000;
-    Kokkos::View<float*> b_data("b_data", 10000);
+    const Kokkos::View<const float*> &b_data;
     f32_10000_1 b_value(&b_data);
     f32_10000_1* b = &b_value;
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 10000;
-    Kokkos::View<float*> c_data("c_data", 10000);
+    const Kokkos::View<const float*> &c_data;
     f32_10000_1 c_value(&c_data);
     f32_10000_1* c = &c_value;
     c->dims[0].lower_bound = 1;
