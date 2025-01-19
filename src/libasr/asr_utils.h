@@ -1802,7 +1802,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
         }
-        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
+        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
 }
 
@@ -1997,7 +1997,8 @@ const ASR::intentType intent_unspecified=ASR::intentType::Unspecified; // dummy 
 
 static inline bool is_arg_dummy(int intent) {
     return intent == intent_in || intent == intent_out
-        || intent == intent_inout || intent == intent_unspecified;
+        || intent == intent_inout || intent == intent_unspecified ||
+        intent == intent_local;
 }
 
 static inline bool main_program_present(const ASR::TranslationUnit_t &unit)

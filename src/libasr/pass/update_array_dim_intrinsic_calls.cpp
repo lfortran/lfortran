@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/asr_builder.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 
 
@@ -113,7 +114,9 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         int64_t dim = -1;
         ASRUtils::extract_value(x->m_dim, dim);
         if( x->m_bound == ASR::arrayboundType::LBound ) {
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
             *current_expr = dims[dim - 1].m_start;
+            *current_expr = b.t2t(*current_expr, ASRUtils::expr_type(*current_expr), x->m_type);
         } else {
             ASR::expr_t* ub = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
                                 x->base.base.loc, dims[dim - 1].m_length,
