@@ -1,0 +1,5 @@
+semantic error: Class variable must be a dummy argument, allocatable, or pointer.
+  --> tests/errors/continue_compilation_5.f90:13:9
+   |
+13 |         class(tt) :: local_var
+   |         ^^^^^^^^^^^^^^^^^^^^^^ 
