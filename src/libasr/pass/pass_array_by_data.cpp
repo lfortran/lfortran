@@ -466,8 +466,10 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
             if ( ASR::is_a<ASR::Variable_t>(*it.second) &&
                 ASR::down_cast<ASR::Variable_t>(it.second)->m_type_declaration ) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
-                ASR::symbol_t* resolved_type_dec = v.proc2newproc[var->m_type_declaration].first;
-                if ( resolved_type_dec == nullptr ) {
+                ASR::symbol_t* resolved_type_dec = nullptr;
+                if ( v.proc2newproc.find(var->m_type_declaration) != v.proc2newproc.end() ) {
+                    resolved_type_dec = v.proc2newproc[var->m_type_declaration].first;
+                } else if ( v.proc2newproc.find(ASRUtils::symbol_get_past_external(var->m_type_declaration)) != v.proc2newproc.end() ) {
                     resolved_type_dec = v.proc2newproc[ASRUtils::symbol_get_past_external(var->m_type_declaration)].first;
                 }
                 if ( resolved_type_dec ) {
