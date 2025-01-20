@@ -1,6 +1,10 @@
 #!/usr/bin/env shell
 # This is a cross-platform `shell` script.
 
+set -ex
+
+echo "Running SHELL"
+
 # Run some simple compilation tests, works everywhere:
 src/bin/lfortran --version
 # Compile and link separately
