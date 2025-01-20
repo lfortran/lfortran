@@ -20,10 +20,10 @@ integer, parameter :: c_long_long = 8
 integer, parameter :: c_size_t = 8
 integer, parameter :: c_float = 4
 integer, parameter :: c_double = 8
-integer, parameter :: c_long_double = 10
+integer, parameter :: c_long_double = -1
 integer, parameter :: c_float_complex = 4
 integer, parameter :: c_double_complex = 8
-integer, parameter :: c_long_double_complex = 10
+integer, parameter :: c_long_double_complex = -1
 integer, parameter :: c_bool = 1
 integer, parameter :: c_char = 1
 character(len=1), parameter :: c_null_char = char(0)
