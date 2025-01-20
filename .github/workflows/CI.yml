@@ -94,6 +94,7 @@ jobs:
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             xonsh ci/test.xsh
+            shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
         shell: bash -e -l {0}
@@ -122,6 +123,7 @@ jobs:
             set ENABLE_RUNTIME_STACKTRACE=no
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
+            shell ci\test.sh
 
   scipy:
     name: Check SciPy Build and Test Run
