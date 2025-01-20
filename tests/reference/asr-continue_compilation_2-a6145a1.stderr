@@ -13,14 +13,8 @@ syntax error: kind 16 is not supported yet.
 tokenizer error: Token '?' is not recognized
    --> tests/errors/continue_compilation_2.f90:325:17
     |
-325 |     integer  :: ?
+325 |     integer  :: ? tokenizer_error
     |                 ^ token not recognized
-
-syntax error: Newline is unexpected here
-   --> tests/errors/continue_compilation_2.f90:325:18
-    |
-325 |     integer  :: ?
-    |                  ^ 
 
 syntax error: End module name does not match module name
    --> tests/errors/continue_compilation_2.f90:341:1 - 343:28

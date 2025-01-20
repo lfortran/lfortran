@@ -5,6 +5,11 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/bigint.h>
 
+using LCompilers::diag::Level;
+using LCompilers::diag::Stage;
+using LCompilers::diag::Label;
+using LCompilers::diag::Diagnostic;
+
 namespace LCompilers::LFortran {
 
 void Tokenizer::set_string(const std::string &str)
@@ -262,11 +267,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     }));
 
                 if(!continue_compilation) {
-                    throw parser_local::TokenizerError(diag::Diagnostic(
-                        "Token '" + t + "' is not recognized",
-                        diag::Level::Error, diag::Stage::Tokenizer, {
-                        diag::Label("token not recognized", {loc})
-                    }));
+                    throw parser_local::TokenizerAbort();
                 } else {
                     continue;
                 }

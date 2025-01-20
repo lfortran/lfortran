@@ -168,10 +168,14 @@ bool Parser::parse(const std::string &input)
     }
     if (!fixed_form) {
         m_tokenizer.set_string(inp);
-        if (yyparse(*this) == 0) {
-            if (diag.has_error())
-                return false;
-            return true;
+        try {
+            if (yyparse(*this) == 0) {
+                if (diag.has_error())
+                    return false;
+                return true;
+            }
+        } catch (const parser_local::TokenizerAbort &e) {
+            return false;
         }
     } else {
         f_tokenizer.set_string(inp);
@@ -231,6 +235,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
                 token = t.lex(al, y, l, diagnostics, continue_compilation);
             } catch (const parser_local::TokenizerError &e) {
                 diagnostics.diagnostics.push_back(e.d);
+                return Error();
+            } catch (const parser_local::TokenizerAbort &e) {
                 return Error();
             }
             tst.push_back(token);

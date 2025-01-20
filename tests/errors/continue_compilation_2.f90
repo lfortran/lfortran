@@ -322,7 +322,7 @@ program continue_compilation_2
     real*16 :: unsupported_kind
 
     !tokenizer error
-    integer  :: ?
+    integer  :: ? tokenizer_error
 
     contains
     logical function f(x)
