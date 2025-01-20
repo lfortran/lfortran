@@ -10,10 +10,12 @@ your contribution so that it can be merged.
 To contribute, follow these steps:
 
 1. **Fork the Repository**
+
     Fork the [LFortran repository](https://github.com/lfortran/lfortran) to 
     your GitHub account.
 
-2. **Clone Your Fork**  
+2. **Clone Your Fork**
+
    Clone your forked repository to your local machine:
    ```
    git clone https://github.com/<your-username>/lfortran.git
@@ -21,6 +23,7 @@ To contribute, follow these steps:
    ```
 
 3. **Add the Upstream Repository**
+
     Add the original LFortran repository as the upstream remote.
     ```
     git remote add upstream https://github.com/lfortran/lfortran.git
@@ -28,11 +31,13 @@ To contribute, follow these steps:
     ```
 
 4. **Install Dependencies and Build the Project**
+
     Follow the [installation guide](https://docs.lfortran.org/en/installation/) 
     to set up the required dependencies and build the project.
     You will need ninja for building, install it using `conda install ninja`.
 
 5. **Make Changes and Submit Your Contribution**
+
     Create a branch for your changes and make the necessary edits.
     When ready, push your changes to your fork and submit a Pull Request (PR) 
     against our repository at: https://github.com/lfortran/lfortran.
