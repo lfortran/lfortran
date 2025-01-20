@@ -641,8 +641,12 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     } else {
                         token_loc(loc);
                         std::string t = token();
-                        throw LFortran::parser_local::TokenizerError("Integer '" + t + "' too large",
-                            loc);
+                        diagnostics.add(diag::Diagnostic(
+                            "Integer '" + t + "' too large",
+                            diag::Level::Error, diag::Stage::Tokenizer, {
+                            diag::Label("", {loc})}
+                        ));
+                        throw parser_local::TokenizerAbort();
                     }
                 } else {
                     lex_int_large(al, tok, cur,
