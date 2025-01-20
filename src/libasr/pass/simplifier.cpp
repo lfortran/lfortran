@@ -1489,7 +1489,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     bool is_simd_expression;
     ASR::ttype_t* simd_type;
     ASR::expr_t* parent_expr;
-    ASR::symbol_t* lhs_var_sym;
+    ASR::expr_t* lhs_var;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
@@ -1678,14 +1678,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     void replace_ArraySection(ASR::ArraySection_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
-            ASR::expr_t* temp = x->m_v;
-            ASR::symbol_t* rhs_var_sym = nullptr;
-            if( ASR::is_a<ASR::Var_t>(*temp) ) {
-                rhs_var_sym = ASR::down_cast<ASR::Var_t>(temp)->m_v;
-            }
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) || 
-                (rhs_var_sym && lhs_var_sym && lhs_var_sym == rhs_var_sym)) {
+                (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v))) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_section_", al, current_body,
                     current_scope, exprs_with_target);
@@ -1742,14 +1737,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
-            ASR::expr_t* temp = x->m_v;
-            ASR::symbol_t* rhs_var_sym = nullptr;
-            if( ASR::is_a<ASR::Var_t>(*temp) ) {
-                rhs_var_sym = ASR::down_cast<ASR::Var_t>(temp)->m_v;
-            }
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) || 
-                (rhs_var_sym && lhs_var_sym && lhs_var_sym == rhs_var_sym)) {
+                (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v))) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
                     current_scope, exprs_with_target);
@@ -1931,12 +1921,9 @@ class ReplaceExprWithTemporaryVisitor:
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
-        ASR::symbol_t* lhs_var_sym = nullptr;
+        ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
-            ASR::expr_t* lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
-            if (ASR::is_a<ASR::Var_t>(*lhs_array_var)) {
-                lhs_var_sym = ASR::down_cast<ASR::Var_t>(lhs_array_var)->m_v;
-            }
+            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
         if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
             ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ) {
@@ -1958,10 +1945,10 @@ class ReplaceExprWithTemporaryVisitor:
         ASR::ttype_t* simd_type_copy = replacer.simd_type;
         replacer.is_simd_expression = ASRUtils::is_simd_array(x.m_value);
         replacer.simd_type = ASRUtils::expr_type(x.m_value);
-        replacer.lhs_var_sym = lhs_var_sym;
+        replacer.lhs_var = lhs_array_var;
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         call_replacer();
-        replacer.lhs_var_sym = nullptr;
+        replacer.lhs_var = nullptr;
         if( ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             !is_elemental_expr(x.m_value) ) {
