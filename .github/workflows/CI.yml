@@ -515,8 +515,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf-b_1-b_2-n_1-n_2-u_1-u_2-c_1-l_1-1
-            git checkout addc8693e4637c4946c649fcc20e266cc1f0380e
+            git checkout -t origin/lf-b_1-b_2-n_1-n_2-u_1-u_2-c_1-l_1-l_2-1
+            git checkout 633b74c9569e17cd49edf58a947af18e4a9ad848
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
