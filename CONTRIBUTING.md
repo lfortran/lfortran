@@ -32,9 +32,8 @@ To contribute, follow these steps:
 
 4. **Install Dependencies and Build the Project**
 
-    Follow the [installation guide](https://docs.lfortran.org/en/installation/) 
+    Follow the [installation guide](https://docs.lfortran.org/en/installation/#build-from-git) 
     to set up the required dependencies and build the project.
-    You will need ninja for building, install it using `conda install ninja`.
 
 5. **Make Changes and Submit Your Contribution**
 
