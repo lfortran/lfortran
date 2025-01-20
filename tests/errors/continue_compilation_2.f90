@@ -321,6 +321,9 @@ program continue_compilation_2
     !unsupported kind
     real*16 :: unsupported_kind
 
+    !tokenizer error
+    integer  :: ? tokenizer_error
+
     contains
     logical function f(x)
         integer, intent(in), optional :: x
