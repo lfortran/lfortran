@@ -58,7 +58,7 @@ int32_t mysum(T0* a)
 void main2() {
     int32_t i;
     int32_t s;
-    const Kokkos::View<const int32_t*> &x_data;
+    Kokkos::View<int32_t*> x_data("x_data", 10);
     i32_10_1 x_value(&x_data);
     i32_10_1* x = &x_value;
     x->dims[0].lower_bound = 1;
