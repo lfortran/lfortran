@@ -695,15 +695,15 @@ public:
                                    x.m_name, x.base.base.loc);
 
         // Verify dependencies
-        // for( size_t i = 0; i < x.n_dependencies; i++ ) {
-        //     require(std::find(
-        //         variable_dependencies.begin(),
-        //         variable_dependencies.end(),
-        //         std::string(x.m_dependencies[i])
-        //     ) != variable_dependencies.end(),
-        //         "Variable " + std::string(x.m_name) + " doesn't depend on " +
-        //         std::string(x.m_dependencies[i]) + " but is found in its dependency list.");
-        // }
+        for( size_t i = 0; i < x.n_dependencies; i++ ) {
+            require(std::find(
+                variable_dependencies.begin(),
+                variable_dependencies.end(),
+                std::string(x.m_dependencies[i])
+            ) != variable_dependencies.end(),
+                "Variable " + std::string(x.m_name) + " doesn't depend on " +
+                std::string(x.m_dependencies[i]) + " but is found in its dependency list.");
+        }
 
         for( size_t i = 0; i < variable_dependencies.size(); i++ ) {
             require(present(x.m_dependencies, x.n_dependencies, variable_dependencies[i]),
