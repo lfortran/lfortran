@@ -611,6 +611,12 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     if (args[1]) {
         if (is_integer(*ASRUtils::expr_type(args[1]))) {
             dim = args[1];
+            int n_dims = extract_dim_value_int(dim);
+            if (n_dims <= 0 || n_dims > ASRUtils::extract_n_dims_from_ttype(array_type)) {
+                append_error(diag, "`dim` argument of `" + intrinsic_func_name + "` is not a valid dimension on index",
+                    args[1]->base.loc);
+                return nullptr;
+            }
             if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
                 mask = args[2];
             } else if (args[2]) {
@@ -622,6 +628,12 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             mask = args[1];
             if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {
                 dim = args[2];
+                int n_dims = extract_dim_value_int(dim);
+                if (n_dims <= 0 || n_dims > ASRUtils::extract_n_dims_from_ttype(array_type)) {
+                    append_error(diag, "`dim` argument of `" + intrinsic_func_name + "` is not a valid dimension on index",
+                        args[2]->base.loc);
+                    return nullptr;
+                }
             } else if (args[2]) {
                 append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` must be a scalar and of integer type",
                     args[2]->base.loc);

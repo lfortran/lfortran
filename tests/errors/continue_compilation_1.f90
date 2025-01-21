@@ -94,4 +94,10 @@ program continue_compilation_1
     print *, selected_int_kind([1,2,3])
     print *, selected_real_kind([1,2,3])
     print *, selected_char_kind(['c', 'a', 'b'])
+
+    print *, sum(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
+    print *, product(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
+    print *, minval(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
+    print *, maxval(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
+    print *, iparity(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
 end program
