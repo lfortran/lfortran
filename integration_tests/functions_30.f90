@@ -9,15 +9,12 @@ program functions_30
     print *, x
     if(any(abs(x - [0.182574183, 0.365148365, 0.547722518, 0.730296731]) > 10e-12)) error stop
 contains 
-    function max_func(x) result(y)
+    real function max_func(x) result(y)
       real, intent(in) :: x(:)
-      real :: y
       y = maxval(x)
     end function
-    function norm(vec) result(res)
-      implicit none
+    real function norm(vec) result(res)
       real, intent(in) :: vec(:)   
-      real :: res                  
       integer :: i                 
       res = 0.0                    
       do i = 1, size(vec)
