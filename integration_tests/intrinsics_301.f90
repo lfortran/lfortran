@@ -15,6 +15,7 @@ program intrinsics_301
     integer(4), parameter :: i12(1) = findloc(["aa", "db", "ca"], "aa", mask = [.false., .false., .false.], kind = 4)
     integer(4), parameter :: i13 = findloc([1, 3, 2, 3], 3, 1, mask = [.true., .true., .false., .true.], back = .true., kind = 4)
     complex, dimension(2) :: dc = [(1.4, 1.1), (2.3, 2.2)]
+    complex, dimension(2) :: dc2 = [(1.0, 2.0), (3.0, 4.0)]
 
 
     integer :: x1(5) = [1, 3, 2, 4, 2], y1 = 2
@@ -25,6 +26,10 @@ program intrinsics_301
     logical :: back1 = .false.
     logical :: back2 = .true.
     complex :: x = (1.4, 1.1)
+    complex :: x5 = (3.0, 4.0)
+
+    integer, dimension(1) :: result
+    integer, dimension(1) :: result2
 
     ! findloc(Array, value, mask)
     logical :: x4(3) = [.true., .false., .true.], y4 = .true., mask3 = .true.
@@ -90,5 +95,14 @@ program intrinsics_301
     if (any(findloc([(1.0, 2.0), (3.0, 4.0)], (1.0, 2.0), mask = [.true., .true.]) /= 1)) error stop
     print*, findloc([(1.0, 2.0), (3.0, 4.0)], (3.0, 4.0), mask=[.true., .true.], kind = 8)
     if (any(findloc([(1.0, 2.0), (3.0, 4.0)], (3.0, 4.0), mask = [.true., .true.], kind = 8) /= 2)) error stop
+
+    result = findloc(dc2, x5)
+    result2 = findloc(dc2, x5, mask = [.true., .true.])
+
+    print *, result
+    if (any(result /= 2)) error stop
+    
+    print*, result2
+    if (any(result2 /= 2)) error stop
     
 end program intrinsics_301
