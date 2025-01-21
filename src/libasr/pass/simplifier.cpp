@@ -1494,7 +1494,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
         is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
-        parent_expr(nullptr) {}
+        parent_expr(nullptr), lhs_var(nullptr) {}
 
     #define is_current_expr_linked_to_target exprs_with_target.find(*current_expr) != exprs_with_target.end()
 
@@ -1590,6 +1590,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
             }
+        }
+        if( !ASRUtils::is_array(x->m_type) && lhs_var &&
+               is_common_symbol_present_in_lhs_and_rhs(lhs_var, *current_expr) ) {
+            force_replace_current_expr_for_scalar(std::string("_function_call_") +
+                                           ASRUtils::symbol_name(x->m_name))
+            return ;
         }
 
         replace_current_expr(std::string("_function_call_") +
