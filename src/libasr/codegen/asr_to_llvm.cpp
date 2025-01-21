@@ -3036,6 +3036,9 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type[ptr] = type;
+#endif
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python(x.m_type), x.base.base.loc);
         }
@@ -4768,17 +4771,6 @@ public:
             ptr_loads = ptr_loads_copy;
             ASR::dimension_t* m_dims = nullptr;
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-            // if ( ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
-            //     llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(
-            //         ASRUtils::get_contained_type(target_type), module.get());
-            //     // get pointer to the function
-            //     llvm_target = llvm_utils->CreateLoad2(llvm_target_type->getPointerTo(), llvm_target);
-
-            //     // llvm::AllocaInst *llvm_target_ptr = llvm_utils->CreateAlloca(
-            //     //     llvm_target_type, nullptr, "associate_target");
-            //     // builder->CreateStore(llvm_target, llvm_target_ptr);
-            //     // llvm_target = llvm_target_ptr;
-            // }
 
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
             int n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
@@ -7261,6 +7253,9 @@ public:
                 } else if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
                     tmp = llvm_symtab_fn[h];
                     tmp = llvm_utils->CreateLoad2(tmp->getType()->getPointerTo(), tmp);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[tmp] = tmp->getType();
+#endif
                 } else {
                     throw CodeGenError("Function type not supported yet");
                 }
@@ -7274,6 +7269,9 @@ public:
                     // Load only once since its a value
                     if( ptr_loads > 0 ) {
                         tmp = llvm_utils->CreateLoad2(x->m_type, tmp);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[tmp] = tmp->getType();
+#endif
                     }
                 }
                 break;
