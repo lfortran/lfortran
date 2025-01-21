@@ -323,6 +323,7 @@ program continue_compilation_2
 
     !tokenizer error
     integer  :: ? tokenizer_error
+    100 FORMAT(A10, @)
 
     contains
     logical function f(x)
