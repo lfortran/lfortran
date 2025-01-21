@@ -304,21 +304,27 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
     if (fixed_form) {
         FixedFormTokenizer t;
         t.set_string(input);
-        if (t.tokenize_input(diagnostics, al)) {
-            LCOMPILERS_ASSERT(t.tokens.size() == t.stypes.size())
-            if (stypes) {
-                for(const auto & el : t.stypes) {
-                    stypes->push_back(el);
+        try {
+            if (t.tokenize_input(diagnostics, al)) {
+                LCOMPILERS_ASSERT(t.tokens.size() == t.stypes.size())
+                if (stypes) {
+                    for(const auto & el : t.stypes) {
+                        stypes->push_back(el);
+                    }
                 }
-            }
-            if (locations) {
-                for(const auto & el : t.locations) {
-                    locations->push_back(el);
+                if (locations) {
+                    for(const auto & el : t.locations) {
+                        locations->push_back(el);
+                    }
                 }
+            } else {
+                return Error();
+            };
+        } catch (const parser_local::TokenizerAbort &e) {
+            if (!continue_compilation) {
+                return Error();
             }
-        } else {
-            return Error();
-        };
+        }
         return t.tokens;
     } else {
         Tokenizer t;
