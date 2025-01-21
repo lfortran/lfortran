@@ -99,6 +99,7 @@
                                     toml_ordered
                                     []
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -125,6 +126,7 @@
                                                 )
                                         })
                                     toml_structure
+                                    []
                                     []
                                     []
                                     Source
@@ -339,6 +341,13 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        [(Allocatable
+                                                            (ClassType
+                                                                2 toml_ordered
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
                                                         2 toml_array
                                                     )
                                                     ()
@@ -352,6 +361,13 @@
                                     new_array
                                     (FunctionType
                                         [(StructType
+                                            [(Allocatable
+                                                (ClassType
+                                                    2 toml_ordered
+                                                )
+                                            )]
+                                            []
+                                            .true.
                                             2 toml_array
                                         )]
                                         ()
@@ -416,6 +432,7 @@
                                     toml_array
                                     []
                                     [list]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -547,6 +564,7 @@
                                     toml_value
                                     []
                                     [key]
+                                    []
                                     Source
                                     Private
                                     .false.
