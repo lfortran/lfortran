@@ -614,7 +614,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             if ( ASRUtils::is_value_constant(dim) ) {
                 int n_dims = extract_dim_value_int(dim);
                 if (n_dims <= 0 || n_dims > ASRUtils::extract_n_dims_from_ttype(array_type)) {
-                    append_error(diag, "`dim` argument of `" + intrinsic_func_name + "` is not a valid dimension on index",
+                    append_error(diag, "`dim` argument of the `" + intrinsic_func_name + "` is out of bounds",
                         args[1]->base.loc);
                     return nullptr;
                 }
@@ -633,7 +633,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 if ( ASRUtils::is_value_constant(dim) ) {
                     int n_dims = extract_dim_value_int(dim);
                     if (n_dims <= 0 || n_dims > ASRUtils::extract_n_dims_from_ttype(array_type)) {
-                        append_error(diag, "`dim` argument of `" + intrinsic_func_name + "` is not a valid dimension on index",
+                        append_error(diag, "`dim` argument of the `" + intrinsic_func_name + "` is out of bounds",
                             args[2]->base.loc);
                         return nullptr;
                     }
