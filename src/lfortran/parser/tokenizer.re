@@ -5,6 +5,11 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/bigint.h>
 
+using LCompilers::diag::Level;
+using LCompilers::diag::Stage;
+using LCompilers::diag::Label;
+using LCompilers::diag::Diagnostic;
+
 namespace LCompilers::LFortran {
 
 void Tokenizer::set_string(const std::string &str)
@@ -144,7 +149,7 @@ void Tokenizer::add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form,
     }
 }
 
-int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics)
+int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics, bool continue_compilation)
 {
     if (enddo_state == 1) {
         enddo_state = 2;
@@ -255,12 +260,17 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             * { token_loc(loc);
                 std::string t = token();
-                throw parser_local::TokenizerError(diag::Diagnostic(
-                    "Token '" + t + "' is not recognized",
-                    diag::Level::Error, diag::Stage::Tokenizer, {
+                diagnostics.add(diag::Diagnostic(
+                        "Token '" + t + "' is not recognized",
+                        diag::Level::Error, diag::Stage::Tokenizer, {
                         diag::Label("token not recognized", {loc})
-                    })
-                );
+                    }));
+
+                if(!continue_compilation) {
+                    throw parser_local::TokenizerAbort();
+                } else {
+                    continue;
+                }
             }
             end { RET(END_OF_FILE); }
             whitespace { continue; }
@@ -631,8 +641,12 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     } else {
                         token_loc(loc);
                         std::string t = token();
-                        throw LFortran::parser_local::TokenizerError("Integer '" + t + "' too large",
-                            loc);
+                        diagnostics.add(diag::Diagnostic(
+                            "Integer '" + t + "' too large",
+                            diag::Level::Error, diag::Stage::Tokenizer, {
+                            diag::Label("", {loc})}
+                        ));
+                        throw parser_local::TokenizerAbort();
                     }
                 } else {
                     lex_int_large(al, tok, cur,

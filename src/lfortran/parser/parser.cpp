@@ -265,10 +265,14 @@ bool Parser::parse(const std::string &input)
     }
     if (!fixed_form) {
         m_tokenizer.set_string(inp);
-        if (yyparse(*this) == 0) {
-            if (diag.has_error())
-                return false;
-            return true;
+        try {
+            if (yyparse(*this) == 0) {
+                if (diag.has_error())
+                    return false;
+                return true;
+            }
+        } catch (const parser_local::TokenizerAbort &e) {
+            return false;
         }
     } else {
         f_tokenizer.set_string(inp);
@@ -294,7 +298,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
         std::vector<YYSTYPE> *stypes,
         std::vector<Location> *locations,
-        bool fixed_form)
+        bool fixed_form,
+        bool continue_compilation)
 {
     if (fixed_form) {
         FixedFormTokenizer t;
@@ -324,9 +329,11 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
             YYSTYPE y;
             Location l;
             try {
-                token = t.lex(al, y, l, diagnostics);
+                token = t.lex(al, y, l, diagnostics, continue_compilation);
             } catch (const parser_local::TokenizerError &e) {
                 diagnostics.diagnostics.push_back(e.d);
+                return Error();
+            } catch (const parser_local::TokenizerAbort &e) {
                 return Error();
             }
             tst.push_back(token);
@@ -1145,7 +1152,7 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             LFortran::YYSTYPE yylval_;
             YYLTYPE yyloc_;
             this->m_tokenizer.cur = this->m_tokenizer.tok;
-            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
+            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag, this->continue_compilation);
             token_str = this->m_tokenizer.token();
         }
         // Create a nice error message

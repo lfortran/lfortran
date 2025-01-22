@@ -11,6 +11,8 @@ namespace parser_local {
     // It is not propagated outside.
     // This file is included in parser.tab.cc (via semantics.h)
     // And in parser.cpp. Nowhere else.
+    class TokenizerAbort {
+    };
 
     class TokenizerError
     {

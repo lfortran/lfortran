@@ -477,8 +477,13 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             if( index2var[index_var].second == IndexType::ArrayIndex ) {
                 bound_dim = 1;
             }
-            ASR::expr_t* lbound = PassUtils::get_bound(
-                index2var[index_var].first, bound_dim, "lbound", al);
+            ASR::expr_t* lbound;
+            if( !ASRUtils::is_array(ASRUtils::expr_type(index2var[index_var].first)) ){
+                lbound = index2var[index_var].first;
+            } else {
+                lbound = PassUtils::get_bound(
+                    index2var[index_var].first, bound_dim, "lbound", al);
+            }
             ASR::stmt_t* set_index_var = ASRUtils::STMT(ASR::make_Assignment_t(
                 al, loc, index_var, lbound, nullptr));
             dest_vec.push_back(al, set_index_var);
@@ -519,6 +524,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             ASRUtils::extract_indices(expr, m_args, n_args);
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             Vec<ASR::expr_t*> new_indices; new_indices.reserve(al, n_args);
+            int k = 0;
             for( size_t i = 0; i < (n_args == 0 ? var_rank : n_args); i++ ) {
                 if( m_args && m_args[i].m_left == nullptr &&
                     m_args[i].m_right != nullptr &&
@@ -539,14 +545,16 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
                         array_index.m_step = nullptr;
                         array_item_args.push_back(al, array_index);
                         j++;
+                        k++;
                     } else {
                         array_item_args.push_back(al, m_args[i]);
                     }
                 } else {
                     ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
-                    index1.m_right = var2indices[var2indices_key][i]; index1.m_step = nullptr;
+                    index1.m_right = var2indices[var2indices_key][k]; index1.m_step = nullptr;
                     array_item_args.push_back(al, index1);
-                    new_indices.push_back(al, var2indices[var2indices_key][i]);
+                    new_indices.push_back(al, var2indices[var2indices_key][k]);
+                    k++;
                 }
             }
             var2indices[var2indices_key] = new_indices;
@@ -569,14 +577,18 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         bool is_target_array = ASRUtils::is_array(ASRUtils::expr_type(target));
         bool is_value_array = ASRUtils::is_array(ASRUtils::expr_type(value));
         Vec<ASR::array_index_t> array_indices_args; array_indices_args.reserve(al, 1);
+        Vec<ASR::array_index_t> rhs_array_indices_args; rhs_array_indices_args.reserve(al, 1);
         int n_array_indices_args = -1;
+        int temp_n = -1;
         size_t do_loop_depth = var_rank;
         if( is_target_array ) {
             vars_expr.push_back(al, ASRUtils::extract_array_variable(target));
             ASRUtils::extract_array_indices(target, al, array_indices_args, n_array_indices_args);
         }
-        if( is_value_array )
+        if( is_value_array ) {
             vars_expr.push_back(al, ASRUtils::extract_array_variable(value));
+            ASRUtils::extract_array_indices(value, al, rhs_array_indices_args, temp_n);
+        }
 
         size_t offset_for_array_indices = 0;
 
@@ -603,8 +615,13 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(index_var_name, index);
                 ASR::expr_t* index_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, index));
-                index2var[index_expr] = std::make_pair(vars_expr[i],
-                    i >= offset_for_array_indices ? IndexType::ArrayIndex : IndexType::ScalarIndex);
+                if ((i == offset_for_array_indices - 1) && is_value_array &&
+                        rhs_array_indices_args[j].m_left != nullptr) {
+                    index2var[index_expr] = std::make_pair(rhs_array_indices_args[j].m_left, IndexType::ScalarIndex);
+                } else {
+                    index2var[index_expr] = std::make_pair(vars_expr[i],
+                        i >= offset_for_array_indices ? IndexType::ArrayIndex : IndexType::ScalarIndex);
+                }
                 indices.push_back(al, index_expr);
             }
             var2indices[i] = indices;

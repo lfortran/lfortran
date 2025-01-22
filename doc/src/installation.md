@@ -84,15 +84,15 @@ wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-lates
 bash miniconda.sh -b -p $HOME/conda_root
 export PATH="$HOME/conda_root/bin:$PATH"
 ```
-Then prepare the environment:
-```bash
-conda create -n lf -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml zstd-static pandoc gcc gxx libcxx
-conda activate lf
-```
 Clone the LFortran git repository:
 ```
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
+```
+Then prepare the environment:
+```bash
+conda env create -f environment_linux.yml
+conda activate lf
 ```
 Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):
 ```bash
@@ -194,10 +194,17 @@ sudo nano .bashrc
 export PATH="$HOME/conda_root/bin:$PATH"
 ```
 * Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)
-* After that restart Ubuntu
+* After that restart Ubuntu.
+* You can change the directory to a Windows location using 
+`cd /mnt/[drive letter]/[windows location]`, e.g. `cd mnt/c/Users/name/source/repos/`.
+* Now clone the LFortran git repository.
+```bash
+git clone https://github.com/lfortran/lfortran.git
+cd lfortran
+```
 * Run the following
 ```bash
-conda create -n lf -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml
+conda env create -f environment_linux.yml
 conda init bash
 ```
 * Restart Ubuntu again
@@ -207,14 +214,6 @@ sudo apt update
 sudo apt-get install build-essential
 sudo apt-get install zlib1g-dev libzstd-dev
 sudo apt install clang
-```
-* You can change the directory to a Windows location using `cd /mnt/[drive letter]/[windows location]`.
-* e.g. `cd mnt/c/Users/name/source/repos/`
-
-* Now clone the LFortran git repository
-```bash
-git clone https://github.com/lfortran/lfortran.git
-cd lfortran
 ```
 
 * Run the following commands
