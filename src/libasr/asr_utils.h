@@ -1802,7 +1802,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
         }
-        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
+        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
 }
 

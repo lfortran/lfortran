@@ -3022,6 +3022,23 @@ public:
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
+        } else if (x.m_type->type == ASR::ttypeType::FunctionType) {
+            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, type);
+            if (!external) {
+                if (init_value) {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            init_value);
+                } else {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            llvm::Constant::getNullValue(type)
+                        );
+                }
+            }
+            llvm_symtab[h] = ptr;
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type[ptr] = type;
+#endif
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python(x.m_type), x.base.base.loc);
         }
@@ -4178,8 +4195,8 @@ public:
                     if (!interface_as_arg) {
                         instantiate_function(*v);
                     }
-                } else if ( ASR::is_a<ASR::Variable_t>(*item.second) && is_function_variable(item.second) ) {
-                    ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
+                } else if ( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(item.second)) && is_function_variable(ASRUtils::symbol_get_past_external(item.second)) ) {
+                    ASR::Variable_t *v = down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(item.second));
                     bool interface_as_arg = false;
                     for (size_t i=0; i<x.n_args; i++) {
                         if (is_a<ASR::Var_t>(*x.m_args[i])) {
@@ -4754,6 +4771,7 @@ public:
             ptr_loads = ptr_loads_copy;
             ASR::dimension_t* m_dims = nullptr;
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
             int n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
             ASR::ttype_t *type = ASRUtils::get_contained_type(target_type);
@@ -7221,6 +7239,40 @@ public:
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                     tmp = llvm_symtab[h];
+                }
+                break;
+            }
+            case ASR::ttypeType::FunctionType: {
+                // break;
+                uint32_t h = get_hash((ASR::asr_t*)x);
+                uint32_t x_h = get_hash((ASR::asr_t*)x);
+                if ( llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end() ) {
+                    tmp = llvm_symtab_fn_arg[h];
+                } else if ( llvm_symtab.find(x_h) != llvm_symtab.end() ) {
+                    tmp = llvm_symtab[x_h];
+                } else if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
+                    tmp = llvm_symtab_fn[h];
+                    tmp = llvm_utils->CreateLoad2(tmp->getType()->getPointerTo(), tmp);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[tmp] = tmp->getType();
+#endif
+                } else {
+                    throw CodeGenError("Function type not supported yet");
+                }
+                if (x->m_value_attr) {
+                    // Already a value, such as value argument to bind(c)
+                    break;
+                }
+                if( ASRUtils::is_array(x->m_type) ) {
+                    break;
+                } else {
+                    // Load only once since its a value
+                    if( ptr_loads > 0 ) {
+                        tmp = llvm_utils->CreateLoad2(x->m_type, tmp);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[tmp] = tmp->getType();
+#endif
+                    }
                 }
                 break;
             }

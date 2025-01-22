@@ -874,7 +874,7 @@ namespace LCompilers {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
-                LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
+                LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent) || arg->m_intent == ASR::intentType::Local);
                 // We pass all arguments as pointers for now,
                 // except bind(C) value arguments that are passed by value
                 llvm::Type *type = nullptr, *type_original = nullptr;
