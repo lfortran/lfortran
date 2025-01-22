@@ -4428,3 +4428,12 @@ asr = true
 [[test]]
 filename = "../integration_tests/polymorphic_arguments_02.f90"
 asr = true
+
+[[test]]
+filename = "parse_without_program_line.f90"
+ast = true
+
+[[test]]
+filename = "interactive_parse_without_program_line.f90"
+options = "--interactive-parse"
+ast = true
