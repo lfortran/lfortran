@@ -612,10 +612,13 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         if (is_integer(*ASRUtils::expr_type(args[1]))) {
             dim = args[1];
             if ( ASRUtils::is_value_constant(dim) ) {
-                int n_dims = extract_dim_value_int(dim);
-                if (n_dims <= 0 || n_dims > ASRUtils::extract_n_dims_from_ttype(array_type)) {
-                    append_error(diag, "`dim` argument of the `" + intrinsic_func_name + "` is out of bounds",
-                        args[1]->base.loc);
+                int dim_val = extract_dim_value_int(dim);
+                int n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
+                if (dim_val <= 0 || dim_val > n_dims) {
+                    diag.add(diag::Diagnostic("`dim` argument of the `" + intrinsic_func_name + "` is out of bounds", 
+                    diag::Level::Error, 
+                    diag::Stage::Semantic, 
+                    {diag::Label("array argument is rank " + std::to_string(n_dims) + ", so must have 1 <= dim <= " + std::to_string(n_dims), { args[1]->base.loc })}));
                     return nullptr;
                 }
             }
@@ -631,10 +634,13 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {
                 dim = args[2];
                 if ( ASRUtils::is_value_constant(dim) ) {
-                    int n_dims = extract_dim_value_int(dim);
-                    if (n_dims <= 0 || n_dims > ASRUtils::extract_n_dims_from_ttype(array_type)) {
-                        append_error(diag, "`dim` argument of the `" + intrinsic_func_name + "` is out of bounds",
-                            args[2]->base.loc);
+                    int dim_val = extract_dim_value_int(dim);
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
+                    if (dim_val <= 0 || dim_val > n_dims) {
+                        diag.add(diag::Diagnostic("`dim` argument of the `" + intrinsic_func_name + "` is out of bounds", 
+                        diag::Level::Error, 
+                        diag::Stage::Semantic, 
+                        {diag::Label("array argument is rank " + std::to_string(n_dims) + ", so must have 1 <= dim <= " + std::to_string(n_dims), { args[2]->base.loc })}));
                         return nullptr;
                     }
                 }
