@@ -1,9 +1,9 @@
 program continue_compilation_1
     implicit integer(a-f), real(e-z)
 
-    integer :: a(3), b(3), b1(3, 3), a3(3, 3, 3), b4(3, 3, 3, 3), a5, c5, i
+    integer :: a(3), b(3), b1(3, 3), a3(3, 3, 3), b4(3, 3, 3, 3), a5, c5, i, arr1(3), arr2(2, 3), arr3(2, 1, 3)
     character :: a1(3, 3)
-    logical :: a2(3, 3)
+    logical :: a2(3, 3), mask1(3), mask2(2, 3), mask3(2, 1, 3)
     integer(kind=8) :: b5
     real(8) :: y1
     real :: z1
@@ -95,9 +95,25 @@ program continue_compilation_1
     print *, selected_real_kind([1,2,3])
     print *, selected_char_kind(['c', 'a', 'b'])
 
-    print *, sum(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
-    print *, product(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
-    print *, minval(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
-    print *, maxval(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
-    print *, iparity(reshape([1, 2, 3, 4, 5, 6], [2, 3]), dim = 3)
+    arr1 = reshape([1, 2, 3], [3])
+    arr2 = reshape([1, 2, 3, 4, 5, 6], [2, 3])
+    arr3 = reshape([1, 2, 3, 4, 5, 6], [2, 1, 3])
+    mask1 = reshape([.true., .false., .true.], [3])
+    mask2 = reshape([.true., .false., .true., .true., .false., .true.], [2, 3])
+    mask3 = reshape([.true., .false., .true., .true., .false., .true.], [2, 1, 3])
+
+    print *, sum(arr1, dim = 2)
+    print *, sum(arr1, dim = -1)
+    print *, sum(arr1, mask = mask1, dim = 2)
+    print *, sum(arr1, mask = mask1, dim = -1)
+
+    print *, product(arr2, dim = 3)
+    print *, product(arr2, dim = -1)
+    print *, product(arr2, mask = mask2, dim = 3)
+    print *, product(arr2, mask = mask2, dim = -1)
+
+    print *, iparity(arr3, dim = 4)
+    print *, iparity(arr3, dim = -1)
+    print *, iparity(arr3, mask = mask3, dim = 4)
+    print *, iparity(arr3, mask = mask3, dim = -1)
 end program
