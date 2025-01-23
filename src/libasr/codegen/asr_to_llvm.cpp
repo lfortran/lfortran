@@ -5384,7 +5384,7 @@ public:
                     value_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(value));
                 }
                 LCOMPILERS_ASSERT(data_only_copy);
-                arr_descr->copy_array_data_only(value_data, target_data, module.get(),
+                arr_descr->copy_array_data_only(target_data, value_data, module.get(),
                                                 target_el_type, llvm_size);
             } else if ( is_target_simd_array ) {
                 if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
