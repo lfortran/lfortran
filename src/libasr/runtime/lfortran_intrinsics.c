@@ -2788,6 +2788,7 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 
 struct UNIT_FILE {
     int32_t unit;
+    char* filename;
     FILE* filep;
     bool unit_file_bin;
 };
@@ -2796,7 +2797,7 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
-void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
+void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin) {
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             unit_to_file[i].unit = unit_num;
@@ -2810,6 +2811,7 @@ void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
         exit(1);
     }
     unit_to_file[last_index_used].unit = unit_num;
+    unit_to_file[last_index_used].filename = filename;
     unit_to_file[last_index_used].filep = filep;
     unit_to_file[last_index_used].unit_file_bin = unit_file_bin;
 }
@@ -2820,6 +2822,17 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin) {
         if( unit_to_file[i].unit == unit_num ) {
             *unit_file_bin = unit_to_file[i].unit_file_bin;
             return unit_to_file[i].filep;
+        }
+    }
+    return NULL;
+}
+
+char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
+    *unit_file_bin = false;
+    for (int i = 0; i <= last_index_used; i++) {
+        if (unit_to_file[i].unit == unit_num) {
+            *unit_file_bin = unit_to_file[i].unit_file_bin;
+            return unit_to_file[i].filename;
         }
     }
     return NULL;
@@ -2838,6 +2851,7 @@ void remove_from_unit_to_file(int32_t unit_num) {
     }
     for( int i = index; i < last_index_used; i++ ) {
         unit_to_file[i].unit = unit_to_file[i + 1].unit;
+        unit_to_file[i].filename = unit_to_file[i + 1].filename;
         unit_to_file[i].filep = unit_to_file[i + 1].filep;
         unit_to_file[i].unit_file_bin = unit_to_file[i + 1].unit_file_bin;
     }
@@ -2920,7 +2934,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         perror(f_name);
         exit(1);
     }
-    store_unit_file(unit_num, fd, unit_file_bin);
+    store_unit_file(unit_num, f_name, fd, unit_file_bin);
     return (int64_t)fd;
 }
 
@@ -3581,7 +3595,7 @@ LFORTRAN_API void _lpython_close(int64_t fd)
     }
 }
 
-LFORTRAN_API void _lfortran_close(int32_t unit_num)
+LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
 {
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
@@ -3592,6 +3606,13 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num)
     if (fclose(filep) != 0) {
         printf("Error in closing the file!\n");
         exit(1);
+    }
+    // TODO: Support other `status` specifiers
+    if (status && strcmp(status, "delete") == 0) {
+        if (remove(get_file_name_from_unit(unit_num, &unit_file_bin)) != 0) {
+            printf("Error in deleting file!\n");
+            exit(1);
+        }
     }
     remove_from_unit_to_file(unit_num);
 }
