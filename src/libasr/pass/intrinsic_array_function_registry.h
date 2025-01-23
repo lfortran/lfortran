@@ -611,6 +611,17 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     if (args[1]) {
         if (is_integer(*ASRUtils::expr_type(args[1]))) {
             dim = args[1];
+            if ( ASRUtils::is_value_constant(dim) ) {
+                int dim_val = extract_dim_value_int(dim);
+                int n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
+                if (dim_val <= 0 || dim_val > n_dims) {
+                    diag.add(diag::Diagnostic("`dim` argument of the `" + intrinsic_func_name + "` intrinsic is out of bounds", 
+                    diag::Level::Error, 
+                    diag::Stage::Semantic, 
+                    {diag::Label("Must have 0 < dim <= " + std::to_string(n_dims) + " for array of rank " + std::to_string(n_dims), { args[1]->base.loc })}));
+                    return nullptr;
+                }
+            }
             if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
                 mask = args[2];
             } else if (args[2]) {
@@ -622,6 +633,17 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             mask = args[1];
             if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {
                 dim = args[2];
+                if ( ASRUtils::is_value_constant(dim) ) {
+                    int dim_val = extract_dim_value_int(dim);
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
+                    if (dim_val <= 0 || dim_val > n_dims) {
+                        diag.add(diag::Diagnostic("`dim` argument of the `" + intrinsic_func_name + "` intrinsic is out of bounds", 
+                        diag::Level::Error, 
+                        diag::Stage::Semantic, 
+                        {diag::Label("Must have 0 < dim <= " + std::to_string(n_dims) + " for array of rank " + std::to_string(n_dims), { args[2]->base.loc })}));
+                        return nullptr;
+                    }
+                }
             } else if (args[2]) {
                 append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` must be a scalar and of integer type",
                     args[2]->base.loc);
