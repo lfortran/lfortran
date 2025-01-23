@@ -3772,11 +3772,10 @@ public:
                             ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
                             llvm_symtab_deep_copy[m_length_variable_h] = deep;
+                            builder->CreateStore(tmp, deep);
+                            tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),deep);
                         } 
                     }
-
-                    builder->CreateStore(tmp, deep);
-                    tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),deep);
 
                     // Make dimension length and return size compatible.(TODO : array_size should be of type int64)
                     if(ASRUtils::extract_kind_from_ttype_t(
