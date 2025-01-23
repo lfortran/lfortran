@@ -1668,15 +1668,6 @@ public:
                         (symbol_scope->counter != current_scope->counter && is_argument &&
                         ASRUtils::expr_value(end) == nullptr) ) {
                             end = get_transformed_function_call(end_sym);
-                    } else if (ASR::is_a<ASR::Variable_t>(*end_sym)) {
-                        ASR::Variable_t* end_sym_varible = ASR::down_cast<ASR::Variable_t>(end_sym);
-                        ASR::symbol_t* end_parent_sym = current_scope->parent->get_symbol(end_sym_varible->m_name);
-                        if (in_Subroutine && end_sym_varible->m_value == nullptr && end_parent_sym != nullptr && ASR::is_a<ASR::Variable_t>(*end_parent_sym)) {
-                            ASR::Variable_t* end_parent_sym_variable = ASR::down_cast<ASR::Variable_t>(end_parent_sym);
-                            if (end_parent_sym_variable != nullptr && end_parent_sym_variable->m_value != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*end_parent_sym_variable->m_value)) {
-                                end = end_parent_sym_variable->m_value;
-                            }
-                        }
                     }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
                     end = convert_integer_binop_to_function_call(end, is_argument);
