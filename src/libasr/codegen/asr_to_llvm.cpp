@@ -3763,17 +3763,17 @@ public:
                 for( size_t i = 0; i < n_dims; i++ ) {
                     this->visit_expr_wrapper(m_dims[i].m_length, true);
 
-                    llvm::Value* deep = llvm_utils->CreateAlloca(*builder, type, nullptr, "deep");
-
                     if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
                         ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
                         ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
                         if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
                             ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                            llvm_symtab_deep_copy[m_length_variable_h] = deep;
+                            llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_dims[i].m_length),module.get());
+                            llvm::Value* deep = llvm_utils->CreateAlloca(*builder, deep_type, nullptr, "deep");
                             builder->CreateStore(tmp, deep);
                             tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),deep);
+                            llvm_symtab_deep_copy[m_length_variable_h] = deep;
                         } 
                     }
 
