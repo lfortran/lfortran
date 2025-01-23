@@ -10290,7 +10290,11 @@ public:
                                 if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
                                     ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                                     uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                                    tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                    if (llvm_symtab_deep_copy.find(m_length_variable_h) != llvm_symtab_deep_copy.end()) {
+                                        tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                    } else {
+                                        visit_expr_wrapper(m_dims[i].m_length, true);
+                                    } 
                                 } else {
                                     visit_expr_wrapper(m_dims[i].m_length, true);
                                 }
@@ -10411,7 +10415,11 @@ public:
                                 if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
                                     ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                                     uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                                    tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                    if (llvm_symtab_deep_copy.find(m_length_variable_h) != llvm_symtab_deep_copy.end()) {
+                                        tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                    } else {
+                                        this->visit_expr_wrapper(m_dims[i].m_length, true);
+                                    } 
                                 } else {
                                     this->visit_expr_wrapper(m_dims[i].m_length, true);
                                 }
@@ -10492,7 +10500,11 @@ public:
                                     if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
                                         ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                                         uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                                        tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                        if (llvm_symtab_deep_copy.find(m_length_variable_h) != llvm_symtab_deep_copy.end()) {
+                                            tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                        } else {
+                                            this->visit_expr_wrapper(m_dims[i].m_length, true);
+                                        } 
                                     } else {
                                         this->visit_expr_wrapper(m_dims[i].m_length, true);
                                     }
