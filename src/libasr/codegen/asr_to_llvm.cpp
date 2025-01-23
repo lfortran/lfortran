@@ -10285,7 +10285,19 @@ public:
                         int ptr_loads_copy = ptr_loads;
                         ptr_loads = 2;
                         for( int i = 0; i < n_dims; i++ ) {
-                            visit_expr_wrapper(m_dims[i].m_length, true);
+                            if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
+                                ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
+                                ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
+                                if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
+                                    ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
+                                    uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
+                                    tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                } else {
+                                    visit_expr_wrapper(m_dims[i].m_length, true);
+                                }
+                            } else {
+                                visit_expr_wrapper(m_dims[i].m_length, true);
+                            }
 
                             // Make dimension length and return size compatible.
                             if(ASRUtils::extract_kind_from_ttype_t(
@@ -10475,7 +10487,19 @@ public:
                                 llvm::Value *lbound = nullptr, *length = nullptr;
                                 this->visit_expr_wrapper(m_dims[i].m_start, true);
                                 lbound = tmp;
-                                this->visit_expr_wrapper(m_dims[i].m_length, true);
+                                if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
+                                    ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
+                                    ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
+                                    if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
+                                        ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
+                                        uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
+                                        tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
+                                    } else {
+                                        this->visit_expr_wrapper(m_dims[i].m_length, true);
+                                    }
+                                } else {
+                                    this->visit_expr_wrapper(m_dims[i].m_length, true);
+                                }
                                 length = tmp;
                                 builder->CreateStore(
                                     builder->CreateSub(builder->CreateAdd(length, lbound),
