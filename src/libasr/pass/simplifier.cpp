@@ -893,7 +893,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         al(al_), current_body(nullptr), parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
             inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
-    
+
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
         transform_stmts_impl(al, m_body, n_body, current_body,
@@ -1596,6 +1596,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
             }
+
+            if( ASRUtils::is_allocatable(target) && ASRUtils::is_fixed_size_array(x->m_type) ) {
+                insert_allocate_stmt_for_array(al, target, *current_expr, current_body);
+                return ;
+            }
         }
         if( !ASRUtils::is_array(x->m_type) && lhs_var &&
                is_common_symbol_present_in_lhs_and_rhs(lhs_var, *current_expr) ) {
@@ -1691,7 +1696,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
-                !is_assignment_target_array_section_item) || 
+                !is_assignment_target_array_section_item) ||
                 (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v))) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_section_", al, current_body,
@@ -1750,7 +1755,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
-                !is_assignment_target_array_section_item) || 
+                !is_assignment_target_array_section_item) ||
                 (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v))) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
