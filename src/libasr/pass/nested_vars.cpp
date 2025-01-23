@@ -680,6 +680,13 @@ public:
                                                         target, val, nullptr));
                             body.push_back(al, assignment);
                             if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter) {
+                                if ( ASR::is_a<ASR::Var_t>(*val) ) {
+                                    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(val);
+                                    if ( ASR::is_a<ASR::Variable_t>(*var->m_v) ) {
+                                        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                                        v->m_intent = ASR::intentType::InOut;
+                                    }
+                                }
                                 assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
                                                 val, target, nullptr));
                                 assigns_at_end.push_back(assignment);
