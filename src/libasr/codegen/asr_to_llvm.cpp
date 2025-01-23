@@ -8262,20 +8262,27 @@ public:
     }
 
     void visit_FileClose(const ASR::FileClose_t &x) {
-        llvm::Value *unit_val = nullptr;
+        llvm::Value *unit_val, *status = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+        if (x.m_status) {
+            this->visit_expr_wrapper(x.m_status, true);
+            status = tmp;
+        } else {
+            status = llvm::Constant::getNullValue(character_type);
+        }
         std::string runtime_func_name = "_lfortran_close";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         llvm::Type::getInt32Ty(context),
+                        character_type,
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {unit_val});
+        tmp = builder->CreateCall(fn, {unit_val, status});
     }
 
     void visit_Print(const ASR::Print_t &x) {
