@@ -833,9 +833,11 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
         }
     }
 
-    void insert_realloc_for_target(ASR::expr_t* target, Vec<ASR::expr_t**>& vars) {
+    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
-        if( realloc_lhs == false || !ASRUtils::is_allocatable(target_type) || vars.size() == 1 ) {
+        if( (realloc_lhs == false || !ASRUtils::is_allocatable(target_type) || vars.size() == 1) &&
+            !(ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target) &&
+              ASRUtils::is_allocatable(target_type)) ) {
             return ;
         }
 
@@ -944,7 +946,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
             return ;
         }
 
-        insert_realloc_for_target(xx.m_target, vars);
+        insert_realloc_for_target(xx.m_target, xx.m_value, vars);
 
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 2);
