@@ -7,6 +7,7 @@
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pickle.h>
+#include <functional>
 
 #include <vector>
 #include <utility>
@@ -762,16 +763,19 @@ void insert_allocate_stmt_for_struct(Allocator& al, ASR::expr_t* temporary_var,
         nullptr, nullptr, nullptr)));
 }
 
-#define transform_stmts_impl Vec<ASR::stmt_t*>* current_body_copy = current_body; \
-    Vec<ASR::stmt_t*> current_body_vec; current_body_vec.reserve(al, 1); \
-    current_body_vec.reserve(al, n_body); \
-    current_body = &current_body_vec; \
-    for (size_t i = 0; i < n_body; i++) { \
-        visit_stmt(*m_body[i]); \
-        current_body->push_back(al, m_body[i]); \
-    } \
-    m_body = current_body_vec.p; n_body = current_body_vec.size(); \
+void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
+    Vec<ASR::stmt_t*>*& current_body, std::function<void(const ASR::stmt_t&)> visit_stmt) {
+    Vec<ASR::stmt_t*>* current_body_copy = current_body;
+    Vec<ASR::stmt_t*> current_body_vec; current_body_vec.reserve(al, 1);
+    current_body_vec.reserve(al, n_body);
+    current_body = &current_body_vec;
+    for (size_t i = 0; i < n_body; i++) {
+        visit_stmt(*m_body[i]);
+        current_body->push_back(al, m_body[i]);
+    }
+    m_body = current_body_vec.p; n_body = current_body_vec.size();
     current_body = current_body_copy;
+}
 
 ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
     ASR::expr_t* scalar_expr, const std::string& name_hint, Allocator& al,
@@ -889,9 +893,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         al(al_), current_body(nullptr), parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
             inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
+    
 
-    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-        transform_stmts_impl
+    void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
+        transform_stmts_impl(al, m_body, n_body, current_body,
+            [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
     #define BEGIN_VAR_CHECK(expr) if( !ASR::is_a<ASR::Var_t>(*expr) && \
@@ -1894,7 +1900,8 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-        transform_stmts_impl
+        transform_stmts_impl(al, m_body, n_body, current_body,
+            [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
