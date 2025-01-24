@@ -196,3 +196,75 @@ semantic error: arguments of `selected_char_kind` intrinsic must be scalar
    |
 96 |     print *, selected_char_kind(['c', 'a', 'b'])
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` argument of the `Sum` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:105:30
+    |
+105 |     print *, sum(arr1, dim = 2)
+    |                              ^ Must have 0 < dim <= 1 for array of rank 1
+
+semantic error: `dim` argument of the `Sum` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:106:30
+    |
+106 |     print *, sum(arr1, dim = -1)
+    |                              ^^ Must have 0 < dim <= 1 for array of rank 1
+
+semantic error: `dim` argument of the `Sum` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:107:44
+    |
+107 |     print *, sum(arr1, mask = mask1, dim = 2)
+    |                                            ^ Must have 0 < dim <= 1 for array of rank 1
+
+semantic error: `dim` argument of the `Sum` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:108:44
+    |
+108 |     print *, sum(arr1, mask = mask1, dim = -1)
+    |                                            ^^ Must have 0 < dim <= 1 for array of rank 1
+
+semantic error: `dim` argument of the `Product` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:110:34
+    |
+110 |     print *, product(arr2, dim = 3)
+    |                                  ^ Must have 0 < dim <= 2 for array of rank 2
+
+semantic error: `dim` argument of the `Product` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:111:34
+    |
+111 |     print *, product(arr2, dim = -1)
+    |                                  ^^ Must have 0 < dim <= 2 for array of rank 2
+
+semantic error: `dim` argument of the `Product` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:112:48
+    |
+112 |     print *, product(arr2, mask = mask2, dim = 3)
+    |                                                ^ Must have 0 < dim <= 2 for array of rank 2
+
+semantic error: `dim` argument of the `Product` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:113:48
+    |
+113 |     print *, product(arr2, mask = mask2, dim = -1)
+    |                                                ^^ Must have 0 < dim <= 2 for array of rank 2
+
+semantic error: `dim` argument of the `Iparity` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:115:34
+    |
+115 |     print *, iparity(arr3, dim = 4)
+    |                                  ^ Must have 0 < dim <= 3 for array of rank 3
+
+semantic error: `dim` argument of the `Iparity` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:116:34
+    |
+116 |     print *, iparity(arr3, dim = -1)
+    |                                  ^^ Must have 0 < dim <= 3 for array of rank 3
+
+semantic error: `dim` argument of the `Iparity` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:117:48
+    |
+117 |     print *, iparity(arr3, mask = mask3, dim = 4)
+    |                                                ^ Must have 0 < dim <= 3 for array of rank 3
+
+semantic error: `dim` argument of the `Iparity` intrinsic is out of bounds
+   --> tests/errors/continue_compilation_1.f90:118:48
+    |
+118 |     print *, iparity(arr3, mask = mask3, dim = -1)
+    |                                                ^^ Must have 0 < dim <= 3 for array of rank 3

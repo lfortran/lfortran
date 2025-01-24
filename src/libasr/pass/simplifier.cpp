@@ -904,23 +904,27 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
     #define END_VAR_CHECK }
 
-    #define call_create_and_allocate_temporary_variable(expr) ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr); \
-        ASR::expr_t* array_var_temporary = nullptr; \
-        if( ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) && \
-            ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i)) ) { \
-            array_var_temporary = create_and_allocate_temporary_variable_for_array( \
-                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
-                false); \
-        } else if(ASR::is_a<ASR::ArrayItem_t>(*x_m_args_i) && \
-            ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArrayItem_t>(x_m_args_i))) { \
-            array_var_temporary = create_and_allocate_temporary_variable_for_array( \
-                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
-                false); \
-        } else { \
-            array_var_temporary = create_and_allocate_temporary_variable_for_array( \
-                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
-                ASR::is_a<ASR::ArraySection_t>(*x_m_args_i)); \
+    ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
+        const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
+        ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
+        ASR::expr_t* array_var_temporary = nullptr;
+        if( ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) && 
+            ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i)) ) { 
+            array_var_temporary = create_and_allocate_temporary_variable_for_array(
+                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
+                false);
+        } else if(ASR::is_a<ASR::ArrayItem_t>(*x_m_args_i) &&
+            ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArrayItem_t>(x_m_args_i))) {
+            array_var_temporary = create_and_allocate_temporary_variable_for_array(
+                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
+                false);
+        } else {
+            array_var_temporary = create_and_allocate_temporary_variable_for_array(
+                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
+                ASR::is_a<ASR::ArraySection_t>(*x_m_args_i));
         }
+        return array_var_temporary;
+    }
 
     void visit_IO(ASR::expr_t**& x_values, size_t& n_values, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_values; x_m_values.reserve(al, n_values);
@@ -929,7 +933,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < n_values; i++ ) {
             if( is_temporary_needed(x_values[i]) ) {
                 visit_expr(*x_values[i]);
-                call_create_and_allocate_temporary_variable(x_values[i])
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_values[i], al, current_body, name_hint, current_scope, exprs_with_target);
                 x_m_values.push_back(al, array_var_temporary);
             } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_values[i])) &&
                        !ASR::is_a<ASR::Var_t>(
@@ -978,7 +982,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < x_n_args; i++ ) {
             visit_expr(*x_m_args[i]);
             if( is_temporary_needed(x_m_args[i]) ) {
-                call_create_and_allocate_temporary_variable(x_m_args[i])
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i], al, current_body, name_hint, current_scope, exprs_with_target);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1014,7 +1018,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < x_n_args; i++ ) {
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
-                call_create_and_allocate_temporary_variable(x_m_args[i].m_value)
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1085,7 +1089,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
                 if (create_temp_var_for_rhs) {
                     std::string name_hint = "_assignment_";
-                    call_create_and_allocate_temporary_variable(xx.m_value)
+                    ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target);
                     xx.m_value = array_var_temporary;
                 }
             }
@@ -1124,7 +1128,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         std::string name_hint = "print";
         if( is_temporary_needed(xx.m_text) ) {
             visit_expr(*xx.m_text);
-            call_create_and_allocate_temporary_variable(xx.m_text);
+            ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_text, al, current_body, name_hint, current_scope, exprs_with_target);
             xx.m_text = array_var_temporary;
         } else if( ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_text)) &&
                     !ASR::is_a<ASR::Var_t>(
@@ -1187,7 +1191,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
-            call_create_and_allocate_temporary_variable(expr)
+            ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(expr, al, current_body, name_hint, current_scope, exprs_with_target);
             return array_var_temporary;
         } else if( ASRUtils::is_struct(*ASRUtils::expr_type(expr)) &&
                     !ASR::is_a<ASR::Var_t>(
