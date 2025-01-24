@@ -65,7 +65,8 @@ The command will push the new branch `fix1` into your remote repository `REMOTE_
 
 ### How to Fix Things: A Tutorial
 
-Here’s a tutorial video that explains how to fix things: [Watch here](https://www.youtube.com/watch?v=yuYsyM08bss).
+Here’s a tutorial video that explains LFortran's design and how to fix bugs: [Watch here](https://www.youtube.com/watch?v=yuYsyM08bss).
+
 ## Add New Features
 
 The example below shows the steps it would take to create a caret binary operator **^** which computes the average value of the two operands.
