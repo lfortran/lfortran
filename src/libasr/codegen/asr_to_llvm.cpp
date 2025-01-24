@@ -10202,6 +10202,26 @@ public:
         }
     }
 
+    void load_array_size_deep_copy(ASR::expr_t* x) {
+        if (x != nullptr &&  ASR::is_a<ASR::Var_t>(*x)) {
+            ASR::Var_t* x_var = ASR::down_cast<ASR::Var_t>(x);
+            ASR::symbol_t* x_sym = ASRUtils::symbol_get_past_external(x_var->m_v);
+            if (x_sym != nullptr && ASR::is_a<ASR::Variable_t>(*x_sym)) {
+                ASR::Variable_t* x_sym_variable = ASR::down_cast<ASR::Variable_t>(x_sym);
+                uint32_t x_sym_variable_h = get_hash((ASR::asr_t*)x_sym_variable);
+                if (llvm_symtab_deep_copy.find(x_sym_variable_h) != llvm_symtab_deep_copy.end()) {
+                    tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x),llvm_symtab_deep_copy[x_sym_variable_h]); 
+                } else {
+                    this->visit_expr_wrapper(x, true);
+                } 
+            } else {
+                this->visit_expr_wrapper(x, true);
+            }
+        } else {
+            this->visit_expr_wrapper(x, true);
+        }
+    }
+
     void visit_ArraySizeUtil(ASR::expr_t* m_v, ASR::ttype_t* m_type,
         ASR::expr_t* m_dim=nullptr, ASR::expr_t* m_value=nullptr) {
         if( m_value ) {
@@ -10291,23 +10311,7 @@ public:
                         int ptr_loads_copy = ptr_loads;
                         ptr_loads = 2;
                         for( int i = 0; i < n_dims; i++ ) {
-                            if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
-                                ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
-                                ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
-                                if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
-                                    ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
-                                    uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                                    if (llvm_symtab_deep_copy.find(m_length_variable_h) != llvm_symtab_deep_copy.end()) {
-                                        tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
-                                    } else {
-                                        visit_expr_wrapper(m_dims[i].m_length, true);
-                                    } 
-                                } else {
-                                    visit_expr_wrapper(m_dims[i].m_length, true);
-                                }
-                            } else {
-                                visit_expr_wrapper(m_dims[i].m_length, true);
-                            }
+                            load_array_size_deep_copy(m_dims[i].m_length);
 
                             // Make dimension length and return size compatible.
                             if(ASRUtils::extract_kind_from_ttype_t(
@@ -10416,23 +10420,7 @@ public:
                             llvm::Value *lbound = nullptr, *length = nullptr;
                             this->visit_expr_wrapper(m_dims[i].m_start, true);
                             lbound = tmp;
-                            if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
-                                ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
-                                ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
-                                if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
-                                    ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
-                                    uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                                    if (llvm_symtab_deep_copy.find(m_length_variable_h) != llvm_symtab_deep_copy.end()) {
-                                        tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
-                                    } else {
-                                        this->visit_expr_wrapper(m_dims[i].m_length, true);
-                                    } 
-                                } else {
-                                    this->visit_expr_wrapper(m_dims[i].m_length, true);
-                                }
-                            } else {
-                                this->visit_expr_wrapper(m_dims[i].m_length, true);
-                            }
+                            load_array_size_deep_copy(m_dims[i].m_length);
                             length = tmp;
                             builder->CreateStore(
                                 builder->CreateSub(builder->CreateAdd(length, lbound),
@@ -10501,23 +10489,7 @@ public:
                                 llvm::Value *lbound = nullptr, *length = nullptr;
                                 this->visit_expr_wrapper(m_dims[i].m_start, true);
                                 lbound = tmp;
-                                if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
-                                    ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
-                                    ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
-                                    if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
-                                        ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
-                                        uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                                        if (llvm_symtab_deep_copy.find(m_length_variable_h) != llvm_symtab_deep_copy.end()) {
-                                            tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),llvm_symtab_deep_copy[m_length_variable_h]); 
-                                        } else {
-                                            this->visit_expr_wrapper(m_dims[i].m_length, true);
-                                        } 
-                                    } else {
-                                        this->visit_expr_wrapper(m_dims[i].m_length, true);
-                                    }
-                                } else {
-                                    this->visit_expr_wrapper(m_dims[i].m_length, true);
-                                }
+                                load_array_size_deep_copy(m_dims[i].m_length);
                                 length = tmp;
                                 builder->CreateStore(
                                     builder->CreateSub(builder->CreateAdd(length, lbound),
