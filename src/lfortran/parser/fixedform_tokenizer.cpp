@@ -266,15 +266,21 @@ std::map<std::string, yytokentype> identifiers_map = {
     {"uminus", UMINUS}
 };
 
+// star-forms must appear before non-stars
 std::vector<std::string> declarators{
+            "integer*",
             "integer",
+	    "real*",
             "real",
+	    "complex*",
             "complex",
             "doubleprecision",
             "doublecomplex",
             "external",
             "dimension",
+	    "character*",
             "character",
+	    "logical*",
             "logical",
             "bytes",
             "data",
@@ -841,7 +847,20 @@ struct FixedFormRecursiveDescent {
     bool lex_declarator(unsigned char *&cur) {
         for(const auto& declarator : declarators) {
             if(next_is(cur, declarator)) {
-                push_token_advance(cur, declarator);
+		if (declarator.back() == '*') {
+		    /* In "star" form declarations, we need to be careful of only parsing an integer (no kind)
+		       after the star, so that we correctly parse "character*2d3v" as "character*2 d3v"
+		       instead of "character*2d3 v", which is illegal. */
+		    push_token_advance(cur, declarator.substr(0, declarator.size() - 1));
+		    push_token_advance(cur, std::string("*"));
+		    unsigned char *int_start = cur;
+		    if (try_integer(cur)) {
+			int32_t val = std::atoi((char*)int_start);
+			push_integer_no_advance(int_start, val);
+		    }
+		} else {
+		    push_token_advance(cur, declarator);
+		}
                 return true;
             }
         }
