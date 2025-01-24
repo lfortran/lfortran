@@ -22,7 +22,7 @@ int position = 0;
 
 namespace LCompilers::LFortran {
 
-std::map<std::string, yytokentype> identifiers_map = {
+const std::unordered_map<std::string, yytokentype> identifiers_map = {
     {"EOF", END_OF_FILE},
     {"\n", TK_NEWLINE},
     {"name", TK_NAME},
@@ -267,7 +267,7 @@ std::map<std::string, yytokentype> identifiers_map = {
 };
 
 // star-forms must appear before non-stars
-std::vector<std::string> declarators{
+const std::vector<std::string> declarators{
             "integer*",
             "integer",
 	    "real*",
@@ -437,7 +437,7 @@ struct FixedFormRecursiveDescent {
     // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
     // (Does not modify `cur`.)
     void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
-            yytokentype token_type) {
+            yytokentype const token_type) {
         YYSTYPE yy;
         yy.string.from_str(m_a, token_str);
         stypes.push_back(yy);
@@ -450,7 +450,9 @@ struct FixedFormRecursiveDescent {
 
     // token_type automatically determined
     void push_token_no_advance(unsigned char *cur, const std::string &token_str) {
-        push_token_no_advance_token(cur, token_str, identifiers_map[token_str]);
+	auto it = identifiers_map.find(token_str);
+	LCOMPILERS_ASSERT(it != identifiers_map.end());
+        push_token_no_advance_token(cur, token_str, it->second);
     }
 
     void push_integer_no_advance(unsigned char *cur, int32_t n) {
