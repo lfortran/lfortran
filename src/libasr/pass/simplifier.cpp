@@ -1749,6 +1749,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) || 
                 (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v))) {
@@ -1756,7 +1757,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     *current_expr, "_array_item_", al, current_body,
                     current_scope, exprs_with_target);
             }
-            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             return ;
         }
 
