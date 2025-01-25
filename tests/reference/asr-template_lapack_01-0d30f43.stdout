@@ -5099,10 +5099,20 @@
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))
+                                                (ArraySize
+                                                    (Var 20 asp)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                (ArraySize
+                                                    (Var 20 bsp)
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerToDataArray
                                             )
                                             ()
                                             ()
@@ -5145,10 +5155,20 @@
                                             (Array
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))
+                                                (ArraySize
+                                                    (Var 20 adp)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                (ArraySize
+                                                    (Var 20 bdp)
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerToDataArray
                                             )
                                             ()
                                             ()
