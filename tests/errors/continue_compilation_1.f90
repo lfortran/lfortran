@@ -116,4 +116,12 @@ program continue_compilation_1
     print *, iparity(arr3, dim = -1)
     print *, iparity(arr3, mask = mask3, dim = 4)
     print *, iparity(arr3, mask = mask3, dim = -1)
+
+    integer :: q1
+    real :: r1
+    character :: c1
+
+    if (q1) q1 = 1
+    if (r1) r1 = 1.0
+    if (c1) c1 = 'a'
 end program
