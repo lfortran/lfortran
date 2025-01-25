@@ -3582,8 +3582,12 @@ namespace FindLoc {
     }
     ASR::ttype_t *type = ASRUtils::extract_type(return_type);
     ASR::expr_t *i = declare("i", type, Local);
+    ASR::expr_t *j = declare("j", type, Local);
+    ASR::expr_t *found_value = declare("found_value", logical, Local);
+    ASR::expr_t* ubound_dim = declare("ubound_dim", type, Local);
     ASR::expr_t *array = args[0];
     ASR::expr_t *value = args[1];
+    ASR::expr_t* dim = args[2];
     ASR::expr_t *mask = args[3];
     ASR::expr_t *back = args[5];
     if (overload_id == 1) {
@@ -3604,14 +3608,29 @@ namespace FindLoc {
             }, {})
         }));
     } else {
+        Vec<ASR::expr_t*> idx_vars; idx_vars.reserve(al, 2);
+        idx_vars.push_back(al, j);
+        idx_vars.push_back(al, i);
+        body.push_back(al, b.If(b.Eq(dim, b.i_t(1, return_type)), {
+            b.Assignment(ubound_dim, b.i_t(2, return_type))
+        }, {
+            b.Assignment(ubound_dim, b.i_t(1, return_type))
+        }));
         body.push_back(al, b.Assignment(result, b.i_t(0, use_experimental_simplifier ? ASRUtils::type_get_past_array(return_type) : return_type)));
-        body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
-            b.If(b.Eq(ArrayItem_02(array, i), value), {
-                b.Assignment(result, i),
-                b.If(b.NotEq(back, b.bool_t(1, logical)), {
-                    b.Return()
+        body.push_back(al, b.DoLoop(i, b.i_t(1, type), ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, array, ubound_dim, int32, ASR::arrayboundType::UBound, nullptr)), {
+            b.Assignment(found_value, b.bool_t(0, logical)),
+            b.DoLoop(j, b.i_t(1, type), ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, array, dim, int32, ASR::arrayboundType::UBound, nullptr)), {
+                b.If(b.Eq(ArrayItem_02(array, idx_vars), value), {
+                    b.Assignment(b.ArrayItem_01(result, {i}), j),
+                    b.Assignment(found_value, b.bool_t(1, logical)),
+                    // b.If(b.NotEq(back, b.bool_t(1, logical)), {
+                    //     b.Return()
+                    // }, {})
+                }, {}),
+                b.If(found_value, {
+                    b.Exit()
                 }, {})
-            }, {})
+            })
         }));
     }
 
