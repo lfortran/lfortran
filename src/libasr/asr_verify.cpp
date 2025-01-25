@@ -550,10 +550,7 @@ public:
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));
             char* aggregate_type_name = nullptr;
             ASR::symbol_t* sym = nullptr;
-            if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
+            if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::EnumType_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
@@ -1026,17 +1023,6 @@ public:
     SymbolTable *get_dt_symtab(ASR::expr_t *dt) {
         ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
         ASR::symbol_t *type_sym=nullptr;
-        switch (t2->type) {
-            case (ASR::ttypeType::StructType): {
-                type_sym = ASR::down_cast<ASR::StructType_t>(t2)->m_derived_type;
-                break;
-            }
-            default :
-                require_with_loc(false,
-                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType)",
-                    dt->base.loc);
-        }
-        return get_dt_symtab(type_sym);
     }
 
     ASR::symbol_t *get_parent_type_dt(ASR::symbol_t *dt) {
@@ -1057,22 +1043,10 @@ public:
     }
 
     ASR::symbol_t *get_parent_type_dt(ASR::expr_t *dt) {
+        // TODO: StructType - Remove this function
         ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
         ASR::symbol_t *type_sym=nullptr;
         ASR::symbol_t *parent = nullptr;
-        switch (t2->type) {
-            case (ASR::ttypeType::StructType): {
-                type_sym = ASR::down_cast<ASR::StructType_t>(t2)->m_derived_type;
-                type_sym = ASRUtils::symbol_get_past_external(type_sym);
-                ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(type_sym);
-                parent = der_type->m_parent;
-                break;
-            }
-            default :
-                require_with_loc(false,
-                    "m_dt::m_v::m_type must point to a StructType type",
-                    dt->base.loc);
-        }
         return parent;
     }
 
@@ -1180,16 +1154,15 @@ public:
         visit_ttype(*x.m_type);
     }
 
-    void visit_StructType(const StructType_t &x) {
-        std::string symbol_owner = "global scope";
-        if( ASRUtils::get_asr_owner(x.m_derived_type) ) {
-            symbol_owner = ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type));
+    void visit_StructType(const StructType_t& x) {
+        for (size_t i = 0; i < x.n_member_types; i++) {
+            symbol_visited = false;
+            visit_ttype(*x.m_member_types[i]);
+            ASRUtils ::require_impl((symbol_visited == false),
+                                    ("ASR::ttype_t in ASR::StructType cannot be tied to a scope."),
+                                    x.base.base.loc,
+                                    diagnostics);
         }
-        require(symtab_in_scope(current_symtab, x.m_derived_type),
-            "StructType::m_derived_type '" +
-            std::string(ASRUtils::symbol_name(x.m_derived_type)) +
-            "' cannot point outside of its symbol table, owner: " +
-            symbol_owner);
     }
 
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
