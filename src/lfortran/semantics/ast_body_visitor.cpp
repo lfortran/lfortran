@@ -3886,7 +3886,7 @@ public:
         ASR::ttype_t *test_type = ASRUtils::expr_type(test);
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic(
-                "If statement requires a logical expression",
+                ASRUtils::type_to_str(test_type) + " expression, expected logical",
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {test->base.loc})}));
             throw SemanticAbort();
