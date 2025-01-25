@@ -900,9 +900,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
-    #define BEGIN_VAR_CHECK(expr) if( !ASR::is_a<ASR::Var_t>(*expr) && \
-        ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
-    #define END_VAR_CHECK }
+    bool var_check(ASR::expr_t* expr) {
+        return !ASR::is_a<ASR::Var_t>(*expr) && ASRUtils::is_array(ASRUtils::expr_type(expr));
+    }
 
     ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
         const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
@@ -1412,11 +1412,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
     }
 
-    #define replace_expr_with_temporary_variable(member, name_hint) BEGIN_VAR_CHECK(x.m_##member) \
+    #define replace_expr_with_temporary_variable(member, name_hint) if( var_check(x.m_##member)) { \
         visit_expr(*x.m_##member); \
         xx.m_##member = create_and_allocate_temporary_variable_for_array( \
             x.m_##member, name_hint, al, current_body, current_scope, exprs_with_target); \
-        END_VAR_CHECK
+        }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
@@ -1506,9 +1506,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
         parent_expr(nullptr), lhs_var(nullptr) {}
 
-    #define is_current_expr_linked_to_target exprs_with_target.find(*current_expr) != exprs_with_target.end()
+    bool is_current_expr_linked_to_target(ExprsWithTargetType& exprs_with_target, ASR::expr_t** &current_expr) {
+        return exprs_with_target.find(*current_expr) != exprs_with_target.end();
+    }
 
-    #define is_current_expr_linked_to_target_then_return if( is_current_expr_linked_to_target ) { \
+    #define is_current_expr_linked_to_target_then_return if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) { \
             std::pair<ASR::expr_t*, targetType>& target_info = exprs_with_target[*current_expr]; \
             ASR::expr_t* target = target_info.first; targetType target_Type = target_info.second; \
             if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && \
@@ -1584,7 +1586,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ;
         }
 
-        if( is_current_expr_linked_to_target && ASRUtils::is_array(x->m_type) ) {
+        if( is_current_expr_linked_to_target(exprs_with_target, current_expr) && ASRUtils::is_array(x->m_type) ) {
             targetType target_Type = exprs_with_target[*current_expr].second;
             ASR::expr_t* target = exprs_with_target[*current_expr].first;
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
@@ -1614,15 +1616,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
         std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
-        if (!(is_current_expr_linked_to_target || ASRUtils::is_array(x->m_type))) {
+        if (!(is_current_expr_linked_to_target(exprs_with_target, current_expr) || ASRUtils::is_array(x->m_type))) {
             force_replace_current_expr_for_scalar(name_hint)
-        } else if ((is_current_expr_linked_to_target &&
+        } else if ((is_current_expr_linked_to_target(exprs_with_target, current_expr) &&
             static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose) == x->m_arr_intrinsic_id &&
             exprs_with_target[*current_expr].second == targetType::OriginalTarget) ||
-            (is_current_expr_linked_to_target &&
+            (is_current_expr_linked_to_target(exprs_with_target, current_expr) &&
                 exprs_with_target[*current_expr].second ==
                     targetType::GeneratedTargetPointerForArraySection) ||
-            (is_current_expr_linked_to_target && ((
+            (is_current_expr_linked_to_target(exprs_with_target, current_expr) && ((
              ASRUtils::is_array(ASRUtils::expr_type(exprs_with_target[*current_expr].first)) ||
              ASRUtils::is_array(x->m_type)) &&
              is_common_symbol_present_in_lhs_and_rhs(exprs_with_target[*current_expr].first, *current_expr)))
@@ -1717,7 +1719,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
         const Location& loc = x->base.base.loc;
         if( is_simd_expression ) {
-            if( is_current_expr_linked_to_target ) {
+            if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) {
                 return ;
             }
 
@@ -1988,17 +1990,17 @@ class ReplaceExprWithTemporaryVisitor:
 
 };
 
-#define check_if_ASR_owner_is_module(asr_owner) asr_owner && \
-    ASR::is_a<ASR::symbol_t>(*asr_owner) && \
-    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
+bool check_if_ASR_owner_is_module(ASR::asr_t* &asr_owner) {
+    return ASR::is_a<ASR::symbol_t>(*asr_owner) && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner));
+}
 
-#define check_if_ASR_owner_is_enum(asr_owner) asr_owner && \
-    ASR::is_a<ASR::symbol_t>(*asr_owner) && \
-    ASR::is_a<ASR::Enum_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
+bool check_if_ASR_owner_is_enum(ASR::asr_t* &asr_owner) {
+    return ASR::is_a<ASR::symbol_t>(*asr_owner) && ASR::is_a<ASR::Enum_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner));
+}
 
-#define check_if_ASR_owner_is_struct(asr_owner) asr_owner && \
-    ASR::is_a<ASR::symbol_t>(*asr_owner) && \
-    ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
+bool check_if_ASR_owner_is_struct(ASR::asr_t* &asr_owner) {
+    return ASR::is_a<ASR::symbol_t>(*asr_owner) && ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner));
+}
 
 class ReplaceModuleVarWithValue:
     public ASR::BaseExprReplacer<ReplaceModuleVarWithValue> {
