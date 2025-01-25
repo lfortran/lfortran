@@ -279,6 +279,7 @@ decl_attribute
     = AttrBind(bind bind)
     | AttrDimension(dimension* dim)
     | AttrCodimension(codimension* codim)
+    | AttrCommon(common_block* blks)
     | AttrEquivalence(equi* args)
     | AttrExtends(identifier name)
     | AttrIntent(attr_intent intent)
@@ -295,7 +296,6 @@ simple_attribute
     = AttrAbstract
     | AttrAllocatable
     | AttrAsynchronous
-    | AttrCommon
     | AttrContiguous
     | AttrDeferred
     | AttrElemental
