@@ -2,7 +2,7 @@
     [(Function
         zdotc
         [(n)
-        (zx)]
+        (d1x)]
         [(AttrType
             TypeComplex
             [(()
@@ -47,7 +47,7 @@
                 None
             )
             []
-            [(zx
+            [(d1x
             [(()
             ()
             DimensionStar)]
@@ -57,8 +57,34 @@
             None
             ())]
             ()
+        )
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(()
+                2
+                Value)]
+                ()
+                ()
+                None
+            )
+            []
+            [(d2v
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
         )]
-        [(Return
+        [(Assignment
+            0
+            d2v
+            (String "AB")
+            ()
+        )
+        (Return
             0
             ()
             ()
