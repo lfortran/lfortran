@@ -3332,6 +3332,8 @@ namespace FindLoc {
         ASR::expr_t* array = args[0];
         ASR::expr_t* value = args[1];
         ASR::expr_t* dim = args[2];
+        ASR::expr_t* mask = args[3];
+        ASR::expr_t* back = args[5];
         if (!array) return nullptr;
         if (!value) return nullptr;
         if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
@@ -3347,32 +3349,33 @@ namespace FindLoc {
             } else {
                 return nullptr;
             }
-            ASR::ArrayConstant_t *mask = nullptr;
-            if (args[3] && ASR::is_a<ASR::ArrayConstant_t>(*args[3])) {
-                mask = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[3]));
-            } else if(args[3] && ASR::is_a<ASR::LogicalConstant_t>(*args[3])) {
-                bool mask_val = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[3])) -> m_value;
+            ASR::expr_t* mask_value = ASRUtils::expr_value(mask);
+            ASR::ArrayConstant_t *mask_value_constant = nullptr;
+            if (mask && ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
+                mask_value_constant = ASR::down_cast<ASR::ArrayConstant_t>(mask_value);
+            } else if (mask && ASR::is_a<ASR::LogicalConstant_t>(*mask)) {
+                bool mask_val = ASR::down_cast<ASR::LogicalConstant_t>(mask_value)->m_value;
                 if (mask_val == false) return b.i_t(0, type);
-                mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant({b.bool_t(mask_val, logical)}, logical, false));
+                mask_value_constant = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant({b.bool_t(mask_val, logical)}, logical, false));
             } else {
                 std::vector<ASR::expr_t*> mask_data;
                 for (int i = 0; i < arr_size; i++) {
                     mask_data.push_back(b.bool_t(true, logical));
                 }
-                mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
+                mask_value_constant = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
             }
-            ASR::LogicalConstant_t *back = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[5]));
-            int element_idx = 0;
-            bool element_found = 0;
+            ASR::expr_t* back_value = ASRUtils::expr_value(back);
+            ASR::LogicalConstant_t *back_value_constant = ASR::down_cast<ASR::LogicalConstant_t>(back_value);
+            // index "-1" indicates that the element is not found
+            int element_idx = -1;
             if (is_character(*expr_type(array))) {
-                std::string ele = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
-                for (int i = element_idx; i < arr_size; i++) {
-                    if (((bool*)mask->m_data)[i] != 0) {
+                std::string ele = ASR::down_cast<ASR::StringConstant_t>(value_value)->m_s;
+                for (int i = 0; i < arr_size; i++) {
+                    if (((bool*)mask_value_constant->m_data)[i] != 0) {
                         std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_s;
                         if (ele.compare(ele2) == 0) {
-                            element_found = 1;
                             element_idx = i;
-                            if (!(back && back->m_value)) break;
+                            if (!(back_value_constant && back_value_constant->m_value)) break;
                         }
                     }
                 }
@@ -3380,42 +3383,37 @@ namespace FindLoc {
                 double re, im;
                 re = ASR::down_cast<ASR::ComplexConstant_t>(value_value)->m_re;
                 im = ASR::down_cast<ASR::ComplexConstant_t>(value_value)->m_im;
-                for (int i = element_idx; i < arr_size; i++) {
-                    if (((bool*)mask->m_data)[i] != 0) {
+                for (int i = 0; i < arr_size; i++) {
+                    if (((bool*)mask_value_constant->m_data)[i] != 0) {
                         double re2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_re;
                         double im2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_im;
                         if (re == re2 && im == im2) {
-                            element_found = 1;
                             element_idx = i;
-                            if (!(back && back->m_value)) break;
+                            if (!(back_value_constant && back_value_constant->m_value)) break;
                         }
                     }
                 }
             } else {
                 double ele = 0;
-                ASR::expr_t* extracted_value = ASRUtils::expr_value(value);
-                if (!extracted_value) return nullptr;
-                if (is_integer(*ASRUtils::expr_type(value))) {
-                    ele = ASR::down_cast<ASR::IntegerConstant_t>(extracted_value)->m_n;
+                if (is_integer(*ASRUtils::expr_type(value_value))) {
+                    ele = ASR::down_cast<ASR::IntegerConstant_t>(value_value)->m_n;
                 } else if (is_real(*ASRUtils::expr_type(value))) {
-                    ele = ASR::down_cast<ASR::RealConstant_t>(extracted_value)->m_r;
+                    ele = ASR::down_cast<ASR::RealConstant_t>(value_value)->m_r;
                 } else if (is_logical(*ASRUtils::expr_type(value))) {
-                    ele = ASR::down_cast<ASR::LogicalConstant_t>(extracted_value)->m_value;
+                    ele = ASR::down_cast<ASR::LogicalConstant_t>(value_value)->m_value;
                 }
-                for (int i = element_idx; i < arr_size; i++) {
-                    if (((bool*)mask->m_data)[i] != 0) {
+                for (int i = 0; i < arr_size; i++) {
+                    if (((bool*)mask_value_constant->m_data)[i] != 0) {
                         double ele2 = 0;
                         if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i), ele2)) {
                             if (ele == ele2) {
-                                element_found = 1;
                                 element_idx = i;
-                                if (!(back && back->m_value)) break;
+                                if (!(back_value_constant && back_value_constant->m_value)) break;
                             }
                         }
                     }
                 }
             }
-            if (element_found == 0) element_idx = -1;
             if (ASR::down_cast<ASR::IntegerConstant_t>(dim) -> m_n != -1) {
                 return b.i_t(element_idx + 1, type);
             }

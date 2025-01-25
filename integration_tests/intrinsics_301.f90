@@ -17,12 +17,16 @@ program intrinsics_301
     complex, dimension(2) :: dc = [(1.4, 1.1), (2.3, 2.2)]
     complex, dimension(2) :: dc2 = [(1.0, 2.0), (3.0, 4.0)]
 
-
     integer :: x1(5) = [1, 3, 2, 4, 2], y1 = 2
     integer, parameter :: x1_param(5) = [1, 3, 2, 4, 2]
     integer, parameter :: y1_param = 2
     integer, parameter :: i14(1) = findloc(x1_param, y1_param)
+    ! complex argument complex-time search
     integer, parameter :: i15(1) = findloc([(1.0, 2.0), (3.0, 4.0)], (3.0, 4.0))
+    integer, parameter :: i16(1) = findloc([(1, 2), (3, 4)], (3, 4))
+    ! complex argument search with no-find of "value"
+    integer, parameter :: i17(1) = findloc([(1.0, 2.0), (3.0, 4.0), (4.0, 2.0)], (3.0, 2.0))
+    integer, parameter :: i18(1) = findloc(["aa", "bb", "cc"], "bb")
 
     real :: x2(5) = [1.0, 3.0, 2.0, 4.0, 2.0], y2 = 2.0
     character(len=2) :: x3(3) = ["aa", "db", "ca"], y3 = "aa"
@@ -113,6 +117,12 @@ program intrinsics_301
     if (any(i14 /= 3)) error stop
     print *, i15
     if (any(i15 /= 2)) error stop
+    print *, i16
+    if (any(i16 /= 2)) error stop
+    print *, i17
+    if (any(i17 /= 0)) error stop
+    print *, i18
+    if (any(i18 /= 2)) error stop
 
     print *, findloc(x1_param, y1)
     if (any(findloc(x1_param, y1) /= 3)) error stop
