@@ -173,7 +173,7 @@
                                                                     (StructType
                                                                         2 string_t
                                                                     )
-                                                                    [(()
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     ())]
                                                                     DescriptorArray
                                                                 )

@@ -4870,6 +4870,7 @@ public:
         bool implied_do_loops_present = false;
         bool use_descriptorArray = false; // Set to true if any argument has no fixed size (array arguments).
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
+        size_t n_elements = 0;
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
@@ -4913,6 +4914,12 @@ public:
                 ImplicitCastRules::set_converted_value(al, expr->base.loc,
                     &expr, expr_type, type, diag);
             }
+
+            if (ASRUtils::is_fixed_size_array(expr_type)) {
+                n_elements += ASRUtils::get_fixed_size_of_array(expr_type);
+            } else {
+                n_elements += 1;
+            }
             body.push_back(al, expr);
         }
 
@@ -4921,10 +4928,10 @@ public:
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         dim.m_start = one;
-        if( implied_do_loops_present ) {
+        if( implied_do_loops_present || use_descriptorArray) {
             dim.m_length = nullptr;
         } else {
-            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int_type));
+            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, n_elements, int_type));
             dim.m_length = x_n_args;
         }
         dims.push_back(al, dim);
