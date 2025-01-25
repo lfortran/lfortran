@@ -1764,6 +1764,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     current_scope, exprs_with_target);
             }
             return ;
+        } else if( (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v)) ) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
+            *current_expr = create_and_declare_temporary_variable_for_scalar(*current_expr, 
+                "_array_item_", al, current_body, current_scope, exprs_with_target);
         }
 
         if( ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
