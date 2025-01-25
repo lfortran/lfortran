@@ -1698,6 +1698,8 @@ RUN(NAME array_slice_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackA
 RUN(NAME array_slice_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray c)
 RUN(NAME array_slice_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
+RUN(NAME array_size_01 LABELS gfortran llvm)
+
 RUN(NAME declaration_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME procedure_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
