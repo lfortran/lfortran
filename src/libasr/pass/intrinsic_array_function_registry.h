@@ -3337,10 +3337,13 @@ namespace FindLoc {
         if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
             int arr_size = 0;
             ASR::expr_t* array_value = ASRUtils::expr_value(array);
-            ASR::ArrayConstant_t *arr = nullptr;
-            if (array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value)) {
-                arr = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
-                arr_size = ASRUtils::get_fixed_size_of_array(arr->m_type);
+            ASR::expr_t* value_value = ASRUtils::expr_value(value);
+            ASR::ArrayConstant_t *array_value_constant = nullptr;
+            if (array_value && value_value &&
+                ASR::is_a<ASR::ArrayConstant_t>(*array_value)
+            ) {
+                array_value_constant = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
+                arr_size = ASRUtils::get_fixed_size_of_array(array_value_constant->m_type);
             } else {
                 return nullptr;
             }
@@ -3365,7 +3368,7 @@ namespace FindLoc {
                 std::string ele = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
                 for (int i = element_idx; i < arr_size; i++) {
                     if (((bool*)mask->m_data)[i] != 0) {
-                        std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                        std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_s;
                         if (ele.compare(ele2) == 0) {
                             element_found = 1;
                             element_idx = i;
@@ -3373,14 +3376,14 @@ namespace FindLoc {
                         }
                     }
                 }
-            } else if (is_complex(*expr_type(args[0]))) {
+            } else if (is_complex(*expr_type(array))) {
                 double re, im;
-                re = ASR::down_cast<ASR::ComplexConstant_t>(args[1])->m_re;
-                im = ASR::down_cast<ASR::ComplexConstant_t>(args[1])->m_im;
+                re = ASR::down_cast<ASR::ComplexConstant_t>(value_value)->m_re;
+                im = ASR::down_cast<ASR::ComplexConstant_t>(value_value)->m_im;
                 for (int i = element_idx; i < arr_size; i++) {
                     if (((bool*)mask->m_data)[i] != 0) {
-                        double re2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_re;
-                        double im2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_im;
+                        double re2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_re;
+                        double im2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_im;
                         if (re == re2 && im == im2) {
                             element_found = 1;
                             element_idx = i;
@@ -3402,7 +3405,7 @@ namespace FindLoc {
                 for (int i = element_idx; i < arr_size; i++) {
                     if (((bool*)mask->m_data)[i] != 0) {
                         double ele2 = 0;
-                        if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele2)) {
+                        if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i), ele2)) {
                             if (ele == ele2) {
                                 element_found = 1;
                                 element_idx = i;
