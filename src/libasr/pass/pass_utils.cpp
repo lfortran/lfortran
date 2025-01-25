@@ -93,23 +93,8 @@ namespace LCompilers {
             return get_rank(x) > 0;
         }
 
-         #define fix_struct_type_scope() array_ref_type = ASRUtils::type_get_past_array( \
-                ASRUtils::type_get_past_pointer( \
-                    ASRUtils::type_get_past_allocatable(array_ref_type))); \
-            if( current_scope && ASR::is_a<ASR::StructType_t>(*array_ref_type) && !ASRUtils::is_class_type(array_ref_type)) { \
-                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(array_ref_type); \
-                if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab( \
-                        struct_t->m_derived_type)->get_counter() ) { \
-                    ASR::symbol_t* m_derived_type = current_scope->resolve_symbol( \
-                        ASRUtils::symbol_name(struct_t->m_derived_type)); \
-                    ASR::ttype_t* struct_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, \
-                        struct_t->base.base.loc, m_derived_type)); \
-                    array_ref_type = struct_type; \
-                } \
-            } \
-
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr, ASR::expr_t* idx_var,
-            Allocator& al, SymbolTable* current_scope, bool perform_cast,
+            Allocator& al, bool perform_cast,
             ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
             Vec<ASR::array_index_t> args;
             args.reserve(al, 1);
@@ -121,7 +106,6 @@ namespace LCompilers {
             args.push_back(al, ai);
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
-            fix_struct_type_scope()
             ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
                                         arr_expr->base.loc, arr_expr,
                                         args.p, args.size(),
@@ -138,7 +122,7 @@ namespace LCompilers {
         }
 
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr,
-            Vec<ASR::expr_t*>& idx_vars, Allocator& al, SymbolTable* current_scope,
+            Vec<ASR::expr_t*>& idx_vars, Allocator& al,
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
             if (idx_vars.size() == 0) {
                 return arr_expr;
@@ -184,7 +168,6 @@ namespace LCompilers {
             }
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
-            fix_struct_type_scope()
             array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
                                         arr_expr->base.loc, arr_expr,
                                         args.p, args.size(),
@@ -210,7 +193,7 @@ namespace LCompilers {
         }
 
         ASR::expr_t* create_array_ref(ASR::ArraySection_t* array_section,
-            Vec<ASR::expr_t*>& idx_vars, Allocator& al, SymbolTable* current_scope,
+            Vec<ASR::expr_t*>& idx_vars, Allocator& al,
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
             Vec<ASR::array_index_t> args;
             args.reserve(al, 1);
@@ -231,7 +214,6 @@ namespace LCompilers {
             empty_dims.reserve(al, 1);
             ASR::ttype_t* array_ref_type = array_section->m_type;
             array_ref_type = ASRUtils::duplicate_type_without_dims(al, array_ref_type, loc);
-            fix_struct_type_scope()
             ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
                                         loc, array_section->m_v,
                                         args.p, args.size(),
@@ -246,7 +228,7 @@ namespace LCompilers {
         }
 
         ASR::expr_t* create_array_ref(ASR::symbol_t* arr, Vec<ASR::expr_t*>& idx_vars, Allocator& al,
-            const Location& loc, ASR::ttype_t* _type, SymbolTable* current_scope, bool perform_cast,
+            const Location& loc, ASR::ttype_t* _type, bool perform_cast,
             ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
             Vec<ASR::array_index_t> args;
             args.reserve(al, 1);
@@ -259,7 +241,6 @@ namespace LCompilers {
                 args.push_back(al, ai);
             }
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(al, _type, loc);
-            fix_struct_type_scope()
             ASR::expr_t* arr_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arr));
             ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, arr_var,
                                         args.p, args.size(),
@@ -1000,7 +981,6 @@ namespace LCompilers {
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent, ASR::symbol_t* var_decl) {
-            ASRUtils::import_struct_t(al, loc, var_type, var_intent, current_scope);
             ASR::asr_t* expr_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name), nullptr, 0,
                                                     var_intent, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     var_type, var_decl, ASR::abiType::Source, ASR::accessType::Public,
