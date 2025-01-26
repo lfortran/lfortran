@@ -282,14 +282,8 @@ public:
 
     template<typename T>
     void visit_Call(const T &x) {
-        mlir::LLVM::LLVMFuncOp fn = module->lookupSymbol<mlir::LLVM::LLVMFuncOp>(
-            ASRUtils::symbol_name(x.m_name));
-        if (!fn) {
-            throw CodeGenError("Function '"+
-                std::string(ASRUtils::symbol_name(x.m_name))
-                +"' not found", x.base.base.loc);
-        }
         Vec<mlir::Value> args; args.reserve(al, x.n_args);
+        Vec<mlir::Type> argTypes; argTypes.reserve(al, x.n_args);
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i].m_value);
             if (!is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(
@@ -308,6 +302,26 @@ public:
             } else {
                 args.push_back(al, tmp);
             }
+            argTypes.push_back(al, voidPtr);
+        }
+        mlir::LLVM::LLVMFuncOp fn = module->lookupSymbol<mlir::LLVM::LLVMFuncOp>(
+            ASRUtils::symbol_name(x.m_name));
+        if (!fn) {
+            // Add function declaration
+            ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
+                down_cast<ASR::Function_t>(x.m_name)->m_function_signature);
+            mlir::Type returnType;
+            if (fnType->m_return_var_type) {
+                returnType = getType(fnType->m_return_var_type);
+            } else {
+                returnType = mlir::LLVM::LLVMVoidType::get(context.get());
+            }
+
+            mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
+                returnType, argTypes.as_vector(), false);
+            mlir::OpBuilder builder0(module->getBodyRegion());
+            fn = builder0.create<mlir::LLVM::LLVMFuncOp>(loc,
+                ASRUtils::symbol_name(x.m_name), llvmFnType);
         }
         tmp = builder->create<mlir::LLVM::CallOp>(loc, fn,
             args.as_vector()).getResult();
