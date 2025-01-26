@@ -429,12 +429,14 @@ static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
 	for (size_t i = 0; i < vs.n_dim; ++i) {
 	    dimension_t const &d = vs.m_dim[i];
 	    ca->loc = d.loc;
-	    if (has_num_val(d.m_start, 1))
+	    if (has_num_val(d.m_start, 1)) {
 		ca->m_start = nullptr;
-	    else
+		ca->m_step = nullptr;
+	    } else {
 		ca->m_start = d.m_start;
+		ca->m_step = EXPR(make_Num_t(al, vs.loc, 1, nullptr));
+	    }
 	    ca->m_end = d.m_end;
-	    ca->m_step = nullptr;
 	    ca->m_label = 0;
 	    ++ca;
 	}
