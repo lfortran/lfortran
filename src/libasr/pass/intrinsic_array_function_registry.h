@@ -3584,7 +3584,6 @@ namespace FindLoc {
     ASR::expr_t *i = declare("i", type, Local);
     ASR::expr_t *j = declare("j", type, Local);
     ASR::expr_t *found_value = declare("found_value", logical, Local);
-    ASR::expr_t* ubound_dim = declare("ubound_dim", type, Local);
     ASR::expr_t *array = args[0];
     ASR::expr_t *value = args[1];
     ASR::expr_t* dim = args[2];
@@ -3608,30 +3607,52 @@ namespace FindLoc {
             }, {})
         }));
     } else {
-        Vec<ASR::expr_t*> idx_vars; idx_vars.reserve(al, 2);
-        idx_vars.push_back(al, j);
-        idx_vars.push_back(al, i);
-        body.push_back(al, b.If(b.Eq(dim, b.i_t(1, return_type)), {
-            b.Assignment(ubound_dim, b.i_t(2, return_type))
-        }, {
-            b.Assignment(ubound_dim, b.i_t(1, return_type))
-        }));
-        body.push_back(al, b.Assignment(result, b.i_t(0, use_experimental_simplifier ? ASRUtils::type_get_past_array(return_type) : return_type)));
-        body.push_back(al, b.DoLoop(i, b.i_t(1, type), ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, array, ubound_dim, int32, ASR::arrayboundType::UBound, nullptr)), {
-            b.Assignment(found_value, b.bool_t(0, logical)),
-            b.DoLoop(j, b.i_t(1, type), ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, array, dim, int32, ASR::arrayboundType::UBound, nullptr)), {
-                b.If(b.Eq(ArrayItem_02(array, idx_vars), value), {
-                    b.Assignment(b.ArrayItem_01(result, {i}), j),
-                    b.Assignment(found_value, b.bool_t(1, logical)),
-                    // b.If(b.NotEq(back, b.bool_t(1, logical)), {
-                    //     b.Return()
-                    // }, {})
-                }, {}),
-                b.If(found_value, {
-                    b.Exit()
+        int array_rank = ASRUtils::extract_n_dims_from_ttype(array_type);
+        ASR::ttype_t* ret_type = use_experimental_simplifier ? ASRUtils::type_get_past_array(return_type) : return_type;
+        if (array_rank == 1) {
+            body.push_back(al, b.Assignment(result, b.i_t(0, ret_type)));
+            body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
+                b.If(b.Eq(ArrayItem_02(array, i), value), {
+                    b.Assignment(result, i),
+                    b.If(b.NotEq(back, b.bool_t(1, logical)), {
+                        b.Return()
+                    }, {})
                 }, {})
-            })
-        }));
+            }));
+        } else if (array_rank == 2) {
+            Vec<ASR::expr_t*> idx_vars_ij; idx_vars_ij.reserve(al, 2);
+            Vec<ASR::expr_t*> idx_vars_ji; idx_vars_ji.reserve(al, 2);
+            idx_vars_ij.push_back(al, i); idx_vars_ij.push_back(al, j);
+            idx_vars_ji.push_back(al, j); idx_vars_ji.push_back(al, i);
+            body.push_back(al, b.Assignment(result, b.i_t(0, ret_type)));
+            body.push_back(al, b.If(b.Eq(dim, b.i_t(1, ret_type)), {
+                b.DoLoop(i, b.i_t(1, ret_type), UBound(array, 2), {
+                    b.Assignment(found_value, b.bool_t(0, logical)),
+                    b.DoLoop(j, b.i_t(1, ret_type), UBound(array, 1), {
+                        b.If(b.Eq(ArrayItem_02(array, idx_vars_ji), value), {
+                            b.Assignment(b.ArrayItem_01(result, {i}), j),
+                            b.Assignment(found_value, b.bool_t(1, logical)),
+                        }, {}),
+                        b.If(b.And(found_value, b.Not(back)), {
+                            b.Exit()
+                        }, {})
+                    })
+                })
+            }, {
+                b.DoLoop(i, b.i_t(1, ret_type), UBound(array, 1), {
+                    b.Assignment(found_value, b.bool_t(0, logical)),
+                    b.DoLoop(j, b.i_t(1, ret_type), UBound(array, 2), {
+                        b.If(b.Eq(ArrayItem_02(array, idx_vars_ij), value), {
+                            b.Assignment(b.ArrayItem_01(result, {i}), j),
+                            b.Assignment(found_value, b.bool_t(1, logical)),
+                        }, {}),
+                        b.If(b.And(found_value, b.Not(back)), {
+                            b.Exit()
+                        }, {})
+                    })
+                })
+            }));
+        }
     }
 
     body.push_back(al, b.Return());
