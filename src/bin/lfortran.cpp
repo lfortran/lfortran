@@ -909,7 +909,7 @@ int handle_mlir(const std::string &infile,
     std::unique_ptr<LCompilers::MLIRModule> m;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
-        res = fe.get_mlir(*asr, diagnostics);
+        res = fe.get_mlir(*(LCompilers::ASR::asr_t *)asr, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);

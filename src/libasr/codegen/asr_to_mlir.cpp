@@ -874,10 +874,10 @@ public:
 };
 
 Result<std::unique_ptr<MLIRModule>> asr_to_mlir(Allocator &al,
-        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics) {
+        ASR::asr_t &asr, diag::Diagnostics &diagnostics) {
     ASRToMLIRVisitor v(al);
     try {
-        v.visit_TranslationUnit(asr);
+        v.visit_asr(asr);
     } catch (const CodeGenError &e) {
         diagnostics.diagnostics.push_back(e.d);
         return Error();
