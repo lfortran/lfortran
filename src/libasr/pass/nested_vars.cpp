@@ -128,6 +128,8 @@ public:
                         if (m_dims[i].m_length) {
                             if ( ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length)) {
                                 visit_expr(*m_dims[i].m_length);
+                            } else if ( ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
+                                visit_expr(*m_dims[i].m_length);
                             }
                         }
                     }
@@ -422,6 +424,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
         if ( ASRUtils::is_array(xx.m_type) ) {
+            ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(xx.m_type));
             ASR::dimension_t* m_dims;
             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(xx.m_type, m_dims);
             for( size_t i = 0; i < n_dims; i++ ) {
@@ -440,6 +443,19 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_length));
                         call_replacer();
                         current_expr = current_expr_copy_2;
+                        visit_expr(*m_dims[i].m_length);
+                    } else if ( ASR::is_a<ASR::Var_t>(*m_dims[i].m_length) ) {
+                        ASR::expr_t** current_expr_copy_3 = current_expr;
+                        ASR::expr_t* m_length = const_cast<ASR::expr_t*>(m_dims[i].m_length);
+                        current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_length));
+                        ASR::symbol_t* prev_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
+                        call_replacer();
+                        ASR::symbol_t* new_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
+                        if ( prev_sym != new_sym ) {
+                            // need to convert this to a pointer
+                            array->m_physical_type = ASR::array_physical_typeType::PointerToDataArray;
+                        }
+                        current_expr = current_expr_copy_3;
                         visit_expr(*m_dims[i].m_length);
                     }
                 }

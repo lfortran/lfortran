@@ -1565,7 +1565,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME template_02 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
+RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23 ONLY_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm NO_STD_F23)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc wasm NO_STD_F23)
@@ -1583,7 +1583,7 @@ RUN(NAME template_array_02 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray w
 RUN(NAME template_array_03 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME template_array_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm NO_STD_F23)
 RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME template_matrix_01 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
+RUN(NAME template_matrix_01 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23 ONLY_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME template_matrix_test LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
     template_semigroup.f90
     template_semiring.f90
@@ -1719,6 +1719,7 @@ RUN(NAME procedure_13 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME procedure_14 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME procedure_15 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME procedure_16 LABELS gfortran llvm NO_STD_F23)
+RUN(NAME procedure_17 LABELS gfortran llvm NO_STD_F23)
 
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
