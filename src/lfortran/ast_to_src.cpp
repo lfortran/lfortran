@@ -1434,8 +1434,20 @@ public:
 		r += "/ ";
 	    }
 	    for (size_t j = 0; j < cb.n_objects; ++j) {
-		visit_var_sym(cb.m_objects[j]);
-		r += s;
+		// We can't use this when we have both dimensions and initializers
+		// visit_var_sym(cb.m_objects[j]);
+		// r += s;
+		var_sym_t const &vs = cb.m_objects[j];
+		r.append(vs.m_name);
+		if (vs.n_dim > 0) {
+		    r.append("(");
+		    for (size_t j=0; j<vs.n_dim; j++) {
+			visit_dimension(vs.m_dim[j]);
+			r += s;
+			if (j < vs.n_dim-1) r.append(",");
+		    }
+		    r.append(")");
+		}
 		if (j < cb.n_objects - 1) r.append(", ");
 	    }
 	    if (i < x.n_blks - 1) r.append(", ");
