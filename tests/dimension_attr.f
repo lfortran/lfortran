@@ -7,7 +7,6 @@ c this is a test comment
         integer , dimension (3,3) :: z
         integer a, b
         dimension a(2,2), b(10,10)
-        dimension z(3,3)
         integer, dimension(2,2) :: d
         call f(1)
       end
