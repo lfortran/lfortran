@@ -25,30 +25,24 @@
         )]
         [(Declaration
             ()
-            [(SimpleAttribute
-                AttrCommon
+            [(AttrCommon
+                [(range
+                [(x0
+                []
+                []
+                ()
+                x0
+                None
+                ())
+                (x1
+                []
+                []
+                ()
+                x1
+                None
+                ())])]
             )]
-            [(range
             []
-            []
-            ()
-            ()
-            Slash
-            ())
-            (x0
-            []
-            []
-            ()
-            x0
-            None
-            ())
-            (x1
-            []
-            []
-            ()
-            x1
-            None
-            ())]
             ()
         )]
         [(DataStmt
@@ -84,30 +78,24 @@
         )]
         [(Declaration
             ()
-            [(SimpleAttribute
-                AttrCommon
+            [(AttrCommon
+                [(range
+                [(x0
+                []
+                []
+                ()
+                x0
+                None
+                ())
+                (x1
+                []
+                []
+                ()
+                x1
+                None
+                ())])]
             )]
-            [(range
             []
-            []
-            ()
-            ()
-            Slash
-            ())
-            (x0
-            []
-            []
-            ()
-            x0
-            None
-            ())
-            (x1
-            []
-            []
-            ()
-            x1
-            None
-            ())]
             ()
         )]
         [(Print
