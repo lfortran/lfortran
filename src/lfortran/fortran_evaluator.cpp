@@ -559,7 +559,7 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     }
 
     // MLIR -> LLVM
-    m->mlir_to_llvm();
+    m->mlir_to_llvm(*m->llvm_ctx);
     return m;
 #else
     throw LCompilersException("MLIR is not enabled");
