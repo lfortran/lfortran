@@ -1435,7 +1435,7 @@ class DoConcurrentVisitor :
                         loc, fn_scope, s2c(al, sym_name), nullptr, 0,
                         ASR::intentType::InOut, nullptr, nullptr,
                         ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type_with_empty_dims(al, sym_type),
+                        ASRUtils::duplicate_type(al, sym_type),
                         nullptr, ASR::abiType::Source, ASR::accessType::Private,
                         ASR::presenceType::Required, false));
                     fn_scope->add_symbol(sym_name, sym);
@@ -1453,7 +1453,7 @@ class DoConcurrentVisitor :
                 ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Function_t_util(al, loc, fn_scope,
                     s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
-                    fn_body.p, fn_body.n, nullptr, ASR::abiType::Source,
+                    fn_body.p, fn_body.n, nullptr, ASR::abiType::BindC,
                     ASR::accessType::Public, ASR::deftypeType::Implementation,
                     nullptr, false, false, false, false, false, nullptr, 0,
                     false, false, false, nullptr));
@@ -1461,13 +1461,33 @@ class DoConcurrentVisitor :
 
                 current_scope = scope_copy;
 
-                ASR::symbol_t *es = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_ExternalSymbol_t(al, loc, current_scope,
-                    s2c(al, fn_name), function, s2c(al, mod_name),
-                    nullptr, 0, s2c(al, fn_name), ASR::accessType::Public));
-                current_scope->add_symbol(fn_name, es);
-                pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
-                    al, loc, es, es, call_args.p, call_args.n, nullptr)));
+                SymbolTable *fnI_scope{al.make_new<SymbolTable>(current_scope)};
+                Vec<ASR::expr_t *> fnI_args;
+                fnI_args.reserve(al, involved_symbols.size());
+                for (auto &[sym_name, sym_type]: involved_symbols) {
+                    ASR::symbol_t *sym{ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, loc, fnI_scope,
+                        s2c(al, sym_name), nullptr, 0, ASR::intentType::InOut,
+                        nullptr, nullptr, ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, sym_type),
+                        nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                        ASR::presenceType::Required, false))};
+                    fnI_scope->add_symbol(sym_name, sym);
+                    fnI_args.push_back(al, ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, sym)));
+                }
+
+                ASR::symbol_t* fnInterface = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Function_t_util(al, loc, fnI_scope,
+                    s2c(al, fn_name), nullptr, 0, fnI_args.p, fnI_args.n,
+                    nullptr, 0, nullptr, ASR::abiType::BindC,
+                    ASR::accessType::Public, ASR::deftypeType::Interface,
+                    nullptr, false, false, false, false, false, nullptr, 0,
+                    false, false, false, nullptr));
+                current_scope->add_symbol(fn_name, fnInterface);
+                pass_result.push_back(al, ASRUtils::STMT(
+                    ASR::make_SubroutineCall_t(al, loc, fnInterface, fnInterface,
+                    call_args.p, call_args.n, nullptr)));
                 remove_original_statement = true;
                 return;
             }
