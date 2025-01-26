@@ -1626,8 +1626,8 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b mlir mlir_omp -j1
-            ./run_tests.py -b mlir mlir_omp -j1 --no-experimental-simplifier
+            ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
+            ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1 --no-experimental-simplifier
 
   upload_docs:
     name: Documentation
