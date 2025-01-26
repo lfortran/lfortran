@@ -151,6 +151,11 @@ public:
     }
 
     void visit_Module(const ASR::Module_t &x) {
+        if (!module) {
+            module = std::make_unique<mlir::ModuleOp>(
+                builder->create<mlir::ModuleOp>(loc,
+                llvm::StringRef("LFortran")));
+        }
         // Visit all the Functions
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
