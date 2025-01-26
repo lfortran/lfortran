@@ -167,6 +167,10 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
+        if (fnType->m_deftype == ASR::deftypeType::Interface) {
+            // Skip Interface function for now
+            return;
+        }
         Vec<mlir::Type> argsType; argsType.reserve(al, fnType->n_arg_types);
         // Collect all the arguments type
         for (size_t i=0; i<fnType->n_arg_types; i++) {
