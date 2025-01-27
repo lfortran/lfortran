@@ -54,12 +54,24 @@
                         (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_a
-                            (Real 4)
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
                             ()
                         )
-                        (RealConstant
-                            10.000000
-                            (Real 4)
+                        (ArrayConstant
+                            8
+                            [1.00000000e+01, 1.10000000e+01]
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
                         )
                         ()
                     )
@@ -320,7 +332,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4)
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -491,10 +508,23 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_sample)
-                                        2 1_sample_a
+                                    (ArrayItem
+                                        (StructInstanceMember
+                                            (Var 2 struct_instance_sample)
+                                            2 1_sample_a
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
                                         (Real 4)
+                                        ColMajor
                                         ()
                                     )
                                     Sub
@@ -564,7 +594,12 @@
                             [(StructInstanceMember
                                 (Var 2 struct_instance_sample)
                                 2 1_sample_a
-                                (Real 4)
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
                                 ()
                             )
                             (StructInstanceMember
