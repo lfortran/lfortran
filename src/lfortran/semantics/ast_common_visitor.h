@@ -1223,7 +1223,6 @@ public:
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
-    bool is_common_variable = false;
     bool _processing_dimensions = false;
     bool _declaring_variable = false;
     bool is_implicit_interface = false;
@@ -2720,54 +2719,41 @@ public:
                     } else {
                         // Example:
                         // private :: x, y, z
-                        std::string common_block_name;
-                        ASR::symbol_t* common_block_struct_sym = nullptr;
-                        ASR::Struct_t* struct_type = nullptr;
                         for (size_t i=0; i<x.n_syms; i++) {
                             AST::var_sym_t &s = x.m_syms[i];
                             if (s.m_name == nullptr) {
-                                if (false /*sa->m_attr == AST::simple_attributeType
-					    ::AttrCommon */) {
-				    is_common_variable = true;
-				    LCOMPILERS_ASSERT(s.m_sym == AST::symbolType::Slash);
-				    common_block_name = "blank#block";
-				    common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
-				    struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
-				    is_common_variable = false;
-				} else {
-				    if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
-					// Operator Overloading Encountered
-					if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-					    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-					    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-					} else {
-					    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-					}
-				    } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
-					// Assignment Overloading Encountered
-					if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-					    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-					    assgn[current_scope] = ASR::Public;
-					} else {
-					    assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
-					}
-				    } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
-					//std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
-					// Custom Operator Overloading Encountered
-					if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-					    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-					    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-					} else {
-					    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-					}
+				if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
+				    // Operator Overloading Encountered
+				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
 				    } else {
-					diag.add(Diagnostic(
-						     "Attribute type not implemented yet.",
-						     Level::Error, Stage::Semantic, {
-							 Label("",{x.base.base.loc})
-						     }));
-					throw SemanticAbort();
+					overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
 				    }
+				} else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
+				    // Assignment Overloading Encountered
+				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					assgn[current_scope] = ASR::Public;
+				    } else {
+					assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
+				    }
+				} else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
+				    //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
+				    // Custom Operator Overloading Encountered
+				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+				    } else {
+					overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+				    }
+				} else {
+				    diag.add(Diagnostic(
+						 "Attribute type not implemented yet.",
+						 Level::Error, Stage::Semantic, {
+						     Label("",{x.base.base.loc})
+						 }));
+				    throw SemanticAbort();
 				}
                             } else {
                                 std::string sym = to_lower(s.m_name);
@@ -2845,23 +2831,6 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
-                                } else if (false /*sa->m_attr == AST::simple_attributeType
-						   ::AttrCommon */) {
-				    is_common_variable = true;
-				    if (s.m_sym == AST::symbolType::Slash) { /* new block name */
-					if (s.m_name)
-					    common_block_name = sym;
-					else
-					    common_block_name = "blank#block";
-                                        common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
-                                        struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
-				    } else { /* common-block-object */
-#if 0
-					LCOMPILERS_ASSERT(struct_type);
-                                        populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
-#endif
-   				    }
-                                    is_common_variable = false;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
@@ -4961,12 +4930,12 @@ public:
             if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){ // Check physicalType of the array.
                 ASR::array_physical_typeType arr_physicalType =  ASR::down_cast<ASR::Array_t>(
                                             ASRUtils::type_get_past_allocatable_pointer(expr_type))->m_physical_type;
-                if( arr_physicalType == ASR::array_physical_typeType::DescriptorArray || 
+                if( arr_physicalType == ASR::array_physical_typeType::DescriptorArray ||
                     arr_physicalType == ASR::array_physical_typeType::PointerToDataArray){
 
                     use_descriptorArray = true;
                 }
-            }     
+            }
             if (type == nullptr) {
                 type = expr_type;
                 extracted_type = ASRUtils::extract_type(type);
@@ -5014,7 +4983,7 @@ public:
         }
         dims.push_back(al, dim);
         if (use_descriptorArray){
-            type = ASRUtils::duplicate_type(al, type, &dims, 
+            type = ASRUtils::duplicate_type(al, type, &dims,
                     ASR::array_physical_typeType::DescriptorArray, true);
         } else {
             type = ASRUtils::duplicate_type(al, type, &dims);
@@ -6086,7 +6055,7 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i].m_end);
             args.p[i] = ASRUtils::EXPR(tmp);
-            if (intrinsic_name == "and" || intrinsic_name == "or" || intrinsic_name == "xor" || intrinsic_name == "repeat" || intrinsic_name == "selected_int_kind" 
+            if (intrinsic_name == "and" || intrinsic_name == "or" || intrinsic_name == "xor" || intrinsic_name == "repeat" || intrinsic_name == "selected_int_kind"
             || intrinsic_name == "selected_real_kind" || intrinsic_name == "selected_char_kind") {
                 if( ASRUtils::is_array(ASRUtils::expr_type(args[i]))) {
                     diag.add(diag::Diagnostic(
@@ -7768,8 +7737,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        if (!is_common_variable
-            && ( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
+        if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
             && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
             && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             if (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name)) {
