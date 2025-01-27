@@ -2314,7 +2314,7 @@ class VerifySimplifierASROutput:
         }
     }
 
-    void check_if_linked_to_target(ASR::expr_t expr, ASR::ttype_t* type) {
+    void check_if_linked_to_target([[maybe_unused]] ASR::expr_t expr, ASR::ttype_t* type) {
         if( ASRUtils::is_aggregate_type(type) &&
             ASRUtils::is_simd_array(type) ) {
             LCOMPILERS_ASSERT(exprs_with_target.find(&expr) != exprs_with_target.end());
