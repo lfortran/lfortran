@@ -3,7 +3,7 @@ syntax error: Token 'print' is unexpected here
    |
 75 |     print*, nint(1e12_8)
    |     ^^^^^ 
-
+   
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
  --> tests/errors/continue_compilation_1.f90:2:5 - 3:1
   |
