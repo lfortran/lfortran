@@ -533,20 +533,25 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     }
 }
 
+// asr_t &asr accepts only TranslationUnit and Module's type for now
 Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 #ifdef HAVE_LFORTRAN_MLIR
-        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics
+        ASR::asr_t &asr, diag::Diagnostics &diagnostics
 #else
-        ASR::TranslationUnit_t &/*asr*/, diag::Diagnostics &/*diagnostics*/
+        ASR::asr_t &/*asr*/, diag::Diagnostics &/*diagnostics*/
 #endif
 ) {
 #ifdef HAVE_LFORTRAN_MLIR
     // ASR -> MLIR
     std::unique_ptr<LCompilers::MLIRModule> m;
     LCompilers::PassManager pass_manager;
-    pass_manager.use_default_passes();
-    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
-    Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, asr, diagnostics);
+    if (ASR::is_a<ASR::unit_t>(asr)) {
+        pass_manager.use_default_passes();
+        pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,
+            compiler_options.po, diagnostics);
+    }
+    Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al,
+        (ASR::asr_t &)asr, diagnostics);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -555,7 +560,7 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     }
 
     // MLIR -> LLVM
-    m->mlir_to_llvm();
+    m->mlir_to_llvm(*m->llvm_ctx);
     return m;
 #else
     throw LCompilersException("MLIR is not enabled");
