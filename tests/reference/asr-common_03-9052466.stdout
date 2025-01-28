@@ -2,11 +2,21 @@
     (SymbolTable
         1
         {
-            common1:
+            common3:
                 (Program
                     (SymbolTable
                         5
                         {
+                            1_b_e:
+                                (ExternalSymbol
+                                    5
+                                    1_b_e
+                                    7 e
+                                    b
+                                    []
+                                    e
+                                    Public
+                                ),
                             1_sample_a:
                                 (ExternalSymbol
                                     5
@@ -37,6 +47,16 @@
                                     sample
                                     Public
                                 ),
+                            struct_instance_b:
+                                (ExternalSymbol
+                                    5
+                                    struct_instance_b
+                                    6 struct_instance_b
+                                    file_common_block_b
+                                    []
+                                    struct_instance_b
+                                    Public
+                                ),
                             struct_instance_sample:
                                 (ExternalSymbol
                                     5
@@ -48,18 +68,30 @@
                                     Public
                                 )
                         })
-                    common1
+                    common3
                     []
                     [(Assignment
                         (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_a
-                            (Real 4)
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
                             ()
                         )
-                        (RealConstant
-                            10.000000
-                            (Real 4)
+                        (ArrayConstant
+                            8
+                            [1.00000000e+01, 1.10000000e+01]
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
                         )
                         ()
                     )
@@ -76,6 +108,16 @@
                         )
                         ()
                     )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 5 struct_instance_b)
+                            5 1_b_e
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 123 (Integer 4) Decimal)
+                        ()
+                    )
                     (SubroutineCall
                         1 pass
                         ()
@@ -86,16 +128,16 @@
             file_common_block_b:
                 (Module
                     (SymbolTable
-                        8
+                        6
                         {
                             b:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        7
                                         {
                                             d:
                                                 (Variable
-                                                    9
+                                                    7
                                                     d
                                                     []
                                                     Local
@@ -112,7 +154,7 @@
                                                 ),
                                             e:
                                                 (Variable
-                                                    9
+                                                    7
                                                     e
                                                     []
                                                     Local
@@ -129,7 +171,7 @@
                                                 ),
                                             f:
                                                 (Variable
-                                                    9
+                                                    7
                                                     f
                                                     []
                                                     Local
@@ -160,7 +202,7 @@
                                 ),
                             struct_instance_b:
                                 (Variable
-                                    8
+                                    6
                                     struct_instance_b
                                     []
                                     Local
@@ -168,7 +210,7 @@
                                     ()
                                     Default
                                     (StructType
-                                        8 b
+                                        6 b
                                     )
                                     ()
                                     Source
@@ -183,19 +225,101 @@
                     .false.
                     .false.
                 ),
+            file_common_block_blank#block:
+                (Module
+                    (SymbolTable
+                        8
+                        {
+                            blank#block:
+                                (Struct
+                                    (SymbolTable
+                                        9
+                                        {
+                                            z1:
+                                                (Variable
+                                                    9
+                                                    z1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            z2:
+                                                (Variable
+                                                    9
+                                                    z2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    blank#block
+                                    []
+                                    [z1
+                                    z2]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            struct_instance_blank#block:
+                                (Variable
+                                    8
+                                    struct_instance_blank#block
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        8 blank#block
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    file_common_block_blank#block
+                    []
+                    .false.
+                    .false.
+                ),
             file_common_block_c:
                 (Module
                     (SymbolTable
-                        6
+                        10
                         {
                             c:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        11
                                         {
                                             c:
                                                 (Variable
-                                                    7
+                                                    11
                                                     c
                                                     []
                                                     Local
@@ -212,7 +336,7 @@
                                                 ),
                                             g:
                                                 (Variable
-                                                    7
+                                                    11
                                                     g
                                                     []
                                                     Local
@@ -229,7 +353,7 @@
                                                 ),
                                             h:
                                                 (Variable
-                                                    7
+                                                    11
                                                     h
                                                     []
                                                     Local
@@ -246,7 +370,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    7
+                                                    11
                                                     j
                                                     []
                                                     Local
@@ -278,7 +402,7 @@
                                 ),
                             struct_instance_c:
                                 (Variable
-                                    6
+                                    10
                                     struct_instance_c
                                     []
                                     Local
@@ -286,7 +410,7 @@
                                     ()
                                     Default
                                     (StructType
-                                        6 c
+                                        10 c
                                     )
                                     ()
                                     Source
@@ -320,7 +444,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4)
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -491,10 +620,23 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_sample)
-                                        2 1_sample_a
+                                    (ArrayItem
+                                        (StructInstanceMember
+                                            (Var 2 struct_instance_sample)
+                                            2 1_sample_a
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
                                         (Real 4)
+                                        ColMajor
                                         ()
                                     )
                                     Sub
@@ -564,7 +706,12 @@
                             [(StructInstanceMember
                                 (Var 2 struct_instance_sample)
                                 2 1_sample_a
-                                (Real 4)
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
                                 ()
                             )
                             (StructInstanceMember

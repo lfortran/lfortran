@@ -2577,6 +2577,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "common3.f90"
+ast_f90 = true
+
+[[test]]
 filename = "data1.f90"
 ast = true
 ast_f90 = true

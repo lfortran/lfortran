@@ -1223,7 +1223,6 @@ public:
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
-    bool is_common_variable = false;
     bool _processing_dimensions = false;
     bool _declaring_variable = false;
     bool is_implicit_interface = false;
@@ -1232,6 +1231,7 @@ public:
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
 
+    using common_block_varsyms = std::map<std::string, std::vector<AST::var_sym_t>>;
     std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
 
@@ -1624,6 +1624,90 @@ public:
 
         return false;
     }
+
+
+    void dimension_variable(AST::var_sym_t const & s, const Location& loc) {
+	std::string sym = to_lower(s.m_name);
+	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
+	// get actual variable from SymTab, not the current line
+	if (get_sym == nullptr) {
+	    if (compiler_options.implicit_typing) {
+		ASR::intentType intent;
+		if (std::find(current_procedure_args.begin(),
+			      current_procedure_args.end(), sym) !=
+		    current_procedure_args.end()) {
+		    intent = ASRUtils::intent_unspecified;
+		} else {
+		    intent = ASRUtils::intent_local;
+		}
+		get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
+	    } else {
+		diag.add(Diagnostic(
+			     "Cannot set dimension for undeclared variable",
+			     Level::Error, Stage::Semantic, {
+				 Label("",{loc})
+			     }));
+		throw SemanticAbort();
+	    }
+	}
+
+	if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
+	    bool is_compile_time = false;
+	    Vec<ASR::dimension_t> dims;
+	    dims.reserve(al, 0);
+	    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
+	    bool is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
+	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
+
+	    bool is_star_dimension = false;
+
+	    if (s.n_dim > 0) {
+		is_star_dimension = (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
+	    }
+
+	    if (ASRUtils::is_array(v->m_type)) {
+		/* You can't specify an attribute such as DIMENSION more than once in a scoping
+		   unit (so sayth F2023, 8.5.1 C815). There are really four ways to dimension a variable:
+		     1a. In a _type-decl_ DIMENSION attribute;
+		     1b. In a _type-decl_ _entity-decl_ _array-spec_ (overides #1a)
+		     2. In a DIMENSION statement
+		     3. In a COMMON statement
+		   Cases 1a and 1b are handled in the _type-decl_ visitor, but that visitor should
+		   also check for existence of other attribute specifications via attribute statements.
+		   This check handles cases 2 and 3.
+		*/
+                diag.add(diag::Diagnostic(
+                    "Duplicate DIMENSION attribute specified",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {s.loc})}));
+                throw SemanticAbort();
+	    }
+
+	    if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al,
+						ASR::abiType::Source, false, is_star_dimension)) {
+		diag.add(Diagnostic(
+			     "Cannot set dimension for variable of non-numerical type",
+			     Level::Error, Stage::Semantic, {
+				 Label("",{loc})
+			     }));
+		throw SemanticAbort();
+	    }
+	    SetChar variable_dependencies_vec;
+	    variable_dependencies_vec.reserve(al, 1);
+	    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type,
+						    v->m_symbolic_value, v->m_value);
+	    v->m_dependencies = variable_dependencies_vec.p;
+	    v->n_dependencies = variable_dependencies_vec.size();
+	} else {
+	    diag.add(Diagnostic(
+			 "Cannot attribute non-variable type with dimension",
+			 Level::Error, Stage::Semantic, {
+			     Label("",{loc})
+			 }));
+	    throw SemanticAbort();
+	}
+    }
+
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
@@ -2232,152 +2316,153 @@ public:
         struct_type->n_members = members.size();
     }
 
-    ASR::Variable_t* extract_common_variable(AST::expr_t* expr, Location loc, Location var_loc) {
-        this->visit_expr(*expr);
-        ASR::Variable_t* var_;
-        if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
-            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
-            ASR::expr_t* array = array_item->m_v;
-            var_ = ASRUtils::EXPR2VAR(array);
-            if (ASRUtils::is_array(ASRUtils::expr_type(array))) {
-                diag.add(diag::Diagnostic(
-                    "Duplicate DIMENSION attribute specified",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {var_loc})}));
-                throw SemanticAbort();
-            } else {
-                if (array_item->n_args == 1) {
-                    ASR::array_index_t arg = array_item->m_args[0];
-                    ASR::expr_t* arg_right = arg.m_right;
-                    ASR::ttype_t* type = array_item->m_type;
-                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+    ASR::Variable_t * get_symtab_var_for_common(AST::var_sym_t const &s) {
+	std::string const sym {to_lower(s.m_name)};
+	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
+	if (get_sym == nullptr) {
+	    if (compiler_options.implicit_typing) {
+		ASR::intentType intent = ASRUtils::intent_local;
+		get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
+	    } else {
+		diag.add(Diagnostic(
+			     "Cannot implicitly declare variable in COMMON block",
+			     Level::Error, Stage::Semantic, {
+				 Label("",{s.loc})
+			     }));
+		throw SemanticAbort();
+	    }
+	}
 
-                    Vec<ASR::dimension_t> dims;
-                    dims.reserve(al, 1);
-                    ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
-                    dim.loc = loc;
-                    dim.m_start = one;
-                    dim.m_length = arg_right;
-                    dims.push_back(al, dim);
-
-                    if (ASR::is_a<ASR::Real_t>(*type)) {
-                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
-                        int64_t kind = real_type->m_kind;
-                        var_->m_type = ASRUtils::TYPE(ASR::make_Real_t(al, var_->base.base.loc, kind));
-                    } else if (ASR::is_a<ASR::Integer_t>(*type)) {
-                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(type);
-                        int64_t kind = int_type->m_kind;
-                        var_->m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, var_->base.base.loc, kind));
-                    } else {
-                        diag.add(diag::Diagnostic(
-                            "Type not supported yet",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {loc})}));
-                        throw SemanticAbort();
-                    }
-                    var_->m_type = ASRUtils::make_Array_t_util(
-                        al, var_->base.base.loc, var_->m_type,
-                        dims.p, dims.size(), var_->m_abi);
-                }
-            }
-        } else {
-            var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
-        }
-        return var_;
+	ASR::Variable_t* var_{nullptr};
+	if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
+	    var_ = ASR::down_cast<ASR::Variable_t>(get_sym);
+	} else {
+	    diag.add(Diagnostic(
+			 "Can only add variables to COMMON blocks",
+			 Level::Error, Stage::Semantic, {
+			     Label("",{s.loc})
+			 }));
+	    throw SemanticAbort();
+	}
+	return var_;
     }
 
-    void populate_common_dictionary(const AST::Declaration_t &x, ASR::symbol_t* common_block_struct_sym, ASR::Struct_t* struct_type, std::string common_block_name, size_t &i) {
-        AST::var_sym_t& s = x.m_syms[i];
-        if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
-            // create a new common_block pair
-            std::vector<ASR::expr_t*> common_block_variables;
-            AST::expr_t* expr = s.m_initializer;
-            ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
-            uint64_t hash = get_hash((ASR::asr_t*) var_);
-            common_block_variables.push_back(ASRUtils::EXPR(tmp));
-            common_block_dictionary[common_block_name].first = true;
-            common_block_dictionary[common_block_name].second = common_block_variables;
-            common_variables_hash[hash] = common_block_struct_sym;
 
-            // add variable to struct
-            add_sym_to_struct(var_, struct_type);
-        } else {
-            // check if it has been already declared in any other program
-            if (!common_block_dictionary[common_block_name].first) {
-                // already declared in some other program, verify the order of variables
-                std::vector<ASR::expr_t*> common_block_variables = common_block_dictionary[common_block_name].second;
-                if (common_block_variables.size() != x.n_syms) {
-                    diag.add(Diagnostic(
-                        "The order of variables in common block must be same in all programs",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                } else {
-                    for (auto &expr: common_block_dictionary[common_block_name].second) {
-                        ASR::Variable_t* var_ = nullptr;
-                        if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
-                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expr);
-                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
-                            var_ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                        } else {
-                            var_ = ASRUtils::EXPR2VAR(expr);
-                        }
-                        s = x.m_syms[i];
-                        AST::expr_t* expr_ = s.m_initializer;
-                        this->visit_expr(*expr_);
-                        ASR::Variable_t* var__ = nullptr;
-                        if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
-                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
-                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
-                            var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                        } else {
-                            var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
-                        }
-                        if (!ASRUtils::check_equal_type(var_->m_type, var__->m_type)) {
-                            diag.add(Diagnostic(
-                                "The order of variables in common block must be same in all programs",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{x.base.base.loc})
-                                }));
-                            throw SemanticAbort();
-                        } else {
-                            uint64_t hash = get_hash((ASR::asr_t*) var__);
-                            common_variables_hash[hash] = common_block_struct_sym;
-                        }
-                        if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
-                            /*
-                                Update type of original symbol
-                                case:
-                                program main
-                                double precision x
-                                common /a/ x(10)
-                                end program
-                            */
-                            ASR::symbol_t* var_sym = current_scope->get_symbol(s2c(al, var_->m_name));
-                            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
-                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
-                                var->m_type = var_->m_type;
-                            }
-                        }
-                        i++;
-                    }
-                    i-=1;
-                }
-            } else {
-                AST::expr_t* expr = s.m_initializer;
-                this->visit_expr(*expr);
-                ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
-                uint64_t hash = get_hash((ASR::asr_t*) var_);
-                common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
-                common_variables_hash[hash] = common_block_struct_sym;
-                // add variable to struct
-                add_sym_to_struct(var_, struct_type);
-            }
-        }
+    void populate_common_dictionary(const AST::Declaration_t &x, common_block_varsyms const & objs_by_blk) {
+	for (auto const & blk : objs_by_blk) {
+	    std::string const & common_block_name = blk.first;
+	    ASR::symbol_t* common_block_struct_sym = create_common_module(x.base.base.loc,
+									  common_block_name);
+	    ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
+	    size_t const num_cb_var = blk.second.size();
+
+	    auto cbd_it = common_block_dictionary.find(common_block_name);
+
+	    if (cbd_it == common_block_dictionary.end()) {
+		// Populate an entire new common_block_dictionary entry
+		std::vector<ASR::expr_t*> common_block_variables;
+		common_block_variables.reserve(num_cb_var);
+
+		// Add all the block variables
+		for (auto const &s : blk.second) {
+		    AST::expr_t* expr = s.m_initializer;
+		    this->visit_expr(*expr);
+		    ASR::Variable_t* var_ = get_symtab_var_for_common(s);
+		    uint64_t hash = get_hash((ASR::asr_t*) var_);
+		    common_block_variables.push_back(ASRUtils::EXPR(tmp));
+		    // add variable to struct
+		    add_sym_to_struct(var_, struct_type);
+		    common_variables_hash[hash] = common_block_struct_sym;
+		}
+
+		common_block_dictionary[common_block_name].first = true;
+		common_block_dictionary[common_block_name].second.swap(common_block_variables);
+
+	    } else {
+		// There is already an entry in the dictionary for this block name
+		if (cbd_it->second.first) {
+		    // The block has not been marked as declared, so we just append all the variables
+		    std::vector<ASR::expr_t*> & common_block_variables = cbd_it->second.second;
+		    common_block_variables.reserve(common_block_variables.size() + blk.second.size());
+
+		    for (auto const &s : blk.second) {
+			AST::expr_t* expr = s.m_initializer;
+			this->visit_expr(*expr);
+			ASR::Variable_t* var_ = get_symtab_var_for_common(s);
+			uint64_t hash = get_hash((ASR::asr_t*) var_);
+			common_block_variables.push_back(ASRUtils::EXPR(tmp));
+			common_variables_hash[hash] = common_block_struct_sym;
+			// add variable to struct
+			add_sym_to_struct(var_, struct_type);
+		    }
+		} else {
+		    /* The block has already been declared, so we need to compare the structure of the block
+		       declarations and update the structs holding the variables. */
+		    std::vector<ASR::expr_t*> const & common_block_variables = cbd_it->second.second;
+
+		    if (common_block_variables.size() != num_cb_var) {
+			diag.add(Diagnostic(
+				     "The number of variables in common block must be same in all programs",
+				     Level::Error, Stage::Semantic, {
+					 Label("",{x.base.base.loc})
+				     }));
+			throw SemanticAbort();
+		    }
+
+		    for (size_t i = 0; i < num_cb_var; ++i) {
+			auto &expr = common_block_variables[i];
+			auto &s = blk.second[i];
+
+			ASR::Variable_t* var_ = nullptr;
+			if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+			    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+			    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
+			    var_ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+			} else {
+			    var_ = ASRUtils::EXPR2VAR(expr);
+			}
+
+			AST::expr_t* expr_ = s.m_initializer;
+			this->visit_expr(*expr_);
+			ASR::Variable_t* var__ = nullptr;
+			if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+			    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
+			    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
+			    var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+			} else {
+			    var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+			}
+			if (!ASRUtils::check_equal_type(var_->m_type, var__->m_type)) {
+			    diag.add(Diagnostic(
+					 "The order of variables in common block must be same in all programs",
+					 Level::Error, Stage::Semantic, {
+					     Label("",{x.base.base.loc})
+					 }));
+			    throw SemanticAbort();
+			} else {
+			    uint64_t hash = get_hash((ASR::asr_t*) var__);
+			    common_variables_hash[hash] = common_block_struct_sym;
+			}
+			if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+			    /*
+			      Update type of original symbol
+			      case:
+			      program main
+			      double precision x
+			      common /a/ x(10)
+			      end program
+			    */
+			    ASR::symbol_t* var_sym = current_scope->get_symbol(s2c(al, var_->m_name));
+			    if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+				ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
+				var->m_type = var_->m_type;
+			    }
+			}
+		    }
+		}
+	    }
+	}
     }
-
 
     template <typename T>
     void check_if_global_save_is_enabled(T &x) {
@@ -2609,68 +2694,42 @@ public:
                     } else {
                         // Example:
                         // private :: x, y, z
-                        std::string common_block_name = "";
-                        ASR::symbol_t* common_block_struct_sym = nullptr;
-                        ASR::Struct_t* struct_type = nullptr;
                         for (size_t i=0; i<x.n_syms; i++) {
                             AST::var_sym_t &s = x.m_syms[i];
                             if (s.m_name == nullptr) {
-                                if (sa->m_attr == AST::simple_attributeType
-                                        ::AttrCommon) {
-                                    if (struct_type) {
-                                        is_common_variable = true;
-                                        // add to existing common_block pair
-                                        AST::expr_t* expr = s.m_initializer;
-                                        this->visit_expr(*expr);
-                                        ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
-                                        uint64_t hash = get_hash((ASR::asr_t*) var_);
-                                        common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
-                                        common_variables_hash[hash] = common_block_struct_sym;
-                                        add_sym_to_struct(var_, struct_type);
-                                        is_common_variable = false;
-                                    } else {
-                                        is_common_variable = true;
-                                        common_block_name = "blank_block";
-                                        common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
-                                        struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
-                                        populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
-                                        is_common_variable = false;
-                                    }
-                                } else {
-                                    if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
-                                        // Operator Overloading Encountered
-                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                            overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-                                        } else {
-                                            overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-                                        }
-                                    } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
-                                        // Assignment Overloading Encountered
-                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                            assgn[current_scope] = ASR::Public;
-                                        } else {
-                                            assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
-                                        }
-                                        } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
-                                        //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
-                                        // Custom Operator Overloading Encountered
-                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                            overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-                                        } else {
-                                            overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-                                        }
-                                    } else {
-                                        diag.add(Diagnostic(
-                                            "Attribute type not implemented yet.",
-                                            Level::Error, Stage::Semantic, {
-                                                Label("",{x.base.base.loc})
-                                            }));
-                                        throw SemanticAbort();
-                                    }
-                                }
+				if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
+				    // Operator Overloading Encountered
+				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+				    } else {
+					overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+				    }
+				} else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
+				    // Assignment Overloading Encountered
+				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					assgn[current_scope] = ASR::Public;
+				    } else {
+					assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
+				    }
+				} else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
+				    //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
+				    // Custom Operator Overloading Encountered
+				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+					overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+				    } else {
+					overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+				    }
+				} else {
+				    diag.add(Diagnostic(
+						 "Attribute type not implemented yet.",
+						 Level::Error, Stage::Semantic, {
+						     Label("",{x.base.base.loc})
+						 }));
+				    throw SemanticAbort();
+				}
                             } else {
                                 std::string sym = to_lower(s.m_name);
                                 if (sa->m_attr == AST::simple_attributeType
@@ -2747,15 +2806,6 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
-                                } else if (sa->m_attr == AST::simple_attributeType
-                                        ::AttrCommon) {
-                                    is_common_variable = true;
-                                    common_block_name = sym;
-                                    common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
-                                    struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
-                                    // populate common_block_dictionary
-                                    populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
-                                    is_common_variable = false;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
@@ -2851,70 +2901,42 @@ public:
                             }
                         }
                     }
-                // enable sole `dimension` attribute
+		    // enable sole `dimension` attribute
                 } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
                     for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
                         AST::var_sym_t &s = x.m_syms[i];
-                        std::string sym = to_lower(s.m_name);
-                        ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
-                        // get actual variable from SymTab, not the current line
-                        if (get_sym == nullptr) {
-                            if (compiler_options.implicit_typing) {
-                                ASR::intentType intent;
-                                if (std::find(current_procedure_args.begin(),
-                                        current_procedure_args.end(), sym) !=
-                                        current_procedure_args.end()) {
-                                    intent = ASRUtils::intent_unspecified;
-                                } else {
-                                    intent = ASRUtils::intent_local;
-                                }
-                                get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
-                            } else {
-                                diag.add(Diagnostic(
-                                    "Cannot set dimension for undeclared variable",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
-                        }
-                        bool is_compile_time = false;
-                        if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
-                            Vec<ASR::dimension_t> dims;
-                            dims.reserve(al, 0);
-                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
-                            bool is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
-                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim, is_compile_time, is_char_type);
-
-                            bool is_star_dimension = false;
-
-                            if (x.m_syms[i].n_dim > 0) {
-                                is_star_dimension = (x.m_syms[i].m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
-                            }
-
-                            if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al, ASR::abiType::Source, false, is_star_dimension)) {
-                                diag.add(Diagnostic(
-                                    "Cannot set dimension for variable of non-numerical type",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
-                            SetChar variable_dependencies_vec;
-                            variable_dependencies_vec.reserve(al, 1);
-                            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type, v->m_symbolic_value, v->m_value);
-                            v->m_dependencies = variable_dependencies_vec.p;
-                            v->n_dependencies = variable_dependencies_vec.size();
-                        } else {
-                            diag.add(Diagnostic(
-                                "Cannot attribute non-variable type with dimension",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{x.base.base.loc})
-                                }));
-                            throw SemanticAbort();
-                        }
+			dimension_variable(s, x.base.base.loc);
                     }
-                } else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
+		} else if (AST::is_a<AST::AttrCommon_t>(*x.m_attributes[i])) {
+		    AST::AttrCommon_t const & common_stmt =
+			*AST::down_cast<AST::AttrCommon_t>(x.m_attributes[i]);
+		    constexpr char BLANK_BLOCK[] = "blank#block";
+		    std::string common_block_name;
+		    /* Local dictionary to aggregate objects into:
+		       "COMMON A /B1/ B, // C", will put "A" and "C"
+		       in the blank block.  This should be done for
+		       the entire declaration-construct. */
+		    common_block_varsyms objs_by_blk;
+		    for (size_t bi = 0; bi < common_stmt.n_blks; ++bi) {
+			AST::common_block_t const &cb = common_stmt.m_blks[bi];
+			if (cb.m_name) {
+			    common_block_name = to_lower(cb.m_name);
+			} else {
+			    common_block_name = BLANK_BLOCK;
+			}
+
+			// Aggregate the objects into their named common blocks
+			for (size_t oi = 0; oi < cb.n_objects; ++oi) {
+			    AST::var_sym_t const & vs = cb.m_objects[oi];
+			    objs_by_blk[common_block_name].push_back(vs);
+			    if (vs.n_dim) {
+				/* Treat this as a dimension statement. */
+				dimension_variable(vs, x.base.base.loc);
+			    }
+			}
+		    }
+		    populate_common_dictionary(x, objs_by_blk);
+		} else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
                     AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
                     int eq_n_args = eq->n_args;
                     for (int i = 0; i < eq_n_args; i++) {
@@ -4883,12 +4905,12 @@ public:
             if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){ // Check physicalType of the array.
                 ASR::array_physical_typeType arr_physicalType =  ASR::down_cast<ASR::Array_t>(
                                             ASRUtils::type_get_past_allocatable_pointer(expr_type))->m_physical_type;
-                if( arr_physicalType == ASR::array_physical_typeType::DescriptorArray || 
+                if( arr_physicalType == ASR::array_physical_typeType::DescriptorArray ||
                     arr_physicalType == ASR::array_physical_typeType::PointerToDataArray){
 
                     use_descriptorArray = true;
                 }
-            }     
+            }
             if (type == nullptr) {
                 type = expr_type;
                 extracted_type = ASRUtils::extract_type(type);
@@ -4936,7 +4958,7 @@ public:
         }
         dims.push_back(al, dim);
         if (use_descriptorArray){
-            type = ASRUtils::duplicate_type(al, type, &dims, 
+            type = ASRUtils::duplicate_type(al, type, &dims,
                     ASR::array_physical_typeType::DescriptorArray, true);
         } else {
             type = ASRUtils::duplicate_type(al, type, &dims);
@@ -6008,7 +6030,7 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i].m_end);
             args.p[i] = ASRUtils::EXPR(tmp);
-            if (intrinsic_name == "and" || intrinsic_name == "or" || intrinsic_name == "xor" || intrinsic_name == "repeat" || intrinsic_name == "selected_int_kind" 
+            if (intrinsic_name == "and" || intrinsic_name == "or" || intrinsic_name == "xor" || intrinsic_name == "repeat" || intrinsic_name == "selected_int_kind"
             || intrinsic_name == "selected_real_kind" || intrinsic_name == "selected_char_kind") {
                 if( ASRUtils::is_array(ASRUtils::expr_type(args[i]))) {
                     diag.add(diag::Diagnostic(
@@ -7690,8 +7712,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        if (!is_common_variable
-            && ( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
+        if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
             && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
             && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             if (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name)) {

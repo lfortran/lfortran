@@ -1285,12 +1285,6 @@ public:
                 r += s;
                 if (i < x.n_syms-1) r.append(", ");
             }
-        } else if (x.m_vartype == nullptr && x.n_attributes == 1 &&
-                is_a<SimpleAttribute_t>(*x.m_attributes[0]) &&
-                down_cast<SimpleAttribute_t>(x.m_attributes[0])->m_attr
-                == simple_attributeType::AttrCommon) {
-            visit_Common(x);
-            r.append(s);
         } else {
             if (x.m_vartype) {
                 visit_decl_attribute(*x.m_vartype);
@@ -1364,26 +1358,6 @@ public:
         s = r;
     }
 
-    void visit_Common(const Declaration_t &x) {
-        std::string r;
-        r += syn(gr::Type);
-        r += "common ";
-        r += syn();
-        for (size_t i=0; i<x.n_syms; i++) {
-            if(x.m_syms[i].m_name){
-                r += "/";
-                r.append(x.m_syms[i].m_name);
-                r += "/ ";
-            }
-            if (x.m_syms[i].m_initializer) {
-                visit_expr(*x.m_syms[i].m_initializer);
-                r += s;
-            }
-            if (i < x.n_syms-1) r.append(", ");
-        }
-        s = r;
-    }
-
     void visit_DataStmt(const DataStmt_t &x) {
         std::string r;
         r += syn(gr::Type);
@@ -1442,6 +1416,43 @@ public:
         r += ")";
         s = r;
         last_expr_precedence = 13;
+    }
+
+
+    void visit_AttrCommon(AttrCommon_t const &x) {
+        std::string r;
+        r += syn(gr::Type);
+        r += "common ";
+        r += syn();
+	for (size_t i = 0; i < x.n_blks; ++i) {
+	    common_block_t const &cb = x.m_blks[i];
+	    if (i > 0 || cb.m_name) {
+		r += "/";
+		if (cb.m_name) {
+		    r.append(cb.m_name);
+		}
+		r += "/ ";
+	    }
+	    for (size_t j = 0; j < cb.n_objects; ++j) {
+		// We can't use this when we have both dimensions and initializers
+		// visit_var_sym(cb.m_objects[j]);
+		// r += s;
+		var_sym_t const &vs = cb.m_objects[j];
+		r.append(vs.m_name);
+		if (vs.n_dim > 0) {
+		    r.append("(");
+		    for (size_t j=0; j<vs.n_dim; j++) {
+			visit_dimension(vs.m_dim[j]);
+			r += s;
+			if (j < vs.n_dim-1) r.append(",");
+		    }
+		    r.append(")");
+		}
+		if (j < cb.n_objects - 1) r.append(", ");
+	    }
+	    if (i < x.n_blks - 1) r.append(", ");
+	}
+	s = r;
     }
 
     void visit_AttrEquivalence(const AttrEquivalence_t &x) {

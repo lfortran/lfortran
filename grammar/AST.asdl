@@ -279,6 +279,7 @@ decl_attribute
     = AttrBind(bind bind)
     | AttrDimension(dimension* dim)
     | AttrCodimension(codimension* codim)
+    | AttrCommon(common_block* blks)
     | AttrEquivalence(equi* args)
     | AttrExtends(identifier name)
     | AttrIntent(attr_intent intent)
@@ -295,7 +296,6 @@ simple_attribute
     = AttrAbstract
     | AttrAllocatable
     | AttrAsynchronous
-    | AttrCommon
     | AttrContiguous
     | AttrDeferred
     | AttrElemental
@@ -347,6 +347,8 @@ team_attribute = CoarrayAssociation(expr coarray, expr selector)
 
 var_sym = (identifier? name, dimension* dim, codimension* codim,
  expr? length, expr? initializer, symbol sym, decl_attribute? spec)
+
+common_block = (identifier? name, var_sym* objects)
 
 kind_item = (identifier? id, expr? value, kind_item_type type)
 

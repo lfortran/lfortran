@@ -122,25 +122,6 @@
             ()
         )
         (Declaration
-            ()
-            [(AttrDimension
-                []
-            )]
-            [(z
-            [(1
-            3
-            DimensionExpr)
-            (1
-            3
-            DimensionExpr)]
-            []
-            ()
-            ()
-            None
-            ())]
-            ()
-        )
-        (Declaration
             (AttrType
                 TypeInteger
                 []
