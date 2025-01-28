@@ -612,7 +612,7 @@ static inline bool is_same_dimension(ASR::expr_t* &array, ASR::expr_t* &mask, st
         return false;
     }
     for (int i = 0; i < array_n_dims; i++) {
-        if (!(ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length))) {
+        if (!(array_dims[i].m_length != nullptr && mask_dims[i].m_length != nullptr && ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length))) {
                 diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
