@@ -612,12 +612,12 @@ static inline bool is_same_dimension(ASR::expr_t* &array, ASR::expr_t* &mask, st
         return false;
     }
     for (int i = 0; i < array_n_dims; i++) {
-        if (!(array_dims[i].m_length != nullptr && mask_dims[i].m_length != nullptr && ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length))) {
+        if (array_dims[i].m_length != nullptr && mask_dims[i].m_length != nullptr && !(ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length))) {
                 diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
-                {diag::Label("`array` have shape " + ASRUtils::type_encode_dims(array_n_dims, array_dims) +
-                ", but `mask` have shape " + ASRUtils::type_encode_dims(mask_n_dims, mask_dims), location)}));
+                {diag::Label("`array` has shape " + ASRUtils::type_encode_dims(array_n_dims, array_dims) +
+                ", but `mask` has shape " + ASRUtils::type_encode_dims(mask_n_dims, mask_dims), location)}));
                 return false;
         }
     }
