@@ -3378,6 +3378,8 @@ public:
                         ASRUtils::type_get_past_array(type));
                     char_length = ASRUtils::EXPR(tmp);
                     ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
+                    ASRUtils::ASRBuilder b(al, x.base.base.loc);
+                    if (c_length == nullptr) c_length = ASRUtils::expr_value(b.i32(0));
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*c_length))
                     int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
                     lhs_type->m_len = lhs_len;
