@@ -129,7 +129,7 @@ program continue_compilation_1
     mask5 = reshape([.true., .false., .true., .true., .false., .true.], [2, 3, 1])
 
     print *, sum(arr1, mask2)
-    print *, sum(arr1, mask2, 2)
+    print *, sum(arr2, mask3, 2)
     print *, iparity(arr2, mask4)
     print *, iparity(arr3, mask5, 3)
 end program

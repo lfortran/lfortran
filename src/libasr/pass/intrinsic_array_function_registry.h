@@ -597,6 +597,33 @@ static inline void fill_dimensions_for_ArrIntrinsic(Allocator& al, size_t n_dims
     }
 }
 
+static inline bool is_same_dimension(ASR::expr_t* &array, ASR::expr_t* &mask, std::string &intrinsic_func_name, diag::Diagnostics &diag, const std::vector<Location> &location) {
+    ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+    ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
+    ASR::dimension_t* mask_dims = nullptr;
+    ASR::dimension_t* array_dims = nullptr;
+    int array_n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, array_dims);
+    int mask_n_dims = ASRUtils::extract_dimensions_from_ttype(mask_type, mask_dims);
+    if (array_n_dims != mask_n_dims) {
+        diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
+        diag::Level::Error, 
+        diag::Stage::Semantic, 
+        {diag::Label("`array` is rank " + std::to_string(array_n_dims) + ", but `mask` is rank " + std::to_string(mask_n_dims), location)}));
+        return false;
+    }
+    for (int i = 0; i < array_n_dims; i++) {
+        if (!(ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length))) {
+                diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
+                diag::Level::Error, 
+                diag::Stage::Semantic, 
+                {diag::Label("`array` have shape " + ASRUtils::type_encode_dims(array_n_dims, array_dims) +
+                ", but `mask` have shape " + ASRUtils::type_encode_dims(mask_n_dims, mask_dims), location)}));
+                return false;
+        }
+    }
+    return true;
+}
+
 static inline ASR::asr_t* create_ArrIntrinsic(
     Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
@@ -625,28 +652,8 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
                 mask = args[2];
                 if (!ASRUtils::is_value_constant(mask)) {
-                    ASR::dimension_t* mask_dims = nullptr;
-                    ASR::dimension_t* array_dims = nullptr;
-                    ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
-                    int array_n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, array_dims);
-                    int mask_n_dims = ASRUtils::extract_dimensions_from_ttype(mask_type, mask_dims);
-                    if (array_n_dims != mask_n_dims) {
-                        diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
-                        diag::Level::Error, 
-                        diag::Stage::Semantic, 
-                        {diag::Label("Incompatible ranks in arguments `array` and `mask` for (" + std::to_string(array_n_dims) + ", " + 
-                                    std::to_string(mask_n_dims) + ")", { args[0]->base.loc, args[2]->base.loc })}));
+                    if (!is_same_dimension(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[2]->base.loc})) {
                         return nullptr;
-                    }
-                    for (int i = 0; i < array_n_dims; i++) {
-                        if (!(ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length) &&
-                            ASRUtils::expr_equal(array_dims[i].m_start, mask_dims[i].m_start))) {
-                                diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
-                                diag::Level::Error, 
-                                diag::Stage::Semantic, 
-                                {diag::Label("Different shape for arguments `array` and `mask` on dimension " + std::to_string((i + 1)), { args[0]->base.loc, args[2]->base.loc })}));
-                                return nullptr;
-                        }
                     }
                 }
             } else if (args[2]) {
@@ -657,28 +664,8 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
             mask = args[1];
             if (!ASRUtils::is_value_constant(mask)) {
-                ASR::dimension_t* mask_dims = nullptr;
-                ASR::dimension_t* array_dims = nullptr;
-                ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
-                int array_n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, array_dims);
-                int mask_n_dims = ASRUtils::extract_dimensions_from_ttype(mask_type, mask_dims);
-                if (array_n_dims != mask_n_dims) {
-                    diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
-                    diag::Level::Error, 
-                    diag::Stage::Semantic, 
-                    {diag::Label("Incompatible ranks in arguments `array` and `mask` for (" + std::to_string(array_n_dims) + ", " + 
-                                std::to_string(mask_n_dims) + ")", { args[0]->base.loc, args[1]->base.loc })}));
+                if (!is_same_dimension(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[1]->base.loc})) {
                     return nullptr;
-                }
-                for (int i = 0; i < array_n_dims; i++) {
-                    if (!(ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length) &&
-                        ASRUtils::expr_equal(array_dims[i].m_start, mask_dims[i].m_start))) {
-                            diag.add(diag::Diagnostic("The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
-                            diag::Level::Error, 
-                            diag::Stage::Semantic, 
-                            {diag::Label("Different shape for arguments `array` and `mask` on dimension " + std::to_string((i + 1)), { args[0]->base.loc, args[1]->base.loc })}));
-                            return nullptr;
-                    }
                 }
             }
             if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {

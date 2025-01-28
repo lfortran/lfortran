@@ -291,22 +291,22 @@ semantic error: The dimensions of `array` and `mask` arguments of `Sum` intrinsi
    --> tests/errors/continue_compilation_1.f90:131:18
     |
 131 |     print *, sum(arr1, mask2)
-    |                  ^^^^  ^^^^^ Incompatible ranks in arguments `array` and `mask` for (1, 2)
+    |                  ^^^^  ^^^^^ `array` is rank 1, but `mask` is rank 2
 
 semantic error: The dimensions of `array` and `mask` arguments of `Sum` intrinsic must be same
    --> tests/errors/continue_compilation_1.f90:132:18
     |
-132 |     print *, sum(arr1, mask2, 2)
-    |                  ^^^^  ^^^^^ Incompatible ranks in arguments `array` and `mask` for (1, 2)
+132 |     print *, sum(arr2, mask3, 2)
+    |                  ^^^^  ^^^^^ `array` is rank 2, but `mask` is rank 3
 
 semantic error: The dimensions of `array` and `mask` arguments of `Iparity` intrinsic must be same
    --> tests/errors/continue_compilation_1.f90:133:22
     |
 133 |     print *, iparity(arr2, mask4)
-    |                      ^^^^  ^^^^^ Different shape for arguments `array` and `mask` on dimension 1
+    |                      ^^^^  ^^^^^ `array` have shape [2,3], but `mask` have shape [3,2]
 
 semantic error: The dimensions of `array` and `mask` arguments of `Iparity` intrinsic must be same
    --> tests/errors/continue_compilation_1.f90:134:22
     |
 134 |     print *, iparity(arr3, mask5, 3)
-    |                      ^^^^  ^^^^^ Different shape for arguments `array` and `mask` on dimension 2
+    |                      ^^^^  ^^^^^ `array` have shape [2,1,3], but `mask` have shape [2,3,1]
