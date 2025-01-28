@@ -2945,7 +2945,7 @@ public:
 		    for (size_t bi = 0; bi < common_stmt.n_blks; ++bi) {
 			AST::common_block_t const &cb = common_stmt.m_blks[bi];
 			if (cb.m_name) {
-			    common_block_name = cb.m_name;
+			    common_block_name = to_lower(cb.m_name);
 			} else {
 			    common_block_name = BLANK_BLOCK;
 			}
