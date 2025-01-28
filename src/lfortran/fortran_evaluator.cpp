@@ -533,6 +533,7 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     }
 }
 
+// asr_t &asr accepts only TranslationUnit and Module's type for now
 Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 #ifdef HAVE_LFORTRAN_MLIR
         ASR::asr_t &asr, diag::Diagnostics &diagnostics
@@ -544,7 +545,7 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     // ASR -> MLIR
     std::unique_ptr<LCompilers::MLIRModule> m;
     LCompilers::PassManager pass_manager;
-    if (asr.type == ASR::unit) {
+    if (ASR::is_a<ASR::unit_t>(asr)) {
         pass_manager.use_default_passes();
         pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,
             compiler_options.po, diagnostics);

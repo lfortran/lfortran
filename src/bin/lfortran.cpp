@@ -1081,7 +1081,7 @@ int compile_src_to_object_file(const std::string &infile,
                     mlir_res = fe.get_mlir((LCompilers::ASR::asr_t &)mod, diagnostics);
 
                 std::cerr << diagnostics.render(lm, compiler_options);
-                if (result.ok) {
+                if (mlir_res.ok) {
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
                     std::string mlir_tmp_o{std::filesystem::path(infile).
                         replace_extension(".mlir.tmp.o").string()};

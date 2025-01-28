@@ -875,6 +875,13 @@ public:
 
 Result<std::unique_ptr<MLIRModule>> asr_to_mlir(Allocator &al,
         ASR::asr_t &asr, diag::Diagnostics &diagnostics) {
+    if ( !(ASR::is_a<ASR::unit_t>(asr) ||
+            (ASR::is_a<ASR::Module_t>((ASR::symbol_t &)asr))) ) {
+        diagnostics.diagnostics.push_back(diag::Diagnostic("Unhandled type "
+            "passed as argument: 'asr' to asr_to_mlir(...)",
+            diag::Level::Error, diag::Stage::CodeGen));
+        Error error; return error;
+    }
     ASRToMLIRVisitor v(al);
     try {
         v.visit_asr(asr);
