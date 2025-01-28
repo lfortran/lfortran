@@ -605,7 +605,7 @@ static inline bool is_same_shape(ASR::expr_t* &array, ASR::expr_t* &mask, const 
     int array_n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, array_dims);
     int mask_n_dims = ASRUtils::extract_dimensions_from_ttype(mask_type, mask_dims);
     if (array_n_dims != mask_n_dims) {
-        diag.add(diag::Diagnostic("The ranks of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
+        diag.add(diag::Diagnostic("The ranks of the `array` and `mask` arguments of the `" + intrinsic_func_name + "` intrinsic must be the same", 
         diag::Level::Error, 
         diag::Stage::Semantic, 
         {diag::Label("`array` is rank " + std::to_string(array_n_dims) + ", but `mask` is rank " + std::to_string(mask_n_dims), location)}));
@@ -613,7 +613,7 @@ static inline bool is_same_shape(ASR::expr_t* &array, ASR::expr_t* &mask, const 
     }
     for (int i = 0; i < array_n_dims; i++) {
         if (array_dims[i].m_length != nullptr && mask_dims[i].m_length != nullptr && !(ASRUtils::expr_equal(array_dims[i].m_length, mask_dims[i].m_length))) {
-                diag.add(diag::Diagnostic("The shapes of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same", 
+                diag.add(diag::Diagnostic("The shapes of the `array` and `mask` arguments of the `" + intrinsic_func_name + "` intrinsic must be the same", 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("`array` has shape " + ASRUtils::type_encode_dims(array_n_dims, array_dims) +

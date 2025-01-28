@@ -287,25 +287,25 @@ semantic error: string expression, expected logical
 126 |     if (c1) c1 = 'a'
     |         ^^ 
 
-semantic error: The ranks of `array` and `mask` arguments of `Sum` intrinsic must be same
+semantic error: The ranks of the `array` and `mask` arguments of the `Sum` intrinsic must be the same
    --> tests/errors/continue_compilation_1.f90:131:18
     |
 131 |     print *, sum(arr1, mask2)
     |                  ^^^^  ^^^^^ `array` is rank 1, but `mask` is rank 2
 
-semantic error: The ranks of `array` and `mask` arguments of `Sum` intrinsic must be same
+semantic error: The ranks of the `array` and `mask` arguments of the `Sum` intrinsic must be the same
    --> tests/errors/continue_compilation_1.f90:132:18
     |
 132 |     print *, sum(arr2, mask3, 2)
     |                  ^^^^  ^^^^^ `array` is rank 2, but `mask` is rank 3
 
-semantic error: The shapes of `array` and `mask` arguments of `Iparity` intrinsic must be same
+semantic error: The shapes of the `array` and `mask` arguments of the `Iparity` intrinsic must be the same
    --> tests/errors/continue_compilation_1.f90:133:22
     |
 133 |     print *, iparity(arr2, mask4)
     |                      ^^^^  ^^^^^ `array` has shape [2,3], but `mask` has shape [3,2]
 
-semantic error: The shapes of `array` and `mask` arguments of `Iparity` intrinsic must be same
+semantic error: The shapes of the `array` and `mask` arguments of the `Iparity` intrinsic must be the same
    --> tests/errors/continue_compilation_1.f90:134:22
     |
 134 |     print *, iparity(arr3, mask5, 3)
