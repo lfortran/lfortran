@@ -1799,15 +1799,37 @@ namespace Present {
         }
     }
 
-    static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+    static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::expr_t* arg = args[0];
+        if (!ASR::is_a<ASR::Var_t>(*arg)) {
+            append_error(diag, 
+                "Argument to 'present' must be a variable, but got an expression", 
+                loc);
+            return nullptr;
+        }
+
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (var->m_presence != ASR::presenceType::Optional) {
+            append_error(diag, 
+                "Argument to 'present' must be an optional dummy argument", 
+                loc);
+            return nullptr;
+        }
+
         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
         expr_duplicator.allow_procedure_calls = true;
+
         ASR::ttype_t* type_ = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         ASR::ttype_t *return_type = type_;
         ASR::expr_t *m_value = nullptr;
+
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
-        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Present), m_args.p, m_args.n, 0, return_type, m_value);
+
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, 
+            static_cast<int64_t>(IntrinsicElementalFunctions::Present), 
+            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Present(Allocator &/*al*/, const Location &/*loc*/,
