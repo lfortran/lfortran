@@ -4867,7 +4867,7 @@ namespace Pack {
                 ", provided an array with rank, " + std::to_string(mask_rank), mask->base.loc);
             return nullptr;
         }
-        if (!dimension_expr_equal(array_dims[0].m_length,
+         if (array_dim != -1 && mask_dim != -1 && !dimension_expr_equal(array_dims[0].m_length,
                 mask_dims[0].m_length)) {
             append_error(diag, "The argument `mask` must be of dimension "
                 + std::to_string(array_dim) + ", provided an array "
