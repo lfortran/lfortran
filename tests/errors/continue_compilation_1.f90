@@ -132,4 +132,10 @@ program continue_compilation_1
     print *, sum(arr2, mask3, 2)
     print *, iparity(arr2, mask4)
     print *, iparity(arr3, mask5, 3)
+
+    ! argument_not_a_variable
+    print *, present(a + 1)
+
+    ! argument_not_optional
+    print *, present(a)
 end program
