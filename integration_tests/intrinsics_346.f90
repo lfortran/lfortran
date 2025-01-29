@@ -39,6 +39,7 @@ program intrinsics_346
     character(len=:), allocatable :: outputString
 
     inputString = "Hi!"
+    allocate(asciiCodes(len(inputString)))
     asciiCodes = iascii(inputString)
 
     print *, "ASCII codes for '", inputString, "':", asciiCodes
