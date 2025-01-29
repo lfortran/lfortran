@@ -1023,6 +1023,7 @@ RUN(NAME intrinsics_344 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl
 RUN(NAME intrinsics_345 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_346 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar
 RUN(NAME intrinsics_347 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran ONLY_EXPERIMENTAL_SIMPLIFIER) # reshape
+RUN(NAME intrinsics_348 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran ONLY_EXPERIMENTAL_SIMPLIFIER) # reshape
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 

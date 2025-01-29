@@ -669,14 +669,15 @@ bool set_allocation_size(
         }
         case ASR::exprType::ArrayReshape: {
             ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(value);
-            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+            size_t n_dims = ASRUtils::get_fixed_size_of_array(
                 ASRUtils::expr_type(array_reshape_t->m_shape));
             allocate_dims.reserve(al, n_dims);
+            ASRUtils::ASRBuilder b(al, array_reshape_t->base.base.loc);
             for( size_t i = 0; i < n_dims; i++ ) {
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = int32_one;
-                allocate_dim.m_length = int32_one;
+                allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {b.i32(i + 1)});
                 allocate_dims.push_back(al, allocate_dim);
             }
             break;
