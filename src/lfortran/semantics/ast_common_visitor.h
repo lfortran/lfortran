@@ -1223,6 +1223,7 @@ public:
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
+    bool is_common_variable = false;
     bool _processing_dimensions = false;
     bool _declaring_variable = false;
     bool is_implicit_interface = false;
@@ -2382,6 +2383,7 @@ public:
 	    ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
 	    size_t const num_cb_var = blk.second.size();
 
+	    is_common_variable = true;  // This changes the behavior of visit_FuncCallOrArray
 	    auto cbd_it = common_block_dictionary.find(common_block_name);
 
 	    if (cbd_it == common_block_dictionary.end()) {
@@ -2486,6 +2488,7 @@ public:
 		    }
 		}
 	    }
+	    is_common_variable = false;
 	}
     }
 
@@ -7737,7 +7740,8 @@ public:
                 throw SemanticAbort();
             }
         }
-        if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
+        if (!is_common_variable
+	    && (ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
             && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
             && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             if (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name)) {
