@@ -9516,6 +9516,13 @@ public:
                 } else {
                     pass_arg = dt_polymorphic;
                 }
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)){
+                this->visit_expr(*x.m_dt);
+                llvm::Value* dt = tmp;
+                llvm::Value* dt_polymorphic = tmp;
+                dt_polymorphic = convert_to_polymorphic_arg(dt, ASRUtils::expr_type(s->m_args[0]),
+                                                ASRUtils::expr_type(x.m_dt));
+                args.push_back(dt_polymorphic);
             } else {
                 throw CodeGenError("SubroutineCall: StructType symbol type not supported");
             }
@@ -10051,6 +10058,13 @@ public:
                 } else {
                     pass_arg = dt_polymorphic;
                 }
+            } else if(ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
+                this->visit_expr(*x.m_dt);
+                llvm::Value* dt = tmp;
+                llvm::Value* dt_polymorphic = tmp;
+                dt_polymorphic = convert_to_polymorphic_arg(dt, ASRUtils::expr_type(s->m_args[0]),
+                                                ASRUtils::expr_type(x.m_dt));
+                args.push_back(dt_polymorphic);
             } else {
                 throw CodeGenError("FunctionCall: StructType symbol type not supported");
             }
