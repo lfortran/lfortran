@@ -9329,6 +9329,13 @@ public:
                         char* x_m_id, const Location& loc) {
         if (x_n_member == 0) {
             ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
+            if(x_m_member && x_m_member[0].m_args) {
+                expr = ASRUtils::EXPR(
+                    create_ArrayRef(loc, x_m_member[0].m_args, x_m_member[0].n_args,
+                    nullptr, 0, nullptr,
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v,
+                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v)));
+            }
             tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
         } else if (x_n_member == 1) {
             if (x_m_member[0].n_args == 0) {
