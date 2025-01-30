@@ -15,4 +15,4 @@ program intrinsics_350
     if ( abs(sum(1 - spread(v_,dim = 2 , ncopies =23)) - (-46.0)) > 1e-6 ) error stop
     print *, sum(1 - spread(v_2,dim = 2 , ncopies =23))
     if ( abs(sum(1 - spread(v_2,dim = 2 , ncopies =23)) - (-46.0)) > 1e-6 ) error stop
-end program main
+end program intrinsics_350
