@@ -6323,15 +6323,13 @@ public:
         this->visit_expr(*shape);
         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
         if( !ASRUtils::is_array(ASRUtils::expr_type(array)) ) {
-            diag.add(Diagnostic("reshape only accept arrays for source "
-                "arguments, found " +
+            diag.add(Diagnostic("reshape accepts arrays for `source` argument, found " +
                 ASRUtils::type_to_str_python(ASRUtils::expr_type(array)) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[0].loc})}));
             throw SemanticAbort();
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
-            diag.add(Diagnostic("reshape only accept arrays for shape "
-                "arguments, found " +
+            diag.add(Diagnostic("reshape accepts arrays for `shape` argument, found " +
                 ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[1].loc})}));
             throw SemanticAbort();

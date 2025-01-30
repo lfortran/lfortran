@@ -323,25 +323,25 @@ semantic error: Argument to 'present' must be an optional dummy argument
 140 |     print *, present(a)
     |              ^^^^^^^^^^ 
 
-semantic error: reshape only accept arrays for source arguments, found str instead.
+semantic error: reshape accepts arrays for `source` argument, found str instead.
    --> tests/errors/continue_compilation_1.f90:142:22
     |
 142 |     print *, reshape("hello", [2, 3])
     |                      ^^^^^^^ 
 
-semantic error: reshape only accept arrays for source arguments, found bool instead.
+semantic error: reshape accepts arrays for `source` argument, found bool instead.
    --> tests/errors/continue_compilation_1.f90:143:22
     |
 143 |     print *, reshape(.true., [2, 3])
     |                      ^^^^^^ 
 
-semantic error: reshape only accept arrays for shape arguments, found str instead.
+semantic error: reshape accepts arrays for `shape` argument, found str instead.
    --> tests/errors/continue_compilation_1.f90:144:36
     |
 144 |     print *, reshape([1, 2, 3, 4], "hello")
     |                                    ^^^^^^^ 
 
-semantic error: reshape only accept arrays for shape arguments, found bool instead.
+semantic error: reshape accepts arrays for `shape` argument, found bool instead.
    --> tests/errors/continue_compilation_1.f90:145:36
     |
 145 |     print *, reshape([1, 2, 3, 4], .false.)
