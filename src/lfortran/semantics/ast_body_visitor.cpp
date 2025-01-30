@@ -3888,7 +3888,7 @@ public:
             diag.add(diag::Diagnostic(
                 ASRUtils::type_to_str(test_type) + " expression, expected logical",
                 diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {test->base.loc})}));
+                diag::Label(ASRUtils::type_to_str(test_type) + " expression, expected logical", {test->base.loc})}));
             throw SemanticAbort();
         }
         Vec<ASR::stmt_t*> body;

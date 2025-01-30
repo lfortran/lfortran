@@ -273,19 +273,19 @@ semantic error: integer expression, expected logical
    --> tests/errors/continue_compilation_1.f90:124:9
     |
 124 |     if (q1) q1 = 1
-    |         ^^ 
+    |         ^^ integer expression, expected logical
 
 semantic error: real expression, expected logical
    --> tests/errors/continue_compilation_1.f90:125:9
     |
 125 |     if (r1) r1 = 1.0
-    |         ^^ 
+    |         ^^ real expression, expected logical
 
 semantic error: string expression, expected logical
    --> tests/errors/continue_compilation_1.f90:126:9
     |
 126 |     if (c1) c1 = 'a'
-    |         ^^ 
+    |         ^^ string expression, expected logical
 
 semantic error: The ranks of the `array` and `mask` arguments of the `Sum` intrinsic must be the same
    --> tests/errors/continue_compilation_1.f90:131:18
