@@ -625,12 +625,13 @@ bool set_allocation_size(
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
                     ASR::expr_t* ncopies = intrinsic_array_function->m_args[2];
                     allocate_dims.reserve(al, n_dims);
-
+                    ASRUtils::ASRBuilder b(al, intrinsic_array_function->base.base.loc);
                     for (size_t i = 0; i < n_dims; i++) {
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
-                        allocate_dim.m_length = ncopies;
+                        if ( i == n_dims - 1 ) allocate_dim.m_length = ncopies;
+                        else allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[0], b.i32(i + 1), ASRUtils::expr_type(int32_one));
                         allocate_dims.push_back(al, allocate_dim);
                     }
                     break;
