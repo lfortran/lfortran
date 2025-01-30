@@ -885,6 +885,44 @@ bool is_temporary_needed(ASR::expr_t* value) {
             !is_elemental_expr(value) && is_non_empty_fixed_size_array;
 }
 
+ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
+    switch( expr->type ) {
+        case ASR::exprType::Var: {
+            return ASR::down_cast<ASR::Var_t>(expr)->m_v;
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+        }
+        default: {
+            return nullptr;
+        }
+    }
+}
+    
+bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
+    if (lhs == nullptr) {
+        return false;
+    }
+    Vec<ASR::expr_t*> lhs_vars, rhs_vars;
+    lhs_vars.reserve(al, 1); rhs_vars.reserve(al, 1);
+    ArrayVarCollector lhs_collector(al, lhs_vars);
+    ArrayVarCollector rhs_collector(al, rhs_vars);
+    lhs_collector.visit_expr(*lhs);
+    rhs_collector.visit_expr(*rhs);
+
+    for( size_t i = 0; i < lhs_vars.size(); i++ ) {
+        ASR::symbol_t* lhs_sym = extract_symbol(lhs_vars[i]);
+        for( size_t j = 0; j < rhs_vars.size(); j++ ) {
+            if( extract_symbol(rhs_vars[j]) == lhs_sym ) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 {
 
@@ -894,6 +932,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     Vec<ASR::stmt_t*>* current_body;
     Vec<ASR::stmt_t*>* parent_body_for_where;
     ExprsWithTargetType& exprs_with_target;
+    ASR::expr_t* lhs_var;
     bool realloc_lhs;
     bool inside_where;
 
@@ -901,7 +940,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), current_body(nullptr), parent_body_for_where(nullptr),
-            exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
+            exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
             inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
 
 
@@ -918,21 +957,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
         ASR::expr_t* array_var_temporary = nullptr;
-        if( ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) && 
-            ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i)) ) { 
-            array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
-                false);
-        } else if(ASR::is_a<ASR::ArrayItem_t>(*x_m_args_i) &&
-            ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArrayItem_t>(x_m_args_i))) {
-            array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
-                false);
-        } else {
-            array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
-                ASR::is_a<ASR::ArraySection_t>(*x_m_args_i));
-        }
+        bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) && 
+                    !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr) &&
+                    !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
+        array_var_temporary = create_and_allocate_temporary_variable_for_array(
+            x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
+            is_pointer_required);
         return array_var_temporary;
     }
 
@@ -1104,7 +1134,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+        ASR::expr_t* lhs_array_var = nullptr;
+        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
+            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
+        }
+        lhs_var = lhs_array_var;
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
+        lhs_var = nullptr;
     }
 
     void visit_Where(const ASR::Where_t &x) {
@@ -1575,41 +1611,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_complex_constructor_");
     }
 
-    ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
-        switch( expr->type ) {
-            case ASR::exprType::Var: {
-                return ASR::down_cast<ASR::Var_t>(expr)->m_v;
-            }
-            case ASR::exprType::StructInstanceMember: {
-                return ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
-            }
-            default: {
-                return nullptr;
-            }
-        }
-    }
-
-    bool is_common_symbol_present_in_lhs_and_rhs(ASR::expr_t* lhs, ASR::expr_t* rhs) {
-        Vec<ASR::expr_t*> lhs_vars, rhs_vars;
-        lhs_vars.reserve(al, 1); rhs_vars.reserve(al, 1);
-        ArrayVarCollector lhs_collector(al, lhs_vars);
-        ArrayVarCollector rhs_collector(al, rhs_vars);
-        lhs_collector.visit_expr(*lhs);
-        rhs_collector.visit_expr(*rhs);
-
-        for( size_t i = 0; i < lhs_vars.size(); i++ ) {
-            ASR::symbol_t* lhs_sym = extract_symbol(lhs_vars[i]);
-            for( size_t j = 0; j < rhs_vars.size(); j++ ) {
-                if( extract_symbol(rhs_vars[j]) == lhs_sym ) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( PassUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
@@ -1626,7 +1627,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
                  ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
                    ASRUtils::is_array(x->m_type)) &&
-                   is_common_symbol_present_in_lhs_and_rhs(target, *current_expr))) ) ||
+                   is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr))) ) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
                 (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
                 force_replace_current_expr_for_array(current_expr, std::string("_function_call_") +
@@ -1635,8 +1636,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 return ;
             }
         }
-        if( !ASRUtils::is_array(x->m_type) && lhs_var &&
-               is_common_symbol_present_in_lhs_and_rhs(lhs_var, *current_expr) ) {
+        if( !ASRUtils::is_array(x->m_type) &&
+               is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, *current_expr) ) {
             force_replace_current_expr_for_scalar(current_expr, std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name), al, current_body, current_scope, exprs_with_target);
             return ;
@@ -1659,7 +1660,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             (is_current_expr_linked_to_target(exprs_with_target, current_expr) && ((
              ASRUtils::is_array(ASRUtils::expr_type(exprs_with_target[*current_expr].first)) ||
              ASRUtils::is_array(x->m_type)) &&
-             is_common_symbol_present_in_lhs_and_rhs(exprs_with_target[*current_expr].first, *current_expr)))
+             is_common_symbol_present_in_lhs_and_rhs(al, exprs_with_target[*current_expr].first, *current_expr)))
         ) {
             // x = transpose(x), where 'x' is user-variable
             // needs have a temporary, there might be more
@@ -1746,7 +1747,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||
-                (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v))) {
+                is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_section_", al, current_body,
                     current_scope, exprs_with_target);
@@ -1796,13 +1797,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||
-                (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v))) {
+                is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
                     current_scope, exprs_with_target);
             }
             return ;
-        } else if( (lhs_var && is_common_symbol_present_in_lhs_and_rhs(lhs_var, x->m_v)) ) {
+        } else if( is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v) ) {
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             *current_expr = create_and_declare_temporary_variable_for_scalar(*current_expr, 
                 "_array_item_", al, current_body, current_scope, exprs_with_target);
