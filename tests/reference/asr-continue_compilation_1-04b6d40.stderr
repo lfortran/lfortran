@@ -322,3 +322,9 @@ semantic error: Argument to 'present' must be an optional dummy argument
     |
 140 |     print *, present(a)
     |              ^^^^^^^^^^ 
+
+semantic error: Different shape for arguments `array` and `mask` for pack intrinsic (3 and 4)
+   --> tests/errors/continue_compilation_1.f90:142:30
+    |
+142 |     print *, pack([1, 2, 3], [.true., .true., .true., .true.])
+    |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
