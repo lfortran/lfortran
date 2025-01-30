@@ -446,6 +446,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     int decimal = 1;
+    if (val < 0 &&  val_str[0] == '0') {
+        decimal = 0;
+    }
     while (val_str[0] == '0') {
         // Used for the case: 1.123e-10
         memmove(val_str, val_str + 1, strlen(val_str));
