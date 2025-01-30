@@ -1521,17 +1521,21 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     bool is_current_expr_linked_to_target(ExprsWithTargetType& exprs_with_target, ASR::expr_t** &current_expr) {
         return exprs_with_target.find(*current_expr) != exprs_with_target.end();
     }
-
-    #define is_current_expr_linked_to_target_then_return if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) { \
-            std::pair<ASR::expr_t*, targetType>& target_info = exprs_with_target[*current_expr]; \
-            ASR::expr_t* target = target_info.first; targetType target_Type = target_info.second; \
-            if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && \
-                target_Type == targetType::OriginalTarget && \
-                realloc_lhs ) { \
-                insert_allocate_stmt_for_array(al, target, *current_expr, current_body); \
-            } \
-            return ; \
+    
+    bool is_current_expr_linked_to_target_then_return(ASR::expr_t** &current_expr, ExprsWithTargetType& exprs_with_target,
+        Vec<ASR::stmt_t*>* &current_body, bool &realloc_lhs, Allocator& al) {
+        if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) {
+            std::pair<ASR::expr_t*, targetType>& target_info = exprs_with_target[*current_expr];
+            ASR::expr_t* target = target_info.first; targetType target_Type = target_info.second;
+            if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
+                target_Type == targetType::OriginalTarget &&
+                realloc_lhs ) {
+                insert_allocate_stmt_for_array(al, target, *current_expr, current_body);
+            }
+            return true;
         }
+        return false;
+    }
 
     void force_replace_current_expr_for_array(ASR::expr_t** &current_expr, const std::string& name_hint, Allocator& al,
         Vec<ASR::stmt_t*>* &current_body, SymbolTable* &current_scope, ExprsWithTargetType& exprs_with_target,
@@ -1557,7 +1561,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     template <typename T>
     void replace_current_expr(T* &x, const std::string& name_hint) {
-        is_current_expr_linked_to_target_then_return
+        if( is_current_expr_linked_to_target_then_return(current_expr, exprs_with_target, current_body, realloc_lhs, al) ) {
+            return;
+        }
         if( ASRUtils::is_array(x->m_type) ) {
             force_replace_current_expr_for_array(current_expr, name_hint, al, current_body, current_scope, exprs_with_target, is_assignment_target_array_section_item);
         } else if( ASRUtils::is_struct(*x->m_type) ) {
