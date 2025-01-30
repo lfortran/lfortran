@@ -525,12 +525,8 @@ jobs:
             ./build/fortran/example_uobyqa_fortran_1_exe
             ./build/fortran/example_uobyqa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_1_exe
-
-            if [ "$(uname)" == "Linux" ]; then
-              ./build/fortran/example_lincoa_fortran_2_exe
-            fi
-            
             ./build/fortran/example_lincoa_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
 
       - name: Test POT3D
