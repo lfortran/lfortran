@@ -1972,12 +1972,7 @@ namespace Spread {
     static inline ASR::asr_t* create_Spread(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
-        bool is_type_allocatable = false;
         bool is_scalar = false;
-
-        if (ASRUtils::is_allocatable(source)) {
-            is_type_allocatable = true;
-        }
         ASR::ttype_t *type_source = ASRUtils::type_get_past_allocatable_pointer(expr_type(source));
         ASR::ttype_t *type_dim = ASRUtils::type_get_past_allocatable_pointer(expr_type(dim));
         ASR::ttype_t *type_ncopies = ASRUtils::type_get_past_allocatable_pointer(expr_type(ncopies));
@@ -2045,13 +2040,6 @@ namespace Spread {
                 result_dims.push_back(al, dim);
             }
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
-        }
-        if (is_type_allocatable) {
-            if ( use_experimental_simplifier ) {
-                ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
-            } else {
-                ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
-            }
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, source); m_args.push_back(al, dim);
