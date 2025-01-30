@@ -138,4 +138,9 @@ program continue_compilation_1
 
     ! argument_not_optional
     print *, present(a)
+
+    print *, reshape("hello", [2, 3])
+    print *, reshape(.true., [2, 3])
+    print *, reshape([1, 2, 3, 4], "hello")
+    print *, reshape([1, 2, 3, 4], .false.)
 end program
