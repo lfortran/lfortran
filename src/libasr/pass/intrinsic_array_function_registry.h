@@ -4839,6 +4839,7 @@ namespace Pack {
         int array_dim = -1, mask_dim = -1, fixed_size_array = -1;
         fixed_size_array = ASRUtils::get_fixed_size_of_array(type_array);
         extract_value(array_dims[0].m_length, array_dim);
+        if (mask_rank != 0) extract_value(mask_dims[0].m_length, mask_dim);
         if (mask_rank == 0) {
             Vec<ASR::expr_t*> mask_expr; mask_expr.reserve(al, fixed_size_array);
             for (int i = 0; i < fixed_size_array; i++) {
@@ -4869,9 +4870,8 @@ namespace Pack {
         }
          if (array_dim != -1 && mask_dim != -1 && !dimension_expr_equal(array_dims[0].m_length,
                 mask_dims[0].m_length)) {
-            append_error(diag, "The argument `mask` must be of dimension "
-                + std::to_string(array_dim) + ", provided an array "
-                "with dimension " + std::to_string(mask_dim), mask->base.loc);
+            append_error(diag, "Different shape for arguments `array` and `mask` for pack intrinsic "
+                "(" + std::to_string(array_dim) + " and " + std::to_string(mask_dim) + ")", mask->base.loc);
             return nullptr;
         }
         if (is_vector_present && vector_rank != 1) {
