@@ -138,4 +138,6 @@ program continue_compilation_1
 
     ! argument_not_optional
     print *, present(a)
+
+    print *, pack([1, 2, 3], [.true., .true., .true., .true.])
 end program
