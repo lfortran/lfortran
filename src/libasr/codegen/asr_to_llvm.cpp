@@ -8901,7 +8901,11 @@ public:
                     ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     if (llvm_symtab.find(h) != llvm_symtab.end()) {
-                        tmp = llvm_symtab[h];
+                        if (llvm_symtab_deep_copy.find(h) != llvm_symtab_deep_copy.end()) {
+                            tmp = llvm_symtab_deep_copy[h];
+                        } else {
+                            tmp = llvm_symtab[h];
+                        }
                         if( !ASRUtils::is_array(arg->m_type) ) {
 
                             if (x_abi == ASR::abiType::Source && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
