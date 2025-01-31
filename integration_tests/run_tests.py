@@ -96,8 +96,6 @@ def get_args():
                 help="Run supported tests with --fast")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
-    parser.add_argument("--no-experimental-simplifier",
-                        action='store_true', help="Use simplifier ASR pass")
     return parser.parse_args()
 
 def main():

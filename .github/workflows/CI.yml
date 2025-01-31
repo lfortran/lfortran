@@ -438,8 +438,6 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
-            ./run_tests.py -b llvm --no-experimental-simplifier
-            ./run_tests.py -b llvm -f --no-experimental-simplifier
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -542,16 +540,6 @@ jobs:
             $FC -c psi_io.f90
             $FC pot3d.F --cpp --implicit-interface --fixed-form --show-llvm
 
-            cd ..
-            git clean -fdx
-
-            # Test without simplifier
-            cd src
-            $FC --no-experimental-simplifier -c mpi.f90
-            $FC --no-experimental-simplifier -c psi_io.f90
-            $FC --no-experimental-simplifier pot3d.F --cpp --implicit-interface --fixed-form --show-llvm
-
-
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
@@ -562,21 +550,6 @@ jobs:
             mkdir lf
             cd lf
             FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
-            make
-            examples/example_hybrd
-            examples/example_hybrd1
-            examples/example_lmder1
-            examples/example_lmdif1
-            examples/example_primes
-            ctest
-
-            cd ..
-
-            # Test without simplifier
-            git clean -dfx
-            mkdir lf
-            cd lf
-            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling --no-experimental-simplifier" cmake ..
             make
             examples/example_hybrd
             examples/example_hybrd1
@@ -597,13 +570,6 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-            # Test without simplifier
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --no-experimental-simplifier
-
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
         run: |
@@ -616,13 +582,6 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
-
-            # Test without simplifier
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --no-experimental-simplifier
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -637,11 +596,6 @@ jobs:
             git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
-            make -f Makefile.manual quicktest
-
-            # Test without simplifier
-            git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --no-experimental-simplifier"
             make -f Makefile.manual quicktest
 
             git clean -dfx
@@ -839,12 +793,6 @@ jobs:
             make -j8
             ctest
 
-            # Test without simplifier
-            git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-experimental-simplifier"
-            make -j8
-            ctest
-
             # Test with GFortran
             ./build_test_gf.sh
 
@@ -868,11 +816,6 @@ jobs:
 
             make clean
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
-
-            # Test without simplifier
-            make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --no-experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
       # The below projects are tested with a higher CMake version, so replace the current installed version
@@ -1111,8 +1054,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
-            ./run_tests.py -b llvm llvmImplicit --no-experimental-simplifier
-            ./run_tests.py -b llvm llvmImplicit -f --no-experimental-simplifier
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -1124,21 +1065,6 @@ jobs:
             mkdir lf
             cd lf
             FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
-            make
-            examples/example_hybrd
-            examples/example_hybrd1
-            examples/example_lmder1
-            examples/example_lmdif1
-            examples/example_primes
-            ctest
-
-            cd ..
-
-            # Test without simplifier
-            git clean -dfx
-            mkdir lf
-            cd lf
-            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling --no-experimental-simplifier" cmake ..
             make
             examples/example_hybrd
             examples/example_hybrd1
@@ -1159,13 +1085,6 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-            # Test without simplifier
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --no-experimental-simplifier
-
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
         run: |
@@ -1178,13 +1097,6 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
-
-            # Test without simplifier
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --no-experimental-simplifier
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --no-experimental-simplifier
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -1201,17 +1113,8 @@ jobs:
             make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
             ./tests/atom_U/F_atom_U
 
-            # Test without simplifier
-            git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --no-experimental-simplifier"
-            ./tests/atom_U/F_atom_U
-
             git clean -dfx
             make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
-            ./tests/atom_U/F_atom_U
-
-            git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast --no-experimental-simplifier"
             ./tests/atom_U/F_atom_U
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -1363,16 +1266,6 @@ jobs:
             make -j8
             ctest
 
-            # Test without simplifier
-            git remote add pranavchiku https://github.com/Pranavchiku/stdlib-fortran-lang.git
-            git fetch pranavchiku
-            git checkout -t pranavchiku/lf21
-            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
-            git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-experimental-simplifier"
-            make -j8
-            ctest
-
       - name: Test SNAP
         shell: bash -e -x -l {0}
         run: |
@@ -1393,11 +1286,6 @@ jobs:
 
             make clean
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
-
-            # Test without simplifier
-            make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --no-experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
@@ -1460,15 +1348,12 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
-            ./run_tests.py -b llvm --no-experimental-simplifier
-            ./run_tests.py -b llvm -f --no-experimental-simplifier
 
       - name: Test OpenMP
         shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
-            ./run_tests.py -b llvm_omp --no-experimental-simplifier
 
       - name: Test Fortran Backend
         shell: bash -e -l {0}
@@ -1476,8 +1361,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
-            ./run_tests.py -b fortran -j1 --no-experimental-simplifier
-            ./run_tests.py -b fortran -f -j1 --no-experimental-simplifier
 
       - name: Test C/C++ Backend
         shell: bash -e -l {0}
@@ -1498,8 +1381,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
-            ./run_tests.py -b cpp c c_nopragma --no-experimental-simplifier
-            ./run_tests.py -b cpp c c_nopragma -f --no-experimental-simplifier
 
       - name: Test CPP
         shell: bash -e -l {0}
@@ -1519,8 +1400,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
-            ./run_tests.py -b wasm --no-experimental-simplifier
-            ./run_tests.py -b wasm -f --no-experimental-simplifier
 
   upload_tarball:
     name: Upload Tarball
@@ -1623,7 +1502,6 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
-            ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1 --no-experimental-simplifier
 
   upload_docs:
     name: Documentation
