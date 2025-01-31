@@ -4497,7 +4497,7 @@ class SymbolDuplicator {
         SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
         duplicate_SymbolTable(function->m_symtab, function_symtab);
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, function->n_body);        
+        new_body.reserve(al, function->n_body);
 
         ASRUtils::ExprStmtWithScopeDuplicator scoped_node_duplicator(al, function_symtab);
         scoped_node_duplicator.allow_procedure_calls = true;
