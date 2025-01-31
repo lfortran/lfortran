@@ -328,3 +328,27 @@ semantic error: Different shape for arguments `array` and `mask` for pack intrin
     |
 142 |     print *, pack([1, 2, 3], [.true., .true., .true., .true.])
     |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: reshape accepts arrays for `source` argument, found str instead.
+   --> tests/errors/continue_compilation_1.f90:144:22
+    |
+144 |     print *, reshape("hello", [2, 3])
+    |                      ^^^^^^^ 
+
+semantic error: reshape accepts arrays for `source` argument, found bool instead.
+   --> tests/errors/continue_compilation_1.f90:145:22
+    |
+145 |     print *, reshape(.true., [2, 3])
+    |                      ^^^^^^ 
+
+semantic error: reshape accepts arrays for `shape` argument, found str instead.
+   --> tests/errors/continue_compilation_1.f90:146:36
+    |
+146 |     print *, reshape([1, 2, 3, 4], "hello")
+    |                                    ^^^^^^^ 
+
+semantic error: reshape accepts arrays for `shape` argument, found bool instead.
+   --> tests/errors/continue_compilation_1.f90:147:36
+    |
+147 |     print *, reshape([1, 2, 3, 4], .false.)
+    |                                    ^^^^^^^ 
