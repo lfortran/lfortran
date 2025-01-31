@@ -5039,9 +5039,23 @@ public:
                 fix_exprs_ttype_t(func_calls, args, f);
                 Vec<ASR::dimension_t> new_dims;
                 fill_new_dims(t, func_calls, new_dims);
+                bool for_type = true;
+                for( size_t k = 0; k < new_dims.size(); k++ ) {
+                    if( new_dims[k].m_length &&
+                        ASR::is_a<ASR::ArraySize_t>(*new_dims[k].m_length) ) {
+                        ASR::ArraySize_t* array_size_t =
+                            ASR::down_cast<ASR::ArraySize_t>(new_dims[k].m_length);
+                        if( ASR::is_a<ASR::FunctionCall_t>(*array_size_t->m_v) &&
+                            ASRUtils::is_allocatable(array_size_t->m_v) ) {
+                            for_type = false;
+                            break;
+                        }
+                    }
+                }
                 return ASRUtils::make_Array_t_util(
                     al, loc, t_m_type, new_dims.p, new_dims.size(),
-                    current_procedure_abi_type);
+                    current_procedure_abi_type, false,
+                    ASR::DescriptorArray, false, false, for_type);
             }
             case ASR::ttypeType::String: {
                 ASR::String_t *t = ASR::down_cast<ASR::String_t>(return_type);
