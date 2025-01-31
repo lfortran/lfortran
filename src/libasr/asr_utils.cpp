@@ -1977,6 +1977,10 @@ ASR::asr_t* make_ArraySize_t_util(
             }
         } else {
             if( a_dim == nullptr ) {
+                if ( m_dims[0].m_length == nullptr ) {
+                    // dimension of return type of function is not known at compile time
+                    return nullptr;
+                }
                 LCOMPILERS_ASSERT(m_dims[0].m_length);
                 ASR::expr_t* result = m_dims[0].m_length;
                 for( size_t i = 1; i < n_dims; i++ ) {

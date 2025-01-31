@@ -2564,8 +2564,19 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     for( size_t i = 0; i < n_dims; i++ ) {
         if( m_dims[i].m_length && ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length) ) {
             ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(m_dims[i].m_length);
-            m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, nullptr));
+            ASR::expr_t* res = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, as->m_value));
+            if ( res == nullptr ) {
+                // dimension cannot be computed at compile time
+                for ( size_t j = 0; j < n_dims; j++ ) {
+                    m_dims[j].m_length = nullptr;
+                    m_dims[j].m_start = nullptr;
+                }
+                break;
+            } else {
+                m_dims[i].m_length = res;
+            }
+
         }
     }
 
