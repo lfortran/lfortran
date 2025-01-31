@@ -140,4 +140,9 @@ program continue_compilation_1
     print *, present(a)
 
     print *, pack([1, 2, 3], [.true., .true., .true., .true.])
+
+    print *, reshape("hello", [2, 3])
+    print *, reshape(.true., [2, 3])
+    print *, reshape([1, 2, 3, 4], "hello")
+    print *, reshape([1, 2, 3, 4], .false.)
 end program
