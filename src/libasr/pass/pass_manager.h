@@ -78,8 +78,6 @@ namespace LCompilers {
     class PassManager {
         private:
 
-        std::vector<std::string> _passes_with_experimental_simplifier;
-        std::vector<std::string> _with_optimization_passes_for_experimental_simplifier;
         std::vector<std::string> _passes;
         std::vector<std::string> _with_optimization_passes;
         std::vector<std::string> _user_defined_passes;
@@ -218,98 +216,25 @@ namespace LCompilers {
 
         PassManager(): apply_default_passes{false},
             c_skip_pass{false} {
-            _passes_with_experimental_simplifier = {
-                "global_stmts",
-                "init_expr",
-                "function_call_in_declaration",
-                "openmp",
-                "implied_do_loops",
-                "simplifier",
-                "nested_vars",
-                "transform_optional_argument_functions",
-                "forall",
-                "class_constructor",
-                "pass_list_expr",
-                "where_simplifier",
-                "subroutine_from_function_simplifier",
-                "array_op_simplifier",
-                "symbolic",
-                "intrinsic_function",
-                "intrinsic_subroutine",
-                "array_op_simplifier",
-                "pass_array_by_data",
-                "print_struct_type",
-                "print_arr",
-                "print_list_tuple",
-                "print_struct_type",
-                "array_dim_intrinsics_update",
-                "do_loops",
-                "while_else",
-                "select_case",
-                "inline_function_calls",
-                "unused_functions",
-                "unique_symbols",
-                "insert_deallocate",
-            };
-            _with_optimization_passes_for_experimental_simplifier = {
-                "global_stmts",
-                "init_expr",
-                "function_call_in_declaration",
-                "openmp",
-                "implied_do_loops",
-                "simplifier",
-                "nested_vars",
-                "transform_optional_argument_functions",
-                "forall",
-                "class_constructor",
-                "pass_list_expr",
-                "where_simplifier",
-                "subroutine_from_function_simplifier",
-                "array_op_simplifier",
-                "symbolic",
-                "flip_sign",
-                "intrinsic_function",
-                "intrinsic_subroutine",
-                "array_op_simplifier",
-                "pass_array_by_data",
-                "print_struct_type",
-                "print_arr",
-                "print_list_tuple",
-                "print_struct_type",
-                "loop_vectorise",
-                "array_dim_intrinsics_update",
-                "do_loops",
-                "while_else",
-                "dead_code_removal",
-                "select_case",
-                "unused_functions",
-                "sign_from_value",
-                "div_to_mul",
-                "fma",
-                "inline_function_calls",
-                "unique_symbols",
-                "insert_deallocate",
-                "promote_allocatable_to_nonallocatable"
-            };
             _passes = {
-                "nested_vars",
                 "global_stmts",
-                "transform_optional_argument_functions",
                 "init_expr",
-                "forall",
+                "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
+                "simplifier",
+                "nested_vars",
+                "transform_optional_argument_functions",
+                "forall",
                 "class_constructor",
                 "pass_list_expr",
-                "where",
-                "function_call_in_declaration",
-                "subroutine_from_function",
-                "array_op",
+                "where_simplifier",
+                "subroutine_from_function_simplifier",
+                "array_op_simplifier",
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
-                "subroutine_from_function",
-                "array_op",
+                "array_op_simplifier",
                 "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",
@@ -324,26 +249,26 @@ namespace LCompilers {
                 "unique_symbols",
                 "insert_deallocate",
             };
-
             _with_optimization_passes = {
-                "nested_vars",
                 "global_stmts",
-                "transform_optional_argument_functions",
                 "init_expr",
+                "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
+                "simplifier",
+                "nested_vars",
+                "transform_optional_argument_functions",
+                "forall",
                 "class_constructor",
                 "pass_list_expr",
-                "where",
-                "function_call_in_declaration",
-                "subroutine_from_function",
-                "array_op",
+                "where_simplifier",
+                "subroutine_from_function_simplifier",
+                "array_op_simplifier",
                 "symbolic",
                 "flip_sign",
                 "intrinsic_function",
                 "intrinsic_subroutine",
-                "subroutine_from_function",
-                "array_op",
+                "array_op_simplifier",
                 "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",
@@ -352,7 +277,6 @@ namespace LCompilers {
                 "loop_vectorise",
                 "array_dim_intrinsics_update",
                 "do_loops",
-                "forall",
                 "while_else",
                 "dead_code_removal",
                 "select_case",
@@ -392,15 +316,10 @@ namespace LCompilers {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
-                if( pass_options.fast && !ASRUtils::use_experimental_simplifier ) {
-                    apply_passes(al, asr, _with_optimization_passes, pass_options,
-                        diagnostics);
-                } else if (!pass_options.fast && !ASRUtils::use_experimental_simplifier) {
+                if (pass_options.fast ){
+                    apply_passes(al, asr, _with_optimization_passes, pass_options, diagnostics);
+                } else if (!pass_options.fast ) {
                     apply_passes(al, asr, _passes, pass_options, diagnostics);
-                } else if (pass_options.fast && ASRUtils::use_experimental_simplifier){
-                    apply_passes(al, asr, _with_optimization_passes_for_experimental_simplifier, pass_options, diagnostics);
-                } else if (!pass_options.fast && ASRUtils::use_experimental_simplifier) {
-                    apply_passes(al, asr, _passes_with_experimental_simplifier, pass_options, diagnostics);
                 }
             }
         }
@@ -409,14 +328,10 @@ namespace LCompilers {
                            PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
             std::vector<std::string> passes;
-            if (pass_options.fast && !pass_options.experimental_simplifier) {
+            if (pass_options.fast) {
                 passes = _with_optimization_passes;
-            } else if (!pass_options.fast && !pass_options.experimental_simplifier) {
+            } else {
                 passes = _passes;
-            } else if (pass_options.fast && pass_options.experimental_simplifier){
-                passes = _with_optimization_passes_for_experimental_simplifier;
-            } else if (!pass_options.fast && pass_options.experimental_simplifier) {
-                passes = _passes_with_experimental_simplifier;
             }
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
