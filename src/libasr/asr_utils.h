@@ -2556,7 +2556,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     ASR::ttype_t* type, ASR::dimension_t* m_dims, size_t n_dims,
     ASR::abiType abi=ASR::abiType::Source, bool is_argument=false,
     ASR::array_physical_typeType physical_type=ASR::array_physical_typeType::DescriptorArray,
-    bool override_physical_type=false, bool is_dimension_star=false) {
+    bool override_physical_type=false, bool is_dimension_star=false, bool for_type=true) {
     if( n_dims == 0 ) {
         return type;
     }
@@ -2565,7 +2565,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
         if( m_dims[i].m_length && ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length) ) {
             ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(m_dims[i].m_length);
             m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, nullptr));
+                al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, nullptr, for_type));
         }
     }
 
