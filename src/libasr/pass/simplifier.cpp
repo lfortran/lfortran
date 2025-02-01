@@ -623,16 +623,36 @@ bool set_allocation_size(
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
-                    ASR::expr_t* ncopies = intrinsic_array_function->m_args[2];
+                    ASR::expr_t* dim_arg = intrinsic_array_function->m_args[1];
                     allocate_dims.reserve(al, n_dims);
-                    ASRUtils::ASRBuilder b(al, intrinsic_array_function->base.base.loc);
-                    for (size_t i = 0; i < n_dims; i++) {
-                        ASR::dimension_t allocate_dim;
-                        allocate_dim.loc = loc;
-                        allocate_dim.m_start = int32_one;
-                        if ( i == n_dims - 1 ) allocate_dim.m_length = ncopies;
-                        else allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[0], b.i32(i + 1), ASRUtils::expr_type(int32_one));
-                        allocate_dims.push_back(al, allocate_dim);
+                    if (dim_arg && (ASRUtils::expr_value(dim_arg) != nullptr)) {
+                        // Compile time value of `dim`
+                        ASRUtils::ASRBuilder b(al, intrinsic_array_function->base.base.loc);
+                        ASR::IntegerConstant_t* dim_val = ASR::down_cast<ASR::IntegerConstant_t>(dim_arg);
+                        size_t dim_index = dim_val->m_n;
+                        ASR::expr_t* ncopies = intrinsic_array_function->m_args[2];
+                        int ncopies_inserted = 0;
+                        for (size_t i = 0; i < n_dims; i++) {
+                            ASR::dimension_t allocate_dim;
+                            allocate_dim.loc = loc;
+                            allocate_dim.m_start = int32_one;
+                            if ( i == dim_index - 1 ) {
+                                allocate_dim.m_length = ncopies;
+                                ncopies_inserted = 1;
+                            } else {
+                                allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[0], 
+                                        b.i32(i + 1 - ncopies_inserted), ASRUtils::expr_type(int32_one));
+                            }
+                            allocate_dims.push_back(al, allocate_dim);
+                        }
+                    } else {
+                        // Here `dim` is runtime so can't decide where to insert ncopies
+                        // Just copy original dimensions
+                        ASR::dimension_t* dims;
+                        ASRUtils::extract_dimensions_from_ttype(intrinsic_array_function->m_type, dims);
+                        for (size_t i = 0; i < n_dims; i++) {
+                            allocate_dims.push_back(al, dims[i]);
+                        }
                     }
                     break;
                 }
