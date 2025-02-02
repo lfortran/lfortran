@@ -59,6 +59,12 @@ end subroutine
 
 **FixedSizeArray**: An array that is fully known at compile time: both size and elements. ArrayConstant. In LLVM backend we can store such an array as a variable with known size (say 10). (This type might in principle be possible to use for `A(10, 20)`, but currently we don't. It cannot be used for `A(n, m)`.). It seems we cannot change elements at runtime, they are all constant.
 
+```fortran
+program main
+real :: A(10, 20)
+end program
+```
+
 **DescriptorArray**: Array is represented by an array descriptor (struct that contains the pointer to data, dimensions, strides, etc.)
 
 ```fortran
