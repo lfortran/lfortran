@@ -5045,8 +5045,9 @@ public:
                         ASR::is_a<ASR::ArraySize_t>(*new_dims[k].m_length) ) {
                         ASR::ArraySize_t* array_size_t =
                             ASR::down_cast<ASR::ArraySize_t>(new_dims[k].m_length);
-                        if( ASR::is_a<ASR::FunctionCall_t>(*array_size_t->m_v) &&
-                            ASRUtils::is_allocatable(array_size_t->m_v) ) {
+                        if( (ASR::is_a<ASR::FunctionCall_t>(*array_size_t->m_v) &&
+                            ASRUtils::is_allocatable(array_size_t->m_v)) ||
+                            ASR::is_a<ASR::IntrinsicArrayFunction_t>(*array_size_t->m_v) ) {
                             for_type = false;
                             break;
                         }
