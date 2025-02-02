@@ -353,25 +353,25 @@ semantic error: reshape accepts arrays for `shape` argument, found bool instead.
 147 |     print *, reshape([1, 2, 3, 4], .false.)
     |                                    ^^^^^^^ 
 
-semantic error: Argument to intrinsic `Sum` is expected to be an array, found: `integer
+semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer
    --> tests/errors/continue_compilation_1.f90:149:14
     |
 149 |     print *, sum(q1)
     |              ^^^^^^^ 
 
-semantic error: Argument to intrinsic `Product` is expected to be an array, found: `real
+semantic error: Argument to intrinsic `Product` is expected to be an array, found: real
    --> tests/errors/continue_compilation_1.f90:150:14
     |
 150 |     print *, product(r1)
     |              ^^^^^^^^^^^ 
 
-semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: `integer
+semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: integer
    --> tests/errors/continue_compilation_1.f90:151:14
     |
 151 |     print *, minval(q1)
     |              ^^^^^^^^^^ 
 
-semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: `real
+semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: real
    --> tests/errors/continue_compilation_1.f90:152:14
     |
 152 |     print *, maxval(r1)

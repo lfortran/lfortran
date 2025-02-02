@@ -1,4 +1,4 @@
-semantic error: Argument to intrinsic `Sum` is expected to be an array, found: `integer
+semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer
  --> tests/errors/intrinsics16.f90:7:20
   |
 7 |     integer :: arr(sum(kind(x)))
