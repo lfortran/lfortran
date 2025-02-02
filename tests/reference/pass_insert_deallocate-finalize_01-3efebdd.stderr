@@ -1,0 +1,5 @@
+semantic error: EXIT statement outside of loop
+  --> tests/finalize_01.f90:41:9
+   |
+41 |         exit bl ! This will have `impliciteDeallocate` inserted before it.
+   |         ^^^^^^^ 
