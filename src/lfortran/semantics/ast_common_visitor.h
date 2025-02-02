@@ -12,6 +12,7 @@
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
+#include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
 #include <string>
 #include <set>
@@ -8163,6 +8164,17 @@ public:
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
             int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+
+            if (op == ASR::Div && right_value == 0) {
+                diag.add(Diagnostic(
+                    "Division by zero",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    })
+                );
+                throw SemanticAbort();
+            }
+
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
                     perform_binop(left_value, right_value, op), dest_type));
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
@@ -8661,6 +8673,23 @@ public:
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
+
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*ASRUtils::EXPR(tmp))) {
+            ASR::IntegerBinOp_t *bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(ASRUtils::EXPR(tmp));
+            ASR::expr_t *right_value = ASRUtils::expr_value(bin_op->m_right);
+            if (bin_op->m_op == ASR::Div && right_value != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
+                ASR::IntegerConstant_t *right_const = ASR::down_cast<ASR::IntegerConstant_t>(right_value);
+                if (right_const->m_n == 0) {
+                    diag.add(Diagnostic(
+                        "Division by zero",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        })
+                    );
+                    throw SemanticAbort();
+                }
+            }
+        }
     }
 
     void visit_DefBinOp(const AST::DefBinOp_t &x) {
