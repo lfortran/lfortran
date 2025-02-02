@@ -4248,6 +4248,10 @@ filename = "errors/intrinsics15.f90"
 asr = true
 
 [[test]]
+filename = "errors/intrinsics16.f90"
+asr = true
+
+[[test]]
 filename = "exit1.f90"
 run = true
 
