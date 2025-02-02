@@ -6388,10 +6388,10 @@ public:
             }
             int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
             if (array_size != -1 &&  new_shape_size > array_size) {
-                diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size of `shape` array",
-                                    Level::Error, Stage::Semantic, {Label("`source` array has size " +
-                                    std::to_string(array_size) + ", but `shape` array has size " +
-                                    std::to_string(new_shape_size), {x.base.base.loc})}));
+                diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size specified by `shape` array",
+                                    Level::Error, Stage::Semantic, {Label("`shape` specifies size of " +
+                                    std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
+                                    std::to_string(array_size), {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         } else {

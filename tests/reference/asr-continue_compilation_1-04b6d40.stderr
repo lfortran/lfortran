@@ -353,8 +353,8 @@ semantic error: reshape accepts arrays for `shape` argument, found bool instead.
 147 |     print *, reshape([1, 2, 3, 4], .false.)
     |                                    ^^^^^^^ 
 
-semantic error: reshape accepts `source` array with size greater than or equal to size of `shape` array
+semantic error: reshape accepts `source` array with size greater than or equal to size specified by `shape` array
    --> tests/errors/continue_compilation_1.f90:149:14
     |
 149 |     print *, reshape([1, 2, 3, 4], [2, 3])
-    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `source` array has size 4, but `shape` array has size 6
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `shape` specifies size of 6 which exceeds the `source` array size of 4
