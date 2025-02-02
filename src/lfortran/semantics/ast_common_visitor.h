@@ -6377,12 +6377,22 @@ public:
         if (ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
             ASR::ArrayConstant_t* const_newshape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            int new_shape_size = 1;
             for (size_t i=0; i < n_dims_array_reshape; i++) {
                 ASR::dimension_t dim;
                 dim.loc = loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
                 dim.m_length = ASRUtils::fetch_ArrayConstant_value(al, const_newshape, i);
                 dims.push_back(al, dim);
+                new_shape_size *= ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
+            }
+            int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+            if (array_size != -1 &&  new_shape_size > array_size) {
+                diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size of `shape` array",
+                                    Level::Error, Stage::Semantic, {Label("`source` array has size " +
+                                    std::to_string(array_size) + ", but `shape` array has size " +
+                                    std::to_string(new_shape_size), {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         } else {
             // otherwise empty dimensions
