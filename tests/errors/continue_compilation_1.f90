@@ -145,4 +145,10 @@ program continue_compilation_1
     print *, reshape(.true., [2, 3])
     print *, reshape([1, 2, 3, 4], "hello")
     print *, reshape([1, 2, 3, 4], .false.)
+
+    complex :: c = (1.0, 2.0)
+    print *, sum([c1])
+    print *, product([c1])
+    print *, minval(c)
+    print *, maxval(c)
 end program

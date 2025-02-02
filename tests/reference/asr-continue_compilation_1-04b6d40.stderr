@@ -352,3 +352,27 @@ semantic error: reshape accepts arrays for `shape` argument, found bool instead.
     |
 147 |     print *, reshape([1, 2, 3, 4], .false.)
     |                                    ^^^^^^^ 
+
+semantic error: Input to `SumEXpected to be numeric, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:150:18
+    |
+150 |     print *, sum([c1])
+    |                  ^^^^ Input to `Sum` intrinsic must be of integer, real or complex type
+
+semantic error: Input to `ProductEXpected to be numeric, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:151:22
+    |
+151 |     print *, product([c1])
+    |                      ^^^^ Input to `Product` intrinsic must be of integer, real or complex type
+
+semantic error: Input to `MinValEXpected to be integer, real or string type but got complex
+   --> tests/errors/continue_compilation_1.f90:152:21
+    |
+152 |     print *, minval(c)
+    |                     ^ Input to `MinVal` intrinsic must be of integer, real or complex type
+
+semantic error: Input to `MaxValEXpected to be integer, real or string type but got complex
+   --> tests/errors/continue_compilation_1.f90:153:21
+    |
+153 |     print *, maxval(c)
+    |                     ^ Input to `MaxVal` intrinsic must be of integer, real or complex type
