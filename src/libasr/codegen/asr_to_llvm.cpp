@@ -6704,7 +6704,7 @@ public:
             case ASR::binopType::Pow: {
                 const int return_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
                 llvm::Type* const base_type = llvm_utils->getFPType(return_kind);
-                llvm::Type *exponent_type;
+                llvm::Type *exponent_type = nullptr;
                 std::string func_name;
                 // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
                 if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
