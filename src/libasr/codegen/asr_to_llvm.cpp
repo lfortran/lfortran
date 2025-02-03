@@ -6706,12 +6706,6 @@ public:
                 llvm::Type* const base_type = llvm_utils->getFPType(return_kind);
                 llvm::Type *exponent_type;
                 std::string func_name;
-
-                if(ASRUtils::extract_kind_from_ttype_t(expr_type(x.m_right)) > 4){ // possible truncation + overflow.
-                    diag.semantic_warning_label(
-                        "Exponent of kind 8. Overflow may happen",
-                        {x.m_right->base.loc},"Make Sure ** operation won't overflow");
-                }
                 // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
                 if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
                     #if LLVM_VERSION_MAJOR < 12
