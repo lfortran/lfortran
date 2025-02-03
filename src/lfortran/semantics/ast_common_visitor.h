@@ -8154,13 +8154,20 @@ public:
         }
         return result;
     }
-
+    // Creates a compile-time expression value for the Binop expression, if possible.
     ASR::expr_t* visit_BinOp_helper(ASR::expr_t* left, ASR::expr_t* right, ASR::binopType op, const Location& loc, ASR::ttype_t* dest_type) {
+        LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
         if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
             double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
             double right_value = ASR::down_cast<ASR::RealConstant_t>(right)->m_r;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
             perform_binop(left_value, right_value, op), dest_type));
+        } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
+            LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
+            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                    std::pow(left_value, right_value), dest_type));
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
             int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
@@ -8189,11 +8196,8 @@ public:
             std::complex<double> result = perform_binop(left_value_, right_value_, op);
             return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
                     std::real(result), std::imag(result), dest_type));
-        } else {
-            diag.add(Diagnostic("Binary operation for type is not supported yet",
-                                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
         }
+        return nullptr;
     }
 
     ASR::expr_t* extract_value(ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::binopType op, ASR::ttype_t* dest_type, const Location& loc) {
@@ -8309,9 +8313,7 @@ public:
 
         if (ASRUtils::is_integer(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr ) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8321,9 +8323,7 @@ public:
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8333,9 +8333,7 @@ public:
 
         } else if (ASRUtils::is_complex(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
