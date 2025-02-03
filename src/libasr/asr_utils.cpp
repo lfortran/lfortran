@@ -2052,7 +2052,7 @@ ASR::asr_t* make_ArraySize_t_util(
                     return ASR::make_IntegerConstant_t(al, a_loc, arr_size, a_type);
                 } else {
                     return ASRUtils::make_ArraySize_t_util(
-                al, end->base.loc, end, nullptr, a_type, ASRUtils::expr_value(end), true);
+                        al, end->base.loc, end, nullptr, a_type, ASRUtils::expr_value(end), true);
                 }
             }
 
