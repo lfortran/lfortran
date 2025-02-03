@@ -6618,11 +6618,6 @@ public:
                 #endif
                 llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
                 llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
-                if(ASRUtils::extract_kind_from_ttype_t(expr_type(x.m_right)) > 4){ // possible truncation + overflow.
-                    diag.semantic_warning_label(
-                        "Exponent of kind 8. Overflow may happen",
-                        {x.m_right->base.loc},"Make Sure ** operation won't overflow");
-                }
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
