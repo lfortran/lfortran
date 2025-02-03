@@ -6611,7 +6611,7 @@ public:
                 llvm::Type* const exponent_type = llvm::Type::getInt32Ty(context);
                 llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
                 llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
-                #if LLVM_VERSION_MAJOR < 12
+                #if LLVM_VERSION_MAJOR <= 12
                 const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32"; 
                 #else
                 const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32"; 
@@ -6703,7 +6703,7 @@ public:
                 std::string func_name;
                 // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
                 if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
-                    #if LLVM_VERSION_MAJOR < 12
+                    #if LLVM_VERSION_MAJOR <= 12
                     func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
                     #else
                     func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
