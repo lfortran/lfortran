@@ -6611,7 +6611,11 @@ public:
                 llvm::Type* const exponent_type = llvm::Type::getInt32Ty(context);
                 llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
                 llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32";
+                #if LLVM_VERSION_MAJOR < 12
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32"; 
+                #else
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32"; 
+                #endif
                 llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
                 llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
                 if(ASRUtils::extract_kind_from_ttype_t(expr_type(x.m_right)) > 4){ // possible truncation + overflow.
@@ -6710,7 +6714,11 @@ public:
                 }
                 // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
                 if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+                    #if LLVM_VERSION_MAJOR < 12
                     func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
+                    #else
+                    func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
+                    #endif
                     right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
                     exponent_type = llvm::Type::getInt32Ty(context);
                 } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
