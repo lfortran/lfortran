@@ -353,26 +353,26 @@ semantic error: reshape accepts arrays for `shape` argument, found bool instead.
 147 |     print *, reshape([1, 2, 3, 4], .false.)
     |                                    ^^^^^^^ 
 
-semantic error: Input to `SumEXpected to be numeric, but got string[:]
-   --> tests/errors/continue_compilation_1.f90:150:18
+semantic error: Input to `Sum is expected to be numeric, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:152:18
     |
-150 |     print *, sum([c1])
-    |                  ^^^^ Input to `Sum` intrinsic must be of integer, real or complex type
+152 |     print *, sum([c1])
+    |                  ^^^^ must be integer, real or complex type
 
-semantic error: Input to `ProductEXpected to be numeric, but got string[:]
-   --> tests/errors/continue_compilation_1.f90:151:22
+semantic error: Input to `Product is expected to be numeric, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:153:22
     |
-151 |     print *, product([c1])
-    |                      ^^^^ Input to `Product` intrinsic must be of integer, real or complex type
+153 |     print *, product([c1])
+    |                      ^^^^ must be integer, real or complex type
 
-semantic error: Input to `MinValEXpected to be integer, real or string type but got complex
-   --> tests/errors/continue_compilation_1.f90:152:21
+semantic error: Input to `MinVal is expected to be integer, real or string type but got complex
+   --> tests/errors/continue_compilation_1.f90:154:21
     |
-152 |     print *, minval(c)
-    |                     ^ Input to `MinVal` intrinsic must be of integer, real or complex type
+154 |     print *, minval(c)
+    |                     ^ must be integer, real or string type
 
-semantic error: Input to `MaxValEXpected to be integer, real or string type but got complex
-   --> tests/errors/continue_compilation_1.f90:153:21
+semantic error: Input to `MaxVal is expected to be integer, real or string type but got complex
+   --> tests/errors/continue_compilation_1.f90:155:21
     |
-153 |     print *, maxval(c)
-    |                     ^ Input to `MaxVal` intrinsic must be of integer, real or complex type
+155 |     print *, maxval(c)
+    |                     ^ must be integer, real or string type
