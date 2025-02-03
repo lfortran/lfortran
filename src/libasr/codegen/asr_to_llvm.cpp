@@ -6698,15 +6698,33 @@ public:
                 break;
             };
             case ASR::binopType::Pow: {
-                llvm::Type *type;
-                int a_kind;
-                a_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
-                type = llvm_utils->getFPType(a_kind);
-                std::string func_name = a_kind == 4 ? "llvm.pow.f32" : "llvm.pow.f64";
+                const int return_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
+                llvm::Type* const base_type = llvm_utils->getFPType(return_kind);
+                llvm::Type *exponent_type;
+                std::string func_name;
+
+                if(ASRUtils::extract_kind_from_ttype_t(expr_type(x.m_right)) > 4){ // possible truncation + overflow.
+                    diag.semantic_warning_label(
+                        "Exponent of kind 8. Overflow may happen",
+                        {x.m_right->base.loc},"Make Sure ** operation won't overflow");
+                }
+                // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
+                if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+                    func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
+                    right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
+                    exponent_type = llvm::Type::getInt32Ty(context);
+                } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
+                    func_name = (return_kind == 4) ? "llvm.pow.f32" : "llvm.pow.f64";
+                    right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
+                    exponent_type = base_type;
+                } else {
+                    LCOMPILERS_ASSERT_MSG(false, "Exponent in RealBinOp should either be [Integer or Real] only.")
+                }
+
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            type, { type, type }, false);
+                            base_type, { base_type, exponent_type }, false);
                     fn_pow = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, func_name,
                             module.get());
