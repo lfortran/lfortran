@@ -2016,12 +2016,14 @@ ASR::asr_t* make_ArraySize_t_util(
                 // Case: A(:, iact) where iact is an array
                 if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
                     ASR::ttype_t* arr_type = ASRUtils::expr_type(end);
+                    bool is_func_with_unknown_return = (ASR::is_a<ASR::FunctionCall_t>(*end) &&
+                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);  
                     if( ASRUtils::is_fixed_size_array(arr_type) ) {
                         int64_t arr_size = ASRUtils::get_fixed_size_of_array(arr_type);
                         plus1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc, arr_size, a_type));
                     } else {
-                        plus1 = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                            al, end->base.loc, end, nullptr, a_type, ASRUtils::expr_value(end), true));
+                        plus1 = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, end->base.loc, end, 
+                            nullptr, a_type, ASRUtils::expr_value(end), !is_func_with_unknown_return));
                     }
                 } else {
                     start = CastingUtil::perform_casting(start, a_type, al, a_loc);
@@ -2046,13 +2048,15 @@ ASR::asr_t* make_ArraySize_t_util(
 
             // Case: A(:, iact) where iact is an array and dim = 2
             if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
+                bool is_func_with_unknown_return = (ASR::is_a<ASR::FunctionCall_t>(*end) &&
+                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);  
                 ASR::ttype_t* arr_type = ASRUtils::expr_type(end);
                 if( ASRUtils::is_fixed_size_array(arr_type) ) {
                     int64_t arr_size = ASRUtils::get_fixed_size_of_array(arr_type);
                     return ASR::make_IntegerConstant_t(al, a_loc, arr_size, a_type);
                 } else {
-                    return ASRUtils::make_ArraySize_t_util(
-                        al, end->base.loc, end, nullptr, a_type, ASRUtils::expr_value(end), true);
+                    return ASRUtils::make_ArraySize_t_util(al, end->base.loc, end,
+                        nullptr, a_type, ASRUtils::expr_value(end), !is_func_with_unknown_return);
                 }
             }
 

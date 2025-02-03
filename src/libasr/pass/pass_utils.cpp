@@ -1551,11 +1551,22 @@ namespace LCompilers {
                         }
                         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                         dims.push_back(al, dimension);
+                        bool is_alloc_return_func = false;
+                        if( dimension.m_length && ASR::is_a<ASR::ArraySize_t>(*dimension.m_length) ) {
+                            ASR::ArraySize_t* array_size = ASR::down_cast<ASR::ArraySize_t>(dimension.m_length);
+                            if( (ASR::is_a<ASR::FunctionCall_t>(*array_size->m_v) &&
+                                ASRUtils::is_allocatable(array_size->m_v)) ||
+                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*array_size->m_v) ) {
+                                is_alloc_return_func = true;
+                            }
+                        }
                         type = ASRUtils::make_Array_t_util(al, loc,
                             ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(
                                     ASRUtils::expr_type(arr_var))),
-                            dims.p, dims.size());
+                            dims.p, dims.size(), ASR::abiType::Source, false, 
+                            ASR::array_physical_typeType::DescriptorArray,
+                            false, false, !is_alloc_return_func);
                         ASR::expr_t* res = ASRUtils::EXPR(ASR::make_ArraySection_t(
                             al, loc, arr_var, array_section_index.p, 1, type, nullptr));
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
