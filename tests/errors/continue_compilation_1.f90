@@ -145,4 +145,6 @@ program continue_compilation_1
     print *, reshape(.true., [2, 3])
     print *, reshape([1, 2, 3, 4], "hello")
     print *, reshape([1, 2, 3, 4], .false.)
+
+    print *, reshape([1, 2, 3, 4], [2, 3])
 end program
