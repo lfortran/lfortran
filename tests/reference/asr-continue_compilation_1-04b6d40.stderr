@@ -370,3 +370,15 @@ semantic error: Division by zero
     |
 155 |     print *, x/zero
     |              ^^^^^^ 
+
+semantic error: Type mismatch in binary operator, the types must be compatible
+   --> tests/errors/continue_compilation_1.f90:158:14
+    |
+158 |     print *, v**str
+    |              ^  ^^^ type mismatch (real and string)
+
+semantic error: Type mismatch in binary operator, the types must be compatible
+   --> tests/errors/continue_compilation_1.f90:159:14
+    |
+159 |     print *, str**v
+    |              ^^^  ^ type mismatch (string and real)

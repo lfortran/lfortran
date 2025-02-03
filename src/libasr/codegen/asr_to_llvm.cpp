@@ -6607,30 +6607,27 @@ public:
                 break;
             };
             case ASR::binopType::Pow: {
-                llvm::Type *type;
-                int a_kind;
-                a_kind = down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind;
-                if( a_kind <= 4 ) {
-                    type = llvm_utils->getFPType(4);
-                } else {
-                    type = llvm_utils->getFPType(8);
-                }
-                llvm::Value *fleft = builder->CreateSIToFP(left_val,
-                        type);
-                llvm::Value *fright = builder->CreateSIToFP(right_val,
-                        type);
-                std::string func_name = a_kind <= 4 ? "llvm.pow.f32" : "llvm.pow.f64";
+                const int expr_return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                llvm::Type* const exponent_type = llvm::Type::getInt32Ty(context);
+                llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
+                llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
+                #if LLVM_VERSION_MAJOR <= 12
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32"; 
+                #else
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32"; 
+                #endif
+                llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
+                llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            type, { type, type}, false);
+                            base_type, {base_type, exponent_type}, false);
                     fn_pow = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, func_name,
                             module.get());
                 }
                 tmp = builder->CreateCall(fn_pow, {fleft, fright});
-                type = llvm_utils->getIntType(a_kind);
-                tmp = builder->CreateFPToSI(tmp, type);
+                tmp = builder->CreateFPToSI(tmp, return_type);
                 break;
             };
             case ASR::binopType::BitOr: {
@@ -6700,15 +6697,31 @@ public:
                 break;
             };
             case ASR::binopType::Pow: {
-                llvm::Type *type;
-                int a_kind;
-                a_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
-                type = llvm_utils->getFPType(a_kind);
-                std::string func_name = a_kind == 4 ? "llvm.pow.f32" : "llvm.pow.f64";
+                const int return_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
+                llvm::Type* const base_type = llvm_utils->getFPType(return_kind);
+                llvm::Type *exponent_type = nullptr;
+                std::string func_name;
+                // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
+                if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+                    #if LLVM_VERSION_MAJOR <= 12
+                    func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
+                    #else
+                    func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
+                    #endif
+                    right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
+                    exponent_type = llvm::Type::getInt32Ty(context);
+                } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
+                    func_name = (return_kind == 4) ? "llvm.pow.f32" : "llvm.pow.f64";
+                    right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
+                    exponent_type = base_type;
+                } else {
+                    LCOMPILERS_ASSERT_MSG(false, "Exponent in RealBinOp should either be [Integer or Real] only.")
+                }
+
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            type, { type, type }, false);
+                            base_type, { base_type, exponent_type }, false);
                     fn_pow = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, func_name,
                             module.get());
