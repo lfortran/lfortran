@@ -404,15 +404,7 @@
                                                         ()
                                                     )
                                                     Pow
-                                                    (Cast
-                                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                                        IntegerToReal
-                                                        (Real 4)
-                                                        (RealConstant
-                                                            2.000000
-                                                            (Real 4)
-                                                        )
-                                                    )
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Real 4)
                                                     ()
                                                 )
@@ -436,15 +428,7 @@
                                                         ()
                                                     )
                                                     Pow
-                                                    (Cast
-                                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                                        IntegerToReal
-                                                        (Real 4)
-                                                        (RealConstant
-                                                            2.000000
-                                                            (Real 4)
-                                                        )
-                                                    )
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Real 4)
                                                     ()
                                                 )
@@ -593,15 +577,7 @@
                                                         ()
                                                     )
                                                     Pow
-                                                    (Cast
-                                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                                        IntegerToReal
-                                                        (Real 4)
-                                                        (RealConstant
-                                                            2.000000
-                                                            (Real 4)
-                                                        )
-                                                    )
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Real 4)
                                                     ()
                                                 )
@@ -625,15 +601,7 @@
                                                         ()
                                                     )
                                                     Pow
-                                                    (Cast
-                                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                                        IntegerToReal
-                                                        (Real 4)
-                                                        (RealConstant
-                                                            2.000000
-                                                            (Real 4)
-                                                        )
-                                                    )
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Real 4)
                                                     ()
                                                 )
