@@ -153,4 +153,8 @@ program continue_compilation_1
     integer, parameter :: zero = 0
     integer :: x = 1
     print *, x/zero
+    real :: v
+    character(10) :: str
+    print *, v**str
+    print *, str**v
 end program
