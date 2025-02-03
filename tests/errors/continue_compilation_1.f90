@@ -147,4 +147,10 @@ program continue_compilation_1
     print *, reshape([1, 2, 3, 4], .false.)
 
     print *, reshape([1, 2, 3, 4], [2, 3])
+
+    ! Division by zero
+    print *, 1/0
+    integer, parameter :: zero = 0
+    integer :: x = 1
+    print *, x/zero
 end program

@@ -358,3 +358,15 @@ semantic error: reshape accepts `source` array with size greater than or equal t
     |
 149 |     print *, reshape([1, 2, 3, 4], [2, 3])
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `shape` specifies size of 6 which exceeds the `source` array size of 4
+
+semantic error: Division by zero
+   --> tests/errors/continue_compilation_1.f90:152:14
+    |
+152 |     print *, 1/0
+    |              ^^^ 
+
+semantic error: Division by zero
+   --> tests/errors/continue_compilation_1.f90:155:14
+    |
+155 |     print *, x/zero
+    |              ^^^^^^ 
