@@ -1804,7 +1804,7 @@ namespace Present {
         if (!ASR::is_a<ASR::Var_t>(*arg)) {
             diag.semantic_error_label(
                 "Argument to 'present' must be a variable, but got an expression",
-                {loc},
+                {arg->base.loc},
                 "Expected a variable here"
             );
 
@@ -1816,7 +1816,7 @@ namespace Present {
         if (var->m_presence != ASR::presenceType::Optional) {
             diag.semantic_error_label(
                 "Argument to 'present' must be an optional dummy argument",
-                {loc},
+                {arg->base.loc},
                 "This variable is not 'optional'"
             );
 
