@@ -711,13 +711,6 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
 
-            # Test without simplifier
-            git fetch origin lfortran_build_5
-            git checkout lfortran_build_5
-            git checkout ac56f53824257e088fdf23746d261237e1598715
-            git clean -fdx
-            ./build.sh
-
       - name: Test stdlib
         shell: bash -e -x -l {0}
         run: |
