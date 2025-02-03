@@ -315,13 +315,13 @@ semantic error: Argument to 'present' must be a variable, but got an expression
    --> tests/errors/continue_compilation_1.f90:137:14
     |
 137 |     print *, present(a + 1)
-    |              ^^^^^^^^^^^^^^ 
+    |              ^^^^^^^^^^^^^^ Expected a variable here
 
 semantic error: Argument to 'present' must be an optional dummy argument
    --> tests/errors/continue_compilation_1.f90:140:14
     |
 140 |     print *, present(a)
-    |              ^^^^^^^^^^ 
+    |              ^^^^^^^^^^ This variable is not 'optional'
 
 semantic error: Different shape for arguments `array` and `mask` for pack intrinsic (3 and 4)
    --> tests/errors/continue_compilation_1.f90:142:30
