@@ -6607,30 +6607,28 @@ public:
                 break;
             };
             case ASR::binopType::Pow: {
-                llvm::Type *type;
-                int a_kind;
-                a_kind = down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind;
-                if( a_kind <= 4 ) {
-                    type = llvm_utils->getFPType(4);
-                } else {
-                    type = llvm_utils->getFPType(8);
+                const int expr_return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                llvm::Type* const exponent_type = llvm::Type::getInt32Ty(context);
+                llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
+                llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32";
+                llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
+                llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
+                if(ASRUtils::extract_kind_from_ttype_t(expr_type(x.m_right)) > 4){ // possible truncation + overflow.
+                    diag.semantic_warning_label(
+                        "Exponent of kind 8. Overflow may happen",
+                        {x.m_right->base.loc},"Make Sure ** operation won't overflow");
                 }
-                llvm::Value *fleft = builder->CreateSIToFP(left_val,
-                        type);
-                llvm::Value *fright = builder->CreateSIToFP(right_val,
-                        type);
-                std::string func_name = a_kind <= 4 ? "llvm.pow.f32" : "llvm.pow.f64";
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            type, { type, type}, false);
+                            base_type, {base_type, exponent_type}, false);
                     fn_pow = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, func_name,
                             module.get());
                 }
                 tmp = builder->CreateCall(fn_pow, {fleft, fright});
-                type = llvm_utils->getIntType(a_kind);
-                tmp = builder->CreateFPToSI(tmp, type);
+                tmp = builder->CreateFPToSI(tmp, return_type);
                 break;
             };
             case ASR::binopType::BitOr: {
