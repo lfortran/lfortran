@@ -25,6 +25,7 @@ if [[ $WIN != "1" ]]; then
     ./run_tests.py
 
     cd integration_tests
+    rm -rf build-lfortran-llvm
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
     FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
