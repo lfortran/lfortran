@@ -1798,7 +1798,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             // drop the last stack item in the wasm stack
                             m_wa.emit_drop();
                             this->visit_expr(*x.m_left);
-                            m_wa.emit_f32_mul();
+                            m_wa.emit_f64_mul();
                         } else {
                             throw CodeGenError(
                                 "RealBinop: only x**2 implemented so far for "
