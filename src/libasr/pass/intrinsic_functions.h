@@ -1351,9 +1351,21 @@ namespace Sign {
 namespace Shiftr {
 
     static ASR::expr_t *eval_Shiftr(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'shiftr' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'shiftr' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 >> val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1387,9 +1399,21 @@ namespace Shiftr {
 namespace Rshift {
 
     static ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'rshift' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'rshift' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 >> val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1419,9 +1443,21 @@ namespace Rshift {
 namespace Shiftl {
 
     static ASR::expr_t *eval_Shiftl(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'shiftl' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'shiftl' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 << val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
