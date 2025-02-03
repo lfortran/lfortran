@@ -2205,9 +2205,11 @@ namespace LCompilers {
         if(val->getType()->getPrimitiveSizeInBits() == target_type->getPrimitiveSizeInBits()){
             return val;
         } else if(val->getType()->getPrimitiveSizeInBits() > target_type->getPrimitiveSizeInBits()){
-            return builder->CreateTrunc(val, target_type);
+            return val->getType()->isIntegerTy() ? 
+                builder->CreateTrunc(val, target_type) : builder->CreateFPTrunc(val, target_type);
         } else {
-            return builder->CreateSExt(val, target_type);
+            return val->getType()->isIntegerTy() ?
+                builder->CreateSExt(val, target_type): builder->CreateFPExt(val, target_type);
         }
     }
 
