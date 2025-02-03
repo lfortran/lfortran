@@ -27,7 +27,6 @@
 #include <libasr/pass/replace_param_to_const.h>
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/replace_where.h>
-#include <libasr/pass/replace_where_simplifier.h>
 #include <libasr/pass/replace_print_list_tuple.h>
 #include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_flip_sign.h>
@@ -112,7 +111,6 @@ namespace LCompilers {
             {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
-            {"where_simplifier", &pass_replace_where_simplifier},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"openmp", &pass_replace_openmp},
             {"print_struct_type", &pass_replace_print_struct_type},
@@ -224,7 +222,7 @@ namespace LCompilers {
                 "forall",
                 "class_constructor",
                 "pass_list_expr",
-                "where_simplifier",
+                "where",
                 "subroutine_from_function",
                 "array_op",
                 "symbolic",
@@ -257,7 +255,7 @@ namespace LCompilers {
                 "forall",
                 "class_constructor",
                 "pass_list_expr",
-                "where_simplifier",
+                "where",
                 "subroutine_from_function",
                 "array_op",
                 "symbolic",

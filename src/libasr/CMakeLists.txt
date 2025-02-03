@@ -32,7 +32,6 @@ set(SRC
     pass/nested_vars.cpp
     pass/simplifier.cpp
     pass/where.cpp
-    pass/where_simplifier.cpp
     pass/function_call_in_declaration.cpp
     pass/openmp.cpp
     pass/param_to_const.cpp
