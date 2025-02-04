@@ -2401,6 +2401,11 @@ static inline bool is_only_upper_bound_empty(ASR::dimension_t& dim) {
     return (dim.m_start != nullptr && dim.m_length == nullptr);
 }
 
+inline bool is_array(ASR::ttype_t *x) {
+    ASR::dimension_t* dims = nullptr;
+    return extract_dimensions_from_ttype(x, dims) > 0;
+}
+
 class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments> {
 
     public:
@@ -2413,7 +2418,11 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
         void visit_Var(const ASR::Var_t& x) {
             if( ASR::is_a<ASR::Variable_t>(*x.m_v) ) {
                 ASR::Variable_t* x_m_v = ASR::down_cast<ASR::Variable_t>(x.m_v);
-                is_dependent_only_on_argument = is_dependent_only_on_argument && ASRUtils::is_arg_dummy(x_m_v->m_intent);
+                if ( ASRUtils::is_array(x_m_v->m_type) ) {
+                    is_dependent_only_on_argument = is_dependent_only_on_argument && ASRUtils::is_arg_dummy(x_m_v->m_intent);
+                } else {
+                    is_dependent_only_on_argument = is_dependent_only_on_argument && (x_m_v->m_intent == ASR::intentType::In);
+                }
             } else {
                 is_dependent_only_on_argument = false;
             }
@@ -2439,11 +2448,6 @@ static inline bool is_dimension_dependent_only_on_arguments(ASR::ttype_t* type) 
     ASR::dimension_t* m_dims;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
     return is_dimension_dependent_only_on_arguments(m_dims, n_dims);
-}
-
-inline bool is_array(ASR::ttype_t *x) {
-    ASR::dimension_t* dims = nullptr;
-    return extract_dimensions_from_ttype(x, dims) > 0;
 }
 
 static inline bool is_binop_expr(ASR::expr_t* x) {
