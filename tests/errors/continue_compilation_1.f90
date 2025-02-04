@@ -157,4 +157,11 @@ program continue_compilation_1
     character(10) :: str
     print *, v**str
     print *, str**v
+
+    print *, shiftl(2, 34)
+    print *, shiftl(2, -3)
+    print *, shiftr(2, 34)
+    print *, shiftr(2, -3)
+    print *, rshift(2, 34)
+    print *, rshift(2, -3)
 end program

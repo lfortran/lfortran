@@ -382,3 +382,39 @@ semantic error: Type mismatch in binary operator, the types must be compatible
     |
 159 |     print *, str**v
     |              ^^^  ^ type mismatch (string and real)
+
+semantic error: The shift argument of 'shiftl' intrinsic must be less than or equal to the bit size of the integer
+   --> tests/errors/continue_compilation_1.f90:161:24
+    |
+161 |     print *, shiftl(2, 34)
+    |                        ^^ Shift value is 34, but bit size of integer is 32
+
+semantic error: The shift argument of 'shiftl' intrinsic must be non-negative integer
+   --> tests/errors/continue_compilation_1.f90:162:24
+    |
+162 |     print *, shiftl(2, -3)
+    |                        ^^ 
+
+semantic error: The shift argument of 'shiftr' intrinsic must be less than or equal to the bit size of the integer
+   --> tests/errors/continue_compilation_1.f90:163:24
+    |
+163 |     print *, shiftr(2, 34)
+    |                        ^^ Shift value is 34, but bit size of integer is 32
+
+semantic error: The shift argument of 'shiftr' intrinsic must be non-negative integer
+   --> tests/errors/continue_compilation_1.f90:164:24
+    |
+164 |     print *, shiftr(2, -3)
+    |                        ^^ 
+
+semantic error: The shift argument of 'rshift' intrinsic must be less than or equal to the bit size of the integer
+   --> tests/errors/continue_compilation_1.f90:165:24
+    |
+165 |     print *, rshift(2, 34)
+    |                        ^^ Shift value is 34, but bit size of integer is 32
+
+semantic error: The shift argument of 'rshift' intrinsic must be non-negative integer
+   --> tests/errors/continue_compilation_1.f90:166:24
+    |
+166 |     print *, rshift(2, -3)
+    |                        ^^ 
