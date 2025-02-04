@@ -2745,6 +2745,33 @@ LFORTRAN_API char* _lfortran_date() {
 
 LFORTRAN_API int32_t _lfortran_values(int32_t n)
 {   int32_t result = 0;
+#if defined(_WIN32)
+    SYSTEMTIME st;
+    GetLocalTime(&st); // Get the current local date
+    if (n == 1) result = st.wYear;
+    else if (n == 2) result = st.wMonth;
+    else if (n == 3) result = st.wDay;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = st.wHour;
+    else if (n == 6) result = st.wMinute;
+    else if (n == 7) result = st.wSecond;
+    else if (n == 8) result = st.wMilliseconds;
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    // For non-ARM-based Apple platforms
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm* ptm = localtime(&tv.tv_sec);
+    int milliseconds = tv.tv_usec / 1000;
+    if (n == 1) result = ptm->tm_year + 1900;
+    else if (n == 2) result = ptm->tm_mon + 1;
+    else if (n == 3) result = ptm->tm_mday;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = ptm->tm_hour;
+    else if (n == 6) result = ptm->tm_min;
+    else if (n == 7) result = ptm->tm_sec;
+    else if (n == 8) result = milliseconds;
+#else
+    // For Linux and other platforms
     time_t t = time(NULL);
     struct tm* ptm = localtime(&t);
     struct timespec ts;
@@ -2757,6 +2784,7 @@ LFORTRAN_API int32_t _lfortran_values(int32_t n)
     else if (n == 6) result = ptm->tm_min;
     else if (n == 7) result = ptm->tm_sec;
     else if (n == 8) result = ts.tv_nsec / 1000000;
+#endif
     return result;
 }
 
