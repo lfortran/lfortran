@@ -1176,7 +1176,7 @@ namespace LCompilers {
                     else_stmt_body.push_back(al, if_stmt->m_orelse[i]);
                 }
             }
-            
+
             if_stmt->m_orelse = else_stmt_body.p;
             if_stmt->n_orelse = else_stmt_body.n;
 
@@ -1480,7 +1480,7 @@ namespace LCompilers {
                         doloop_body.push_back(al, assign);
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
-                } else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) { 
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) {
                     bool contains_array = false;
                     ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(curr_init);
                     for(size_t i = 0; i < array_item->n_args; i++) {
@@ -1514,8 +1514,7 @@ namespace LCompilers {
                         increment_by_one(idx_var, result_vec)
                     }
                 } else {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) &&
-                        ASRUtils::use_experimental_simplifier ) {
+                    if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) ) {
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                             al, loc, 1, ASRUtils::expr_type(idx_var)));

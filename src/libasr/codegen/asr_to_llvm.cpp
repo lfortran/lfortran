@@ -158,7 +158,7 @@ public:
     std::map<std::string, std::map<std::string, int>> name2memidx;
 
     std::map<uint64_t, llvm::Value*> llvm_symtab; // llvm_symtab_value
-    std::map<uint64_t, llvm::Value*> llvm_symtab_deep_copy; 
+    std::map<uint64_t, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
@@ -3775,7 +3775,7 @@ public:
                             builder->CreateStore(tmp, deep);
                             tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),deep);
                             llvm_symtab_deep_copy[m_length_variable_h] = deep;
-                        } 
+                        }
                     }
 
                     // Make dimension length and return size compatible.(TODO : array_size should be of type int64)
@@ -6937,11 +6937,9 @@ public:
 
     template <typename T>
     void visit_ArrayConstructorUtil(const T& x) {
-        if( ASRUtils::use_experimental_simplifier ) {
-            if (x.m_value) {
-                this->visit_expr_wrapper(x.m_value, true);
-                return;
-            }
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
         }
 
         llvm::Type* el_type = nullptr;
@@ -10247,10 +10245,10 @@ public:
                 ASR::Variable_t* x_sym_variable = ASR::down_cast<ASR::Variable_t>(x_sym);
                 uint32_t x_sym_variable_h = get_hash((ASR::asr_t*)x_sym_variable);
                 if (llvm_symtab_deep_copy.find(x_sym_variable_h) != llvm_symtab_deep_copy.end()) {
-                    tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x),llvm_symtab_deep_copy[x_sym_variable_h]); 
+                    tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x),llvm_symtab_deep_copy[x_sym_variable_h]);
                 } else {
                     this->visit_expr_wrapper(x, true);
-                } 
+                }
             } else {
                 this->visit_expr_wrapper(x, true);
             }
