@@ -2687,12 +2687,6 @@ LFORTRAN_API char* _lfortran_zone() {
     return result;
 }
 
-LFORTRAN_API int32_t _lfortran_values()
-{   
-    //TODO: correct this according to the definition
-    return 1;
-}
-
 LFORTRAN_API char* _lfortran_time() {
     char* result = (char*)malloc(13 * sizeof(char)); // "hhmmss.sss\0" = 12 + 1
 
@@ -2747,6 +2741,23 @@ LFORTRAN_API char* _lfortran_date() {
 #endif
 
     return result; // Return the formatted date string
+}
+
+LFORTRAN_API int32_t _lfortran_values(int32_t n)
+{   int32_t result = 0;
+    time_t t = time(NULL);
+    struct tm* ptm = localtime(&t);
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    if (n == 1) result = ptm->tm_year + 1900;
+    else if (n == 2) result = ptm->tm_mon + 1;
+    else if (n == 3) result = ptm->tm_mday;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = ptm->tm_hour;
+    else if (n == 6) result = ptm->tm_min;
+    else if (n == 7) result = ptm->tm_sec;
+    else if (n == 8) result = ts.tv_nsec / 1000000;
+    return result;
 }
 
 LFORTRAN_API float _lfortran_sp_rand_num() {
