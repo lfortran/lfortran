@@ -16,44 +16,50 @@ tokenizer error: Token '?' is not recognized
 325 |     integer  :: ? tokenizer_error
     |                 ^ token not recognized
 
+tokenizer error: Token '@' is not recognized in `format` statement
+ --> tests/errors/continue_compilation_2.f90:1:2
+  |
+1 | module Geometry
+  |  ^ 
+
 syntax error: End module name does not match module name
-   --> tests/errors/continue_compilation_2.f90:341:1 - 343:28
+   --> tests/errors/continue_compilation_2.f90:342:1 - 344:28
     |
-341 |    module my_module
+342 |    module my_module
     |    ^^^^^^^^^^^^^^^^...
 ...
     |
-343 |    end module wrong_module_name 
+344 |    end module wrong_module_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:345:1 - 347:29
+   --> tests/errors/continue_compilation_2.f90:346:1 - 348:29
     |
-345 |    subroutine my_subroutine1()
+346 |    subroutine my_subroutine1()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-347 |    end subroutine different_name
+348 |    end subroutine different_name
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End function name does not match function name
-   --> tests/errors/continue_compilation_2.f90:349:1 - 352:28
+   --> tests/errors/continue_compilation_2.f90:350:1 - 353:28
     |
-349 |    function my_function() result(res)
+350 |    function my_function() result(res)
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-352 |    end function not_my_function
+353 |    end function not_my_function
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:354:1 - 356:29
+   --> tests/errors/continue_compilation_2.f90:355:1 - 357:29
     |
-354 |    subroutine my_subroutine2()
+355 |    subroutine my_subroutine2()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-356 |    end subroutine different_name 
+357 |    end subroutine different_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate DIMENSION attribute specified
@@ -667,7 +673,7 @@ semantic error: Variable 'foo' is not declared
     |             ^^^ 'foo' is undeclared
 
 semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:338:5
+   --> tests/errors/continue_compilation_2.f90:339:5
     |
-338 |     y = 99  
+339 |     y = 99  
     |     ^ 
