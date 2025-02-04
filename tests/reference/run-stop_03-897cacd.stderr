@@ -1,4 +1,1 @@
-sh: 1: clang: not found
-The command 'clang -o stop_03.out tests/../integration_tests/stop_03.tmp.o  -L"$DIR/src/bin/../runtime" -Wl,-rpath,"$DIR/src/bin/../runtime" -llfortran_runtime -lm' failed.
-Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
-Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker execuatable
+STOP hi
