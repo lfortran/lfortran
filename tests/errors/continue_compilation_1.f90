@@ -153,6 +153,17 @@ program continue_compilation_1
     integer, parameter :: zero = 0
     integer :: x = 1
     print *, x/zero
+    real :: v
+    character(10) :: str
+    print *, v**str
+    print *, str**v
+
+    print *, shiftl(2, 34)
+    print *, shiftl(2, -3)
+    print *, shiftr(2, 34)
+    print *, shiftr(2, -3)
+    print *, rshift(2, 34)
+    print *, rshift(2, -3)
 
     complex :: c = (1.0, 2.0)
     print *, sum([c1])
