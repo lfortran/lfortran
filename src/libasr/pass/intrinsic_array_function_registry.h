@@ -692,13 +692,12 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             return nullptr;
         }
     } else if (args[2]) {
-                if (is_logical(*ASRUtils::expr_type(args[2]))) {
-                    mask = args[2];
-                } else {
-                    diag.add(diag::Diagnostic("'mask' argument of 'sum' intrinsic at (1) must be LOGICAL",
-                        diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
-                    return nullptr;
-                }
+        if (!is_logical(*ASRUtils::expr_type(args[2]))) {
+            diag.add(diag::Diagnostic("'mask' argument of 'sum' intrinsic must be logical",
+                diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
+            return nullptr;
+        }
+        mask = args[2];
     }
     if (dim) {
         size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim));
