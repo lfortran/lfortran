@@ -1,4 +1,4 @@
-semantic error: 'mask' argument of 'sum' intrinsic at (1) must be LOGICAL
+semantic error: 'mask' argument of 'sum' intrinsic must be logical
  --> tests/errors/mask_not_logical.f90:2:14
   |
 2 |     print *, sum([1, 2, 3], mask = [1, 2, 3])
