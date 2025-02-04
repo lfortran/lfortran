@@ -4445,3 +4445,7 @@ ast = true
 filename = "interactive_parse_without_program_line.f90"
 options = "--interactive-parse"
 ast = true
+
+[[test]]
+filename = "errors/mask_not_logical.f90"
+asr = true
