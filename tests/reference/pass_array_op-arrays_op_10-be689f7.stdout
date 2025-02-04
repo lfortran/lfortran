@@ -246,17 +246,34 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 4 x)
-                                        (ArrayConstant
-                                            8
-                                            [1.00000000e+00, 1.00000000e+00]
-                                            (Array
-                                                (Real 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                            )
+                                        (ArrayItem
+                                            (Var 4 x)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
                                             ColMajor
+                                            ()
+                                        )
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 4 x)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
                                         )
                                         ()
                                     )]
