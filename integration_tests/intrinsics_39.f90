@@ -4,7 +4,7 @@ program test_time_and_date
     character(len=5)  :: zone
     integer,dimension(8) :: values
     ! using keyword arguments
-    call date_and_time(date,time,zone,values)
+    call date_and_time(date, time, zone, values)
     ! call date_and_time(date=date,zone=zone)
     ! call date_and_time(time=time)
     ! call date_and_time(values=values)
