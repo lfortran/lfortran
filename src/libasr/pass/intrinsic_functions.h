@@ -1838,18 +1838,24 @@ namespace Present {
     static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t* arg = args[0];
         if (!ASR::is_a<ASR::Var_t>(*arg)) {
-            append_error(diag,
+            diag.semantic_error_label(
                 "Argument to 'present' must be a variable, but got an expression",
-                loc);
+                {arg->base.loc},
+                "Expected a variable here"
+            );
+            
             return nullptr;
         }
 
         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
         if (var->m_presence != ASR::presenceType::Optional) {
-            append_error(diag,
+            diag.semantic_error_label(
                 "Argument to 'present' must be an optional dummy argument",
-                loc);
+                {arg->base.loc},
+                "This variable is not 'optional'"
+            );
+
             return nullptr;
         }
 
