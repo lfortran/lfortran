@@ -854,26 +854,22 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
-        if (ASRUtils::use_experimental_simplifier) {
-            if( check_external ) {
-                if( ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ) {
-                    require(ASRUtils::is_array(x.m_type),
-                        "ArrayItem::m_type with array indices must be an array.")
-                } else {
-                    require(!ASRUtils::is_array(x.m_type),
-                        "ArrayItem::m_type cannot be array.")
-                }
+        if( check_external ) {
+            if( ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ) {
+                require(ASRUtils::is_array(x.m_type),
+                    "ArrayItem::m_type with array indices must be an array.")
+            } else {
+                require(!ASRUtils::is_array(x.m_type),
+                    "ArrayItem::m_type cannot be array.")
             }
         }
         handle_ArrayItemSection(x);
     }
 
     void visit_ArraySize(const ArraySize_t& x) {
-        if (ASRUtils::use_experimental_simplifier) {
-            if (check_external) {
-                require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
-                    "ArraySize::m_v must be an array");
-            }
+        if (check_external) {
+            require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+                "ArraySize::m_v must be an array");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
@@ -1244,13 +1240,11 @@ public:
     void visit_Allocatable(const Allocatable_t &x) {
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
-        if (ASRUtils::use_experimental_simplifier) {
-            ASR::dimension_t* m_dims = nullptr;
-            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
-            for( size_t i = 0; i < n_dims; i++ ) {
-                require(m_dims[i].m_length == nullptr,
-                    "Length of allocatable should be deferred (empty).");
-            }
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+        for( size_t i = 0; i < n_dims; i++ ) {
+            require(m_dims[i].m_length == nullptr,
+                "Length of allocatable should be deferred (empty).");
         }
         visit_ttype(*x.m_type);
     }
