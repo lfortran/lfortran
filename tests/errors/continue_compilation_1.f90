@@ -175,4 +175,6 @@ program continue_compilation_1
     print *, product(r1)
     print *, minval(q1)
     print *, maxval(r1)
+
+    print *, sum([1, 2, 3], mask = [1, 2, 3])
 end program
