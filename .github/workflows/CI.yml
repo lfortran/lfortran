@@ -538,9 +538,6 @@ jobs:
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
             git checkout 502271c6ae591893d8132ed08be40c3637e47893
             cd src
-            echo "CONDA_PREFIX is: $CONDA_PREFIX"
-            ls -la $CONDA_PREFIX/include
-            echo "CC: ${CC}"
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
             else
