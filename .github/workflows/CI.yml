@@ -473,6 +473,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
+            gfortran=13.2.0
             openmpi=5.0.6
 
       - uses: hendrikmuhs/ccache-action@main
