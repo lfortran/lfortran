@@ -635,6 +635,10 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     ASR::expr_t *dim = nullptr;
     ASR::expr_t *mask = nullptr;
     ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+    if (!is_array(array_type)){
+        append_error(diag, "Argument to intrinsic `" + intrinsic_func_name + "` is expected to be an array, found: " + type_to_str(array_type), loc);
+        return nullptr;
+    }
     if (args[1]) {
         if (is_integer(*ASRUtils::expr_type(args[1]))) {
             dim = args[1];
