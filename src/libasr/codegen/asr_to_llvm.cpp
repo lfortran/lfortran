@@ -9213,7 +9213,7 @@ public:
                                 // run out of stack
                                 if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ||
                                     (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
-                                    (ASRUtils::is_array(arg_type) ||
+                                    !ASRUtils::is_allocatable(arg_type) && (ASRUtils::is_array(arg_type) ||
                                         ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_args[i].m_value)))))
                                         && value->getType()->isPointerTy()) {
                                     value = llvm_utils->CreateLoad(value);
