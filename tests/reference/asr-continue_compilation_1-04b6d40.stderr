@@ -419,26 +419,26 @@ semantic error: The shift argument of 'rshift' intrinsic must be non-negative in
 166 |     print *, rshift(2, -3)
     |                        ^^ 
 
-semantic error: Input to `Sum is expected to be numeric, but got string[:]
+semantic error: Input to `Sum` is expected to be numeric, but got string[:]
    --> tests/errors/continue_compilation_1.f90:169:18
     |
 169 |     print *, sum([c1])
     |                  ^^^^ must be integer, real or complex type
 
-semantic error: Input to `Product is expected to be numeric, but got string[:]
+semantic error: Input to `Product` is expected to be numeric, but got string[:]
    --> tests/errors/continue_compilation_1.f90:170:22
     |
 170 |     print *, product([c1])
     |                      ^^^^ must be integer, real or complex type
 
-semantic error: Input to `MinVal is expected to be integer, real or string type but got complex[:]
+semantic error: Input to `MinVal` is expected to be of integer, real or character type, but got complex[:]
    --> tests/errors/continue_compilation_1.f90:171:21
     |
 171 |     print *, minval([c])
-    |                     ^^^ must be integer, real or string type
+    |                     ^^^ must be integer, real or character type
 
-semantic error: Input to `MaxVal is expected to be integer, real or string type but got complex[:]
+semantic error: Input to `MaxVal` is expected to be of integer, real or character type, but got complex[:]
    --> tests/errors/continue_compilation_1.f90:172:21
     |
 172 |     print *, maxval([c])
-    |                     ^^^ must be integer, real or string type
+    |                     ^^^ must be integer, real or character type
