@@ -18,17 +18,20 @@ program function_32
     use function_32_mod
     real(8) :: x(5,2)
     integer :: iact(2)
+    integer :: nact
     real(8) :: full_size(10)
     iact = [2,1]
+    nact = -1
     full_size = return_type_check(x(:,iact)) + 1.0_8
     if(any(full_size /= 2.0_8)) error stop
     x = matprod(x(:,iact), x(:, iact)) + 1.0_8
     if(any(x /= 2.0_8)) error stop
-    call func(x, iact)
+    call func(x, iact, nact)
 contains 
-subroutine func(x, iact)
+subroutine func(x, iact, nact)
     real(8), intent(in) :: x(:,:)
     integer, intent(inout) :: iact(:)
+    integer, intent(inout) :: nact
     real(8) :: bmat(2, 2 + size(x,1))
     real(8) :: yzmat_c(2, size(x,2))
     real(8) :: tmp_x(size(x,1) * size(x,2))
@@ -40,5 +43,8 @@ subroutine func(x, iact)
     if(any(tmp_x /= 2.0_8)) error stop
     yzmat_c = matprod(x(iact, :), x(:, iact)) + 1.0_8
     if(any(yzmat_c /= 2.0_8)) error stop
+    nact = 2
+    bmat(:, 1:nact) = -matprod(yzmat_c, x(:, 1:nact))
+    if(any(bmat(:,1:nact) /= -1.0_8)) error stop
 end subroutine
 end program 

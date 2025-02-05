@@ -27,7 +27,6 @@
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
-#include <libasr/pass/replace_array_op_simplifier.h>
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_print_arr.h>
@@ -2197,7 +2196,6 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> O_flags;
 
     CompilerOptions compiler_options;
-    bool no_experimental_simplifier = false;
     compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
@@ -2304,7 +2302,6 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
-    app.add_flag("--no-experimental-simplifier", no_experimental_simplifier, "Do not use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
     app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
 
@@ -2352,8 +2349,6 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    compiler_options.po.experimental_simplifier = !no_experimental_simplifier;
-    LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
     if (arg_version) {

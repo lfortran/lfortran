@@ -1221,7 +1221,7 @@ namespace CompilerVersion {
 } // namespace CompilerVersion
 
 namespace CompilerOptions {
-    
+
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "compiler_options() takes no argument",
@@ -1838,18 +1838,24 @@ namespace Present {
     static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t* arg = args[0];
         if (!ASR::is_a<ASR::Var_t>(*arg)) {
-            append_error(diag, 
-                "Argument to 'present' must be a variable, but got an expression", 
-                loc);
+            diag.semantic_error_label(
+                "Argument to 'present' must be a variable, but got an expression",
+                {arg->base.loc},
+                "Expected a variable here"
+            );
+            
             return nullptr;
         }
 
         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
         if (var->m_presence != ASR::presenceType::Optional) {
-            append_error(diag, 
-                "Argument to 'present' must be an optional dummy argument", 
-                loc);
+            diag.semantic_error_label(
+                "Argument to 'present' must be an optional dummy argument",
+                {arg->base.loc},
+                "This variable is not 'optional'"
+            );
+
             return nullptr;
         }
 
@@ -1863,8 +1869,8 @@ namespace Present {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
 
-        return ASR::make_IntrinsicElementalFunction_t(al, loc, 
-            static_cast<int64_t>(IntrinsicElementalFunctions::Present), 
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::Present),
             m_args.p, m_args.n, 0, return_type, m_value);
     }
 
@@ -3637,18 +3643,12 @@ namespace Merge {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        if ( use_experimental_simplifier ) {
-            tsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[0]));
-            fsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[1]));
-            mask_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[2]));
-        } else {
-            tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
-            fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
-            mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
-        }
+        tsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[0]));
+        fsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[1]));
+        mask_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[2]));
         if( ASR::is_a<ASR::String_t>(*tsource_type) ) {
             ASR::String_t* tsource_char = ASR::down_cast<ASR::String_t>(tsource_type);
             ASR::String_t* fsource_char = ASR::down_cast<ASR::String_t>(fsource_type);
@@ -3740,7 +3740,7 @@ namespace Trailz {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
-        set_kind_to_ttype_t(t1, 4); 
+        set_kind_to_ttype_t(t1, 4);
         return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
     }
 

@@ -1109,7 +1109,7 @@
                                                                 (Var 9 n))
                                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 9 n))]
-                                                                PointerToDataArray
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                             ()
@@ -1584,7 +1584,7 @@
                                                                 )
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 5 n))]
-                                                                PointerToDataArray
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                             ()

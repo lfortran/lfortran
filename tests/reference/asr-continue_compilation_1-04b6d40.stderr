@@ -312,16 +312,16 @@ semantic error: The shapes of the `array` and `mask` arguments of the `Iparity` 
     |                      ^^^^  ^^^^^ `array` has shape [2,1,3], but `mask` has shape [2,3,1]
 
 semantic error: Argument to 'present' must be a variable, but got an expression
-   --> tests/errors/continue_compilation_1.f90:137:14
+   --> tests/errors/continue_compilation_1.f90:137:22
     |
 137 |     print *, present(a + 1)
-    |              ^^^^^^^^^^^^^^ 
+    |                      ^^^^^ Expected a variable here
 
 semantic error: Argument to 'present' must be an optional dummy argument
-   --> tests/errors/continue_compilation_1.f90:140:14
+   --> tests/errors/continue_compilation_1.f90:140:22
     |
 140 |     print *, present(a)
-    |              ^^^^^^^^^^ 
+    |                      ^ This variable is not 'optional'
 
 semantic error: Different shape for arguments `array` and `mask` for pack intrinsic (3 and 4)
    --> tests/errors/continue_compilation_1.f90:142:30
