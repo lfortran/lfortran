@@ -419,26 +419,50 @@ semantic error: The shift argument of 'rshift' intrinsic must be non-negative in
 166 |     print *, rshift(2, -3)
     |                        ^^ 
 
-semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer
-   --> tests/errors/continue_compilation_1.f90:168:14
+semantic error: Input to `Sum` is expected to be numeric, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:169:18
     |
-168 |     print *, sum(q1)
+169 |     print *, sum([c1])
+    |                  ^^^^ must be integer, real or complex type
+
+semantic error: Input to `Product` is expected to be numeric, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:170:22
+    |
+170 |     print *, product([c1])
+    |                      ^^^^ must be integer, real or complex type
+
+semantic error: Input to `MinVal` is expected to be of integer, real or character type, but got complex[:]
+   --> tests/errors/continue_compilation_1.f90:171:21
+    |
+171 |     print *, minval([c])
+    |                     ^^^ must be integer, real or character type
+
+semantic error: Input to `MaxVal` is expected to be of integer, real or character type, but got complex[:]
+   --> tests/errors/continue_compilation_1.f90:172:21
+    |
+172 |     print *, maxval([c])
+    |                     ^^^ must be integer, real or character type
+
+semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer
+   --> tests/errors/continue_compilation_1.f90:174:14
+    |
+174 |     print *, sum(q1)
     |              ^^^^^^^ 
 
 semantic error: Argument to intrinsic `Product` is expected to be an array, found: real
-   --> tests/errors/continue_compilation_1.f90:169:14
+   --> tests/errors/continue_compilation_1.f90:175:14
     |
-169 |     print *, product(r1)
+175 |     print *, product(r1)
     |              ^^^^^^^^^^^ 
 
 semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: integer
-   --> tests/errors/continue_compilation_1.f90:170:14
+   --> tests/errors/continue_compilation_1.f90:176:14
     |
-170 |     print *, minval(q1)
+176 |     print *, minval(q1)
     |              ^^^^^^^^^^ 
 
 semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: real
-   --> tests/errors/continue_compilation_1.f90:171:14
+   --> tests/errors/continue_compilation_1.f90:177:14
     |
-171 |     print *, maxval(r1)
+177 |     print *, maxval(r1)
     |              ^^^^^^^^^^ 
