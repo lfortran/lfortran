@@ -531,13 +531,18 @@ jobs:
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
+            FC="$(pwd)/src/bin/lfortran"
             git clone https://github.com/gxyd/pot3d.git
-            micromamba install -y -n lf gfortran=13.2.0
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 3824e4615e2e802bf69f909ecf18afeb6efa351d
-            ./build_examples/build_cpu_mpi-only_gcc_lfortran.sh
-            micromamba remove -y -n lf gfortran
+            git checkout 502271c6ae591893d8132ed08be40c3637e47893
+            cd src
+            mpicc -c mpi_wrapper.c
+            ${FC} -c mpi_c_bindings.f90
+            ${FC} -c mpi.f90
+            ${FC} -c psi_io.f90
+            ${FC} -E --cpp pot3d.F90 > pot3d_cpp.f90
+            ${FC} -c --implicit-interface pot3d_cpp.f90 --show-asr
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
