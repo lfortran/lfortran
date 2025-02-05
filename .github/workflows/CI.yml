@@ -534,7 +534,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 924a6c4b4c18cb5f77ebcf323e9d4153997dcb79
+            git checkout 8c4ebad6c4fc162623c24acc232ec01793ed0696
             ./build_examples/build_cpu_mpi-only_gcc_lfortran.sh
 
       - name: Test Legacy Minpack (SciPy)
