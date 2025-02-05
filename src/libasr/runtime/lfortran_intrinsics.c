@@ -3628,6 +3628,11 @@ LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
     sscanf(str, format, *s);
 }
 
+LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i) {
+    sscanf(str, format, i);
+    printf("%s\n", str);
+}
+
 LFORTRAN_API void _lpython_close(int64_t fd)
 {
     if (fclose((FILE*)fd) != 0)

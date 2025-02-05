@@ -256,6 +256,7 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, char *format, int64_t *i)
 LFORTRAN_API void _lfortran_string_read_f32(char *str, char *format, float *f);
 LFORTRAN_API void _lfortran_string_read_f64(char *str, char *format, double *f);
 LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s);
+LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i);
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status);
