@@ -541,6 +541,11 @@ jobs:
             echo "CONDA_PREFIX is: $CONDA_PREFIX"
             ls -la $CONDA_PREFIX/include
             echo "CC: ${CC}"
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              CC=clang
+            else
+              CC=gcc
+            fi
             ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
             ${FC} -c mpi_c_bindings.f90
             ${FC} -c mpi.f90
