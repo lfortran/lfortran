@@ -541,8 +541,7 @@ jobs:
             ${FC} -c mpi_c_bindings.f90
             ${FC} -c mpi.f90
             ${FC} -c psi_io.f90
-            ${FC} -E --cpp pot3d.F90 > pot3d_cpp.f90
-            ${FC} -c --implicit-interface pot3d_cpp.f90 --show-asr
+            ${FC} -c --cpp --implicit-interface pot3d.F90 --show-asr
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
