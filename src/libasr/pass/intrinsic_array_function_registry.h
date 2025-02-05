@@ -3083,6 +3083,15 @@ namespace Sum {
 
     static inline ASR::asr_t* create_Sum(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* array_type = expr_type(args[0]);
+        if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
+            diag.add(diag::Diagnostic("Input to `Sum` is expected to be numeric, but got " +
+                type_to_str(array_type), 
+                diag::Level::Error, 
+                diag::Stage::Semantic, 
+                {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
+            return nullptr;
+        }
         return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::Sum);
     }
@@ -3115,6 +3124,15 @@ namespace Product {
 
     static inline ASR::asr_t* create_Product(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* array_type = expr_type(args[0]);
+        if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
+            diag.add(diag::Diagnostic("Input to `Product` is expected to be numeric, but got " +
+                type_to_str(array_type), 
+                diag::Level::Error, 
+                diag::Stage::Semantic, 
+                {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
+            return nullptr;
+        }
         return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::Product);
     }
@@ -3180,6 +3198,15 @@ namespace MaxVal {
     static inline ASR::asr_t* create_MaxVal(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
+        ASR::ttype_t* array_type = expr_type(args[0]);
+        if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
+            diag.add(diag::Diagnostic("Input to `MaxVal` is expected to be of integer, real or character type, but got " +
+                type_to_str(array_type), 
+                diag::Level::Error, 
+                diag::Stage::Semantic, 
+                {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
+            return nullptr;
+        }
         return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::MaxVal);
     }
@@ -3608,6 +3635,15 @@ namespace MinVal {
     static inline ASR::asr_t* create_MinVal(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
+        ASR::ttype_t* array_type = expr_type(args[0]);
+        if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
+            diag.add(diag::Diagnostic("Input to `MinVal` is expected to be of integer, real or character type, but got " +
+                type_to_str(array_type), 
+                diag::Level::Error, 
+                diag::Stage::Semantic, 
+                {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
+            return nullptr;
+        }
         return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::MinVal);
     }

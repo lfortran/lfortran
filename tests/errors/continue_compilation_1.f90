@@ -164,4 +164,10 @@ program continue_compilation_1
     print *, shiftr(2, -3)
     print *, rshift(2, 34)
     print *, rshift(2, -3)
+
+    complex :: c = (1.0, 2.0)
+    print *, sum([c1])
+    print *, product([c1])
+    print *, minval([c])
+    print *, maxval([c])
 end program
