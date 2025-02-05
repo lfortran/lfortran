@@ -466,9 +466,9 @@ semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found
     |
 177 |     print *, maxval(r1)
     |              ^^^^^^^^^^ 
-    
+
 semantic error: 'mask' argument of 'sum' intrinsic must be logical
-   --> tests/errors/continue_compilation_1.f90:168:14
+   --> tests/errors/continue_compilation_1.f90:179:14
     |
-168 |     print *, sum([1, 2, 3], mask = [1, 2, 3])
+179 |     print *, sum([1, 2, 3], mask = [1, 2, 3])
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
