@@ -8065,8 +8065,10 @@ public:
                 llvm::Function *fn;
                 if (is_string) {
                     // TODO: Support multiple arguments and fmt
-                    std::string runtime_func_name = "_lfortran_string_read_" + ASRUtils::type_to_str_python(type);
-                    llvm::Function *fn = module->getFunction(runtime_func_name);
+                    std::string runtime_func_name = "_lfortran_string_read_"
+                                                    + ASRUtils::type_to_str_python(ASRUtils::type_get_past_array(
+                                                        ASRUtils::type_get_past_allocatable_pointer(type)));
+                    llvm::Function* fn = module->getFunction(runtime_func_name);
                     if (!fn) {
                         llvm::FunctionType *function_type = llvm::FunctionType::get(
                                 llvm::Type::getVoidTy(context), {
@@ -8077,18 +8079,26 @@ public:
                                 llvm::Function::ExternalLinkage, runtime_func_name, *module);
                     }
                     llvm::Value *fmt = nullptr;
-                    if (ASR::is_a<ASR::Integer_t>(*type)) {
-                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(type);
+                    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(type)))) {
+                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
+                                ASRUtils::type_get_past_allocatable_pointer(type)));
                         fmt = int_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%d")
                                                     : builder->CreateGlobalStringPtr("%ld");
-                    } else if (ASR::is_a<ASR::Real_t>(*type)) {
-                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
+                    } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(
+                                   ASRUtils::type_get_past_allocatable_pointer(type)))) {
+                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(ASRUtils::type_get_past_array(
+                                ASRUtils::type_get_past_allocatable_pointer(type)));
                         fmt = real_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%f")
                                                      : builder->CreateGlobalStringPtr("%lf");
-                    } else if (ASR::is_a<ASR::String_t>(*type)) {
+                    } else if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(
+                                   ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         fmt = builder->CreateGlobalStringPtr("%s");
+                    } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(
+                                   ASRUtils::type_get_past_allocatable_pointer(type)))) {
+                        fmt = builder->CreateGlobalStringPtr("%d");
                     }
-                    builder->CreateCall(fn, {unit_val, fmt, tmp});
+                    builder->CreateCall(fn, { unit_val, fmt, tmp });
                     return;
                 } else {
                     fn = get_read_function(type);
