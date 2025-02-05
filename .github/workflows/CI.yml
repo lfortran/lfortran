@@ -473,7 +473,6 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            gfortran=13.2.0
             openmpi=5.0.6
 
       - uses: hendrikmuhs/ccache-action@main
@@ -534,6 +533,7 @@ jobs:
         if: contains(matrix.os, 'macos')
         run: |
             git clone https://github.com/gxyd/pot3d.git
+            micromamba install -y -n lf gfortran=13.2.0
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
             git checkout 8c4ebad6c4fc162623c24acc232ec01793ed0696
