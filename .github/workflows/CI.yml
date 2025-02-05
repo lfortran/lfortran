@@ -473,7 +473,6 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -533,12 +532,12 @@ jobs:
         if: contains(matrix.os, 'macos')
         run: |
             git clone https://github.com/gxyd/pot3d.git
-            micromamba install -y -n lf gfortran=13.2.0
+            micromamba create -y -n pot3d_env -f pot3d/ci/environment.yml
+            micromamba activate pot3d_env
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
             git checkout 3824e4615e2e802bf69f909ecf18afeb6efa351d
             ./build_examples/build_cpu_mpi-only_gcc_lfortran.sh
-            micromamba remove -y -n lf gfortran
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
