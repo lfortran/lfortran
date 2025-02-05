@@ -1176,7 +1176,7 @@ namespace LCompilers {
                     else_stmt_body.push_back(al, if_stmt->m_orelse[i]);
                 }
             }
-            
+
             if_stmt->m_orelse = else_stmt_body.p;
             if_stmt->n_orelse = else_stmt_body.n;
 
@@ -1480,7 +1480,7 @@ namespace LCompilers {
                         doloop_body.push_back(al, assign);
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
-                } else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) { 
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*curr_init) ) {
                     bool contains_array = false;
                     ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(curr_init);
                     for(size_t i = 0; i < array_item->n_args; i++) {
@@ -1514,8 +1514,7 @@ namespace LCompilers {
                         increment_by_one(idx_var, result_vec)
                     }
                 } else {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) &&
-                        ASRUtils::use_experimental_simplifier ) {
+                    if( ASRUtils::is_array(ASRUtils::expr_type(curr_init)) ) {
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                             al, loc, 1, ASRUtils::expr_type(idx_var)));
@@ -1551,11 +1550,22 @@ namespace LCompilers {
                         }
                         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                         dims.push_back(al, dimension);
+                        bool is_alloc_return_func = false;
+                        if( dimension.m_length && ASR::is_a<ASR::ArraySize_t>(*dimension.m_length) ) {
+                            ASR::ArraySize_t* array_size = ASR::down_cast<ASR::ArraySize_t>(dimension.m_length);
+                            if( (ASR::is_a<ASR::FunctionCall_t>(*array_size->m_v) &&
+                                ASRUtils::is_allocatable(array_size->m_v)) ||
+                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*array_size->m_v) ) {
+                                is_alloc_return_func = true;
+                            }
+                        }
                         type = ASRUtils::make_Array_t_util(al, loc,
                             ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(
                                     ASRUtils::expr_type(arr_var))),
-                            dims.p, dims.size());
+                            dims.p, dims.size(), ASR::abiType::Source, false, 
+                            ASR::array_physical_typeType::DescriptorArray,
+                            false, false, !is_alloc_return_func);
                         ASR::expr_t* res = ASRUtils::EXPR(ASR::make_ArraySection_t(
                             al, loc, arr_var, array_section_index.p, 1, type, nullptr));
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);

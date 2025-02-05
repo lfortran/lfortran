@@ -772,7 +772,7 @@ cumulative = true
 [[test]]
 filename = "array_op_simplifier_test.f90"
 asr = true
-pass = "simplifier,array_op_simplifier"
+pass = "simplifier,array_op"
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
@@ -4245,10 +4245,6 @@ asr = true
 
 [[test]]
 filename = "errors/intrinsics15.f90"
-asr = true
-
-[[test]]
-filename = "errors/intrinsics16.f90"
 asr = true
 
 [[test]]

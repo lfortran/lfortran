@@ -25,7 +25,7 @@ def run_cmd(cmd, cwd=None):
 
 def run_test(backend, std):
     run_cmd(f"mkdir {BASE_DIR}/test-{backend}")
-    if std == "f23": 
+    if std == "f23":
         std_string = "-DSTD_F23=yes"
     elif std == "legacy":
         std_string = "-DSTD_LEGACY=yes"
@@ -40,14 +40,14 @@ def run_test(backend, std):
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
     elif backend == "cpp":
-        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DEXPERIMENTAL_SIMPLIFIER={experimental_simplifier} {std_string}" + common,
+        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} {std_string}" + common,
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
-            f"-DFAST={fast_tests} -DCMAKE_Fortran_FLAGS=\"-fPIC\" -DEXPERIMENTAL_SIMPLIFIER={experimental_simplifier} {std_string}" + common,
+            f"-DFAST={fast_tests} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
                 cwd=cwd)
     else:
-        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DEXPERIMENTAL_SIMPLIFIER={experimental_simplifier} {std_string}" + common,
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} {std_string}" + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
@@ -96,8 +96,6 @@ def get_args():
                 help="Run supported tests with --fast")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
-    parser.add_argument("--no-experimental-simplifier",
-                        action='store_true', help="Use simplifier ASR pass")
     return parser.parse_args()
 
 def main():
@@ -108,7 +106,7 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, experimental_simplifier, std_f23_tests
+    global NO_OF_THREADS, fast_tests, std_f23_tests
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
     # delete previously created directories (if any)
     for backend in SUPPORTED_BACKENDS:
@@ -116,7 +114,6 @@ def main():
 
     NO_OF_THREADS = args.no_of_threads or NO_OF_THREADS
     fast_tests = "yes" if args.fast else "no"
-    experimental_simplifier = "no" if args.no_experimental_simplifier else "yes"
     for backend in args.backends:
         test_backend(backend, args.std)
 

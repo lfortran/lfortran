@@ -12,6 +12,7 @@
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
+#include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
 #include <string>
 #include <set>
@@ -5045,8 +5046,9 @@ public:
                         ASR::is_a<ASR::ArraySize_t>(*new_dims[k].m_length) ) {
                         ASR::ArraySize_t* array_size_t =
                             ASR::down_cast<ASR::ArraySize_t>(new_dims[k].m_length);
-                        if( ASR::is_a<ASR::FunctionCall_t>(*array_size_t->m_v) &&
-                            ASRUtils::is_allocatable(array_size_t->m_v) ) {
+                        if( (ASR::is_a<ASR::FunctionCall_t>(*array_size_t->m_v) &&
+                            ASRUtils::is_allocatable(array_size_t->m_v)) ||
+                            ASR::is_a<ASR::IntrinsicArrayFunction_t>(*array_size_t->m_v) ) {
                             for_type = false;
                             break;
                         }
@@ -6377,12 +6379,22 @@ public:
         if (ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
             ASR::ArrayConstant_t* const_newshape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            int new_shape_size = 1;
             for (size_t i=0; i < n_dims_array_reshape; i++) {
                 ASR::dimension_t dim;
                 dim.loc = loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
                 dim.m_length = ASRUtils::fetch_ArrayConstant_value(al, const_newshape, i);
                 dims.push_back(al, dim);
+                new_shape_size *= ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
+            }
+            int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+            if (array_size != -1 &&  new_shape_size > array_size) {
+                diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size specified by `shape` array",
+                                    Level::Error, Stage::Semantic, {Label("`shape` specifies size of " +
+                                    std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
+                                    std::to_string(array_size), {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         } else {
             // otherwise empty dimensions
@@ -8142,16 +8154,34 @@ public:
         }
         return result;
     }
-
+    // Creates a compile-time expression value for the Binop expression, if possible.
     ASR::expr_t* visit_BinOp_helper(ASR::expr_t* left, ASR::expr_t* right, ASR::binopType op, const Location& loc, ASR::ttype_t* dest_type) {
+        LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
         if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
             double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
             double right_value = ASR::down_cast<ASR::RealConstant_t>(right)->m_r;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
             perform_binop(left_value, right_value, op), dest_type));
+        } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
+            LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
+            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                    std::pow(left_value, right_value), dest_type));
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
             int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+
+            if (op == ASR::Div && right_value == 0) {
+                diag.add(Diagnostic(
+                    "Division by zero",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    })
+                );
+                throw SemanticAbort();
+            }
+
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
                     perform_binop(left_value, right_value, op), dest_type));
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
@@ -8166,11 +8196,8 @@ public:
             std::complex<double> result = perform_binop(left_value_, right_value_, op);
             return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
                     std::real(result), std::imag(result), dest_type));
-        } else {
-            diag.add(Diagnostic("Binary operation for type is not supported yet",
-                                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
         }
+        return nullptr;
     }
 
     ASR::expr_t* extract_value(ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::binopType op, ASR::ttype_t* dest_type, const Location& loc) {
@@ -8248,9 +8275,14 @@ public:
                                                       right_type, conversion_cand,
                                                       &source_type, &dest_type);
           }
-
-            ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                                source_type, dest_type, diag);
+            if((op == ASR::binopType::Pow) &&
+                ASRUtils::is_real(*dest_type) &&
+                ASRUtils::is_integer(*right_type)){ // Don't cast exponent to preserve precision.
+                // Do nothing.
+            } else {
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
+                                                    source_type, dest_type, diag);
+            }
         }
 
         if( (ASRUtils::is_array(right_type) || ASRUtils::is_array(left_type)) &&
@@ -8268,8 +8300,11 @@ public:
                 dest_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, dest_type->base.loc, dest_type));
             }
         }
-
-        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
+        if((op == ASR::binopType::Pow) &&
+            ASRUtils::is_real(*dest_type) &&
+            ASRUtils::is_integer(*right_type)) {
+            // Don't Check.
+        } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right))) {
             std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(left));
             std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(right));
@@ -8286,9 +8321,7 @@ public:
 
         if (ASRUtils::is_integer(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr ) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8298,9 +8331,7 @@ public:
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8310,9 +8341,7 @@ public:
 
         } else if (ASRUtils::is_complex(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8650,6 +8679,23 @@ public:
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
+
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*ASRUtils::EXPR(tmp))) {
+            ASR::IntegerBinOp_t *bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(ASRUtils::EXPR(tmp));
+            ASR::expr_t *right_value = ASRUtils::expr_value(bin_op->m_right);
+            if (bin_op->m_op == ASR::Div && right_value != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
+                ASR::IntegerConstant_t *right_const = ASR::down_cast<ASR::IntegerConstant_t>(right_value);
+                if (right_const->m_n == 0) {
+                    diag.add(Diagnostic(
+                        "Division by zero",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        })
+                    );
+                    throw SemanticAbort();
+                }
+            }
+        }
     }
 
     void visit_DefBinOp(const AST::DefBinOp_t &x) {

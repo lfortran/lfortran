@@ -589,10 +589,18 @@ namespace DateAndTime {
         }
         if (arg_types.size() > 3) {
             fill_func_arg_sub("values", arg_types[3], InOut);
-            ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 0, arg_types[3]);
+            std::vector<LCompilers::ASR::expr_t *> vals;
+            ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
             dep.push_back(al, s2c(al, c_func_name_4));
-            // body.push_back(al, b.Assignment(args[3], b.Call(s_4, call_args, arg_types[3])));
+            for (int i = 0; i < 8; i++) {
+                Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 1);
+                call_args2.push_back(al, b.i32(i+1));
+                auto xx = declare("i_" + std::to_string(i), int32, Local);
+                body.push_back(al, b.Assignment(xx, b.Call(s_4, call_args2, int32)));
+                vals.push_back(xx);
+            }
+            body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
