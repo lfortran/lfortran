@@ -531,7 +531,6 @@ jobs:
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
-            micromamba activate lf
             FC="$(pwd)/src/bin/lfortran"
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
