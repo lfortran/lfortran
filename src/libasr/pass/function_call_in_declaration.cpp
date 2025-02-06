@@ -148,10 +148,10 @@ public:
         std::vector<ArgInfo> indicies;
         get_arg_indices_used(x, indicies);
 
-        SymbolTable* global_scope = current_scope->parent;
-        // while (global_scope->parent) {
-        //     global_scope = global_scope->parent;
-        // }
+        SymbolTable* global_scope = current_scope;
+        while (global_scope->parent) {
+            global_scope = global_scope->parent;
+        }
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
         SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
 
@@ -179,6 +179,19 @@ public:
 
             ASR::call_arg_t arg_for_return_var; arg_for_return_var.loc = arg_expr->base.loc; arg_for_return_var.m_value = arg.arg_expr;
             args_for_return_var.push_back(al, arg_for_return_var);
+        }
+
+        if (is_a<ASR::IntrinsicArrayFunction_t>(*assignment_value)) {
+            ASR::IntrinsicArrayFunction_t* intrinsic_array_func = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(assignment_value);
+            if (is_a<ASR::ArrayPhysicalCast_t>(*intrinsic_array_func->m_args[0])) {
+                ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(intrinsic_array_func->m_args[0]);
+
+                if (is_a<ASR::RealCompare_t>(*cast->m_arg)) {
+                    ASR::RealCompare_t* real_comp = ASR::down_cast<ASR::RealCompare_t>(cast->m_arg);
+                    ASR::expr_t* function_param = ASRUtils::EXPR(ASR::make_FunctionParam_t(al, real_comp->m_left->base.loc, 0, ASRUtils::expr_type(real_comp->m_left), real_comp->m_left));
+                    real_comp->m_left = function_param;
+                }
+            }
         }
         replace_FunctionParam_with_FunctionArgs(assignment_value, new_args);
         new_body.push_back(al, b.Assignment(return_var, assignment_value));
