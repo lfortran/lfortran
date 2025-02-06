@@ -977,6 +977,7 @@ public:
         {AST::operatorType::Mul, "~mul"},
         {AST::operatorType::Add, "~add"},
         {AST::operatorType::Sub, "~sub"},
+        {AST::operatorType::Div, "~div"},
     };
 
     std::map<AST::cmpopType, std::string> cmpop2str = {
@@ -991,6 +992,7 @@ public:
     std::map<AST::intrinsicopType, std::string> intrinsic2str = {
         {AST::intrinsicopType::STAR, "~mul"},
         {AST::intrinsicopType::PLUS, "~add"},
+        {AST::intrinsicopType::DIV, "~div"},
         {AST::intrinsicopType::EQ, "~eq"},
         {AST::intrinsicopType::NOTEQ, "~noteq"},
         {AST::intrinsicopType::LT, "~lt"},
