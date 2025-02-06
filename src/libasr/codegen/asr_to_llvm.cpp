@@ -8065,9 +8065,11 @@ public:
                 llvm::Function *fn;
                 if (is_string) {
                     // TODO: Support multiple arguments and fmt
-                    std::string runtime_func_name = "_lfortran_string_read_"
-                                                    + ASRUtils::type_to_str_python(ASRUtils::type_get_past_array(
-                                                        ASRUtils::type_get_past_allocatable_pointer(type)));
+                    std::string runtime_func_name = "_lfortran_string_read_" +
+                                            ASRUtils::type_to_str_python(ASRUtils::extract_type(type));
+                    if (ASRUtils::is_array(type)) {
+                        runtime_func_name += "_array";
+                    }
                     llvm::Function* fn = module->getFunction(runtime_func_name);
                     if (!fn) {
                         llvm::FunctionType *function_type = llvm::FunctionType::get(
