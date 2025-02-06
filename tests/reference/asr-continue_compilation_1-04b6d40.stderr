@@ -122,6 +122,12 @@ semantic error: Invalid argument `hello` supplied
 76 |     OPEN(file="numbers", hello="world")
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Type mismatch in assignment, the types must be compatible
+  --> tests/errors/continue_compilation_1.f90:80:5
+   |
+80 |     x = y  
+   |     ^   ^ type mismatch (real and logical)
+
 semantic error: Cannot assign to a constant variable
   --> tests/errors/continue_compilation_1.f90:78:5
    |
