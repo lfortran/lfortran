@@ -3944,6 +3944,7 @@ namespace Count {
         if (!is_array(expr_type(args[0])) || !is_logical(*expr_type(args[0]))){
             append_error(diag, "`mask` argument to `count` intrinsic must be a logical array",
                 args[0]->base.loc);
+            return nullptr;
         }
         ASR::expr_t *mask = args[0], *dim_ = nullptr, *kind = nullptr;
 
