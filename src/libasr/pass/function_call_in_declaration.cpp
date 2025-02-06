@@ -91,6 +91,14 @@ public:
         if (is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
             arg = cast->m_arg;
+
+            if (is_a<ASR::RealCompare_t>(*cast->m_arg)) {
+                ASR::RealCompare_t* real_comp = ASR::down_cast<ASR::RealCompare_t>(cast->m_arg);
+                ArgInfo info = {static_cast<int>(0), ASRUtils::expr_type(real_comp->m_left), current_function->m_args[0], real_comp->m_left};
+                if (!exists_in_arginfo(0, indicies)) {
+                    indicies.push_back(info);
+                }     
+            }
         }
         if (is_a<ASR::FunctionCall_t>(*arg)) {
             get_arg_indices_used_functioncall(ASR::down_cast<ASR::FunctionCall_t>(arg), indicies);
@@ -140,10 +148,10 @@ public:
         std::vector<ArgInfo> indicies;
         get_arg_indices_used(x, indicies);
 
-        SymbolTable* global_scope = current_scope;
-        while (global_scope->parent) {
-            global_scope = global_scope->parent;
-        }
+        SymbolTable* global_scope = current_scope->parent;
+        // while (global_scope->parent) {
+        //     global_scope = global_scope->parent;
+        // }
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
         SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
 
@@ -266,6 +274,17 @@ public:
         ASRUtils::EXPR2VAR(func->m_return_var)->m_type = return_type_copy;
     }
 
+    void visit_Array(const ASR::Array_t &x) {
+        if (!current_scope) return;
+        
+        if (is_function_call_or_intrinsic_array_function(x.m_dims->m_length)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_dims->m_length));
+            this->call_replacer_(x.m_dims->m_length);
+            current_expr = current_expr_copy;
+        }
+    }
+
     void visit_FunctionType(const ASR::FunctionType_t &x) {
         if (!current_scope) return;
 
@@ -339,6 +358,12 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         current_scope = x.m_symtab;
         this->visit_ttype(*x.m_function_signature);
+        for( auto sym: x.m_symtab->get_scope() ) {
+            if ( ASR::is_a<ASR::Variable_t>(*sym.second) ) {
+                ASR::Variable_t* sym_variable = ASR::down_cast<ASR::Variable_t>(sym.second);
+                this->visit_ttype(*sym_variable->m_type);
+            }
+        }
         current_scope = nullptr;
         for( auto sym: x.m_symtab->get_scope() ) {
             visit_symbol(*sym.second);
