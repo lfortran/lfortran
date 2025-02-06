@@ -50,6 +50,8 @@ program read_01
     print *, al_val
     if (al_val /= "cd") error stop
 
+    print *, str
+    str = "72"
     key = "int_read"
     select case(key)
         case ("int_read")
@@ -58,5 +60,5 @@ program read_01
             read(str, *) i32_arr_size3
     end select
     print *, i32
-    if (i32 /= 42) error stop
+    if (i32 /= 72) error stop
 end program
