@@ -91,6 +91,14 @@ public:
         if (is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
             arg = cast->m_arg;
+
+            if (is_a<ASR::RealCompare_t>(*cast->m_arg)) {
+                ASR::RealCompare_t* real_comp = ASR::down_cast<ASR::RealCompare_t>(cast->m_arg);
+                ArgInfo info = {static_cast<int>(0), ASRUtils::expr_type(real_comp->m_left), current_function->m_args[0], real_comp->m_left};
+                if (!exists_in_arginfo(0, indicies)) {
+                    indicies.push_back(info);
+                }     
+            }
         }
         if (is_a<ASR::FunctionCall_t>(*arg)) {
             get_arg_indices_used_functioncall(ASR::down_cast<ASR::FunctionCall_t>(arg), indicies);
@@ -171,6 +179,19 @@ public:
 
             ASR::call_arg_t arg_for_return_var; arg_for_return_var.loc = arg_expr->base.loc; arg_for_return_var.m_value = arg.arg_expr;
             args_for_return_var.push_back(al, arg_for_return_var);
+        }
+
+        if (is_a<ASR::IntrinsicArrayFunction_t>(*assignment_value)) {
+            ASR::IntrinsicArrayFunction_t* intrinsic_array_func = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(assignment_value);
+            if (is_a<ASR::ArrayPhysicalCast_t>(*intrinsic_array_func->m_args[0])) {
+                ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(intrinsic_array_func->m_args[0]);
+
+                if (is_a<ASR::RealCompare_t>(*cast->m_arg)) {
+                    ASR::RealCompare_t* real_comp = ASR::down_cast<ASR::RealCompare_t>(cast->m_arg);
+                    ASR::expr_t* function_param = ASRUtils::EXPR(ASR::make_FunctionParam_t(al, real_comp->m_left->base.loc, 0, ASRUtils::expr_type(real_comp->m_left), real_comp->m_left));
+                    real_comp->m_left = function_param;
+                }
+            }
         }
         replace_FunctionParam_with_FunctionArgs(assignment_value, new_args);
         new_body.push_back(al, b.Assignment(return_var, assignment_value));
@@ -266,6 +287,17 @@ public:
         ASRUtils::EXPR2VAR(func->m_return_var)->m_type = return_type_copy;
     }
 
+    void visit_Array(const ASR::Array_t &x) {
+        if (!current_scope) return;
+        
+        if (is_function_call_or_intrinsic_array_function(x.m_dims->m_length)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_dims->m_length));
+            this->call_replacer_(x.m_dims->m_length);
+            current_expr = current_expr_copy;
+        }
+    }
+
     void visit_FunctionType(const ASR::FunctionType_t &x) {
         if (!current_scope) return;
 
@@ -339,6 +371,12 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         current_scope = x.m_symtab;
         this->visit_ttype(*x.m_function_signature);
+        for( auto sym: x.m_symtab->get_scope() ) {
+            if ( ASR::is_a<ASR::Variable_t>(*sym.second) ) {
+                ASR::Variable_t* sym_variable = ASR::down_cast<ASR::Variable_t>(sym.second);
+                this->visit_ttype(*sym_variable->m_type);
+            }
+        }
         current_scope = nullptr;
         for( auto sym: x.m_symtab->get_scope() ) {
             visit_symbol(*sym.second);
