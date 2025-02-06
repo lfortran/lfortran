@@ -3556,7 +3556,6 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-                    // if (type=real and init_type=logical) Raise a semantic error
                     if (ASRUtils::is_real(*type) && ASRUtils::is_logical(*init_type)) {
                         diag.add(Diagnostic(
                             "Cannot convert LOGICAL to REAL",

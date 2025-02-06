@@ -74,6 +74,10 @@ program continue_compilation_1
     print*, nint(1000000000000.0000000000000000d0)
     ! open_invalid_kwarg1
     OPEN(file="numbers", hello="world")
+    !logical_to_real_assignment
+    real :: x
+    logical :: y
+    x = y  
     !parameter_01
     i1 = 3
     print*,i1
