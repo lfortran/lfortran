@@ -3941,7 +3941,10 @@ namespace Count {
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int64_t id_mask = 0, id_mask_dim = 1;
         int64_t overload_id = id_mask;
-
+        if (!is_array(expr_type(args[0])) || !is_logical(*expr_type(args[0]))){
+            append_error(diag, "`mask` argument to `count` intrinsic must be a logical array",
+                args[0]->base.loc);
+        }
         ASR::expr_t *mask = args[0], *dim_ = nullptr, *kind = nullptr;
 
         if (args.size() == 2) {
