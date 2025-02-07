@@ -787,6 +787,22 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             xx.n_args = new_args.size();
         }
 
+        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = x.m_symtab;
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*a.second)) {
+                    this->visit_symbol(*a.second);
+                }
+            }
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Module_t>(*a.second)) {
+                    this->visit_symbol(*a.second);
+                }
+            }
+            current_scope = current_scope_copy;
+        }
+        
         void visit_Program(const ASR::Program_t &x) {
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
