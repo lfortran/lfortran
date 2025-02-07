@@ -50,8 +50,8 @@ struct SymbolTable {
         return scope[name];
     }
 
-    SymbolTable* get_global_scope(SymbolTable* current_scope) {
-        SymbolTable* global_scope = current_scope;
+    SymbolTable* get_global_scope() {
+        SymbolTable* global_scope = this;
         while (global_scope->parent) {
             global_scope = global_scope->parent;
         }
