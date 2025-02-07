@@ -1,10 +1,17 @@
 module function_32_mod
 contains
+function istril(y) result(z)
+    real(8), intent(in) :: y(:, :)
+    logical :: z
+    if(any(y /= 2.0_8)) error stop 
+end function
 function matprod(x, y) result(z)
     real(8), intent(in) :: x(:, :)
     real(8), intent(in) :: y(:, :)
     real(8) :: z(size(x, 1), size(y, 2))
     integer :: i, j
+    if(istril(y)) then 
+    end if
     z = 1.0_8
 end function matprod
 function return_type_check(x) result(z)
@@ -22,6 +29,7 @@ program function_32
     real(8) :: full_size(10)
     iact = [2,1]
     nact = -1
+    x = 2
     full_size = return_type_check(x(:,iact)) + 1.0_8
     if(any(full_size /= 2.0_8)) error stop
     x = matprod(x(:,iact), x(:, iact)) + 1.0_8
