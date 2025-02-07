@@ -1108,6 +1108,7 @@ public:
         {"same_type_as", IntrinsicSignature({"a", "b"}, 2, 2)},
         {"len_trim", IntrinsicSignature({"String", "Kind"}, 1, 2)},
         {"int", IntrinsicSignature({"i", "kind"}, 1, 2)},
+        {"random_number", IntrinsicSignature({"harvest"}, 1, 1)},
     };
 
 
