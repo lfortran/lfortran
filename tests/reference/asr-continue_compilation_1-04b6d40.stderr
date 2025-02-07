@@ -196,3 +196,15 @@ semantic error: arguments of `selected_char_kind` intrinsic must be scalar
    |
 96 |     print *, selected_char_kind(['c', 'a', 'b'])
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `mask` argument to `count` intrinsic must be a logical array
+  --> tests/errors/continue_compilation_1.f90:98:20
+   |
+98 |     print *, count(1)
+   |                    ^ 
+
+semantic error: `mask` argument to `count` intrinsic must be a logical array
+  --> tests/errors/continue_compilation_1.f90:99:20
+   |
+99 |     print *, count([2])
+   |                    ^^^ 

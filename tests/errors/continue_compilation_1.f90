@@ -94,4 +94,7 @@ program continue_compilation_1
     print *, selected_int_kind([1,2,3])
     print *, selected_real_kind([1,2,3])
     print *, selected_char_kind(['c', 'a', 'b'])
+
+    print *, count(1)
+    print *, count([2])
 end program
