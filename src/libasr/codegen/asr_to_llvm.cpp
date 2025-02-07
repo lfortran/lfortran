@@ -4808,6 +4808,10 @@ public:
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 builder->CreateStore(llvm_value, llvm_target);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) && 
+                        ASR::is_a<ASR::FunctionType_t>(*value_type)) {
+                llvm_value = llvm_utils->CreateLoad(llvm_value);
+                builder->CreateStore(llvm_value, llvm_target);
             } else if (is_target_class && !is_value_class) {
                 llvm::Value* vtab_address_ptr = llvm_utils->create_gep(llvm_target, 0);
                 llvm_target = llvm_utils->create_gep(llvm_target, 1);

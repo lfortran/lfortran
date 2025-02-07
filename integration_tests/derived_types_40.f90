@@ -18,6 +18,8 @@ module derived_types_40_prob_mod
     procedure(OBJ),nopass, pointer :: calfun => null()
     procedure(OBJ),nopass, pointer :: calfun2 => temp_calfun
  end type PROB_T
+    procedure(OBJ), pointer :: orig_calfun
+
 contains 
 
 subroutine construct(prob)
@@ -35,5 +37,10 @@ end module
 program derived_types_40
     use derived_types_40_prob_mod
     type(PROB_T) :: prob
+    real :: x(5)
+    x = 0
+    orig_calfun => prob % calfun2
+    call orig_calfun(x)
+    if (any(x /= 1.0)) error stop
     call construct(prob)
 end program
