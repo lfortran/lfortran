@@ -174,7 +174,6 @@ public:
             BaseExprReplacer<ReplaceFunctionCall>::replace_IntrinsicArrayFunction(x);
             return ;
         }
-        // std::cout<<x->m_args[0]->type<<std::endl;
         std::vector<ArgInfo> indicies;
         get_arg_indices_used(x, indicies);
 
@@ -200,7 +199,6 @@ public:
             if (is_a<ASR::Var_t>(*arg_expr)) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg_expr);
                 sd.duplicate_symbol(var->m_v, new_scope);
-                // std::cout<<ASRUtils::symbol_name(var->m_v)<<std::endl;
                 ASR::expr_t* new_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_scope->get_symbol(ASRUtils::symbol_name(var->m_v))));
                 new_args.push_back(al, new_var_expr);
             }
