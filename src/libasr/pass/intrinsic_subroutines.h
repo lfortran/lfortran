@@ -113,7 +113,15 @@ namespace RandomSeed {
     }
 
     static inline ASR::asr_t* create_RandomSeed(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1); m_args.push_back(al, args[0]);
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 0);
+        ASRBuilder b(al, loc);
+        for (int i = 0; i < int(args.size()); i++) {
+            if(args[i]) {
+                m_args.push_back(al, args[i]);
+            } else {
+                m_args.push_back(al, b.f32(1));
+            }
+        }
         return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed), m_args.p, m_args.n, 0);
     }
 
@@ -121,31 +129,53 @@ namespace RandomSeed {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
-        std::string c_func_name = "_lfortran_random_seed";
+        std::string c_func_name_1 = "_lfortran_random_seed";
+        std::string c_func_name_2 = "_lfortran_dp_rand_num";
         std::string new_name = "_lcompilers_random_seed_";
         declare_basic_variables(new_name);
-        fill_func_arg_sub("r", arg_types[0], InOut);
-        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
-        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
-            ASR::intentType::In, ASR::abiType::BindC, true);
-        args_1.push_back(al, arg);
-
-        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-           
-        SetChar dep_1; dep_1.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-        fn_symtab->add_symbol(c_func_name, s);
-        dep.push_back(al, s2c(al, c_func_name));
-
-        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-        call_args.push_back(al, b.i32(8));
-        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
-        
+        int flag = 0;
+        if (!is_real(*arg_types[0])) {
+            fill_func_arg_sub("size", arg_types[0], InOut);
+            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 1, arg_types[0]);
+            fn_symtab->add_symbol(c_func_name_1, s_1);
+            dep.push_back(al, s2c(al, c_func_name_1));
+            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+            call_args.push_back(al, b.i32(8));
+            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+        } else {
+            fill_func_arg_sub("size", real32, InOut);
+            body.push_back(al, b.Assignment(args[0], b.f32(0)));
+        }
+        if (!is_real(*arg_types[1])) {
+            flag = 1;
+            fill_func_arg_sub("put", arg_types[1], InOut);
+            body.push_back(al, b.Assignment(args[1], args[1]));
+        } else {
+            fill_func_arg_sub("put", real32, InOut);
+            body.push_back(al, b.Assignment(args[1], b.f32(0)));
+        }
+        if (!is_real(*arg_types[2])) {
+            fill_func_arg_sub("get", arg_types[2], InOut);
+            if (flag == 1) {
+                body.push_back(al, b.Assignment(args[2], args[1]));
+            } else {
+                std::vector<LCompilers::ASR::expr_t *> vals;
+                ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[2]);
+                fn_symtab->add_symbol(c_func_name_2, s_2);
+                dep.push_back(al, s2c(al, c_func_name_2));
+                Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 0);
+                for (int i = 0; i < 8; i++) {
+                    auto xx = declare("i_" + std::to_string(i), int32, Local);
+                    body.push_back(al, b.Assignment(xx, b.Call(s_2, call_args2, int32)));
+                    vals.push_back(xx);
+                }
+                body.push_back(al, b.Assignment(args[2], b.ArrayConstant(vals, extract_type(arg_types[2]), false)));
+            }
+        } else {
+            fill_func_arg_sub("get", real32, InOut);
+            body.push_back(al, b.Assignment(args[2], b.f32(0)));
+        }
+       
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
