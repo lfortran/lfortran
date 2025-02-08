@@ -8,7 +8,7 @@
 namespace LCompilers {
 
     Result<std::unique_ptr<MLIRModule>> asr_to_mlir(Allocator &al,
-        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics);
+        ASR::asr_t &asr, diag::Diagnostics &diagnostics);
 
 } // namespace LCompilers
 

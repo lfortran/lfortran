@@ -398,7 +398,7 @@ loop.body2:                                       ; preds = %loop.head1
   %73 = load i32, i32* %v, align 4
   %74 = mul i32 %72, %73
   %75 = sitofp i32 %74 to float
-  %76 = fcmp one float %71, %75
+  %76 = fcmp une float %71, %75
   br i1 %76, label %then, label %else
 
 then:                                             ; preds = %loop.body2
@@ -513,7 +513,7 @@ loop.body2:                                       ; preds = %loop.head1
   %68 = load i32, i32* %v, align 4
   %69 = mul i32 %67, %68
   %70 = sitofp i32 %69 to float
-  %71 = fcmp one float %66, %70
+  %71 = fcmp une float %66, %70
   br i1 %71, label %then, label %else
 
 then:                                             ; preds = %loop.body2

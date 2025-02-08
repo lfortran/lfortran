@@ -2,11 +2,11 @@
     "basename": "asr-matrix_02_matmul-d389302",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/matrix_02_matmul.f90",
-    "infile_hash": "f9f29eb561649b8537a9026dd909d5127760d548d49dfa42f0b3ef32",
+    "infile_hash": "d02f8fde32ffc602a3915e12a9e9cd79453989c6edcbe310a8dd7d76",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-matrix_02_matmul-d389302.stdout",
-    "stdout_hash": "f4a2c6bbf54b6ed98af270a5cbc8011ef536812f2581462bce0170b9",
+    "stdout_hash": "d113c5137339694574165ae30ea97b862cba8f960079d5f2b93b6c04",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

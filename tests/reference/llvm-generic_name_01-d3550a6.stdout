@@ -133,7 +133,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
   %20 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
   %21 = load float, float* %20, align 4
-  %22 = fcmp one float %21, 2.000000e+00
+  %22 = fcmp une float %21, 2.000000e+00
   br i1 %22, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -147,7 +147,7 @@ else:                                             ; preds = %.entry
 ifcont:                                           ; preds = %else, %then
   %23 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
   %24 = load float, float* %23, align 4
-  %25 = fcmp one float %24, 2.000000e+00
+  %25 = fcmp une float %24, 2.000000e+00
   br i1 %25, label %then3, label %else4
 
 then3:                                            ; preds = %ifcont
@@ -175,7 +175,7 @@ ifcont5:                                          ; preds = %else4, %then3
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
   %36 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
   %37 = load float, float* %36, align 4
-  %38 = fcmp one float %37, 1.000000e+00
+  %38 = fcmp une float %37, 1.000000e+00
   br i1 %38, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont5
@@ -189,7 +189,7 @@ else7:                                            ; preds = %ifcont5
 ifcont8:                                          ; preds = %else7, %then6
   %39 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
   %40 = load float, float* %39, align 4
-  %41 = fcmp one float %40, 1.000000e+00
+  %41 = fcmp une float %40, 1.000000e+00
   br i1 %41, label %then9, label %else10
 
 then9:                                            ; preds = %ifcont8

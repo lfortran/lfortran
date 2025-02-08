@@ -547,9 +547,13 @@ namespace DateAndTime {
 
     static inline ASR::asr_t* create_DateAndTime(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
-        m_args.push_back(al, args[0]);
-        for (int i = 1; i < int(args.size()); i++) {
-            if(args[i]) m_args.push_back(al, args[i]);
+        ASRBuilder b(al, loc);
+        for (int i = 0; i < int(args.size()); i++) {
+            if(args[i]) {
+                m_args.push_back(al, args[i]);
+            } else {
+                m_args.push_back(al, b.f32(1));
+            }
         }
         return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime), m_args.p, m_args.n, 0);
     }
@@ -566,33 +570,53 @@ namespace DateAndTime {
         declare_basic_variables(new_name);
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
 
-        if (arg_types.size() > 0) {
+        if (!is_real(*arg_types[0])) {
             fill_func_arg_sub("date", arg_types[0], InOut);
             ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
             fn_symtab->add_symbol(c_func_name_1, s_1);
             dep.push_back(al, s2c(al, c_func_name_1));
             body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+        } else {
+            fill_func_arg_sub("date", real32, InOut);
+            body.push_back(al, b.Assignment(args[0], b.f32(0)));
         }
-        if (arg_types.size() > 1) {
+        if (!is_real(*arg_types[1])) {
             fill_func_arg_sub("time", arg_types[1], InOut);
             ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
             fn_symtab->add_symbol(c_func_name_2, s_2);
             dep.push_back(al, s2c(al, c_func_name_2));
             body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
+        }  else {
+            fill_func_arg_sub("time", real32, InOut);
+            body.push_back(al, b.Assignment(args[1], b.f32(0)));
         }
-        if (arg_types.size() > 2) {
+        if (!is_real(*arg_types[2])) {
             fill_func_arg_sub("zone", arg_types[2], InOut);
             ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
             fn_symtab->add_symbol(c_func_name_3, s_3);
             dep.push_back(al, s2c(al, c_func_name_3));
             body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
+        } else {
+            fill_func_arg_sub("zone", real32, InOut);
+            body.push_back(al, b.Assignment(args[2], b.f32(0)));
         }
-        if (arg_types.size() > 3) {
+        if (!is_real(*arg_types[3])) {
             fill_func_arg_sub("values", arg_types[3], InOut);
-            ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 0, arg_types[3]);
+            std::vector<LCompilers::ASR::expr_t *> vals;
+            ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
             dep.push_back(al, s2c(al, c_func_name_4));
-            // body.push_back(al, b.Assignment(args[3], b.Call(s_4, call_args, arg_types[3])));
+            for (int i = 0; i < 8; i++) {
+                Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 1);
+                call_args2.push_back(al, b.i32(i+1));
+                auto xx = declare("i_" + std::to_string(i), int32, Local);
+                body.push_back(al, b.Assignment(xx, b.Call(s_4, call_args2, int32)));
+                vals.push_back(xx);
+            }
+            body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
+        } else {
+            fill_func_arg_sub("values", real32, InOut);
+            body.push_back(al, b.Assignment(args[3], b.f32(0)));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

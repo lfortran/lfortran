@@ -10,51 +10,63 @@ syntax error: kind 16 is not supported yet.
 322 |     real*16 :: unsupported_kind
     |     ^^^^^^^ 
 
-syntax error: End module name does not match module name
-   --> tests/errors/continue_compilation_2.f90:338:1 - 340:28
+tokenizer error: Token '?' is not recognized
+   --> tests/errors/continue_compilation_2.f90:325:17
     |
-338 |    module my_module
+325 |     integer  :: ? tokenizer_error
+    |                 ^ token not recognized
+
+tokenizer error: Token '@' is not recognized in `format` statement
+ --> tests/errors/continue_compilation_2.f90:1:2
+  |
+1 | module Geometry
+  |  ^ 
+
+syntax error: End module name does not match module name
+   --> tests/errors/continue_compilation_2.f90:342:1 - 344:28
+    |
+342 |    module my_module
     |    ^^^^^^^^^^^^^^^^...
 ...
     |
-340 |    end module wrong_module_name 
+344 |    end module wrong_module_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:342:1 - 344:29
+   --> tests/errors/continue_compilation_2.f90:346:1 - 348:29
     |
-342 |    subroutine my_subroutine1()
+346 |    subroutine my_subroutine1()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-344 |    end subroutine different_name
+348 |    end subroutine different_name
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End function name does not match function name
-   --> tests/errors/continue_compilation_2.f90:346:1 - 349:28
+   --> tests/errors/continue_compilation_2.f90:350:1 - 353:28
     |
-346 |    function my_function() result(res)
+350 |    function my_function() result(res)
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-349 |    end function not_my_function
+353 |    end function not_my_function
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:351:1 - 353:29
+   --> tests/errors/continue_compilation_2.f90:355:1 - 357:29
     |
-351 |    subroutine my_subroutine2()
+355 |    subroutine my_subroutine2()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-353 |    end subroutine different_name 
+357 |    end subroutine different_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate DIMENSION attribute specified
-  --> tests/errors/continue_compilation_2.f90:22:12
+  --> tests/errors/continue_compilation_2.f90:22:20
    |
 22 |     common /rowns/ rowns(209)
-   |            ^^^^^^^^^^^^^^^^^^ 
+   |                    ^^^^^^^^^^ 
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
   --> tests/errors/continue_compilation_2.f90:30:5 - 31:1
@@ -78,13 +90,13 @@ semantic error: `parameter` attribute conflicts with `allocatable` attribute
 33 |     integer, allocatable, parameter :: v=1
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: kind argument of `int` intrinsic must be a scalar
+semantic error: `kind` argument of `int` intrinsic must be a scalar
    --> tests/errors/continue_compilation_2.f90:286:54
     |
 286 |     integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
     |                                                      ^^^^^^^^^ 
 
-semantic error: kind argument of `int` intrinsic must be a scalar
+semantic error: `kind` argument of `int` intrinsic must be a scalar
    --> tests/errors/continue_compilation_2.f90:288:54
     |
 288 |     integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
@@ -630,7 +642,7 @@ semantic error: The first argument of `cmplx` intrinsic is of complex type, the 
 276 |     print *, cmplx(complex_z , 1)
     |              ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: kind argument of `aint` intrinsic must be a scalar
+semantic error: `kind` argument of `aint` intrinsic must be a scalar
    --> tests/errors/continue_compilation_2.f90:278:36
     |
 278 |     print *, aint([1.0, 2.0, 3.0], [4, 4])
@@ -661,7 +673,7 @@ semantic error: Variable 'foo' is not declared
     |             ^^^ 'foo' is undeclared
 
 semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:335:5
+   --> tests/errors/continue_compilation_2.f90:339:5
     |
-335 |     y = 99  
+339 |     y = 99  
     |     ^ 

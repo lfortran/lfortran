@@ -44,6 +44,7 @@ namespace LCompilers {
                 ASR::down_cast<ASR::Function_t>(x))->m_elemental;
         }
 
+        bool is_args_contains_allocatable(ASR::expr_t* x);
         void fix_dimension(ASR::Cast_t* x, ASR::expr_t* arg_expr);
 
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
@@ -80,7 +81,6 @@ namespace LCompilers {
 
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
                                 Allocator& al);
-
 
         ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
                              Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc,

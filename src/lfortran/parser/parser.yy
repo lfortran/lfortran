@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    227 // shift/reduce conflicts
+%expect    226 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -16,7 +16,7 @@
 // yydebug=1;
 %define parse.trace
 %printer { fprintf(yyo, "%s", $$.str().c_str()); } <string>
-%printer { fprintf(yyo, "%d", $$); } <n>
+%printer { fprintf(yyo, "%lld", $$); } <n>
 %printer { std::cerr << "AST TYPE: " << $$->type; } <ast>
 */
 
@@ -37,9 +37,9 @@ int yylex(LCompilers::LFortran::YYSTYPE *yylval, YYLTYPE *yyloc,
     LCompilers::LFortran::Parser &p)
 {
     if (p.fixed_form) {
-        return p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+        return p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag, false);
     } else {
-        return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+        return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag, p.continue_compilation);
     }
 } // ylex
 
@@ -527,8 +527,11 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> concurrent_control
 %type <vec_var_sym> named_constant_def_list
 %type <var_sym> named_constant_def
-%type <vec_var_sym> common_block_list
-%type <var_sym> common_block
+%type <vec_common_block> common_block_list_top
+%type <vec_common_block> common_block_list
+%type <common_block> common_block
+%type <vec_var_sym> common_block_object_list
+%type <var_sym> common_block_object
 %type <vec_ast> data_set_list
 %type <ast> data_set
 %type <vec_ast> data_object_list
@@ -1326,7 +1329,7 @@ var_decl
         LLOC(@$, @4); $$ = VAR_DECL_PARAMETER($3, TRIVIA_AFTER($5, @$), @$); }
     | KW_NAMELIST "/" id "/" id_list sep {
         LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
-    | KW_COMMON common_block_list sep {
+    | KW_COMMON common_block_list_top sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
@@ -1353,14 +1356,43 @@ named_constant_def
     : id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
     ;
 
+/* The first common block specification in a COMMON statement
+   does not need "//" to represent blank common.  Enumerating
+   all of these rules minimizes shift/reduce conflicts. */
+common_block_list_top
+    : common_block_object_list {
+         LIST_NEW($$); PLIST_ADD($$, COMMON_BLOCK(nullptr, $1, @$)); }
+    | common_block_object_list TK_COMMA common_block_list {
+         COMMON_BLOCK_MERGE($$, nullptr, $1, $3, @$); }
+    | common_block_object_list common_block_list {
+         COMMON_BLOCK_MERGE($$, nullptr, $1, $2, @$); }
+    | common_block_list { $$ = $1; }
+    ;
+
 common_block_list
-    : common_block_list "," common_block { $$ = $1; PLIST_ADD($$, $3); }
+    : common_block_list TK_COMMA common_block { $$ = $1; PLIST_ADD($$, $3); }
+    | common_block_list common_block { $$ = $1; PLIST_ADD($$, $2); }
     | common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
     ;
 
 common_block
-    : "/" id "/" expr {  $$ = VAR_SYM_DIM_INIT($2, nullptr, 0, $4, Equal, @$); }
-    | expr { $$ = VAR_SYM_DIM_EXPR($1, None, @$); }
+    : TK_SLASH id TK_SLASH common_block_object_list  %dprec 2 {
+       $$ = COMMON_BLOCK($2, $4, @$); }
+    | TK_CONCAT common_block_object_list %dprec 1 {
+       $$ = COMMON_BLOCK(nullptr, $2, @$); }
+    | TK_SLASH TK_SLASH common_block_object_list %dprec 1 {
+       $$ = COMMON_BLOCK(nullptr, $3, @$); }
+    ;
+
+common_block_object_list
+    : common_block_object_list "," common_block_object {
+           $$ = $1; PLIST_ADD($$, $3); }
+    | common_block_object { LIST_NEW($$); PLIST_ADD($$, $1); }
+    ;
+
+common_block_object
+    : id { $$ = VAR_SYM_NAME($1, None, @$); }
+    | id "(" array_comp_decl_list ")" { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
     ;
 
 data_set_list

@@ -32,7 +32,6 @@ set(SRC
     pass/nested_vars.cpp
     pass/simplifier.cpp
     pass/where.cpp
-    pass/where_simplifier.cpp
     pass/function_call_in_declaration.cpp
     pass/openmp.cpp
     pass/param_to_const.cpp
@@ -44,9 +43,7 @@ set(SRC
     pass/init_expr.cpp
     pass/implied_do_loops.cpp
     pass/array_op.cpp
-    pass/array_op_simplifier.cpp
     pass/subroutine_from_function.cpp
-    pass/subroutine_from_function_simplifier.cpp
     pass/transform_optional_argument_functions.cpp
     pass/class_constructor.cpp
     pass/arr_slice.cpp
@@ -115,8 +112,7 @@ add_library(asr STATIC ${SRC})
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 if (WITH_LIBUNWIND)
-    target_link_libraries(asr ${LIBUNWIND_LIBRARY})
-    target_link_options(asr PRIVATE -lunwind)
+    target_link_libraries(asr p::libunwind)
 endif()
 if (WITH_BFD)
     target_link_libraries(asr p::bfd)

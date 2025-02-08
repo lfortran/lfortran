@@ -41,6 +41,7 @@ contains
         integer, save :: x(4) = 0 
         if(present(call_back)) then
             call temp3(call_back, x) 
+            call temp3(call_back, x(1:3)) 
         end if 
     end subroutine
 

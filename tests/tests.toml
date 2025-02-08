@@ -772,7 +772,7 @@ cumulative = true
 [[test]]
 filename = "array_op_simplifier_test.f90"
 asr = true
-pass = "simplifier,array_op_simplifier"
+pass = "simplifier,array_op"
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
@@ -1793,6 +1793,10 @@ filename = "format4.f90"
 run = true
 
 [[test]]
+filename = "format5.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/format_11.f90"
 run = true
 
@@ -2577,6 +2581,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "common3.f90"
+ast_f90 = true
+
+[[test]]
 filename = "data1.f90"
 ast = true
 ast_f90 = true
@@ -2758,6 +2766,10 @@ llvm = true
 
 [[test]]
 filename = "../integration_tests/operator_overloading_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/operator_overloading_08.f90"
 asr = true
 
 [[test]]
@@ -4428,3 +4440,12 @@ asr = true
 [[test]]
 filename = "../integration_tests/polymorphic_arguments_02.f90"
 asr = true
+
+[[test]]
+filename = "parse_without_program_line.f90"
+ast = true
+
+[[test]]
+filename = "interactive_parse_without_program_line.f90"
+options = "--interactive-parse"
+ast = true

@@ -151,6 +151,11 @@ public:
     }
 
     void visit_Module(const ASR::Module_t &x) {
+        if (!module) {
+            module = std::make_unique<mlir::ModuleOp>(
+                builder->create<mlir::ModuleOp>(loc,
+                llvm::StringRef("LFortran")));
+        }
         // Visit all the Functions
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
@@ -162,6 +167,10 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
+        if (fnType->m_deftype == ASR::deftypeType::Interface) {
+            // Skip Interface function for now
+            return;
+        }
         Vec<mlir::Type> argsType; argsType.reserve(al, fnType->n_arg_types);
         // Collect all the arguments type
         for (size_t i=0; i<fnType->n_arg_types; i++) {
@@ -277,14 +286,8 @@ public:
 
     template<typename T>
     void visit_Call(const T &x) {
-        mlir::LLVM::LLVMFuncOp fn = module->lookupSymbol<mlir::LLVM::LLVMFuncOp>(
-            ASRUtils::symbol_name(x.m_name));
-        if (!fn) {
-            throw CodeGenError("Function '"+
-                std::string(ASRUtils::symbol_name(x.m_name))
-                +"' not found", x.base.base.loc);
-        }
         Vec<mlir::Value> args; args.reserve(al, x.n_args);
+        Vec<mlir::Type> argTypes; argTypes.reserve(al, x.n_args);
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i].m_value);
             if (!is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(
@@ -303,6 +306,26 @@ public:
             } else {
                 args.push_back(al, tmp);
             }
+            argTypes.push_back(al, voidPtr);
+        }
+        mlir::LLVM::LLVMFuncOp fn = module->lookupSymbol<mlir::LLVM::LLVMFuncOp>(
+            ASRUtils::symbol_name(x.m_name));
+        if (!fn) {
+            // Add function declaration
+            ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
+                down_cast<ASR::Function_t>(x.m_name)->m_function_signature);
+            mlir::Type returnType;
+            if (fnType->m_return_var_type) {
+                returnType = getType(fnType->m_return_var_type);
+            } else {
+                returnType = mlir::LLVM::LLVMVoidType::get(context.get());
+            }
+
+            mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
+                returnType, argTypes.as_vector(), false);
+            mlir::OpBuilder builder0(module->getBodyRegion());
+            fn = builder0.create<mlir::LLVM::LLVMFuncOp>(loc,
+                ASRUtils::symbol_name(x.m_name), llvmFnType);
         }
         tmp = builder->create<mlir::LLVM::CallOp>(loc, fn,
             args.as_vector()).getResult();
@@ -851,10 +874,17 @@ public:
 };
 
 Result<std::unique_ptr<MLIRModule>> asr_to_mlir(Allocator &al,
-        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics) {
+        ASR::asr_t &asr, diag::Diagnostics &diagnostics) {
+    if ( !(ASR::is_a<ASR::unit_t>(asr) ||
+            (ASR::is_a<ASR::Module_t>((ASR::symbol_t &)asr))) ) {
+        diagnostics.diagnostics.push_back(diag::Diagnostic("Unhandled type "
+            "passed as argument: 'asr' to asr_to_mlir(...)",
+            diag::Level::Error, diag::Stage::CodeGen));
+        Error error; return error;
+    }
     ASRToMLIRVisitor v(al);
     try {
-        v.visit_TranslationUnit(asr);
+        v.visit_asr(asr);
     } catch (const CodeGenError &e) {
         diagnostics.diagnostics.push_back(e.d);
         return Error();

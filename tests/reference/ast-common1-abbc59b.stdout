@@ -50,127 +50,136 @@
         )
         (Declaration
             ()
-            [(SimpleAttribute
-                AttrCommon
+            [(AttrCommon
+                [(sample
+                [(A
+                []
+                []
+                ()
+                A
+                None
+                ())
+                (B
+                []
+                []
+                ()
+                B
+                None
+                ())])]
             )]
-            [(sample
             []
-            []
-            ()
-            A
-            Equal
-            ())
-            (()
-            []
-            []
-            ()
-            B
-            None
-            ())]
             ()
         )
         (Declaration
             ()
-            [(SimpleAttribute
-                AttrCommon
-            )]
-            [(c
-            []
-            []
-            ()
-            c
-            Equal
-            ())
-            (b
-            []
-            []
-            ()
-            d
-            Equal
-            ())
-            (()
-            []
-            []
-            ()
-            e
-            None
-            ())
-            (()
-            []
-            []
-            ()
-            f
-            None
-            ())
-            (c
-            []
-            []
-            ()
-            g
-            Equal
-            ())
-            (()
-            []
-            []
-            ()
-            h
-            None
-            ())
-            (()
-            []
-            []
-            ()
-            (FuncCallOrArray
-                i
+            [(AttrCommon
+                [(c
+                [(c
                 []
-                [(()
+                []
+                ()
+                c
+                None
+                ())])
+                (b
+                [(d
+                []
+                []
+                ()
+                d
+                None
+                ())
+                (e
+                []
+                []
+                ()
+                e
+                None
+                ())
+                (f
+                []
+                []
+                ()
+                f
+                None
+                ())])
+                (c
+                [(g
+                []
+                []
+                ()
+                g
+                None
+                ())
+                (h
+                []
+                []
+                ()
+                h
+                None
+                ())
+                (i
+                [(1
                 5
+                DimensionExpr)]
+                []
                 ()
-                0)]
-                []
-                []
-                []
-            )
-            None
-            ())]
+                (FuncCallOrArray
+                    i
+                    []
+                    [(()
+                    5
+                    ()
+                    0)]
+                    []
+                    []
+                    []
+                )
+                None
+                ())])]
+            )]
+            []
             ()
         )
         (Declaration
             ()
-            [(SimpleAttribute
-                AttrCommon
-            )]
-            [(()
-            []
-            []
-            ()
-            x
-            None
-            ())
-            (()
-            []
-            []
-            ()
-            y
-            None
-            ())
-            (()
-            []
-            []
-            ()
-            (FuncCallOrArray
-                z
-                []
+            [(AttrCommon
                 [(()
-                10
+                [(x
+                []
+                []
                 ()
-                0)]
+                x
+                None
+                ())
+                (y
                 []
                 []
+                ()
+                y
+                None
+                ())
+                (z
+                [(1
+                10
+                DimensionExpr)]
                 []
-            )
-            None
-            ())]
+                ()
+                (FuncCallOrArray
+                    z
+                    []
+                    [(()
+                    10
+                    ()
+                    0)]
+                    []
+                    []
+                    []
+                )
+                None
+                ())])]
+            )]
+            []
             ()
         )]
         [(Assignment
@@ -238,23 +247,24 @@
         )
         (Declaration
             ()
-            [(SimpleAttribute
-                AttrCommon
+            [(AttrCommon
+                [(sample
+                [(A
+                []
+                []
+                ()
+                A
+                None
+                ())
+                (B
+                []
+                []
+                ()
+                B
+                None
+                ())])]
             )]
-            [(sample
             []
-            []
-            ()
-            A
-            Equal
-            ())
-            (()
-            []
-            []
-            ()
-            B
-            None
-            ())]
             ()
         )]
         [(Print

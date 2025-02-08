@@ -104,25 +104,46 @@ public:
         return doloop;
     }
 
-    void print_fixed_sized_array(ASR::expr_t *arr_expr,std::vector<ASR::expr_t*>& print_body, const Location &loc) {
-        ASR::dimension_t* m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_expr), m_dims);
-        int m_dim_length = ASR::down_cast<ASR::IntegerConstant_t>(m_dims->m_length)->m_n;
-        Vec<ASR::expr_t*> idx_vars;
-        PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
+    void print_fixed_sized_array_helper(ASR::expr_t *arr_expr, std::vector<ASR::expr_t*> &print_body, 
+                                        const Location &loc, std::vector<ASR::expr_t*> &current_indices, 
+                                        int dim_index, int n_dims, ASR::dimension_t* m_dims, 
+                                        Allocator &al, SymbolTable *current_scope) {
         ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
-        ASR::expr_t* lbound = PassUtils::get_bound(arr_expr, 1, "lbound", al);
-        for (int n = 0; n < n_dims; n++) {
-            ASR::expr_t* idx_var = idx_vars[n];
-            idx_var = lbound;
-            for (int m = 0; m < m_dim_length; m++) {
-                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_var, al, current_scope);
+
+        int m_dim_length = ASR::down_cast<ASR::IntegerConstant_t>(m_dims[dim_index].m_length)->m_n;
+
+        for (int i = 0; i < m_dim_length; i++) {
+            if (dim_index == 0) {
+                Vec<ASR::expr_t*> indices;
+                indices.reserve(al, n_dims);
+                for (int j = 0; j < n_dims; j++) {
+                    indices.push_back(al, current_indices[j]);
+                }
+
+                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, indices, al, current_scope);
                 print_body.push_back(ref);
-                idx_var = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, idx_var,
-                    ASR::binopType::Add, one, int32_type, nullptr));
+            } else {
+                print_fixed_sized_array_helper(arr_expr, print_body, loc, current_indices, 
+                                                dim_index - 1, n_dims, m_dims, al, current_scope);
             }
+
+            current_indices[dim_index] = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, current_indices[dim_index], ASR::binopType::Add, one, int32_type, nullptr));
         }
+        current_indices[dim_index] = PassUtils::get_bound(arr_expr, dim_index + 1, "lbound", al);
+    }
+
+    void print_fixed_sized_array(ASR::expr_t *arr_expr, std::vector<ASR::expr_t*> &print_body, const Location &loc) {
+        ASR::dimension_t* m_dims;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_expr), m_dims);
+
+        std::vector<ASR::expr_t*> current_indices(n_dims);
+        for (int i = 0; i < n_dims; i++) {
+            current_indices[i] = PassUtils::get_bound(arr_expr, i + 1, "lbound", al);
+        }
+
+        print_fixed_sized_array_helper(arr_expr, print_body, loc, current_indices, n_dims - 1, n_dims, m_dims, al, current_scope);
     }
 
     ASR::stmt_t* create_formatstmt(std::vector<ASR::expr_t*> &print_body, ASR::StringFormat_t* format, const Location &loc, ASR::stmtType _type,

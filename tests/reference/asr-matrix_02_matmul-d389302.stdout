@@ -151,6 +151,150 @@
                     matrix_02_matmul
                     []
                     [(Assignment
+                        (Var 2 a)
+                        (ArrayReshape
+                            (ArrayConstant
+                                48
+                                [1, 2, 3, ...., 10, 11, 12]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 12 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (ArrayPhysicalCast
+                                (IntrinsicArrayFunction
+                                    Shape
+                                    [(ArrayPhysicalCast
+                                        (Var 2 a)
+                                        FixedSizeArray
+                                        DescriptorArray
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))
+                                            ((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            DescriptorArray
+                                        )
+                                        ()
+                                    )]
+                                    0
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        [3, 4]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )
+                            (Array
+                                (Integer 4)
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (ArrayReshape
+                            (ArrayConstant
+                                48
+                                [1.00000000e+00, 2.00000000e+00, 3.00000000e+00, ...., 1.00000000e+01, 1.10000000e+01, 1.20000000e+01]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 12 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (ArrayPhysicalCast
+                                (IntrinsicArrayFunction
+                                    Shape
+                                    [(ArrayPhysicalCast
+                                        (Var 2 b)
+                                        FixedSizeArray
+                                        DescriptorArray
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))
+                                            ((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            DescriptorArray
+                                        )
+                                        ()
+                                    )]
+                                    0
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        [4, 3]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
                         (Var 2 cmat)
                         (IntrinsicArrayFunction
                             MatMul

@@ -53,7 +53,7 @@ public:
     ~MLIRModule();
     std::string mlir_str();
     std::string llvm_str();
-    void mlir_to_llvm();
+    void mlir_to_llvm(llvm::LLVMContext &ctx);
 };
 
 class LLVMEvaluator

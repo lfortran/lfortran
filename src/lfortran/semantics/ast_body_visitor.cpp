@@ -3883,6 +3883,14 @@ public:
     void visit_If(const AST::If_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *test_type = ASRUtils::expr_type(test);
+        if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
+            diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
+                ASRUtils::type_to_str(test_type) + " instead",
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label(ASRUtils::type_to_str(test_type) + " expression, expected logical", {test->base.loc})}));
+            throw SemanticAbort();
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);

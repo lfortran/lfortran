@@ -63,6 +63,10 @@ git push REMOTE_NAME fix1
 
 The command will push the new branch `fix1` into your remote repository `REMOTE_NAME` that you created earlier. Additionally, it will also display a link that you can click on to open the new merge request. After clicking on the link, write a title and a concise description then click the "Create" button. Yay you are now all set.
 
+### How to Fix Things: A Tutorial
+
+Here’s a tutorial video that explains LFortran's design and how to fix bugs: [Watch here](https://www.youtube.com/watch?v=yuYsyM08bss).
+
 ## Add New Features
 
 The example below shows the steps it would take to create a caret binary operator **^** which computes the average value of the two operands.

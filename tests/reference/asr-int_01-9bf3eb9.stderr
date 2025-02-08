@@ -1,4 +1,4 @@
-semantic error: kind argument of `int` intrinsic must be a scalar
+semantic error: `kind` argument of `int` intrinsic must be a scalar
  --> tests/errors/int_01.f90:2:54
   |
 2 |     integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])

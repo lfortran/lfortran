@@ -46,7 +46,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
         std::vector<YYSTYPE> *stypes,
         std::vector<Location> *locations,
-        bool fixed_form);
+        bool fixed_form,
+        bool continue_compilation = false);
 
 // Converts token number to text
 std::string token2text(const int token);

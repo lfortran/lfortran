@@ -446,6 +446,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     int decimal = 1;
+    if (val < 0 &&  val_str[0] == '0') {
+        decimal = 0;
+    }
     while (val_str[0] == '0') {
         // Used for the case: 1.123e-10
         memmove(val_str, val_str + 1, strlen(val_str));
@@ -2684,12 +2687,6 @@ LFORTRAN_API char* _lfortran_zone() {
     return result;
 }
 
-LFORTRAN_API int32_t _lfortran_values()
-{   
-    //TODO: correct this according to the definition
-    return 1;
-}
-
 LFORTRAN_API char* _lfortran_time() {
     char* result = (char*)malloc(13 * sizeof(char)); // "hhmmss.sss\0" = 12 + 1
 
@@ -2746,6 +2743,51 @@ LFORTRAN_API char* _lfortran_date() {
     return result; // Return the formatted date string
 }
 
+LFORTRAN_API int32_t _lfortran_values(int32_t n)
+{   int32_t result = 0;
+#if defined(_WIN32)
+    SYSTEMTIME st;
+    GetLocalTime(&st); // Get the current local date
+    if (n == 1) result = st.wYear;
+    else if (n == 2) result = st.wMonth;
+    else if (n == 3) result = st.wDay;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = st.wHour;
+    else if (n == 6) result = st.wMinute;
+    else if (n == 7) result = st.wSecond;
+    else if (n == 8) result = st.wMilliseconds;
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    // For non-ARM-based Apple platforms
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm* ptm = localtime(&tv.tv_sec);
+    int milliseconds = tv.tv_usec / 1000;
+    if (n == 1) result = ptm->tm_year + 1900;
+    else if (n == 2) result = ptm->tm_mon + 1;
+    else if (n == 3) result = ptm->tm_mday;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = ptm->tm_hour;
+    else if (n == 6) result = ptm->tm_min;
+    else if (n == 7) result = ptm->tm_sec;
+    else if (n == 8) result = milliseconds;
+#else
+    // For Linux and other platforms
+    time_t t = time(NULL);
+    struct tm* ptm = localtime(&t);
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    if (n == 1) result = ptm->tm_year + 1900;
+    else if (n == 2) result = ptm->tm_mon + 1;
+    else if (n == 3) result = ptm->tm_mday;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = ptm->tm_hour;
+    else if (n == 6) result = ptm->tm_min;
+    else if (n == 7) result = ptm->tm_sec;
+    else if (n == 8) result = ts.tv_nsec / 1000000;
+#endif
+    return result;
+}
+
 LFORTRAN_API float _lfortran_sp_rand_num() {
     return rand() / (float) RAND_MAX;
 }
@@ -2788,6 +2830,7 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 
 struct UNIT_FILE {
     int32_t unit;
+    char* filename;
     FILE* filep;
     bool unit_file_bin;
 };
@@ -2796,7 +2839,7 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
-void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
+void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin) {
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             unit_to_file[i].unit = unit_num;
@@ -2810,6 +2853,7 @@ void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
         exit(1);
     }
     unit_to_file[last_index_used].unit = unit_num;
+    unit_to_file[last_index_used].filename = filename;
     unit_to_file[last_index_used].filep = filep;
     unit_to_file[last_index_used].unit_file_bin = unit_file_bin;
 }
@@ -2820,6 +2864,17 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin) {
         if( unit_to_file[i].unit == unit_num ) {
             *unit_file_bin = unit_to_file[i].unit_file_bin;
             return unit_to_file[i].filep;
+        }
+    }
+    return NULL;
+}
+
+char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
+    *unit_file_bin = false;
+    for (int i = 0; i <= last_index_used; i++) {
+        if (unit_to_file[i].unit == unit_num) {
+            *unit_file_bin = unit_to_file[i].unit_file_bin;
+            return unit_to_file[i].filename;
         }
     }
     return NULL;
@@ -2838,6 +2893,7 @@ void remove_from_unit_to_file(int32_t unit_num) {
     }
     for( int i = index; i < last_index_used; i++ ) {
         unit_to_file[i].unit = unit_to_file[i + 1].unit;
+        unit_to_file[i].filename = unit_to_file[i + 1].filename;
         unit_to_file[i].filep = unit_to_file[i + 1].filep;
         unit_to_file[i].unit_file_bin = unit_to_file[i + 1].unit_file_bin;
     }
@@ -2920,7 +2976,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         perror(f_name);
         exit(1);
     }
-    store_unit_file(unit_num, fd, unit_file_bin);
+    store_unit_file(unit_num, f_name, fd, unit_file_bin);
     return (int64_t)fd;
 }
 
@@ -3572,6 +3628,38 @@ LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
     sscanf(str, format, *s);
 }
 
+LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i) {
+    sscanf(str, format, i);
+    printf("%s\n", str);
+}
+
+void lfortran_error(const char *message) {
+    fprintf(stderr, "LFORTRAN ERROR: %s\n", message);
+    exit(EXIT_FAILURE);
+}
+
+// TODO: add support for reading comma separated string, into `_arr` functions
+// by accepting array size as an argument as well
+LFORTRAN_API void _lfortran_string_read_i32_array(char *str, char *format, int32_t *arr) {
+    lfortran_error("Reading into an array of int32_t is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_i64_array(char *str, char *format, int64_t *arr) {
+    lfortran_error("Reading into an array of int64_t is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, char *format, float *arr) {
+    lfortran_error("Reading into an array of float is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, char *format, double *arr) {
+    lfortran_error("Reading into an array of double is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, char *format, char **arr) {
+    lfortran_error("Reading into an array of strings is not supported.");
+}
+
 LFORTRAN_API void _lpython_close(int64_t fd)
 {
     if (fclose((FILE*)fd) != 0)
@@ -3581,7 +3669,7 @@ LFORTRAN_API void _lpython_close(int64_t fd)
     }
 }
 
-LFORTRAN_API void _lfortran_close(int32_t unit_num)
+LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
 {
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
@@ -3592,6 +3680,13 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num)
     if (fclose(filep) != 0) {
         printf("Error in closing the file!\n");
         exit(1);
+    }
+    // TODO: Support other `status` specifiers
+    if (status && strcmp(status, "delete") == 0) {
+        if (remove(get_file_name_from_unit(unit_num, &unit_file_bin)) != 0) {
+            printf("Error in deleting file!\n");
+            exit(1);
+        }
     }
     remove_from_unit_to_file(unit_num);
 }

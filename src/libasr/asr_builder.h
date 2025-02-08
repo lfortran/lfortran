@@ -769,6 +769,9 @@ class ASRBuilder {
             case ASR::ttypeType::Logical: {
                 return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
+            case ASR::ttypeType::Complex: {
+                return EXPR(ASR::make_ComplexCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
+            }
             default: {
                 throw LCompilersException("Expression type, " +
                     ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");

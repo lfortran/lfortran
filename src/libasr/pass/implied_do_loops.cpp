@@ -125,8 +125,18 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             } else if ( ASR::is_a<ASR::ArrayItem_t>(*element) ) {
                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(element);
                 if ( ASR::is_a<ASR::Array_t>(*array_item->m_type) ) {
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_item->m_type);
-                    constant_size += ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+                    if ( ASRUtils::is_fixed_size_array(array_item->m_type) ) {
+                        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_item->m_type);
+                        constant_size += ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+                    } else {
+                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                        if( array_size == nullptr ) {
+                            array_size = element_array_size;
+                        } else {
+                            array_size = builder.Add(array_size,
+                                            element_array_size);
+                        }
+                    }
                 } else {
                     constant_size += 1;
                 }
@@ -183,8 +193,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     array_size = builder.Add(array_section_size, array_size);
                 }
             } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*element) &&
-                       ASRUtils::is_array(ASRUtils::expr_type(element)) &&
-                       ASRUtils::use_experimental_simplifier ) {
+                       ASRUtils::is_array(ASRUtils::expr_type(element)) ) {
                 ASR::IntrinsicElementalFunction_t* intrinsic_element_t = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(element);
                 if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
@@ -198,8 +207,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     }
                 }
             } else if( ASR::is_a<ASR::FunctionCall_t>(*element)  &&
-                       ASRUtils::is_array(ASRUtils::expr_type(element)) &&
-                       ASRUtils::use_experimental_simplifier ) {
+                       ASRUtils::is_array(ASRUtils::expr_type(element)) ) {
                 ASR::FunctionCall_t* fc_element_t = ASR::down_cast<ASR::FunctionCall_t>(element);
                 if( ASRUtils::is_fixed_size_array(fc_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(fc_element_t->m_type);
@@ -213,8 +221,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     }
                 }
             } else if( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*element)  &&
-                       ASRUtils::is_array(ASRUtils::expr_type(element)) &&
-                       ASRUtils::use_experimental_simplifier ) {
+                       ASRUtils::is_array(ASRUtils::expr_type(element)) ) {
                 ASR::IntrinsicArrayFunction_t* intrinsic_element_t = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(element);
                 if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
@@ -227,12 +234,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                                         element_array_size);
                     }
                 }
-            } else if( ASR::is_a<ASR::RealBinOp_t>(*element) &&
-                       ASRUtils::is_array(ASRUtils::expr_type(element)) &&
-                       ASRUtils::use_experimental_simplifier ) {
-                ASR::RealBinOp_t* real_binop_t = ASR::down_cast<ASR::RealBinOp_t>(element);
-                if( ASRUtils::is_fixed_size_array(real_binop_t->m_type) ) {
-                    constant_size += ASRUtils::get_fixed_size_of_array(real_binop_t->m_type);
+            } else if( (ASR::is_a<ASR::RealBinOp_t>(*element) || ASR::is_a<ASR::IntegerBinOp_t>(*element) ||
+                       ASR::is_a<ASR::RealUnaryMinus_t>(*element) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*element)) &&
+                       ASRUtils::is_array(ASRUtils::expr_type(element)) ) {
+                ASR::ttype_t* arr_type = ASRUtils::expr_type(element);
+                if( ASRUtils::is_fixed_size_array(arr_type) ) {
+                    constant_size += ASRUtils::get_fixed_size_of_array(arr_type);
                 } else {
                     ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
                     if( array_size == nullptr ) {
@@ -363,13 +370,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
         LCOMPILERS_ASSERT(result_var != nullptr);
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
-        if (ASRUtils::use_experimental_simplifier) {
-            PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var,
-                result_vec, current_scope);
-        } else {
-            PassUtils::ReplacerUtils::replace_ArrayConstructor(x, this,
-                remove_original_statement, result_vec);
-        }
+        PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var,
+            result_vec, current_scope);
         result_var = result_var_copy;
     }
 
@@ -460,11 +462,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     }
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        [[maybe_unused]] bool is_arr_construct_arg = ASR::is_a<ASR::ArrayConstructor_t>(*x->m_arg);
         ASR::BaseExprReplacer<ReplaceArrayConstant>::replace_ArrayPhysicalCast(x);
-        if( ASRUtils::use_experimental_simplifier ) {
-            if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
-                x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
-            }
+        if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
+            x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+        }
+        if( (is_arr_construct_arg && ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x->m_arg))) ){
+            *current_expr = x->m_arg;
+            return;
         }
 
         if( (x->m_old == x->m_new &&
@@ -508,10 +513,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         replacer(al_, pass_result, remove_original_statement,
             resultvar2value, realloc_lhs_, allocate_target),
         parent_body(nullptr) {
-            if( ASRUtils::use_experimental_simplifier ) {
-                call_replacer_on_value = false;
-                replacer.call_replacer_on_value = false;
-            }
+            call_replacer_on_value = false;
+            replacer.call_replacer_on_value = false;
             pass_result.n = 0;
             pass_result.reserve(al, 0);
             print = false, file_write = false;
