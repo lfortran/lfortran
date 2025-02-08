@@ -1,7 +1,7 @@
 syntax error: Token 'print' is unexpected here
-  --> tests/errors/continue_compilation_1.f90:73:5
+  --> tests/errors/continue_compilation_1.f90:80:5
    |
-73 |     print*, nint(1e12_8)
+80 |     print*, nint(1e12_8)
    |     ^^^^^ 
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
@@ -14,131 +14,137 @@ semantic error: Implicit typing is not allowed, enable it by using --implicit-ty
 3 |    
   | ...^ 
 
-semantic error: Assignment to loop variable `i` is not allowed
-  --> tests/errors/continue_compilation_1.f90:18:8
+semantic error: Cannot convert LOGICAL to REAL
+  --> tests/errors/continue_compilation_1.f90:16:20
    |
-18 |        i = i + 1
+16 |     real :: adwf = .true.
+   |                    ^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+  --> tests/errors/continue_compilation_1.f90:17:5
+   |
+17 |     x = y 
+   |     ^   ^ type mismatch (real and logical)
+
+semantic error: Assignment to loop variable `i` is not allowed
+  --> tests/errors/continue_compilation_1.f90:25:8
+   |
+25 |        i = i + 1
    |        ^ 
 
 semantic error:  first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND=4)
-  --> tests/errors/continue_compilation_1.f90:22:13
+  --> tests/errors/continue_compilation_1.f90:29:13
    |
-22 |     print*, maskl(63)
+29 |     print*, maskl(63)
    |             ^^^^^^^^^ 
 
 semantic error: first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND=4)
-  --> tests/errors/continue_compilation_1.f90:24:13
+  --> tests/errors/continue_compilation_1.f90:31:13
    |
-24 |     print*, maskr(63)
+31 |     print*, maskr(63)
    |             ^^^^^^^^^ 
 
 semantic error: first argument of `maskl` must be nonnegative
-  --> tests/errors/continue_compilation_1.f90:26:13
+  --> tests/errors/continue_compilation_1.f90:33:13
    |
-26 |     print*, maskl(-24)
+33 |     print*, maskl(-24)
    |             ^^^^^^^^^^ 
 
 semantic error: first argument of `maskr` must be nonnegative
-  --> tests/errors/continue_compilation_1.f90:28:13
+  --> tests/errors/continue_compilation_1.f90:35:13
    |
-28 |     print*, maskr(-24)
+35 |     print*, maskr(-24)
    |             ^^^^^^^^^^ 
 
 semantic error: The argument `matrix_a` in `matmul` must be of type Integer, Real, Complex or Logical
-  --> tests/errors/continue_compilation_1.f90:30:21
+  --> tests/errors/continue_compilation_1.f90:37:21
    |
-30 |     print *, matmul(a1, b1)
+37 |     print *, matmul(a1, b1)
    |                     ^^ 
 
 semantic error: The argument `matrix_b` in `matmul` must be of type Integer, Real or Complex if first matrix is of numeric type
-  --> tests/errors/continue_compilation_1.f90:32:25
+  --> tests/errors/continue_compilation_1.f90:39:25
    |
-32 |     print *, matmul(b1, a1)
+39 |     print *, matmul(b1, a1)
    |                         ^^ 
 
 semantic error: The `matmul` intrinsic doesn't handle logical type yet
-  --> tests/errors/continue_compilation_1.f90:34:14
+  --> tests/errors/continue_compilation_1.f90:41:14
    |
-34 |     print *, matmul(a2, b1)
+41 |     print *, matmul(a2, b1)
    |              ^^^^^^^^^^^^^^ 
 
 semantic error: `matmul` accepts arrays of rank 1 or 2 only, provided an array with rank, 3
-  --> tests/errors/continue_compilation_1.f90:36:21
+  --> tests/errors/continue_compilation_1.f90:43:21
    |
-36 |     print *, matmul(a3, b1)
+43 |     print *, matmul(a3, b1)
    |                     ^^ 
 
 semantic error: `matmul` accepts arrays of rank 1 or 2 only, provided an array with rank, 4
-  --> tests/errors/continue_compilation_1.f90:38:25
+  --> tests/errors/continue_compilation_1.f90:45:25
    |
-38 |     print *, matmul(b1, b4)
+45 |     print *, matmul(b1, b4)
    |                         ^^ 
 
 semantic error: The argument `matrix_b` in `matmul` must be of rank 2, provided an array with rank, 1
-  --> tests/errors/continue_compilation_1.f90:40:24
+  --> tests/errors/continue_compilation_1.f90:47:24
    |
-40 |     print *, matmul(a, b)
+47 |     print *, matmul(a, b)
    |                        ^ 
 
 semantic error: `transpose` accepts arrays of rank 2 only, provided an array with rank, 1
-  --> tests/errors/continue_compilation_1.f90:42:24
+  --> tests/errors/continue_compilation_1.f90:49:24
    |
-42 |     print *, transpose(a)
+49 |     print *, transpose(a)
    |                        ^ 
 
 semantic error: Kind of all the arguments of Mergebits must be the same
-  --> tests/errors/continue_compilation_1.f90:44:14
+  --> tests/errors/continue_compilation_1.f90:51:14
    |
-44 |     print *, merge_bits(8, 12_8, 2)
+51 |     print *, merge_bits(8, 12_8, 2)
    |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Kind of all the arguments of Mergebits must be the same
-  --> tests/errors/continue_compilation_1.f90:46:14
+  --> tests/errors/continue_compilation_1.f90:53:14
    |
-46 |     print *, merge_bits(a5, b5, c5)
+53 |     print *, merge_bits(a5, b5, c5)
    |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Second argument of modulo cannot be 0
-  --> tests/errors/continue_compilation_1.f90:62:14
+  --> tests/errors/continue_compilation_1.f90:69:14
    |
-62 |     print *, modulo(1, 0)
+69 |     print *, modulo(1, 0)
    |              ^^^^^^^^^^^^ 
 
 semantic error: Function 'my_func' not found (not user defined nor intrinsic)
-  --> tests/errors/continue_compilation_1.f90:64:5
+  --> tests/errors/continue_compilation_1.f90:71:5
    |
-64 |     call my_func(y=1, x=2, z=1)
+71 |     call my_func(y=1, x=2, z=1)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Result of `nint` overflows its kind(4)
-  --> tests/errors/continue_compilation_1.f90:74:13
+  --> tests/errors/continue_compilation_1.f90:81:13
    |
-74 |     print*, nint(1000000000000.0000000000000000d0)
+81 |     print*, nint(1000000000000.0000000000000000d0)
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Invalid argument `hello` supplied
-  --> tests/errors/continue_compilation_1.f90:76:5
+  --> tests/errors/continue_compilation_1.f90:83:5
    |
-76 |     OPEN(file="numbers", hello="world")
+83 |     OPEN(file="numbers", hello="world")
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in assignment, the types must be compatible
-  --> tests/errors/continue_compilation_1.f90:80:5
-   |
-80 |     x = y  
-   |     ^   ^ type mismatch (real and logical)
-
 semantic error: Cannot assign to a constant variable
-  --> tests/errors/continue_compilation_1.f90:78:5
+  --> tests/errors/continue_compilation_1.f90:85:5
    |
-78 |     i1 = 3
+85 |     i1 = 3
    |     ^^^^^^ assignment here
    |
 10 |     integer, parameter :: i1 = 2
    |                           ~~~~~~ declared as constant
 
 semantic error: Expected 0 or 1 arguments, got 2 arguments instead.
-  --> tests/errors/continue_compilation_1.f90:80:5
+  --> tests/errors/continue_compilation_1.f90:87:5
    |
-80 |     call FLUSH(1, 2)
+87 |     call FLUSH(1, 2)
    |     ^^^^^^^^^^^^^^^^ 

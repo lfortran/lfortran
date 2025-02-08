@@ -9,6 +9,13 @@ program continue_compilation_1
     real :: z1
     integer, parameter :: i1 = 2
 
+    real :: x
+    logical :: y
+     
+
+    real :: adwf = .true.
+    x = y 
+    
     a5 = 8
     b5 = 12_8
     c5 = 2
@@ -74,10 +81,6 @@ program continue_compilation_1
     print*, nint(1000000000000.0000000000000000d0)
     ! open_invalid_kwarg1
     OPEN(file="numbers", hello="world")
-    !logical_to_real_assignment
-    real :: x
-    logical :: y
-    x = y  
     !parameter_01
     i1 = 3
     print*,i1
