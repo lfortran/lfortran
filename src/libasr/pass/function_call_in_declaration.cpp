@@ -102,14 +102,6 @@ public:
         if (is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
             arg = cast->m_arg;
-
-            if (is_a<ASR::RealCompare_t>(*cast->m_arg)) {
-                ASR::RealCompare_t* real_comp = ASR::down_cast<ASR::RealCompare_t>(cast->m_arg);
-                ArgInfo info = {static_cast<int>(0), ASRUtils::expr_type(real_comp->m_left), current_function->m_args[0], real_comp->m_left};
-                if (!exists_in_arginfo(0, indicies)) {
-                    indicies.push_back(info);
-                }     
-            }
         }
         if (is_a<ASR::FunctionCall_t>(*arg)) {
             get_arg_indices_used_functioncall(ASR::down_cast<ASR::FunctionCall_t>(arg), indicies);
@@ -141,7 +133,17 @@ public:
             helper_get_arg_indices_used(binop->m_left, indicies);
             helper_get_arg_indices_used(binop->m_right, indicies);
         } else if (is_a<ASR::Var_t>(*arg)) {
-            ArgInfo info = {static_cast<int>(0), ASRUtils::expr_type(arg), current_function->m_args[0], arg};
+            int arg_num = 0;
+            for (size_t i = 0; i < current_function->n_args; i++) {
+                if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                    ASR::Var_t * temp_var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                    if (temp_var->m_v == ASR::down_cast<ASR::Var_t>(arg)->m_v) { 
+                        arg_num = i;
+                        break;
+                    }
+                }
+            }
+            ArgInfo info = {static_cast<int>(arg_num), ASRUtils::expr_type(arg), current_function->m_args[arg_num] , arg};
             if (!exists_in_arginfo(0, indicies)) {
                 indicies.push_back(info);
             }
@@ -172,7 +174,7 @@ public:
             BaseExprReplacer<ReplaceFunctionCall>::replace_IntrinsicArrayFunction(x);
             return ;
         }
-
+        // std::cout<<x->m_args[0]->type<<std::endl;
         std::vector<ArgInfo> indicies;
         get_arg_indices_used(x, indicies);
 
@@ -198,6 +200,7 @@ public:
             if (is_a<ASR::Var_t>(*arg_expr)) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg_expr);
                 sd.duplicate_symbol(var->m_v, new_scope);
+                // std::cout<<ASRUtils::symbol_name(var->m_v)<<std::endl;
                 ASR::expr_t* new_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_scope->get_symbol(ASRUtils::symbol_name(var->m_v))));
                 new_args.push_back(al, new_var_expr);
             }
