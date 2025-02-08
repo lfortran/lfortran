@@ -6298,37 +6298,38 @@ public:
     }
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
-        if( x.n_args + x.n_keywords != 2) {
-            diag.add(Diagnostic("reshape accepts only 2 arguments, got " +
+        if( x.n_args + x.n_keywords < 2 || x.n_args + x.n_keywords > 4 ) {
+            diag.add(Diagnostic("reshape expects number of arguments to be between, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
         AST::expr_t* source = nullptr;
         AST::expr_t* shape = nullptr;
+        AST::expr_t* order = nullptr;
+        AST::expr_t* pad = nullptr;
         if ( x.n_args > 0 ) {
             source = x.m_args[0].m_end;
         }
         if ( x.n_args > 1 ) {
             shape = x.m_args[1].m_end;
         }
-        if ( x.n_keywords > 0 ) {
-            if ( to_lower(x.m_keywords[0].m_arg) == "source" ) {
-                source = x.m_keywords[0].m_value;
-            } else if ( to_lower(x.m_keywords[0].m_arg) == "shape" ) {
-                shape = x.m_keywords[0].m_value;
-            } else {
-                diag.add(Diagnostic("Unrecognized keyword argument " +
-                                    std::string(x.m_keywords[0].m_arg) + " passed to reshape.",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
+        if (x.n_args > 2){
+            pad = x.m_args[2].m_end;
         }
-        if ( x.n_keywords > 1 ) {
-            if ( to_lower(x.m_keywords[1].m_arg) == "source" ) {
-                source = x.m_keywords[1].m_value;
-            } else if ( to_lower(x.m_keywords[1].m_arg) == "shape" ) {
-                shape = x.m_keywords[1].m_value;
+        if (x.n_args > 3){
+            order = x.m_args[2].m_end;
+            pad = x.m_args[2].m_end;
+        }
+        for( size_t i=0;i<x.n_keywords;i++ ) {
+            if( to_lower(x.m_keywords[i].m_arg) == "source" ) {
+                source = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "shape" ) {
+                shape = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "pad" ) {
+                pad = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "order" ) {
+                order = x.m_keywords[i].m_value;
             } else {
                 diag.add(Diagnostic("Unrecognized keyword argument " +
                                     std::string(x.m_keywords[1].m_arg) + " passed to reshape.",
