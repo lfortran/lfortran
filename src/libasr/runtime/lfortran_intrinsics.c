@@ -3633,6 +3633,33 @@ LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i
     printf("%s\n", str);
 }
 
+void lfortran_error(const char *message) {
+    fprintf(stderr, "LFORTRAN ERROR: %s\n", message);
+    exit(EXIT_FAILURE);
+}
+
+// TODO: add support for reading comma separated string, into `_arr` functions
+// by accepting array size as an argument as well
+LFORTRAN_API void _lfortran_string_read_i32_array(char *str, char *format, int32_t *arr) {
+    lfortran_error("Reading into an array of int32_t is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_i64_array(char *str, char *format, int64_t *arr) {
+    lfortran_error("Reading into an array of int64_t is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, char *format, float *arr) {
+    lfortran_error("Reading into an array of float is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, char *format, double *arr) {
+    lfortran_error("Reading into an array of double is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, char *format, char **arr) {
+    lfortran_error("Reading into an array of strings is not supported.");
+}
+
 LFORTRAN_API void _lpython_close(int64_t fd)
 {
     if (fclose((FILE*)fd) != 0)

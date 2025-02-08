@@ -442,3 +442,33 @@ semantic error: Input to `MaxVal` is expected to be of integer, real or characte
     |
 172 |     print *, maxval([c])
     |                     ^^^ must be integer, real or character type
+
+semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer
+   --> tests/errors/continue_compilation_1.f90:174:14
+    |
+174 |     print *, sum(q1)
+    |              ^^^^^^^ 
+
+semantic error: Argument to intrinsic `Product` is expected to be an array, found: real
+   --> tests/errors/continue_compilation_1.f90:175:14
+    |
+175 |     print *, product(r1)
+    |              ^^^^^^^^^^^ 
+
+semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: integer
+   --> tests/errors/continue_compilation_1.f90:176:14
+    |
+176 |     print *, minval(q1)
+    |              ^^^^^^^^^^ 
+
+semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: real
+   --> tests/errors/continue_compilation_1.f90:177:14
+    |
+177 |     print *, maxval(r1)
+    |              ^^^^^^^^^^ 
+
+semantic error: 'mask' argument of 'sum' intrinsic must be logical
+   --> tests/errors/continue_compilation_1.f90:179:14
+    |
+179 |     print *, sum([1, 2, 3], mask = [1, 2, 3])
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

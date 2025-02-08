@@ -680,11 +680,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     }
                 }
 
-                if ( v.proc2newproc.find(subrout_sym) != v.proc2newproc.end() ) {
-                    ASR::symbol_t* new_x_name = resolve_new_proc(x.m_name);
+                if ( v.proc2newproc.find(subrout_sym) != v.proc2newproc.end()) {
+                    ASR::symbol_t* new_x_name = nullptr;
+                    if (is_external && (v.proc2newproc.find(x.m_name) != v.proc2newproc.end())) { 
+                        new_x_name = v.proc2newproc[x.m_name].first;
+                    } else {
+                        new_x_name = resolve_new_proc(x.m_name);
+                    }
                     if ( new_x_name != nullptr ) {
                         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(resolve_new_proc(subrout_sym));
-                        ASR::down_cast<ASR::Variable_t>(x.m_name)->m_type = new_func->m_function_signature;
+                        ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_type = new_func->m_function_signature;
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
@@ -782,16 +787,155 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             xx.n_args = new_args.size();
         }
 
+        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = x.m_symtab;
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*a.second)) {
+                    this->visit_symbol(*a.second);
+                }
+            }
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Module_t>(*a.second)) {
+                    this->visit_symbol(*a.second);
+                }
+            }
+            current_scope = current_scope_copy;
+        }
+        
+        void visit_Program(const ASR::Program_t &x) {
+            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = x.m_symtab;
+            for (auto &a : x.m_symtab->get_scope()) {
+                if(!ASR::is_a<ASR::Function_t>(*a.second)){
+                    this->visit_symbol(*a.second);
+                }
+            }
+            for (auto &a : x.m_symtab->get_scope()) {
+                if(ASR::is_a<ASR::Function_t>(*a.second)){
+                    this->visit_symbol(*a.second);
+                }
+            }
+            this->transform_stmts(xx.m_body, xx.n_body);
+            current_scope = current_scope_copy;
+        }
+
+        void visit_Module(const ASR::Module_t &x) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = x.m_symtab;
+            for (auto &a : x.m_symtab->get_scope()) {
+                if(!ASR::is_a<ASR::Function_t>(*a.second)){
+                    this->visit_symbol(*a.second);
+                }
+            }
+            for (auto &a : x.m_symtab->get_scope()) {
+                if(ASR::is_a<ASR::Function_t>(*a.second)){
+                    this->visit_symbol(*a.second);
+                }
+            }
+            current_scope = current_scope_copy;
+        }
+
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-            visit_Call(x);
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_SubroutineCall(x);
+            visit_Call(x);
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-            visit_Call(x);
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_FunctionCall(x);
+            visit_Call(x);
         }
 
+        void visit_Variable(const ASR::Variable_t &x) {
+            if (v.proc2newproc.find((ASR::symbol_t*) &x) != v.proc2newproc.end()){
+                return;
+            }
+            // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
+            ASR::symbol_t* type_dec = x.m_type_declaration;
+            if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() && 
+                    v.proc2newproc.find(type_dec) == v.proc2newproc.end()){
+                ASR::symbol_t* new_func = resolve_new_proc(ASRUtils::symbol_get_past_external(type_dec));
+                ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(type_dec);
+                std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(type_dec)));
+                ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(v.al, type_dec->base.loc, x_sym_ext->m_parent_symtab,
+                        s2c(v.al, new_func_sym_name), new_func, x_sym_ext->m_module_name,
+                        x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(new_func),
+                        x_sym_ext->m_access));
+                v.proc2newproc[type_dec] = {new_func_sym_, {}};
+                x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
+            }
+            if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() && 
+                ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_dec))){
+                ASR::symbol_t* new_sym = resolve_new_proc(type_dec);
+                if ( new_sym == nullptr ) {
+                    return;
+                }
+                ASR::expr_t* sym_val = x.m_symbolic_value;
+                ASR::expr_t* m_val = x.m_value;
+                ASR::Function_t * subrout = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(new_sym));
+                if (x.m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*x.m_symbolic_value)) {
+                    ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(x.m_symbolic_value);
+                    pnc->m_type = subrout->m_function_signature;
+                    sym_val = (ASR::expr_t*) pnc;
+                }
+                if (x.m_value && ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                    ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(x.m_value);
+                    pnc->m_type = subrout->m_function_signature;
+                    m_val = (ASR::expr_t*) pnc;
+                }
+                std::string new_sym_name = x.m_parent_symtab->get_unique_name(x.m_name);
+                ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(v.al, x.base.base.loc, x.m_parent_symtab, s2c(v.al, new_sym_name), 
+                        x.m_dependencies, x.n_dependencies, x.m_intent, 
+                        sym_val, m_val, x.m_storage, subrout->m_function_signature, 
+                        new_sym, x.m_abi, x.m_access, x.m_presence, x.m_value_attr));
+                v.proc2newproc[(ASR::symbol_t *) &x] = {new_func_sym_, {}};
+                x.m_parent_symtab->add_symbol(new_sym_name, new_func_sym_); 
+                not_to_be_erased.insert(new_func_sym_);
+            }
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Variable(x);
+        }
+
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+            //Case: prob % calfun => temp_calfun (where calfun is procedure variable)
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_StructInstanceMember(x);
+            if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(x.m_m)) != v.proc2newproc.end()) {
+                ASR::symbol_t* new_func_sym_ = x.m_m;
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_m)) {
+                    ASR::symbol_t* new_func = v.proc2newproc[ASRUtils::symbol_get_past_external(x.m_m)].first;
+                    ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_m);
+                    std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(x.m_m));
+                    new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(v.al, x.m_m->base.loc, x_sym_ext->m_parent_symtab,
+                            s2c(v.al, new_func_sym_name), new_func, x_sym_ext->m_module_name,
+                            x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(new_func),
+                            x_sym_ext->m_access));
+                    v.proc2newproc[x.m_m] = {new_func_sym_, {}};
+                    x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
+                } else if (ASR::is_a<ASR::Variable_t>(*x.m_m)) {
+                    new_func_sym_ = v.proc2newproc[x.m_m].first;
+                }
+                ASR::StructInstanceMember_t& sim = const_cast<ASR::StructInstanceMember_t&>(x);
+                sim.m_m = new_func_sym_;
+                sim.m_type = ASRUtils::symbol_type(new_func_sym_);
+            }
+        }
+ 
+        void visit_Struct(const ASR::Struct_t &x) { 
+            //just to update names of changed symbols of Struct
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Struct(x);
+            ASR::Struct_t& ss = const_cast<ASR::Struct_t&>(x);
+            for (size_t i = 0; i < x.n_members; i++) {
+                ASR::symbol_t* old_sym = x.m_symtab->get_symbol(x.m_members[i]);
+                if (v.proc2newproc.find(old_sym) != v.proc2newproc.end()) {
+                    ss.m_members[i] = ASRUtils::symbol_name(v.proc2newproc[old_sym].first);
+                }
+            }
+        }
+      
         void visit_Var(const ASR::Var_t &x) {
             if (v.proc2newproc.find(x.m_v) != v.proc2newproc.end()){
                 ASR::symbol_t* new_sym = v.proc2newproc[x.m_v].first;
@@ -799,43 +943,21 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 vv.m_v = new_sym;
                 return;
             }
-            if(ASR::is_a<ASR::Variable_t>(*x.m_v)){
-                // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
-                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x.m_v);
-                ASR::symbol_t* type_dec = variable->m_type_declaration;
-                if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() && 
-                        v.proc2newproc.find(type_dec) == v.proc2newproc.end()){
-                    ASR::symbol_t* new_func = resolve_new_proc(ASRUtils::symbol_get_past_external(type_dec));
-                    ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(type_dec);
-                    std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(type_dec)));
-                    ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(v.al, type_dec->base.loc, x_sym_ext->m_parent_symtab,
-                            s2c(v.al, new_func_sym_name), new_func, x_sym_ext->m_module_name,
-                            x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(new_func),
-                            x_sym_ext->m_access));
-                    v.proc2newproc[type_dec] = {new_func_sym_, {}};
-                    x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
-                }
-                if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() && 
-                    ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_dec))){
-                    ASR::symbol_t* new_sym = resolve_new_proc(type_dec);
-                    if ( new_sym == nullptr ) {
-                        return;
-                    }
-                    ASR::Function_t * subrout = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(new_sym));
-                    std::string new_sym_name = current_scope->get_unique_name(ASRUtils::symbol_name(x.m_v));
-                    ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
-                        ASRUtils::make_Variable_t_util(v.al, x.m_v->base.loc, current_scope, s2c(v.al, new_sym_name), 
-                            variable->m_dependencies, variable->n_dependencies, variable->m_intent, 
-                            variable->m_symbolic_value, variable->m_value, variable->m_storage, subrout->m_function_signature, 
-                            new_sym, variable->m_abi, variable->m_access, variable->m_presence, variable->m_value_attr));
-                    v.proc2newproc[x.m_v] = {new_func_sym_, {}};
-                    current_scope->add_symbol(new_sym_name, new_func_sym_); 
-                    ASR::Var_t& vv = const_cast<ASR::Var_t&>(x);
-                    vv.m_v = new_func_sym_;
-                    not_to_be_erased.insert(new_func_sym_);
-                }
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_v) &&
+                v.proc2newproc.find(ASRUtils::symbol_get_past_external(x.m_v)) != v.proc2newproc.end()) {
+                ASR::symbol_t* new_func_sym_ = x.m_v;
+                ASR::symbol_t* new_func = v.proc2newproc[ASRUtils::symbol_get_past_external(x.m_v)].first;
+                ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_v);
+                std::string new_func_sym_name = x_sym_ext->m_parent_symtab->get_unique_name(ASRUtils::symbol_name(x.m_v));
+                new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(v.al, x.m_v->base.loc, x_sym_ext->m_parent_symtab,
+                        s2c(v.al, new_func_sym_name), new_func, x_sym_ext->m_module_name,
+                        x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(new_func),
+                        x_sym_ext->m_access));
+                v.proc2newproc[x.m_v] = {new_func_sym_, {}};
+                x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
+                ASR::Var_t& vv = const_cast<ASR::Var_t&>(x);
+                vv.m_v = new_func_sym_;
             }
         }
 };

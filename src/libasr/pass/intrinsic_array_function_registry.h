@@ -635,6 +635,10 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     ASR::expr_t *dim = nullptr;
     ASR::expr_t *mask = nullptr;
     ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+    if (!is_array(array_type)){
+        append_error(diag, "Argument to intrinsic `" + intrinsic_func_name + "` is expected to be an array, found: " + type_to_str(array_type), loc);
+        return nullptr;
+    }
     if (args[1]) {
         if (is_integer(*ASRUtils::expr_type(args[1]))) {
             dim = args[1];
@@ -691,8 +695,13 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 args[1]->base.loc);
             return nullptr;
         }
-    } else if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
-                mask = args[2];
+    } else if (args[2]) {
+        if (!is_logical(*ASRUtils::expr_type(args[2]))) {
+            diag.add(diag::Diagnostic("'mask' argument of 'sum' intrinsic must be logical",
+                diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
+            return nullptr;
+        }
+        mask = args[2];
     }
     if (dim) {
         size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim));
