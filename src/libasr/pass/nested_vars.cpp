@@ -184,14 +184,18 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         // Only attempt if we are actually in a nested function
         if (nesting_depth > 1) {
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::symbol_get_past_external(x.m_v));
-            // If the variable is not defined in the current scope, it is a
-            // "needed global" since we need to be able to access it from the
-            // nested procedure.
-            if ( current_scope && par_func_sym &&
-                 v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
-                nesting_map[par_func_sym].insert(x.m_v);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                visit_symbol(*sym);
+            } else {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                // If the variable is not defined in the current scope, it is a
+                // "needed global" since we need to be able to access it from the
+                // nested procedure.
+                if ( current_scope && par_func_sym &&
+                    v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
+                    nesting_map[par_func_sym].insert(x.m_v);
+                }
             }
         }
     }
