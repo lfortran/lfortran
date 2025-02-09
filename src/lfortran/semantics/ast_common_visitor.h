@@ -6299,7 +6299,7 @@ public:
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
         if( x.n_args + x.n_keywords < 2 || x.n_args + x.n_keywords > 4 ) {
-            diag.add(Diagnostic("reshape expects number of arguments to be between, got " +
+            diag.add(Diagnostic("reshape expects number at least 2 and at most 4 arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -6319,7 +6319,7 @@ public:
         }
         if (x.n_args > 3){
             order = x.m_args[2].m_end;
-            pad = x.m_args[2].m_end;
+            pad = x.m_args[3].m_end;
         }
         for( size_t i=0;i<x.n_keywords;i++ ) {
             if( to_lower(x.m_keywords[i].m_arg) == "source" ) {
@@ -6341,17 +6341,49 @@ public:
         ASR::expr_t* array = ASRUtils::EXPR(tmp);
         this->visit_expr(*shape);
         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
+        ASR::expr_t* order_expr = nullptr;
+        ASR::expr_t* pad_expr = nullptr;
+        if (order!=nullptr){
+            this->visit_expr(*order);
+            order_expr = ASRUtils::EXPR(tmp);
+        }
+        if (pad != nullptr){
+            this->visit_expr(*pad);
+            pad_expr = ASRUtils::EXPR(tmp);
+        }
         if( !ASRUtils::is_array(ASRUtils::expr_type(array)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `source` argument, found " +
                 ASRUtils::type_to_str_python(ASRUtils::expr_type(array)) +
-                " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[0].loc})}));
+                " instead.", Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `shape` argument, found " +
                 ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
-                " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[1].loc})}));
+                " instead.", Level::Error, Stage::Semantic, {Label("", {shape->base.loc})}));
             throw SemanticAbort();
+        }
+        if (order_expr) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(order_expr))){
+                diag.add(Diagnostic("reshape accepts arrays for `order` argument, found " +
+                    ASRUtils::type_to_str_python(ASRUtils::expr_type(order_expr)) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+        if (pad_expr) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(pad_expr))){
+                diag.add(Diagnostic("reshape accepts arrays for `pad` argument, found " +
+                    ASRUtils::type_to_str_python(ASRUtils::expr_type(pad_expr)) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
+                throw SemanticAbort();
+            } else if ( (ASRUtils::type_to_str(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str(ASRUtils::expr_type(array)))|| 
+            (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
+                diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
+                    ASRUtils::type_to_str_python(ASRUtils::expr_type(pad_expr)) + " source type " + ASRUtils::type_to_str_python(ASRUtils::expr_type(array)) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
+                throw SemanticAbort();
+            }
         }
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                             ASRUtils::expr_type(array));
@@ -6393,12 +6425,38 @@ public:
             }
             int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
             if (array_size != -1 &&  new_shape_size > array_size) {
-                diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size specified by `shape` array",
-                                    Level::Error, Stage::Semantic, {Label("`shape` specifies size of " +
-                                    std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
-                                    std::to_string(array_size), {x.base.base.loc})}));
-                throw SemanticAbort();
+                if (!pad){
+                    diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size specified by `shape` array",
+                                        Level::Error, Stage::Semantic, {Label("`shape` specifies size of " +
+                                        std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
+                                        std::to_string(array_size), {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
             }
+            if (order_expr && ASR::is_a<ASR::ArrayConstant_t>(*order_expr)){
+                ASR::ArrayConstant_t* const_order = ASR::down_cast<ASR::ArrayConstant_t>(order_expr);
+                std::vector<int> elements;
+                int64_t n = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(order_expr));
+                for (int64_t i=0; i <  n; i++) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::fetch_ArrayConstant_value(al, const_order, i))){
+                        elements.push_back(ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, i))->m_n);
+                    } else {
+                        diag.add(Diagnostic("reshape accepts `order` array with integer elements",
+                                            Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+                std::set<int> unique_elements(elements.begin(), elements.end());
+                for (int i=1; i<=n; i++){
+                    if (unique_elements.find(i) == unique_elements.end()){
+                        diag.add(Diagnostic("reshape accepts `order` array as a permutation of elements from 1 to " + std::to_string(n),
+                                            Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+
+
+            } 
         } else {
             // otherwise empty dimensions
             dims.reserve(al, n_dims_array_reshape);
