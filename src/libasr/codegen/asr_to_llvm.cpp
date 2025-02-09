@@ -3032,7 +3032,9 @@ public:
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             init_value);
                 } else {
-                    llvm::dyn_cast<llvm::GlobalVariable>(ptr)->setInitializer(llvm::Constant::getNullValue(type));
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            llvm::Constant::getNullValue(type)
+                        );
                 }
             }
             llvm_symtab[h] = ptr;
