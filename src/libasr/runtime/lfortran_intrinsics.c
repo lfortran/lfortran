@@ -495,11 +495,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     if (decimal_digits > width - 3) {
         perror("Specified width is not enough for the specified number of decimal digits.\n");
     }
-    if (decimal_digits > strlen(val_str)) {
-        int k = decimal_digits - (strlen(val_str) - integer_length);
-        for(int i=0; i < k; i++) {
-            strcat(val_str, "0");
-        }
+    int zeroes_needed = decimal_digits - (strlen(val_str) - integer_length);
+    for(int i=0; i < zeroes_needed; i++) {
+        strcat(val_str, "0");
     }
 
     char formatted_value[64] = "";
