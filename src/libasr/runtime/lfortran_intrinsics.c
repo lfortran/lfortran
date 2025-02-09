@@ -483,20 +483,16 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         // decimal = -10, case:  1.123e-10
     }
 
-    if (dot_pos != NULL) {
-        if (width == 0) {
-            if (decimal_digits == 0) {
-                width = 14 + sign_width;
-                decimal_digits = 9;
-            } else {
-                width = decimal_digits + 5 + sign_width;
-            }
+    if (width == 0) {
+        if (decimal_digits == 0) {
+            width = 14 + sign_width;
+            decimal_digits = 9;
+        } else {
+            width = decimal_digits + 5 + sign_width;
         }
-        if (decimal_digits > width - 3) {
-            perror("Specified width is not enough for the specified number of decimal digits.\n");
-        }
-    } else {
-        width = atoi(format + 1);
+    }
+    if (decimal_digits > width - 3) {
+        perror("Specified width is not enough for the specified number of decimal digits.\n");
     }
     if (decimal_digits > strlen(val_str)) {
         int k = decimal_digits - (strlen(val_str) - integer_length);
