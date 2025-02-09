@@ -74,16 +74,13 @@ program intrinsics_1arg
     print *, i1
 
     ! String functions
-    str = adjustl(str = "  text")
+    str = adjustl(string = "  text")
     print *, "'" // str // "'"
 
-    str = adjustr(str = "text  ")
+    str = adjustr(string = "text  ")
     print *, "'" // str // "'"
 
-    i1 = len(str = "hello")
-    print *, i1
-
-    str = trim(str = "hello   ")
+    str = trim(string = "hello   ")
     print *, "'" // str // "'"
 
     ! Kind functions
@@ -115,8 +112,6 @@ program intrinsics_1arg
     integer, allocatable :: arr(:)
     allocate(arr(5))
     print *, allocated(x = arr)
-    print *, shape(x = arr)
-    print *, size(x = arr)
     deallocate(arr)
 
     ! Bit manipulation
