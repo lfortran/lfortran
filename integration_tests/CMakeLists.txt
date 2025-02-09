@@ -437,6 +437,7 @@ RUN(NAME functions_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME functions_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME common_01 LABELS gfortran)
