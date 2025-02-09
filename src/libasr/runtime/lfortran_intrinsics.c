@@ -492,13 +492,16 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         // exponent = "+10"
     }
 
+    int FIXED_CHARS_LENGTH = 1 + 1 + 1; // digit, ., E
+    int exp_length = strlen(exponent);
+
     if (width == 0) {
         if (decimal_digits == 0) {
             decimal_digits = 9;
         }
-        width = sign_width + 2 /* 0.*/ + decimal_digits + 3 /* exp length*/;
+        width = sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length;
     }
-    if (decimal_digits > width - 3) {
+    if (decimal_digits > width - FIXED_CHARS_LENGTH) {
         perror("Specified width is not enough for the specified number of decimal digits.\n");
     }
     int zeroes_needed = decimal_digits - (strlen(val_str) - integer_length);
@@ -507,7 +510,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     char formatted_value[64] = "";
-    int spaces = width - sign_width - decimal_digits - 6;
+    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length);
     // spaces = 2
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
