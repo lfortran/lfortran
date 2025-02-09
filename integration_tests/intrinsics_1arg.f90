@@ -111,7 +111,7 @@ program intrinsics_1arg
     ! Array functions
     integer, allocatable :: arr(:)
     allocate(arr(5))
-    print *, allocated(x = arr)
+    print *, allocated(array = arr)
     deallocate(arr)
 
     ! Bit manipulation

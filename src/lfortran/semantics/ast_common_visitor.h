@@ -1139,7 +1139,7 @@ public:
         {"digits", IntrinsicSignature({"x"}, 1, 1)},
         {"radix", IntrinsicSignature({"x"}, 1, 1)},
         {"present", IntrinsicSignature({"a"}, 1, 1)},
-        {"allocated", IntrinsicSignature({"x"}, 1, 1)},
+        {"allocated", IntrinsicSignature({"array" , "scalar"}, 1, 1)},
         {"leadz", IntrinsicSignature({"i"}, 1, 1)},
         {"trailz", IntrinsicSignature({"i"}, 1, 1)},
         {"random_number", IntrinsicSignature({"harvest"}, 1, 1)},
