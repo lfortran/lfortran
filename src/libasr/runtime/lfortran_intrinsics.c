@@ -503,17 +503,19 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     char formatted_value[64] = "";
     int spaces = width - sign_width - decimal_digits - 6;
     // spaces = 2
-    if (scale > 1) {
-        decimal_digits -= scale - 1;
-    }
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
+    }
+
+    if (scale > 1) {
+        decimal_digits -= scale - 1;
     }
 
     if (sign_width == 1) {
         // adds `-` (negative) sign
         strcat(formatted_value, "-");
     }
+
     if (scale <= 0) {
         strcat(formatted_value, "0.");
         for (int k = 0; k < abs(scale); k++) {
