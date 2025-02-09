@@ -398,20 +398,41 @@ void handle_en(char* format, double val, int scale, char** result, char* c) {
     *result = final_result;
 }
 
+void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
+    *width_digits = -1;
+    *decimal_digits = -1;
+    *exp_digits = -1;
+
+    char *width_digits_pos = format;
+    while (!isdigit(*width_digits_pos)) {
+        width_digits_pos++;
+    }
+    *width_digits = atoi(width_digits_pos);
+
+    // dot_pos exists, we previous checked for it in `parse_fortran_format`
+    char *dot_pos = strchr(format, '.');
+    *decimal_digits = atoi(++dot_pos);
+
+    char *exp_pos = strchr(dot_pos, 'e');
+    if(exp_pos != NULL) {
+        *exp_digits = atoi(++exp_pos);
+    }
+}
+
+
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
-    int width = 0, decimal_digits = 0;
+
+    int width_digits, decimal_digits, exp_digits;
+    parse_deciml_format(format, &width_digits, &decimal_digits, &exp_digits);
+
+    int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
     // integer_part = 11230000128, integer_length = 11
-
-    char *num_pos = format ,*dot_pos = strchr(format, '.');
-    decimal_digits = atoi(++dot_pos);
-    while(!isdigit(*num_pos)) num_pos++;
-    width = atoi(num_pos);
     // width = 10, decimal_digits = 2
 
     char val_str[128];
@@ -428,9 +449,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     // val_str = "11230000128."
 
     int exp = 2;
-    char* exp_loc = strchr(num_pos, 'e');
-    if (exp_loc != NULL) {
-        exp = atoi(++exp_loc);
+    if (exp_digits != -1) {
+        exp = exp_digits;
     }
     // exp = 2;
 
@@ -545,7 +565,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     // formatted_value = "  1.12E"
 
     char exponent[12];
-    if (atoi(num_pos) == 0) {
+    if (width_digits == 0) {
         sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
         sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
