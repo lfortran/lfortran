@@ -494,11 +494,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
 
     if (width == 0) {
         if (decimal_digits == 0) {
-            width = 14 + sign_width;
             decimal_digits = 9;
-        } else {
-            width = decimal_digits + 5 + sign_width;
         }
+        width = sign_width + 2 /* 0.*/ + decimal_digits + 3 /* exp length*/;
     }
     if (decimal_digits > width - 3) {
         perror("Specified width is not enough for the specified number of decimal digits.\n");
