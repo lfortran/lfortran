@@ -484,6 +484,14 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         // decimal = -10, case:  1.123e-10
     }
 
+    char exponent[12];
+    if (width_digits == 0) {
+        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+    } else {
+        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        // exponent = "+10"
+    }
+
     if (width == 0) {
         if (decimal_digits == 0) {
             width = 14 + sign_width;
@@ -562,13 +570,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     strcat(formatted_value, c);
     // formatted_value = "  1.12E"
 
-    char exponent[12];
-    if (width_digits == 0) {
-        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
-    } else {
-        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
-        // exponent = "+10"
-    }
+
 
     strcat(formatted_value, exponent);
     // formatted_value = "  1.12E+10"
