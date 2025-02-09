@@ -437,9 +437,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
 
     #define MAX_SIZE 128
     char val_str[MAX_SIZE] = "";
+    int avail_len_decimal_digits = MAX_SIZE - integer_length - sign_width - 2 /* 0.*/;
     // TODO: This will work for up to `E65.60` but will fail for:
     // print "(E67.62)", 1.23456789101112e-62_8
-    sprintf(val_str, "%.*lf", (MAX_SIZE - integer_length - sign_width - 1 /* dot size*/), val);
+    sprintf(val_str, "%.*lf", avail_len_decimal_digits, val);
     // val_str = "11230000128.00..."
 
     int i = strlen(val_str) - 1;
