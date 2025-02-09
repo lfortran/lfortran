@@ -47,7 +47,6 @@ class ReplaceFunctionCall : public ASR::BaseExprReplacer<ReplaceFunctionCall>
 public:
     Allocator& al;
     SymbolTable* new_function_scope = nullptr;
-    SymbolTable* new_function_scope = nullptr;
     SymbolTable* current_scope = nullptr;
     ASR::expr_t* assignment_value = nullptr;
     ASR::expr_t* call_for_return_var = nullptr;
