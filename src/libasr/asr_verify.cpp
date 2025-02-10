@@ -655,6 +655,8 @@ public:
         const symbol_t *current_sym = &x.base;
         require(symtab_sym == current_sym,
             "Variable's parent symbol table does not point to it");
+        require(current_symtab == symtab,
+            "Variable's parent-symbolTable and actuall parent symbolTable don't match (Maybe inserted from another symbolTable)");
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
             "Variable::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
