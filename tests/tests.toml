@@ -4449,3 +4449,7 @@ ast = true
 filename = "interactive_parse_without_program_line.f90"
 options = "--interactive-parse"
 ast = true
+
+[[test]]
+filename = "interface_generic_procedure_same_name.f90"
+asr = true
