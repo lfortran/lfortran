@@ -8,7 +8,7 @@ program intrinsics_356
     
 contains
 
-    function rand1(m) result(x)
+    impure function rand1(m) result(x)
         implicit none
         integer, intent(in) :: m
         real :: x(max(m, 0))

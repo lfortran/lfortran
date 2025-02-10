@@ -10,7 +10,7 @@ program intrinsics_357
 
 contains
 
-    function rand2(m, n) result(x)
+    impure function rand2(m, n) result(x)
         implicit none
         integer, intent(in) :: m, n
         real :: x(max(m, 0), max(n, 0))
