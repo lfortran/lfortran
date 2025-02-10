@@ -2817,6 +2817,14 @@ LFORTRAN_API double _lfortran_dp_rand_num() {
     return rand() / (double) RAND_MAX;
 }
 
+LFORTRAN_API int32_t _lfortran_int32_rand_num() {
+    return rand();
+}
+
+LFORTRAN_API int64_t _lfortran_int64_rand_num() {
+    return rand();
+}
+
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
             srand(0);

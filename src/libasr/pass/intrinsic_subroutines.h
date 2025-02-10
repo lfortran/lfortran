@@ -160,12 +160,28 @@ namespace RandomSeed {
                 body.push_back(al, b.Assignment(args[2], args[1]));
             } else {
                 std::vector<LCompilers::ASR::expr_t *> vals;
-                ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[2]);
-                fn_symtab->add_symbol(c_func_name_2, s_2);
-                dep.push_back(al, s2c(al, c_func_name_2));
+                std::string c_func = c_func_name_2;
+                int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[2]);
+                if ( is_real(*arg_types[2]) ) {
+                    if (kind == 4) {
+                        c_func = "_lfortran_sp_rand_num";
+                    } else {
+                        c_func = "_lfortran_dp_rand_num";
+                    }
+                } else if ( is_integer(*arg_types[2]) ) {
+                    if (kind == 4) {
+                        c_func = "_lfortran_int32_rand_num";
+                    } else {
+                        c_func = "_lfortran_int64_rand_num";
+                    }
+                }
+                ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func, fn_symtab, 0, arg_types[2]);
+                fn_symtab->add_symbol(c_func, s_2);
+                dep.push_back(al, s2c(al, c_func));
                 Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 0);
+                ASR::ttype_t* elem_type = extract_type(arg_types[2]);
                 for (int i = 0; i < 8; i++) {
-                    auto xx = declare("i_" + std::to_string(i), int32, Local);
+                    auto xx = declare("i_" + std::to_string(i), elem_type, Local);
                     body.push_back(al, b.Assignment(xx, b.Call(s_2, call_args2, int32)));
                     vals.push_back(xx);
                 }
