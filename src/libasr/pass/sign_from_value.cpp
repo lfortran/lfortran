@@ -70,8 +70,7 @@ public:
             return nullptr;
         }
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
-        if( ASRUtils::is_intrinsic_procedure(func) &&
-            std::string(func->m_name).find("sign") == std::string::npos ) {
+        if( std::string(func->m_name).find("_lcompilers_sign_") == std::string::npos ) {
             return nullptr;
         }
         ASR::expr_t *arg0 = func_call->m_args[0].m_value, *arg1 = func_call->m_args[1].m_value;
