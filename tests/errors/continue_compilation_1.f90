@@ -3,16 +3,13 @@ program continue_compilation_1
 
     integer :: a(3), b(3), b1(3, 3), a3(3, 3, 3), b4(3, 3, 3, 3), a5, c5, i, arr1(3), arr2(2, 3), arr3(2, 1, 3)
     character :: a1(3, 3)
-    logical :: y
-    logical :: a2(3, 3), mask1(3), mask2(2, 3), mask3(2, 1, 3), mask4(3, 2), mask5(2, 3, 1)
+    logical :: a2(3, 3), mask1(3), mask2(2, 3), mask3(2, 1, 3), mask4(3, 2), mask5(2, 3, 1), y
     integer(kind=8) :: b5
     real(8) :: y1
     real :: z1
     integer, parameter :: i1 = 2
     character(len=5) :: string = "hello"
 	character(len=1) :: set(2) = ["l", "h"]
-
-    real :: x_real
      
     real :: adwf = .true.
     
@@ -182,5 +179,5 @@ program continue_compilation_1
     print *, maxval(r1)
     
     print *, sum([1, 2, 3], mask = [1, 2, 3])
-    x_real = y 
+    z1 = y 
 end program
