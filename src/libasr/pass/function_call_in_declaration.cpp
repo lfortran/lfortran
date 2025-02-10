@@ -134,6 +134,12 @@ public:
             ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(arg);
             helper_get_arg_indices_used(binop->m_left, indices);
             helper_get_arg_indices_used(binop->m_right, indices);
+        } else if (is_a<ASR::RealUnaryMinus_t>(*arg)) {
+            ASR::RealUnaryMinus_t* r_minus = ASR::down_cast<ASR::RealUnaryMinus_t>(arg);
+            helper_get_arg_indices_used(r_minus->m_arg, indices);
+        } else if (is_a<ASR::IntegerUnaryMinus_t>(*arg)) {
+            ASR::IntegerUnaryMinus_t* i_minus = ASR::down_cast<ASR::IntegerUnaryMinus_t>(arg);
+            helper_get_arg_indices_used(i_minus->m_arg, indices);
         } else if (is_a<ASR::Var_t>(*arg)) {
             int arg_num = -1;
             int i = 0;
