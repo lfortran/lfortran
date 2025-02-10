@@ -266,7 +266,7 @@ namespace RandomNumber {
         std::string new_name = "_lcompilers_random_number_";
 
         declare_basic_variables(new_name);
-        fill_func_arg_sub("r", arg_types[0], InOut);
+        fill_func_arg_sub("r", ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]), InOut);
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
