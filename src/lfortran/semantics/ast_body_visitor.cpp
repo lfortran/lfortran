@@ -314,6 +314,16 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_filename))){
                     a_filename = ASRUtils::cast_string_descriptor_to_pointer(al, a_filename);
                 }
+
+                if (ASR::is_a<ASR::StringConstant_t>(*a_filename)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_filename)->m_s);
+                    rtrim(str);
+                    a_filename = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                al, x.base.base.loc, s2c(al, str),
+                                ASRUtils::TYPE(ASR::make_String_t(
+                                    al, a_filename->base.loc, 1, str.length(),
+                                    nullptr, ASR::string_physical_typeType::PointerString))));
+                }
             } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     diag.add(Diagnostic(
@@ -387,8 +397,8 @@ public:
                 }));
             throw SemanticAbort();
         }
-        tmp = ASR::make_FileOpen_t(al, x.base.base.loc, x.m_label,
-                               a_newunit, a_filename, a_status, a_form);
+        tmp = ASR::make_FileOpen_t(
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }

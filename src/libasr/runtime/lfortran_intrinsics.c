@@ -2943,6 +2943,17 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         form = "formatted";
     }
     bool file_exists[1] = {false};
+
+    size_t len = strlen(f_name);
+    if (*(f_name + len - 1) == ' ') {
+        // trim trailing spaces
+        char* end = f_name + len - 1;
+        while (end > f_name && isspace((unsigned char) *end)) {
+            end--;
+        }
+        *(end + 1) = '\0';
+    }
+
     _lfortran_inquire(f_name, file_exists, -1, NULL, NULL);
     char *access_mode = NULL;
     /*
