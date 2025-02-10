@@ -757,6 +757,23 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
+      - name: Test Numerical Methods Fortran
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
+            cd numerical-methods-fortran
+            export PATH="$(pwd)/../src/bin:$PATH"
+            git checkout -t origin/lf4
+            git checkout 810a03407ab1b209fc5d9181811157b88f4a138b
+            FC=lfortran make
+            ./test_fix_point.exe
+            ./test_integrate_one.exe
+            ./test_linear.exe
+            ./test_newton.exe
+            ./test_ode.exe
+            ./test_probability_distribution.exe
+            ./test_sde.exe
+
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Override cmake version to 3.31.2
         if: contains(matrix.os, 'ubuntu')
