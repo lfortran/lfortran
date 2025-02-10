@@ -1097,7 +1097,7 @@ namespace LCompilers {
             }
             ASRUtils::impl_function instantiate_function =
             ASRUtils::IntrinsicElementalFunctionRegistry::get_instantiate_function(
-                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::FMA));
+                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::SignFromValue));
             Vec<ASR::ttype_t*> arg_types;
             arg_types.reserve(al, 2);
             arg_types.push_back(al, ASRUtils::expr_type(arg0));
