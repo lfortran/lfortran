@@ -278,4 +278,9 @@ bool str_compare(const unsigned char *pos, std::string s) {
     return true;
 }
 
+// trim trailing whitespace from a string in-place
+void rtrim(std::string& str) {
+    str.erase(std::find_if_not(str.rbegin(), str.rend(), ::isspace).base(), str.end());
+}
+
 } // namespace LCompilers
