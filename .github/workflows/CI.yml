@@ -535,7 +535,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 79585cc94cb9fa40400b0e6447871eb477e17292
+            git checkout 1aba062ac90c39e171f722c15b2bc6fafaaff251
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
@@ -547,6 +547,8 @@ jobs:
             ${FC} -c mpi.f90
             ${FC} -c psi_io.f90
             ${FC} -c --cpp --implicit-interface pot3d.F90
+            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi
+            cp pot3d ../bin/
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
