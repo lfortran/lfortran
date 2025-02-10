@@ -53,7 +53,8 @@ public:
 
     bool is_value_one(ASR::expr_t* expr) {
         double value;
-        if( ASRUtils::is_value_constant(expr, value) ) {
+        if( ASRUtils::is_value_constant(expr, value) && 
+            ASRUtils::is_real(*ASRUtils::expr_type(expr)) ) {
             return value == 1.0;
         }
         return false;
