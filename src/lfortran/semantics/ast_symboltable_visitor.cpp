@@ -1674,7 +1674,8 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
-        if( generic_procedures.find(sym_name) != generic_procedures.end() ) {
+        if (generic_procedures.find(sym_name) != generic_procedures.end()
+            || interface_name == to_lower(sym_name)) {
             sym_name = sym_name + "~genericprocedure";
         }
 
