@@ -13,10 +13,13 @@ module mod_arrays_10_size
     real, intent(in) :: xx(:)
     real :: buggy(2*count(xx > 0.0))
     real :: buggy2(2*count(xx > ext_var))
+    real :: buggy3(2*count(xx > -ext_var))
     print * , size(buggy)
     if (size(buggy) /= 6) error stop
     print * , size(buggy2)
     if (size(buggy2) /= 4) error stop
+    print * , size(buggy3)
+    if (size(buggy3) /= 8) error stop
   end subroutine sub
 end module mod_arrays_10_size
 program arrays_10_size
