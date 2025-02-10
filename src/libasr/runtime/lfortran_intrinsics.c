@@ -398,26 +398,49 @@ void handle_en(char* format, double val, int scale, char** result, char* c) {
     *result = final_result;
 }
 
+void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
+    *width_digits = -1;
+    *decimal_digits = -1;
+    *exp_digits = -1;
+
+    char *width_digits_pos = format;
+    while (!isdigit(*width_digits_pos)) {
+        width_digits_pos++;
+    }
+    *width_digits = atoi(width_digits_pos);
+
+    // dot_pos exists, we previous checked for it in `parse_fortran_format`
+    char *dot_pos = strchr(format, '.');
+    *decimal_digits = atoi(++dot_pos);
+
+    char *exp_pos = strchr(dot_pos, 'e');
+    if(exp_pos != NULL) {
+        *exp_digits = atoi(++exp_pos);
+    }
+}
+
+
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
-    int width = 0, decimal_digits = 0;
+
+    int width_digits, decimal_digits, exp_digits;
+    parse_deciml_format(format, &width_digits, &decimal_digits, &exp_digits);
+
+    int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
     // integer_part = 11230000128, integer_length = 11
-
-    char *num_pos = format ,*dot_pos = strchr(format, '.');
-    decimal_digits = atoi(++dot_pos);
-    while(!isdigit(*num_pos)) num_pos++;
-    width = atoi(num_pos);
     // width = 10, decimal_digits = 2
 
-    char val_str[128];
+    #define MAX_SIZE 128
+    char val_str[MAX_SIZE] = "";
+    int avail_len_decimal_digits = MAX_SIZE - integer_length - sign_width - 2 /* 0.*/;
     // TODO: This will work for up to `E65.60` but will fail for:
     // print "(E67.62)", 1.23456789101112e-62_8
-    sprintf(val_str, "%.*lf", (60-integer_length), val);
+    sprintf(val_str, "%.*lf", avail_len_decimal_digits, val);
     // val_str = "11230000128.00..."
 
     int i = strlen(val_str) - 1;
@@ -428,9 +451,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     // val_str = "11230000128."
 
     int exp = 2;
-    char* exp_loc = strchr(num_pos, 'e');
-    if (exp_loc != NULL) {
-        exp = atoi(++exp_loc);
+    if (exp_digits != -1) {
+        exp = exp_digits;
     }
     // exp = 2;
 
@@ -462,42 +484,47 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         // decimal = -10, case:  1.123e-10
     }
 
-    if (dot_pos != NULL) {
-        if (width == 0) {
-            if (decimal_digits == 0) {
-                width = 14 + sign_width;
-                decimal_digits = 9;
-            } else {
-                width = decimal_digits + 5 + sign_width;
-            }
-        }
-        if (decimal_digits > width - 3) {
-            perror("Specified width is not enough for the specified number of decimal digits.\n");
-        }
+    char exponent[12];
+    if (width_digits == 0) {
+        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
-        width = atoi(format + 1);
+        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        // exponent = "+10"
     }
-    if (decimal_digits > strlen(val_str)) {
-        int k = decimal_digits - (strlen(val_str) - integer_length);
-        for(int i=0; i < k; i++) {
-            strcat(val_str, "0");
+
+    int FIXED_CHARS_LENGTH = 1 + 1 + 1; // digit, ., E
+    int exp_length = strlen(exponent);
+
+    if (width == 0) {
+        if (decimal_digits == 0) {
+            decimal_digits = 9;
         }
+        width = sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length;
+    }
+    if (decimal_digits > width - FIXED_CHARS_LENGTH) {
+        perror("Specified width is not enough for the specified number of decimal digits.\n");
+    }
+    int zeroes_needed = decimal_digits - (strlen(val_str) - integer_length);
+    for(int i=0; i < zeroes_needed; i++) {
+        strcat(val_str, "0");
     }
 
     char formatted_value[64] = "";
-    int spaces = width - sign_width - decimal_digits - 6;
+    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length);
     // spaces = 2
-    if (scale > 1) {
-        decimal_digits -= scale - 1;
-    }
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
+    }
+
+    if (scale > 1) {
+        decimal_digits -= scale - 1;
     }
 
     if (sign_width == 1) {
         // adds `-` (negative) sign
         strcat(formatted_value, "-");
     }
+
     if (scale <= 0) {
         strcat(formatted_value, "0.");
         for (int k = 0; k < abs(scale); k++) {
@@ -544,13 +571,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     strcat(formatted_value, c);
     // formatted_value = "  1.12E"
 
-    char exponent[12];
-    if (atoi(num_pos) == 0) {
-        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
-    } else {
-        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
-        // exponent = "+10"
-    }
+
 
     strcat(formatted_value, exponent);
     // formatted_value = "  1.12E+10"
