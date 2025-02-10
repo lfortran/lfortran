@@ -1034,6 +1034,8 @@ RUN(NAME intrinsics_353 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_354 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # minval
 
 RUN(NAME intrinsics_355 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # system_clock
+RUN(NAME intrinsics_356 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_357 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 
