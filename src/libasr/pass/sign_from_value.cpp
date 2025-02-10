@@ -98,8 +98,12 @@ public:
             return ;
         }
 
-        from_sign_from_value = true;
         T& x = const_cast<T&>(x_const);
+        if( x.m_op != ASR::binopType::Mul ) {
+            return ;
+        }
+
+        from_sign_from_value = true;
 
         sign_from_value_var = nullptr;
         visit_expr(*x.m_left);
@@ -114,9 +118,6 @@ public:
         }
         sign_from_value_var = nullptr;
 
-        if( x.m_op != ASR::binopType::Mul ) {
-            return ;
-        }
 
         ASR::expr_t *first_arg = nullptr, *second_arg = nullptr;
 
