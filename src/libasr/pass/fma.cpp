@@ -118,6 +118,42 @@ public:
                                      al, unit, x.base.base.loc, pass_options);
         from_fma = false;
     }
+    //TODO : Use replacer class
+    void visit_Cast(const ASR::Cast_t& x){
+        if(!from_fma) {return;}
+        LCOMPILERS_ASSERT(fma_var == nullptr);
+        visit_expr(*x.m_arg);
+        if(fma_var){
+            ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
+            xx.m_arg = fma_var;
+            fma_var = (ASR::expr_t*)&x;
+        }
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t& x){
+        if(!from_fma) {return;}
+        for(size_t i = 0; i< x.n_args; i++){
+            visit_expr(*(x.m_args[i].m_value));
+            if(fma_var){
+                x.m_args->m_value = fma_var;
+                fma_var = nullptr;
+            }
+        }
+    }
+    void visit_RealCopySign(const ASR::RealCopySign_t& x){
+        if(!from_fma){return;}
+        visit_expr(*x.m_source);
+        if(fma_var){
+            ASR::RealCopySign_t& xx = const_cast<ASR::RealCopySign_t&>(x);
+            xx.m_source = fma_var;
+            fma_var =nullptr;
+        }
+        visit_expr(*x.m_target);
+        if(fma_var){
+            ASR::RealCopySign_t& xx = const_cast<ASR::RealCopySign_t&>(x);
+            xx.m_target = fma_var;
+            fma_var =nullptr;
+        }
+    }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         from_fma = true;
