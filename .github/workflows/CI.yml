@@ -527,6 +527,19 @@ jobs:
             ./build/fortran/example_lincoa_fortran_1_exe
             ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
+            
+            git clean -dfx
+            FC="$(pwd)/../src/bin/lfortran --cpp --fast --skip-pass=fma" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            ./build/fortran/example_bobyqa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_2_exe
+            ./build/fortran/example_bobyqa_fortran_2_exe
+            ./build/fortran/example_uobyqa_fortran_1_exe
+            ./build/fortran/example_uobyqa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_2_exe
 
       - name: Test POT3D
         shell: bash -e -l {0}
