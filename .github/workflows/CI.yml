@@ -515,7 +515,7 @@ jobs:
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
             git checkout -t origin/lf-prima-2
-            git checkout 28240cde03b0c246763bc4017c9e2b2c56350dba
+            git checkout 4561b3c7314f4d1b9dd0aa1e1028485112df60fa
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
@@ -544,8 +544,6 @@ jobs:
             ./build/fortran/example_lincoa_fortran_1_exe
             ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
-
-
 
       - name: Test POT3D
         shell: bash -e -l {0}
