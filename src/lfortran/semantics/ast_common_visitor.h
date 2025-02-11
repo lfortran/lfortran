@@ -3584,7 +3584,14 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-
+                    if (ASRUtils::is_real(*type) && ASRUtils::is_logical(*init_type)) {
+                        diag.add(Diagnostic(
+                            "Cannot convert LOGICAL to REAL",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {init_expr->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                     size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
                     size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
 
