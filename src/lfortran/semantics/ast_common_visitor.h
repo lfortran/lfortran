@@ -6431,6 +6431,38 @@ public:
                                         std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
                                         std::to_string(array_size), {x.base.base.loc})}));
                     throw SemanticAbort();
+                } else if ( ASR::is_a<ASR::ArrayConstant_t>(*pad_expr) ) {
+                    if ( ASR::is_a<ASR::ArrayConstant_t>(*array) ) {
+                        ASR::ttype_t* a_type = ASRUtils::expr_type(array);
+                        a_type = ASRUtils::type_get_past_pointer(a_type);
+                        ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+                        Vec<ASR::expr_t*> elements;
+                        elements.reserve(al, array_size);
+                        ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                        ASR::ArrayConstant_t* const_pad = ASR::down_cast<ASR::ArrayConstant_t>(pad_expr);
+                        for (int i = 0; i < array_size; i++) {
+                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
+                        }
+                        int64_t diff = new_shape_size - array_size;
+                        int pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_expr));
+                        for (int i = 0; i < diff; i++) {
+                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
+                        }
+                        size_t curr_idx = elements.size();
+                        ASR::ttype_t* new_type = ASRUtils::TYPE(
+                            ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
+                                            a_type_->m_physical_type)
+                        );
+                        void *data = ASRUtils::set_ArrayConstant_data(elements.p, curr_idx, a_type_->m_type);
+                        int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
+                        if (ASRUtils::is_character(*a_type_->m_type)) {
+                            n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
+                        }
+                        array = ASRUtils::EXPR(
+                            ASR::make_ArrayConstant_t(al, loc, n_data, data, new_type,
+                                                    ASR::arraystorageType::ColMajor)
+                        );
+                    }
                 }
             }
             if (order_expr && ASR::is_a<ASR::ArrayConstant_t>(*order_expr)){
