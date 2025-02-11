@@ -139,6 +139,21 @@ public:
             }
         }
     }
+    void visit_RealCopySign(const ASR::RealCopySign_t& x){
+        if(!from_fma){return;}
+        visit_expr(*x.m_source);
+        if(fma_var){
+            ASR::RealCopySign_t& xx = const_cast<ASR::RealCopySign_t&>(x);
+            xx.m_source = fma_var;
+            fma_var =nullptr;
+        }
+        visit_expr(*x.m_target);
+        if(fma_var){
+            ASR::RealCopySign_t& xx = const_cast<ASR::RealCopySign_t&>(x);
+            xx.m_target = fma_var;
+            fma_var =nullptr;
+        }
+    }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         from_fma = true;
