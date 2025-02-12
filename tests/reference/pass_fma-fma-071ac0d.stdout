@@ -982,14 +982,30 @@
                             ColMajor
                             ()
                         )
-                        (FunctionCall
-                            1 _lcompilers_optimization_fma_f322
-                            1 _lcompilers_optimization_fma_f322
-                            [((Var 2 r))
-                            ((Var 2 r))
-                            ((Var 2 r))]
-                            (Real 4)
-                            ()
+                        (IntrinsicElementalFunction
+                            Nint
+                            [(IntrinsicElementalFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (FunctionCall
+                                    1 _lcompilers_optimization_fma_f322
+                                    1 _lcompilers_optimization_fma_f322
+                                    [((Var 2 r))
+                                    ((Var 2 r))
+                                    ((Var 2 r))]
+                                    (Real 4)
+                                    ()
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )]
+                            0
+                            (Integer 4)
                             ()
                         )
                         ()
