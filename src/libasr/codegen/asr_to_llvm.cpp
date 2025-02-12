@@ -1149,9 +1149,14 @@ public:
                 ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::symbol_type(tmp_sym))), module.get());
+
+            llvm::Type* dest_type = tp->getPointerTo();
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(tmp_sym))) {
+                // functions are pointers in LLVM, so we do not need to get the pointer to it
+                dest_type = tp;
+            }
             llvm::Value* np = builder->CreateIntToPtr(
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                tp->getPointerTo());
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
             builder->CreateStore(np, target);
         }
     }
