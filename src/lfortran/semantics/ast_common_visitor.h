@@ -6300,7 +6300,7 @@ public:
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
         if( x.n_args + x.n_keywords < 2 || x.n_args + x.n_keywords > 4 ) {
             diag.add(Diagnostic("reshape expects number at least 2 and at most 4 arguments, got " +
-                                std::to_string(x.n_args) + " arguments instead.",
+                                std::to_string(x.n_args + x.n_keywords) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
