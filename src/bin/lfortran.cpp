@@ -51,7 +51,10 @@
 
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
-#include "libasr/lsp.cpp"
+
+#include "bin/utils.h"
+#include "bin/server/cli.h"
+#include "bin/server/interface.h"
 
 #ifdef HAVE_BUILD_TO_WASM
     #include <emscripten/emscripten.h>
@@ -64,6 +67,10 @@ namespace {
 
 using LCompilers::endswith;
 using LCompilers::CompilerOptions;
+
+#ifdef WITH_LSP
+namespace lsi = LCompilers::LLanguageServer::Interface;
+#endif
 
 enum Backend {
     llvm, c, cpp, x86, wasm, fortran, mlir
@@ -2195,8 +2202,6 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> f_flags;
     std::vector<std::string> O_flags;
 
-    CompilerOptions compiler_options;
-    compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
     LCompilers::PassManager lfortran_pass_manager;
@@ -2207,17 +2212,10 @@ int main_app(int argc, char *argv[]) {
     app.add_option("files", arg_files, "Source files");
     app.add_flag("-S", arg_S, "Emit assembly, do not assemble or link");
     app.add_flag("-c", arg_c, "Compile and assemble, do not link");
-    app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
     app.add_flag("-v", arg_v, "Be more verbose");
     app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
     app.add_option("-l", arg_l, "Link library option")->allow_extra_args(false);
     app.add_option("-L", arg_L, "Library path option")->allow_extra_args(false);
-    app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
-    app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
-    app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
-    app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
-        "Convert the linear location info into line + column in the debugging information");
-    app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
     app.add_flag("--version", arg_version, "Display compiler version information");
     app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
     app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
@@ -2227,7 +2225,6 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--cpp", cpp, "Enable C preprocessing");
     app.add_flag("--cpp-infer", cpp_infer, "Use heuristics to infer if a file needs preprocessing");
     app.add_flag("--no-cpp", no_cpp, "Disable C preprocessing");
-    app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
     app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
     app.add_option("--std", arg_standard, "Select standard conformance (lf, f23, legacy)");
     app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescanning");
@@ -2235,14 +2232,9 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
     app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
     app.add_flag("--show-asr", show_asr, "Show ASR for the given file and exit");
-    app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR");
     app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
     app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
     app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
-    app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST");
-    app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format");
-    app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format");
-    app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization");
     app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
     app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
     app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
@@ -2254,60 +2246,23 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
     app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
     app.add_flag("--show-fortran", show_fortran, "Show Fortran translation source for the given file and exit");
-    app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
-    app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
     app.add_flag("--time-report", time_report, "Show compilation time report");
     app.add_flag("--static", static_link, "Create a static executable");
     app.add_flag("--shared", shared_link, "Create a shared executable");
-    app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting");
-    app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
-    app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions");
-    app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
-    app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
     app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str();
-    app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
-    app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
-    app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR");
-    app.add_flag("--rename-symbol", compiler_options.rename_symbol, "Returns list of locations where symbol specified by --line & --column appears in the ASR");
-    app.add_option("--line", compiler_options.line, "Line number for --lookup-name")->capture_default_str();
-    app.add_option("--column", compiler_options.column, "Column number for --lookup-name")->capture_default_str();
-    app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation");
-    app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors");
-    app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
-    app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
-    app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
-    app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
     app.add_flag("--linker", linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str();
     app.add_flag("--linker-path", linker_path, "Use the linker from this path")->capture_default_str();
-    app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
     app.add_flag("--print-targets", print_targets, "Print the registered targets");
-    app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
-    app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
-    app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting");
-    app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
-    app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
-    app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements");
-    app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file");
-    app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
-    app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass");
-    app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically");
-    app.add_flag("--module-mangling", compiler_options.po.module_name_mangling, "Mangles the module name");
-    app.add_flag("--global-mangling", compiler_options.po.global_symbols_mangling, "Mangles all the global symbols");
-    app.add_flag("--intrinsic-mangling", compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
-    app.add_flag("--all-mangling", compiler_options.po.all_symbols_mangling, "Mangles all possible symbols");
-    app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)");
-    app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax");
-    app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore");
-    app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
-    app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
-    app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
-    app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
-    app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
-    app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
 
     // LSP specific options
     app.add_flag("--show-errors", show_errors, "Show errors when LSP is running in the background");
     app.add_flag("--show-document-symbols", show_document_symbols, "Show symbols in lfortran file");
+
+    CompilerOptions compiler_options;
+
+    // NOTE: Initialize compiler_options within the following utility function.
+    // This will allow them to be configured by the language server.
+    LCompilers::CommandLineInterface::init_compiler_options(compiler_options, app);
 
     /*
     * Subcommands:
@@ -2337,6 +2292,11 @@ int main_app(int argc, char *argv[]) {
     pywrap.add_option("--array-order", arg_pywrap_array_order,
             "Select array order (c, f)")->capture_default_str();
 
+#ifdef WITH_LSP
+    // server
+    lsi::CommandLineInterface lsp_cli;
+    CLI::App &server = lsp_cli.prepare(app);
+#endif
 
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
@@ -2477,6 +2437,16 @@ int main_app(int argc, char *argv[]) {
         std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
         return 1;
     }
+
+#ifdef WITH_LSP
+    if (server) {
+      lsi::ExitCode exit_code = lsp_cli.validate();
+      if (exit_code == lsi::ExitCode::SUCCESS) {
+        exit_code = lsp_cli.serve();
+      }
+      return static_cast<int>(exit_code);
+    }
+#endif
 
     if (arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM

@@ -21,20 +21,20 @@ set(SRC
     mod_to_asr.cpp
 
     utils.cpp
-)
+  )
 
-if (WITH_WHEREAMI)
+  if (WITH_WHEREAMI)
     set(SRC ${SRC} ../bin/tpl/whereami/whereami.cpp)
-endif()
+  endif()
 
-if (WITH_XEUS)
+  if (WITH_XEUS)
     set(SRC ${SRC}
-        fortran_kernel.cpp
+      fortran_kernel.cpp
     )
-endif()
-if (WITH_JSON)
+  endif()
+  if (WITH_JSON)
     set(SRC ${SRC}
-        ast_to_json.cpp
+      ast_to_json.cpp
     )
 endif()
 add_library(lfortran_lib STATIC ${SRC})
