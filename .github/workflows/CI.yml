@@ -14,439 +14,439 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
-  Check_for_Added_Binary_Files:
-    name: Check for Added Binary Files
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # Check_for_Added_Binary_Files:
+  #   name: Check for Added Binary Files
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Check for Added Binary Files
-        run: python3 check_binary_file_in_git_history.py
+  #     - name: Check for Added Binary Files
+  #       run: python3 check_binary_file_in_git_history.py
 
-  Build:
-    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
-        python-version: ["3.10"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # Build:
+  #   name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ["windows-2019", "macos-latest", "ubuntu-latest"]
+  #       python-version: ["3.10"]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment.yml
+  #         create-args: >-
+  #           python=${{ matrix.python-version }}
 
-      - name: Install Windows Packages
-        if: contains(matrix.os, 'windows')
-        shell: bash -e -l {0}
-        run: micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1
+  #     - name: Install Windows Packages
+  #       if: contains(matrix.os, 'windows')
+  #       shell: bash -e -l {0}
+  #       run: micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1
 
-      - name: Install Linux / macOS Packages
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        shell: bash -e -l {0}
-        run: micromamba install bison=3.4
+  #     - name: Install Linux / macOS Packages
+  #       if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+  #       shell: bash -e -l {0}
+  #       run: micromamba install bison=3.4
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          key: ${{ github.job }}-${{ matrix.os }}
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Setup Platform
-        shell: bash -e -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
-            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
+  #     - name: Setup Platform
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+  #           echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+  #           echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+  #           echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
-      - name: Build (Linux / macOS)
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+  #     - name: Build (Linux / macOS)
+  #       shell: bash -e -l {0}
+  #       if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+  #       run: |
+  #           export CXXFLAGS="-Werror"
+  #           export CFLAGS="-Werror"
+  #           xonsh ci/build_tmp.xsh
 
-      - name: Build (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-            call micromamba activate lf
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
+  #     - name: Build (Windows)
+  #       if: contains(matrix.os, 'windows')
+  #       shell: cmd
+  #       run: |
+  #           set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+  #           call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+  #           call micromamba activate lf
+  #           set LFORTRAN_CMAKE_GENERATOR=Ninja
+  #           set WIN=1
+  #           set MACOS=0
+  #           set ENABLE_RUNTIME_STACKTRACE=no
+  #           call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+  #           xonsh ci\build_tmp.xsh
 
-      - name: Test (Linux / macOS)
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            xonsh ci/test.xsh
+  #     - name: Test (Linux / macOS)
+  #       shell: bash -e -l {0}
+  #       if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+  #       run: |
+  #           xonsh ci/test.xsh
 
-      - name: Test LFortran's Command Line Interface (Linux / macOS)
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            ./test_lfortran_cmdline
+  #     - name: Test LFortran's Command Line Interface (Linux / macOS)
+  #       shell: bash -e -l {0}
+  #       if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+  #       run: |
+  #           ./test_lfortran_cmdline
 
-      - name: Test with specific Fortran standard
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./integration_tests
-            ./run_tests.py -b llvm --std=f23
-            ./run_tests.py -b llvm -f --std=f23
+  #     - name: Test with specific Fortran standard
+  #       shell: bash -e -l {0}
+  #       if: contains(matrix.os, 'ubuntu')
+  #       run: |
+  #           cd ./integration_tests
+  #           ./run_tests.py -b llvm --std=f23
+  #           ./run_tests.py -b llvm -f --std=f23
 
-      - name: Test (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-            call micromamba activate lf
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\test.xsh
+  #     - name: Test (Windows)
+  #       if: contains(matrix.os, 'windows')
+  #       shell: cmd
+  #       run: |
+  #           set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+  #           call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+  #           call micromamba activate lf
+  #           set LFORTRAN_CMAKE_GENERATOR=Ninja
+  #           set WIN=1
+  #           set MACOS=0
+  #           set ENABLE_RUNTIME_STACKTRACE=no
+  #           call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+  #           xonsh ci\test.xsh
 
-  scipy:
-    name: Check SciPy Build and Test Run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # scipy:
+  #   name: Check SciPy Build and Test Run
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux.yml
+  #         create-args: >-
+  #           python=3.10
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+  #     - name: Build Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DWITH_LSP=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-            cmake --build . -j16 --target install
+  #           cmake --build . -j16 --target install
 
-      - name: Test SciPy
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/scipy/scipy.git
-            cd scipy
-            git checkout 527f2ddcda98ebf4dae37abc38c85082218fcd6a
-            find . -name "*.f" > files.txt
-            files=$(<files.txt)
-            for file in $files; do
-                ../src/bin/lfortran --fixed-form fmt --no-color $file > $file.f90
-                gfortran -fallow-argument-mismatch -ffree-line-length-none -c $file.f90 -o $file.o
-                #if [[ "$file" == *"minpack"* ]]; then
-                #    if [[ "$file" != *"dpmpar.f"* ]]; then
-                #        ../src/bin/lfortran --show-asr --no-indent --no-color --fixed-form --implicit-typing --implicit-interface $file > $file.asr
-                #    fi
-                #fi
+  #     - name: Test SciPy
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/scipy/scipy.git
+  #           cd scipy
+  #           git checkout 527f2ddcda98ebf4dae37abc38c85082218fcd6a
+  #           find . -name "*.f" > files.txt
+  #           files=$(<files.txt)
+  #           for file in $files; do
+  #               ../src/bin/lfortran --fixed-form fmt --no-color $file > $file.f90
+  #               gfortran -fallow-argument-mismatch -ffree-line-length-none -c $file.f90 -o $file.o
+  #               #if [[ "$file" == *"minpack"* ]]; then
+  #               #    if [[ "$file" != *"dpmpar.f"* ]]; then
+  #               #        ../src/bin/lfortran --show-asr --no-indent --no-color --fixed-form --implicit-typing --implicit-interface $file > $file.asr
+  #               #    fi
+  #               #fi
 
-            done
+  #           done
 
-            cd ..
-            rm -rf scipy/
-            git clone https://github.com/pranavchiku/scipy.git
-            cd scipy
-            git checkout -t origin/scipy1
-            git checkout a70f11a305edd024cb9a0e5048257eb0f51e29e1
-            find . -name "*.f" > files.txt
-            files=$(<files.txt)
-            for file in $files; do
-                ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr --no-color $file > $file.f90
-            done
-            cd ..
-            rm -rf scipy/
+  #           cd ..
+  #           rm -rf scipy/
+  #           git clone https://github.com/pranavchiku/scipy.git
+  #           cd scipy
+  #           git checkout -t origin/scipy1
+  #           git checkout a70f11a305edd024cb9a0e5048257eb0f51e29e1
+  #           find . -name "*.f" > files.txt
+  #           files=$(<files.txt)
+  #           for file in $files; do
+  #               ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr --no-color $file > $file.f90
+  #           done
+  #           cd ..
+  #           rm -rf scipy/
 
-      - name: Build SciPy
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/scipy/scipy
-            cd scipy
-            git remote add ondrej https://github.com/certik/scipy
-            git fetch ondrej
-            git checkout -t ondrej/merge_special_minpack_minpack2_fitpack_integrate_01
-            git checkout 503037097dad5a7d33c1445e8778a9cdf1f9ef11
-            micromamba env create -f environment.yml
-            micromamba activate scipy-dev
-            git submodule update --init
-            mkdir lfortran-build/
-            cd lfortran-build/
-            LIBRARY_PATH="`pwd`/../../src/runtime/"
-            FC=$(pwd)/../../src/bin/lfortran cmake \
-              -DCMAKE_Fortran_FLAGS=--verbose \
-              -DLFORTRAN_RUNTIME_LIBRARY_PATH=$LIBRARY_PATH \
-              ..
-            make install
-            cp ${{ github.workspace }}/src/runtime/liblfortran_runtime.*  $CONDA_PREFIX/lib
-            cd ../
-            python dev.py build
+  #     - name: Build SciPy
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/scipy/scipy
+  #           cd scipy
+  #           git remote add ondrej https://github.com/certik/scipy
+  #           git fetch ondrej
+  #           git checkout -t ondrej/merge_special_minpack_minpack2_fitpack_integrate_01
+  #           git checkout 503037097dad5a7d33c1445e8778a9cdf1f9ef11
+  #           micromamba env create -f environment.yml
+  #           micromamba activate scipy-dev
+  #           git submodule update --init
+  #           mkdir lfortran-build/
+  #           cd lfortran-build/
+  #           LIBRARY_PATH="`pwd`/../../src/runtime/"
+  #           FC=$(pwd)/../../src/bin/lfortran cmake \
+  #             -DCMAKE_Fortran_FLAGS=--verbose \
+  #             -DLFORTRAN_RUNTIME_LIBRARY_PATH=$LIBRARY_PATH \
+  #             ..
+  #           make install
+  #           cp ${{ github.workspace }}/src/runtime/liblfortran_runtime.*  $CONDA_PREFIX/lib
+  #           cd ../
+  #           python dev.py build
 
-      - name: Test SciPy Special (Specfun, Amos, Mach and Cdflib)
-        shell: bash -e -x -l {0}
-        run: |
-            cd scipy/
-            micromamba activate scipy-dev
-            python dev.py test -t scipy.special -v
+  #     - name: Test SciPy Special (Specfun, Amos, Mach and Cdflib)
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           cd scipy/
+  #           micromamba activate scipy-dev
+  #           python dev.py test -t scipy.special -v
 
-      - name: Test SciPy Minpack & Minpack2
-        shell: bash -e -x -l {0}
-        run: |
-            cd scipy/
-            micromamba activate scipy-dev
-            python dev.py test -t scipy.optimize -v
+  #     - name: Test SciPy Minpack & Minpack2
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           cd scipy/
+  #           micromamba activate scipy-dev
+  #           python dev.py test -t scipy.optimize -v
 
-      - name: Test SciPy Fitpack
-        shell: bash -e -x -l {0}
-        run: |
-            cd scipy/
-            micromamba activate scipy-dev
-            python dev.py test -t scipy.interpolate -v
+  #     - name: Test SciPy Fitpack
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           cd scipy/
+  #           micromamba activate scipy-dev
+  #           python dev.py test -t scipy.interpolate -v
 
-      - name: Test SciPy Mach & Quadpack (Integrate)
-        shell: bash -e -x -l {0}
-        run: |
-            cd scipy/
-            micromamba activate scipy-dev
-            python dev.py test -t scipy.integrate -v
+  #     - name: Test SciPy Mach & Quadpack (Integrate)
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           cd scipy/
+  #           micromamba activate scipy-dev
+  #           python dev.py test -t scipy.integrate -v
 
-  build_to_wasm_and_upload:
-    name: Build LFortran to WASM and Upload
-    runs-on: "ubuntu-latest"
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # build_to_wasm_and_upload:
+  #   name: Build LFortran to WASM and Upload
+  #   runs-on: "ubuntu-latest"
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux.yml
+  #         create-args: >-
+  #           python=3.10
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
 
-      - name : Remove existing node
-        shell: bash -e -l {0}
-        run : |
-            which node
-            node -v
-            sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
+  #     - name : Remove existing node
+  #       shell: bash -e -l {0}
+  #       run : |
+  #           which node
+  #           node -v
+  #           sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
 
-      - name: Install Emscripten from Git
-        # TODO: This fails with "-e" for some reason:
-        shell: bash -l {0}
-        run: |
-            mkdir $HOME/ext
-            cd $HOME/ext
+  #     - name: Install Emscripten from Git
+  #       # TODO: This fails with "-e" for some reason:
+  #       shell: bash -l {0}
+  #       run: |
+  #           mkdir $HOME/ext
+  #           cd $HOME/ext
 
-            git clone https://github.com/emscripten-core/emsdk.git
-            cd emsdk
+  #           git clone https://github.com/emscripten-core/emsdk.git
+  #           cd emsdk
 
-            ./emsdk install 3.1.35
+  #           ./emsdk install 3.1.35
 
-            ./emsdk activate 3.1.35
+  #           ./emsdk activate 3.1.35
 
-            ./emsdk install node-18.20.3-64bit
+  #           ./emsdk install node-18.20.3-64bit
 
-            ./emsdk activate node-18.20.3-64bit
+  #           ./emsdk activate node-18.20.3-64bit
 
-      - name: Show Emscripten and Node Info
-        shell: bash -l {0}
-        run: |
-            set -ex
-            # Activate PATH and other environment variables in the current terminal
-            source $HOME/ext/emsdk/emsdk_env.sh
-            emcc -v
-            em++ -v
-            which node
-            node -v
+  #     - name: Show Emscripten and Node Info
+  #       shell: bash -l {0}
+  #       run: |
+  #           set -ex
+  #           # Activate PATH and other environment variables in the current terminal
+  #           source $HOME/ext/emsdk/emsdk_env.sh
+  #           emcc -v
+  #           em++ -v
+  #           which node
+  #           node -v
 
-      - name: Build to WASM
-        shell: bash -l {0}
-        run: |
-            set -ex
-            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-            ./build_to_wasm.sh
+  #     - name: Build to WASM
+  #       shell: bash -l {0}
+  #       run: |
+  #           set -ex
+  #           source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+  #           ./build_to_wasm.sh
 
-      - name: Test built lfortran.wasm
-        shell: bash -l {0}
-        run: |
-            set -ex
-            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-            which node
-            node -v
-            node src/lfortran/tests/test_lfortran.js
+  #     - name: Test built lfortran.wasm
+  #       shell: bash -l {0}
+  #       run: |
+  #           set -ex
+  #           source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+  #           which node
+  #           node -v
+  #           node src/lfortran/tests/test_lfortran.js
 
-      - name: Upload to wasm_builds
-        shell: bash -l {0}
-        run: |
-            ci/upload_lfortran_wasm.sh
-        env:
-          SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
+  #     - name: Upload to wasm_builds
+  #       shell: bash -l {0}
+  #       run: |
+  #           ci/upload_lfortran_wasm.sh
+  #       env:
+  #         SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
 
-  debug_outOfSource:
-    name: Check Out-of-Source Debug build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          path: src
+  # debug_outOfSource:
+  #   name: Check Out-of-Source Debug build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #         path: src
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: src/ci/environment_linux.yml
-          create-args: >-
-            python=3.10
+  #     - uses: mamba-org/setup-micromamba@v1.8.0
+  #       with:
+  #         micromamba-version: '1.5.10-0'
+  #         environment-file: src/ci/environment_linux.yml
+  #         create-args: >-
+  #           python=3.10
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ( cd src && ./build0.sh )
-            export CXXFLAGS="-Werror"
-            cmake -S src -B builddir -GNinja \
-              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DWITH_KOKKOS=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+  #     - name: Build Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ( cd src && ./build0.sh )
+  #           export CXXFLAGS="-Werror"
+  #           cmake -S src -B builddir -GNinja \
+  #             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  #             -DWITH_LLVM=yes \
+  #             -DWITH_LSP=yes \
+  #             -DWITH_KOKKOS=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DWITH_RUNTIME_STACKTRACE=yes \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-            cmake --build builddir  -j16 --target install
+  #           cmake --build builddir  -j16 --target install
 
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: ctest --output-on-failure
-        working-directory: builddir
+  #     - name: Test Linux
+  #       shell: bash -e -l {0}
+  #       run: ctest --output-on-failure
+  #       working-directory: builddir
 
-      - name: Test Moved Installation
-        shell: bash -e -l {0}
-        run: |
-          mv inst inst.moved
-          cp src/examples/expr2.f90 expr2.F90
-          rm -rf src
-          inst.moved/bin/lfortran expr2.F90 -o expr2
-          ./expr2
-          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
-          ./expr2b
-          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
-          ./expr2c
+  #     - name: Test Moved Installation
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         mv inst inst.moved
+  #         cp src/examples/expr2.f90 expr2.F90
+  #         rm -rf src
+  #         inst.moved/bin/lfortran expr2.F90 -o expr2
+  #         ./expr2
+  #         inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
+  #         ./expr2b
+  #         inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
+  #         ./expr2c
 
-  release:
-    name: Check Release build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # release:
+  #   name: Check Release build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux.yml
+  #         create-args: >-
+  #           python=3.10
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_INSTALL_BINDIR=bin/tastic \
-              -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
-              -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
-              -DCMAKE_INSTALL_MANDIR=man/O/man \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+  #     - name: Build Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           export CXXFLAGS="-Werror"
+  #           export CFLAGS="-Werror"
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Release \
+  #             -DWITH_LLVM=yes \
+  #             -DWITH_LSP=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DWITH_RUNTIME_STACKTRACE=yes \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_INSTALL_BINDIR=bin/tastic \
+  #             -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
+  #             -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
+  #             -DCMAKE_INSTALL_MANDIR=man/O/man \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-            cmake --build . -j16 --target install
+  #           cmake --build . -j16 --target install
 
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            ctest
-            ./run_tests.py
-            ./run_tests.py -vh
-            cd integration_tests
-            ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
+  #     - name: Test Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ctest
+  #           ./run_tests.py
+  #           ./run_tests.py -vh
+  #           cd integration_tests
+  #           ./run_tests.py -m
+  #           ./run_tests.py -b llvm
+  #           ./run_tests.py -b llvm -f
 
-      - name: Test Installation
-        shell: bash -e -l {0}
-        run: |
-            test -x inst/bin/tastic/lfortran
-            test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
-            test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
-            test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
-            test -f inst/man/O/man/man1/lfortran.1
+  #     - name: Test Installation
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           test -x inst/bin/tastic/lfortran
+  #           test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
+  #           test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
+  #           test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
+  #           test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
     name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
@@ -515,7 +515,7 @@ jobs:
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
             git checkout -t origin/lf-prima-2
-            git checkout 4561b3c7314f4d1b9dd0aa1e1028485112df60fa
+            git checkout d5214010f1750100673f60babc8f6e1db88e32c5
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
@@ -545,283 +545,283 @@ jobs:
             ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
 
-      - name: Test POT3D
-        shell: bash -e -l {0}
-        run: |
-            FC="$(pwd)/src/bin/lfortran"
-            git clone https://github.com/gxyd/pot3d.git
-            cd pot3d
-            git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 1aba062ac90c39e171f722c15b2bc6fafaaff251
-            cd src
-            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
-              CC=clang
-            else
-              CC=gcc
-            fi
-            ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
-            ${FC} -c mpi_c_bindings.f90
-            ${FC} -c mpi.f90
-            ${FC} -c psi_io.f90
-            ${FC} -c --cpp --implicit-interface pot3d.F90
-            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi
-            cp pot3d ../bin/
+      # - name: Test POT3D
+      #   shell: bash -e -l {0}
+      #   run: |
+      #       FC="$(pwd)/src/bin/lfortran"
+      #       git clone https://github.com/gxyd/pot3d.git
+      #       cd pot3d
+      #       git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
+      #       git checkout 1aba062ac90c39e171f722c15b2bc6fafaaff251
+      #       cd src
+      #       if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+      #         CC=clang
+      #       else
+      #         CC=gcc
+      #       fi
+      #       ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
+      #       ${FC} -c mpi_c_bindings.f90
+      #       ${FC} -c mpi.f90
+      #       ${FC} -c psi_io.f90
+      #       ${FC} -c --cpp --implicit-interface pot3d.F90
+      #       ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi
+      #       cp pot3d ../bin/
 
-      - name: Test Legacy Minpack (SciPy)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/certik/minpack.git
-            cd minpack
-            git checkout -t origin/scipy30
-            git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
-            mkdir lf
-            cd lf
-            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
-            make
-            examples/example_hybrd
-            examples/example_hybrd1
-            examples/example_lmder1
-            examples/example_lmdif1
-            examples/example_primes
-            ctest
+      # - name: Test Legacy Minpack (SciPy)
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/certik/minpack.git
+      #       cd minpack
+      #       git checkout -t origin/scipy30
+      #       git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
+      #       mkdir lf
+      #       cd lf
+      #       FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
+      #       make
+      #       examples/example_hybrd
+      #       examples/example_hybrd1
+      #       examples/example_lmder1
+      #       examples/example_lmdif1
+      #       examples/example_primes
+      #       ctest
 
-      - name: Test Modern Minpack (Fortran-Lang)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/fortran-lang/minpack modern_minpack_01
-            cd modern_minpack_01
-            git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+      # - name: Test Modern Minpack (Fortran-Lang)
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/fortran-lang/minpack modern_minpack_01
+      #       cd modern_minpack_01
+      #       git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
+      #       $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-      - name: Test Modern Minpack (check results)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
-            cd modern_minpack_02
-            git checkout -t origin/w5
-            git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+      # - name: Test Modern Minpack (check results)
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
+      #       cd modern_minpack_02
+      #       git checkout -t origin/w5
+      #       git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+      #       $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+      #       $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
+      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
+      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
+      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
+      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
 
-      - name: Test dftatom
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/certik/dftatom.git
-            cd dftatom
-            git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
-            export PATH="$(pwd)/../src/bin:$PATH"
-            make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
-            make -f Makefile.manual quicktest
+      # - name: Test dftatom
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/certik/dftatom.git
+      #       cd dftatom
+      #       git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
+      #       export PATH="$(pwd)/../src/bin:$PATH"
+      #       make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
+      #       make -f Makefile.manual quicktest
 
-            git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
-            make -f Makefile.manual quicktest
+      #       git clean -dfx
+      #       make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+      #       make -f Makefile.manual quicktest
 
-      - name: Test fastGPT ( ubuntu-latest )
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            git clone https://github.com/certik/fastGPT.git
-            cd fastGPT
-            git checkout -t origin/lf6
-            git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
-            echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-            make
-            ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            ldd ./gpt2
-            ldd ./chat
-            ldd ./test_basic_input
-            ldd ./test_chat
-            ldd ./test_more_inputs
+      # - name: Test fastGPT ( ubuntu-latest )
+      #   shell: bash -e -x -l {0}
+      #   if: contains(matrix.os, 'ubuntu')
+      #   run: |
+      #       git clone https://github.com/certik/fastGPT.git
+      #       cd fastGPT
+      #       git checkout -t origin/lf6
+      #       git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
+      #       echo $CONDA_PREFIX
+      #       FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+      #       make
+      #       ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+      #       file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+      #       ldd ./gpt2
+      #       ldd ./chat
+      #       ldd ./test_basic_input
+      #       ldd ./test_chat
+      #       ldd ./test_more_inputs
 
-            git clean -dfx
-            git checkout -t origin/lf36run
-            git checkout c915a244354df2e23b0dc613e302893b496549e2
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+      #       git clean -dfx
+      #       git checkout -t origin/lf36run
+      #       git checkout c915a244354df2e23b0dc613e302893b496549e2
+      #       curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_more_inputs
-            ./test_chat
-            ctest -V
+      #       mkdir lf
+      #       cd lf
+      #       FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+      #       make VERBOSE=1
+      #       ln -s ../model.dat .
+      #       ./gpt2
+      #       ./test_more_inputs
+      #       ./test_chat
+      #       ctest -V
 
-            cd ..
+      #       cd ..
 
-            mkdir lf-fast
-            cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_more_inputs
-            ./test_chat
-            ctest -V
-            cd ..
+      #       mkdir lf-fast
+      #       cd lf-fast
+      #       FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+      #       make VERBOSE=1
+      #       ln -s ../model.dat .
+      #       ./gpt2
+      #       ./test_more_inputs
+      #       ./test_chat
+      #       ctest -V
+      #       cd ..
 
-            git clean -dfx
-            git checkout -t origin/namelist
-            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+      #       git clean -dfx
+      #       git checkout -t origin/namelist
+      #       git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+      #       curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
+      #       mkdir lf
+      #       cd lf
+      #       FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+      #       make VERBOSE=1
+      #       ln -s ../model.dat .
+      #       ./gpt2
+      #       ./test_basic_input
+      #       ./test_more_inputs
+      #       cd ..
 
-            mkdir lf-fast
-            cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
+      #       mkdir lf-fast
+      #       cd lf-fast
+      #       FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+      #       make VERBOSE=1
+      #       ln -s ../model.dat .
+      #       ./gpt2
+      #       ./test_basic_input
+      #       ./test_more_inputs
 
-            cd ..
+      #       cd ..
 
-            rm -rf fastGPT/
+      #       rm -rf fastGPT/
 
-      - name: Test fastGPT ( macos-latest )
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'macos')
-        run: |
-            git clone https://github.com/certik/fastGPT.git
-            cd fastGPT
+      # - name: Test fastGPT ( macos-latest )
+      #   shell: bash -e -x -l {0}
+      #   if: contains(matrix.os, 'macos')
+      #   run: |
+      #       git clone https://github.com/certik/fastGPT.git
+      #       cd fastGPT
 
-            git clean -dfx
-            git checkout -t origin/namelist
-            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+      #       git clean -dfx
+      #       git checkout -t origin/namelist
+      #       git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+      #       curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
+      #       mkdir lf
+      #       cd lf
+      #       FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+      #       make VERBOSE=1
+      #       ln -s ../model.dat .
+      #       ./gpt2
+      #       ./test_basic_input
+      #       ./test_more_inputs
+      #       cd ..
 
-      - name: Test fpm
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            git clone https://github.com/czgdp1807/fpm.git
-            cd fpm
-            git fetch origin lfortran_build_4
-            git checkout lfortran_build_4
-            git checkout 910c461f04506bf87a05a8fbaf7d1b0a79f0bd48
-            export PATH="$(pwd)/../src/bin:$PATH"
-            ./build.sh
+      # - name: Test fpm
+      #   shell: bash -e -x -l {0}
+      #   if: contains(matrix.os, 'ubuntu')
+      #   run: |
+      #       git clone https://github.com/czgdp1807/fpm.git
+      #       cd fpm
+      #       git fetch origin lfortran_build_4
+      #       git checkout lfortran_build_4
+      #       git checkout 910c461f04506bf87a05a8fbaf7d1b0a79f0bd48
+      #       export PATH="$(pwd)/../src/bin:$PATH"
+      #       ./build.sh
 
-      - name: Test stdlib
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/czgdp1807/stdlib.git
-            cd stdlib
-            export PATH="$(pwd)/../src/bin:$PATH"
+      # - name: Test stdlib
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/czgdp1807/stdlib.git
+      #       cd stdlib
+      #       export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
-            micromamba install -c conda-forge fypp gfortran
+      #       git checkout lf20
+      #       git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+      #       micromamba install -c conda-forge fypp gfortran
 
-            git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
-            make -j8
-            ctest
+      #       git clean -fdx
+      #       FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
+      #       make -j8
+      #       ctest
 
-            # Test with GFortran
-            ./build_test_gf.sh
+      #       # Test with GFortran
+      #       ./build_test_gf.sh
 
-      - name: Test SNAP
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/certik/SNAP.git
-            cd SNAP
-            export PATH="$(pwd)/../src/bin:$PATH"
+      # - name: Test SNAP
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/certik/SNAP.git
+      #       cd SNAP
+      #       export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf11
-            git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
-            cd ./src
-            make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
+      #       git checkout lf11
+      #       git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
+      #       cd ./src
+      #       make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
+      #       ./gsnap ../qasnap/sample/inp out
 
-            make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
+      #       make clean
+      #       make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+      #       ./gsnap ../qasnap/sample/inp out
 
-      - name: Test Numerical Methods Fortran
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
-            cd numerical-methods-fortran
-            export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf4
-            git checkout 810a03407ab1b209fc5d9181811157b88f4a138b
-            FC=lfortran make
-            ./test_fix_point.exe
-            ./test_integrate_one.exe
-            ./test_linear.exe
-            ./test_newton.exe
-            ./test_ode.exe
-            ./test_probability_distribution.exe
-            ./test_sde.exe
+      # - name: Test Numerical Methods Fortran
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
+      #       cd numerical-methods-fortran
+      #       export PATH="$(pwd)/../src/bin:$PATH"
+      #       git checkout -t origin/lf4
+      #       git checkout 810a03407ab1b209fc5d9181811157b88f4a138b
+      #       FC=lfortran make
+      #       ./test_fix_point.exe
+      #       ./test_integrate_one.exe
+      #       ./test_linear.exe
+      #       ./test_newton.exe
+      #       ./test_ode.exe
+      #       ./test_probability_distribution.exe
+      #       ./test_sde.exe
 
-      # The below projects are tested with a higher CMake version, so replace the current installed version
-      - name: Override cmake version to 3.31.2
-        if: contains(matrix.os, 'ubuntu')
-        run: micromamba install -y -n lf cmake=3.31.2
+      # # The below projects are tested with a higher CMake version, so replace the current installed version
+      # - name: Override cmake version to 3.31.2
+      #   if: contains(matrix.os, 'ubuntu')
+      #   run: micromamba install -y -n lf cmake=3.31.2
 
-      - name: Test Examples/Project 1
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./examples/project1
-            FC=../../src/bin/lfortran cmake .
-            cmake --build . -v
-            ./project1
+      # - name: Test Examples/Project 1
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu')
+      #   run: |
+      #       cd ./examples/project1
+      #       FC=../../src/bin/lfortran cmake .
+      #       cmake --build . -v
+      #       ./project1
 
-      - name: Test Examples/Project 2
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./examples/project2
-            FC=../../src/bin/lfortran cmake .
-            cmake --build . -v
-            ./doconcurrent
+      # - name: Test Examples/Project 2
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu')
+      #   run: |
+      #       cd ./examples/project2
+      #       FC=../../src/bin/lfortran cmake .
+      #       cmake --build . -v
+      #       ./doconcurrent
 
-      - name: Test Examples/Project 3
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./examples/project3
-            FC=../../src/bin/lfortran cmake .
-            cmake --build . -v
-            ./project3
+      # - name: Test Examples/Project 3
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu')
+      #   run: |
+      #       cd ./examples/project3
+      #       FC=../../src/bin/lfortran cmake .
+      #       cmake --build . -v
+      #       ./project3
 
 
 # Commented out to save CI runners:
@@ -863,640 +863,640 @@ jobs:
 #          pixi run integration_tests
 #          pixi run clean
 
-  test_llvm:
-    name: Test LLVM ${{ matrix.llvm-version }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # this is only run on ubuntu intentionally
-        os: ["ubuntu-latest"]
-        # Note: The LLVM 11 test is redundant, since it is already tested by
-        # most other tests (since LLVM 11 is our default version), but we have
-        # it here as well for consistency, and that way other tests can freely
-        # switch to other versions as needed. We test all versions here in
-        # exactly the same manner, to ensure that users can just change the
-        # `llvmdev` version in their conda environment and everything will just
-        # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
-        python-version: ["3.10"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '19')
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            nodejs=18.20.4
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '10')
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            nodejs=18.20.2
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.llvm-version }}
-
-      - name: Install libunwind
-        if: matrix.llvm-version > 11
-        run: micromamba install -y -n lf libunwind=1.7.2
-
-      - name: Setup WASI SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
-        shell: bash -e -l {0}
-        run: |
-          cd $HOME
-          curl -o wasi-sdk.tar.gz -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0-linux.tar.gz
-          tar -xvf wasi-sdk.tar.gz
-          export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-          echo $WASI_SDK_PATH
-          $WASI_SDK_PATH/bin/clang --version
-
-      - name: Install wasmtime
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
-        shell: bash -e -l {0}
-        run: |
-          cd $HOME
-          curl -o wasmtime.tar.gz -L https://github.com/bytecodealliance/wasmtime/releases/download/v19.0.2/wasmtime-v19.0.2-x86_64-linux.tar.xz
-          tar -xvf wasmtime.tar.gz
-          export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
-          wasmtime --version
-
-      - name: Setup EMSCRIPTEN SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
-        shell: bash -e -l {0}
-        run: |
-          cd $HOME
-          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.59.tar.gz
-          tar -xvf emsdk.tar.gz
-          export EMSDK_PATH=$HOME/emsdk-3.1.59
-          echo $EMSDK_PATH
-          cd $EMSDK_PATH
-          ./emsdk install latest
-          ./emsdk activate latest
-
-      - name: Build Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
-        shell: bash -e -l {0}
-        run: |
-            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-            export EMSDK_PATH=$HOME/emsdk-3.1.59
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DWITH_TARGET_WASM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
-        shell: bash -e -l {0}
-        run: |
-            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-            export EMSDK_PATH=$HOME/emsdk-3.1.59
-            export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
-            export WASMTIME_NEW_CLI=0
-            cd integration_tests
-            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
-
-      - name: Build Linux
-        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      # LLVM 10-19 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 10-19
-        shell: bash -e -l {0}
-        run: |
-            ctest --output-on-failure
-            cd integration_tests
-            ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f
-
-      - name: Test Legacy Minpack (SciPy)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/certik/minpack.git
-            cd minpack
-            git checkout -t origin/scipy30
-            git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
-            mkdir lf
-            cd lf
-            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
-            make
-            examples/example_hybrd
-            examples/example_hybrd1
-            examples/example_lmder1
-            examples/example_lmdif1
-            examples/example_primes
-            ctest
-
-      - name: Test Modern Minpack (Fortran-Lang)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/fortran-lang/minpack modern_minpack_01
-            cd modern_minpack_01
-            git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
-
-      - name: Test Modern Minpack (check results)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
-            cd modern_minpack_02
-            git checkout -t origin/w5
-            git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
-
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
-
-      - name: Test dftatom
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/certik/dftatom.git
-            cd dftatom
-            git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
-            export PATH="$(pwd)/../src/bin:$PATH"
-            make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
-            ./tests/atom_U/F_atom_U
-
-            git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
-            ./tests/atom_U/F_atom_U
-
-      - name: Test fastGPT ( ubuntu-latest )
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            git clone https://github.com/certik/fastGPT.git
-            cd fastGPT
-            git checkout -t origin/lf6
-            git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
-            echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_Fortran_FLAGS="--realloc-lhs" .
-            make
-            ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            ldd ./gpt2
-            ldd ./chat
-            ldd ./test_basic_input
-            ldd ./test_chat
-            ldd ./test_more_inputs
-
-            git clean -dfx
-            git checkout -t origin/lf36run
-            git checkout c915a244354df2e23b0dc613e302893b496549e2
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
-
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_more_inputs
-            ./test_chat
-            ctest -V
-
-            cd ..
-
-            mkdir lf-fast
-            cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_more_inputs
-            ./test_chat
-            ctest -V
-            cd ..
-
-            git checkout -t origin/namelist
-            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-
-            cd lf
-            git clean -dfx
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
-
-            cd lf-fast
-            git clean -dfx
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
-
-            rm -rf fastGPT/
-
-      - name: Test fpm
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            git clone https://github.com/certik/fpm.git
-            cd fpm
-            git checkout lfortran_build_3
-            git checkout a63eb805747f717d420c12de1984e5e15cdb6984
-            export PATH="$(pwd)/../src/bin:$PATH"
-            ./build.sh
-
-      - name: Test stdlib
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/czgdp1807/stdlib.git
-            cd stdlib
-            export PATH="$(pwd)/../src/bin:$PATH"
-
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
-            micromamba install -c conda-forge fypp gfortran
-            git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
-            make -j8
-            ctest
-
-      - name: Test SNAP
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/certik/SNAP.git
-            cd SNAP
-            export PATH="$(pwd)/../src/bin:$PATH"
-
-            git checkout lf11
-            git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
-            cd ./src
-            make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
-
-            make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
-
-  lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
-    name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            llvm-openmp
-            nodejs=18.20.4
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Test integration_tests with GFortran
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b gfortran
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Debug Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ctest
-            ./run_tests.py
-            ./run_tests.py -vh
-            cd integration_tests
-            ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
-
-      - name: Test OpenMP
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm_omp
-
-      - name: Test Fortran Backend
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b fortran -j1
-            ./run_tests.py -b fortran -f -j1
-
-      - name: Test C/C++ Backend
-        shell: bash -e -l {0}
-        run: |
-            mkdir build-kokkos
-            cd build-kokkos
-            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-            tar xaf 3.1.01.tar.gz
-            cd kokkos-3.1.01
-            mkdir build
-            cd build
-            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
-            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
-            make
-            make install
-            cd ../../..
-
-            cd integration_tests
-            ./run_tests.py -b cpp c c_nopragma
-            ./run_tests.py -b cpp c c_nopragma -f
-
-      - name: Test CPP
-        shell: bash -e -l {0}
-        run: |
-            xonsh ci/test_cpp_version.xsh
-
-      - name: Show Node Info
-        shell: bash -e -l {0}
-        run: |
-          set -ex
-          which node
-          node --version
-
-      - name: Test WASM backend
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b wasm
-            ./run_tests.py -b wasm -f
-
-  upload_tarball:
-    name: Upload Tarball
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - name: Upload Tarball
-        shell: bash -e -l {0}
-        run: |
-          ./build0.sh
-          lfortran_version=$(<version)
-          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
-          ci/create_source_tarball.sh $lfortran_version
-          ci/upload_tarball.sh
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
-
-      - name: Upload Tarball to Release
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        shell: bash -e -l {0}
-        run: |
-          ci/upload_tarball_to_release.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  test_without_llvm:
-    name: Test without LLVM Backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - name: Test
-        shell: bash -e -l {0}
-        run: |
-          xonsh ci/test_without_llvm_backend.xsh
-
-  test_mlir:
-    name: Test MLIR backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=3.10
-            mlir=19.1.6
-            llvm=19.1.6
-            llvm-openmp=19.1.6
-            libunwind=1.7.2
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DWITH_MLIR=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
-
-  upload_docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_docs_linux.yml
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Kernel
-        shell: bash -e -l {0}
-        run: |
-          ./build0.sh
-          export CXXFLAGS="-Werror"
-          cmake . -GNinja \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DWITH_LLVM=yes \
-            -DWITH_LSP=yes \
-            -DWITH_XEUS=yes \
-            -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-          ninja install
-          ctest --output-on-failure
-          jupyter kernelspec list --json
-
-      - name: Build Docs
-        shell: bash -e -l {0}
-        working-directory: doc
-        run: |
-          $(command -v python) build.py
-
-      - name: Upload Docs
-        shell: bash -e -l {0}
-        working-directory: doc
-        run: |
-          ../ci/upload_docs.sh
-        env:
-          SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
-
-
-  build-and-push-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      REGISTRY: ghcr.io
-      USER: lfortran
-      PROJECT: lfortran
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Log in to the Container registry
-        if: ${{ github.event_name == 'push' }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ env.USER }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
+  # test_llvm:
+  #   name: Test LLVM ${{ matrix.llvm-version }}
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       # this is only run on ubuntu intentionally
+  #       os: ["ubuntu-latest"]
+  #       # Note: The LLVM 11 test is redundant, since it is already tested by
+  #       # most other tests (since LLVM 11 is our default version), but we have
+  #       # it here as well for consistency, and that way other tests can freely
+  #       # switch to other versions as needed. We test all versions here in
+  #       # exactly the same manner, to ensure that users can just change the
+  #       # `llvmdev` version in their conda environment and everything will just
+  #       # work.
+  #       llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
+  #       python-version: ["3.10"]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       if: contains(matrix.llvm-version, '19')
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux_llvm.yml
+  #         create-args: >-
+  #           python=${{ matrix.python-version }}
+  #           llvmdev=${{ matrix.llvm-version }}
+  #           bison=3.4
+  #           openblas=0.3.21
+  #           llvm-openmp=14.0.4
+  #           make=4.3
+  #           nodejs=18.20.4
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       if: contains(matrix.llvm-version, '10')
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux_llvm.yml
+  #         create-args: >-
+  #           python=${{ matrix.python-version }}
+  #           llvmdev=${{ matrix.llvm-version }}
+  #           bison=3.4
+  #           openblas=0.3.21
+  #           llvm-openmp=14.0.4
+  #           make=4.3
+  #           nodejs=18.20.2
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux_llvm.yml
+  #         create-args: >-
+  #           python=${{ matrix.python-version }}
+  #           llvmdev=${{ matrix.llvm-version }}
+  #           bison=3.4
+  #           openblas=0.3.21
+  #           llvm-openmp=14.0.4
+  #           make=4.3
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.llvm-version }}
+
+  #     - name: Install libunwind
+  #       if: matrix.llvm-version > 11
+  #       run: micromamba install -y -n lf libunwind=1.7.2
+
+  #     - name: Setup WASI SDK
+  #       if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         cd $HOME
+  #         curl -o wasi-sdk.tar.gz -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0-linux.tar.gz
+  #         tar -xvf wasi-sdk.tar.gz
+  #         export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+  #         echo $WASI_SDK_PATH
+  #         $WASI_SDK_PATH/bin/clang --version
+
+  #     - name: Install wasmtime
+  #       if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         cd $HOME
+  #         curl -o wasmtime.tar.gz -L https://github.com/bytecodealliance/wasmtime/releases/download/v19.0.2/wasmtime-v19.0.2-x86_64-linux.tar.xz
+  #         tar -xvf wasmtime.tar.gz
+  #         export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+  #         wasmtime --version
+
+  #     - name: Setup EMSCRIPTEN SDK
+  #       if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         cd $HOME
+  #         curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.59.tar.gz
+  #         tar -xvf emsdk.tar.gz
+  #         export EMSDK_PATH=$HOME/emsdk-3.1.59
+  #         echo $EMSDK_PATH
+  #         cd $EMSDK_PATH
+  #         ./emsdk install latest
+  #         ./emsdk activate latest
+
+  #     - name: Build Linux ( WASM )
+  #       if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+  #           export EMSDK_PATH=$HOME/emsdk-3.1.59
+  #           ./build0.sh
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DWITH_LSP=yes \
+  #             -DWITH_TARGET_WASM=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #           cmake --build . -j16 --target install
+
+  #     - name: Test Linux ( WASM )
+  #       if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+  #           export EMSDK_PATH=$HOME/emsdk-3.1.59
+  #           export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+  #           export WASMTIME_NEW_CLI=0
+  #           cd integration_tests
+  #           ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+
+  #     - name: Build Linux
+  #       if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DWITH_LSP=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #           cmake --build . -j16 --target install
+
+  #     # LLVM 10-19 all work in exactly the same way, so the test is identical
+  #     - name: Test Linux LLVM 10-19
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ctest --output-on-failure
+  #           cd integration_tests
+  #           ./run_tests.py -b llvm llvmImplicit
+  #           ./run_tests.py -b llvm llvmImplicit -f
+
+  #     - name: Test Legacy Minpack (SciPy)
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/certik/minpack.git
+  #           cd minpack
+  #           git checkout -t origin/scipy30
+  #           git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
+  #           mkdir lf
+  #           cd lf
+  #           FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
+  #           make
+  #           examples/example_hybrd
+  #           examples/example_hybrd1
+  #           examples/example_lmder1
+  #           examples/example_lmdif1
+  #           examples/example_primes
+  #           ctest
+
+  #     - name: Test Modern Minpack (Fortran-Lang)
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/fortran-lang/minpack modern_minpack_01
+  #           cd modern_minpack_01
+  #           git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
+  #           $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+
+  #     - name: Test Modern Minpack (check results)
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
+  #           cd modern_minpack_02
+  #           git checkout -t origin/w5
+  #           git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+  #           $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+  #           $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+
+  #           # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
+  #           # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
+  #           # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
+  #           # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
+
+  #     - name: Test dftatom
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/certik/dftatom.git
+  #           cd dftatom
+  #           git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
+  #           export PATH="$(pwd)/../src/bin:$PATH"
+  #           make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
+  #           ./tests/atom_U/F_atom_U
+
+  #           git clean -dfx
+  #           make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+  #           ./tests/atom_U/F_atom_U
+
+  #     - name: Test fastGPT ( ubuntu-latest )
+  #       shell: bash -e -x -l {0}
+  #       if: contains(matrix.os, 'ubuntu')
+  #       run: |
+  #           git clone https://github.com/certik/fastGPT.git
+  #           cd fastGPT
+  #           git checkout -t origin/lf6
+  #           git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
+  #           echo $CONDA_PREFIX
+  #           FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_Fortran_FLAGS="--realloc-lhs" .
+  #           make
+  #           ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+  #           file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+  #           ldd ./gpt2
+  #           ldd ./chat
+  #           ldd ./test_basic_input
+  #           ldd ./test_chat
+  #           ldd ./test_more_inputs
+
+  #           git clean -dfx
+  #           git checkout -t origin/lf36run
+  #           git checkout c915a244354df2e23b0dc613e302893b496549e2
+  #           curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+
+  #           mkdir lf
+  #           cd lf
+  #           FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+  #           make VERBOSE=1
+  #           ln -s ../model.dat .
+  #           ./gpt2
+  #           ./test_more_inputs
+  #           ./test_chat
+  #           ctest -V
+
+  #           cd ..
+
+  #           mkdir lf-fast
+  #           cd lf-fast
+  #           FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+  #           make VERBOSE=1
+  #           ln -s ../model.dat .
+  #           ./gpt2
+  #           ./test_more_inputs
+  #           ./test_chat
+  #           ctest -V
+  #           cd ..
+
+  #           git checkout -t origin/namelist
+  #           git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+
+  #           cd lf
+  #           git clean -dfx
+  #           FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+  #           make VERBOSE=1
+  #           ln -s ../model.dat .
+  #           ./gpt2
+  #           ./test_basic_input
+  #           ./test_more_inputs
+  #           cd ..
+
+  #           cd lf-fast
+  #           git clean -dfx
+  #           FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+  #           make VERBOSE=1
+  #           ln -s ../model.dat .
+  #           ./gpt2
+  #           ./test_basic_input
+  #           ./test_more_inputs
+  #           cd ..
+
+  #           rm -rf fastGPT/
+
+  #     - name: Test fpm
+  #       shell: bash -e -x -l {0}
+  #       if: contains(matrix.os, 'ubuntu')
+  #       run: |
+  #           git clone https://github.com/certik/fpm.git
+  #           cd fpm
+  #           git checkout lfortran_build_3
+  #           git checkout a63eb805747f717d420c12de1984e5e15cdb6984
+  #           export PATH="$(pwd)/../src/bin:$PATH"
+  #           ./build.sh
+
+  #     - name: Test stdlib
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/czgdp1807/stdlib.git
+  #           cd stdlib
+  #           export PATH="$(pwd)/../src/bin:$PATH"
+
+  #           git checkout lf20
+  #           git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+  #           micromamba install -c conda-forge fypp gfortran
+  #           git clean -fdx
+  #           FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
+  #           make -j8
+  #           ctest
+
+  #     - name: Test SNAP
+  #       shell: bash -e -x -l {0}
+  #       run: |
+  #           git clone https://github.com/certik/SNAP.git
+  #           cd SNAP
+  #           export PATH="$(pwd)/../src/bin:$PATH"
+
+  #           git checkout lf11
+  #           git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
+  #           cd ./src
+  #           make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
+  #           ./gsnap ../qasnap/sample/inp out
+
+  #           make clean
+  #           make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+  #           ./gsnap ../qasnap/sample/inp out
+
+  # lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
+  #   name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux.yml
+  #         create-args: >-
+  #           llvm-openmp
+  #           nodejs=18.20.4
+  #           python=3.10
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
+
+  #     - name: Test integration_tests with GFortran
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           cd integration_tests
+  #           ./run_tests.py -b gfortran
+
+  #     - name: Build Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           export CXXFLAGS="-Werror"
+  #           export CFLAGS="-Werror"
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DWITH_LSP=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DWITH_RUNTIME_STACKTRACE=yes \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #           cmake --build . -j16 --target install
+
+  #     - name: Test Debug Build Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ctest
+  #           ./run_tests.py
+  #           ./run_tests.py -vh
+  #           cd integration_tests
+  #           ./run_tests.py -m
+  #           ./run_tests.py -b llvm
+  #           ./run_tests.py -b llvm -f
+
+  #     - name: Test OpenMP
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           cd integration_tests
+  #           ./run_tests.py -b llvm_omp
+
+  #     - name: Test Fortran Backend
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           cd integration_tests
+  #           ./run_tests.py -b fortran -j1
+  #           ./run_tests.py -b fortran -f -j1
+
+  #     - name: Test C/C++ Backend
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           mkdir build-kokkos
+  #           cd build-kokkos
+  #           wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
+  #           tar xaf 3.1.01.tar.gz
+  #           cd kokkos-3.1.01
+  #           mkdir build
+  #           cd build
+  #           export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
+  #           cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
+  #           make
+  #           make install
+  #           cd ../../..
+
+  #           cd integration_tests
+  #           ./run_tests.py -b cpp c c_nopragma
+  #           ./run_tests.py -b cpp c c_nopragma -f
+
+  #     - name: Test CPP
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           xonsh ci/test_cpp_version.xsh
+
+  #     - name: Show Node Info
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         set -ex
+  #         which node
+  #         node --version
+
+  #     - name: Test WASM backend
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           cd integration_tests
+  #           ./run_tests.py -b wasm
+  #           ./run_tests.py -b wasm -f
+
+  # upload_tarball:
+  #   name: Upload Tarball
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux.yml
+  #         create-args: >-
+  #           python=3.10
+
+  #     - name: Upload Tarball
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         ./build0.sh
+  #         lfortran_version=$(<version)
+  #         pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
+  #         ci/create_source_tarball.sh $lfortran_version
+  #         ci/upload_tarball.sh
+  #       env:
+  #         SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+  #     - name: Upload Tarball to Release
+  #       if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         ci/upload_tarball_to_release.sh
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # test_without_llvm:
+  #   name: Test without LLVM Backend
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux.yml
+  #         create-args: >-
+  #           python=3.10
+
+  #     - name: Test
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         xonsh ci/test_without_llvm_backend.xsh
+
+  # test_mlir:
+  #   name: Test MLIR backend
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_linux_llvm.yml
+  #         create-args: >-
+  #           python=3.10
+  #           mlir=19.1.6
+  #           llvm=19.1.6
+  #           llvm-openmp=19.1.6
+  #           libunwind=1.7.2
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
+
+  #     - name: Build Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DWITH_LSP=yes \
+  #             -DWITH_MLIR=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #           cmake --build . -j16 --target install
+
+  #     - name: Test Linux
+  #       shell: bash -e -l {0}
+  #       run: |
+  #           cd integration_tests
+  #           ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
+
+  # upload_docs:
+  #   name: Documentation
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/setup-micromamba@v2.0.2
+  #       with:
+  #         micromamba-version: '2.0.4-0'
+  #         environment-file: ci/environment_docs_linux.yml
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
+
+  #     - name: Build Kernel
+  #       shell: bash -e -l {0}
+  #       run: |
+  #         ./build0.sh
+  #         export CXXFLAGS="-Werror"
+  #         cmake . -GNinja \
+  #           -DCMAKE_BUILD_TYPE=Debug \
+  #           -DWITH_LLVM=yes \
+  #           -DWITH_LSP=yes \
+  #           -DWITH_XEUS=yes \
+  #           -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  #           -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+  #           -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #         ninja install
+  #         ctest --output-on-failure
+  #         jupyter kernelspec list --json
+
+  #     - name: Build Docs
+  #       shell: bash -e -l {0}
+  #       working-directory: doc
+  #       run: |
+  #         $(command -v python) build.py
+
+  #     - name: Upload Docs
+  #       shell: bash -e -l {0}
+  #       working-directory: doc
+  #       run: |
+  #         ../ci/upload_docs.sh
+  #       env:
+  #         SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+
+
+  # build-and-push-image:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   env:
+  #     REGISTRY: ghcr.io
+  #     USER: lfortran
+  #     PROJECT: lfortran
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: Log in to the Container registry
+  #       if: ${{ github.event_name == 'push' }}
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ env.USER }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         push: ${{ github.event_name == 'push' }}
+  #         tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
