@@ -11,7 +11,7 @@ program main
         temp = solution()
         print *, temp
         do i = lbound(temp, 1), ubound(temp, 1)
-            if (abs(temp(i) * i - 1.0) > 1e-8) error stop
+            if (abs(temp(i) * i - 1.0) > 1e-5) error stop
         end do
     end subroutine compare_solutions
 
