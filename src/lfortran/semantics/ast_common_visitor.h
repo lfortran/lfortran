@@ -6486,8 +6486,57 @@ public:
                         throw SemanticAbort();
                     }
                 }
+                if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*newshape)){
+                    ASR::ttype_t* a_type = ASRUtils::expr_type(array);
+                    a_type = ASRUtils::type_get_past_pointer(a_type);
+                    ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+                    Vec<ASR::expr_t*> elements_;
+                    elements_.reserve(al, array_size);
+                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                    ASR::ArrayConstant_t* const_shape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
+                    int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+                    std::map<int, int> index_map;
+                    for (int i=0; i<array_size; i++){
+                        int temp = i;
+                        std::vector<int> d(n, 0);
+                        for (int j=0; j<n; j++){
+                            int dim = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, j))->m_n - 1;
+                            int shape_dim = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_shape, dim))->m_n;
+                            d[j] = temp % shape_dim;
+                            temp = temp / shape_dim;
+                        }
+                        std::vector<int> I(n, 0);
+                        for(int j=0; j<n; j++){
+                            int order_ = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, j))->m_n - 1;
+                            I[order_] = d[j];
+                        }
 
+                        int R = 0, stride = 1;
+                        for (int j=0; j<n; j++){
+                            R += I[j] * stride;
+                            stride *= ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_shape, j))->m_n;
+                        }
+                        index_map[R] = i;
+                    }
+                    for (int i=0; i<array_size; i++){
+                        elements_.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, index_map[i]));
+                    }
 
+                    size_t curr_idx = elements_.size();
+                    ASR::ttype_t* new_type = ASRUtils::TYPE(
+                        ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
+                                        a_type_->m_physical_type)
+                    );
+                    void *data = ASRUtils::set_ArrayConstant_data(elements_.p, curr_idx, a_type_->m_type);
+                    int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
+                    if (ASRUtils::is_character(*a_type_->m_type)) {
+                        n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
+                    }
+                    array = ASRUtils::EXPR(
+                        ASR::make_ArrayConstant_t(al, loc, n_data, data, new_type,
+                                                ASR::arraystorageType::ColMajor)
+                    );
+                }
             } 
         } else {
             // otherwise empty dimensions
