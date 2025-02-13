@@ -6,7 +6,7 @@ integer, intent(out) :: seed(:)
 call random_seed(get=seed)
 end subroutine getseed
 
-impure function rand0() result(x)
+function rand0() result(x)
 use iso_fortran_env, only: RP => REAL64
 real(RP) :: x
 call random_number(harvest=x)
