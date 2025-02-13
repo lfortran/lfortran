@@ -602,8 +602,8 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                 default:
                     LCOMPILERS_ASSERT(false);
             }
-            diag.add(Diagnostic("Operator undefined for " + ASRUtils::type_to_str(left_type)
-                                + " " +  op_str + " " + ASRUtils::type_to_str(right_type), Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
     }
@@ -8412,8 +8412,8 @@ public:
                     default:
                         LCOMPILERS_ASSERT(false);
                 }
-                diag.add(Diagnostic("Operator undefined for " + ASRUtils::type_to_str(left_type)
-                                    + " " +  op_str + " " + ASRUtils::type_to_str(right_type), Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         } else if( overloaded == nullptr ) {
