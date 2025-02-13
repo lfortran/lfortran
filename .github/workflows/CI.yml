@@ -515,7 +515,7 @@ jobs:
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
             git checkout -t origin/lf-prima-2
-            git checkout 35f288cdc52dab1da32050ce798436c4ed17deed
+            git checkout ef8b50f9c1d154211c9403ddf0081bfe84b0dfdd
             git clean -dfx
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
@@ -529,9 +529,19 @@ jobs:
             ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
 
-            cd fortran/
-            export FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
-            cd ../
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+            fi
+
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+            fi
 
             git clean -dfx
             FC="$(pwd)/../src/bin/lfortran --cpp --fast --skip-pass=fma" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
