@@ -8416,7 +8416,6 @@ public:
                                     + " " +  op_str + " " + ASRUtils::type_to_str(right_type), Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
-            return;
         } else if( overloaded == nullptr ) {
             LCOMPILERS_ASSERT(false);
         }
