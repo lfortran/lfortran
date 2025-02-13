@@ -560,6 +560,88 @@ jobs:
             ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
 
+
+      - name: Test PRIMA
+        shell: bash -e -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/prima.git
+            cd prima
+            git checkout -t origin/lf-prima-2
+            git checkout ef8b50f9c1d154211c9403ddf0081bfe84b0dfdd
+            git clean -dfx
+            FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            ./build/fortran/example_bobyqa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_2_exe
+            ./build/fortran/example_bobyqa_fortran_2_exe
+            ./build/fortran/example_uobyqa_fortran_1_exe
+            ./build/fortran/example_uobyqa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_2_exe
+
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              cd fortran/
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              cd ../
+            fi
+
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              cd fortran/
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              cd ../
+            fi
+
+            git clean -dfx
+            FC="$(pwd)/../src/bin/lfortran --cpp --fast --skip-pass=fma" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            ./build/fortran/example_bobyqa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_2_exe
+            ./build/fortran/example_bobyqa_fortran_2_exe
+            ./build/fortran/example_uobyqa_fortran_1_exe
+            ./build/fortran/example_uobyqa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_2_exe
+
+      - name: Test PRIMA test_newuoa
+        shell: bash -e -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/prima.git
+            cd prima
+            git checkout -t origin/lf-prima-2
+            git checkout ef8b50f9c1d154211c9403ddf0081bfe84b0dfdd
+            git clean -dfx
+            FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              cd fortran/
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              cd ../
+            fi
+
+      - name: Test PRIMA test_uobyqa
+        shell: bash -e -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/prima.git
+            cd prima
+            git checkout -t origin/lf-prima-2
+            git checkout ef8b50f9c1d154211c9403ddf0081bfe84b0dfdd
+            git clean -dfx
+            FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              cd fortran/
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              cd ../
+            fi
+
       # - name: Test POT3D
       #   shell: bash -e -l {0}
       #   run: |
