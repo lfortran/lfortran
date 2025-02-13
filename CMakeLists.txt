@@ -344,8 +344,7 @@ set(WITH_LSP no CACHE BOOL "Build with LSP support")
 if (WITH_JSON)
     find_package(RapidJSON REQUIRED)
     set(HAVE_LFORTRAN_RAPIDJSON yes)
-endif(
-)
+endif()
 
 set(HAVE_LFORTRAN_DEMANGLE yes
     CACHE BOOL "Build with C++ name demangling support (cxxabi.h)")

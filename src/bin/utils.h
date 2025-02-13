@@ -5,15 +5,15 @@
 
 namespace LCompilers::CommandLineInterface {
 
-  auto init_compiler_options(
-    CompilerOptions &compiler_options,
-    CLI::App &app
-  ) -> void;
+    auto init_compiler_options(
+        CompilerOptions &compiler_options,
+        CLI::App &app
+    ) -> void;
 
-  auto init_compiler_options(
-    CompilerOptions &compiler_options,
-    int argc,
-    const char *const *argv
-  ) -> int;
+    auto init_compiler_options(
+        CompilerOptions &compiler_options,
+        int argc,
+        const char *const *argv
+    ) -> int;
 
 } // namespace LCompilers::CommandLineInterface

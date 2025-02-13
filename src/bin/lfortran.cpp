@@ -52,9 +52,9 @@
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
 
-#include "bin/utils.h"
-#include "bin/server/cli.h"
-#include "bin/server/interface.h"
+#include <bin/utils.h>
+#include <bin/server/cli.h>
+#include <bin/server/interface.h>
 
 #ifdef HAVE_BUILD_TO_WASM
     #include <emscripten/emscripten.h>
@@ -2260,8 +2260,10 @@ int main_app(int argc, char *argv[]) {
 
     CompilerOptions compiler_options;
 
-    // NOTE: Initialize compiler_options within the following utility function.
-    // This will allow them to be configured by the language server.
+    // NOTE: All compiler_options initialization has been moved to the following
+    // utility function. This allows the language server to initialize them the
+    // same way as the command-line and it will keep its options up-to-date. All
+    // previous options have been moved here.
     LCompilers::CommandLineInterface::init_compiler_options(compiler_options, app);
 
     /*

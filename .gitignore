@@ -1,6 +1,5 @@
 # LFortran
 
-src/bin/cpptranslate
 src/bin/lfortran
 src/bin/parse
 src/bin/parse2
@@ -33,6 +32,12 @@ src/server/lsp_transformer.h
 src/server/lsp_transformer.cpp
 src/server/lsp_language_server.h
 src/server/lsp_language_server.cpp
+
+.#*
+*.sw?
+
+expr2
+lfortran-*-dirty/
 
 # fortran_parser
 

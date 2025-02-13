@@ -7,8 +7,8 @@
 
 namespace LCompilers::LanguageServerProtocol {
 
-  DiagnosticSeverity diagnostic_level_to_lsp_severity(diag::Level level);
+    auto diagnostic_level_to_lsp_severity(diag::Level level) -> DiagnosticSeverity;
 
-  SymbolKind asr_symbol_type_to_lsp_symbol_kind(ASR::symbolType symbol_type);
+    auto asr_symbol_type_to_lsp_symbol_kind(ASR::symbolType symbol_type) -> SymbolKind;
 
 } // namespace LCompilers::LanguageServerProtocol

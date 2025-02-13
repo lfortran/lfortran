@@ -11,136 +11,139 @@
 #include <string_view>
 
 namespace LCompilers::LLanguageServer::Logging {
-  namespace fs = std::filesystem;
+    namespace fs = std::filesystem;
 
-  enum class Level {
-    OFF,
-    FATAL,
-    ERROR,
-    WARN,
-    INFO,
-    DEBUG,
-    TRACE,
-    ALL,
-  };
+    enum class Level {
+        OFF,
+        FATAL,
+        ERROR,
+        WARN,
+        INFO,
+        DEBUG,
+        TRACE,
+        ALL,
+    };
 
-  extern std::map<Level, std::string> LevelNames;
-  extern std::map<Level, std::string> LevelValues;
+    extern std::map<Level, std::string> LevelNames;
+    extern std::map<Level, std::string> LevelValues;
 
-  auto levelByName(const std::string &name) -> Level;
-  auto levelByValue(const std::string &value) -> Level;
-  auto levelByValue(int value) -> Level;
+    auto levelByName(const std::string &name) -> Level;
+    auto levelByValue(const std::string &value) -> Level;
+    auto levelByValue(int value) -> Level;
 
-  class Logger;
+    class Logger;
 
-  class Formatter {
-  public:
-    Formatter(Logger &logger, Level level, const std::string &prompt);
-    auto operator<<(unsigned char c) -> Formatter &;
-    auto operator<<(char c) -> Formatter &;
-    auto operator<<(short unsigned int value) -> Formatter &;
-    auto operator<<(int value) -> Formatter &;
-    auto operator<<(unsigned int value) -> Formatter &;
-    auto operator<<(std::size_t value) -> Formatter &;
-    auto operator<<(const char *str) -> Formatter &;
-    auto operator<<(const std::string &str) -> Formatter &;
-    auto operator<<(const std::string_view &view) -> Formatter &;
-    auto operator<<(std::ostream& (*manip)(std::ostream&)) -> Formatter &;
-  private:
-    Logger &logger;
-    bool enabled = false;
-    std::unique_lock<std::recursive_mutex> lock;
-  };
+    class Formatter {
+    public:
+        Formatter(Logger &logger, Level level, const std::string &prompt);
+        auto operator<<(unsigned char c) -> Formatter &;
+        auto operator<<(char c) -> Formatter &;
+        auto operator<<(short unsigned int value) -> Formatter &;
+        auto operator<<(int value) -> Formatter &;
+        auto operator<<(unsigned int value) -> Formatter &;
+        auto operator<<(std::size_t value) -> Formatter &;
+        auto operator<<(const char *str) -> Formatter &;
+        auto operator<<(const std::string &str) -> Formatter &;
+        auto operator<<(const std::string_view &view) -> Formatter &;
+        auto operator<<(std::ostream& (*manip)(std::ostream&)) -> Formatter &;
+    private:
+        Logger &logger;
+        bool enabled = false;
+        std::unique_lock<std::recursive_mutex> lock;
+    };
 
-  class Logger {
-  public:
-    Logger(const fs::path &logPath);
-    ~Logger();
+    class Logger {
+    public:
+        Logger(const fs::path &logPath);
+        ~Logger();
 
-    inline auto mutex() -> std::recursive_mutex & {
-      return _mutex;
-    }
+        inline auto mutex() -> std::recursive_mutex & {
+            return _mutex;
+        }
 
-    auto logPath() const -> const fs::path &;
-    auto isOpen() const -> bool;
-    auto close() -> void;
-    auto setLevel(Level level) -> void;
+        auto logPath() const -> const fs::path &;
+        auto isOpen() const -> bool;
+        auto close() -> void;
 
-    inline auto level() const -> Level {
-      return _level;
-    }
+        auto inline setLevel(Level level) -> void {
+            _level = level;
+        }
 
-    inline auto isOff() const -> bool {
-      return _level == Level::OFF;
-    }
+        inline auto level() const -> Level {
+            return _level;
+        }
 
-    inline auto isFatalEnabled() const -> bool {
-      return _level >= Level::FATAL;
-    }
+        inline auto isOff() const -> bool {
+            return _level == Level::OFF;
+        }
 
-    inline auto isErrorEnabled() const -> bool {
-      return _level >= Level::ERROR;
-    }
+        inline auto isFatalEnabled() const -> bool {
+            return _level >= Level::FATAL;
+        }
 
-    inline auto isWarnEnabled() const -> bool {
-      return _level >= Level::WARN;
-    }
+        inline auto isErrorEnabled() const -> bool {
+            return _level >= Level::ERROR;
+        }
 
-    inline auto isInfoEnabled() const -> bool {
-      return _level >= Level::INFO;
-    }
+        inline auto isWarnEnabled() const -> bool {
+            return _level >= Level::WARN;
+        }
 
-    inline auto isDebugEnabled() const -> bool {
-      return _level >= Level::DEBUG;
-    }
+        inline auto isInfoEnabled() const -> bool {
+            return _level >= Level::INFO;
+        }
 
-    inline auto isTraceEnabled() const -> bool {
-      return _level >= Level::TRACE;
-    }
+        inline auto isDebugEnabled() const -> bool {
+            return _level >= Level::DEBUG;
+        }
 
-    inline auto areAllEnabled() const -> bool {
-      return _level == Level::ALL;
-    }
+        inline auto isTraceEnabled() const -> bool {
+            return _level >= Level::TRACE;
+        }
 
-    inline auto fatal() -> Formatter {
-      return Formatter(*this, Level::FATAL, "FATAL");
-    }
+        inline auto areAllEnabled() const -> bool {
+            return _level == Level::ALL;
+        }
 
-    inline auto error() -> Formatter {
-      return Formatter(*this, Level::ERROR, "ERROR");
-    }
+        inline auto fatal() -> Formatter {
+            return Formatter(*this, Level::FATAL, "FATAL");
+        }
 
-    inline auto warn() -> Formatter {
-      return Formatter(*this, Level::WARN, "WARN");
-    }
+        inline auto error() -> Formatter {
+            return Formatter(*this, Level::ERROR, "ERROR");
+        }
 
-    inline auto info() -> Formatter {
-      return Formatter(*this, Level::INFO, "INFO");
-    }
+        inline auto warn() -> Formatter {
+            return Formatter(*this, Level::WARN, "WARN");
+        }
 
-    inline auto debug() -> Formatter {
-      return Formatter(*this, Level::DEBUG, "DEBUG");
-    }
+        inline auto info() -> Formatter {
+            return Formatter(*this, Level::INFO, "INFO");
+        }
 
-    inline auto trace() -> Formatter {
-      return Formatter(*this, Level::TRACE, "TRACE");
-    }
+        inline auto debug() -> Formatter {
+            return Formatter(*this, Level::DEBUG, "DEBUG");
+        }
 
-    auto operator<<(unsigned char c) -> Logger &;
-    auto operator<<(char c) -> Logger &;
-    auto operator<<(short unsigned int value) -> Logger &;
-    auto operator<<(int value) -> Logger &;
-    auto operator<<(unsigned int value) -> Logger &;
-    auto operator<<(std::size_t value) -> Logger &;
-    auto operator<<(const char *str) -> Logger &;
-    auto operator<<(const std::string &str) -> Logger &;
-    auto operator<<(const std::string_view &view) -> Logger &;
-    auto operator<<(std::ostream& (*manip)(std::ostream&)) -> Logger &;
-  private:
-    fs::path _logPath;
-    std::ofstream logFile;
-    std::recursive_mutex _mutex;
-    std::atomic<Level> _level{Level::INFO};
-  };
+        inline auto trace() -> Formatter {
+            return Formatter(*this, Level::TRACE, "TRACE");
+        }
+
+        auto operator<<(unsigned char c) -> Logger &;
+        auto operator<<(char c) -> Logger &;
+        auto operator<<(short unsigned int value) -> Logger &;
+        auto operator<<(int value) -> Logger &;
+        auto operator<<(unsigned int value) -> Logger &;
+        auto operator<<(std::size_t value) -> Logger &;
+        auto operator<<(const char *str) -> Logger &;
+        auto operator<<(const std::string &str) -> Logger &;
+        auto operator<<(const std::string_view &view) -> Logger &;
+        auto operator<<(std::ostream& (*manip)(std::ostream&)) -> Logger &;
+    private:
+        fs::path _logPath;
+        std::ofstream logFile;
+        std::recursive_mutex _mutex;
+        std::atomic<Level> _level{Level::INFO};
+    };
 
 } // namespace LCompilers::LLanguageServer::Logging

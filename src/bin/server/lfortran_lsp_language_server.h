@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
 #include <shared_mutex>
+#include <unordered_map>
 
 #include <libasr/utils.h>
 
@@ -10,66 +10,66 @@
 #include <server/message_queue.h>
 #include <server/specification.h>
 
-#include "bin/server/lfortran_accessor.h"
+#include <bin/server/lfortran_accessor.h>
 
 namespace LCompilers::LanguageServerProtocol {
-  namespace ls = LCompilers::LLanguageServer;
-  namespace lsl = LCompilers::LLanguageServer::Logging;
+    namespace ls = LCompilers::LLanguageServer;
+    namespace lsl = LCompilers::LLanguageServer::Logging;
 
-  class LFortranLspLanguageServer : public BaseLspLanguageServer {
-  public:
-    LFortranLspLanguageServer(
-      ls::MessageQueue &incomingMessages,
-      ls::MessageQueue &outgoingMessages,
-      std::size_t numRequestThreads,
-      std::size_t numWorkerThreads,
-      lsl::Logger &logger,
-      const std::string &configSection
-    );
-  protected:
+    class LFortranLspLanguageServer : public BaseLspLanguageServer {
+    public:
+        LFortranLspLanguageServer(
+            ls::MessageQueue &incomingMessages,
+            ls::MessageQueue &outgoingMessages,
+            std::size_t numRequestThreads,
+            std::size_t numWorkerThreads,
+            lsl::Logger &logger,
+            const std::string &configSection
+        );
+    protected:
 
-    auto invalidateConfigCache() -> void override;
+        auto invalidateConfigCache() -> void override;
 
-    // ================= //
-    // Incoming Requests //
-    // ================= //
+        // ================= //
+        // Incoming Requests //
+        // ================= //
 
-    InitializeResult receiveInitialize(
-      InitializeParams &params
-    ) override;
+        InitializeResult receiveInitialize(
+            InitializeParams &params
+        ) override;
 
-    // ====================== //
-    // Incoming Notifications //
-    // ====================== //
+        // ====================== //
+        // Incoming Notifications //
+        // ====================== //
 
-    void receiveWorkspace_didDeleteFiles(
-      DeleteFilesParams &params
-    ) override;
+        void receiveWorkspace_didDeleteFiles(
+            DeleteFilesParams &params
+        ) override;
 
-    void receiveWorkspace_didChangeConfiguration(
-      DidChangeConfigurationParams &params
-    ) override;
+        void receiveWorkspace_didChangeConfiguration(
+            DidChangeConfigurationParams &params
+        ) override;
 
-    void receiveTextDocument_didOpen(
-      DidOpenTextDocumentParams &params
-    ) override;
+        void receiveTextDocument_didOpen(
+            DidOpenTextDocumentParams &params
+        ) override;
 
-    void receiveTextDocument_didChange(
-      DidChangeTextDocumentParams &params
-    ) override;
+        void receiveTextDocument_didChange(
+            DidChangeTextDocumentParams &params
+        ) override;
 
-    void receiveWorkspace_didChangeWatchedFiles(
-      DidChangeWatchedFilesParams &params
-    ) override;
+        void receiveWorkspace_didChangeWatchedFiles(
+            DidChangeWatchedFilesParams &params
+        ) override;
 
-  private:
-    const std::string source = "lfortran";
-    ls::LFortranAccessor lfortran;
-    std::map<DocumentUri, CompilerOptions> optionsByUri;
-    std::shared_mutex optionMutex;
+    private:
+        const std::string source = "lfortran";
+        ls::LFortranAccessor lfortran;
+        std::unordered_map<DocumentUri, CompilerOptions> optionsByUri;
+        std::shared_mutex optionMutex;
 
-    auto validate(TextDocument &document) -> void;
-    auto getCompilerOptions(const DocumentUri &uri) -> const CompilerOptions &;
-  };
+        auto validate(TextDocument &document) -> void;
+        auto getCompilerOptions(const DocumentUri &uri) -> const CompilerOptions &;
+    };
 
 } // namespace LCompilers::LanguageServerProtocol
