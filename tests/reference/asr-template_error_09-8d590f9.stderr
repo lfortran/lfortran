@@ -1,0 +1,5 @@
+semantic error: Operator undefined for t == t
+  --> tests/errors/template_error_09.f90:21:20
+   |
+21 |             prop = bin(x,y) == bin(y,x)
+   |                    ^^^^^^^^^^^^^^^^^^^^ 
