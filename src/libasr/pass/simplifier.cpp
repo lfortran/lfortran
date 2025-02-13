@@ -787,7 +787,7 @@ void insert_allocate_stmt_for_struct(Allocator& al, ASR::expr_t* temporary_var,
 }
 
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
-    Vec<ASR::stmt_t*>*& current_body, bool inside_where,
+    Vec<ASR::stmt_t*>*& current_body, Vec<ASR::stmt_t*>*& after_stmt_body, bool inside_where,
     std::function<void(const ASR::stmt_t&)> visit_stmt) {
     if( inside_where ) {
         for (size_t i = 0; i < n_body; i++) {
@@ -799,8 +799,15 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
         current_body_vec.reserve(al, n_body);
         current_body = &current_body_vec;
         for (size_t i = 0; i < n_body; i++) {
+            Vec<ASR::stmt_t*>* after_stmt_body_copy = after_stmt_body;
+            Vec<ASR::stmt_t*> after_stmt_body_vec; after_stmt_body_vec.reserve(al, 1);
+            after_stmt_body = &after_stmt_body_vec;
             visit_stmt(*m_body[i]);
             current_body->push_back(al, m_body[i]);
+            for (size_t j = 0; j < after_stmt_body_vec.size(); j++) { 
+                current_body->push_back(al, after_stmt_body_vec[j]);
+            }
+            after_stmt_body = after_stmt_body_copy;
         }
         m_body = current_body_vec.p; n_body = current_body_vec.size();
         current_body = current_body_copy;
@@ -821,15 +828,15 @@ ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
 
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
-    Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
+    Vec<ASR::stmt_t*>*& current_body, Vec<ASR::stmt_t*>*& after_stmt_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false,
-    ASR::expr_t* allocate_size_reference=nullptr) {
+    ASR::expr_t* allocate_size_reference=nullptr, bool is_func_arg = false) {
     const Location& loc = array_expr->base.loc;
     if( allocate_size_reference == nullptr ) {
         allocate_size_reference = array_expr;
     }
     ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-        al, allocate_size_reference, current_scope, name_hint, is_pointer_required);
+        al, allocate_size_reference, current_scope, name_hint, is_pointer_required && !is_func_arg);
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
         exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTargetPointerForArraySection);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
@@ -837,7 +844,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     } else {
         insert_allocate_stmt_for_array(al, array_var_temporary, allocate_size_reference, current_body);
         array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
-        if( !is_pointer_required &&
+        if( (!is_pointer_required || is_func_arg) &&
             !ASRUtils::is_simd_array(array_expr) &&
             ( (ASR::is_a<ASR::ArraySection_t>(*array_expr) &&
             !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(array_expr))) ||
@@ -855,6 +862,13 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
                 al, loc, array_expr_ptr, array_expr)));
             exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);
             array_expr = array_expr_ptr;
+            if (is_func_arg && is_pointer_required) {
+                // ASR::expr_t ** arg;
+                // ASRUtils::STMT(ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc, 
+                //     static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any),  ))
+                after_stmt_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                    al, loc, array_expr, array_var_temporary, nullptr, exprs_with_target)));
+            }
         }
         current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
             al, loc, array_var_temporary, array_expr, nullptr, exprs_with_target)));
@@ -950,6 +964,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
+    Vec<ASR::stmt_t*>* after_stmt_body;
     Vec<ASR::stmt_t*>* parent_body_for_where;
     ExprsWithTargetType& exprs_with_target;
     ASR::expr_t* lhs_var;
@@ -959,13 +974,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     public:
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
-        al(al_), current_body(nullptr), parent_body_for_where(nullptr),
+        al(al_), current_body(nullptr), after_stmt_body(nullptr), parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
             inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
 
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
-        transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
+        transform_stmts_impl(al, m_body, n_body, current_body, after_stmt_body, inside_where,
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
@@ -973,16 +988,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         return !ASR::is_a<ASR::Var_t>(*expr) && ASRUtils::is_array(ASRUtils::expr_type(expr));
     }
 
-    ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
-        const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
+    ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body, Vec<ASR::stmt_t*>*& after_stmt_body,
+        const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target, bool is_func_arg = false) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
         ASR::expr_t* array_var_temporary = nullptr;
         bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) && 
                     !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr) &&
                     !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
         array_var_temporary = create_and_allocate_temporary_variable_for_array(
-            x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
-            is_pointer_required);
+            x_m_args_i, name_hint, al, current_body, after_stmt_body, current_scope, exprs_with_target,
+            is_pointer_required, nullptr, is_func_arg);
         return array_var_temporary;
     }
 
@@ -993,7 +1008,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < n_values; i++ ) {
             if( is_temporary_needed(x_values[i]) ) {
                 visit_expr(*x_values[i]);
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_values[i], al, current_body, name_hint, current_scope, exprs_with_target);
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_values[i], al, current_body, after_stmt_body, name_hint, current_scope, exprs_with_target);
                 x_m_values.push_back(al, array_var_temporary);
             } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_values[i])) &&
                        !ASR::is_a<ASR::Var_t>(
@@ -1042,7 +1057,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < x_n_args; i++ ) {
             visit_expr(*x_m_args[i]);
             if( is_temporary_needed(x_m_args[i]) ) {
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i], al, current_body, name_hint, current_scope, exprs_with_target);
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i], al, current_body, after_stmt_body, name_hint, current_scope, exprs_with_target);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1078,7 +1093,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < x_n_args; i++ ) {
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target);
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, after_stmt_body, name_hint, current_scope, exprs_with_target, true);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1149,7 +1164,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
                 if (create_temp_var_for_rhs) {
                     std::string name_hint = "_assignment_";
-                    ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target);
+                    ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_value, al, current_body, after_stmt_body, name_hint, current_scope, exprs_with_target);
                     xx.m_value = array_var_temporary;
                 }
             }
@@ -1194,7 +1209,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         std::string name_hint = "print";
         if( is_temporary_needed(xx.m_text) ) {
             visit_expr(*xx.m_text);
-            ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_text, al, current_body, name_hint, current_scope, exprs_with_target);
+            ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_text, al, current_body, after_stmt_body, name_hint, current_scope, exprs_with_target);
             xx.m_text = array_var_temporary;
         } else if( ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_text)) &&
                     !ASR::is_a<ASR::Var_t>(
@@ -1257,7 +1272,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
-            ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(expr, al, current_body, name_hint, current_scope, exprs_with_target);
+            ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(expr, al, current_body, after_stmt_body, name_hint, current_scope, exprs_with_target);
             return array_var_temporary;
         } else if( ASRUtils::is_struct(*ASRUtils::expr_type(expr)) &&
                     !ASR::is_a<ASR::Var_t>(
@@ -1482,7 +1497,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( var_check(x_member)) {
             visit_expr(*x_member);
             xx_member = create_and_allocate_temporary_variable_for_array(x_member,
-                name_hint, al, current_body, current_scope, exprs_with_target);
+                name_hint, al, current_body, after_stmt_body, current_scope, exprs_with_target);
         }
     }
 
@@ -1562,6 +1577,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     public:
 
     Vec<ASR::stmt_t*>* current_body;
+    Vec<ASR::stmt_t*>* after_stmt_body;
     SymbolTable* current_scope;
     bool is_assignment_target_array_section_item;
     bool is_simd_expression;
@@ -1597,7 +1613,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         Vec<ASR::stmt_t*>* &current_body, SymbolTable* &current_scope, ExprsWithTargetType& exprs_with_target,
         bool is_assignment_target_array_section_item) {
         *current_expr = create_and_allocate_temporary_variable_for_array(
-                *current_expr, name_hint, al, current_body,
+                *current_expr, name_hint, al, current_body, after_stmt_body, 
                 current_scope, exprs_with_target, is_assignment_target_array_section_item);
     }
 
@@ -1769,7 +1785,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 !is_assignment_target_array_section_item) ||
                 is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
-                    *current_expr, "_array_section_", al, current_body,
+                    *current_expr, "_array_section_", al, current_body, after_stmt_body,
                     current_scope, exprs_with_target);
             }
             return ;
@@ -1819,7 +1835,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 !is_assignment_target_array_section_item) ||
                 is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
-                    *current_expr, "_array_item_", al, current_body,
+                    *current_expr, "_array_item_", al, current_body, after_stmt_body,
                     current_scope, exprs_with_target);
             }
             return ;
@@ -1945,6 +1961,7 @@ class ReplaceExprWithTemporaryVisitor:
     Allocator& al;
     ExprsWithTargetType& exprs_with_target;
     Vec<ASR::stmt_t*>* current_body;
+    Vec<ASR::stmt_t*>* after_stmt_body;
     ReplaceExprWithTemporary replacer;
     Vec<ASR::stmt_t*>* parent_body_for_where;
     bool inside_where;
@@ -1974,7 +1991,7 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-        transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
+        transform_stmts_impl(al, m_body, n_body, current_body, after_stmt_body, inside_where,
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
