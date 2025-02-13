@@ -2042,16 +2042,6 @@ class CPlusPlusLspTransformerSourceGenerator(CPlusPlusLspFileGenerator):
             if notification_spec["messageDirection"] == "serverToClient":
                 self.generate_as_outgoing_params("notificationParams", notification_spec)
 
-    def generate_constructor(self) -> None:
-        self.write('LspTransformer::LspTransformer(lsl::Logger &logger)')
-        with self.indent():
-            self.write(': logger(logger)')
-        self.write('{')
-        with self.indent():
-            self.write('// empty')
-        self.write('}')
-        self.newline()
-
     def generate_code(self) -> None:
         print(f'Generating: {self.file_path}')
         self.generate_disclaimer()
@@ -2066,7 +2056,6 @@ class CPlusPlusLspTransformerSourceGenerator(CPlusPlusLspFileGenerator):
         self.write(f'namespace {self.namespace} {{')
         self.newline()
         with self.indent():
-            self.generate_constructor()
             self.generate_copy_methods()
             self.generate_enumeration_transforms()
             self.generate_structure_transforms()

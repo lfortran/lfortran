@@ -41,7 +41,6 @@ class CPlusPlusLspLanguageServerSourceGenerator(CPlusPlusLspFileGenerator):
         self.write('    })')
         self.write('    , requestPool("request", numRequestThreads, logger)')
         self.write('    , workerPool("worker", numWorkerThreads, logger)')
-        self.write('    , transformer(logger)')
         self.write('{')
         with self.indent():
             self.write('callbacksById.reserve(256);')
@@ -98,12 +97,12 @@ class CPlusPlusLspLanguageServerSourceGenerator(CPlusPlusLspFileGenerator):
                                 self.write('logger.error()')
                                 with self.indent():
                                     self.write('<< "[" << threadName << "_" << threadId << "] "')
-                                    self.write('<< "Failed to handle message: " << message')
+                                    self.write('"Failed to handle message: " << message')
                                     self.write('<< std::endl;')
                                 self.write('logger.error()')
                                 with self.indent():
                                     self.write('<< "[" << threadName << "_" << threadId << "] "')
-                                    self.write('<< "Caught unhandled exception: " << e.what()')
+                                    self.write('"Caught unhandled exception: " << e.what()')
                                     self.write('<< std::endl;')
                             self.write('}')
                         self.write('});')
@@ -111,11 +110,21 @@ class CPlusPlusLspLanguageServerSourceGenerator(CPlusPlusLspFileGenerator):
                 self.write('}')
             self.write('} catch (std::exception &e) {')
             with self.indent():
-                self.write('logger.warn()')
+                self.write('if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {')
                 with self.indent():
-                    self.write('<< "[LspLanguageServer] Interrupted while dequeuing messages: "')
-                    self.write('<< e.what()')
-                    self.write('<< std::endl;')
+                    self.write('logger.error()')
+                    with self.indent():
+                        self.write('<< "[LspLanguageServer] "')
+                        self.write('"Unhandled exception caught: " << e.what()')
+                        self.write('<< std::endl;')
+                self.write('} else {')
+                with self.indent():
+                    self.write('logger.trace()')
+                    with self.indent():
+                        self.write('<< "[LspLanguageServer] "')
+                        self.write('"Interrupted while dequeuing messages: " << e.what()')
+                        self.write('<< std::endl;')
+                self.write('}')
             self.write('}')
         self.write('}')
         self.newline()
@@ -967,9 +976,10 @@ class CPlusPlusLspLanguageServerSourceGenerator(CPlusPlusLspFileGenerator):
                                 self.write('incomingMessages.stopNow();')
                                 self.write('requestPool.stopNow();')
                                 self.write('workerPool.stopNow();')
-                                self.write('// TODO: Find a better way to terminate the message stream:')
+                                self.write('// NOTE: Notify the message stream that the server is terminating.')
+                                self.write('// NOTE: This works because the null character is not included in')
+                                self.write('// the JSON spec.')
                                 self.write('std::cin.putback(\'\\0\');')
-                                self.write('fclose(stdin);')
                             self.write('}')
                         case "initialized":
                             self.write('// empty')

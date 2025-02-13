@@ -15,6 +15,7 @@ set(LLANGUAGE_SERVER_SRC
   language_server.cpp
   lsp_language_server.cpp
   base_lsp_language_server.cpp
+  message_stream.cpp
   lsp_message_stream.cpp
   communication_protocol.cpp
 )

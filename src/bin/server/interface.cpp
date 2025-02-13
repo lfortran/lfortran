@@ -495,28 +495,37 @@ namespace LCompilers::LLanguageServer::Interface {
     auto CommandLineInterface::serve() -> ExitCode {
         try {
             lsl::Logger logger(opts.logPath);
-            std::unique_ptr<ls::MessageStream> messageStream =
-                buildMessageStream(logger);
-            ls::MessageQueue communicatorToServer(logger);
-            ls::MessageQueue serverToCommunicator(logger);
-            std::unique_ptr<ls::LanguageServer> languageServer =
-                buildLanguageServer(
-                    communicatorToServer,
-                    serverToCommunicator,
-                    logger);
-            std::unique_ptr<ls::CommunicationProtocol> communicationProtocol =
-                buildCommunicationProtocol(
-                    *languageServer,
-                    *messageStream,
-                    serverToCommunicator,
-                    communicatorToServer,
-                    logger
-                );
-            communicationProtocol->serve();
-            logger.debug()
-                << "[CommandLineInterface] Communication protocol terminated."
-                << std::endl;
-            return ExitCode::SUCCESS;
+            try {
+                std::unique_ptr<ls::MessageStream> messageStream =
+                    buildMessageStream(logger);
+                ls::MessageQueue communicatorToServer(logger);
+                ls::MessageQueue serverToCommunicator(logger);
+                std::unique_ptr<ls::LanguageServer> languageServer =
+                    buildLanguageServer(
+                        communicatorToServer,
+                        serverToCommunicator,
+                        logger);
+                std::unique_ptr<ls::CommunicationProtocol> communicationProtocol =
+                    buildCommunicationProtocol(
+                        *languageServer,
+                        *messageStream,
+                        serverToCommunicator,
+                        communicatorToServer,
+                        logger
+                    );
+                communicationProtocol->serve();
+                logger.debug()
+                    << "[CommandLineInterface] Communication protocol terminated."
+                    << std::endl;
+                logger.info() << "Language server terminated cleanly.";
+                return ExitCode::SUCCESS;
+            } catch (std::exception &e) {
+                logger.error()
+                    << "Caught unhandled exception: " << e.what()
+                    << std::endl;
+                logger.error() << "Language server terminated erroneously.";
+                return ExitCode::UNHANDLED_EXCEPTION;
+            }
         } catch (std::exception &e) {
             std::cerr
                 << "Caught unhandled exception: "

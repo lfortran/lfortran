@@ -23,6 +23,7 @@ namespace LCompilers::LLanguageServer {
             MessageQueue &outgoingMessages,
             lsl::Logger &logger
         );
+        virtual ~LanguageServer();
         virtual bool isTerminated() const = 0;
         virtual void join() = 0;
     protected:

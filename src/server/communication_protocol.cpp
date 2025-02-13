@@ -35,18 +35,27 @@ namespace LCompilers::LLanguageServer {
                 std::cout << message << std::flush;
             } while (running);
         } catch (std::exception &e) {
-            logger.error()
-                << "[CommunicationProtocol] Interrupted while dequeuing messages: "
-                << e.what()
-                << std::endl;
+            if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
+                logger.error()
+                    << "[CommunicationProtocol] "
+                    "Unhandled exception caught: " << e.what()
+                    << std::endl;
+            } else {
+                logger.trace()
+                    << "[CommunicationProtocol] "
+                    "Interrupted while dequeuing messages: " << e.what()
+                    << std::endl;
+            }
         }
-        logger.info()
+        logger.debug()
             << "[CommunicationProtocol] Incoming-message listener terminated."
             << std::endl;
     }
 
     void CommunicationProtocol::serve() {
-        logger.info() << "[CommunicationProtocol] Serving requests." << std::endl;
+        logger.info()
+            << "[CommunicationProtocol] Serving requests."
+            << std::endl;
         try {
             while (!languageServer.isTerminated()) {
                 std::string message = messageStream.next();
@@ -54,13 +63,15 @@ namespace LCompilers::LLanguageServer {
                     outgoingMessages.enqueue(message);
                 } else {
                     logger.warn()
-                        << "[CommunicationProtocol] Cannot parse an empty request body."
+                        << "[CommunicationProtocol] "
+                        "Cannot parse an empty request body."
                         << std::endl;
                 }
             }
         } catch (std::exception &e) {
             logger.error()
-                << "[CommunicationProtocol] Caught unhandled exception while serving requests: "
+                << "[CommunicationProtocol] "
+                "Caught unhandled exception while serving requests: "
                 << e.what()
                 << std::endl;
         }
@@ -73,7 +84,8 @@ namespace LCompilers::LLanguageServer {
         if (listener.joinable()) {
             listener.join();
             logger.debug()
-                << "[CommunicationProtocol] Incoming-message listener terminated."
+                << "[CommunicationProtocol] "
+                "Incoming-message listener terminated."
                 << std::endl;
         }
     }

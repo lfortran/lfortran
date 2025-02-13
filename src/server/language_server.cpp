@@ -13,6 +13,10 @@ namespace LCompilers::LLanguageServer {
         // empty
     }
 
+    LanguageServer::~LanguageServer() {
+        // empty
+    }
+
     auto LanguageServer::send(const std::string &message) -> void {
         buffer.clear();
         prepare(buffer, message);

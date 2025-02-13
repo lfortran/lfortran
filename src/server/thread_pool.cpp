@@ -37,7 +37,7 @@ namespace LCompilers::LLanguageServer::Threading {
     auto ThreadPool::stop() -> void {
         logger.debug()
             << "Thread pool [" << _name << "] will no longer accept new tasks and "
-            << "will shut down once those pending have returned."
+            "will shut down once those pending have returned."
             << std::endl;
         stopRunning = true;
         tasks.stop();
@@ -75,25 +75,26 @@ namespace LCompilers::LLanguageServer::Threading {
                     } catch (std::exception &e) {
                         logger.error()
                             << "[" << _name << "_" << threadId << "] "
-                            << "Failed to execute task: " << e.what()
+                            "Failed to execute task: " << e.what()
                             << std::endl;
                     }
                 }
             }
-            logger.debug()
+            logger.trace()
                 << "[" << _name << "_" << threadId << "] "
-                << "Terminated."
+                "Terminated successfully."
                 << std::endl;
         } catch (std::exception &e) {
             if (e.what() != DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
                     << "[" << _name << "_" << threadId << "] "
-                    << "Unhandled exception caught: " << e.what()
+                    "Unhandled exception caught: " << e.what()
                     << std::endl;
-            } else if (logger.isTraceEnabled()) {
+            } else {
                 logger.trace()
                     << "[" << _name << "_" << threadId << "] "
-                    << e.what() << std::endl;
+                    "Interrupted while dequeuing messages: " << e.what()
+                    << std::endl;
             }
         }
     }
