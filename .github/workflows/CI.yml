@@ -531,19 +531,19 @@ jobs:
 
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               cd fortran/
-              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
-              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
-              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
-              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
-              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
               cd ../
             fi
 
             if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
               cd fortran/
-              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
-              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
-              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
               cd ../
             fi
 
