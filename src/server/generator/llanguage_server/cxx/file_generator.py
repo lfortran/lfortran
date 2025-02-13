@@ -1,3 +1,5 @@
+import sys
+import traceback
 from pathlib import Path
 from typing import (
     Any,
@@ -33,14 +35,19 @@ class CPlusPlusLspFileGenerator(FileGenerator):
 
     def generate_docstring(self, docs: Optional[str]) -> None:
         if docs is not None:
-            docs = docs.replace(r'/*', '/​*')
-            self.write( '/**')
-            for line in docs.split('\n'):
-                self.inline(' *', indent=True)
-                if len(line) > 0:
-                    self.inline(f' {line}')
-                self.newline()
-            self.write( ' */')
+            try:
+                docs = docs.replace(r'/*', '/​*')
+                self.write( '/**')
+                for line in docs.split('\n'):
+                    self.inline(' *', indent=True)
+                    if len(line) > 0:
+                        self.inline(f' {line}')
+                    self.newline()
+                self.write( ' */')
+            except Exception as e:
+                self.write('/* DEBUG: Recovered from error, here. */')
+                print(f"Recovered from failure while generating documentation.", file=sys.stderr)
+                traceback.print_exc()
 
     def generate_variant_enumeration(
         self,
