@@ -514,8 +514,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf-cleaned_branch-11
-            git checkout 141cf76b05e4cc142b132a0d5fdbee3ac752fe0e
+            git checkout -t origin/lf-prima-2
+            git checkout fa45eea919af80282aaad2ce256d1e1d3bdb77a6
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
@@ -527,7 +527,13 @@ jobs:
             ./build/fortran/example_lincoa_fortran_1_exe
             ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
-            
+
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              cd fortran/
+              export FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              cd ../
+            fi
+
             git clean -dfx
             FC="$(pwd)/../src/bin/lfortran --cpp --fast --skip-pass=fma" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
@@ -776,8 +782,8 @@ jobs:
             git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
             cd numerical-methods-fortran
             export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf4
-            git checkout 810a03407ab1b209fc5d9181811157b88f4a138b
+            git checkout -t origin/lf3
+            git checkout a3cd1165832349e5c133681328d2f86fa48d650f
             FC=lfortran make
             ./test_fix_point.exe
             ./test_integrate_one.exe

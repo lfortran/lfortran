@@ -4501,7 +4501,7 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
-            if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr))) {
+            if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr)) || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(tmp_expr))) {
                 if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) || ASR::is_a<ASR::Var_t>(*tmp_expr)) {
                     arg_vec.push_back(al, tmp_expr);
                 }

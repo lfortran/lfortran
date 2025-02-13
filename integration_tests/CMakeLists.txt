@@ -519,6 +519,7 @@ RUN(NAME arrays_reshape_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmSta
 RUN(NAME arrays_reshape_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_reshape_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_reshape_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME arrays_reshape_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME arrays_03_func_pass_arr_dims LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
@@ -1055,7 +1056,7 @@ RUN(NAME parameter_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # c
 RUN(NAME parameter_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME parameter_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME parameter_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME parameter_10 LABELS gfortran llvm NOFAST fortran) # sin
+RUN(NAME parameter_10 LABELS gfortran llvm fortran) # sin
 RUN(NAME parameter_11 LABELS gfortran llvm fortran) # merge
 RUN(NAME parameter_12 LABELS gfortran llvm fortran) # implied do loops
 RUN(NAME parameter_13 LABELS gfortran llvm) # compile time example
@@ -1576,6 +1577,7 @@ RUN(NAME flip_sign LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME div_to_mul LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME fma LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME fma_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME fma_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME loop_unroll_small LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME loop_unroll_large LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME loop_var_use_after_loop LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm
@@ -2025,6 +2027,7 @@ RUN(NAME openmp_43 LABELS llvm_omp llvm)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
+RUN(NAME nullify_05 LABELS gfortran llvm)
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME fortran_02 LABELS gfortran fortran)
