@@ -7,8 +7,8 @@ namespace LCompilers::LLanguageServer {
         MessageQueue &outgoingMessages,
         lsl::Logger &logger
     ) : incomingMessages(incomingMessages)
-        , outgoingMessages(outgoingMessages)
-        , logger(logger)
+      , outgoingMessages(outgoingMessages)
+      , logger(logger)
     {
         // empty
     }

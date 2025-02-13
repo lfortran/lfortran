@@ -54,9 +54,21 @@ class CPlusPlusLspLanguageServerSourceGenerator(CPlusPlusLspFileGenerator):
             self.write('if (listener.joinable()) {')
             with self.indent():
                 self.write('listener.join();')
+                self.write('logger.debug()')
+                with self.indent():
+                    self.write('<< "[LspLanguageServer] Incoming-message listener terminated."')
+                    self.write('<< std::endl;')
             self.write('}')
             self.write('requestPool.join();')
+            self.write('logger.debug()')
+            with self.indent():
+                self.write('<< "[LspLanguageServer] Request thread-pool terminated."')
+                self.write('<< std::endl;')
             self.write('workerPool.join();')
+            self.write('logger.debug()')
+            with self.indent():
+                self.write('<< "[LspLanguageServer] Worker thread-pool terminated."')
+                self.write('<< std::endl;')
         self.write('}')
         self.newline()
 
@@ -105,10 +117,6 @@ class CPlusPlusLspLanguageServerSourceGenerator(CPlusPlusLspFileGenerator):
                     self.write('<< e.what()')
                     self.write('<< std::endl;')
             self.write('}')
-            self.write('logger.debug()')
-            with self.indent():
-                self.write('<< "[LspLanguageServer] Incoming-message listener terminated."')
-                self.write('<< std::endl;')
         self.write('}')
         self.newline()
 
@@ -556,6 +564,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(CPlusPlusLspFileGenerator):
             self.write('}')
             self.write('}')
         self.write('}')
+        self.newline()
 
     def generate_dispatch_request(self) -> None:
         self.write('auto LspLanguageServer::dispatch(')

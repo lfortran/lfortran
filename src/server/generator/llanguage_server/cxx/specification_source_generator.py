@@ -103,7 +103,7 @@ class CPlusPlusSpecificationSourceGenerator(CPlusPlusLspFileGenerator):
                 self.write('}')
                 self.write('throw std::invalid_argument(')
                 with self.indent():
-                    self.write(f'"Invalid {enum_name} value: " + value')
+                    self.write(f'"Invalid {enum_name} value: " + std::to_string(value)')
                 self.write(');')
             self.write('}')
         self.newline()

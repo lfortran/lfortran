@@ -7,7 +7,6 @@
 
 #include <server/base_lsp_language_server.h>
 #include <server/logger.h>
-#include <server/message_queue.h>
 #include <server/specification.h>
 
 #include <bin/server/lfortran_accessor.h>

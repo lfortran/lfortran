@@ -8,8 +8,8 @@ set(LLANGUAGE_SERVER_SRC
   lsp_json_parser.cpp
   lsp_json_serializer.cpp
   logger.cpp
+  queue.hpp
   text_document.cpp
-  message_queue.cpp
   thread_pool.cpp
   lsp_transformer.cpp
   language_server.cpp

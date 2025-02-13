@@ -14,10 +14,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &text,
         lsl::Logger &logger
     ) : _uri(uri)
-        , _languageId(languageId)
-        , _version(version)
-        , _text(text)
-        ,    logger(logger)
+      , _languageId(languageId)
+      , _version(version)
+      , _text(text)
+      , logger(logger)
     {
         buffer.reserve(8196);
         validateUriAndSetPath();

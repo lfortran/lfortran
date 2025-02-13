@@ -3,7 +3,6 @@
 #include <atomic>
 #include <thread>
 
-#include <server/message_queue.h>
 #include <server/language_server.h>
 #include <server/logger.h>
 #include <server/message_stream.h>

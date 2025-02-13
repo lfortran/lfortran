@@ -8,9 +8,9 @@ namespace LCompilers::LanguageServerProtocol {
         const char *file,
         int line
     ) : std::logic_error(message)
-        , _code(code)
-        , _file(file)
-        , _line(line)
+      , _code(code)
+      , _file(file)
+      , _line(line)
     {
         // empty
     }

@@ -1,4 +1,4 @@
-#include <chrono>
+#include "server/queue.hpp"
 #include <iostream>
 #include <exception>
 
@@ -12,8 +12,9 @@ namespace LCompilers::LLanguageServer::Threading {
         std::size_t numThreads,
         lsl::Logger &logger
     ) : _name(name)
-        , _numThreads(numThreads)
-        , logger(logger)
+      , _numThreads(numThreads)
+      , logger(logger)
+      , tasks(logger)
     {
         for (std::size_t threadId = 0; threadId < numThreads; ++threadId) {
             logger.debug()
@@ -27,13 +28,8 @@ namespace LCompilers::LLanguageServer::Threading {
 
     auto ThreadPool::execute(Task task) -> bool {
         if (!stopRunning) {
-            std::unique_lock<std::mutex> taskLock(taskMutex);
-            if (!stopRunning) {
-                tasks.push(task);
-                ++size;
-                taskAvailable.notify_one();
-                return true;
-            }
+            tasks.enqueue(task);
+            return true;
         }
         return false;
     }
@@ -44,6 +40,7 @@ namespace LCompilers::LLanguageServer::Threading {
             << "will shut down once those pending have returned."
             << std::endl;
         stopRunning = true;
+        tasks.stop();
     }
 
     auto ThreadPool::stopNow() -> void {
@@ -52,10 +49,7 @@ namespace LCompilers::LLanguageServer::Threading {
             << std::endl;
         stopRunning = true;
         stopRunningNow = true;
-        {
-            std::unique_lock<std::mutex> taskLock(taskMutex);
-            taskAvailable.notify_all();
-        }
+        tasks.stopNow();
     }
 
     auto ThreadPool::join() -> void {
@@ -63,6 +57,9 @@ namespace LCompilers::LLanguageServer::Threading {
             std::thread &worker = workers[threadId];
             if (worker.joinable()) {
                 worker.join();
+                logger.debug()
+                    << "Thread " << _name << "_" << threadId << " terminated."
+                    << std::endl;
             }
         }
         running = false;
@@ -70,16 +67,9 @@ namespace LCompilers::LLanguageServer::Threading {
 
     auto ThreadPool::run(const std::size_t threadId) -> void {
         try {
-            while (!stopRunningNow && (!stopRunning || (size > 0))) {
-                std::unique_lock<std::mutex> taskLock(taskMutex);
-                taskAvailable.wait(taskLock, [this]{
-                    return (size > 0) || stopRunningNow;
-                });
-                if ((size > 0) && !stopRunningNow) {
-                    Task task = tasks.front();
-                    tasks.pop();
-                    --size;
-                    taskLock.unlock();
+            while (!stopRunningNow && (!stopRunning || (tasks.size() > 0))) {
+                Task task = tasks.dequeue();
+                if (!stopRunningNow) {
                     try {
                         task(_name, threadId);
                     } catch (std::exception &e) {
@@ -95,10 +85,16 @@ namespace LCompilers::LLanguageServer::Threading {
                 << "Terminated."
                 << std::endl;
         } catch (std::exception &e) {
-            logger.error()
-                << "[" << _name << "_" << threadId << "] "
-                << "Unhandled exception caught: " << e.what()
-                << std::endl;
+            if (e.what() != DEQUEUE_FAILED_MESSAGE) {
+                logger.error()
+                    << "[" << _name << "_" << threadId << "] "
+                    << "Unhandled exception caught: " << e.what()
+                    << std::endl;
+            } else if (logger.isTraceEnabled()) {
+                logger.trace()
+                    << "[" << _name << "_" << threadId << "] "
+                    << e.what() << std::endl;
+            }
         }
     }
 

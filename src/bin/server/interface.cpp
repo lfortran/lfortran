@@ -513,6 +513,9 @@ namespace LCompilers::LLanguageServer::Interface {
                     logger
                 );
             communicationProtocol->serve();
+            logger.debug()
+                << "[CommandLineInterface] Communication protocol terminated."
+                << std::endl;
             return ExitCode::SUCCESS;
         } catch (std::exception &e) {
             std::cerr

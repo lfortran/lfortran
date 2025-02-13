@@ -12,15 +12,15 @@ namespace LCompilers::LLanguageServer {
         MessageStream &messageStream,
         MessageQueue &incomingMessages,
         MessageQueue &outgoingMessages,
-        lsl::Logger &logger)
-        : languageServer(languageServer)
-        , messageStream(messageStream)
-        , incomingMessages(incomingMessages)
-        , outgoingMessages(outgoingMessages)
-        , logger(logger)
-        , listener([this]() {
-            listen();
-        })
+        lsl::Logger &logger
+    ) : languageServer(languageServer)
+      , messageStream(messageStream)
+      , incomingMessages(incomingMessages)
+      , outgoingMessages(outgoingMessages)
+      , logger(logger)
+      , listener([this]() {
+          listen();
+      })
     {
         // empty
     }
@@ -67,10 +67,15 @@ namespace LCompilers::LLanguageServer {
         running = false;
         incomingMessages.stopNow();
         languageServer.join();
+        logger.debug()
+            << "[CommunicationProtocol] Language server terminated."
+            << std::endl;
         if (listener.joinable()) {
             listener.join();
+            logger.debug()
+                << "[CommunicationProtocol] Incoming-message listener terminated."
+                << std::endl;
         }
-        logger.info() << "[CommunicationProtocol] Terminated." << std::endl;
     }
 
 } // namespace LCompilers::LLanguageServer

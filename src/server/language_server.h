@@ -3,11 +3,18 @@
 #include <string>
 
 #include <server/logger.h>
-#include <server/message_queue.h>
+#include <server/queue.hpp>
 #include <server/thread_pool.h>
 
 namespace LCompilers::LLanguageServer {
     namespace lsl = LCompilers::LLanguageServer::Logging;
+    namespace lst = LCompilers::LLanguageServer::Threading;
+
+    const std::size_t MESSAGE_QUEUE_CAPACITY = 64;
+
+    template class lst::Queue<std::string, MESSAGE_QUEUE_CAPACITY>;
+
+    typedef lst::Queue<std::string, MESSAGE_QUEUE_CAPACITY> MessageQueue;
 
     class LanguageServer {
     public:

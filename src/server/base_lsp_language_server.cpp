@@ -17,13 +17,13 @@ namespace LCompilers::LanguageServerProtocol {
         lsl::Logger &logger,
         const std::string &configSection
     ) : LspLanguageServer(
-            incomingMessages,
-            outgoingMessages,
-            numRequestThreads,
-            numWorkerThreads,
-            logger,
-            configSection
-        )
+        incomingMessages,
+        outgoingMessages,
+        numRequestThreads,
+        numWorkerThreads,
+        logger,
+        configSection
+      )
     {
         documentsByUri.reserve(256);
         configsByUri.reserve(256);

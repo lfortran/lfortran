@@ -13,7 +13,6 @@
 #include <server/communication_protocol.h>
 #include <server/language_server.h>
 #include <server/logger.h>
-#include <server/message_queue.h>
 #include <server/message_stream.h>
 #include <server/thread_pool.h>
 
