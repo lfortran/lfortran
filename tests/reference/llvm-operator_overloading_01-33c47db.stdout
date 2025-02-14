@@ -92,44 +92,76 @@ return:                                           ; preds = %.entry
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %call_arg_value15 = alloca i1, align 1
+  %call_arg_value14 = alloca i1, align 1
+  %call_arg_value13 = alloca i1, align 1
+  %call_arg_value12 = alloca i1, align 1
+  %call_arg_value11 = alloca i1, align 1
+  %call_arg_value10 = alloca i1, align 1
+  %call_arg_value9 = alloca i1, align 1
+  %call_arg_value8 = alloca i1, align 1
+  %call_arg_value7 = alloca i1, align 1
+  %call_arg_value6 = alloca i1, align 1
+  %call_arg_value5 = alloca i1, align 1
+  %call_arg_value4 = alloca i1, align 1
+  %call_arg_value3 = alloca i1, align 1
+  %call_arg_value2 = alloca i1, align 1
+  %call_arg_value1 = alloca i1, align 1
+  %call_arg_value = alloca i1, align 1
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %f = alloca i1, align 1
   store i1 false, i1* %f, align 1
   %t = alloca i1, align 1
   store i1 true, i1* %t, align 1
-  %2 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %t, i1* %t)
+  store i1 true, i1* %call_arg_value, align 1
+  store i1 true, i1* %call_arg_value1, align 1
+  %2 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %call_arg_value, i1* %call_arg_value1)
   %3 = icmp eq i1 %2, false
   %4 = select i1 %3, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0)
   %5 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i32 8, i8* %4)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %6 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %t, i1* %f)
+  store i1 true, i1* %call_arg_value2, align 1
+  store i1 false, i1* %call_arg_value3, align 1
+  %6 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %call_arg_value2, i1* %call_arg_value3)
   %7 = icmp eq i1 %6, false
   %8 = select i1 %7, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0)
   %9 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i32 8, i8* %8)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
-  %10 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %f, i1* %t)
+  store i1 false, i1* %call_arg_value4, align 1
+  store i1 true, i1* %call_arg_value5, align 1
+  %10 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %call_arg_value4, i1* %call_arg_value5)
   %11 = icmp eq i1 %10, false
   %12 = select i1 %11, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @12, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0)
   %13 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i32 8, i8* %12)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
-  %14 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %f, i1* %f)
+  store i1 false, i1* %call_arg_value6, align 1
+  store i1 false, i1* %call_arg_value7, align 1
+  %14 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %call_arg_value6, i1* %call_arg_value7)
   %15 = icmp eq i1 %14, false
   %16 = select i1 %15, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0)
   %17 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i32 8, i8* %16)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0))
-  %18 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %t, i1* %t)
+  store i1 true, i1* %call_arg_value8, align 1
+  store i1 true, i1* %call_arg_value9, align 1
+  %18 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %call_arg_value8, i1* %call_arg_value9)
   %19 = sext i32 %18 to i64
   %20 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i32 2, i64 %19)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @22, i32 0, i32 0), i8* %20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
-  %21 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %t, i1* %f)
+  store i1 true, i1* %call_arg_value10, align 1
+  store i1 false, i1* %call_arg_value11, align 1
+  %21 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %call_arg_value10, i1* %call_arg_value11)
   %22 = sext i32 %21 to i64
   %23 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @24, i32 0, i32 0), i32 2, i64 %22)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @25, i32 0, i32 0), i8* %23, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0))
-  %24 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %f, i1* %t)
+  store i1 false, i1* %call_arg_value12, align 1
+  store i1 true, i1* %call_arg_value13, align 1
+  %24 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %call_arg_value12, i1* %call_arg_value13)
   %25 = sext i32 %24 to i64
   %26 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i32 2, i64 %25)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @28, i32 0, i32 0), i8* %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
-  %27 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %f, i1* %f)
+  store i1 false, i1* %call_arg_value14, align 1
+  store i1 false, i1* %call_arg_value15, align 1
+  %27 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %call_arg_value14, i1* %call_arg_value15)
   %28 = sext i32 %27 to i64
   %29 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @30, i32 0, i32 0), i32 2, i64 %28)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))

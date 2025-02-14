@@ -291,6 +291,7 @@ namespace LCompilers {
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
+                "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",
                 "do_loops",
