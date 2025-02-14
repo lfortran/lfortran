@@ -5644,8 +5644,8 @@ public:
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                         ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
-                        ASR::array_index_t last_arg = array_item->m_args[array_item->n_args - 1];
-                        ASR::expr_t* idx = last_arg.m_right;
+                        ASR::array_index_t first_arg = array_item->m_args[0];
+                        ASR::expr_t* idx = first_arg.m_right;
 
                         Vec<ASR::dimension_t> dims;
                         dims.reserve(al, 1);
@@ -5665,14 +5665,13 @@ public:
                         Vec<ASR::array_index_t> array_indices;
                         array_indices.reserve(al, array_item->n_args);
 
-                        for (size_t i = 0; i < array_item->n_args - 1; i++) {
+                        for (size_t i = 0; i < array_item->n_args; i++) {
                             array_indices.push_back(al, array_item->m_args[i]);
                         }
 
-                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::extract_type(ASRUtils::expr_type(idx))));
 
-                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, array_item->n_args, "ubound", al, diag);
+                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, 1, "ubound", al, diag);
 
                         ASR::array_index_t array_idx;
                         array_idx.loc = array_item->base.base.loc;
@@ -5680,7 +5679,7 @@ public:
                         array_idx.m_right = array_bound;
                         array_idx.m_step = one;
 
-                        array_indices.push_back(al, array_idx);
+                        array_indices.p[0] = array_idx;
 
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
