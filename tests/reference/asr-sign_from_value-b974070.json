@@ -2,11 +2,11 @@
     "basename": "asr-sign_from_value-b974070",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/sign_from_value.f90",
-    "infile_hash": "7cbc0fb4db075ef92bcc404a8b3bf01eae79238f7d4dd22429b5e2e0",
+    "infile_hash": "7437cc00f75f54ea619e0dd72d2c4777e332b6128cc89903c0cea4fc",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-sign_from_value-b974070.stdout",
-    "stdout_hash": "87f7e5aa71a64887e7e0ef6deae48b14346490a4dbdfc44efa30bc62",
+    "stdout_hash": "e913ed57f00403985fa2fb2be78f9b4aa5271578298413eda3be0213",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

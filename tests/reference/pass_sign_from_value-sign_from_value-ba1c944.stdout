@@ -7,54 +7,21 @@
                     (SymbolTable
                         2
                         {
-                            a:
+                            arr:
                                 (Variable
                                     2
-                                    a
-                                    []
-                                    Local
-                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                    Save
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            b:
-                                (Variable
-                                    2
-                                    b
-                                    []
-                                    Local
-                                    (IntegerUnaryMinus
-                                        (IntegerConstant 3 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant -3 (Integer 4) Decimal)
-                                    )
-                                    (IntegerConstant -3 (Integer 4) Decimal)
-                                    Save
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            c:
-                                (Variable
-                                    2
-                                    c
+                                    arr
                                     []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
                                     ()
                                     Source
                                     Public
@@ -77,23 +44,6 @@
                                     (IntegerConstant 16 (Integer 8) Decimal)
                                     Save
                                     (Integer 8)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            epsisp:
-                                (Variable
-                                    2
-                                    epsisp
-                                    []
-                                    Local
-                                    (IntegerConstant 16 (Integer 4) Decimal)
-                                    (IntegerConstant 16 (Integer 4) Decimal)
-                                    Save
-                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -177,23 +127,6 @@
                                     .false.
                                     .false.
                                 ),
-                            ixsp:
-                                (Variable
-                                    2
-                                    ixsp
-                                    []
-                                    Local
-                                    (IntegerConstant 5 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal)
-                                    Save
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
                             rxdp:
                                 (Variable
                                     2
@@ -240,6 +173,87 @@
                                         (Real 4)
                                     )
                                     Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            -2.000000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (RealConstant
+                                        -2.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -3 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            -3.000000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (RealConstant
+                                        -3.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
                                     (Real 4)
                                     ()
                                     Source
@@ -508,46 +522,6 @@
                         []
                     )
                     (Assignment
-                        (Var 2 ixsp)
-                        (IntegerBinOp
-                            (Var 2 ixsp)
-                            Mul
-                            (IntrinsicElementalFunction
-                                Sign
-                                [(IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 2 epsisp)]
-                                0
-                                (Integer 4)
-                                ()
-                            )
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                    )
-                    (Print
-                        (StringFormat
-                            ()
-                            [(Var 2 ixsp)]
-                            FormatFortran
-                            (String -1 0 () PointerString)
-                            ()
-                        )
-                    )
-                    (If
-                        (IntegerCompare
-                            (Var 2 ixsp)
-                            NotEq
-                            (IntegerConstant 5 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (Assignment
                         (Var 2 ixdp)
                         (IntegerBinOp
                             (Var 2 ixdp)
@@ -593,19 +567,51 @@
                         []
                     )
                     (Assignment
-                        (Var 2 c)
-                        (IntegerBinOp
-                            (Var 2 a)
-                            Mul
+                        (Var 2 arr)
+                        (ArrayConstant
+                            20
+                            [1.00000000e+00, 2.00000000e+00, 3.00000000e+00, 4.00000000e+00, 5.00000000e+00]
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (ArrayItem
+                            (Var 2 arr)
+                            [(()
                             (IntrinsicElementalFunction
-                                Sign
-                                [(IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 2 b)]
+                                Int
+                                [(RealBinOp
+                                    (Var 2 x)
+                                    Mul
+                                    (IntrinsicElementalFunction
+                                        Sign
+                                        [(RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        (Var 2 y)]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
                                 0
                                 (Integer 4)
                                 ()
                             )
-                            (Integer 4)
+                            ())]
+                            (Real 4)
+                            ColMajor
                             ()
                         )
                         ()
@@ -613,20 +619,24 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 2 c)]
+                            [(Var 2 z)]
                             FormatFortran
                             (String -1 0 () PointerString)
                             ()
                         )
                     )
                     (If
-                        (IntegerCompare
-                            (Var 2 c)
+                        (RealCompare
+                            (Var 2 z)
                             NotEq
-                            (IntegerUnaryMinus
+                            (ArrayItem
+                                (Var 2 arr)
+                                [(()
                                 (IntegerConstant 2 (Integer 4) Decimal)
-                                (Integer 4)
-                                (IntegerConstant -2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
                             )
                             (Logical 4)
                             ()
