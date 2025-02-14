@@ -1634,6 +1634,7 @@ RUN(NAME template_sort_01 LABELS llvm llvm_wasm llvm_wasm_emcc NOFAST NO_STD_F23
 RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc NOFAST NO_STD_F23)      # FIXME: This test had worked before, but fails now with --fast.
 RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm NO_STD_F23)
 RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)                   # FIXME: add visit_OverloadedBinOp to wasm
+RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)                    # FIXME: add visit_OverloadedBinOp to wasm
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
