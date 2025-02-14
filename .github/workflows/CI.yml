@@ -548,7 +548,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 432ee83a1a33f0e066063c3c4082eee2b80b6e48
+            git checkout 242397c88284e6cdce2bbff8f94374944fd262af
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
@@ -563,7 +563,7 @@ jobs:
             ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
             cp pot3d ../bin/
             cd ..
-            ./validate_lf.sh
+            ./validate.sh
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
