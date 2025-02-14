@@ -13,5 +13,5 @@ integer :: j
 j = 3
 a = 1
 a(2,3) = 2
-call sub(a(1,j))
+! call sub(a(1,j))
 end program
