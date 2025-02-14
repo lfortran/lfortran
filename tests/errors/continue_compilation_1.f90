@@ -180,4 +180,12 @@ program continue_compilation_1
     
     print *, sum([1, 2, 3], mask = [1, 2, 3])
     z1 = y 
+
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], 0)
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
+
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [1.0, 2.0])
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
 end program

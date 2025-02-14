@@ -484,3 +484,39 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 182 |     z1 = y 
     |     ^^   ^ type mismatch (real and logical)
+
+semantic error: reshape accepts arrays for `pad` argument, found i32 instead.
+   --> tests/errors/continue_compilation_1.f90:184:50
+    |
+184 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], 0)
+    |                                                  ^ 
+
+semantic error: reshape accepts arrays for `order` argument, found i32 instead.
+   --> tests/errors/continue_compilation_1.f90:185:55
+    |
+185 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
+    |                                                       ^ 
+
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type f32[1] source type i32[6] instead.
+   --> tests/errors/continue_compilation_1.f90:186:50
+    |
+186 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
+    |                                                  ^^^^^ 
+
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type i64[1] source type i32[6] instead.
+   --> tests/errors/continue_compilation_1.f90:187:50
+    |
+187 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
+    |                                                  ^^^^^ 
+
+semantic error: reshape accepts `order` array with integer elements
+   --> tests/errors/continue_compilation_1.f90:189:58
+    |
+189 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [1.0, 2.0])
+    |                                                          ^^^^^^^^^^ 
+
+semantic error: reshape accepts `order` array as a permutation of elements from 1 to 2
+   --> tests/errors/continue_compilation_1.f90:190:58
+    |
+190 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
+    |                                                          ^^^^^^ 

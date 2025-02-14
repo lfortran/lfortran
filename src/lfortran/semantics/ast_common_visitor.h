@@ -6326,8 +6326,8 @@ public:
             pad = x.m_args[2].m_end;
         }
         if (x.n_args > 3){
-            order = x.m_args[2].m_end;
-            pad = x.m_args[3].m_end;
+            pad = x.m_args[2].m_end;
+            order = x.m_args[3].m_end;
         }
         for( size_t i=0;i<x.n_keywords;i++ ) {
             if( to_lower(x.m_keywords[i].m_arg) == "source" ) {
