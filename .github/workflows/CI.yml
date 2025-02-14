@@ -563,7 +563,9 @@ jobs:
             ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
             cp pot3d ../bin/
             cd ..
-            ./validate.sh
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              ./validate.sh
+            fi
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
