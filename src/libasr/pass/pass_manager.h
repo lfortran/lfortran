@@ -58,6 +58,7 @@
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -80,6 +81,7 @@ namespace LCompilers {
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
+            {"replace_with_compile_time_values", &pass_replace_with_compile_time_values},
             {"do_loops", &pass_replace_do_loops},
             {"while_else", &pass_while_else},
             {"global_stmts", &pass_wrap_global_stmts},
@@ -213,6 +215,7 @@ namespace LCompilers {
             _passes = {
                 "global_stmts",
                 "init_expr",
+                "replace_with_compile_time_values",
                 "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
@@ -246,6 +249,7 @@ namespace LCompilers {
             _with_optimization_passes = {
                 "global_stmts",
                 "init_expr",
+                "replace_with_compile_time_values",
                 "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
