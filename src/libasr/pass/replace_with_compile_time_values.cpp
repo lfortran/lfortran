@@ -22,7 +22,11 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
 
     public:
 
-    CompileTimeValueReplacer(Allocator& al_): al(al_) {}
+    bool inside_prohibited_expression;
+
+
+    CompileTimeValueReplacer(Allocator& al_):
+        al(al_), inside_prohibited_expression(false) {}
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayReshape(x);
@@ -33,8 +37,21 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
         }
     }
 
+    template <typename ExprType>
+    void replace_ExprMethod(ExprType* x,
+            void (ASR::BaseExprReplacer<CompileTimeValueReplacer>::*replacer_function)(ExprType*) ) {
+        bool inside_prohibited_expression_copy = inside_prohibited_expression;
+        inside_prohibited_expression = true;
+        (this->*replacer_function)(x);
+        inside_prohibited_expression = inside_prohibited_expression_copy;
+    }
+
+    void replace_ArrayItem(ASR::ArrayItem_t* x) {
+        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayItem);
+    }
+
     void replace_expr(ASR::expr_t* x) {
-        if( x == nullptr ) {
+        if( x == nullptr || inside_prohibited_expression ) {
             return ;
         }
 
@@ -77,12 +94,26 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
     ExprVisitor(Allocator& al_): replacer(al_)
     {}
 
+    template <typename ExprType>
+    void visit_ExprMethod(const ExprType& x,
+            void (ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::*visitor_function)(const ExprType&) ) {
+        bool inside_prohibited_expression_copy = replacer.inside_prohibited_expression;
+        replacer.inside_prohibited_expression = true;
+        (this->*visitor_function)(x);
+        replacer.inside_prohibited_expression = inside_prohibited_expression_copy;
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_ArrayItem);
+    }
+
 };
 
 void pass_replace_with_compile_time_values(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
     ExprVisitor v(al);
+    // v.call_replacer_on_value = false;
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
