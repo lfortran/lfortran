@@ -34,6 +34,28 @@ class ASRBuilder {
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);                            \
         SetChar dep; dep.reserve(al, 1);
 
+    #define declare_basic_variables_temp(new_name, arg_type)                    \
+        std::string new_func_name = new_name;                                   \
+        int i = 1;                                                              \
+        ASRBuilder b(al, loc);                                                  \
+        while (scope->get_symbol(new_func_name) != nullptr) {                   \
+            ASR::symbol_t *s = scope->get_symbol(new_func_name);                \
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);            \
+            if (ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),        \
+                    arg_type)) {                                                \
+                return b.Call(s, new_args, return_type, nullptr);               \
+            } else {                                                            \
+                new_func_name += std::to_string(i);                             \
+                i++;                                                            \
+            }                                                                   \
+        }                                                                       \
+                                                                                \
+        std::string fn_name = scope->get_unique_name(new_name, false);          \
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);               \
+        Vec<ASR::expr_t*> args; args.reserve(al, 1);                            \
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);                            \
+        SetChar dep; dep.reserve(al, 1);                                        \
+
     // Symbols -----------------------------------------------------------------
     ASR::expr_t *Variable(SymbolTable *symtab, std::string var_name,
             ASR::ttype_t *type, ASR::intentType intent,

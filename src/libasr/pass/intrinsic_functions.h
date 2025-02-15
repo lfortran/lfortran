@@ -4887,7 +4887,8 @@ namespace StringTrim {
     static inline ASR::expr_t* instantiate_StringTrim(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_trim_" + type_to_str_python(arg_types[0]));
+        std::string new_name = "_lcompilers_trim_" + type_to_str_python(arg_types[0]);
+        declare_basic_variables_temp(new_name, arg_types[0]);
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
         return_type = TYPE(ASR::make_String_t(al, loc, 1, -3, func_call_lentrim, ASR::string_physical_typeType::PointerString));
