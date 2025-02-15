@@ -597,19 +597,19 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
 {
     switch (t->type) {
         case ASR::ttypeType::Integer: {
-            return "integer";
+            return "integer("+ std::to_string(extract_kind_from_ttype_t(t)) + ")";
         }
         case ASR::ttypeType::UnsignedInteger: {
-            return "unsigned integer";
+            return "unsigned integer("+ std::to_string(extract_kind_from_ttype_t(t)) + ")";
         }
         case ASR::ttypeType::Real: {
-            return "real";
+            return "real("+ std::to_string(extract_kind_from_ttype_t(t)) + ")";
         }
         case ASR::ttypeType::Complex: {
-            return "complex";
+            return "complex("+ std::to_string(extract_kind_from_ttype_t(t)) + ")";
         }
         case ASR::ttypeType::Logical: {
-            return "logical";
+            return "logical("+ std::to_string(extract_kind_from_ttype_t(t)) + ")";
         }
         case ASR::ttypeType::String: {
             return "string";
@@ -676,12 +676,6 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         }
         default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t) + ".");
     }
-}
-
-static inline std::string type_to_str_with_type(const ASR::ttype_t *t) {
-    std::string type = type_to_str(t);
-    std::string kind = std::to_string(extract_kind_from_ttype_t(t));
-    return type + "(" + kind + ")";
 }
 
 static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,

@@ -28,7 +28,7 @@ define i32 @main(i32 %0, i8** %1) {
   %5 = getelementptr [3 x float], [3 x float]* %a, i32 0, i32 0
   store i32 1, i32* %call_arg_value, align 4
   store i32 3, i32* %call_arg_value1, align 4
-  %6 = call float @sum_real____0(float* %5, i32* %call_arg_value, i32* %call_arg_value1)
+  %6 = call float @sum_real_4_____0(float* %5, i32* %call_arg_value, i32* %call_arg_value1)
   store float %6, float* %b, align 4
   %7 = load float, float* %b, align 4
   %8 = fsub float %7, 6.000000e+00
@@ -80,7 +80,7 @@ return:                                           ; preds = %ifcont
   ret float %5
 }
 
-define float @sum_real____0(float* %a, i32* %__1a, i32* %__2a) {
+define float @sum_real_4_____0(float* %a, i32* %__1a, i32* %__2a) {
 .entry:
   %i = alloca i32, align 4
   %r = alloca float, align 4

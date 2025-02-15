@@ -432,7 +432,7 @@ semantic error: Invalid argument `start` supplied
 160 |     FLUSH(unit=10, start=100)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in argument at argument (1); passed `real` to `integer`.
+semantic error: Type mismatch in argument at argument (1); passed `real(4)` to `integer(4)`.
    --> tests/errors/continue_compilation_2.f90:162:16
     |
 162 |     print *, f(42.9)
@@ -652,19 +652,19 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:281:5
     |
 281 |     tm1_x = "x"
-    |     ^^^^^   ^^^ type mismatch (integer and string)
+    |     ^^^^^   ^^^ type mismatch (integer(4) and string)
 
 semantic error: Type mismatch in binary operator, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:284:13
     |
 284 |     tm2_x = 5 + "x"
-    |             ^   ^^^ type mismatch (integer and string)
+    |             ^   ^^^ type mismatch (integer(4) and string)
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:284:5
     |
 284 |     tm2_x = 5 + "x"
-    |     ^^^^^       ^^^ type mismatch (integer and string)
+    |     ^^^^^       ^^^ type mismatch (integer(4) and string)
 
 semantic error: Variable 'foo' is not declared
    --> tests/errors/continue_compilation_2.f90:315:13

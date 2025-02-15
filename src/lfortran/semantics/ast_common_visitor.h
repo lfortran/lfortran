@@ -4962,8 +4962,8 @@ public:
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)) {
-                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_with_type(extracted_type) +
-                        "` array constructor is `" + ASRUtils::type_to_str_with_type(extracted_new_type) + "`",
+                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str(extracted_type) +
+                        "` array constructor is `" + ASRUtils::type_to_str(extracted_new_type) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
                 } else if (ASR::is_a<ASR::String_t>(*extracted_type)) {
