@@ -593,7 +593,7 @@ static inline void encode_dimensions(size_t n_dims, std::string& res,
     }
 }
 
-static inline std::string type_to_str(const ASR::ttype_t *t)
+static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
 {
     switch (t->type) {
         case ASR::ttypeType::Integer: {
@@ -639,16 +639,16 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
             return "type(c_ptr)";
         }
         case ASR::ttypeType::Pointer: {
-            return type_to_str(ASRUtils::type_get_past_pointer(
+            return type_to_str_fortran(ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t))) + " pointer";
         }
         case ASR::ttypeType::Allocatable: {
-            return type_to_str(ASRUtils::type_get_past_allocatable(
+            return type_to_str_fortran(ASRUtils::type_get_past_allocatable(
                         const_cast<ASR::ttype_t*>(t))) + " allocatable";
         }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str(array_t->m_type);
+            std::string res = type_to_str_fortran(array_t->m_type);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
@@ -663,11 +663,11 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
             std::string result = "(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
-                result += type_to_str(ftp->m_arg_types[i]) + ", ";
+                result += type_to_str_fortran(ftp->m_arg_types[i]) + ", ";
             }
             result += "return_type: ";
             if( ftp->m_return_var_type ) {
-                result += type_to_str(ftp->m_return_var_type);
+                result += type_to_str_fortran(ftp->m_return_var_type);
             } else {
                 result += "void";
             }
@@ -679,7 +679,7 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
 }
 
 static inline std::string type_to_str_with_type(const ASR::ttype_t *t) {
-    std::string type = type_to_str(t);
+    std::string type = type_to_str_fortran(t);
     std::string kind = std::to_string(extract_kind_from_ttype_t(t));
     return type + "(" + kind + ")";
 }
@@ -721,7 +721,7 @@ static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
             result += ")";
             return result;
         }
-        default : return type_to_str(t);
+        default : return type_to_str_fortran(t);
     }
 }
 

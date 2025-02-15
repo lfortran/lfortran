@@ -705,7 +705,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 diag.codegen_warning_label("Declare Global: Type "
-                 + ASRUtils::type_to_str(v_m_type) + " not yet supported", {v->base.base.loc}, "");
+                 + ASRUtils::type_to_str_fortran(v_m_type) + " not yet supported", {v->base.base.loc}, "");
                 global_var_idx = m_wa.declare_global_var(i32, 0);
             }
         }
@@ -963,7 +963,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
             } else {
                 diag.codegen_warning_label("Unsupported variable type: " +
-                        ASRUtils::type_to_str(v->m_type), {v->base.base.loc},
+                        ASRUtils::type_to_str_fortran(v->m_type), {v->base.base.loc},
                         "Only integer, floats, logical and complex supported currently");
                 type_vec.push_back(i32);
             }
@@ -1296,7 +1296,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -1397,7 +1397,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -1485,7 +1485,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryLoad: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -2690,7 +2690,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("temp_value_set: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -2739,7 +2739,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("temp_value_get: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }

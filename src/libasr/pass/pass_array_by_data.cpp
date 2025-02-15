@@ -129,9 +129,9 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
                 if( std::find(indices.begin(), indices.end(), i) != indices.end() ) {
                     if( arg_func ) {
-                        suffix += "_" + ASRUtils::type_to_str(arg_func->m_function_signature);
+                        suffix += "_" + ASRUtils::type_to_str_fortran(arg_func->m_function_signature);
                     } else {
-                        suffix += "_" + ASRUtils::type_to_str(arg->m_type);
+                        suffix += "_" + ASRUtils::type_to_str_fortran(arg->m_type);
                     }
                     suffix += "_" + std::to_string(i);
                 }
