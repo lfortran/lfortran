@@ -1,4 +1,4 @@
-code generation error: Type mismatch in subroutine call, expected `f64[:]`, passed `f64`
+code generation error: Type mismatch in subroutine call, expected `f64[:]`, passed `f64`. Hint: Use the `--legacy-array-sections` flag to compile.
  --> tests/../integration_tests/legacy_array_sections_01.f90:5:8
   |
 5 | call b(w(icon))
