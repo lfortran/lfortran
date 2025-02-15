@@ -4818,15 +4818,18 @@ namespace Pack {
         if (is_type_allocatable) {
             ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
-        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
+        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 3);
+        arg_values.push_back(al, expr_value(array)); arg_values.push_back(al, expr_value(mask));
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, array); m_args.push_back(al, mask);
         if (is_vector_present) {
+            arg_values.push_back(al, expr_value(vector));
             m_args.push_back(al, vector);
             overload_id = 3;
         }
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(m_args)) {
-            value = eval_Pack(al, loc, ret_type, m_args, diag);
+            value = eval_Pack(al, loc, ret_type, arg_values, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::Pack),
