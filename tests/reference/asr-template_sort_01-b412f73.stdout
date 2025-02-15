@@ -468,10 +468,10 @@
                                     (SymbolTable
                                         8
                                         {
-                                            logical:
+                                            logical(4):
                                                 (Variable
                                                     8
-                                                    logical
+                                                    logical(4)
                                                     []
                                                     In
                                                     ()
@@ -1053,7 +1053,7 @@
                                     [(Require
                                         op_r
                                         [t
-                                        logical
+                                        logical(4)
                                         lt]
                                     )]
                                 ),

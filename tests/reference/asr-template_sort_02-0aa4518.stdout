@@ -730,10 +730,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            logical:
+                                            logical(4):
                                                 (Variable
                                                     10
-                                                    logical
+                                                    logical(4)
                                                     []
                                                     In
                                                     ()
@@ -1209,7 +1209,7 @@
                                     [(Require
                                         op_r
                                         [t
-                                        logical
+                                        logical(4)
                                         lt]
                                     )]
                                 ),

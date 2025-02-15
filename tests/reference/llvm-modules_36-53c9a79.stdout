@@ -8,7 +8,7 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 
-define i1 @Any_4_1_0_logical____0(i1* %mask, i32* %__1mask, i32* %__2mask) {
+define i1 @Any_4_1_0_logical_4_____0(i1* %mask, i32* %__1mask, i32* %__2mask) {
 .entry:
   %Any_4_1_0 = alloca i1, align 1
   %__1_i = alloca i32, align 4
@@ -141,7 +141,7 @@ loop.end:                                         ; preds = %ifcont8
   %25 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 0
   store i32 1, i32* %call_arg_value, align 4
   store i32 2, i32* %call_arg_value9, align 4
-  %26 = call i1 @Any_4_1_0_logical____0(i1* %25, i32* %call_arg_value, i32* %call_arg_value9)
+  %26 = call i1 @Any_4_1_0_logical_4_____0(i1* %25, i32* %call_arg_value, i32* %call_arg_value9)
   store i1 %26, i1* %__libasr_created__intrinsic_array_function_Any1, align 1
   %27 = load i1, i1* %__libasr_created__intrinsic_array_function_Any1, align 1
   %28 = load i1, i1* %toomany, align 1

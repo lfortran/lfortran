@@ -43,7 +43,7 @@ loop.end:                                         ; preds = %loop.head
   %13 = getelementptr [10 x i32], [10 x i32]* %x, i32 0, i32 0
   store i32 1, i32* %call_arg_value, align 4
   store i32 10, i32* %call_arg_value3, align 4
-  %14 = call i32 @mysum_integer____0(i32* %13, i32* %call_arg_value, i32* %call_arg_value3)
+  %14 = call i32 @mysum_integer_4_____0(i32* %13, i32* %call_arg_value, i32* %call_arg_value3)
   store i32 %14, i32* %s2, align 4
   %15 = load i32, i32* %s2, align 4
   %16 = sext i32 %15 to i64
@@ -69,7 +69,7 @@ return:                                           ; preds = %ifcont
   ret i32 0
 }
 
-define i32 @mysum_integer____0(i32* %a, i32* %__1a, i32* %__2a) {
+define i32 @mysum_integer_4_____0(i32* %a, i32* %__1a, i32* %__2a) {
 .entry:
   %i = alloca i32, align 4
   %r = alloca i32, align 4

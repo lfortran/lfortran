@@ -221,19 +221,19 @@ semantic error: Type mismatch in assignment, the types must be compatible
   --> tests/errors/continue_compilation_3.f90:88:1
    |
 88 | x = "x"
-   | ^   ^^^ type mismatch (integer and string)
+   | ^   ^^^ type mismatch (integer(4) and string)
 
 semantic error: Type mismatch in binary operator, the types must be compatible
   --> tests/errors/continue_compilation_3.f90:90:5
    |
 90 | x = 5 + "x"
-   |     ^   ^^^ type mismatch (integer and string)
+   |     ^   ^^^ type mismatch (integer(4) and string)
 
 semantic error: Type mismatch in assignment, the types must be compatible
   --> tests/errors/continue_compilation_3.f90:90:1
    |
 90 | x = 5 + "x"
-   | ^       ^^^ type mismatch (integer and string)
+   | ^       ^^^ type mismatch (integer(4) and string)
 
 semantic error: Subroutine `bpe` called as a function
   --> tests/errors/continue_compilation_3.f90:93:5

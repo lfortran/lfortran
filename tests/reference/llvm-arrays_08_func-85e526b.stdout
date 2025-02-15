@@ -54,14 +54,14 @@ loop.end:                                         ; preds = %loop.head
   %14 = getelementptr [10 x i32], [10 x i32]* %y, i32 0, i32 0
   store i32 1, i32* %call_arg_value3, align 4
   store i32 10, i32* %call_arg_value4, align 4
-  call void @copy_from_to_integer____0_integer____1(i32* %13, i32* %call_arg_value, i32* %call_arg_value2, i32* %14, i32* %call_arg_value3, i32* %call_arg_value4)
+  call void @copy_from_to_integer_4_____0_integer_4_____1(i32* %13, i32* %call_arg_value, i32* %call_arg_value2, i32* %14, i32* %call_arg_value3, i32* %call_arg_value4)
   %15 = getelementptr [10 x i32], [10 x i32]* %x, i32 0, i32 0
   store i32 1, i32* %call_arg_value5, align 4
   store i32 10, i32* %call_arg_value6, align 4
   %16 = getelementptr [10 x i32], [10 x i32]* %y, i32 0, i32 0
   store i32 1, i32* %call_arg_value7, align 4
   store i32 10, i32* %call_arg_value8, align 4
-  %17 = call i1 @verify_integer____0_integer____1(i32* %15, i32* %call_arg_value5, i32* %call_arg_value6, i32* %16, i32* %call_arg_value7, i32* %call_arg_value8)
+  %17 = call i1 @verify_integer_4_____0_integer_4_____1(i32* %15, i32* %call_arg_value5, i32* %call_arg_value6, i32* %16, i32* %call_arg_value7, i32* %call_arg_value8)
   store i1 %17, i1* %r, align 1
   %18 = load i1, i1* %r, align 1
   %19 = icmp eq i1 %18, false
@@ -88,7 +88,7 @@ return:                                           ; preds = %ifcont
   ret i32 0
 }
 
-define void @copy_from_to_integer____0_integer____1(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32* %__2b) {
+define void @copy_from_to_integer_4_____0_integer_4_____1(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32* %__2b) {
 .entry:
   %i = alloca i32, align 4
   store i32 0, i32* %i, align 4
@@ -133,7 +133,7 @@ return:                                           ; preds = %loop.end
   ret void
 }
 
-define i1 @verify_integer____0_integer____1(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32* %__2b) {
+define i1 @verify_integer_4_____0_integer_4_____1(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32* %__2b) {
 .entry:
   %i = alloca i32, align 4
   %r = alloca i1, align 1

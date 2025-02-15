@@ -313,10 +313,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            integer:
+                                            integer(4):
                                                 (Variable
                                                     10
-                                                    integer
+                                                    integer(4)
                                                     []
                                                     In
                                                     ()
@@ -343,7 +343,7 @@
                                     equal]
                                     [(Require
                                         magma_r
-                                        [integer
+                                        [integer(4)
                                         bin
                                         equal]
                                     )]

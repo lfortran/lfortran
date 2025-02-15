@@ -275,17 +275,17 @@ semantic error: `dim` argument of the `Iparity` intrinsic is out of bounds
 120 |     print *, iparity(arr3, mask = mask3, dim = -1)
     |                                                ^^ Must have 0 < dim <= 3 for array of rank 3
 
-semantic error: Expected logical expression in if statement, but recieved integer instead
+semantic error: Expected logical expression in if statement, but recieved integer(4) instead
    --> tests/errors/continue_compilation_1.f90:126:9
     |
 126 |     if (q1) q1 = 1
-    |         ^^ integer expression, expected logical
+    |         ^^ integer(4) expression, expected logical
 
-semantic error: Expected logical expression in if statement, but recieved real instead
+semantic error: Expected logical expression in if statement, but recieved real(4) instead
    --> tests/errors/continue_compilation_1.f90:127:9
     |
 127 |     if (r1) r1 = 1.0
-    |         ^^ real expression, expected logical
+    |         ^^ real(4) expression, expected logical
 
 semantic error: Expected logical expression in if statement, but recieved string instead
    --> tests/errors/continue_compilation_1.f90:128:9
@@ -341,7 +341,7 @@ semantic error: reshape accepts arrays for `source` argument, found string inste
 146 |     print *, reshape("hello", [2, 3])
     |                      ^^^^^^^ 
 
-semantic error: reshape accepts arrays for `source` argument, found logical instead.
+semantic error: reshape accepts arrays for `source` argument, found logical(4) instead.
    --> tests/errors/continue_compilation_1.f90:147:22
     |
 147 |     print *, reshape(.true., [2, 3])
@@ -353,7 +353,7 @@ semantic error: reshape accepts arrays for `shape` argument, found string instea
 148 |     print *, reshape([1, 2, 3, 4], "hello")
     |                                    ^^^^^^^ 
 
-semantic error: reshape accepts arrays for `shape` argument, found logical instead.
+semantic error: reshape accepts arrays for `shape` argument, found logical(4) instead.
    --> tests/errors/continue_compilation_1.f90:149:36
     |
 149 |     print *, reshape([1, 2, 3, 4], .false.)
@@ -381,13 +381,13 @@ semantic error: Type mismatch in binary operator, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:160:14
     |
 160 |     print *, v**str
-    |              ^  ^^^ type mismatch (real and string)
+    |              ^  ^^^ type mismatch (real(4) and string)
 
 semantic error: Type mismatch in binary operator, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:161:14
     |
 161 |     print *, str**v
-    |              ^^^  ^ type mismatch (string and real)
+    |              ^^^  ^ type mismatch (string and real(4))
 
 semantic error: The shift argument of 'shiftl' intrinsic must be less than or equal to the bit size of the integer
    --> tests/errors/continue_compilation_1.f90:163:24
@@ -437,37 +437,37 @@ semantic error: Input to `Product` is expected to be numeric, but got string[:]
 172 |     print *, product([c1])
     |                      ^^^^ must be integer, real or complex type
 
-semantic error: Input to `MinVal` is expected to be of integer, real or character type, but got complex[:]
+semantic error: Input to `MinVal` is expected to be of integer, real or character type, but got complex(4)[:]
    --> tests/errors/continue_compilation_1.f90:173:21
     |
 173 |     print *, minval([c])
     |                     ^^^ must be integer, real or character type
 
-semantic error: Input to `MaxVal` is expected to be of integer, real or character type, but got complex[:]
+semantic error: Input to `MaxVal` is expected to be of integer, real or character type, but got complex(4)[:]
    --> tests/errors/continue_compilation_1.f90:174:21
     |
 174 |     print *, maxval([c])
     |                     ^^^ must be integer, real or character type
 
-semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer
+semantic error: Argument to intrinsic `Sum` is expected to be an array, found: integer(4)
    --> tests/errors/continue_compilation_1.f90:176:14
     |
 176 |     print *, sum(q1)
     |              ^^^^^^^ 
 
-semantic error: Argument to intrinsic `Product` is expected to be an array, found: real
+semantic error: Argument to intrinsic `Product` is expected to be an array, found: real(4)
    --> tests/errors/continue_compilation_1.f90:177:14
     |
 177 |     print *, product(r1)
     |              ^^^^^^^^^^^ 
 
-semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: integer
+semantic error: Argument to intrinsic `MinVal` is expected to be an array, found: integer(4)
    --> tests/errors/continue_compilation_1.f90:178:14
     |
 178 |     print *, minval(q1)
     |              ^^^^^^^^^^ 
 
-semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: real
+semantic error: Argument to intrinsic `MaxVal` is expected to be an array, found: real(4)
    --> tests/errors/continue_compilation_1.f90:179:14
     |
 179 |     print *, maxval(r1)
@@ -483,27 +483,27 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:182:5
     |
 182 |     z1 = y 
-    |     ^^   ^ type mismatch (real and logical)
+    |     ^^   ^ type mismatch (real(4) and logical(4))
 
-semantic error: reshape accepts arrays for `pad` argument, found integer instead.
+semantic error: reshape accepts arrays for `pad` argument, found integer(4) instead.
    --> tests/errors/continue_compilation_1.f90:184:50
     |
 184 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], 0)
     |                                                  ^ 
 
-semantic error: reshape accepts arrays for `order` argument, found integer instead.
+semantic error: reshape accepts arrays for `order` argument, found integer(4) instead.
    --> tests/errors/continue_compilation_1.f90:185:55
     |
 185 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
     |                                                       ^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real[:] and kind 4 source type integer[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real(4)[:] and kind 4 source type integer(4)[:] and kind 4 instead.
    --> tests/errors/continue_compilation_1.f90:186:50
     |
 186 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
     |                                                  ^^^^^ 
 
-semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer[:] and kind 8 source type integer[:] and kind 4 instead.
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer(8)[:] and kind 8 source type integer(4)[:] and kind 4 instead.
    --> tests/errors/continue_compilation_1.f90:187:50
     |
 187 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
