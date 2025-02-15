@@ -2648,6 +2648,52 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
 
+static inline ASR::asr_t* make_StructType_t_util(Allocator& al, Location loc, ASR::symbol_t* der){
+    if ( ASRUtils::symbol_get_past_external(der) == nullptr ) {
+        return ASR::make_StructType_t(al,
+                                loc,
+                                nullptr,
+                                0,
+                                nullptr,
+                                0,
+                                true,
+                                der);
+    }
+    ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der));
+    Vec<ASR::ttype_t*> members;
+    members.reserve(al, 1);
+    Vec<ASR::ttype_t*> member_functions;
+    member_functions.reserve(al, 1);
+    SymbolTable* current_scope = st->m_symtab;
+    for(size_t i = 0; i < st->n_members; i++){
+        ASR::symbol_t* temp = current_scope->get_symbol(st->m_members[i]);
+        if(ASR::is_a<ASR::Variable_t>(*temp)){
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                                                ASRUtils::symbol_get_past_external(temp));
+            members.push_back(al,var->m_type);
+        }
+    }
+    for(size_t i = 0; i < st->n_member_functions; i++){
+        ASR::symbol_t* sym = current_scope->get_symbol(st->m_member_functions[i]);
+        if(sym && ASR::is_a<ASR::Function_t>(*sym)){
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(sym));
+            ASR::ttype_t* f_type = f->m_function_signature;
+            member_functions.push_back(al, f_type);
+        }
+    }
+    bool is_cstruct = member_functions.n == 0;
+    return ASR::make_StructType_t(al,
+                                loc,
+                                members.p,
+                                members.n,
+                                member_functions.p,
+                                member_functions.n,
+                                is_cstruct,
+                                der);
+
+}
+
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
     Vec<ASR::dimension_t>* dims=nullptr,
     ASR::array_physical_typeType physical_type=ASR::array_physical_typeType::DescriptorArray,
@@ -2704,7 +2750,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tnew = ASR::down_cast<ASR::StructType_t>(t);
-            t_ = ASRUtils::TYPE(ASR::make_StructType_t(al, t->base.loc, tnew->m_derived_type));
+            t_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, t->base.loc, tnew->m_derived_type));
             break;
         }
         case ASR::ttypeType::ClassType: {
@@ -2907,7 +2953,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
-            return ASRUtils::TYPE(ASR::make_StructType_t(al, loc, tstruct->m_derived_type));
+            return ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, tstruct->m_derived_type));
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
@@ -3924,9 +3970,9 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
                     nullptr, 0, s2c(al, struct_type_name), ASR::accessType::Public));
                 scope->add_symbol(struct_type_name_, imported_struct_type);
             }
-            mem_type = ASRUtils::TYPE(ASR::make_StructType_t(al, mem_type->base.loc, scope->get_symbol(struct_type_name_)));
+            mem_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, mem_type->base.loc, scope->get_symbol(struct_type_name_)));
         } else {
-            mem_type = ASRUtils::TYPE(ASR::make_StructType_t(al, mem_type->base.loc,
+            mem_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, mem_type->base.loc,
                 scope->resolve_symbol(struct_type_name)));
         }
     }
@@ -4579,7 +4625,8 @@ class SymbolDuplicator {
         return ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(
             al, struct_type_t->base.base.loc, struct_type_symtab,
             struct_type_t->m_name, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
-            struct_type_t->m_members, struct_type_t->n_members, struct_type_t->m_abi,
+            struct_type_t->m_members, struct_type_t->n_members, struct_type_t->m_member_functions, 
+            struct_type_t->n_member_functions, struct_type_t->m_abi,
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent));
@@ -5221,7 +5268,7 @@ static inline void import_struct_t(Allocator& al,
             } else {
                 der_sym = current_scope->resolve_symbol(sym_name);
             }
-            var_type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, der_sym));
+            var_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, der_sym));
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);

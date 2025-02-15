@@ -798,7 +798,8 @@ class DoConcurrentVisitor :
             std::string suffix = thread_data_module_name.substr(18);
             std::string thread_data_name = "thread_data" + suffix;
             ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al, loc,
-                current_scope, s2c(al, thread_data_name), nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, ASR::abiType::Source,
+                current_scope, s2c(al, thread_data_name), nullptr, 0, involved_symbols_set.p, 
+                involved_symbols_set.n, 0, 0, ASR::abiType::Source,
                 ASR::accessType::Public, false, false, nullptr, 0, nullptr, nullptr));
             current_scope->parent->add_symbol(thread_data_name, thread_data_struct);
             current_scope = parent_scope;
@@ -850,7 +851,7 @@ class DoConcurrentVisitor :
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // create tdata variable: `type(thread_data), pointer :: tdata`
-            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASR::make_StructType_t(al, loc, thread_data_sym)))),
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, thread_data_sym)))),
                     ASR::intentType::Local, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
@@ -1505,7 +1506,7 @@ class DoConcurrentVisitor :
             std::vector<std::string> array_variables;
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)

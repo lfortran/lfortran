@@ -59,6 +59,14 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        [(Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
                                                         11 git_target_t
                                                     )
                                                     ()
@@ -91,6 +99,14 @@
                                         [(String 1 -1 () PointerString)
                                         (String 1 -1 () PointerString)]
                                         (StructType
+                                            [(Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )]
+                                            []
+                                            .true.
                                             11 git_target_t
                                         )
                                         Source
@@ -201,6 +217,7 @@
                                     []
                                     [url
                                     object]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -236,6 +253,14 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            [(Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
                                                             4 git_target_t
                                                         )
                                                     )
@@ -290,6 +315,7 @@
                                     [name
                                     path
                                     git]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -326,6 +352,7 @@
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -371,6 +398,27 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                [(Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 -2 () DescriptorString)
+                                                                        )
+                                                                        (Allocatable
+                                                                            (String 1 -2 () DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .true.
+                                                                        4 git_target_t
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
                                                                 4 dependency_config_t
                                                             )
                                                             [(()
@@ -396,6 +444,11 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            [(Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -433,6 +486,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        [(Logical 4)]
+                                                        []
+                                                        .true.
                                                         4 toml_table
                                                     )
                                                     ()
@@ -448,6 +504,27 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
+                                                    [(Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            4 git_target_t
+                                                        )
+                                                    )]
+                                                    []
+                                                    .true.
                                                     4 dependency_config_t
                                                 )
                                                 [(()
@@ -456,11 +533,19 @@
                                             )
                                         )
                                         (StructType
+                                            [(Logical 4)]
+                                            []
+                                            .true.
                                             4 toml_table
                                         )
                                         (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
+                                                [(Allocatable
+                                                    (String 1 -2 () DescriptorString)
+                                                )]
+                                                []
+                                                .true.
                                                 4 error_t
                                             )
                                         )]
@@ -532,6 +617,27 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        [(Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                4 git_target_t
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
                                                         4 dependency_config_t
                                                     )
                                                     ()
@@ -564,6 +670,27 @@
                                     new_dependency
                                     (FunctionType
                                         [(StructType
+                                            [(Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    [(Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    4 git_target_t
+                                                )
+                                            )]
+                                            []
+                                            .true.
                                             4 dependency_config_t
                                         )]
                                         ()
@@ -586,6 +713,14 @@
                                             9 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
+                                                    [(Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
                                                     4 git_target_t
                                                 )
                                             )
@@ -613,6 +748,14 @@
                                                 ()
                                             ))]
                                             (StructType
+                                                [(Allocatable
+                                                    (String 1 -2 () DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 -2 () DescriptorString)
+                                                )]
+                                                []
+                                                .true.
                                                 4 git_target_t
                                             )
                                             ()
@@ -658,6 +801,7 @@
                                     toml_table
                                     []
                                     [inline]
+                                    []
                                     Source
                                     Public
                                     .false.

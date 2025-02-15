@@ -69,6 +69,17 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        [(Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
                                                         7 executable_config
                                                     )
                                                     ()
@@ -82,6 +93,17 @@
                                     default_executable
                                     (FunctionType
                                         [(StructType
+                                            [(Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )]
+                                            []
+                                            .true.
                                             7 executable_config
                                         )
                                         (String 1 -1 () PointerString)]
@@ -240,6 +262,7 @@
                                     [name
                                     source_dir
                                     main]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -324,6 +347,32 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        [(Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 -2 () DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 -2 () DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 -2 () DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    4 executable_config
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
                                                         2 package_config_t
                                                     )
                                                     ()
@@ -354,6 +403,32 @@
                                     package_defaults
                                     (FunctionType
                                         [(StructType
+                                            [(Allocatable
+                                                (String 1 -2 () DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        4 executable_config
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )]
+                                            []
+                                            .true.
                                             2 package_config_t
                                         )
                                         (String 1 -1 () PointerString)]
@@ -379,6 +454,17 @@
                                             (Allocatable
                                                 (Array
                                                     (StructType
+                                                        [(Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
                                                         10 1_executable_config
                                                     )
                                                     [(()
@@ -406,6 +492,17 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
+                                                            [(Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
                                                             10 1_executable_config
                                                         )
                                                         [(()
@@ -419,6 +516,17 @@
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (StructType
+                                                [(Allocatable
+                                                    (String 1 -2 () DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 -2 () DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 -2 () DescriptorString)
+                                                )]
+                                                []
+                                                .true.
                                                 10 1_executable_config
                                             )
                                             ColMajor
@@ -487,6 +595,17 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                [(Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
                                                                 4 executable_config
                                                             )
                                                             [(()
@@ -525,6 +644,7 @@
                                     []
                                     [name
                                     executable]
+                                    []
                                     Source
                                     Public
                                     .false.

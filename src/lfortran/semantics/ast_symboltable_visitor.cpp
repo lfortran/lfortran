@@ -1622,7 +1622,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
+                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                     break;
                 }
                 default :
@@ -1980,7 +1980,7 @@ public:
         }
         tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
-            data_member_names.p, data_member_names.size(),
+            data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -3436,7 +3436,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.m_args[i]->base.loc, arg_sym0));
+                            arg_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0));
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }
