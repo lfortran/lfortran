@@ -4870,19 +4870,50 @@ public:
             Vec<ASR::dimension_t> array_section_dims;
             array_section_dims.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
-                if( args.p[i].m_step != nullptr &&
-                    args.p[i].m_left == nullptr ) {
-                    args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
+                ASR::expr_t* start = args.p[i].m_left;
+                ASR::expr_t* end = args.p[i].m_right;
+                ASR::expr_t* step = args.p[i].m_step;
+                bool is_any_kind_8 = false;
+
+                if( step != nullptr &&
+                    start == nullptr ) {
+                    start = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
                 }
-                if (args.p[i].m_step != nullptr
-                    || (args.p[i].m_step == nullptr && args.p[i].m_right != nullptr
-                        && ASRUtils::is_array(ASRUtils::expr_type(args.p[i].m_right)))) {
+                if ( step != nullptr
+                    || (step == nullptr && end != nullptr
+                        && ASRUtils::is_array(ASRUtils::expr_type(end)))) {
                     ASR::dimension_t empty_dim;
                     empty_dim.loc = loc;
                     empty_dim.m_start = nullptr;
                     empty_dim.m_length = nullptr;
                     array_section_dims.push_back(al, empty_dim);
                 }
+                
+                if( !ASRUtils::is_array(ASRUtils::expr_type(end)) && 
+                    ( (end && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) == 8) || 
+                    (start && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start)) == 8) || 
+                    (step && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(step)) == 8) )) {
+                        is_any_kind_8 = true;
+                }
+                if( is_any_kind_8 ) {
+                    ASR::expr_t* int_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))));
+                    if( end && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) != 8 ) {
+                        end = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
+                            al, end->base.loc, end, ASR::cast_kindType::IntegerToInteger, ASRUtils::expr_type(int_one)));
+                    }
+                    if( start && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start)) != 8 ) {
+                        start = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
+                            al, start->base.loc, start, ASR::cast_kindType::IntegerToInteger, ASRUtils::expr_type(int_one)));
+                    }
+                    if( step && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(step)) != 8 ) {
+                        step = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
+                            al, step->base.loc, step, ASR::cast_kindType::IntegerToInteger, ASRUtils::expr_type(int_one)));
+                    }
+                }
+                args.p[i].m_left = start;
+                args.p[i].m_right = end;
+                args.p[i].m_step = step;
             }
             type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
                     &array_section_dims);

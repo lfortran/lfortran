@@ -457,13 +457,24 @@ bool set_allocation_size(
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 } else {
+                    bool is_any_kind_8 = false;
+                    ASR::expr_t * int_one = int32_one; 
+                    if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) == 8 || 
+                        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start)) == 8 || 
+                        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(step)) == 8 ) {
+                            is_any_kind_8 = true;
+                    }
+                    if( is_any_kind_8 ) {
+                        int_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))));
+                    }
                     ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                         end, ASR::binopType::Sub, start, ASRUtils::expr_type(end), nullptr));
                     ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                         end_minus_start, ASR::binopType::Div, step, ASRUtils::expr_type(end_minus_start),
                         nullptr));
                     ASR::expr_t* length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        by_step, ASR::binopType::Add, int32_one, ASRUtils::expr_type(by_step), nullptr));
+                        by_step, ASR::binopType::Add, int_one, ASRUtils::expr_type(by_step), nullptr));
                     allocate_dim.m_length = length;
                     allocate_dims.push_back(al, allocate_dim);
                 }
@@ -863,9 +874,34 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
             exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);
             array_expr = array_expr_ptr;
             if (is_func_arg && is_pointer_required) {
-                // ASR::expr_t ** arg;
-                // ASRUtils::STMT(ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc, 
-                //     static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any),  ))
+                // ASRUtils::ASRBuilder b(al, loc);
+                // ASR::expr_t * arg = nullptr;
+                // ASR::ttype_t* arg_type = ASRUtils::extract_type(ASRUtils::expr_type(array_var_temporary));
+                // // arg[0] = b.NotEq(array_expr, array_var_temporary);
+                // arg = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, loc, ASR::cmpopType::NotEq, array_expr,
+                //                         array_var_temporary, arg_type));
+                // // switch( ASRUtils::extract_type(ASRUtils::expr_type(array_var_temporary))->type ) {
+                // //     case ASR::ttypeType::Integer: {
+                // //         arg[0] = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, array_expr, ASR::cmpopType::NotEq, array_var_temporary, logical, nullptr));
+                // //     }
+                // //     case ASR::ttypeType::Real: {
+                // //         arg[0] = ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, array_expr, ASR::cmpopType::NotEq, array_var_temporary, logical, nullptr));
+                // //     }
+                // //     case ASR::ttypeType::String: {
+                // //         arg[0] = ASRUtils::EXPR(ASR::make_StringCompare_t(al, loc, array_expr, ASR::cmpopType::NotEq, array_var_temporary, logical, nullptr));
+                // //     }
+                // //     case ASR::ttypeType::Logical: {
+                // //         arg[0] = ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, array_expr, ASR::cmpopType::NotEq, array_var_temporary, logical, nullptr));
+                // //     }
+                // // }
+                // ASR::dimension_t * m_dims = nullptr;
+                // size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_var_temporary), m_dims);
+                // ASR::ttype_t * logical_return_type = ASRUtils::make_Array_t_util(al, loc,
+                //     logical, m_dims, n_dims);
+                // ASR::expr_t* any = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc, 
+                //     static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any), &arg, 1, 0, logical_return_type, nullptr));
+                // ASR::stmt_t* if_stmt = b.If(any, { b.Assignment(array_expr, array_var_temporary) }, {});
+                // after_stmt_body->push_back(al, if_stmt);
                 after_stmt_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
                     al, loc, array_expr, array_var_temporary, nullptr, exprs_with_target)));
             }
