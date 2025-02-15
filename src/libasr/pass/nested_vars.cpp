@@ -128,6 +128,8 @@ public:
                         if (m_dims[i].m_length) {
                             if ( ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length)) {
                                 visit_expr(*m_dims[i].m_length);
+                            } else if ( ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
+                                visit_expr(*m_dims[i].m_length);
                             }
                         }
                     }
@@ -182,14 +184,18 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         // Only attempt if we are actually in a nested function
         if (nesting_depth > 1) {
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::symbol_get_past_external(x.m_v));
-            // If the variable is not defined in the current scope, it is a
-            // "needed global" since we need to be able to access it from the
-            // nested procedure.
-            if ( current_scope && par_func_sym &&
-                 v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
-                nesting_map[par_func_sym].insert(x.m_v);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                visit_symbol(*sym);
+            } else {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                // If the variable is not defined in the current scope, it is a
+                // "needed global" since we need to be able to access it from the
+                // nested procedure.
+                if ( current_scope && par_func_sym &&
+                    v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
+                    nesting_map[par_func_sym].insert(x.m_v);
+                }
             }
         }
     }
@@ -422,6 +428,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
         if ( ASRUtils::is_array(xx.m_type) ) {
+            ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(xx.m_type));
             ASR::dimension_t* m_dims;
             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(xx.m_type, m_dims);
             for( size_t i = 0; i < n_dims; i++ ) {
@@ -440,6 +447,19 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_length));
                         call_replacer();
                         current_expr = current_expr_copy_2;
+                        visit_expr(*m_dims[i].m_length);
+                    } else if ( ASR::is_a<ASR::Var_t>(*m_dims[i].m_length) ) {
+                        ASR::expr_t** current_expr_copy_3 = current_expr;
+                        ASR::expr_t* m_length = const_cast<ASR::expr_t*>(m_dims[i].m_length);
+                        current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_length));
+                        ASR::symbol_t* prev_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
+                        call_replacer();
+                        ASR::symbol_t* new_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
+                        if ( prev_sym != new_sym ) {
+                            // need to convert this to a pointer
+                            array->m_physical_type = ASR::array_physical_typeType::PointerToDataArray;
+                        }
+                        current_expr = current_expr_copy_3;
                         visit_expr(*m_dims[i].m_length);
                     }
                 }

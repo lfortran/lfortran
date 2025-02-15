@@ -1305,10 +1305,10 @@ public:
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
-            size_t n, const Location &loc, std::string &return_var_name) {
+            size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
-        if (n == 0 && compiler_options.implicit_interface && compiler_options.implicit_typing) {
+        if (n == 0 && compiler_options.implicit_interface && compiler_options.implicit_typing && !return_var_sym) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
@@ -1545,8 +1545,9 @@ public:
         // or in local variables as
         //     integer :: f
         ASR::asr_t *return_var;
+        ASR::symbol_t* return_var_sym = current_scope->get_symbol(return_var_name);
         AST::AttrType_t *return_type = find_return_type(x.m_attributes,
-            x.n_attributes, x.base.base.loc, return_var_name);
+            x.n_attributes, x.base.base.loc, return_var_name, return_var_sym);
         if (current_scope->get_symbol(return_var_name) == nullptr) {
             // The variable is not defined among local variables, extract the
             // type from "integer function f()" and add the variable.
@@ -1674,7 +1675,8 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
-        if( generic_procedures.find(sym_name) != generic_procedures.end() ) {
+        if (generic_procedures.find(sym_name) != generic_procedures.end()
+            || interface_name == to_lower(sym_name)) {
             sym_name = sym_name + "~genericprocedure";
         }
 

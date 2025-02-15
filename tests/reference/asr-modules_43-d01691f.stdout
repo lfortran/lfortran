@@ -297,7 +297,7 @@
                                                         (StructType
                                                             2 srcfile_t
                                                         )
-                                                        [(()
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         DescriptorArray
                                                     )

@@ -1,0 +1,108 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            interface_generic_procedure_same_name:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            frexp:
+                                (GenericProcedure
+                                    2
+                                    frexp
+                                    [2 frexp~genericprocedure]
+                                    Public
+                                ),
+                            frexp~genericprocedure:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            n:
+                                                (Variable
+                                                    3
+                                                    n
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    3
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                )
+                                        })
+                                    frexp~genericprocedure
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Integer 4)]
+                                        (Real 4)
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 x)
+                                    (Var 3 n)]
+                                    []
+                                    (Var 3 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    interface_generic_procedure_same_name
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

@@ -27,7 +27,6 @@
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
-#include <libasr/pass/replace_array_op_simplifier.h>
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_print_arr.h>
@@ -909,7 +908,7 @@ int handle_mlir(const std::string &infile,
     std::unique_ptr<LCompilers::MLIRModule> m;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
-        res = fe.get_mlir(*asr, diagnostics);
+        res = fe.get_mlir(*(LCompilers::ASR::asr_t *)asr, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -1067,6 +1066,32 @@ int compile_src_to_object_file(const std::string &infile,
         e.save_asm_file(*(m->m_m), outfile);
     } else {
         e.save_object_file(*(m->m_m), outfile);
+    }
+
+    if(compiler_options.po.enable_gpu_offloading) {
+#ifdef HAVE_LFORTRAN_MLIR
+        for (auto &item : asr->m_symtab->get_scope()) {
+            if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second) &&
+                    item.first.find("_lcompilers_mlir_gpu_offloading")
+                    != std::string::npos) {
+                LCompilers::ASR::Module_t &mod = *LCompilers::ASR::down_cast
+                    <LCompilers::ASR::Module_t>(item.second);
+                LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
+                    mlir_res = fe.get_mlir((LCompilers::ASR::asr_t &)mod, diagnostics);
+
+                std::cerr << diagnostics.render(lm, compiler_options);
+                if (mlir_res.ok) {
+                    mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
+                    std::string mlir_tmp_o{std::filesystem::path(infile).
+                        replace_extension(".mlir.tmp.o").string()};
+                    e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
+                } else {
+                    LCOMPILERS_ASSERT(diagnostics.has_error())
+                    return 1;
+                }
+            }
+        }
+#endif
     }
 
     return has_error_w_cc;
@@ -1758,6 +1783,13 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
+                if (backend == Backend::llvm &&
+                        compiler_options.po.enable_gpu_offloading &&
+                        LCompilers::endswith(s, ".tmp.o")) {
+                    std::string mlir_tmp_o{s.substr(0, s.size() - 6) +
+                        ".mlir.tmp.o"};
+                    compile_cmd += mlir_tmp_o + " ";
+                }
             }
             if(!extra_library_flags.empty()) {
                 compile_cmd += extra_library_flags + " ";
@@ -2164,7 +2196,6 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> O_flags;
 
     CompilerOptions compiler_options;
-    bool no_experimental_simplifier = false;
     compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
@@ -2271,7 +2302,6 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
-    app.add_flag("--no-experimental-simplifier", no_experimental_simplifier, "Do not use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
     app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
 
@@ -2319,8 +2349,6 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    compiler_options.po.experimental_simplifier = !no_experimental_simplifier;
-    LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
     if (arg_version) {
@@ -2675,13 +2703,13 @@ int main_app(int argc, char *argv[]) {
                         time_report, compiler_options);
             }
             if (backend == Backend::llvm) {
-    #ifdef HAVE_LFORTRAN_LLVM
+#ifdef HAVE_LFORTRAN_LLVM
                 err = compile_src_to_object_file(arg_file, tmp_o, false,
                     compiler_options, lfortran_pass_manager);
-    #else
+#else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
-    #endif
+#endif
             } else if (backend == Backend::cpp) {
                 err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
                         true, rtlib_header_dir, compiler_options);
@@ -2694,26 +2722,26 @@ int main_app(int argc, char *argv[]) {
                 err = compile_to_binary_wasm(arg_file, outfile,
                         time_report, compiler_options);
             } else if (backend == Backend::mlir) {
-    #ifdef HAVE_LFORTRAN_MLIR
+#ifdef HAVE_LFORTRAN_MLIR
                 err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
-    #else
+#else
                 std::cerr << "Compiling Fortran files to object files using "
                     "`--backend=mlir` requires the MLIR backend to be enabled. "
                     "Recompile with `WITH_MLIR=yes`." << std::endl;
                 return 1;
-    #endif
+#endif
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
         } else if (endswith(arg_file, ".ll")) {
             // this way we can execute LLVM IR files directly
-    #ifdef HAVE_LFORTRAN_LLVM
+#ifdef HAVE_LFORTRAN_LLVM
             err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
             if (err) return err;
-    #else
+#else
             std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
-    #endif
+#endif
         } else {
             // assume it's an object file
             tmp_o = arg_file;

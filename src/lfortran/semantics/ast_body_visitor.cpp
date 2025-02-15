@@ -314,6 +314,16 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_filename))){
                     a_filename = ASRUtils::cast_string_descriptor_to_pointer(al, a_filename);
                 }
+
+                if (ASR::is_a<ASR::StringConstant_t>(*a_filename)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_filename)->m_s);
+                    rtrim(str);
+                    a_filename = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                al, x.base.base.loc, s2c(al, str),
+                                ASRUtils::TYPE(ASR::make_String_t(
+                                    al, a_filename->base.loc, 1, str.length(),
+                                    nullptr, ASR::string_physical_typeType::PointerString))));
+                }
             } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     diag.add(Diagnostic(
@@ -387,8 +397,8 @@ public:
                 }));
             throw SemanticAbort();
         }
-        tmp = ASR::make_FileOpen_t(al, x.base.base.loc, x.m_label,
-                               a_newunit, a_filename, a_status, a_form);
+        tmp = ASR::make_FileOpen_t(
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
@@ -3883,6 +3893,14 @@ public:
     void visit_If(const AST::If_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *test_type = ASRUtils::expr_type(test);
+        if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
+            diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
+                ASRUtils::type_to_str(test_type) + " instead",
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label(ASRUtils::type_to_str(test_type) + " expression, expected logical", {test->base.loc})}));
+            throw SemanticAbort();
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
@@ -4493,7 +4511,7 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
-            if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr))) {
+            if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr)) || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(tmp_expr))) {
                 if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) || ASR::is_a<ASR::Var_t>(*tmp_expr)) {
                     arg_vec.push_back(al, tmp_expr);
                 }

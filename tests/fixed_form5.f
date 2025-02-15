@@ -1,5 +1,7 @@
-        COMPLEX*16 FUNCTION ZDOTC(N,ZX)
+        COMPLEX*16 FUNCTION ZDOTC(N,D1X)
         INTEGER N
-        COMPLEX*16 ZX(*)
+        COMPLEX*16D1X(*)
+        CHARACTER*2D2V
+        D2V="AB"
         RETURN
         END

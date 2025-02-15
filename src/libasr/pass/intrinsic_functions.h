@@ -1221,7 +1221,7 @@ namespace CompilerVersion {
 } // namespace CompilerVersion
 
 namespace CompilerOptions {
-    
+
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "compiler_options() takes no argument",
@@ -1351,9 +1351,21 @@ namespace Sign {
 namespace Shiftr {
 
     static ASR::expr_t *eval_Shiftr(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'shiftr' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'shiftr' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 >> val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1387,9 +1399,21 @@ namespace Shiftr {
 namespace Rshift {
 
     static ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'rshift' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'rshift' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 >> val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1419,9 +1443,21 @@ namespace Rshift {
 namespace Shiftl {
 
     static ASR::expr_t *eval_Shiftl(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'shiftl' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'shiftl' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 << val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1799,15 +1835,43 @@ namespace Present {
         }
     }
 
-    static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+    static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::expr_t* arg = args[0];
+        if (!ASR::is_a<ASR::Var_t>(*arg)) {
+            diag.semantic_error_label(
+                "Argument to 'present' must be a variable, but got an expression",
+                {arg->base.loc},
+                "Expected a variable here"
+            );
+            
+            return nullptr;
+        }
+
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (var->m_presence != ASR::presenceType::Optional) {
+            diag.semantic_error_label(
+                "Argument to 'present' must be an optional dummy argument",
+                {arg->base.loc},
+                "This variable is not 'optional'"
+            );
+
+            return nullptr;
+        }
+
         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
         expr_duplicator.allow_procedure_calls = true;
+
         ASR::ttype_t* type_ = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         ASR::ttype_t *return_type = type_;
         ASR::expr_t *m_value = nullptr;
+
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
-        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Present), m_args.p, m_args.n, 0, return_type, m_value);
+
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Present(Allocator &/*al*/, const Location &/*loc*/,
@@ -3579,18 +3643,12 @@ namespace Merge {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        if ( use_experimental_simplifier ) {
-            tsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[0]));
-            fsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[1]));
-            mask_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[2]));
-        } else {
-            tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
-            fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
-            mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
-        }
+        tsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[0]));
+        fsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[1]));
+        mask_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[2]));
         if( ASR::is_a<ASR::String_t>(*tsource_type) ) {
             ASR::String_t* tsource_char = ASR::down_cast<ASR::String_t>(tsource_type);
             ASR::String_t* fsource_char = ASR::down_cast<ASR::String_t>(fsource_type);
@@ -3682,7 +3740,7 @@ namespace Trailz {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
-        set_kind_to_ttype_t(t1, 4); 
+        set_kind_to_ttype_t(t1, 4);
         return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
     }
 

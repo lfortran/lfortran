@@ -398,26 +398,49 @@ void handle_en(char* format, double val, int scale, char** result, char* c) {
     *result = final_result;
 }
 
+void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
+    *width_digits = -1;
+    *decimal_digits = -1;
+    *exp_digits = -1;
+
+    char *width_digits_pos = format;
+    while (!isdigit(*width_digits_pos)) {
+        width_digits_pos++;
+    }
+    *width_digits = atoi(width_digits_pos);
+
+    // dot_pos exists, we previous checked for it in `parse_fortran_format`
+    char *dot_pos = strchr(format, '.');
+    *decimal_digits = atoi(++dot_pos);
+
+    char *exp_pos = strchr(dot_pos, 'e');
+    if(exp_pos != NULL) {
+        *exp_digits = atoi(++exp_pos);
+    }
+}
+
+
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
-    int width = 0, decimal_digits = 0;
+
+    int width_digits, decimal_digits, exp_digits;
+    parse_deciml_format(format, &width_digits, &decimal_digits, &exp_digits);
+
+    int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
     // integer_part = 11230000128, integer_length = 11
-
-    char *num_pos = format ,*dot_pos = strchr(format, '.');
-    decimal_digits = atoi(++dot_pos);
-    while(!isdigit(*num_pos)) num_pos++;
-    width = atoi(num_pos);
     // width = 10, decimal_digits = 2
 
-    char val_str[128];
+    #define MAX_SIZE 128
+    char val_str[MAX_SIZE] = "";
+    int avail_len_decimal_digits = MAX_SIZE - integer_length - sign_width - 2 /* 0.*/;
     // TODO: This will work for up to `E65.60` but will fail for:
     // print "(E67.62)", 1.23456789101112e-62_8
-    sprintf(val_str, "%.*lf", (60-integer_length), val);
+    sprintf(val_str, "%.*lf", avail_len_decimal_digits, val);
     // val_str = "11230000128.00..."
 
     int i = strlen(val_str) - 1;
@@ -428,9 +451,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     // val_str = "11230000128."
 
     int exp = 2;
-    char* exp_loc = strchr(num_pos, 'e');
-    if (exp_loc != NULL) {
-        exp = atoi(++exp_loc);
+    if (exp_digits != -1) {
+        exp = exp_digits;
     }
     // exp = 2;
 
@@ -446,6 +468,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     int decimal = 1;
+    if (val < 0 &&  val_str[0] == '0') {
+        decimal = 0;
+    }
     while (val_str[0] == '0') {
         // Used for the case: 1.123e-10
         memmove(val_str, val_str + 1, strlen(val_str));
@@ -459,42 +484,47 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         // decimal = -10, case:  1.123e-10
     }
 
-    if (dot_pos != NULL) {
-        if (width == 0) {
-            if (decimal_digits == 0) {
-                width = 14 + sign_width;
-                decimal_digits = 9;
-            } else {
-                width = decimal_digits + 5 + sign_width;
-            }
-        }
-        if (decimal_digits > width - 3) {
-            perror("Specified width is not enough for the specified number of decimal digits.\n");
-        }
+    char exponent[12];
+    if (width_digits == 0) {
+        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
-        width = atoi(format + 1);
+        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        // exponent = "+10"
     }
-    if (decimal_digits > strlen(val_str)) {
-        int k = decimal_digits - (strlen(val_str) - integer_length);
-        for(int i=0; i < k; i++) {
-            strcat(val_str, "0");
+
+    int FIXED_CHARS_LENGTH = 1 + 1 + 1; // digit, ., E
+    int exp_length = strlen(exponent);
+
+    if (width == 0) {
+        if (decimal_digits == 0) {
+            decimal_digits = 9;
         }
+        width = sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length;
+    }
+    if (decimal_digits > width - FIXED_CHARS_LENGTH) {
+        perror("Specified width is not enough for the specified number of decimal digits.\n");
+    }
+    int zeroes_needed = decimal_digits - (strlen(val_str) - integer_length);
+    for(int i=0; i < zeroes_needed; i++) {
+        strcat(val_str, "0");
     }
 
     char formatted_value[64] = "";
-    int spaces = width - sign_width - decimal_digits - 6;
+    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length);
     // spaces = 2
-    if (scale > 1) {
-        decimal_digits -= scale - 1;
-    }
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
+    }
+
+    if (scale > 1) {
+        decimal_digits -= scale - 1;
     }
 
     if (sign_width == 1) {
         // adds `-` (negative) sign
         strcat(formatted_value, "-");
     }
+
     if (scale <= 0) {
         strcat(formatted_value, "0.");
         for (int k = 0; k < abs(scale); k++) {
@@ -541,13 +571,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     strcat(formatted_value, c);
     // formatted_value = "  1.12E"
 
-    char exponent[12];
-    if (atoi(num_pos) == 0) {
-        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
-    } else {
-        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
-        // exponent = "+10"
-    }
+
 
     strcat(formatted_value, exponent);
     // formatted_value = "  1.12E+10"
@@ -2684,12 +2708,6 @@ LFORTRAN_API char* _lfortran_zone() {
     return result;
 }
 
-LFORTRAN_API int32_t _lfortran_values()
-{   
-    //TODO: correct this according to the definition
-    return 1;
-}
-
 LFORTRAN_API char* _lfortran_time() {
     char* result = (char*)malloc(13 * sizeof(char)); // "hhmmss.sss\0" = 12 + 1
 
@@ -2746,12 +2764,65 @@ LFORTRAN_API char* _lfortran_date() {
     return result; // Return the formatted date string
 }
 
+LFORTRAN_API int32_t _lfortran_values(int32_t n)
+{   int32_t result = 0;
+#if defined(_WIN32)
+    SYSTEMTIME st;
+    GetLocalTime(&st); // Get the current local date
+    if (n == 1) result = st.wYear;
+    else if (n == 2) result = st.wMonth;
+    else if (n == 3) result = st.wDay;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = st.wHour;
+    else if (n == 6) result = st.wMinute;
+    else if (n == 7) result = st.wSecond;
+    else if (n == 8) result = st.wMilliseconds;
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    // For non-ARM-based Apple platforms
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm* ptm = localtime(&tv.tv_sec);
+    int milliseconds = tv.tv_usec / 1000;
+    if (n == 1) result = ptm->tm_year + 1900;
+    else if (n == 2) result = ptm->tm_mon + 1;
+    else if (n == 3) result = ptm->tm_mday;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = ptm->tm_hour;
+    else if (n == 6) result = ptm->tm_min;
+    else if (n == 7) result = ptm->tm_sec;
+    else if (n == 8) result = milliseconds;
+#else
+    // For Linux and other platforms
+    time_t t = time(NULL);
+    struct tm* ptm = localtime(&t);
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    if (n == 1) result = ptm->tm_year + 1900;
+    else if (n == 2) result = ptm->tm_mon + 1;
+    else if (n == 3) result = ptm->tm_mday;
+    else if (n == 4) result = 330;
+    else if (n == 5) result = ptm->tm_hour;
+    else if (n == 6) result = ptm->tm_min;
+    else if (n == 7) result = ptm->tm_sec;
+    else if (n == 8) result = ts.tv_nsec / 1000000;
+#endif
+    return result;
+}
+
 LFORTRAN_API float _lfortran_sp_rand_num() {
     return rand() / (float) RAND_MAX;
 }
 
 LFORTRAN_API double _lfortran_dp_rand_num() {
     return rand() / (double) RAND_MAX;
+}
+
+LFORTRAN_API int32_t _lfortran_int32_rand_num() {
+    return rand();
+}
+
+LFORTRAN_API int64_t _lfortran_int64_rand_num() {
+    return rand();
 }
 
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
@@ -2788,6 +2859,7 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 
 struct UNIT_FILE {
     int32_t unit;
+    char* filename;
     FILE* filep;
     bool unit_file_bin;
 };
@@ -2796,7 +2868,7 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
-void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
+void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin) {
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             unit_to_file[i].unit = unit_num;
@@ -2810,6 +2882,7 @@ void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
         exit(1);
     }
     unit_to_file[last_index_used].unit = unit_num;
+    unit_to_file[last_index_used].filename = filename;
     unit_to_file[last_index_used].filep = filep;
     unit_to_file[last_index_used].unit_file_bin = unit_file_bin;
 }
@@ -2820,6 +2893,17 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin) {
         if( unit_to_file[i].unit == unit_num ) {
             *unit_file_bin = unit_to_file[i].unit_file_bin;
             return unit_to_file[i].filep;
+        }
+    }
+    return NULL;
+}
+
+char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
+    *unit_file_bin = false;
+    for (int i = 0; i <= last_index_used; i++) {
+        if (unit_to_file[i].unit == unit_num) {
+            *unit_file_bin = unit_to_file[i].unit_file_bin;
+            return unit_to_file[i].filename;
         }
     }
     return NULL;
@@ -2838,6 +2922,7 @@ void remove_from_unit_to_file(int32_t unit_num) {
     }
     for( int i = index; i < last_index_used; i++ ) {
         unit_to_file[i].unit = unit_to_file[i + 1].unit;
+        unit_to_file[i].filename = unit_to_file[i + 1].filename;
         unit_to_file[i].filep = unit_to_file[i + 1].filep;
         unit_to_file[i].unit_file_bin = unit_to_file[i + 1].unit_file_bin;
     }
@@ -2858,6 +2943,17 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         form = "formatted";
     }
     bool file_exists[1] = {false};
+
+    size_t len = strlen(f_name);
+    if (*(f_name + len - 1) == ' ') {
+        // trim trailing spaces
+        char* end = f_name + len - 1;
+        while (end > f_name && isspace((unsigned char) *end)) {
+            end--;
+        }
+        *(end + 1) = '\0';
+    }
+
     _lfortran_inquire(f_name, file_exists, -1, NULL, NULL);
     char *access_mode = NULL;
     /*
@@ -2920,7 +3016,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         perror(f_name);
         exit(1);
     }
-    store_unit_file(unit_num, fd, unit_file_bin);
+    store_unit_file(unit_num, f_name, fd, unit_file_bin);
     return (int64_t)fd;
 }
 
@@ -3572,6 +3668,38 @@ LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
     sscanf(str, format, *s);
 }
 
+LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i) {
+    sscanf(str, format, i);
+    printf("%s\n", str);
+}
+
+void lfortran_error(const char *message) {
+    fprintf(stderr, "LFORTRAN ERROR: %s\n", message);
+    exit(EXIT_FAILURE);
+}
+
+// TODO: add support for reading comma separated string, into `_arr` functions
+// by accepting array size as an argument as well
+LFORTRAN_API void _lfortran_string_read_i32_array(char *str, char *format, int32_t *arr) {
+    lfortran_error("Reading into an array of int32_t is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_i64_array(char *str, char *format, int64_t *arr) {
+    lfortran_error("Reading into an array of int64_t is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, char *format, float *arr) {
+    lfortran_error("Reading into an array of float is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, char *format, double *arr) {
+    lfortran_error("Reading into an array of double is not supported.");
+}
+
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, char *format, char **arr) {
+    lfortran_error("Reading into an array of strings is not supported.");
+}
+
 LFORTRAN_API void _lpython_close(int64_t fd)
 {
     if (fclose((FILE*)fd) != 0)
@@ -3581,7 +3709,7 @@ LFORTRAN_API void _lpython_close(int64_t fd)
     }
 }
 
-LFORTRAN_API void _lfortran_close(int32_t unit_num)
+LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
 {
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
@@ -3592,6 +3720,13 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num)
     if (fclose(filep) != 0) {
         printf("Error in closing the file!\n");
         exit(1);
+    }
+    // TODO: Support other `status` specifiers
+    if (status && strcmp(status, "delete") == 0) {
+        if (remove(get_file_name_from_unit(unit_num, &unit_file_bin)) != 0) {
+            printf("Error in deleting file!\n");
+            exit(1);
+        }
     }
     remove_from_unit_to_file(unit_num);
 }

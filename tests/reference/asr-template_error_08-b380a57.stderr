@@ -1,4 +1,4 @@
-semantic error: Operator undefined for t + t
+semantic error: Operator `+` undefined for the types in the expression `t + t`
   --> tests/errors/template_error_08.f90:22:17
    |
 22 |             z = x + y

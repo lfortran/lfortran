@@ -54,7 +54,7 @@
         f32.const 3.000000
         local.set 4
         local.get 4
-        f32.const 2.000000
+        i32.const 2
         drop
         local.get 4
         f32.mul
@@ -98,7 +98,7 @@
         f64.const 3.000000
         local.set 3
         local.get 3
-        f64.const 2.000000
+        i32.const 2
         drop
         local.get 3
         f64.mul
