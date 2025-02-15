@@ -6392,20 +6392,20 @@ public:
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(array)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `source` argument, found " +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(array)) +
+                ASRUtils::type_to_str(ASRUtils::expr_type(array)) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `shape` argument, found " +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
+                ASRUtils::type_to_str(ASRUtils::expr_type(newshape)) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {shape->base.loc})}));
             throw SemanticAbort();
         }
         if (order_expr) {
             if (!ASRUtils::is_array(ASRUtils::expr_type(order_expr))){
                 diag.add(Diagnostic("reshape accepts arrays for `order` argument, found " +
-                    ASRUtils::type_to_str_python(ASRUtils::expr_type(order_expr)) +
+                    ASRUtils::type_to_str(ASRUtils::expr_type(order_expr)) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
                 throw SemanticAbort();
             }
@@ -6413,13 +6413,14 @@ public:
         if (pad_expr) {
             if (!ASRUtils::is_array(ASRUtils::expr_type(pad_expr))){
                 diag.add(Diagnostic("reshape accepts arrays for `pad` argument, found " +
-                    ASRUtils::type_to_str_python(ASRUtils::expr_type(pad_expr)) +
+                    ASRUtils::type_to_str(ASRUtils::expr_type(pad_expr)) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
             } else if ( (ASRUtils::type_to_str(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str(ASRUtils::expr_type(array)))|| 
             (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
                 diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
-                    ASRUtils::type_to_str_python(ASRUtils::expr_type(pad_expr)) + " source type " + ASRUtils::type_to_str_python(ASRUtils::expr_type(array)) +
+                    ASRUtils::type_to_str(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
+                     + " source type " + ASRUtils::type_to_str(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
             }
