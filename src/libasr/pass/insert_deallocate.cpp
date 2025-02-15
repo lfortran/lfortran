@@ -32,7 +32,8 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
                 ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(s)) && 
                 (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(s))) ||
                 ASRUtils::is_array(ASRUtils::symbol_type(s))) &&
-                ASRUtils::symbol_intent(s) == ASRUtils::intent_local){
+                ASRUtils::symbol_intent(s) == ASRUtils::intent_local
+                && !ASR::is_a<ASR::Function_t>(*ASRUtils::get_asr_owner(s))) {
                 return true;
             }
             return false;
