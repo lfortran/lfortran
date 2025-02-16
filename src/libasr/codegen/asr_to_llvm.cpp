@@ -4813,7 +4813,7 @@ public:
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 builder->CreateStore(llvm_value, llvm_target);
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) && 
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
                         ASR::is_a<ASR::FunctionType_t>(*value_type)) {
                 llvm_value = llvm_utils->CreateLoad(llvm_value);
                 builder->CreateStore(llvm_value, llvm_target);
@@ -6621,9 +6621,9 @@ public:
                 llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
                 llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
                 #if LLVM_VERSION_MAJOR <= 12
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32"; 
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32";
                 #else
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32"; 
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32";
                 #endif
                 llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
                 llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.

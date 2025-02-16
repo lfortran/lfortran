@@ -40,7 +40,8 @@ passes = [
         "replace_where_simplifier",
         "unique_symbols",
         "insert_deallocate",
-        "promote_allocatable_to_nonallocatable"
+        "promote_allocatable_to_nonallocatable",
+        "replace_with_compile_time_values"
 ]
 
 

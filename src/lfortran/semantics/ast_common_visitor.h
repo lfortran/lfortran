@@ -6416,7 +6416,7 @@ public:
                     ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
-            } else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))|| 
+            } else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))||
             (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
                 diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
                     ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
@@ -6577,7 +6577,7 @@ public:
                                                 ASR::arraystorageType::ColMajor)
                     );
                 }
-            } 
+            }
         } else {
             // otherwise empty dimensions
             dims.reserve(al, n_dims_array_reshape);
