@@ -20,31 +20,571 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %array_bound153 = alloca i32, align 4
+  %array_bound149 = alloca i32, align 4
+  %array_bound143 = alloca i32, align 4
+  %array_bound137 = alloca i32, align 4
+  %array_bound131 = alloca i32, align 4
+  %array_bound125 = alloca i32, align 4
+  %array_bound115 = alloca i32, align 4
+  %array_bound105 = alloca i32, align 4
+  %array_bound95 = alloca i32, align 4
+  %array_bound85 = alloca i32, align 4
+  %array_bound75 = alloca i32, align 4
+  %array_bound65 = alloca i32, align 4
+  %array_bound55 = alloca i32, align 4
+  %array_bound45 = alloca i32, align 4
+  %array_bound37 = alloca i32, align 4
+  %array_bound29 = alloca i32, align 4
+  %array_bound21 = alloca i32, align 4
+  %array_bound13 = alloca i32, align 4
+  %array_bound5 = alloca i32, align 4
+  %array_bound = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca [196 x i32], align 4
   %b = alloca [96 x i32], align 4
   %c = alloca [35 x i32], align 4
   %d = alloca [4 x i32], align 4
-  %2 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 2, i32 2, i64 3, i32 2, i64 1)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %3 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 5, i32 2, i64 9, i32 2, i64 7)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  %4 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 2, i64 1, i32 2, i64 2, i32 2, i64 3, i32 2, i64 4)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
-  %5 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 2, i64 2, i32 2, i64 4, i32 2, i64 6, i32 2, i64 7)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
-  %6 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 6, i32 2, i64 1)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
-  %7 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 10, i32 2, i64 7)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
-  %8 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 1)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
-  %9 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 4)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i32 2, i32* %array_bound, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br i1 false, label %then1, label %else2
+
+then1:                                            ; preds = %else
+  store i32 3, i32* %array_bound, align 4
+  br label %ifcont
+
+else2:                                            ; preds = %else
+  br i1 false, label %then3, label %else4
+
+then3:                                            ; preds = %else2
+  store i32 1, i32* %array_bound, align 4
+  br label %ifcont
+
+else4:                                            ; preds = %else2
+  br label %ifcont
+
+ifcont:                                           ; preds = %else4, %then3, %then1, %then
+  %2 = load i32, i32* %array_bound, align 4
+  %3 = sext i32 %2 to i64
+  br i1 false, label %then6, label %else7
+
+then6:                                            ; preds = %ifcont
+  store i32 2, i32* %array_bound5, align 4
+  br label %ifcont12
+
+else7:                                            ; preds = %ifcont
+  br i1 true, label %then8, label %else9
+
+then8:                                            ; preds = %else7
+  store i32 3, i32* %array_bound5, align 4
+  br label %ifcont12
+
+else9:                                            ; preds = %else7
+  br i1 false, label %then10, label %else11
+
+then10:                                           ; preds = %else9
+  store i32 1, i32* %array_bound5, align 4
+  br label %ifcont12
+
+else11:                                           ; preds = %else9
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %else11, %then10, %then8, %then6
+  %4 = load i32, i32* %array_bound5, align 4
+  %5 = sext i32 %4 to i64
+  br i1 false, label %then14, label %else15
+
+then14:                                           ; preds = %ifcont12
+  store i32 2, i32* %array_bound13, align 4
+  br label %ifcont20
+
+else15:                                           ; preds = %ifcont12
+  br i1 false, label %then16, label %else17
+
+then16:                                           ; preds = %else15
+  store i32 3, i32* %array_bound13, align 4
+  br label %ifcont20
+
+else17:                                           ; preds = %else15
+  br i1 true, label %then18, label %else19
+
+then18:                                           ; preds = %else17
+  store i32 1, i32* %array_bound13, align 4
+  br label %ifcont20
+
+else19:                                           ; preds = %else17
+  br label %ifcont20
+
+ifcont20:                                         ; preds = %else19, %then18, %then16, %then14
+  %6 = load i32, i32* %array_bound13, align 4
+  %7 = sext i32 %6 to i64
+  %8 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 %3, i32 2, i64 %5, i32 2, i64 %7)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  br i1 true, label %then22, label %else23
+
+then22:                                           ; preds = %ifcont20
+  store i32 5, i32* %array_bound21, align 4
+  br label %ifcont28
+
+else23:                                           ; preds = %ifcont20
+  br i1 false, label %then24, label %else25
+
+then24:                                           ; preds = %else23
+  store i32 9, i32* %array_bound21, align 4
+  br label %ifcont28
+
+else25:                                           ; preds = %else23
+  br i1 false, label %then26, label %else27
+
+then26:                                           ; preds = %else25
+  store i32 7, i32* %array_bound21, align 4
+  br label %ifcont28
+
+else27:                                           ; preds = %else25
+  br label %ifcont28
+
+ifcont28:                                         ; preds = %else27, %then26, %then24, %then22
+  %9 = load i32, i32* %array_bound21, align 4
+  %10 = sext i32 %9 to i64
+  br i1 false, label %then30, label %else31
+
+then30:                                           ; preds = %ifcont28
+  store i32 5, i32* %array_bound29, align 4
+  br label %ifcont36
+
+else31:                                           ; preds = %ifcont28
+  br i1 true, label %then32, label %else33
+
+then32:                                           ; preds = %else31
+  store i32 9, i32* %array_bound29, align 4
+  br label %ifcont36
+
+else33:                                           ; preds = %else31
+  br i1 false, label %then34, label %else35
+
+then34:                                           ; preds = %else33
+  store i32 7, i32* %array_bound29, align 4
+  br label %ifcont36
+
+else35:                                           ; preds = %else33
+  br label %ifcont36
+
+ifcont36:                                         ; preds = %else35, %then34, %then32, %then30
+  %11 = load i32, i32* %array_bound29, align 4
+  %12 = sext i32 %11 to i64
+  br i1 false, label %then38, label %else39
+
+then38:                                           ; preds = %ifcont36
+  store i32 5, i32* %array_bound37, align 4
+  br label %ifcont44
+
+else39:                                           ; preds = %ifcont36
+  br i1 false, label %then40, label %else41
+
+then40:                                           ; preds = %else39
+  store i32 9, i32* %array_bound37, align 4
+  br label %ifcont44
+
+else41:                                           ; preds = %else39
+  br i1 true, label %then42, label %else43
+
+then42:                                           ; preds = %else41
+  store i32 7, i32* %array_bound37, align 4
+  br label %ifcont44
+
+else43:                                           ; preds = %else41
+  br label %ifcont44
+
+ifcont44:                                         ; preds = %else43, %then42, %then40, %then38
+  %13 = load i32, i32* %array_bound37, align 4
+  %14 = sext i32 %13 to i64
+  %15 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 %10, i32 2, i64 %12, i32 2, i64 %14)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  br i1 true, label %then46, label %else47
+
+then46:                                           ; preds = %ifcont44
+  store i32 1, i32* %array_bound45, align 4
+  br label %ifcont54
+
+else47:                                           ; preds = %ifcont44
+  br i1 false, label %then48, label %else49
+
+then48:                                           ; preds = %else47
+  store i32 2, i32* %array_bound45, align 4
+  br label %ifcont54
+
+else49:                                           ; preds = %else47
+  br i1 false, label %then50, label %else51
+
+then50:                                           ; preds = %else49
+  store i32 3, i32* %array_bound45, align 4
+  br label %ifcont54
+
+else51:                                           ; preds = %else49
+  br i1 false, label %then52, label %else53
+
+then52:                                           ; preds = %else51
+  store i32 4, i32* %array_bound45, align 4
+  br label %ifcont54
+
+else53:                                           ; preds = %else51
+  br label %ifcont54
+
+ifcont54:                                         ; preds = %else53, %then52, %then50, %then48, %then46
+  %16 = load i32, i32* %array_bound45, align 4
+  %17 = sext i32 %16 to i64
+  br i1 false, label %then56, label %else57
+
+then56:                                           ; preds = %ifcont54
+  store i32 1, i32* %array_bound55, align 4
+  br label %ifcont64
+
+else57:                                           ; preds = %ifcont54
+  br i1 true, label %then58, label %else59
+
+then58:                                           ; preds = %else57
+  store i32 2, i32* %array_bound55, align 4
+  br label %ifcont64
+
+else59:                                           ; preds = %else57
+  br i1 false, label %then60, label %else61
+
+then60:                                           ; preds = %else59
+  store i32 3, i32* %array_bound55, align 4
+  br label %ifcont64
+
+else61:                                           ; preds = %else59
+  br i1 false, label %then62, label %else63
+
+then62:                                           ; preds = %else61
+  store i32 4, i32* %array_bound55, align 4
+  br label %ifcont64
+
+else63:                                           ; preds = %else61
+  br label %ifcont64
+
+ifcont64:                                         ; preds = %else63, %then62, %then60, %then58, %then56
+  %18 = load i32, i32* %array_bound55, align 4
+  %19 = sext i32 %18 to i64
+  br i1 false, label %then66, label %else67
+
+then66:                                           ; preds = %ifcont64
+  store i32 1, i32* %array_bound65, align 4
+  br label %ifcont74
+
+else67:                                           ; preds = %ifcont64
+  br i1 false, label %then68, label %else69
+
+then68:                                           ; preds = %else67
+  store i32 2, i32* %array_bound65, align 4
+  br label %ifcont74
+
+else69:                                           ; preds = %else67
+  br i1 true, label %then70, label %else71
+
+then70:                                           ; preds = %else69
+  store i32 3, i32* %array_bound65, align 4
+  br label %ifcont74
+
+else71:                                           ; preds = %else69
+  br i1 false, label %then72, label %else73
+
+then72:                                           ; preds = %else71
+  store i32 4, i32* %array_bound65, align 4
+  br label %ifcont74
+
+else73:                                           ; preds = %else71
+  br label %ifcont74
+
+ifcont74:                                         ; preds = %else73, %then72, %then70, %then68, %then66
+  %20 = load i32, i32* %array_bound65, align 4
+  %21 = sext i32 %20 to i64
+  br i1 false, label %then76, label %else77
+
+then76:                                           ; preds = %ifcont74
+  store i32 1, i32* %array_bound75, align 4
+  br label %ifcont84
+
+else77:                                           ; preds = %ifcont74
+  br i1 false, label %then78, label %else79
+
+then78:                                           ; preds = %else77
+  store i32 2, i32* %array_bound75, align 4
+  br label %ifcont84
+
+else79:                                           ; preds = %else77
+  br i1 false, label %then80, label %else81
+
+then80:                                           ; preds = %else79
+  store i32 3, i32* %array_bound75, align 4
+  br label %ifcont84
+
+else81:                                           ; preds = %else79
+  br i1 true, label %then82, label %else83
+
+then82:                                           ; preds = %else81
+  store i32 4, i32* %array_bound75, align 4
+  br label %ifcont84
+
+else83:                                           ; preds = %else81
+  br label %ifcont84
+
+ifcont84:                                         ; preds = %else83, %then82, %then80, %then78, %then76
+  %22 = load i32, i32* %array_bound75, align 4
+  %23 = sext i32 %22 to i64
+  %24 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 2, i64 %17, i32 2, i64 %19, i32 2, i64 %21, i32 2, i64 %23)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  br i1 true, label %then86, label %else87
+
+then86:                                           ; preds = %ifcont84
+  store i32 2, i32* %array_bound85, align 4
+  br label %ifcont94
+
+else87:                                           ; preds = %ifcont84
+  br i1 false, label %then88, label %else89
+
+then88:                                           ; preds = %else87
+  store i32 4, i32* %array_bound85, align 4
+  br label %ifcont94
+
+else89:                                           ; preds = %else87
+  br i1 false, label %then90, label %else91
+
+then90:                                           ; preds = %else89
+  store i32 6, i32* %array_bound85, align 4
+  br label %ifcont94
+
+else91:                                           ; preds = %else89
+  br i1 false, label %then92, label %else93
+
+then92:                                           ; preds = %else91
+  store i32 7, i32* %array_bound85, align 4
+  br label %ifcont94
+
+else93:                                           ; preds = %else91
+  br label %ifcont94
+
+ifcont94:                                         ; preds = %else93, %then92, %then90, %then88, %then86
+  %25 = load i32, i32* %array_bound85, align 4
+  %26 = sext i32 %25 to i64
+  br i1 false, label %then96, label %else97
+
+then96:                                           ; preds = %ifcont94
+  store i32 2, i32* %array_bound95, align 4
+  br label %ifcont104
+
+else97:                                           ; preds = %ifcont94
+  br i1 true, label %then98, label %else99
+
+then98:                                           ; preds = %else97
+  store i32 4, i32* %array_bound95, align 4
+  br label %ifcont104
+
+else99:                                           ; preds = %else97
+  br i1 false, label %then100, label %else101
+
+then100:                                          ; preds = %else99
+  store i32 6, i32* %array_bound95, align 4
+  br label %ifcont104
+
+else101:                                          ; preds = %else99
+  br i1 false, label %then102, label %else103
+
+then102:                                          ; preds = %else101
+  store i32 7, i32* %array_bound95, align 4
+  br label %ifcont104
+
+else103:                                          ; preds = %else101
+  br label %ifcont104
+
+ifcont104:                                        ; preds = %else103, %then102, %then100, %then98, %then96
+  %27 = load i32, i32* %array_bound95, align 4
+  %28 = sext i32 %27 to i64
+  br i1 false, label %then106, label %else107
+
+then106:                                          ; preds = %ifcont104
+  store i32 2, i32* %array_bound105, align 4
+  br label %ifcont114
+
+else107:                                          ; preds = %ifcont104
+  br i1 false, label %then108, label %else109
+
+then108:                                          ; preds = %else107
+  store i32 4, i32* %array_bound105, align 4
+  br label %ifcont114
+
+else109:                                          ; preds = %else107
+  br i1 true, label %then110, label %else111
+
+then110:                                          ; preds = %else109
+  store i32 6, i32* %array_bound105, align 4
+  br label %ifcont114
+
+else111:                                          ; preds = %else109
+  br i1 false, label %then112, label %else113
+
+then112:                                          ; preds = %else111
+  store i32 7, i32* %array_bound105, align 4
+  br label %ifcont114
+
+else113:                                          ; preds = %else111
+  br label %ifcont114
+
+ifcont114:                                        ; preds = %else113, %then112, %then110, %then108, %then106
+  %29 = load i32, i32* %array_bound105, align 4
+  %30 = sext i32 %29 to i64
+  br i1 false, label %then116, label %else117
+
+then116:                                          ; preds = %ifcont114
+  store i32 2, i32* %array_bound115, align 4
+  br label %ifcont124
+
+else117:                                          ; preds = %ifcont114
+  br i1 false, label %then118, label %else119
+
+then118:                                          ; preds = %else117
+  store i32 4, i32* %array_bound115, align 4
+  br label %ifcont124
+
+else119:                                          ; preds = %else117
+  br i1 false, label %then120, label %else121
+
+then120:                                          ; preds = %else119
+  store i32 6, i32* %array_bound115, align 4
+  br label %ifcont124
+
+else121:                                          ; preds = %else119
+  br i1 true, label %then122, label %else123
+
+then122:                                          ; preds = %else121
+  store i32 7, i32* %array_bound115, align 4
+  br label %ifcont124
+
+else123:                                          ; preds = %else121
+  br label %ifcont124
+
+ifcont124:                                        ; preds = %else123, %then122, %then120, %then118, %then116
+  %31 = load i32, i32* %array_bound115, align 4
+  %32 = sext i32 %31 to i64
+  %33 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 2, i64 %26, i32 2, i64 %28, i32 2, i64 %30, i32 2, i64 %32)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
+  br i1 true, label %then126, label %else127
+
+then126:                                          ; preds = %ifcont124
+  store i32 6, i32* %array_bound125, align 4
+  br label %ifcont130
+
+else127:                                          ; preds = %ifcont124
+  br i1 false, label %then128, label %else129
+
+then128:                                          ; preds = %else127
+  store i32 1, i32* %array_bound125, align 4
+  br label %ifcont130
+
+else129:                                          ; preds = %else127
+  br label %ifcont130
+
+ifcont130:                                        ; preds = %else129, %then128, %then126
+  %34 = load i32, i32* %array_bound125, align 4
+  %35 = sext i32 %34 to i64
+  br i1 false, label %then132, label %else133
+
+then132:                                          ; preds = %ifcont130
+  store i32 6, i32* %array_bound131, align 4
+  br label %ifcont136
+
+else133:                                          ; preds = %ifcont130
+  br i1 true, label %then134, label %else135
+
+then134:                                          ; preds = %else133
+  store i32 1, i32* %array_bound131, align 4
+  br label %ifcont136
+
+else135:                                          ; preds = %else133
+  br label %ifcont136
+
+ifcont136:                                        ; preds = %else135, %then134, %then132
+  %36 = load i32, i32* %array_bound131, align 4
+  %37 = sext i32 %36 to i64
+  %38 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 %35, i32 2, i64 %37)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %38, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  br i1 true, label %then138, label %else139
+
+then138:                                          ; preds = %ifcont136
+  store i32 10, i32* %array_bound137, align 4
+  br label %ifcont142
+
+else139:                                          ; preds = %ifcont136
+  br i1 false, label %then140, label %else141
+
+then140:                                          ; preds = %else139
+  store i32 7, i32* %array_bound137, align 4
+  br label %ifcont142
+
+else141:                                          ; preds = %else139
+  br label %ifcont142
+
+ifcont142:                                        ; preds = %else141, %then140, %then138
+  %39 = load i32, i32* %array_bound137, align 4
+  %40 = sext i32 %39 to i64
+  br i1 false, label %then144, label %else145
+
+then144:                                          ; preds = %ifcont142
+  store i32 10, i32* %array_bound143, align 4
+  br label %ifcont148
+
+else145:                                          ; preds = %ifcont142
+  br i1 true, label %then146, label %else147
+
+then146:                                          ; preds = %else145
+  store i32 7, i32* %array_bound143, align 4
+  br label %ifcont148
+
+else147:                                          ; preds = %else145
+  br label %ifcont148
+
+ifcont148:                                        ; preds = %else147, %then146, %then144
+  %41 = load i32, i32* %array_bound143, align 4
+  %42 = sext i32 %41 to i64
+  %43 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 %40, i32 2, i64 %42)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  br i1 true, label %then150, label %else151
+
+then150:                                          ; preds = %ifcont148
+  store i32 1, i32* %array_bound149, align 4
+  br label %ifcont152
+
+else151:                                          ; preds = %ifcont148
+  br label %ifcont152
+
+ifcont152:                                        ; preds = %else151, %then150
+  %44 = load i32, i32* %array_bound149, align 4
+  %45 = sext i32 %44 to i64
+  %46 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %45)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %46, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  br i1 true, label %then154, label %else155
+
+then154:                                          ; preds = %ifcont152
+  store i32 4, i32* %array_bound153, align 4
+  br label %ifcont156
+
+else155:                                          ; preds = %ifcont152
+  br label %ifcont156
+
+ifcont156:                                        ; preds = %else155, %then154
+  %47 = load i32, i32* %array_bound153, align 4
+  %48 = sext i32 %47 to i64
+  %49 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %48)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %49, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %ifcont156
   ret i32 0
 }
 
