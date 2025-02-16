@@ -564,8 +564,8 @@ jobs:
             FC="$(pwd)/src/bin/lfortran"
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
-            git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 242397c88284e6cdce2bbff8f94374944fd262af
+            git checkout -t origin/temp_build_pot3d
+            git checkout 0e333ec566f39fbed76a226c006e4c171de7d0de
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
@@ -580,9 +580,7 @@ jobs:
             ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
             cp pot3d ../bin/
             cd ..
-            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
-              ./validate.sh
-            fi
+            ./validate.sh
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
