@@ -823,7 +823,7 @@ namespace Abs {
                 type = real_type;
             }
         }
-        // Simplifier: TODO: Calculate type according to input arguments
+        // array_struct_temporary: TODO: Calculate type according to input arguments
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
             static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
             ASRUtils::type_get_past_allocatable(type), diag);
@@ -1843,7 +1843,7 @@ namespace Present {
                 {arg->base.loc},
                 "Expected a variable here"
             );
-            
+
             return nullptr;
         }
 

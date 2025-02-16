@@ -784,7 +784,7 @@ cumulative = true
 [[test]]
 filename = "array_op_simplifier_test.f90"
 asr = true
-pass = "simplifier,array_op"
+pass = "array_struct_temporary,array_op"
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
