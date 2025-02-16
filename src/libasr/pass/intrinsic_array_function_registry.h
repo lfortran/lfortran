@@ -3393,8 +3393,21 @@ namespace FindLoc {
         int64_t array_value_id = 0, array_value_mask = 1, array_value_dim = 2, array_value_dim_mask = 3;
         int64_t overload_id = array_value_id;
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::expr_t* array = args[0];
-        ASR::expr_t* value = args[1];
+        ASR::expr_t* array = nullptr;
+        ASR::expr_t* value = nullptr;
+        if (extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))){
+            Vec<ASR::expr_t*> args_;
+            args_.reserve(al, 2);
+            args_.push_back(al, args[0]);
+            args_.push_back(al, args[1]);
+            promote_arguments_kinds(al, loc, args_, diag);
+            array = args_[0];
+            value = args_[1];
+        }
+        else {
+            array = args[0];
+            value = args[1];
+        }
         ASR::ttype_t *array_type = expr_type(array);
         ASR::ttype_t *value_type = expr_type(value);
         if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type) && !is_complex(*array_type)) {
