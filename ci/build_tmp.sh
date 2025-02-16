@@ -4,7 +4,7 @@
 # and Windows. The prerequisites such as bison, re2c or cython must be already
 # installed.
 
-set -ex
+set -e
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
