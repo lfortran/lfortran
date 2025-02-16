@@ -3393,8 +3393,21 @@ namespace FindLoc {
         int64_t array_value_id = 0, array_value_mask = 1, array_value_dim = 2, array_value_dim_mask = 3;
         int64_t overload_id = array_value_id;
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::expr_t* array = args[0];
-        ASR::expr_t* value = args[1];
+        ASR::expr_t* array = nullptr;
+        ASR::expr_t* value = nullptr;
+        if (extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))){
+            Vec<ASR::expr_t*> args_;
+            args_.reserve(al, 2);
+            args_.push_back(al, args[0]);
+            args_.push_back(al, args[1]);
+            promote_arguments_kinds(al, loc, args_, diag);
+            array = args_[0];
+            value = args_[1];
+        }
+        else {
+            array = args[0];
+            value = args[1];
+        }
         ASR::ttype_t *array_type = expr_type(array);
         ASR::ttype_t *value_type = expr_type(value);
         if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type) && !is_complex(*array_type)) {
@@ -3406,29 +3419,6 @@ namespace FindLoc {
             append_error(diag, "`value` argument of `findloc` must be a scalar of integer, "
                 "real, logical, character or complex type", loc);
             return nullptr;
-        }
-        if (extract_kind_from_ttype_t(array_type) != extract_kind_from_ttype_t(value_type)) {
-            if (ASR::is_a<ASR::Real_t>(*value_type)){
-                if (ASR::is_a<ASR::RealConstant_t>(*value)){
-                    value = EXPR(ASR::make_RealConstant_t(
-                        al, loc, ASR::down_cast<ASR::RealConstant_t>(value)->m_r,
-                        ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(array_type)))));
-                } else {
-                    value = EXPR(ASR::make_Cast_t(
-                        al, loc, value, ASR::cast_kindType::RealToReal,
-                        ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(array_type))), nullptr));
-                }
-            } else if (ASR::is_a<ASR::Integer_t>(*value_type)){
-                if (ASR::is_a<ASR::IntegerConstant_t>(*value)){
-                    value = EXPR(ASR::make_IntegerConstant_t(
-                        al, loc, ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n,
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(array_type)))));
-                } else {
-                    value = EXPR(ASR::make_Cast_t(
-                        al, loc, value, ASR::cast_kindType::IntegerToInteger,
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(array_type))), nullptr));
-                }
-            } 
         }
         ASR::ttype_t *return_type = nullptr;
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 6);

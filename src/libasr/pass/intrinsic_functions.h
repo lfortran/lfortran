@@ -6056,50 +6056,6 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 
 } // namespace SetRemove
 
-static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
-        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
-    int target_kind = -1;
-    for (size_t i = 0; i < args.size(); i++) {
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
-        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (kind > target_kind) {
-            target_kind = kind;
-        }
-    }
-
-    for (size_t i = 0; i < args.size(); i++) {
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
-        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (kind==target_kind) {
-            continue;
-        }
-        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
-            if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
-            }
-        } else {
-            diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},
-                "help: ensure all arguments are of a convertible type");
-        }
-    }
-}
-
 namespace Max {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
