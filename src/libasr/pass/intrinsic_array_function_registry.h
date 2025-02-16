@@ -3410,6 +3410,25 @@ namespace FindLoc {
         }
         ASR::ttype_t *array_type = expr_type(array);
         ASR::ttype_t *value_type = expr_type(value);
+        if (is_real(*array_type) && is_integer(*value_type)){
+            if (ASR::is_a<ASR::IntegerConstant_t>(*value)){
+                ASR::IntegerConstant_t *value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+                value = EXPR(ASR::make_RealConstant_t(al, loc, value_int->m_n, 
+                ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type)))));
+            } else{
+                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::IntegerToReal, 
+                ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
+            }
+        } else if (is_integer(*array_type) && is_real(*value_type)){
+            if (ASR::is_a<ASR::RealConstant_t>(*value)){
+                ASR::RealConstant_t *value_int = ASR::down_cast<ASR::RealConstant_t>(value);
+                value = EXPR(ASR::make_IntegerConstant_t(al, loc, value_int->m_r, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type)))));
+            } else{
+                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::RealToInteger, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
+            }
+        }
         if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type) && !is_complex(*array_type)) {
             append_error(diag, "`array` argument of `findloc` must be an array of integer, "
                 "real, logical, character or complex type", loc);
