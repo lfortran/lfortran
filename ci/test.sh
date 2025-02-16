@@ -19,13 +19,13 @@ src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
 src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 ./intrinsics_04
 
+
 # Run all tests (does not work on Windows yet):
 cmake --version
 if [[ $WIN != "1" ]]; then
     ./run_tests.py
 
     cd integration_tests
-    rm -rf build-lfortran-llvm
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
     FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
