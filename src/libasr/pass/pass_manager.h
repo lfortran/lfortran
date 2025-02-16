@@ -215,7 +215,6 @@ namespace LCompilers {
             _passes = {
                 "global_stmts",
                 "init_expr",
-                "replace_with_compile_time_values",
                 "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
