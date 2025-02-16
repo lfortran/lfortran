@@ -602,8 +602,8 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                 default:
                     LCOMPILERS_ASSERT(false);
             }
-            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str(left_type)
-                                + " " +  op_str + " " + ASRUtils::type_to_str(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
     }
@@ -981,7 +981,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         else {
             diag.add(diag::Diagnostic(
                 "Operand of .not. operator is "+
-                std::string(ASRUtils::type_to_str(operand_type)),
+                std::string(ASRUtils::type_to_str_fortran(operand_type)),
                 Level::Error, Stage::Semantic, {
                 diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -5609,8 +5609,8 @@ public:
                 }
 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
-                    std::string arg_str = ASRUtils::type_to_str(arg_type);
-                    std::string orig_arg_str = ASRUtils::type_to_str(orig_arg_type);
+                    std::string arg_str = ASRUtils::type_to_str_fortran(arg_type);
+                    std::string orig_arg_str = ASRUtils::type_to_str_fortran(orig_arg_type);
                     diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
                                         "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
                                         Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
@@ -6392,20 +6392,20 @@ public:
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(array)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `source` argument, found " +
-                ASRUtils::type_to_str(ASRUtils::expr_type(array)) +
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `shape` argument, found " +
-                ASRUtils::type_to_str(ASRUtils::expr_type(newshape)) +
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(newshape)) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {shape->base.loc})}));
             throw SemanticAbort();
         }
         if (order_expr) {
             if (!ASRUtils::is_array(ASRUtils::expr_type(order_expr))){
                 diag.add(Diagnostic("reshape accepts arrays for `order` argument, found " +
-                    ASRUtils::type_to_str(ASRUtils::expr_type(order_expr)) +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(order_expr)) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
                 throw SemanticAbort();
             }
@@ -6413,14 +6413,14 @@ public:
         if (pad_expr) {
             if (!ASRUtils::is_array(ASRUtils::expr_type(pad_expr))){
                 diag.add(Diagnostic("reshape accepts arrays for `pad` argument, found " +
-                    ASRUtils::type_to_str(ASRUtils::expr_type(pad_expr)) +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
-            } else if ( (ASRUtils::type_to_str(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str(ASRUtils::expr_type(array)))|| 
+            } else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))|| 
             (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
                 diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
-                    ASRUtils::type_to_str(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
-                     + " source type " + ASRUtils::type_to_str(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
+                     + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
             }
@@ -6939,14 +6939,14 @@ public:
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (arg_type != required_type || kind != required_kind) {
                         diag.add(Diagnostic("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
-                                            " must be of " + ASRUtils::type_to_str(required_type) + " type with kind " + std::to_string(required_kind),
+                                            " must be of " + ASRUtils::type_to_str_fortran(required_type) + " type with kind " + std::to_string(required_kind),
                                             Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }
                 } else {
                     if (arg_type != required_type) {
                         diag.add(Diagnostic("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
-                                            " must be of " + ASRUtils::type_to_str(required_type) + " type",
+                                            " must be of " + ASRUtils::type_to_str_fortran(required_type) + " type",
                                             Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }
@@ -7417,7 +7417,7 @@ public:
                     al, loc, arg, ASR::cast_kindType::ComplexToReal,
                     to_type, value));
         } else {
-            std::string stype = ASRUtils::type_to_str(type);
+            std::string stype = ASRUtils::type_to_str_fortran(type);
             diag.add(Diagnostic("Conversion of '" + stype + "' to float is not Implemented",
                                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
@@ -8166,8 +8166,8 @@ public:
                         ASR::ttype_t *source_type = ASRUtils::expr_type(source);
 
                         if (!ASRUtils::check_equal_type(dest_type, source_type)) {
-                            std::string dtype = ASRUtils::type_to_str(dest_type);
-                            std::string stype = ASRUtils::type_to_str(source_type);
+                            std::string dtype = ASRUtils::type_to_str_fortran(dest_type);
+                            std::string stype = ASRUtils::type_to_str_fortran(source_type);
                             diag.add(Diagnostic(
                                 "Type mismatch in function call, the function expects '" + dtype + "' but '" + stype + "' was provided",
                                 Level::Error, Stage::Semantic, {
@@ -8488,8 +8488,8 @@ public:
             // Don't Check.
         } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right)) && overloaded == nullptr) {
-            std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(left));
-            std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(right));
+            std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
+            std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(right));
             diag.add(Diagnostic(
                 "Type mismatch in binary operator, the types must be compatible",
                 Level::Error, Stage::Semantic, {
@@ -8560,8 +8560,8 @@ public:
                     default:
                         LCOMPILERS_ASSERT(false);
                 }
-            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str(left_type)
-                                + " " +  op_str + " " + ASRUtils::type_to_str(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         } else if( overloaded == nullptr ) {
@@ -8616,7 +8616,7 @@ public:
                     args[i], false, false, dims, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
-                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str(arg_type) +
+                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str_fortran(arg_type) +
                         " cannot be applied to non-type parameter " + param, Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }

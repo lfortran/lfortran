@@ -636,7 +636,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     ASR::expr_t *mask = nullptr;
     ASR::ttype_t* array_type = ASRUtils::expr_type(array);
     if (!is_array(array_type)){
-        append_error(diag, "Argument to intrinsic `" + intrinsic_func_name + "` is expected to be an array, found: " + type_to_str(array_type), loc);
+        append_error(diag, "Argument to intrinsic `" + intrinsic_func_name + "` is expected to be an array, found: " + type_to_str_fortran(array_type), loc);
         return nullptr;
     }
     if (args[1]) {
@@ -3095,7 +3095,7 @@ namespace Sum {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
             diag.add(diag::Diagnostic("Input to `Sum` is expected to be numeric, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
@@ -3136,7 +3136,7 @@ namespace Product {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
             diag.add(diag::Diagnostic("Input to `Product` is expected to be numeric, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
@@ -3210,7 +3210,7 @@ namespace MaxVal {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
             diag.add(diag::Diagnostic("Input to `MaxVal` is expected to be of integer, real or character type, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
@@ -3647,7 +3647,7 @@ namespace MinVal {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
             diag.add(diag::Diagnostic("Input to `MinVal` is expected to be of integer, real or character type, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));

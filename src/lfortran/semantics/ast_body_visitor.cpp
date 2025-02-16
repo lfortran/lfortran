@@ -2728,8 +2728,8 @@ public:
                                         ASRUtils::expr_type(value),ASRUtils::expr_type(to_return), diag);
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(to_return),
                                     ASRUtils::expr_type(value))) {
-            std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(to_return));
-            std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
+            std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(to_return));
+            std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
             diag.semantic_error_label(
                 "Type mismatch in statement function, the types must be compatible",
                 {to_return->base.loc, value->base.loc},
@@ -3037,8 +3037,8 @@ public:
             }
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
                                         ASRUtils::expr_type(value))) {
-                std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(target));
-                std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
+                std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(target));
+                std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
                 if(value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(ac->m_type); i++) {
@@ -3896,9 +3896,9 @@ public:
         ASR::ttype_t *test_type = ASRUtils::expr_type(test);
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
-                ASRUtils::type_to_str(test_type) + " instead",
+                ASRUtils::type_to_str_fortran(test_type) + " instead",
                 diag::Level::Error, diag::Stage::Semantic, {
-                diag::Label(ASRUtils::type_to_str(test_type) + " expression, expected logical", {test->base.loc})}));
+                diag::Label(ASRUtils::type_to_str_fortran(test_type) + " expression, expected logical", {test->base.loc})}));
             throw SemanticAbort();
         }
         Vec<ASR::stmt_t*> body;

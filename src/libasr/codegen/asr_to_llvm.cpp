@@ -7850,7 +7850,7 @@ public:
             case (ASR::cast_kindType::ListToArray) : {
                 if( !ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_arg)) ) {
                     throw CodeGenError("The argument of ListToArray cast should "
-                        "be a list/std::vector, found, " + ASRUtils::type_to_str(
+                        "be a list/std::vector, found, " + ASRUtils::type_to_str_fortran(
                             ASRUtils::expr_type(x.m_arg)));
                 }
                 int64_t ptr_loads_copy = ptr_loads;
@@ -7983,7 +7983,7 @@ public:
                 break;
             }
             default: {
-                std::string s_type = ASRUtils::type_to_str(type);
+                std::string s_type = ASRUtils::type_to_str_fortran(type);
                 throw CodeGenError("Read function not implemented for: " + s_type);
             }
         }
@@ -8736,7 +8736,7 @@ public:
             }
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str(t) + "` type.", loc);
+                ASRUtils::type_to_str_fortran(t) + "` type.", loc);
         }
 
         if(is_array){
@@ -9198,7 +9198,7 @@ public:
                         break;
                     }
                     default :
-                        throw CodeGenError("Type " + ASRUtils::type_to_str(arg_type) + " not implemented yet.");
+                        throw CodeGenError("Type " + ASRUtils::type_to_str_fortran(arg_type) + " not implemented yet.");
                 }
                 if( ASR::is_a<ASR::EnumValue_t>(*x.m_args[i].m_value) ) {
                     target_type = llvm::Type::getInt32Ty(context);
