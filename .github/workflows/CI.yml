@@ -93,7 +93,7 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            case "$OSTYPE" in darwin*) MACOS=1;; *) MACOS=0;; esac
+            case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
             shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
