@@ -53,7 +53,7 @@ public :
 
     void replace_FunctionCall(ASR::FunctionCall_t* x){
         traverse_functionCall_args(x->m_args, x->n_args);
-        if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the simplifier. No need to check for them here.
+        if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the array_struct_temporary. No need to check for them here.
             // Create variable in current_scope to be holding the return + Deallocate.
             ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
                 "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
