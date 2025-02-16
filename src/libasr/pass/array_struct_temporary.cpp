@@ -121,7 +121,7 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
-    bool is_pointer_required=false) {
+    bool is_pointer_required=false, bool is_func_arg_descriptor_arr = false) {
     ASR::ttype_t* value_type = ASRUtils::expr_type(value);
     LCOMPILERS_ASSERT(ASRUtils::is_array(value_type));
 
@@ -190,6 +190,8 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
             } else {
                 var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
             }
+        } else if (is_func_arg_descriptor_arr) {
+            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
         } else {
             var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
         }
@@ -723,6 +725,20 @@ bool set_allocation_size(
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
+        case ASR::exprType::Var: {
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)); 
+            allocate_dims.reserve(al, n_dims);
+            for( size_t i = 0; i < n_dims; i++) {
+                ASR::dimension_t allocate_dim;
+                allocate_dim.loc = loc;
+                allocate_dim.m_start = int32_one;
+                ASR::expr_t* m_dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i + 1, ASRUtils::expr_type(int32_one)));
+                allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                    al, loc, value, m_dim, ASRUtils::expr_type(int32_one), nullptr, false));
+                allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
@@ -733,7 +749,8 @@ bool set_allocation_size(
 
 void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body) {
-    if( !ASRUtils::is_allocatable(temporary_var) ) {
+    if( !ASRUtils::is_allocatable(temporary_var) && 
+        !ASRUtils::is_pointer(ASRUtils::expr_type(temporary_var))) {
         return ;
     }
     Vec<ASR::dimension_t> allocate_dims;
