@@ -339,9 +339,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(x.m_name);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-        v->m_type = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature;
-        scope->add_or_overwrite_symbol(v->m_name, (ASR::symbol_t*)v);
+        v->m_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature);
     }
     bool is_nopass { false };
     bool is_class_procedure { false };

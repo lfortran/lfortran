@@ -1519,7 +1519,7 @@ namespace LCompilers {
                 break;
             }
             default :
-                throw CodeGenError("Support for type " + ASRUtils::type_to_str(asr_type) +
+                throw CodeGenError("Support for type " + ASRUtils::type_to_str_fortran(asr_type) +
                                    " not yet implemented.");
         }
         return llvm_type;
@@ -2193,7 +2193,7 @@ namespace LCompilers {
             }
             default: {
                 throw LCompilersException("LLVMUtils::deepcopy isn't implemented for " +
-                                          ASRUtils::type_to_str(asr_type));
+                                          ASRUtils::type_to_str_fortran(asr_type));
             }
         }
     }

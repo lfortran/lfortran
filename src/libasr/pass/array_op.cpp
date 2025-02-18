@@ -204,6 +204,24 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             xx.m_type = ASRUtils::extract_type(x.m_type);
         }
     }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x){
+        if( !ASRUtils::is_array(x.m_type) ) {
+            return ;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_RealUnaryMinus(x);
+        ASR::RealUnaryMinus_t& xx = const_cast<ASR::RealUnaryMinus_t&>(x);
+        xx.m_type = ASRUtils::extract_type(x.m_type);
+    }
+
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t& x){
+        if( !ASRUtils::is_array(x.m_type) ) {
+            return ;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntegerUnaryMinus(x);
+        ASR::IntegerUnaryMinus_t& xx = const_cast<ASR::IntegerUnaryMinus_t&>(x);
+        xx.m_type = ASRUtils::extract_type(x.m_type);
+    }
 };
 
 class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
@@ -269,7 +287,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // TODO: Remove this because the ArrayConstructor node should
-        // be replaced with its value already (if present) in simplifier pass.
+        // be replaced with its value already (if present) in array_struct_temporary pass.
         if( x->m_value == nullptr ) {
             if( !are_all_elements_scalars(x->m_args, x->n_args) ) {
                 PassUtils::ReplacerUtils::replace_ArrayConstructor_(

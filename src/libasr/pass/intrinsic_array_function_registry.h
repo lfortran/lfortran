@@ -636,7 +636,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     ASR::expr_t *mask = nullptr;
     ASR::ttype_t* array_type = ASRUtils::expr_type(array);
     if (!is_array(array_type)){
-        append_error(diag, "Argument to intrinsic `" + intrinsic_func_name + "` is expected to be an array, found: " + type_to_str(array_type), loc);
+        append_error(diag, "Argument to intrinsic `" + intrinsic_func_name + "` is expected to be an array, found: " + type_to_str_fortran(array_type), loc);
         return nullptr;
     }
     if (args[1]) {
@@ -3095,7 +3095,7 @@ namespace Sum {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
             diag.add(diag::Diagnostic("Input to `Sum` is expected to be numeric, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
@@ -3136,7 +3136,7 @@ namespace Product {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
             diag.add(diag::Diagnostic("Input to `Product` is expected to be numeric, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
@@ -3210,7 +3210,7 @@ namespace MaxVal {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
             diag.add(diag::Diagnostic("Input to `MaxVal` is expected to be of integer, real or character type, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
@@ -3393,10 +3393,42 @@ namespace FindLoc {
         int64_t array_value_id = 0, array_value_mask = 1, array_value_dim = 2, array_value_dim_mask = 3;
         int64_t overload_id = array_value_id;
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::expr_t* array = args[0];
-        ASR::expr_t* value = args[1];
+        ASR::expr_t* array = nullptr;
+        ASR::expr_t* value = nullptr;
+        if (extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))){
+            Vec<ASR::expr_t*> args_;
+            args_.reserve(al, 2);
+            args_.push_back(al, args[0]);
+            args_.push_back(al, args[1]);
+            promote_arguments_kinds(al, loc, args_, diag);
+            array = args_[0];
+            value = args_[1];
+        }
+        else {
+            array = args[0];
+            value = args[1];
+        }
         ASR::ttype_t *array_type = expr_type(array);
         ASR::ttype_t *value_type = expr_type(value);
+        if (is_real(*array_type) && is_integer(*value_type)){
+            if (ASR::is_a<ASR::IntegerConstant_t>(*value)){
+                ASR::IntegerConstant_t *value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+                value = EXPR(ASR::make_RealConstant_t(al, loc, value_int->m_n, 
+                ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type)))));
+            } else{
+                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::IntegerToReal, 
+                ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
+            }
+        } else if (is_integer(*array_type) && is_real(*value_type)){
+            if (ASR::is_a<ASR::RealConstant_t>(*value)){
+                ASR::RealConstant_t *value_int = ASR::down_cast<ASR::RealConstant_t>(value);
+                value = EXPR(ASR::make_IntegerConstant_t(al, loc, value_int->m_r, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type)))));
+            } else{
+                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::RealToInteger, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
+            }
+        }
         if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type) && !is_complex(*array_type)) {
             append_error(diag, "`array` argument of `findloc` must be an array of integer, "
                 "real, logical, character or complex type", loc);
@@ -3647,7 +3679,7 @@ namespace MinVal {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
             diag.add(diag::Diagnostic("Input to `MinVal` is expected to be of integer, real or character type, but got " +
-                type_to_str(array_type), 
+                type_to_str_fortran(array_type), 
                 diag::Level::Error, 
                 diag::Stage::Semantic, 
                 {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
@@ -3966,7 +3998,11 @@ namespace Count {
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int64_t id_mask = 0, id_mask_dim = 1;
         int64_t overload_id = id_mask;
-
+        if (!is_array(expr_type(args[0])) || !is_logical(*expr_type(args[0]))){
+            append_error(diag, "`mask` argument to `count` intrinsic must be a logical array",
+                args[0]->base.loc);
+            return nullptr;
+        }
         ASR::expr_t *mask = args[0], *dim_ = nullptr, *kind = nullptr;
 
         if (args.size() == 2) {
@@ -4818,15 +4854,18 @@ namespace Pack {
         if (is_type_allocatable) {
             ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
-        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
+        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 3);
+        arg_values.push_back(al, expr_value(array)); arg_values.push_back(al, expr_value(mask));
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, array); m_args.push_back(al, mask);
         if (is_vector_present) {
+            arg_values.push_back(al, expr_value(vector));
             m_args.push_back(al, vector);
             overload_id = 3;
         }
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(m_args)) {
-            value = eval_Pack(al, loc, ret_type, m_args, diag);
+            value = eval_Pack(al, loc, ret_type, arg_values, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::Pack),

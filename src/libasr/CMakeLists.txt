@@ -30,7 +30,7 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
-    pass/simplifier.cpp
+    pass/array_struct_temporary.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
     pass/openmp.cpp
@@ -71,6 +71,7 @@ set(SRC
     pass/unique_symbols.cpp
     pass/insert_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
+    pass/replace_with_compile_time_values.cpp
 
     asr_verify.cpp
     asr_utils.cpp

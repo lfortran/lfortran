@@ -53,11 +53,12 @@
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/insert_deallocate.h>
-#include <libasr/pass/simplifier.h>
+#include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -80,6 +81,7 @@ namespace LCompilers {
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
+            {"replace_with_compile_time_values", &pass_replace_with_compile_time_values},
             {"do_loops", &pass_replace_do_loops},
             {"while_else", &pass_while_else},
             {"global_stmts", &pass_wrap_global_stmts},
@@ -117,7 +119,7 @@ namespace LCompilers {
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
-            {"simplifier", &pass_simplifier}
+            {"array_struct_temporary", &pass_array_struct_temporary}
         };
 
         bool apply_default_passes;
@@ -216,7 +218,7 @@ namespace LCompilers {
                 "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
-                "simplifier",
+                "array_struct_temporary",
                 "nested_vars",
                 "transform_optional_argument_functions",
                 "forall",
@@ -246,10 +248,11 @@ namespace LCompilers {
             _with_optimization_passes = {
                 "global_stmts",
                 "init_expr",
+                "replace_with_compile_time_values",
                 "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
-                "simplifier",
+                "array_struct_temporary",
                 "nested_vars",
                 "transform_optional_argument_functions",
                 "forall",
@@ -287,6 +290,7 @@ namespace LCompilers {
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
+                "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",
                 "do_loops",

@@ -93,7 +93,8 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            xonsh ci/test.xsh
+            case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
+            shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
         shell: bash -e -l {0}
@@ -121,7 +122,7 @@ jobs:
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\test.xsh
+            shell ci\test.sh
 
   scipy:
     name: Check SciPy Build and Test Run
@@ -514,9 +515,39 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf-cleaned_branch-10
-            git checkout 4382c00423aca79cc1781073577cda78894da0bb
+            git checkout -t origin/lf-prima-4
+            git checkout 3216d838684d3c9bbbd00b8f55afda878b7f2553
+            git clean -dfx
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            ./build/fortran/example_bobyqa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_2_exe
+            ./build/fortran/example_bobyqa_fortran_2_exe
+            ./build/fortran/example_uobyqa_fortran_1_exe
+            ./build/fortran/example_uobyqa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_1_exe
+            ./build/fortran/example_lincoa_fortran_2_exe
+            ./build/fortran/example_cobyla_fortran_2_exe
+
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              cd fortran/
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              cd ../
+            fi
+
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              cd fortran/
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              cd ../
+            fi
+
+            git clean -dfx
+            FC="$(pwd)/../src/bin/lfortran --cpp --fast" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_2_exe
@@ -535,7 +566,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 79585cc94cb9fa40400b0e6447871eb477e17292
+            git checkout 242397c88284e6cdce2bbff8f94374944fd262af
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
@@ -547,6 +578,12 @@ jobs:
             ${FC} -c mpi.f90
             ${FC} -c psi_io.f90
             ${FC} -c --cpp --implicit-interface pot3d.F90
+            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
+            cp pot3d ../bin/
+            cd ..
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              ./validate.sh
+            fi
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -754,6 +791,23 @@ jobs:
             make clean
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
+
+      - name: Test Numerical Methods Fortran
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
+            cd numerical-methods-fortran
+            export PATH="$(pwd)/../src/bin:$PATH"
+            git checkout -t origin/lf3
+            git checkout a3cd1165832349e5c133681328d2f86fa48d650f
+            FC=lfortran make
+            ./test_fix_point.exe
+            ./test_integrate_one.exe
+            ./test_linear.exe
+            ./test_newton.exe
+            ./test_ode.exe
+            ./test_probability_distribution.exe
+            ./test_sde.exe
 
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Override cmake version to 3.31.2

@@ -928,12 +928,12 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 }
                 if( (arg0_name == pass_arg_str && target != expr_dt) ) {
                     err(std::string(subrout->m_name) + " is not a procedure of " +
-                        ASRUtils::type_to_str(target_type),
+                        ASRUtils::type_to_str_fortran(target_type),
                         loc);
                 }
                 if( (arg1_name == pass_arg_str && value != expr_dt) ) {
                     err(std::string(subrout->m_name) + " is not a procedure of " +
-                        ASRUtils::type_to_str(value_type),
+                        ASRUtils::type_to_str_fortran(value_type),
                         loc);
                 }
             }
@@ -1036,7 +1036,7 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
             std::string pass_arg_str = std::string(pass_arg);
             if( (arg0_name == pass_arg_str && args[0] != expr_dt) ) {
                 err(std::string(subrout->m_name) + " is not a procedure of " +
-                    ASRUtils::type_to_str(arg_type),
+                    ASRUtils::type_to_str_fortran(arg_type),
                     loc);
             }
         }

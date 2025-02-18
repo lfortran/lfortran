@@ -156,7 +156,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid;
 
     public:
-    ASR::expr_t* result_var_; // Declared in simplifier
+    ASR::expr_t* result_var_; // Declared in array_struct_temporary
     SymbolTable* current_scope;
 
     ReplaceFunctionCallReturningArray(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,

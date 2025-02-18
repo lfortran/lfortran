@@ -1149,9 +1149,14 @@ public:
                 ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::symbol_type(tmp_sym))), module.get());
+
+            llvm::Type* dest_type = tp->getPointerTo();
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(tmp_sym))) {
+                // functions are pointers in LLVM, so we do not need to get the pointer to it
+                dest_type = tp;
+            }
             llvm::Value* np = builder->CreateIntToPtr(
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                tp->getPointerTo());
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
             builder->CreateStore(np, target);
         }
     }
@@ -4808,7 +4813,7 @@ public:
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 builder->CreateStore(llvm_value, llvm_target);
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) && 
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
                         ASR::is_a<ASR::FunctionType_t>(*value_type)) {
                 llvm_value = llvm_utils->CreateLoad(llvm_value);
                 builder->CreateStore(llvm_value, llvm_target);
@@ -6616,9 +6621,9 @@ public:
                 llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
                 llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
                 #if LLVM_VERSION_MAJOR <= 12
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32"; 
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32";
                 #else
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32"; 
+                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32";
                 #endif
                 llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
                 llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
@@ -7845,7 +7850,7 @@ public:
             case (ASR::cast_kindType::ListToArray) : {
                 if( !ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_arg)) ) {
                     throw CodeGenError("The argument of ListToArray cast should "
-                        "be a list/std::vector, found, " + ASRUtils::type_to_str(
+                        "be a list/std::vector, found, " + ASRUtils::type_to_str_fortran(
                             ASRUtils::expr_type(x.m_arg)));
                 }
                 int64_t ptr_loads_copy = ptr_loads;
@@ -7978,7 +7983,7 @@ public:
                 break;
             }
             default: {
-                std::string s_type = ASRUtils::type_to_str(type);
+                std::string s_type = ASRUtils::type_to_str_fortran(type);
                 throw CodeGenError("Read function not implemented for: " + s_type);
             }
         }
@@ -8731,7 +8736,7 @@ public:
             }
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str(t) + "` type.", loc);
+                ASRUtils::type_to_str_fortran(t) + "` type.", loc);
         }
 
         if(is_array){
@@ -9193,7 +9198,7 @@ public:
                         break;
                     }
                     default :
-                        throw CodeGenError("Type " + ASRUtils::type_to_str(arg_type) + " not implemented yet.");
+                        throw CodeGenError("Type " + ASRUtils::type_to_str_fortran(arg_type) + " not implemented yet.");
                 }
                 if( ASR::is_a<ASR::EnumValue_t>(*x.m_args[i].m_value) ) {
                     target_type = llvm::Type::getInt32Ty(context);

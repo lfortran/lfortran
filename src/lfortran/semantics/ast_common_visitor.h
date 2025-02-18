@@ -576,6 +576,37 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
             }) ) {
         overloaded = ASRUtils::EXPR(asr);
     }
+
+    if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+        // if overloaded is not found, then reject
+        if (overloaded == nullptr) {
+            std::string op_str = "==";
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq):
+                    break;
+                case (ASR::cmpopType::Gt):
+                    op_str = ">";
+                    break;
+                case (ASR::cmpopType::GtE):
+                    op_str = ">=";
+                    break;
+                case (ASR::cmpopType::Lt):
+                    op_str = "<";
+                    break;
+                case (ASR::cmpopType::LtE):
+                    op_str = "<=";
+                    break;
+                case (ASR::cmpopType::NotEq):
+                    op_str = "/=";
+                    break;
+                default:
+                    LCOMPILERS_ASSERT(false);
+            }
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
     ASR::ttype_t *source_type = nullptr;
     ASR::ttype_t *dest_type = nullptr;
 
@@ -950,7 +981,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         else {
             diag.add(diag::Diagnostic(
                 "Operand of .not. operator is "+
-                std::string(ASRUtils::type_to_str(operand_type)),
+                std::string(ASRUtils::type_to_str_fortran(operand_type)),
                 Level::Error, Stage::Semantic, {
                 diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -3618,7 +3649,14 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-
+                    if (ASRUtils::is_real(*type) && ASRUtils::is_logical(*init_type)) {
+                        diag.add(Diagnostic(
+                            "Cannot convert LOGICAL to REAL",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {init_expr->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                     size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
                     size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
 
@@ -5605,8 +5643,8 @@ public:
                 }
 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
-                    std::string arg_str = ASRUtils::type_to_str(arg_type);
-                    std::string orig_arg_str = ASRUtils::type_to_str(orig_arg_type);
+                    std::string arg_str = ASRUtils::type_to_str_fortran(arg_type);
+                    std::string orig_arg_str = ASRUtils::type_to_str_fortran(orig_arg_type);
                     diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
                                         "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
                                         Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
@@ -6333,37 +6371,38 @@ public:
     }
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
-        if( x.n_args + x.n_keywords != 2) {
-            diag.add(Diagnostic("reshape accepts only 2 arguments, got " +
-                                std::to_string(x.n_args) + " arguments instead.",
+        if( x.n_args + x.n_keywords < 2 || x.n_args + x.n_keywords > 4 ) {
+            diag.add(Diagnostic("reshape expects number at least 2 and at most 4 arguments, got " +
+                                std::to_string(x.n_args + x.n_keywords) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
         AST::expr_t* source = nullptr;
         AST::expr_t* shape = nullptr;
+        AST::expr_t* order = nullptr;
+        AST::expr_t* pad = nullptr;
         if ( x.n_args > 0 ) {
             source = x.m_args[0].m_end;
         }
         if ( x.n_args > 1 ) {
             shape = x.m_args[1].m_end;
         }
-        if ( x.n_keywords > 0 ) {
-            if ( to_lower(x.m_keywords[0].m_arg) == "source" ) {
-                source = x.m_keywords[0].m_value;
-            } else if ( to_lower(x.m_keywords[0].m_arg) == "shape" ) {
-                shape = x.m_keywords[0].m_value;
-            } else {
-                diag.add(Diagnostic("Unrecognized keyword argument " +
-                                    std::string(x.m_keywords[0].m_arg) + " passed to reshape.",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
+        if (x.n_args > 2){
+            pad = x.m_args[2].m_end;
         }
-        if ( x.n_keywords > 1 ) {
-            if ( to_lower(x.m_keywords[1].m_arg) == "source" ) {
-                source = x.m_keywords[1].m_value;
-            } else if ( to_lower(x.m_keywords[1].m_arg) == "shape" ) {
-                shape = x.m_keywords[1].m_value;
+        if (x.n_args > 3){
+            pad = x.m_args[2].m_end;
+            order = x.m_args[3].m_end;
+        }
+        for( size_t i=0;i<x.n_keywords;i++ ) {
+            if( to_lower(x.m_keywords[i].m_arg) == "source" ) {
+                source = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "shape" ) {
+                shape = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "pad" ) {
+                pad = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "order" ) {
+                order = x.m_keywords[i].m_value;
             } else {
                 diag.add(Diagnostic("Unrecognized keyword argument " +
                                     std::string(x.m_keywords[1].m_arg) + " passed to reshape.",
@@ -6375,17 +6414,50 @@ public:
         ASR::expr_t* array = ASRUtils::EXPR(tmp);
         this->visit_expr(*shape);
         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
+        ASR::expr_t* order_expr = nullptr;
+        ASR::expr_t* pad_expr = nullptr;
+        if (order!=nullptr){
+            this->visit_expr(*order);
+            order_expr = ASRUtils::EXPR(tmp);
+        }
+        if (pad != nullptr){
+            this->visit_expr(*pad);
+            pad_expr = ASRUtils::EXPR(tmp);
+        }
         if( !ASRUtils::is_array(ASRUtils::expr_type(array)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `source` argument, found " +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(array)) +
-                " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[0].loc})}));
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) +
+                " instead.", Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `shape` argument, found " +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
-                " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[1].loc})}));
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(newshape)) +
+                " instead.", Level::Error, Stage::Semantic, {Label("", {shape->base.loc})}));
             throw SemanticAbort();
+        }
+        if (order_expr) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(order_expr))){
+                diag.add(Diagnostic("reshape accepts arrays for `order` argument, found " +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(order_expr)) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+        if (pad_expr) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(pad_expr))){
+                diag.add(Diagnostic("reshape accepts arrays for `pad` argument, found " +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
+                throw SemanticAbort();
+            } else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))||
+            (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
+                diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
+                     + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
+                throw SemanticAbort();
+            }
         }
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                             ASRUtils::expr_type(array));
@@ -6427,11 +6499,118 @@ public:
             }
             int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
             if (array_size != -1 &&  new_shape_size > array_size) {
-                diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size specified by `shape` array",
-                                    Level::Error, Stage::Semantic, {Label("`shape` specifies size of " +
-                                    std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
-                                    std::to_string(array_size), {x.base.base.loc})}));
-                throw SemanticAbort();
+                if (!pad){
+                    diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size specified by `shape` array",
+                                        Level::Error, Stage::Semantic, {Label("`shape` specifies size of " +
+                                        std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
+                                        std::to_string(array_size), {x.base.base.loc})}));
+                    throw SemanticAbort();
+                } else if ( ASR::is_a<ASR::ArrayConstant_t>(*pad_expr) ) {
+                    if ( ASR::is_a<ASR::ArrayConstant_t>(*array) ) {
+                        ASR::ttype_t* a_type = ASRUtils::expr_type(array);
+                        a_type = ASRUtils::type_get_past_pointer(a_type);
+                        ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+                        Vec<ASR::expr_t*> elements;
+                        elements.reserve(al, array_size);
+                        ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                        ASR::ArrayConstant_t* const_pad = ASR::down_cast<ASR::ArrayConstant_t>(pad_expr);
+                        for (int i = 0; i < array_size; i++) {
+                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
+                        }
+                        int64_t diff = new_shape_size - array_size;
+                        int pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_expr));
+                        for (int i = 0; i < diff; i++) {
+                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
+                        }
+                        size_t curr_idx = elements.size();
+                        ASR::ttype_t* new_type = ASRUtils::TYPE(
+                            ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
+                                            a_type_->m_physical_type)
+                        );
+                        void *data = ASRUtils::set_ArrayConstant_data(elements.p, curr_idx, a_type_->m_type);
+                        int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
+                        if (ASRUtils::is_character(*a_type_->m_type)) {
+                            n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
+                        }
+                        array = ASRUtils::EXPR(
+                            ASR::make_ArrayConstant_t(al, loc, n_data, data, new_type,
+                                                    ASR::arraystorageType::ColMajor)
+                        );
+                    }
+                }
+            }
+            if (order_expr && ASR::is_a<ASR::ArrayConstant_t>(*order_expr)){
+                ASR::ArrayConstant_t* const_order = ASR::down_cast<ASR::ArrayConstant_t>(order_expr);
+                std::vector<int> elements;
+                int64_t n = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(order_expr));
+                for (int64_t i=0; i <  n; i++) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::fetch_ArrayConstant_value(al, const_order, i))){
+                        elements.push_back(ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, i))->m_n);
+                    } else {
+                        diag.add(Diagnostic("reshape accepts `order` array with integer elements",
+                                            Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+                std::set<int> unique_elements(elements.begin(), elements.end());
+                for (int i=1; i<=n; i++){
+                    if (unique_elements.find(i) == unique_elements.end()){
+                        diag.add(Diagnostic("reshape accepts `order` array as a permutation of elements from 1 to " + std::to_string(n),
+                                            Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+                if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*newshape)){
+                    ASR::ttype_t* a_type = ASRUtils::expr_type(array);
+                    a_type = ASRUtils::type_get_past_pointer(a_type);
+                    ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+                    Vec<ASR::expr_t*> elements_;
+                    elements_.reserve(al, array_size);
+                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                    ASR::ArrayConstant_t* const_shape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
+                    int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+                    std::map<int, int> index_map;
+                    for (int i=0; i<array_size; i++){
+                        int temp = i;
+                        std::vector<int> d(n, 0);
+                        for (int j=0; j<n; j++){
+                            int dim = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, j))->m_n - 1;
+                            int shape_dim = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_shape, dim))->m_n;
+                            d[j] = temp % shape_dim;
+                            temp = temp / shape_dim;
+                        }
+                        std::vector<int> I(n, 0);
+                        for(int j=0; j<n; j++){
+                            int order_ = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, j))->m_n - 1;
+                            I[order_] = d[j];
+                        }
+
+                        int R = 0, stride = 1;
+                        for (int j=0; j<n; j++){
+                            R += I[j] * stride;
+                            stride *= ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_shape, j))->m_n;
+                        }
+                        index_map[R] = i;
+                    }
+                    for (int i=0; i<array_size; i++){
+                        elements_.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, index_map[i]));
+                    }
+
+                    size_t curr_idx = elements_.size();
+                    ASR::ttype_t* new_type = ASRUtils::TYPE(
+                        ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
+                                        a_type_->m_physical_type)
+                    );
+                    void *data = ASRUtils::set_ArrayConstant_data(elements_.p, curr_idx, a_type_->m_type);
+                    int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
+                    if (ASRUtils::is_character(*a_type_->m_type)) {
+                        n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
+                    }
+                    array = ASRUtils::EXPR(
+                        ASR::make_ArrayConstant_t(al, loc, n_data, data, new_type,
+                                                ASR::arraystorageType::ColMajor)
+                    );
+                }
             }
         } else {
             // otherwise empty dimensions
@@ -6794,14 +6973,14 @@ public:
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (arg_type != required_type || kind != required_kind) {
                         diag.add(Diagnostic("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
-                                            " must be of " + ASRUtils::type_to_str(required_type) + " type with kind " + std::to_string(required_kind),
+                                            " must be of " + ASRUtils::type_to_str_fortran(required_type) + " type with kind " + std::to_string(required_kind),
                                             Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }
                 } else {
                     if (arg_type != required_type) {
                         diag.add(Diagnostic("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
-                                            " must be of " + ASRUtils::type_to_str(required_type) + " type",
+                                            " must be of " + ASRUtils::type_to_str_fortran(required_type) + " type",
                                             Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }
@@ -7272,7 +7451,7 @@ public:
                     al, loc, arg, ASR::cast_kindType::ComplexToReal,
                     to_type, value));
         } else {
-            std::string stype = ASRUtils::type_to_str(type);
+            std::string stype = ASRUtils::type_to_str_fortran(type);
             diag.add(Diagnostic("Conversion of '" + stype + "' to float is not Implemented",
                                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
@@ -8021,8 +8200,8 @@ public:
                         ASR::ttype_t *source_type = ASRUtils::expr_type(source);
 
                         if (!ASRUtils::check_equal_type(dest_type, source_type)) {
-                            std::string dtype = ASRUtils::type_to_str(dest_type);
-                            std::string stype = ASRUtils::type_to_str(source_type);
+                            std::string dtype = ASRUtils::type_to_str_fortran(dest_type);
+                            std::string stype = ASRUtils::type_to_str_fortran(source_type);
                             diag.add(Diagnostic(
                                 "Type mismatch in function call, the function expects '" + dtype + "' but '" + stype + "' was provided",
                                 Level::Error, Stage::Semantic, {
@@ -8343,8 +8522,8 @@ public:
             // Don't Check.
         } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right)) && overloaded == nullptr) {
-            std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(left));
-            std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(right));
+            std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
+            std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(right));
             diag.add(Diagnostic(
                 "Type mismatch in binary operator, the types must be compatible",
                 Level::Error, Stage::Semantic, {
@@ -8415,11 +8594,10 @@ public:
                     default:
                         LCOMPILERS_ASSERT(false);
                 }
-                diag.add(Diagnostic("Operator undefined for " + ASRUtils::type_to_str(left_type)
-                                    + " " +  op_str + " " + ASRUtils::type_to_str(right_type), Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
-            return;
         } else if( overloaded == nullptr ) {
             LCOMPILERS_ASSERT(false);
         }
@@ -8472,7 +8650,7 @@ public:
                     args[i], false, false, dims, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
-                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str(arg_type) +
+                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str_fortran(arg_type) +
                         " cannot be applied to non-type parameter " + param, Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
