@@ -182,8 +182,6 @@ public:
         SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
         SymbolTable* new_function_scope_copy = new_function_scope;
         new_function_scope = new_scope;
-        SymbolTable* new_function_scope_copy = new_function_scope;
-        new_function_scope = new_scope;
 
         ASRUtils::SymbolDuplicator sd(al);
         ASRUtils::ASRBuilder b(al, x->base.base.loc);
@@ -387,8 +385,6 @@ public:
         }
 
         ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_Cast(x);
-
-        ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_Array(x);
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
