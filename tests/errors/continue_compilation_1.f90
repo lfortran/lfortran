@@ -191,4 +191,8 @@ program continue_compilation_1
 
     print *, count(1)
     print *, count([2])
+
+    real a_real(0)
+    a_real = [logical::]
+    print *,size(a_real)
 end program
