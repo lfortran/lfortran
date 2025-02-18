@@ -872,8 +872,9 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
         
             Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
             dealloc_args.push_back(al, array_var_temporary);
-            current_body->push_back(al, 
-                b.If(b.logical_true(), {
+            ASR::expr_t* is_contiguous = b.logical_true();
+            current_body->push_back(al,
+                b.If(is_contiguous, {
                     ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
                         array_var_temporary->base.loc, dealloc_args.p, dealloc_args.size())),
                     ASRUtils::STMT(ASR::make_Allocate_t(al,
@@ -885,7 +886,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
                         al, loc, array_var_temporary, array_expr))
                 })
             );
-            body_after_curr_stmt->push_back(al, b.If(b.logical_true(), {
+            body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                 b.Assignment(array_expr, array_var_temporary)
             }, {}));
         } else {
@@ -1133,13 +1134,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
-        size_t x_n_args, const std::string& name_hint) {
+        size_t x_n_args, const std::string& name_hint, std::vector<bool> is_arg_intent_out = {}, bool is_func_bind_c = false) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, body_after_curr_stmt, name_hint, current_scope, exprs_with_target, true);
+                bool is_func_arg = true;
+                if (is_arg_intent_out.size() > 0) {
+                    is_func_arg = is_arg_intent_out[i];
+                }
+                is_func_arg = is_func_arg && !is_func_bind_c;
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, body_after_curr_stmt, name_hint, current_scope, exprs_with_target, is_func_arg);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1513,8 +1519,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_Call(const T& x, const std::string& name_hint) {
         LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
+        std::vector<bool> is_arg_intent_out;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+        bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC || func_type->m_deftype == ASR::deftypeType::Interface;
+        for (size_t i = 0; i < func->n_args; i++ ) {
+            if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ) {
+                ASR::Variable_t* var = ASRUtils::EXPR2VAR(func->m_args[i]);
+                is_arg_intent_out.push_back(var->m_intent == ASR::intentType::Out ||
+                    var->m_intent == ASR::intentType::InOut);
+            } else {
+                is_arg_intent_out.push_back(false);
+            }
+        }
         traverse_call_args(x_m_args, x.m_args, x.n_args,
-            name_hint + ASRUtils::symbol_name(x.m_name));
+            name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out, is_func_bind_c);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
