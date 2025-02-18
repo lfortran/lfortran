@@ -532,3 +532,9 @@ semantic error: `mask` argument to `count` intrinsic must be a logical array
     |
 193 |     print *, count([2])
     |                    ^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_1.f90:196:5
+    |
+196 |     a_real = [logical::]
+    |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
