@@ -3,6 +3,7 @@
 
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
+#include <libasr/string_utils.h>
 #include <math.h>
 
 namespace LCompilers::ASRUtils {
@@ -1931,7 +1932,7 @@ namespace Lgt {
         char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
         bool result = false;
-        if (strcmp(string_A, string_B) > 0) {
+        if (str_compare_fortran(string_A, string_B) > 0) {
             result = true;
         }
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
@@ -1961,7 +1962,7 @@ namespace Llt {
         char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
         bool result = false;
-        if (strcmp(string_A, string_B) < 0) {
+        if (str_compare_fortran(string_A, string_B) < 0) {
             result = true;
         }
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
@@ -1991,7 +1992,7 @@ namespace Lge {
         char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
         bool result = false;
-        if (strcmp(string_A, string_B) >= 0) {
+        if (str_compare_fortran(string_A, string_B) >= 0) {
             result = true;
         }
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
@@ -2021,7 +2022,7 @@ namespace Lle {
         char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
         bool result = false;
-        if (strcmp(string_A, string_B) <= 0) {
+        if (str_compare_fortran(string_A, string_B) <= 0) {
             result = true;
         }
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
@@ -6097,7 +6098,7 @@ namespace Max {
             char* max_val = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
             for (size_t i = 1; i < args.size(); i++) {
                 char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
-                if (strcmp(val, max_val) > 0) {
+                if (str_compare_fortran(val, max_val) > 0) {
                     max_val = val;
                 }
             }
@@ -6254,7 +6255,7 @@ namespace Min {
             char* min_val = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
             for (size_t i = 1; i < args.size(); i++) {
                 char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
-                if (strcmp(val, min_val) < 0) {
+                if (str_compare_fortran(val, min_val) < 0) {
                     min_val = val;
                 }
             }
