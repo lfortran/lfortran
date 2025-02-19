@@ -1198,6 +1198,10 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             ASR::ArrayReshape_t*
                 array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_value);
             return is_value_constant(array_reshape->m_array) && is_value_constant(array_reshape->m_shape);
+        } case ASR::exprType::ArrayIsContiguous: {
+            ASR::ArrayIsContiguous_t*
+                array_is_contiguous = ASR::down_cast<ASR::ArrayIsContiguous_t>(a_value);
+            return is_value_constant(array_is_contiguous->m_array);
         } case ASR::exprType::ArrayPhysicalCast: {
             ASR::ArrayPhysicalCast_t*
                 array_physical_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);

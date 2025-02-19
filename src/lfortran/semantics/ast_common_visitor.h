@@ -6638,6 +6638,29 @@ public:
         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
     }
 
+    ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 1 || x.n_keywords > 0) {
+            diag.add(Diagnostic("is_contiguous expects exactly one array argument, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* array = ASRUtils::EXPR(tmp);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(array))) {
+            diag.add(Diagnostic("is_contiguous expects an array argument, found " +
+                                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " instead.",
+                                Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
+            throw SemanticAbort();
+        }
+        
+        ASR::ttype_t* a_type = ASRUtils::TYPE(ASR::make_Logical_t(
+                                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
+    }
+
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
@@ -7328,6 +7351,8 @@ public:
                 tmp = create_Associated(x);
             } else if( var_name == "complex" ) {
                 tmp = create_Complex(x);
+            } else if( var_name == "is_contiguous" ) {
+                tmp = create_ArrayIsContiguous(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
