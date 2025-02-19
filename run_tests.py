@@ -273,7 +273,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 if pass_ is not None:
                     if fast:
                         cmd = "lfortran --pass=" + pass_ + \
-                            " --show-asr --no-color --fast {infile} -o {outfile}"
+                            " --show-asr --no-color --experimental-fast {infile} -o {outfile}"
                     else:
                         cmd = "lfortran --pass=" + pass_ + \
                             " --show-asr --no-color {infile} -o {outfile}"
