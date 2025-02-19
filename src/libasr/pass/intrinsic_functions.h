@@ -890,30 +890,6 @@ namespace Radix {
 
 }  // namespace Radix
 
-namespace IsContiguous {
-
-    static ASR::expr_t *eval_IsContiguous(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        if (args[0]->type == ASR::exprType::ArraySection) {
-            ASR::ArraySection_t *array_section = ASR::down_cast<ASR::ArraySection_t>(args[0]);
-            ASR::array_index_t *m_args = array_section->m_args;
-            ASR::expr_t *step = m_args->m_step;
-            int stride = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
-            if (stride == 1) {
-                return make_ConstantWithType(make_LogicalConstant_t, true, t1, loc);
-            } else {
-                return make_ConstantWithType(make_LogicalConstant_t, false, t1, loc);
-            }
-        } else if (args[0]->type == ASR::exprType::ArrayConstant || args[0]->type == ASR::exprType::Var) {
-            return make_ConstantWithType(make_LogicalConstant_t, true, t1, loc);
-        } else {
-            append_error(diag, "This Argument type is not supported for is_contiguous yet", loc);
-            return nullptr;
-        }
-    }
-
-}  // namespace IsContiguous
-
 namespace StorageSize {
 
     static ASR::expr_t *eval_StorageSize(Allocator &al, const Location &loc,
