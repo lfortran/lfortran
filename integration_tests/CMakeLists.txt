@@ -1575,7 +1575,7 @@ RUN(NAME cpu_time_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME system_clock_01 LABELS gfortran llvm)
 RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME cmd_02 LABELS gfortran llvm NOFAST)
+RUN(NAME cmd_02 LABELS gfortran llvm)
 
 RUN(NAME flip_sign LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME div_to_mul LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -1634,8 +1634,8 @@ RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm NO_STD_F23
 RUN(NAME template_simple_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm NO_STD_F23)
 RUN(NAME template_simple_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm NO_STD_F23)
 RUN(NAME template_simple_04 LABELS llvm llvm_wasm llvm_wasm_emcc)                      # FIXME: add visit_OverloadedBinOp to wasm
-RUN(NAME template_sort_01 LABELS llvm llvm_wasm llvm_wasm_emcc NOFAST NO_STD_F23)      # FIXME: This test had worked before, but fails now with --fast.
-RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc NOFAST NO_STD_F23)      # FIXME: This test had worked before, but fails now with --fast.
+RUN(NAME template_sort_01 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)      # FIXME: This test had worked before, but fails now with --fast.
+RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)      # FIXME: This test had worked before, but fails now with --fast.
 RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm NO_STD_F23)
 RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)                   # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)                    # FIXME: add visit_OverloadedBinOp to wasm
