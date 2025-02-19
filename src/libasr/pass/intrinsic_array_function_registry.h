@@ -4218,11 +4218,11 @@ namespace Parity {
         ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
 
         if (!ASRUtils::is_logical(*mask_type)) {
-            diag.add(diag::Diagnostic("MASK argument to `PARITY` must be LOGICAL, but got " +
+            diag.add(diag::Diagnostic("The `mask` argument to `parity` must be logical, but got " +
                 ASRUtils::type_to_str_with_type(mask_type),
                 diag::Level::Error,
                 diag::Stage::Semantic,
-                {diag::Label("must be LOGICAL type", { mask->base.loc })}));
+                {diag::Label("must be logical type", { mask->base.loc })}));
             return nullptr;
         }
         if ( dim_ != nullptr ) {
