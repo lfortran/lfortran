@@ -1959,6 +1959,35 @@ public:
         src = "iachar(" + src + ")";
     }
 
+    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t &x) {
+        visit_expr(*x.m_array);
+        src = "is_contiguous(" + src + ")";
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        std::string r = indent;
+        r += "reallocate(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_a);
+            r += src;
+            if (x.m_args[i].n_dims > 0) {
+                r += "(";
+                for (size_t j = 0; j < x.m_args[i].n_dims; j++) {
+                    visit_expr(*x.m_args[i].m_dims[j].m_length);
+                    r += src;
+                    if (j < x.m_args[i].n_dims - 1) r += ", ";
+                }
+                r += ")";
+            }
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+
     // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
 
     // void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {}

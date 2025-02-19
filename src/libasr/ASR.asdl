@@ -182,6 +182,7 @@ expr
     | PointerNullConstant(ttype type)
     | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)
     | RealSqrt(expr arg, ttype type, expr? value)
+    | ArrayIsContiguous(expr array, ttype type, expr? value)
 
 ttype
     = Integer(int kind)

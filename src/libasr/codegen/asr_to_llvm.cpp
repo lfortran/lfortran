@@ -2539,6 +2539,52 @@ public:
         }
     }
 
+    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t& x) {
+        ASR::ttype_t* x_m_array_type = ASRUtils::expr_type(x.m_array);
+        llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type)), module.get());
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 2 - // Sync: instead of 2 - , should this be ptr_loads_copy -
+                    (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_array)));
+        visit_expr_wrapper(x.m_array);
+        ptr_loads = ptr_loads_copy;
+        if (is_a<ASR::StructInstanceMember_t>(*x.m_array)) {
+            tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+        }
+        llvm::Value* llvm_arg1 = tmp;
+        ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_m_array_type);
+        switch( physical_type ) {
+            case ASR::array_physical_typeType::DescriptorArray: {
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
+                llvm::Value* is_contiguous = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, m_dims);
+                llvm::Value* expected_stride = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                for (int i = 0; i < n_dims; i++) {
+                    llvm::Value* dim_index = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+                    llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_index);
+                    llvm::Value* stride = arr_descr->get_stride(dim_desc);
+                    llvm::Value* is_dim_contiguous = builder->CreateICmpEQ(stride, expected_stride);
+                    is_contiguous = builder->CreateAnd(is_contiguous, is_dim_contiguous);
+                    llvm::Value* dim_size = arr_descr->get_upper_bound(dim_desc);
+                    expected_stride = builder->CreateMul(expected_stride, dim_size);
+                }
+                tmp = is_contiguous;
+                break;
+            }
+            case ASR::array_physical_typeType::FixedSizeArray:
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+                break;
+            case ASR::array_physical_typeType::PointerToDataArray:
+            case ASR::array_physical_typeType::StringArraySinglePointer:
+            case ASR::array_physical_typeType::SIMDArray:
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                break;
+            default:
+                LCOMPILERS_ASSERT(false);
+        }
+    }
+
     void lookup_EnumValue(const ASR::EnumValue_t& x) {
         ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
         ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
