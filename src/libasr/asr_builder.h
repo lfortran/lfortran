@@ -192,6 +192,14 @@ class ASRBuilder {
         return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, value));
     }
 
+    inline ASR::expr_t* logical_true() {
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true, logical));
+    }
+
+    inline ASR::expr_t* logical_false() {
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, logical));
+    }
+
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
     }

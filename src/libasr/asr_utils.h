@@ -3814,6 +3814,9 @@ static inline ASR::intentType expr_intent(ASR::expr_t* expr) {
         case ASR::exprType::Var: {
             return ASRUtils::symbol_intent(ASR::down_cast<ASR::Var_t>(expr)->m_v);
         }
+        case ASR::exprType::ArraySection: {
+            return ASRUtils::expr_intent(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+        }
         default: {
             throw LCompilersException("Cannot extract intent of ASR::exprType::" +
                 ASRUtils::type_to_str_python(ASRUtils::expr_type(expr)));
