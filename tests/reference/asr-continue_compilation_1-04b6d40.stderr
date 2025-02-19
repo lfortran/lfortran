@@ -538,3 +538,15 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 196 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
+
+semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:199:22
+    |
+199 |     print *, iparity(["a", "b"])
+    |                      ^^^^^^^^^^ must be of integer type
+
+semantic error: MASK argument to `PARITY` must be LOGICAL, but got string[:](1)
+   --> tests/errors/continue_compilation_1.f90:200:21
+    |
+200 |     print *, parity(["a", "b"])
+    |                     ^^^^^^^^^^ must be LOGICAL type

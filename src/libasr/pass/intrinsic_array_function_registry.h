@@ -3174,6 +3174,15 @@ namespace Iparity {
 
     static inline ASR::asr_t* create_Iparity(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* array_type = expr_type(args[0]);
+        if (!is_integer(*array_type)) {
+            diag.add(diag::Diagnostic("Input to `Iparity` is expected to be an integer, but got " +
+                type_to_str_fortran(array_type), 
+                diag::Level::Error, 
+                diag::Stage::Semantic, 
+                {diag::Label("must be of integer type", { args[0]->base.loc })}));
+        return nullptr;
+    }
         return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::Iparity);
     }
@@ -3187,7 +3196,7 @@ namespace Iparity {
             &get_constant_zero_with_given_type, &ASRBuilder::Xor);
     }
 
-} // namespace Product
+} // namespace Iparity
 
 namespace MaxVal {
 
@@ -4207,6 +4216,15 @@ namespace Parity {
         int array_rank = extract_dimensions_from_ttype(ASRUtils::expr_type(args[0]), array_dims);
 
         ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
+
+        if (!ASRUtils::is_logical(*mask_type)) {
+            diag.add(diag::Diagnostic("MASK argument to `PARITY` must be LOGICAL, but got " +
+                ASRUtils::type_to_str_with_type(mask_type),
+                diag::Level::Error,
+                diag::Stage::Semantic,
+                {diag::Label("must be LOGICAL type", { mask->base.loc })}));
+            return nullptr;
+        }
         if ( dim_ != nullptr ) {
             size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim_));
             if (dim_rank != 0) {
