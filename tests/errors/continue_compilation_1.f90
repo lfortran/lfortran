@@ -195,4 +195,8 @@ program continue_compilation_1
     real a_real(0)
     a_real = [logical::]
     print *,size(a_real)
+
+    print *, iparity(["a", "b"])
+    print *, parity(["a", "b"])
+
 end program
