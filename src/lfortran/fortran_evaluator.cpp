@@ -387,7 +387,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         return res.error;
     }
 
-    if (compiler_options.po.fast) {
+    if (compiler_options.po.fast || compiler_options.po.experimental_fast) {
         e->opt(*m->m_m);
     }
 

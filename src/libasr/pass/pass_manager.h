@@ -314,9 +314,10 @@ namespace LCompilers {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
-                if (pass_options.fast ){
+                // Restore fast after figuring out which optimisation passes to keep in the pipeline
+                if (pass_options.experimental_fast ){
                     apply_passes(al, asr, _with_optimization_passes, pass_options, diagnostics);
-                } else if (!pass_options.fast ) {
+                } else {
                     apply_passes(al, asr, _passes, pass_options, diagnostics);
                 }
             }
@@ -326,7 +327,7 @@ namespace LCompilers {
                            PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
             std::vector<std::string> passes;
-            if (pass_options.fast) {
+            if (pass_options.experimental_fast) {
                 passes = _with_optimization_passes;
             } else {
                 passes = _passes;

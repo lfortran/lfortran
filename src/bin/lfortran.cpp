@@ -1057,7 +1057,7 @@ int compile_src_to_object_file(const std::string &infile,
         return 5;
     }
 
-    if (compiler_options.po.fast) {
+    if (compiler_options.po.fast || compiler_options.po.experimental_fast) {
         e.opt(*m->m_m);
     }
 
@@ -2277,6 +2277,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
     app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
+    app.add_flag("--experimental-fast", compiler_options.po.experimental_fast, "Best performance (disable strict standard compliance)"); // Will be merged with --fast above
     app.add_flag("--linker", linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str();
     app.add_flag("--linker-path", linker_path, "Use the linker from this path")->capture_default_str();
     app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();

@@ -29,7 +29,8 @@
 #include <map>
 
 #define CHECK_FAST_C_CPP(compiler_options, x)                   \
-        if (compiler_options.po.fast && x.m_value != nullptr) { \
+        if ((compiler_options.po.fast ||                        \
+             compiler_options.po.experimental_fast) && x.m_value != nullptr) { \
             self().visit_expr(*x.m_value);                      \
             return;                                             \
         }                                                       \

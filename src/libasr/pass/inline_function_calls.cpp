@@ -244,7 +244,7 @@ public:
         if( ASRUtils::is_intrinsic_function2(func) ||
                 std::string(func->m_name) == current_routine ||
                 // Never Inline BindC Function
-                ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::BindC || 
+                ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::BindC ||
                 // Never Inline Interface Function
                 ASRUtils::get_FunctionType(func)->m_deftype == ASR::deftypeType::Interface) {
             return ;
@@ -538,7 +538,7 @@ void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const LCompilers::PassOptions& pass_options) {
     std::string rl_path = pass_options.runtime_library_dir;
     bool inline_external_symbol_calls = pass_options.inline_external_symbol_calls;
-    InlineFunctionCallVisitor v(al, rl_path, inline_external_symbol_calls, pass_options.fast);
+    InlineFunctionCallVisitor v(al, rl_path, inline_external_symbol_calls, pass_options.experimental_fast);
     v.configure_node_duplicator(false);
     v.visit_TranslationUnit(unit);
     v.configure_node_duplicator(true);
