@@ -1,7 +1,33 @@
-set(SRC
-    parser/preprocessor.cpp
-    parser/tokenizer.cpp
-    parser/parser.tab.cc
+# Specific files generated for lfortran
+
+# tokenizer
+add_custom_command(
+    OUTPUT ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/tokenizer.cpp
+    COMMAND re2c -W -b ${CMAKE_SOURCE_DIR}/src/lfortran/parser/tokenizer.re -o ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/tokenizer.cpp
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/lfortran/parser/tokenizer.re
+    VERBATIM
+)
+# preproc
+add_custom_command(
+    OUTPUT ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/preprocessor.cpp
+    COMMAND re2c -W -b ${CMAKE_SOURCE_DIR}/src/lfortran/parser/preprocessor.re -o ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/preprocessor.cpp
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/lfortran/parser/preprocessor.re
+    VERBATIM
+)
+# parser
+add_custom_command(
+    OUTPUT ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/parser/parser.tab.cc
+    BYPRODUCTS ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/parser/parser.output ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/parser/parser.tab.hh
+    COMMAND bison -Wall -d -r all ${CMAKE_SOURCE_DIR}/src/lfortran/parser/parser.yy
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/lfortran/parser/parser.yy
+    WORKING_DIRECTORY ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/parser
+    VERBATIM
+)
+
+add_library(lfortran_lib STATIC
+    ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/preprocessor.cpp
+    ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/tokenizer.cpp
+    ${LFORTRAN_GENERATED_FILES_PATH}/lfortran/parser/parser.tab.cc
     parser/parser.cpp
     parser/fixedform_tokenizer.cpp
 
@@ -24,23 +50,18 @@ set(SRC
 )
 
 if (WITH_WHEREAMI)
-    set(SRC ${SRC} ../bin/tpl/whereami/whereami.cpp)
+    target_sources(lfortran_lib PUBLIC ../bin/tpl/whereami/whereami.cpp)
 endif()
 
 if (WITH_XEUS)
-    set(SRC ${SRC}
-        fortran_kernel.cpp
-    )
+    target_sources(lfortran_lib PUBLIC fortran_kernel.cpp)
 endif()
 if (WITH_JSON)
-    set(SRC ${SRC}
-        ast_to_json.cpp
-    )
+    target_sources(lfortran_lib PUBLIC ast_to_json.cpp)
 endif()
-add_library(lfortran_lib STATIC ${SRC})
 target_include_directories(lfortran_lib PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-configure_file(config.h.cmakein config.h @ONLY)
+configure_file(config.h.cmakein ${LFORTRAN_GENERATED_FILES_PATH}/config.h @ONLY)
 target_link_libraries(lfortran_lib asr lfortran_runtime_static)
 
 

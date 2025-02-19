@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.23)
 
 project(libasr)
 
@@ -12,7 +12,7 @@ if (NOT LFORTRAN_VERSION)
         CACHE STRING "LFortran version" FORCE)
 endif ()
 
-configure_file(config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
+configure_file(config.h.in ${LFORTRAN_GENERATED_FILES_PATH}/libasr/config.h)
 
 set(SRC
     codegen/asr_to_cpp.cpp
@@ -23,11 +23,6 @@ set(SRC
     codegen/asr_to_py.cpp
     codegen/x86_assembler.cpp
     codegen/asr_to_x86.cpp
-    codegen/asr_to_wasm.cpp
-    codegen/wasm_to_wat.cpp
-    codegen/wasm_to_x86.cpp
-    codegen/wasm_to_x64.cpp
-    codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
     pass/simplifier.cpp
@@ -84,6 +79,17 @@ set(SRC
     stacktrace.cpp
     utils2.cpp
 )
+
+#if (LFORTRAN_BUILD_TO_WASM) wasm sources not dependent on var ?
+    set(SRC ${SRC}
+        codegen/asr_to_wasm.cpp
+        codegen/wasm_to_wat.cpp
+        codegen/wasm_to_x86.cpp
+        codegen/wasm_to_x64.cpp
+        codegen/wasm_utils.cpp
+    )
+#endif()
+
 if (WITH_LLVM)
     set(SRC ${SRC}
         codegen/evaluator.cpp
@@ -111,6 +117,10 @@ endif()
 add_library(asr STATIC ${SRC})
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
+
+# to get the include directories for generated files
+target_link_libraries(asr PUBLIC lf::base)
+
 if (WITH_LIBUNWIND)
     target_link_libraries(asr p::libunwind)
 endif()
