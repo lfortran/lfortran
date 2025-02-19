@@ -545,7 +545,7 @@ semantic error: Input to `Iparity` is expected to be an integer, but got string[
 199 |     print *, iparity(["a", "b"])
     |                      ^^^^^^^^^^ must be of integer type
 
-semantic error: The `mask` argument to `parity` must be logical, but got string[:](1)
+semantic error: The `mask` argument to `parity` must be logical, but got string[:]
    --> tests/errors/continue_compilation_1.f90:200:21
     |
 200 |     print *, parity(["a", "b"])

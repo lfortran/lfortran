@@ -4219,7 +4219,7 @@ namespace Parity {
 
         if (!ASRUtils::is_logical(*mask_type)) {
             diag.add(diag::Diagnostic("The `mask` argument to `parity` must be logical, but got " +
-                ASRUtils::type_to_str_with_type(mask_type),
+                ASRUtils::type_to_str_fortran(mask_type),
                 diag::Level::Error,
                 diag::Stage::Semantic,
                 {diag::Label("must be logical type", { mask->base.loc })}));
