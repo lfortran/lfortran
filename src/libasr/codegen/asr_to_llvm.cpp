@@ -2573,11 +2573,11 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray:
+            case ASR::array_physical_typeType::SIMDArray:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
                 break;
             case ASR::array_physical_typeType::PointerToDataArray:
             case ASR::array_physical_typeType::StringArraySinglePointer:
-            case ASR::array_physical_typeType::SIMDArray:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
                 break;
             default:
