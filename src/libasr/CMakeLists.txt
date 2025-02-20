@@ -119,7 +119,7 @@ target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 
 # to get the include directories for generated files
-target_link_libraries(asr PUBLIC lf::base)
+target_link_libraries(asr lf::base)
 
 if (WITH_LIBUNWIND)
     target_link_libraries(asr p::libunwind)
