@@ -3916,49 +3916,61 @@ public:
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter) {
-                        // TODO: move this into `expr_value` itself:
-                        if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
-                            // For constant arrays we iterate over each element
-                            // and copy over the value
-                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
-                            for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                // if( a_m_args == nullptr ) {
-                                //     a_m_args = a->m_args[i];
-                                // }
-                                body.push_back(al, a_m_args);
-                            }
-                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
-                                a->base.base.loc, body.p, body.size(),
-                                a->m_type, a->m_storage_format));
-                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
-                                type = a->m_type;
+                        if( ASRUtils::is_array(type) ) {
+                            ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
+                            ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
+                                ASRUtils::expr_type(init_expr));
+                            if( var_ptype != init_expr_ptype &&
+                                var_ptype == ASR::array_physical_typeType::DescriptorArray ) {
+                                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(init_expr));
                             }
                         }
-                        if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
-                            // For constant arrays we iterate over each element
-                            // and copy over the value
-                            ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, a->n_args);
-                            for (size_t i=0; i < a->n_args; i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
-                                if( a_m_args == nullptr ) {
-                                    a_m_args = a->m_args[i];
+                        if( value ) {
+                            // TODO: move this into `expr_value` itself:
+                            if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                // For constant arrays we iterate over each element
+                                // and copy over the value
+                                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                                Vec<ASR::expr_t*> body;
+                                body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                    ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+                                    // if( a_m_args == nullptr ) {
+                                    //     a_m_args = a->m_args[i];
+                                    // }
+                                    body.push_back(al, a_m_args);
                                 }
-                                body.push_back(al, a_m_args);
+                                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                                    a->base.base.loc, body.p, body.size(),
+                                    a->m_type, a->m_storage_format));
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = a->m_type;
+                                }
                             }
-                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
-                                a->base.base.loc, body.p, body.size(),
-                                a->m_type, a->m_storage_format));
-                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
-                                type = a->m_type;
+                            if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                                // For constant arrays we iterate over each element
+                                // and copy over the value
+                                ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                                Vec<ASR::expr_t*> body;
+                                body.reserve(al, a->n_args);
+                                for (size_t i=0; i < a->n_args; i++) {
+                                    ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
+                                    if( a_m_args == nullptr ) {
+                                        a_m_args = a->m_args[i];
+                                    }
+                                    body.push_back(al, a_m_args);
+                                }
+                                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                                    a->base.base.loc, body.p, body.size(),
+                                    a->m_type, a->m_storage_format));
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = a->m_type;
+                                }
                             }
-                        } if (ASR::is_a<ASR::StringLen_t>(*value)) {
-                            ASR::StringLen_t *a = ASR::down_cast<ASR::StringLen_t>(value);
-                            value = a->m_value;
+                            if (ASR::is_a<ASR::StringLen_t>(*value)) {
+                                ASR::StringLen_t *a = ASR::down_cast<ASR::StringLen_t>(value);
+                                value = a->m_value;
+                            }
                         }
                     } else {
                         implicit_save = true;
@@ -6655,7 +6667,7 @@ public:
                                 Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
-        
+
         ASR::ttype_t* a_type = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, compiler_options.po.default_integer_kind));
         return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
