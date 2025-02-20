@@ -108,7 +108,6 @@ jobs:
         run: |
             cd ./integration_tests
             ./run_tests.py -b llvm --std=f23
-            ./run_tests.py -b llvm -f --std=f23
             ./run_tests.py -b llvm -ef --std=f23
 
       - name: Test (Windows)
@@ -439,7 +438,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
             ./run_tests.py -b llvm -ef
 
       - name: Test Installation
@@ -1046,8 +1044,14 @@ jobs:
             ctest --output-on-failure
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f
             ./run_tests.py -b llvm llvmImplicit -ef
+
+      - name: Test Linux LLVM 17-19 (fast)
+        if: matrix.llvm-version >= 17 && matrix.llvm-version <= 19
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm llvmImplicit -f
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -1285,7 +1289,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
             ./run_tests.py -b llvm -ef
 
       - name: Test OpenMP
