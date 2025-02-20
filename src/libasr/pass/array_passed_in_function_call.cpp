@@ -765,7 +765,10 @@ public:
                 
                     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
                     dealloc_args.push_back(al, array_var_temporary);
-                    ASR::expr_t* is_contiguous = b.logical_true();
+                    ASR::expr_t* is_contiguous = ASRUtils::EXPR(ASR::make_ArrayIsContiguous_t(al, loc,
+                        arg_expr_past_cast, ASRUtils::expr_type(array_var_temporary), nullptr));
+                    ASR::expr_t* not_is_contiguous = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, is_contiguous,
+                        ASRUtils::expr_type(is_contiguous), nullptr));
                     ASR::dimension_t* array_dims = nullptr;
                     int array_rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_var_temporary), array_dims);
                     std::vector<ASR::expr_t*> do_loop_variables;
@@ -776,7 +779,7 @@ public:
                         do_loop_variables.push_back(b.Variable(current_scope, var_name, ASRUtils::expr_type(b.i32(0)), ASR::intentType::Local));
                     }
                     current_body->push_back(al,
-                        b.If(is_contiguous, {
+                        b.If(not_is_contiguous, {
                             ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
                                 array_var_temporary->base.loc, dealloc_args.p, dealloc_args.size())),
                             ASRUtils::STMT(ASR::make_Allocate_t(al,
@@ -789,7 +792,7 @@ public:
                         })
                     );
                     if ( is_arg_intent_out.size() > 0 && is_arg_intent_out[i] ) {
-                        body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
+                        body_after_curr_stmt->push_back(al, b.If(not_is_contiguous, {
                             create_do_loop(al, loc, do_loop_variables, arg_expr_past_cast, array_var_temporary, array_rank)
                         }, {}));
                     }
