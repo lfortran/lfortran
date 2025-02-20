@@ -109,6 +109,7 @@ jobs:
             cd ./integration_tests
             ./run_tests.py -b llvm --std=f23
             ./run_tests.py -b llvm -f --std=f23
+            ./run_tests.py -b llvm -ef --std=f23
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
@@ -439,6 +440,7 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm -ef
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -644,7 +646,7 @@ jobs:
             make -f Makefile.manual quicktest
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
             make -f Makefile.manual quicktest
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -789,7 +791,7 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
       - name: Test Numerical Methods Fortran
@@ -1045,6 +1047,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
+            ./run_tests.py -b llvm llvmImplicit -ef
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -1105,7 +1108,7 @@ jobs:
             ./tests/atom_U/F_atom_U
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
             ./tests/atom_U/F_atom_U
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -1220,7 +1223,7 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
@@ -1283,6 +1286,7 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm -ef
 
       - name: Test OpenMP
         shell: bash -e -l {0}
@@ -1296,6 +1300,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
+            ./run_tests.py -b fortran -ef -j1
 
       - name: Test C/C++ Backend
         shell: bash -e -l {0}
@@ -1316,6 +1321,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
+            ./run_tests.py -b cpp c c_nopragma -ef
 
       - name: Test CPP
         shell: bash -e -l {0}
@@ -1335,6 +1341,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
+            ./run_tests.py -b wasm -ef
 
   upload_tarball:
     name: Upload Tarball
