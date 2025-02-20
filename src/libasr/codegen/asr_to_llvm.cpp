@@ -6094,8 +6094,8 @@ public:
         bool is_single_char = (ASR::is_a<ASR::StringItem_t>(*x.m_left) &&
                                ASR::is_a<ASR::StringItem_t>(*x.m_right));
         if( is_single_char ) {
-            left = llvm_utils->CreateLoad2(character_type, left);
-            right = llvm_utils->CreateLoad2(character_type, right);
+            left = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), left);
+            right = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), right);
         }
         std::string fn;
         switch (x.m_op) {
