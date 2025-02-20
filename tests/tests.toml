@@ -3508,6 +3508,11 @@ filename = "save3.f90"
 asr = true
 
 [[test]]
+filename = "save4.f90"
+asr_no_warnings = true
+asr_disable_style_and_warnings = true
+
+[[test]]
 filename = "../integration_tests/c_ptr_02.f90"
 asr = true
 
