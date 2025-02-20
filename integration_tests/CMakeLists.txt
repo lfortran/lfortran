@@ -9,6 +9,7 @@ endif ()
 
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
+set(EXP_FAST no CACHE BOOL "Run supported tests with --experimental-fast")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 
 enable_testing()
@@ -25,6 +26,7 @@ message("C compiler flags      : ${CMAKE_C_FLAGS_${BTYPE}}")
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
 message("FAST: ${FAST}")
+message("EXPERIMENTAL_FAST: ${EXP_FAST}")
 message("STD_F23: ${STD_F23}")
 
 
@@ -209,13 +211,20 @@ macro(RUN)
         set(RUN_NAME "${RUN_NAME}_STD_F23")
     endif()
 
-    if (NOT FAST)
+    if (NOT FAST AND NOT EXP_FAST)
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     endif()
 
-    if ((FAST) AND (NOT RUN_NOFAST))
-        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --experimental-fast)
+    if (FAST)
+        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         set(RUN_NAME "${RUN_NAME}_FAST")
+        list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+    endif()
+
+    if ((EXP_FAST) AND (NOT RUN_NOFAST))
+        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --experimental-fast)
+        set(RUN_NAME "${RUN_NAME}_EXP_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     endif()
