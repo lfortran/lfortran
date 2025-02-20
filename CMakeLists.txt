@@ -2,19 +2,6 @@ cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
-# Do we still need this?
-# We don't execute this if we have a tarball
-if (LFORTRAN_BUILD_ALL)
-    find_program(RE2C re2c REQUIRED)
-    find_program(BISON bison REQUIRED)
-    find_program(BASH_BIN bash REQUIRED)
-    execute_process(COMMAND "env" "RE2C=${RE2C}" "BISON=${BISON}" "${BASH_BIN}" "-e" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
-    if (NOT _BUILD0_EXIT EQUAL 0)
-        message(FATAL_ERROR "Running build0.sh failed (see error above)")
-    endif ()
-endif()
-
-
 # generate version from git
 find_package(Git)
 execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --dirty
