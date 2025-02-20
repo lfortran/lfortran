@@ -263,8 +263,8 @@ namespace LCompilers {
                 "sign_from_value",
                 "div_to_mul",
                 "fma",
-                "inline_function_calls",
-                "promote_allocatable_to_nonallocatable"
+                // "inline_function_calls",
+                // "promote_allocatable_to_nonallocatable"
             };
 
             // These are re-write passes which are already handled
