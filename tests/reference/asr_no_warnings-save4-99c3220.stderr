@@ -1,11 +1,12 @@
 style suggestion: Use '==' instead of '.eq.'
- --> tests/save4.f90:6:11
+ --> tests/save4.f90:4:11
   |
-6 |     if (x .eq. 1) then
+4 |     if (y .eq. 1) then
   |           ^^^^ help: write this as '=='
 
-semantic error: Variable 'x' is not declared
- --> tests/save4.f90:6:9
-  |
-6 |     if (x .eq. 1) then
-  |         ^ 'x' is undeclared
+style suggestion: Use '==' instead of '.eq.'
+  --> tests/save4.f90:10:15
+   |
+10 |         if (x .eq. 1) then
+   |               ^^^^ help: write this as '=='
+

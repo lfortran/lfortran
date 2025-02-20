@@ -2,77 +2,83 @@
     (SymbolTable
         1
         {
-            main:
+            save4:
                 (Program
                     (SymbolTable
-                        3
+                        2
                         {
-                            x:
-                                (Variable
-                                    3
-                                    x
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
                                     []
-                                    Local
-                                    (Cast
-                                        (IntegerConstant 5 (Integer 4) Decimal)
-                                        IntegerToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            5.000000
-                                            (Real 4)
+                                    []
+                                    [(If
+                                        (IntegerCompare
+                                            (Var 3 x)
+                                            Eq
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
                                         )
-                                    )
-                                    (RealConstant
-                                        5.000000
-                                        (Real 4)
-                                    )
-                                    Save
-                                    (Real 4)
+                                        [(Print
+                                            (StringConstant
+                                                "x is 1"
+                                                (String 1 6 () PointerString)
+                                            )
+                                        )]
+                                        []
+                                    )]
                                     ()
-                                    Source
                                     Public
-                                    Required
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             y:
                                 (Variable
-                                    3
+                                    2
                                     y
                                     []
                                     Local
-                                    (Cast
-                                        (IntegerConstant 5 (Integer 4) Decimal)
-                                        IntegerToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            5.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    (RealConstant
-                                        5.000000
-                                        (Real 4)
-                                    )
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     Save
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            z:
-                                (Variable
-                                    3
-                                    z
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -81,255 +87,24 @@
                                     .false.
                                 )
                         })
-                    main
+                    save4
                     []
                     [(If
-                        (RealCompare
-                            (Var 3 x)
+                        (IntegerCompare
+                            (Var 2 y)
                             Eq
-                            (Cast
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                IntegerToReal
-                                (Real 4)
-                                (RealConstant
-                                    1.000000
-                                    (Real 4)
-                                )
-                            )
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
                         [(Print
                             (StringConstant
-                                "x is 1"
+                                "y is 1"
                                 (String 1 6 () PointerString)
                             )
                         )]
                         []
                     )]
-                ),
-            save_fun:
-                (Function
-                    (SymbolTable
-                        4
-                        {
-                            save_fun:
-                                (Variable
-                                    4
-                                    save_fun
-                                    []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            x:
-                                (Variable
-                                    4
-                                    x
-                                    []
-                                    Local
-                                    (Cast
-                                        (IntegerConstant 5 (Integer 4) Decimal)
-                                        IntegerToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            5.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    (RealConstant
-                                        5.000000
-                                        (Real 4)
-                                    )
-                                    Save
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            y:
-                                (Variable
-                                    4
-                                    y
-                                    []
-                                    Local
-                                    (Cast
-                                        (IntegerConstant 5 (Integer 4) Decimal)
-                                        IntegerToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            5.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    (RealConstant
-                                        5.000000
-                                        (Real 4)
-                                    )
-                                    Save
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            z:
-                                (Variable
-                                    4
-                                    z
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                )
-                        })
-                    save_fun
-                    (FunctionType
-                        []
-                        (Real 4)
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                    )
-                    []
-                    []
-                    []
-                    (Var 4 save_fun)
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            save_sub:
-                (Function
-                    (SymbolTable
-                        2
-                        {
-                            x:
-                                (Variable
-                                    2
-                                    x
-                                    []
-                                    Local
-                                    (Cast
-                                        (IntegerConstant 5 (Integer 4) Decimal)
-                                        IntegerToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            5.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    (RealConstant
-                                        5.000000
-                                        (Real 4)
-                                    )
-                                    Save
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            y:
-                                (Variable
-                                    2
-                                    y
-                                    []
-                                    Local
-                                    (Cast
-                                        (IntegerConstant 5 (Integer 4) Decimal)
-                                        IntegerToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            5.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    (RealConstant
-                                        5.000000
-                                        (Real 4)
-                                    )
-                                    Save
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            z:
-                                (Variable
-                                    2
-                                    z
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                )
-                        })
-                    save_sub
-                    (FunctionType
-                        []
-                        ()
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                    )
-                    []
-                    []
-                    []
-                    ()
-                    Public
-                    .false.
-                    .false.
-                    ()
                 )
         })
     []
