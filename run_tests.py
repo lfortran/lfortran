@@ -52,6 +52,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
+    asr_no_warnings = is_included("asr_no_warnings")
+    asr_disable_style_and_warnings = is_included("asr_disable_style_and_warnings")
     continue_compilation = is_included("continue_compilation")
     semantics_only_cc = is_included("semantics_only_cc")
     show_errors = is_included("show_errors")
@@ -233,6 +235,27 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
+
+    if asr_no_warnings:
+        run_test(
+            filename,
+            "asr_no_warnings",
+            "lfortran --show-asr --no-warnings --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if asr_disable_style_and_warnings:
+        run_test(
+            filename,
+            "asr_disable_style_and_warnings",
+            "lfortran --show-asr --no-style-warnings --no-warnings --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
     if asr:
         # run fixed form
         if filename.endswith(".f"):
