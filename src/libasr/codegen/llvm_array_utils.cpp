@@ -857,7 +857,11 @@ namespace LCompilers {
                 llvm::Value* src_offset_ptr = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep(src, 1));
                 builder->CreateStore(src_offset_ptr, llvm_utils->create_gep(dest, 1));
                 llvm::Value* dest_dim_des_ptr = this->get_pointer_to_dimension_descriptor_array(dest, false);
-                dest_dim_des_val = llvm_utils->CreateAlloca(*builder, dim_des, n_dims);
+                llvm::Value* dim_des_size = llvm::ConstantInt::get(context, llvm::APInt(32,  data_layout.getTypeAllocSize(dim_des)));
+                llvm::Value * dim_des_size_MUL_n_dim = builder->CreateMul(dim_des_size, n_dims, "dim_des_size_MUL_n_dim");
+                dest_dim_des_val = builder->CreateBitCast(
+                                    lfortran_malloc(context, *module, *builder, dim_des_size_MUL_n_dim),
+                                        dim_des->getPointerTo());
                 builder->CreateStore(dest_dim_des_val, dest_dim_des_ptr);
             }
             llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
