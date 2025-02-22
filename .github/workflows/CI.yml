@@ -797,7 +797,7 @@ jobs:
             cd numerical-methods-fortran
             export PATH="$(pwd)/../src/bin:$PATH"
             git checkout -t origin/lf5
-            git checkout 61b55e40d76c80a500f6e14eabb66078ae3fd014
+            git checkout 2af27a1239263cf4dbec2b464ea1d5af94667997
             FC=lfortran make
             ./test_fix_point.exe
             ./test_integrate_one.exe
