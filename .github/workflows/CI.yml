@@ -796,8 +796,8 @@ jobs:
             git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
             cd numerical-methods-fortran
             export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf3
-            git checkout a3cd1165832349e5c133681328d2f86fa48d650f
+            git checkout -t origin/lf5
+            git checkout 2af27a1239263cf4dbec2b464ea1d5af94667997
             FC=lfortran make
             ./test_fix_point.exe
             ./test_integrate_one.exe
