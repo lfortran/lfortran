@@ -34,6 +34,8 @@ llvm-config --components
 # Generate the `version` file
 bash ci/version.sh
 
+# As we are generating them from CMake now, maybe find a way to call the target 
+# instead of duplicating commands
 # Generate a Fortran AST from AST.asdl (C++)
 python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
 # Generate a Fortran ASR from ASR.asdl (C++)
@@ -65,8 +67,8 @@ if $IS_LINUX:
     BUILD_TYPE = "Debug"
 else:
     BUILD_TYPE = "Release"
-cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE ..
-cmake --build . --target install
+cmake --preset ci_build_tmp ..
+cmake --build --preset ci_build_tmp --target install
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
 ctest --output-on-failure
