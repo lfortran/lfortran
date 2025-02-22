@@ -1153,8 +1153,21 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                     return false;
                 }
             }
-
             return true;
+        } case ASR::exprType::IntrinsicArrayFunction: {
+            ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_value);
+
+            if (ASRUtils::is_value_constant(intrinsic_array_function->m_value)) {
+                return true;
+            }
+
+            for( size_t i = 0; i < intrinsic_array_function->n_args; i++ ) {
+                if( !ASRUtils::is_value_constant(intrinsic_array_function->m_args[i]) ) {
+                    return false;
+                }
+            }
+            return true;  
         } case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
             if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
