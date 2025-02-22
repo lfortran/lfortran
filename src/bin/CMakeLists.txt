@@ -2,14 +2,6 @@ add_executable(lfortran lfortran.cpp)
 target_include_directories(lfortran PRIVATE "tpl")
 target_link_libraries(lfortran lfortran_lib)
 
-# because a lot of stuff depends on the binary being place inside of the source dir
-# we are adding a symlink to the output one
-add_custom_command(
-    TARGET lfortran
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:lfortran> ${CMAKE_SOURCE_DIR}/src/bin/lfortran
-)
-
 if (LFORTRAN_STATIC_BIN)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
