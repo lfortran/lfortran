@@ -23,7 +23,7 @@
             "name": "ci_build_tmp",
             "displayName": "Configuration used by CI",
             "generator": "Ninja",
-            "binaryDir": "build/ci",
+            "binaryDir": "test-bld",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "$env{BUILD_TYPE}" },
                 "CMAKE_PREFIX_PATH": { "type": "PATH", "value": "$env{CONDA_PREFIX}"},

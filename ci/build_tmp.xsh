@@ -59,7 +59,6 @@ tar xzf dist/lfortran-$lfortran_version.tar.gz
 cd lfortran-$lfortran_version
 
 mkdir test-bld
-cd test-bld
 # Note: we have to build in Release mode on Windows, because `llvmdev` is
 # compiled in Release mode and we get link failures if we mix and match build
 # modes:
@@ -67,8 +66,9 @@ if $IS_LINUX:
     BUILD_TYPE = "Debug"
 else:
     BUILD_TYPE = "Release"
-cmake --preset ci_build_tmp ..
+cmake --preset ci_build_tmp .
 cmake --build --preset ci_build_tmp --target install
+cd test-bld
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
 ctest --output-on-failure
