@@ -1140,6 +1140,46 @@ public:
         {"len_trim", IntrinsicSignature({"String", "Kind"}, 1, 2)},
         {"int", IntrinsicSignature({"i", "kind"}, 1, 2)},
         {"random_number", IntrinsicSignature({"harvest"}, 1, 1)},
+        {"abs", IntrinsicSignature({"a"}, 1, 1)},
+        {"acos", IntrinsicSignature({"x"}, 1, 1)},
+        {"acosd", IntrinsicSignature({"x"}, 1, 1)},
+        {"acosh", IntrinsicSignature({"x"}, 1, 1)},
+        {"adjustl", IntrinsicSignature({"string"}, 1, 1)},
+        {"adjustr", IntrinsicSignature({"string"}, 1, 1)},
+        {"aimag", IntrinsicSignature({"z"}, 1, 1)},
+        {"asin", IntrinsicSignature({"x"}, 1, 1)},
+        {"asind", IntrinsicSignature({"x"}, 1, 1)},
+        {"asinh", IntrinsicSignature({"x"}, 1, 1)},
+        {"atan", IntrinsicSignature({"x"}, 1, 1)},
+        {"atanh", IntrinsicSignature({"x"}, 1, 1)},
+        {"bit_size", IntrinsicSignature({"i"}, 1, 1)},
+        {"conjg", IntrinsicSignature({"z"}, 1, 1)},
+        {"cos", IntrinsicSignature({"x"}, 1, 1)},
+        {"cosd", IntrinsicSignature({"x"}, 1, 1)},
+        {"cosh", IntrinsicSignature({"x"}, 1, 1)},
+        {"erf", IntrinsicSignature({"x"}, 1, 1)},
+        {"erfc", IntrinsicSignature({"x"}, 1, 1)},
+        {"exp", IntrinsicSignature({"x"}, 1, 1)},
+        {"gamma", IntrinsicSignature({"x"}, 1, 1)},
+        {"log", IntrinsicSignature({"x"}, 1, 1)},
+        {"log10", IntrinsicSignature({"x"}, 1, 1)},
+        {"log_gamma", IntrinsicSignature({"x"}, 1, 1)},
+        {"sin", IntrinsicSignature({"x"}, 1, 1)},
+        {"sinh", IntrinsicSignature({"x"}, 1, 1)},
+        {"sqrt", IntrinsicSignature({"x"}, 1, 1)},
+        {"tan", IntrinsicSignature({"x"}, 1, 1)},
+        {"tanh", IntrinsicSignature({"x"}, 1, 1)},
+        {"tand", IntrinsicSignature({"x"}, 1, 1)},
+        {"not", IntrinsicSignature({"i"}, 1, 1)},
+        {"precision", IntrinsicSignature({"x"}, 1, 1)},
+        {"range", IntrinsicSignature({"x"}, 1, 1)},
+        {"tiny", IntrinsicSignature({"x"}, 1, 1)},
+        {"huge", IntrinsicSignature({"x"}, 1, 1)},
+        {"epsilon", IntrinsicSignature({"x"}, 1, 1)},
+        {"digits", IntrinsicSignature({"x"}, 1, 1)},
+        {"present", IntrinsicSignature({"a"}, 1, 1)},
+        {"leadz", IntrinsicSignature({"i"}, 1, 1)},
+        {"trailz", IntrinsicSignature({"i"}, 1, 1)}
     };
 
 
@@ -3876,49 +3916,61 @@ public:
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter) {
-                        // TODO: move this into `expr_value` itself:
-                        if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
-                            // For constant arrays we iterate over each element
-                            // and copy over the value
-                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
-                            for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                // if( a_m_args == nullptr ) {
-                                //     a_m_args = a->m_args[i];
-                                // }
-                                body.push_back(al, a_m_args);
-                            }
-                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
-                                a->base.base.loc, body.p, body.size(),
-                                a->m_type, a->m_storage_format));
-                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
-                                type = a->m_type;
+                        if( ASRUtils::is_array(type) ) {
+                            ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
+                            ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
+                                ASRUtils::expr_type(init_expr));
+                            if( var_ptype != init_expr_ptype &&
+                                var_ptype == ASR::array_physical_typeType::DescriptorArray ) {
+                                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(init_expr));
                             }
                         }
-                        if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
-                            // For constant arrays we iterate over each element
-                            // and copy over the value
-                            ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, a->n_args);
-                            for (size_t i=0; i < a->n_args; i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
-                                if( a_m_args == nullptr ) {
-                                    a_m_args = a->m_args[i];
+                        if( value ) {
+                            // TODO: move this into `expr_value` itself:
+                            if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                // For constant arrays we iterate over each element
+                                // and copy over the value
+                                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                                Vec<ASR::expr_t*> body;
+                                body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                    ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+                                    // if( a_m_args == nullptr ) {
+                                    //     a_m_args = a->m_args[i];
+                                    // }
+                                    body.push_back(al, a_m_args);
                                 }
-                                body.push_back(al, a_m_args);
+                                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                                    a->base.base.loc, body.p, body.size(),
+                                    a->m_type, a->m_storage_format));
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = a->m_type;
+                                }
                             }
-                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
-                                a->base.base.loc, body.p, body.size(),
-                                a->m_type, a->m_storage_format));
-                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
-                                type = a->m_type;
+                            if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                                // For constant arrays we iterate over each element
+                                // and copy over the value
+                                ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                                Vec<ASR::expr_t*> body;
+                                body.reserve(al, a->n_args);
+                                for (size_t i=0; i < a->n_args; i++) {
+                                    ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
+                                    if( a_m_args == nullptr ) {
+                                        a_m_args = a->m_args[i];
+                                    }
+                                    body.push_back(al, a_m_args);
+                                }
+                                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                                    a->base.base.loc, body.p, body.size(),
+                                    a->m_type, a->m_storage_format));
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = a->m_type;
+                                }
                             }
-                        } if (ASR::is_a<ASR::StringLen_t>(*value)) {
-                            ASR::StringLen_t *a = ASR::down_cast<ASR::StringLen_t>(value);
-                            value = a->m_value;
+                            if (ASR::is_a<ASR::StringLen_t>(*value)) {
+                                ASR::StringLen_t *a = ASR::down_cast<ASR::StringLen_t>(value);
+                                value = a->m_value;
+                            }
                         }
                     } else {
                         implicit_save = true;
@@ -6599,6 +6651,29 @@ public:
         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr, pad_expr, order_expr);
     }
 
+    ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 1 || x.n_keywords > 0) {
+            diag.add(Diagnostic("is_contiguous expects exactly one array argument, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* array = ASRUtils::EXPR(tmp);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(array))) {
+            diag.add(Diagnostic("is_contiguous expects an array argument, found " +
+                                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " instead.",
+                                Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
+            throw SemanticAbort();
+        }
+
+        ASR::ttype_t* a_type = ASRUtils::TYPE(ASR::make_Logical_t(
+                                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
+    }
+
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
@@ -7289,6 +7364,8 @@ public:
                 tmp = create_Associated(x);
             } else if( var_name == "complex" ) {
                 tmp = create_Complex(x);
+            } else if( var_name == "is_contiguous" ) {
+                tmp = create_ArrayIsContiguous(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }

@@ -1481,14 +1481,22 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void replace_expr_with_temporary_variable(ASR::expr_t* &xx_member, ASR::expr_t* x_member, const std::string& name_hint) {
         if( var_check(x_member)) {
             visit_expr(*x_member);
+            bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_member) &&
+                name_hint.find("_array_is_contiguous_array") != std::string::npos &&
+                !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_member));
             xx_member = create_and_allocate_temporary_variable_for_array(x_member,
-                name_hint, al, current_body, current_scope, exprs_with_target);
+                name_hint, al, current_body, current_scope, exprs_with_target, is_pointer_required);
         }
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array");
+    }
+
+    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t& x) {
+        ASR::ArrayIsContiguous_t& xx = const_cast<ASR::ArrayIsContiguous_t&>(x);
+        replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_is_contiguous_array");
     }
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {

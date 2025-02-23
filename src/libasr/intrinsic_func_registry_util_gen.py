@@ -263,12 +263,6 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
-    "IsContiguous": [
-        {
-            "args": [("any",)],
-            "return": "logical"
-        },
-    ],
     "OutOfRange": [
         {
             "args": [("int", "real", "bool"), ("real", "real", "bool"), ("int", "int", "bool"), ("real", "int", "bool")],

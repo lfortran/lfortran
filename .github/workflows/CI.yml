@@ -566,7 +566,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 242397c88284e6cdce2bbff8f94374944fd262af
+            git checkout de3890cc12cb6a3c1b15710bb82f4c3e816cd59f
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
@@ -576,14 +576,12 @@ jobs:
             ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
             ${FC} -c mpi_c_bindings.f90
             ${FC} -c mpi.f90
-            ${FC} -c psi_io.f90
-            ${FC} -c --cpp --implicit-interface pot3d.F90
+            ${FC} -c psi_io.f90 --no-style-warnings --no-warnings
+            ${FC} -c --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
             ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
             cp pot3d ../bin/
             cd ..
-            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
-              ./validate.sh
-            fi
+            ./validate.sh
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -644,7 +642,7 @@ jobs:
             make -f Makefile.manual quicktest
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
             make -f Makefile.manual quicktest
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -789,7 +787,7 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
       - name: Test Numerical Methods Fortran
@@ -798,8 +796,8 @@ jobs:
             git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
             cd numerical-methods-fortran
             export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf3
-            git checkout a3cd1165832349e5c133681328d2f86fa48d650f
+            git checkout -t origin/lf5
+            git checkout 2af27a1239263cf4dbec2b464ea1d5af94667997
             FC=lfortran make
             ./test_fix_point.exe
             ./test_integrate_one.exe
@@ -1105,7 +1103,7 @@ jobs:
             ./tests/atom_U/F_atom_U
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
             ./tests/atom_U/F_atom_U
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -1220,7 +1218,7 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
