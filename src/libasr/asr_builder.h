@@ -196,6 +196,14 @@ class ASRBuilder {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
     }
 
+    inline ASR::expr_t* logical_true() {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, true, logical));
+    }
+
+    inline ASR::expr_t* logical_false() {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, false, logical));
+    }
+
     inline ASR::expr_t* i32(int64_t x) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32));
     }

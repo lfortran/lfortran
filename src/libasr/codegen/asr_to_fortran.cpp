@@ -1642,6 +1642,20 @@ public:
         src = r;
     }
 
+    void visit_StringSection(const ASR::StringSection_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_arg);
+        r += src;
+        r += "(";
+        visit_expr(*x.m_start);
+        r += src;
+        r += ":";
+        visit_expr(*x.m_end);
+        r += src;
+        r += ")";
+        src = r;
+    }
+
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         src = "\"";
         if(std::strcmp(x.m_s, "\n") == 0) {
