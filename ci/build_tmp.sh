@@ -1,32 +1,10 @@
-#!/usr/bin/env xonsh
+#!/usr/bin/env shell
 
-# A platform independent Xonsh script to build LFortran. Works on Linux, macOS
+# A platform independent Shell script to build LFortran. Works on Linux, macOS
 # and Windows. The prerequisites such as bison, re2c or cython must be already
 # installed.
-#
-# Some issues (with Xonsh):
-#
-# * Some output seems to be lost on Windows
-#   (https://github.com/xonsh/xonsh/issues/3291)
-#
-# * The commands that are executed are sometimes printed after the output,
-#   which makes the log unreadable (https://github.com/xonsh/xonsh/issues/3293)
-#
-# * This script is too slow (due to https://github.com/xonsh/xonsh/issues/3064)
-#   to be suitable for day to day development, but on the CI the few extra
-#   seconds do not matter much
-#
-# * One must be careful to ensure this Xonsh script is in the path. If Xonsh
-#   cannot find the script, it will return success, making the CI tests
-#   "succeed" (https://github.com/xonsh/xonsh/issues/3292)
 
-$RAISE_SUBPROC_ERROR = True
-trace on
-
-import platform
-$IS_MAC = platform.system() == "Darwin"
-$IS_WIN = platform.system() == "Windows"
-$IS_LINUX = platform.system() == "Linux"
+set -e
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
@@ -44,14 +22,16 @@ python src/libasr/wasm_instructions_visitor.py
 python src/libasr/intrinsic_func_registry_util_gen.py
 
 # Generate the tokenizer and parser
-pushd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && popd
-pushd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && popd
-pushd src/lfortran/parser && bison -Wall -d -r all parser.yy && popd
+cd src/lfortran/parser
+re2c -W -b tokenizer.re -o tokenizer.cpp
+re2c -W -b preprocessor.re -o preprocessor.cpp
+bison -Wall -d -r all parser.yy
+cd ../../..
 
 pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
 
-$lfortran_version=$(cat version).strip()
-$dest="lfortran-" + $lfortran_version
+lfortran_version=$(cat version)
+export dest="lfortran-$lfortran_version"
 bash ci/create_source_tarball0.sh
 tar xzf dist/lfortran-$lfortran_version.tar.gz
 cd lfortran-$lfortran_version
@@ -61,11 +41,12 @@ cd test-bld
 # Note: we have to build in Release mode on Windows, because `llvmdev` is
 # compiled in Release mode and we get link failures if we mix and match build
 # modes:
-if $IS_LINUX:
-    BUILD_TYPE = "Debug"
-else:
-    BUILD_TYPE = "Release"
-cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE ..
+if [[ $IS_LINUX == "1" ]]; then
+    BUILD_TYPE="Debug"
+else
+    BUILD_TYPE="Release"
+fi
+cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
@@ -86,8 +67,9 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 cd ../../..
 
 cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
-if $IS_WIN:
+if [[ $IS_WIN == "1" ]]; then
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
-else:
+else
     cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/
+fi
 cp lfortran-$lfortran_version/test-bld/src/runtime/*.mod src/runtime/

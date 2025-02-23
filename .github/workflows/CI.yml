@@ -73,7 +73,9 @@ jobs:
         run: |
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+            export IS_WIN=0
+            case "$OSTYPE" in darwin*) export IS_LINUX=0; export IS_MACOS=1;; *) export IS_LINUX=1; export IS_MACOS=0;; esac
+            shell ci/build_tmp.sh
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
@@ -83,11 +85,12 @@ jobs:
             call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
             call micromamba activate lf
             set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
+            set IS_WIN=1
+            set IS_MACOS=0
+            set IS_LINUX=0
             set ENABLE_RUNTIME_STACKTRACE=no
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
+            shell ci\build_tmp.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
