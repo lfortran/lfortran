@@ -774,7 +774,7 @@ public:
                     x_m_args_vec.push_back(al, array_var_temporary_arg);
                     // This should be always true as we pass `true` to `create_temporary_variable_for_array`
                     ASRUtils::ASRBuilder b(al, arg_expr_past_cast->base.loc);
-                    Vec<ASR::dimension_t> allocate_dims;
+                    Vec<ASR::dimension_t> allocate_dims; allocate_dims.reserve(al, 1);
                     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_var_temporary));
                     if( !set_allocation_size(al, arg_expr_past_cast, allocate_dims, target_n_dims) ) {
                         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
