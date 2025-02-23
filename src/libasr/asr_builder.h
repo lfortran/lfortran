@@ -985,9 +985,24 @@ class ASRBuilder {
         PassUtils::create_idx_vars(idx_vars, rank, loc, al, scope, "_i");
 
         ASR::stmt_t* doloop = nullptr;
-        // if loop_body contains A(i, j, k) then set idx_vars=(k, j, i)
-        // in order to iterate on the array left to right, the inner-most
-        // loop on the fastest index on the left, as is common in Fortran
+        /* if loop_body contains A(i, j, k) then set idx_vars=(k, j, i)
+        in order to iterate on the array left to right, the inner-most
+        loop on the fastest index on the left, as is common in Fortran
+        ```
+            idx_vars=(k, j, i)
+            body A(i, j, k)
+
+            produces
+
+            do k = 1, n
+                do j = 1, n
+                    do i = 1, n
+                        A(i, j, k)
+                    end do
+                end do
+            end do
+        ```
+        */
         for ( int i = 0; i < (int) idx_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
