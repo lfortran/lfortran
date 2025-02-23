@@ -6416,14 +6416,15 @@ public:
                     ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
-            } else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))||
-            (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
-                diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
-                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
-                     + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
-                    " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
-                throw SemanticAbort();
-            }
+            } 
+            // else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))||
+            // (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
+            //     diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
+            //         ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
+            //          + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
+            //         " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
+            //     throw SemanticAbort();
+            // }
         }
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                             ASRUtils::expr_type(array));
@@ -6595,7 +6596,7 @@ public:
         // TODO: 'value' is assigned as nullptr always to ArrayReshape, when both
         // 'array' and 'newshape' are ArrayConstant's we can set 'value'
         // as well
-        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr, pad_expr, order_expr);
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {

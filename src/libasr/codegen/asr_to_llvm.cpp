@@ -2503,6 +2503,11 @@ public:
         llvm::Value* array = tmp;
         this->visit_expr(*x.m_shape);
         llvm::Value* shape = tmp;
+        llvm::Value* pad = nullptr;
+        if (x.m_pad){
+            this->visit_expr(*x.m_pad);
+            pad = tmp;
+        }
         ASR::ttype_t* x_m_array_type = ASRUtils::expr_type(x.m_array);
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(x_m_array_type);
         switch( array_physical_type ) {
@@ -2511,7 +2516,7 @@ public:
                     ASRUtils::get_contained_type(x_m_array_type), x_m_array_type->base.loc);
                 ASR::ttype_t* asr_shape_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_shape));
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(asr_data_type, module.get());
-                tmp = arr_descr->reshape(array, llvm_data_type, shape, asr_shape_type, module.get());
+                tmp = arr_descr->reshape(array, llvm_data_type, shape, asr_shape_type, pad, module.get());
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
