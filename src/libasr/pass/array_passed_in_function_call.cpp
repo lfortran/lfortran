@@ -72,6 +72,35 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     current_body = current_body_copy;
 }
 
+/*
+    This pass is responsible to convert non-contiguous ( DescriptorArray, arrays with stride != 1  )
+    arrays passed to functions by casting to contiguous ( PointerToDataArray ) arrays.
+
+    For example:
+
+    subroutine matprod(y)
+        real(8), intent(inout) :: y(:, :)
+        call istril(y)
+    end subroutine 
+
+    gets converted to:
+
+    subroutine matprod(y)
+        real(8), intent(inout) :: y(:, :)
+        real(8), pointer :: y_tmp(:, :)
+        if (.not. is_contiguous(y))
+            allocate(y_tmp(size(y, 1), size(y, 2)))
+            y_tmp = y
+        else
+            y_tmp => y
+        end if
+        call istril(y_tmp)
+        if (.not. is_contiguous(y)) ! only if intent is inout, out
+            y = y_tmp
+            deallocate(y_tmp)
+        end if
+    end subroutine
+*/
 class CallVisitor : public ASR::CallReplacerOnExpressionsVisitor<CallVisitor>
 {
 public:
