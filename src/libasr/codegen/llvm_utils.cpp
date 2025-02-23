@@ -2089,7 +2089,7 @@ namespace LCompilers {
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_type);
                     switch( physical_type ) {
                         case ASR::array_physical_typeType::DescriptorArray: {
-                            arr_api->copy_array(src, dest, module, asr_type, false, false);
+                            arr_api->copy_array(src, dest, module, asr_type, false);
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {

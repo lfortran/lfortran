@@ -5467,13 +5467,11 @@ public:
                     builder->CreateStore(value, target);
                 }
             } else {
-                bool create_dim_des_array = false;
                 if( LLVM::is_llvm_pointer(*target_type) ) {
                     target = llvm_utils->CreateLoad(target);
-                    create_dim_des_array = true;
                 }
                 arr_descr->copy_array(value, target, module.get(),
-                                      target_type, create_dim_des_array, false);
+                                      target_type, false);
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
             ASR::DictItem_t* dict_item_t = ASR::down_cast<ASR::DictItem_t>(x.m_target);
