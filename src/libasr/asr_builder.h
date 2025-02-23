@@ -985,7 +985,7 @@ class ASRBuilder {
         PassUtils::create_idx_vars(idx_vars, rank, loc, al, scope, "_i");
 
         ASR::stmt_t* doloop = nullptr;
-        for( int i = (int) idx_vars.size() - 1; i >= 0; i-- ) {
+        for ( int i = 0; i < (int) idx_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
             head.m_start = PassUtils::get_bound(array, i + 1, "lbound", al);
