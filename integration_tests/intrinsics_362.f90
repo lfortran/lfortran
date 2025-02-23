@@ -7,11 +7,11 @@ program intrinsics_362
     if (is_contiguous(b(1:, 1:)) .neqv. .true.) error stop
     print *, is_contiguous(a(::2))
     if (is_contiguous(a(::2)) .neqv. .false.) error stop
-    print*, is_contiguous(b(1:2, 1:2))
+    print *, is_contiguous(b(1:2, 1:2))
     if (is_contiguous(b(1:2, 1:2)) .neqv. .false.) error stop
-    print*, is_contiguous(b(1:2, 1:2:2))
+    print *, is_contiguous(b(1:2, 1:2:2))
     if (is_contiguous(b(1:2, 1:2:2)) .neqv. .false.) error stop
-    print*, is_contiguous(b)
+    print *, is_contiguous(b)
     if (is_contiguous(b) .neqv. .true.) error stop
     call sub(a(::2))
     call sub(a)
