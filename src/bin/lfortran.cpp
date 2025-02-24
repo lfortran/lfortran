@@ -1129,9 +1129,9 @@ int compile_src_to_object_file(const std::string &infile,
         std::cout << "File reading:" << std::setw(5) << time_file_read << " ms" << std::endl;
         std::cout << "Src -> ASR:  " << std::setw(5) << time_src_to_asr << " ms" << std::endl;
         std::cout << "ASR -> mod:  " << std::setw(5) << time_save_mod << " ms" << std::endl;
-        std::cout << "ASR -> LLVM: " << std::setw(5) << time_asr_to_llvm << std::endl;
-        std::cout << "LLVM opt:    " << std::setw(5) << time_opt << std::endl;
-        std::cout << "LLVM -> BIN: " << std::setw(5) << time_llvm_to_bin << std::endl;
+        std::cout << "ASR -> LLVM: " << std::setw(5) << time_asr_to_llvm << " ms" << std::endl;
+        std::cout << "LLVM opt:    " << std::setw(5) << time_opt << " ms" << std::endl;
+        std::cout << "LLVM -> BIN: " << std::setw(5) << time_llvm_to_bin << " ms" << std::endl;
         int total = time_file_read + time_src_to_asr + time_save_mod + time_asr_to_llvm + time_opt + time_llvm_to_bin;
         std::cout << "Total:       " << std::setw(5) << total << " ms" << std::endl;
     }
