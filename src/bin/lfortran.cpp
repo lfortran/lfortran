@@ -1064,7 +1064,7 @@ int compile_src_to_object_file(const std::string &infile,
         return 1;
 #endif
     }
-    t2 = std::chrono::high_resolution_clock::now();
+    t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
     t2 = std::chrono::high_resolution_clock::now();
