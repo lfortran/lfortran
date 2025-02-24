@@ -20,6 +20,9 @@ program intrinsics_366
         if (x == 1) exit
     end do
 
+    if (v /= 16) error stop
+    if (y /= 1) error stop
+
     ! Example2: using simple 3x + 1
     x = 37
     do i = 1, ITRLim
@@ -34,4 +37,9 @@ program intrinsics_366
         x = y
         if (x == 1) exit
     end do
+
+    if (v /= 16) error stop
+    if (y /= 1) error stop
+    if (ntz /= 4) error stop
+
 end program
