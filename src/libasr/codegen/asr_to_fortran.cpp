@@ -1404,6 +1404,7 @@ public:
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
         else if(intrinsic_func_name == "CompilerOptions") intrinsic_func_name = "compiler_options";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
+        else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 
@@ -1419,6 +1420,7 @@ public:
         std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int64_t>(x.m_inquiry_id));
         if(intrinsic_func_name == "BitSize") intrinsic_func_name = "bit_size";
         else if(intrinsic_func_name == "NewLine") intrinsic_func_name = "new_line";
+        else if(intrinsic_func_name == "StorageSize") intrinsic_func_name = "storage_size";
         visit_TypeInquiry_helper(out, intrinsic_func_name, x);
     }
 
