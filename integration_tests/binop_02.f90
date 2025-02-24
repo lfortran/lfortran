@@ -8,14 +8,14 @@ program binop_02
 
     print "(es23.16)", v*v
     print "(es23.16)", v**exp_2
-    if(abs(v*v - v**exp_2) > 1e-15) error stop
+    if(v*v /= v**exp_2) error stop
 
     print "(es23.16)", v*v*v
     print "(es23.16)", v**exp_3
-    if(abs(v*v*v - v**exp_3) > 1e-15) error stop
+    if(v*v*v /= v**exp_3) error stop
 
     print "(es23.16)", v*v*v*v
     print "(es23.16)", v**exp_4
-    if(abs(v*v*v*v - v**exp_4) > 1e-14) error stop
+    if(v*v*v*v /= v**exp_4) error stop
 
 end program binop_02
