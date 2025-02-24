@@ -33,6 +33,7 @@ set(SRC
     pass/array_struct_temporary.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
+    pass/array_passed_in_function_call.cpp
     pass/openmp.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp

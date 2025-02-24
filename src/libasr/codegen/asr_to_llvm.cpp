@@ -2563,11 +2563,12 @@ public:
                 for (int i = 0; i < n_dims; i++) {
                     llvm::Value* dim_index = llvm::ConstantInt::get(context, llvm::APInt(32, i));
                     llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_index);
+                    llvm::Value* dim_start = arr_descr->get_lower_bound(dim_desc);
                     llvm::Value* stride = arr_descr->get_stride(dim_desc);
                     llvm::Value* is_dim_contiguous = builder->CreateICmpEQ(stride, expected_stride);
                     is_contiguous = builder->CreateAnd(is_contiguous, is_dim_contiguous);
                     llvm::Value* dim_size = arr_descr->get_upper_bound(dim_desc);
-                    expected_stride = builder->CreateMul(expected_stride, dim_size);
+                    expected_stride = builder->CreateMul(expected_stride, builder->CreateAdd(builder->CreateSub(dim_size, dim_start), llvm::ConstantInt::get(context, llvm::APInt(32, 1))));
                 }
                 tmp = is_contiguous;
                 break;

@@ -1059,7 +1059,8 @@ RUN(NAME intrinsics_361 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_362 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
 RUN(NAME intrinsics_363 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
 RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_365 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shiftl, shiftr, trailz, btest, ibclr
+RUN(NAME intrinsics_365 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
+RUN(NAME intrinsics_366 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shiftl, shiftr, trailz, btest, ibclr
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -1702,6 +1703,7 @@ RUN(NAME enum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_section_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME array_section_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray NO_STD_F23)
 
@@ -1905,7 +1907,7 @@ RUN(NAME precision_02 LABELS gfortran) # TODO fix this test
 RUN(NAME array_unbounded_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_unbounded_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
-RUN(NAME matmul_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm_nopragma c_nopragma NO_STD_F23)
+RUN(NAME matmul_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_nopragma NO_STD_F23)
 RUN(NAME matmul_02 LABELS gfortran)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma)
