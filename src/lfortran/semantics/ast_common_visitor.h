@@ -6468,15 +6468,17 @@ public:
                     ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
-            } 
-            // else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))||
-            // (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
-            //     diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
-            //         ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
-            //          + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
-            //         " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
-            //     throw SemanticAbort();
-            // }
+            } else{
+                ASR::ttype_t* pad_type = ASRUtils::expr_type(pad_expr);
+                ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+                int pad_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr));
+                int array_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array));
+                if (!((ASRUtils::is_integer(*pad_type) && ASRUtils::is_integer(*array_type)) || (ASRUtils::is_real(*pad_type) && ASRUtils::is_real(*array_type)) || (ASRUtils::is_logical(*pad_type) && ASRUtils::is_logical(*array_type))|| (ASRUtils::is_character(*pad_type) && ASRUtils::is_character(*array_type)) || (ASRUtils::is_complex(*pad_type) && ASRUtils::is_complex(*array_type))) || pad_kind != array_kind){ 
+                    diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " + ASRUtils::type_to_str_fortran(pad_type) + " and kind " + std::to_string(pad_kind) + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " and kind " + std::to_string(array_kind) + " instead.",
+                                        Level::Error, Stage::Semantic, {Label("", {pad->base.loc})})); 
+                    throw SemanticAbort();
+                }
+            }
         }
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                             ASRUtils::expr_type(array));
