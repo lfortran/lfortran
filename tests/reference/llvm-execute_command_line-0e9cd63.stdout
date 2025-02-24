@@ -7,9 +7,8 @@ source_filename = "LFortran"
 define void @_lcompilers_execute_command_line_(i8** %command) {
 .entry:
   %0 = load i8*, i8** %command, align 8
-  %1 = load i8*, i8* %0, align 8
-  %2 = call i8* @_lfortran_exec_command(i8* %1)
-  store i8* %2, i8** %command, align 8
+  %1 = call i8* @_lfortran_exec_command(i8* %0)
+  store i8* %1, i8** %command, align 8
   br label %return
 
 return:                                           ; preds = %.entry
