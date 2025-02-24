@@ -668,6 +668,7 @@ jobs:
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            shasum -a 256 model.dat
 
             mkdir lf
             cd lf
@@ -696,6 +697,7 @@ jobs:
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            shasum -a 256 model.dat
 
             mkdir lf
             cd lf
@@ -731,6 +733,7 @@ jobs:
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            shasum -a 256 model.dat
 
             mkdir lf
             cd lf
@@ -1129,6 +1132,7 @@ jobs:
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            shasum -a 256 model.dat
 
             mkdir lf
             cd lf
