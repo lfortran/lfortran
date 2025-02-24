@@ -7,9 +7,20 @@ subroutine istril(y)
     y(2, 2) = 4.0
 
 end subroutine
+
+function istril_func(y) result(z)
+    real(8), intent(inout) :: y(:, :)
+    logical :: z
+    print *, y(2, 2)
+    z = .true.
+    if ( abs(y(2,2) - 4.0) > 1e-8 )  z = .false.
+    y(1,2) = 4.0
+end function
+
 subroutine matprod(y)
     real(8), intent(inout) :: y(:, :)
     call istril(y)
+    if(.not. istril_func(y)) error stop
 end subroutine 
 end module
 
@@ -23,4 +34,5 @@ program array_section_04
     call matprod(A(1:2,1:2))
     print *, A(2,2)
     if ( abs(A(2,2) - 4.0_8) > 1e-8 ) error stop
+    if ( abs(A(1,2) - 4.0_8) > 1e-8 ) error stop
 end program
