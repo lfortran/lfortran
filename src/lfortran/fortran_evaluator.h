@@ -113,6 +113,7 @@ public:
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
+    Allocator &get_al() { return al; };
 
 private:
     Allocator al;
