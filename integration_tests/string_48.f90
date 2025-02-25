@@ -1,4 +1,6 @@
-program read_comma_separated_string_into_array
+! test to ensure that commad separated string is read properly
+! into an array of values
+program string_48
     implicit none
     character(60) :: val1
     character(60) :: val2
@@ -27,4 +29,4 @@ program read_comma_separated_string_into_array
     read(val4, *) nprocs_real64
     print *, nprocs_real64
     if (any(nprocs_real64 /= [133._8, 0.0_8, 1.0_8, 0.0_8, 5.0_8])) error stop
-end program
+end program string_48
