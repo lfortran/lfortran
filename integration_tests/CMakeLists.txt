@@ -1612,6 +1612,7 @@ RUN(NAME sign_from_value LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME rewind_inquire_flush LABELS gfortran)
 RUN(NAME flush_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 RUN(NAME flush_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt file_02_data.txt)
+RUN(NAME flush_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME assign_to1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assign_to2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
