@@ -2749,6 +2749,81 @@ public:
         }
     }
 
+    void visit_StructConstant(const ASR::StructConstant_t& x) {
+        std::vector<llvm::Constant *> elements;
+        llvm::StructType *t = llvm::cast<llvm::StructType>(llvm_utils->getStructType(x.m_type, module.get()));
+        ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym));
+
+        LCOMPILERS_ASSERT(x.n_args == struct_->n_members);
+        for (size_t i = 0; i < x.n_args; ++i) {
+            ASR::expr_t *value = x.m_args[i].m_value;
+            llvm::Constant* initializer = nullptr;
+            llvm::Type* type = nullptr;
+            if (value == nullptr) {
+                auto member2sym = struct_->m_symtab->get_scope();
+                LCOMPILERS_ASSERT(member2sym[struct_->m_members[i]]->type == ASR::symbolType::Variable);
+                ASR::Variable_t *s = ASR::down_cast<ASR::Variable_t>(member2sym[struct_->m_members[i]]);
+                type = llvm_utils->get_type_from_ttype_t_util(s->m_type, module.get());
+                if (type->isArrayTy()) {
+                    initializer = llvm::ConstantArray::getNullValue(type);
+                } else {
+                    initializer = llvm::Constant::getNullValue(type);
+                }
+            } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                ASR::ArrayConstant_t *arr_expr = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                type = llvm_utils->get_type_from_ttype_t_util(arr_expr->m_type, module.get());
+                initializer = get_const_array(value, type);
+            } else {
+                visit_expr_wrapper(value);
+                initializer = llvm::dyn_cast<llvm::Constant>(tmp);
+                if (!initializer) {
+                    throw CodeGenError("Non-constant value found in struct initialization");
+                }
+            }
+            elements.push_back(initializer);
+        }
+        tmp = llvm::ConstantStruct::get(t, elements);
+    }
+
+    llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+        ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        std::vector<llvm::Constant*> arr_elements;
+        size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
+        arr_elements.reserve(arr_const_size);
+        int a_kind;
+        for (size_t i = 0; i < arr_const_size; i++) {
+            ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, i);
+            a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(elem));
+            if (ASR::is_a<ASR::IntegerConstant_t>(*elem)) {
+                ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(elem);
+                arr_elements.push_back(llvm::ConstantInt::get(
+                    context, llvm::APInt(8 * a_kind, int_const->m_n)));
+            } else if (ASR::is_a<ASR::RealConstant_t>(*elem)) {
+                ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
+                if (a_kind == 4) {
+                    arr_elements.push_back(llvm::ConstantFP::get(
+                        context, llvm::APFloat((float) real_const->m_r)));
+                } else if (a_kind == 8) {
+                    arr_elements.push_back(llvm::ConstantFP::get(
+                        context, llvm::APFloat((double) real_const->m_r)));
+                }
+            } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
+                ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
+                arr_elements.push_back(llvm::ConstantInt::get(
+                    context, llvm::APInt(1, logical_const->m_value)));
+            }
+        }
+        llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
+        llvm::Constant* initializer = nullptr;
+        if (isNullValueArray(arr_elements)) {
+            initializer = llvm::ConstantArray::getNullValue(type);
+        } else {
+            initializer = llvm::ConstantArray::get(arr_type, arr_elements);
+        }
+        return initializer;
+    }
+
     bool isNullValueArray(const std::vector<llvm::Constant*>& elements) {
         return std::all_of(elements.begin(), elements.end(),
             [](llvm::Constant* elem) { return elem->isNullValue(); });
@@ -2829,41 +2904,7 @@ public:
                     value = x.m_symbolic_value;
                 }
                 if (value) {
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
-                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                    std::vector<llvm::Constant*> arr_elements;
-                    size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
-                    arr_elements.reserve(arr_const_size);
-                    int a_kind;
-                    for (size_t i = 0; i < arr_const_size; i++) {
-                        ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, i);
-                        a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(elem));
-                        if (ASR::is_a<ASR::IntegerConstant_t>(*elem)) {
-                            ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(elem);
-                            arr_elements.push_back(llvm::ConstantInt::get(
-                                context, llvm::APInt(8 * a_kind, int_const->m_n)));
-                        } else if (ASR::is_a<ASR::RealConstant_t>(*elem)) {
-                            ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
-                            if (a_kind == 4) {
-                                arr_elements.push_back(llvm::ConstantFP::get(
-                                    context, llvm::APFloat((float) real_const->m_r)));
-                            } else if (a_kind == 8) {
-                                arr_elements.push_back(llvm::ConstantFP::get(
-                                    context, llvm::APFloat((double) real_const->m_r)));
-                            }
-                        } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
-                            ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
-                            arr_elements.push_back(llvm::ConstantInt::get(
-                                context, llvm::APInt(1, logical_const->m_value)));
-                        }
-                    }
-                    llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
-                    llvm::Constant* initializer = nullptr;
-                    if (isNullValueArray(arr_elements)) {
-                        initializer = llvm::ConstantArray::getNullValue(type);
-                    } else {
-                        initializer = llvm::ConstantArray::get(arr_type, arr_elements);
-                    }
+                    llvm::Constant* initializer = get_const_array(value, type);
                     module->getNamedGlobal(x.m_name)->setInitializer(initializer);
                 } else {
                     module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
