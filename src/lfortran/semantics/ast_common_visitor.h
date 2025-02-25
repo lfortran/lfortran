@@ -1916,8 +1916,7 @@ public:
             }
 
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, ASRUtils::fix_scoped_type(al, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)),
-                    current_scope), nullptr);
+                member_sym, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)), nullptr);
 
             return new_target;
         } else {
@@ -2348,7 +2347,7 @@ public:
             current_scope->add_symbol(common_block_name, struct_symbol);
 
             // create a struct instance
-            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, struct_symbol));
+            ASR::ttype_t* type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, struct_symbol));
             std::string struct_var_name = base_struct_instance_name + common_block_name;
             ASR::symbol_t* struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, struct_var_name), nullptr, 0,
                                         ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
@@ -4291,7 +4290,7 @@ public:
                             nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                             ASR::accessType::Private));
                 }
-                type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, v));
+                type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
                 if (is_pointer) {
@@ -4405,7 +4404,7 @@ public:
         }
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
         ASR::ttype_t* der = ASRUtils::TYPE(
-                            ASR::make_StructType_t(al, loc, v));
+                            ASRUtils::make_StructType_t_util(al, loc, v));
         return ASR::make_StructConstructor_t(al, loc,
                 v, vals.p, vals.size(), der, nullptr);
     }
@@ -4428,123 +4427,6 @@ public:
             }
         }
         return 1; // default
-    }
-
-    void create_and_replace_structType() {
-
-        class StructTypeVisitor : public ASR::BaseWalkVisitor<StructTypeVisitor> {
-            private:
-                Allocator &al;
-
-            public:
-                int sem = -1;
-                SymbolTable* local_current_scope;
-                StructTypeVisitor (Allocator &_al, SymbolTable* current_scope) : al(_al) {
-                    local_current_scope = current_scope;
-                    sem = -1;
-                }
-
-                void visit_Module(const ASR::Module_t &x) {
-                    for (auto &a : x.m_symtab->get_scope()) {
-                        if ( ASR::is_a<ASR::Function_t>(*a.second) ) {
-                            ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(a.second);
-                            SymbolTable* local_current_scope_copy = local_current_scope;
-                            local_current_scope = f->m_symtab;
-                            this->visit_Function(*f);
-                            local_current_scope = local_current_scope_copy;
-                        } else {
-                            this->visit_symbol(*a.second);
-                        }
-                    }
-                }
-
-                void visit_Program(const ASR::Program_t &x) {
-                    for (auto &a : x.m_symtab->get_scope()) {
-                        if ( ASR::is_a<ASR::Function_t>(*a.second) ) {
-                            ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(a.second);
-                            SymbolTable* local_current_scope_copy = local_current_scope;
-                            local_current_scope = f->m_symtab;
-                            this->visit_Function(*f);
-                            local_current_scope = local_current_scope_copy;
-                        } else {
-                            this->visit_symbol(*a.second);
-                        }
-                    }
-                    for (size_t i=0; i<x.n_body; i++) {
-                        this->visit_stmt(*x.m_body[i]);
-                    }
-                }
-
-                void visit_Struct( const ASR::Struct_t& x ) {
-                    SymbolTable* local_current_scope_copy = local_current_scope;
-                    local_current_scope = x.m_symtab;
-                    for (auto &a : x.m_symtab->get_scope()) {
-                        this->visit_symbol(*a.second);
-                    }
-                    for (size_t i=0; i<x.n_initializers; i++) {
-                        this->visit_call_arg(x.m_initializers[i]);
-                    }
-                    if (x.m_alignment) {
-                        this->visit_expr(*x.m_alignment);
-                    }
-                    local_current_scope = local_current_scope_copy;
-                }
-
-                void visit_Array( const ASR::Array_t& x ) {
-                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
-                        sem += 1;
-                        visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
-                        sem -= 1;
-                    }
-
-                }
-
-                void visit_FunctionType( const ASR::FunctionType_t& x ) {
-                    for (size_t i=0; i<x.n_arg_types; i++) {
-                        this->visit_ttype(*x.m_arg_types[i]);
-                    }
-                    if (x.m_return_var_type)
-                        this->visit_ttype(*x.m_return_var_type);
-                }
-
-                void visit_ArrayItem(const ASR::ArrayItem_t& x) {
-                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
-                        sem += 1;
-                        visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
-                        sem -= 1;
-                    }
-                    this->visit_expr(*x.m_v);
-                }
-
-                void visit_StructType( const ASR::StructType_t& x ) {
-                    if ( sem >= 0 ) {
-                        ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
-                        if ( ASRUtils::symbol_parent_symtab(xx.m_derived_type)->counter != local_current_scope->counter) {
-                            if ((local_current_scope->resolve_symbol(ASRUtils::symbol_name(xx.m_derived_type)) == nullptr)) {
-                                ASRUtils::SymbolDuplicator sd(al);
-                                sd.duplicate_symbol(xx.m_derived_type, local_current_scope);
-                            }
-                            xx.m_derived_type = local_current_scope->resolve_symbol(ASRUtils::symbol_name(xx.m_derived_type));
-                        }
-                    }
-                }
-        };
-
-        StructTypeVisitor v(al, current_scope);
-        ASR::asr_t* asr_owner = current_scope->asr_owner;
-        if ( ASR::is_a<ASR::symbol_t>(*asr_owner) ) {
-            ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
-            if ( ASR::is_a<ASR::Function_t>(*sym) ) {
-                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
-                v.visit_Function(*f);
-            } else if ( ASR::is_a<ASR::Program_t>(*sym) ) {
-                ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(sym);
-                v.visit_Program(*p);
-            } else if ( ASR::is_a<ASR::Module_t>(*sym) ) {
-                ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(sym);
-                v.visit_Module(*m);
-            }
-        }
     }
 
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
@@ -4570,10 +4452,9 @@ public:
         ASR::expr_t* v_Var = nullptr;
         if( v_expr ) {
             ASR::ttype_t* struct_t_mem_type = ASRUtils::symbol_type(v);
-            ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope, struct_t_mem_type);
+            ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                        al, v_expr->base.loc, v_expr, v_ext,
-                        ASRUtils::fix_scoped_type(al, struct_t_mem_type, current_scope), nullptr));
+                        al, v_expr->base.loc, v_expr, v_ext, struct_t_mem_type, nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
@@ -5163,28 +5044,7 @@ public:
                 return ASRUtils::TYPE(ASR::make_String_t(al, loc, t->m_kind, a_len, func_calls[0], t->m_physical_type));
             }
             case ASR::ttypeType::StructType: {
-                ASR::StructType_t* struct_t_type = ASR::down_cast<ASR::StructType_t>(return_type);
-                ASR::symbol_t *sym = struct_t_type->m_derived_type;
-                ASR::symbol_t *es_s = current_scope->resolve_symbol(
-                    ASRUtils::symbol_name(sym));
-                if (es_s == nullptr) {
-                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(sym);
-                    ASR::Module_t* sym_module = ASRUtils::get_sym_module(sym);
-                    LCOMPILERS_ASSERT(sym_module != nullptr);
-                    std::string st_name = "1_" + std::string(st->m_name);
-                    if (current_scope->get_symbol(st_name)) {
-                        sym = current_scope->get_symbol(st_name);
-                    } else {
-                        sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                            al, st->base.base.loc, current_scope, s2c(al, st_name),
-                            sym, sym_module->m_name, nullptr, 0, st->m_name,
-                            ASR::accessType::Public));
-                        current_scope->add_symbol(st_name, sym);
-                    }
-                } else {
-                    sym = es_s;
-                }
-                return ASRUtils::TYPE(ASR::make_StructType_t(al, loc, sym));
+                return ASRUtils::duplicate_type(al, return_type);
             }
             default: {
                 return return_type;
@@ -5970,9 +5830,7 @@ public:
                 ASR::is_a<ASR::ClassType_t>(*v_variable_m_type)) {
             ASR::ttype_t* v_type = v_variable_m_type;
             ASR::symbol_t *derived_type = nullptr;
-            if (ASR::is_a<ASR::StructType_t>(*v_type)) {
-                derived_type = ASR::down_cast<ASR::StructType_t>(v_type)->m_derived_type;
-            } else if (ASR::is_a<ASR::ClassType_t>(*v_type)) {
+            if (ASR::is_a<ASR::ClassType_t>(*v_type)) {
                 derived_type = ASR::down_cast<ASR::ClassType_t>(v_type)->m_class_type;
             }
             ASR::Struct_t *der_type;
@@ -6074,10 +5932,7 @@ public:
                 ASRUtils::type_get_past_allocatable(dt_type));
         }
         if( parent == nullptr ) {
-            if ( ASR::is_a<ASR::StructType_t>(*dt_type) ) {
-                ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(dt_type);
-                der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der->m_derived_type));
-            } else if( ASR::is_a<ASR::ClassType_t>(*dt_type) ) {
+            if( ASR::is_a<ASR::ClassType_t>(*dt_type) ) {
                 ASR::ClassType_t* der = ASR::down_cast<ASR::ClassType_t>(dt_type);
                 der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der->m_class_type));
             } else {
@@ -8726,7 +8581,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASR::make_StructType_t(al, args[i]->base.loc, arg_sym0));
+                            arg_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, args[i]->base.loc, arg_sym0));
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }
@@ -8966,11 +8821,7 @@ public:
         ASR::ttype_t *right_type = ASRUtils::expr_type(right);
 
         ASR::Struct_t *left_struct = nullptr;
-        if ( ASR::is_a<ASR::StructType_t>(*left_type) ) {
-            left_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
-                left_type)->m_derived_type));
-        } else if ( ASR::is_a<ASR::ClassType_t>(*left_type) ) {
+        if ( ASR::is_a<ASR::ClassType_t>(*left_type) ) {
             left_struct = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::ClassType_t>(
                 left_type)->m_class_type));
@@ -9690,7 +9541,7 @@ public:
                         scope);
                 ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
                 ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al,
-                                                    tmp2->m_m, current_scope, tmp2_mem_type);
+                                                    tmp2->m_m, current_scope);
                 if( is_tmp_array ) {
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -9699,8 +9550,7 @@ public:
                     m_dims_vec.from_pointer_n(m_dims, n_dims);
                     tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
                 }
-                tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
-                    tmp2_m_m_ext, ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
+                tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_mem_type, nullptr);
                 make_ArrayItem_from_struct_m_args(x_m_member[i].m_args, x_m_member[i].n_args,
                     ASRUtils::EXPR(tmp), tmp, loc);
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
@@ -9717,7 +9567,7 @@ public:
                         to_lower(x_m_member[i].m_name), scope);
             ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
             ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m,
-                                            current_scope, tmp2_mem_type);
+                                            current_scope);
             if( is_tmp_array ) {
                 if( ASRUtils::is_array(tmp2_mem_type) ) {
                     diag.add(Diagnostic(
@@ -9732,8 +9582,7 @@ public:
                 m_dims_vec.from_pointer_n(m_dims, n_dims);
                 tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
             }
-            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
-                ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
+            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, nullptr);
         }
         // Find array in the returning tmp expression. If found set tmp type to that array type.
         bool array_found = false;

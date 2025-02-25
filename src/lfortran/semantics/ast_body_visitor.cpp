@@ -1345,7 +1345,7 @@ public:
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
+                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                         new_arg.m_type = struct_t;
                     } else {
                         diag.add(Diagnostic(
@@ -1725,7 +1725,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
@@ -1775,7 +1775,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
@@ -1933,7 +1933,6 @@ public:
             v->n_dependencies = module_dependencies.size();
         }
 
-        create_and_replace_structType();
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
@@ -1998,7 +1997,6 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
-        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -2032,23 +2030,6 @@ public:
                         ASR::is_a<ASR::Allocatable_t>(*orig_var->m_type) &&
                         orig_var->m_intent == ASR::intentType::Out ) {
                         del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x->base.loc, arg_var->m_v)));
-                    }
-                    // Check struct-type members
-                    if(ASR::is_a<ASR::StructType_t>(*ASRUtils::symbol_type(sym)) &&
-                        ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out){
-                        ASR::StructType_t* struct_type_instance = ASR::down_cast<ASR::StructType_t>(var->m_type);
-                        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(struct_type_instance->m_derived_type));
-                        SymbolTable* sym_table_of_struct = struct_type->m_symtab;
-                        for(auto struct_member : sym_table_of_struct->get_scope()){
-                            if(ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
-                                ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))){
-                                del_syms.push_back(al, ASRUtils::EXPR(
-                                    ASRUtils::getStructInstanceMember_t(al,subrout_call->m_args[i].m_value->base.loc,
-                                    (ASR::asr_t*)subrout_call->m_args[i].m_value,
-                                    const_cast<ASR::symbol_t*>(sym), struct_member.second, current_scope)));
-                            }
-                        }
                     }
                 }
             }
@@ -2431,7 +2412,6 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
-        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -2511,7 +2491,6 @@ public:
             is_Function = false;
         }
 
-        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
