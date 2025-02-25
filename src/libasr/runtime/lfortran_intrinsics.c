@@ -3678,24 +3678,83 @@ void lfortran_error(const char *message) {
     exit(EXIT_FAILURE);
 }
 
-// TODO: add support for reading comma separated string, into `_arr` functions
-// by accepting array size as an argument as well
-LFORTRAN_API void _lfortran_string_read_i32_array(char *str, char *format, int32_t *arr) {
-    lfortran_error("Reading into an array of int32_t is not supported.");
+LFORTRAN_API void _lfortran_string_read_i32_array(char *str, char *format, int32_t *arr, size_t arr_size) {
+    size_t count = 0;
+    char *token = strtok(str, ",");
+
+    while (token != NULL && count < arr_size) {
+        int read_count = sscanf(token, format, &arr[count]);
+        if (read_count != 1) {
+            lfortran_error("Failed to parse an i32 from the input string");
+        }
+        count++;
+
+        token = strtok(NULL, ",");
+    }
+
+    if (count < arr_size) {
+        lfortran_error("Not enough i32 found in the input string");
+    }
 }
 
-LFORTRAN_API void _lfortran_string_read_i64_array(char *str, char *format, int64_t *arr) {
-    lfortran_error("Reading into an array of int64_t is not supported.");
+LFORTRAN_API void _lfortran_string_read_i64_array(char *str, char *format, int64_t *arr, size_t arr_size) {
+    size_t count = 0;
+    char *token = strtok(str, ",");
+
+    while (token != NULL && count < arr_size) {
+        int read_count = sscanf(token, format, &arr[count]);
+        if (read_count != 1) {
+            lfortran_error("Failed to parse an i64 from the input string");
+        }
+        count++;
+
+        token = strtok(NULL, ",");
+    }
+
+    if (count < arr_size) {
+        lfortran_error("Not enough i64 found in the input string");
+    }
 }
 
-LFORTRAN_API void _lfortran_string_read_f32_array(char *str, char *format, float *arr) {
-    lfortran_error("Reading into an array of float is not supported.");
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, char *format, float *arr, size_t arr_size) {
+    size_t count = 0;
+    char *token = strtok(str, ",");
+
+    while (token != NULL && count < arr_size) {
+        int read_count = sscanf(token, format, &arr[count]);
+        if (read_count != 1) {
+            lfortran_error("Failed to parse an float from the input string");
+        }
+        count++;
+
+        token = strtok(NULL, ",");
+    }
+
+    if (count < arr_size) {
+        lfortran_error("Not enough floats found in the input string");
+    }
 }
 
-LFORTRAN_API void _lfortran_string_read_f64_array(char *str, char *format, double *arr) {
-    lfortran_error("Reading into an array of double is not supported.");
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, char *format, double *arr, size_t arr_size) {
+    size_t count = 0;
+    char *token = strtok(str, ",");
+
+    while (token != NULL && count < arr_size) {
+        int read_count = sscanf(token, format, &arr[count]);
+        if (read_count != 1) {
+            lfortran_error("Failed to parse an double from the input string");
+        }
+        count++;
+
+        token = strtok(NULL, ",");
+    }
+
+    if (count < arr_size) {
+        lfortran_error("Not enough double found in the input string");
+    }
 }
 
+// TODO: read comma separated string into an array of strings
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, char *format, char **arr) {
     lfortran_error("Reading into an array of strings is not supported.");
 }

@@ -8114,23 +8114,45 @@ public:
                 int ptr_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_values[i]);
+                llvm::Value* v = tmp;
                 ptr_loads = ptr_copy;
                 ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
+                bool is_array = ASRUtils::is_array(type);
                 llvm::Function *fn;
                 if (is_string) {
                     // TODO: Support multiple arguments and fmt
                     std::string runtime_func_name = "_lfortran_string_read_" +
                                             ASRUtils::type_to_str_python(ASRUtils::extract_type(type));
-                    if (ASRUtils::is_array(type)) {
+                    llvm::Value* array_size_llvm_value = nullptr;
+                    if (is_array) {
+                        ASR::dimension_t* dims = nullptr;
+                        ASRUtils::extract_dimensions_from_ttype(type, dims);
+                        int array_size = ASRUtils::get_fixed_size_of_array(type);
+                        ASR::expr_t* compile_time_size = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, dims->loc, array_size,
+                                ASRUtils::TYPE(ASR::make_Integer_t(al, dims->loc, 4)))
+                        );
+                        visit_expr(*compile_time_size);
+                        array_size_llvm_value = tmp;
                         runtime_func_name += "_array";
                     }
                     llvm::Function* fn = module->getFunction(runtime_func_name);
                     if (!fn) {
-                        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context), {
-                                    character_type, character_type,
-                                    llvm_utils->get_type_from_ttype_t_util(type, module.get())->getPointerTo()
-                                }, false);
+                        llvm::FunctionType* function_type = nullptr;
+                        if (is_array) {
+                            function_type = llvm::FunctionType::get(
+                                    llvm::Type::getVoidTy(context), {
+                                        character_type, character_type,
+                                        llvm_utils->get_type_from_ttype_t_util(type, module.get())->getPointerTo(),
+                                        array_size_llvm_value->getType()
+                                    }, false);
+                        } else {
+                            function_type = llvm::FunctionType::get(
+                                    llvm::Type::getVoidTy(context), {
+                                        character_type, character_type,
+                                        llvm_utils->get_type_from_ttype_t_util(type, module.get())->getPointerTo()
+                                    }, false);
+                        }
                         fn = llvm::Function::Create(function_type,
                                 llvm::Function::ExternalLinkage, runtime_func_name, *module);
                     }
@@ -8154,7 +8176,11 @@ public:
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         fmt = builder->CreateGlobalStringPtr("%d");
                     }
-                    builder->CreateCall(fn, { unit_val, fmt, tmp });
+                    if (is_array) {
+                        builder->CreateCall(fn, { unit_val, fmt, v, array_size_llvm_value});
+                    } else {
+                        builder->CreateCall(fn, { unit_val, fmt, v });
+                    }
                     return;
                 } else {
                     fn = get_read_function(type);
