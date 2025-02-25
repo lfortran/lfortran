@@ -3033,6 +3033,19 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
         bool unit_file_bin;
         FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
         if( filep == NULL ) {
+            if ( unit_num == 6 ) {
+                // special case: flush OUTPUT_UNIT
+                fflush(stdout);
+                return;
+            } else if ( unit_num == 5 ) {
+                // special case: flush INPUT_UNIT
+                fflush(stdin);
+                return;
+            } else if ( unit_num == 0 ) {
+                // special case: flush ERROR_UNIT
+                fflush(stderr);
+                return;
+            }
             printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
             exit(1);
         }
