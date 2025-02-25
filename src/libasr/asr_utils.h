@@ -1121,7 +1121,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::ImpliedDoLoop:
         case ASR::exprType::PointerNullConstant:
         case ASR::exprType::ArrayConstant:
-        case ASR::exprType::StringConstant: {
+        case ASR::exprType::StringConstant:
+        case ASR::exprType::StructConstant: {
             return true;
         }
         case ASR::exprType::RealBinOp:

@@ -85,6 +85,7 @@ expr
     | IntrinsicImpureFunction(int impure_intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)
     | TypeInquiry(int inquiry_id, ttype arg_type, expr? arg, ttype type, expr value)
     | StructConstructor(symbol dt_sym, call_arg* args, ttype type, expr? value)
+    | StructConstant(symbol dt_sym, call_arg* args, ttype type)
     | EnumConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | UnionConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | ImpliedDoLoop(expr* values, expr var, expr start, expr end, expr? increment, ttype type, expr? value)

@@ -3466,6 +3466,13 @@ public:
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(func_call->m_func);
+                        bool is_struct_const = false;
+                        if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                            if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
+                                is_struct_const = true;
+                            }
+                        }
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
@@ -3476,7 +3483,7 @@ public:
                                                 func_call->base.base.loc,
                                                 func_call->m_args, func_call->n_args,
                                                 func_call->m_keywords, func_call->n_keywords,
-                                                sym_found));
+                                                sym_found, is_struct_const));
                             } else {
                                 LCOMPILERS_ASSERT(false);
                             }
@@ -4369,7 +4376,7 @@ public:
 
     ASR::asr_t* create_DerivedTypeConstructor(const Location &loc,
             AST::fnarg_t* m_args, size_t n_args, AST::keyword_t* kwargs,
-            size_t n_kwargs, ASR::symbol_t *v) {
+            size_t n_kwargs, ASR::symbol_t *v, bool is_const = false) {
         Vec<ASR::call_arg_t> vals;
         visit_expr_list(m_args, n_args, vals);
         if(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(v))){
@@ -4406,6 +4413,20 @@ public:
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
         ASR::ttype_t* der = ASRUtils::TYPE(
                             ASR::make_StructType_t(al, loc, v));
+
+        // Ensure all values are present and are constant before creating StructConstant
+        for (const auto& val : vals) {
+            if (!val.m_value || 
+                    !(ASRUtils::is_value_constant(val.m_value) ||
+                      ASRUtils::is_value_constant(ASRUtils::expr_value(val.m_value)))) {
+                    is_const = false;
+                    break;
+            }
+        }
+        if (is_const) {
+           return ASR::make_StructConstant_t(al, loc,
+                    v, vals.p, vals.size(), der);
+        }
         return ASR::make_StructConstructor_t(al, loc,
                 v, vals.p, vals.size(), der, nullptr);
     }
