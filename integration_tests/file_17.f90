@@ -13,11 +13,11 @@ program file_17
 
     open(10, file="file_17_util.txt")
     read(10, *) a, b, c
-    close(10)
+    ! close(10)
 
-    print *, arr(1), a
-    print *, arr(2), b
-    print *, arr(3), c
+        print *, arr(1), a
+        print *, arr(2), b
+        print *, arr(3), c
 
     if (abs(arr(1) - a) > 1e-5) error stop
     if (abs(arr(2) - b) > 1e-5) error stop
