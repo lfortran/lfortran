@@ -1235,8 +1235,8 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     }
     if (args[2]) {
         mask_expr = args[2];
-        if (!is_array(expr_type(args[2])) || !is_logical(*expr_type(args[2]))) {
-            append_error(diag, "`mask` argument of `"+ intrinsic_name +"` must be a logical array", loc);
+        if (!is_logical(*expr_type(args[2]))) {
+            append_error(diag, "`mask` argument of `"+ intrinsic_name +"` must be logical", loc);
             return nullptr;
         }
         m_args.push_back(al, args[2]);
