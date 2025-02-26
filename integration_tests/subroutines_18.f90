@@ -9,7 +9,7 @@ contains
    end subroutine
 
    subroutine sub(calfun)
-      procedure(OBJ), pointer :: calfun
+      procedure(OBJ), pointer , intent(inout) :: calfun
       calfun => OBJ
       call calfun
    end subroutine

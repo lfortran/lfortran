@@ -892,7 +892,7 @@ namespace LCompilers {
                     type = type_original;
                 }
                 if ( arg->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(arg->m_type_declaration)) &&
-                    arg->m_intent != ASRUtils::intent_in && arg->m_intent != ASRUtils::intent_local ) {
+                    (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) ) {
                     type = type->getPointerTo();
                 }
                 if( (arg->m_intent == ASRUtils::intent_out || (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
