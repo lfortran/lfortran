@@ -2065,6 +2065,8 @@ RUN(NAME openmp_41 LABELS llvm_omp llvm)
 RUN(NAME openmp_42 LABELS llvm_omp llvm)
 RUN(NAME openmp_43 LABELS llvm_omp llvm)
 
+RUN(NAME struct_allocate LABELS gfortran llvm)
+
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
 RUN(NAME nullify_03 LABELS gfortran llvm)
