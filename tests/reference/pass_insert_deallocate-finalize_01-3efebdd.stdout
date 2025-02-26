@@ -148,16 +148,8 @@
                                             .true.
                                             (Logical 4)
                                         )
-                                        [(ImplicitDeallocate
-                                            [(Var 6 arr_real)
-                                            (Var 6 str)]
-                                        )
-                                        (Return)]
+                                        [(Return)]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 6 arr_real)
-                                        (Var 6 str)]
                                     )]
                                     ()
                                     Public
@@ -301,17 +293,8 @@
                                             .true.
                                             (Logical 4)
                                         )
-                                        [(ImplicitDeallocate
-                                            [(Var 4 arr)]
-                                        )
-                                        (Return)]
-                                        [(ImplicitDeallocate
-                                            [(Var 4 arr)]
-                                        )
-                                        (Return)]
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 4 arr)]
+                                        [(Return)]
+                                        [(Return)]
                                     )]
                                     ()
                                     Public
@@ -386,9 +369,6 @@
                                         ()
                                         ()
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 str)]
                                     )
                                     (Return)
                                     (DoLoop
