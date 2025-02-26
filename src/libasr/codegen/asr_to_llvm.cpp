@@ -2694,14 +2694,15 @@ public:
         current_der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
         int64_t ptr_loads_copy = ptr_loads;
-        if( ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
-            ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)) ) {
-            ptr_loads = 0;
-        } else {
-            ptr_loads = 2 - LLVM::is_llvm_pointer(*x_m_v_type);
-        }
+        ptr_loads = (ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
+                 ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)))
+                ? 0 : 2 - LLVM::is_llvm_pointer(*x_m_v_type);
+
+
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
+        llvm::Value* base_tmp = tmp; // Save the result of x.m_v
+        llvm::Type* base_type = llvm_utils->get_type_from_ttype_t_util(x_m_v_type, module.get());
         if( ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(x_m_v_type))) ) {
             if (ASRUtils::is_allocatable(x_m_v_type)) {
@@ -2716,6 +2717,20 @@ public:
             } else {
                 // TODO: Select type by comparing with vtab
             }
+        } else if (ASR::is_a<ASR::Array_t>(*x_m_v_type)) {
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(x_m_v_type);
+            ASR::ttype_t* element_type = array_type->m_type;
+    
+            llvm::Value* index = llvm::ConstantInt::get(context, llvm::APInt(32, 0)); // 0-based indexing
+            std::vector<llvm::Value*> idx_vec = {
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                index
+            };
+            llvm::Type* element_llvm_type = llvm_utils->get_type_from_ttype_t_util(element_type, module.get());
+            tmp = builder->CreateGEP(base_type, base_tmp, idx_vec);
+            base_type = element_llvm_type;
+            current_der_type_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::StructType_t>(element_type)->m_derived_type);
         }
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
@@ -2729,7 +2744,6 @@ public:
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
-
         llvm::Type *xtype = name2dertype[current_der_type_name];
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
