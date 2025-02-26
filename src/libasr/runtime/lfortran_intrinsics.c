@@ -4151,7 +4151,9 @@ LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
     if (name == NULL) {
         return NULL;
     } else {
-        return getenv("HOME");
+        // if the name is not found, return empty string
+        char* empty_string = "";
+        return getenv(name) ? getenv(name) : empty_string;
     }
 }
 

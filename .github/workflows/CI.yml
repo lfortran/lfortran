@@ -94,6 +94,7 @@ jobs:
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
@@ -107,6 +108,7 @@ jobs:
         if: contains(matrix.os, 'ubuntu')
         run: |
             cd ./integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b llvm --std=f23
             ./run_tests.py -b llvm -f --std=f23
 
@@ -436,6 +438,7 @@ jobs:
             ./run_tests.py
             ./run_tests.py -vh
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
@@ -1029,6 +1032,7 @@ jobs:
             export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
             export WASMTIME_NEW_CLI=0
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
       - name: Build Linux
@@ -1055,6 +1059,7 @@ jobs:
         run: |
             ctest --output-on-failure
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
 
@@ -1271,6 +1276,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b gfortran
 
       - name: Build Linux
@@ -1300,6 +1306,7 @@ jobs:
             ./run_tests.py
             ./run_tests.py -vh
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
@@ -1308,12 +1315,14 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b llvm_omp
 
       - name: Test Fortran Backend
         shell: bash -e -l {0}
         run: |
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
 
@@ -1334,6 +1343,7 @@ jobs:
             cd ../../..
 
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
 
@@ -1353,6 +1363,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
 
@@ -1456,6 +1467,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!';
             ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
 
   upload_docs:
