@@ -35,6 +35,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -54,6 +55,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -218,6 +220,7 @@
                                                     Required
                                                     .false.
                                                     .true.
+                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -239,6 +242,7 @@
                                                     Optional
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -258,6 +262,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -328,6 +333,7 @@
                                                     Optional
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -349,6 +355,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -364,6 +371,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -449,6 +457,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -464,6 +473,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -518,6 +528,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -539,6 +550,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

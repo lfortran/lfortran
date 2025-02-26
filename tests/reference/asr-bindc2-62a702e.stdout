@@ -53,6 +53,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             newshape:
                                 (Variable
@@ -75,6 +76,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -90,6 +92,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -118,6 +121,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -142,6 +146,7 @@
                                     Required
                                     .false.
                                     .true.
+                                    .false.
                                 )
                         })
                     bindc2

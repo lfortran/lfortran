@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             f:
                                 (Variable
@@ -44,6 +45,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -113,6 +115,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             ptr:
                                 (Variable
@@ -130,6 +133,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -182,6 +186,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -197,6 +202,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -218,6 +224,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -233,6 +240,7 @@
                                                     Source
                                                     Private
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -300,6 +308,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             def:
                                                 (Variable
@@ -317,6 +326,7 @@
                                                     Optional
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -332,6 +342,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -353,6 +364,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -368,6 +380,7 @@
                                                     Source
                                                     Private
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

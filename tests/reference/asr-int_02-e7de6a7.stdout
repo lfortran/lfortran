@@ -29,6 +29,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             x2:
                                 (Variable
@@ -44,6 +45,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -69,6 +71,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y2:
                                 (Variable
@@ -90,6 +93,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )
