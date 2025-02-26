@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -148,6 +149,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -163,6 +165,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

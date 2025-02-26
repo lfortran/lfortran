@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -38,6 +39,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -62,6 +64,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -77,6 +80,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -96,6 +100,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             bcorr_arg_1:
                                                 (Variable
@@ -113,6 +118,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             bcorr_return_var_name:
                                                 (Variable
@@ -128,6 +134,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -174,6 +181,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             exp:
                                 (Variable
@@ -189,6 +197,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

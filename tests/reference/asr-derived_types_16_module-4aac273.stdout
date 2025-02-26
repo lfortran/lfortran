@@ -77,6 +77,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     derived_types_16
@@ -201,6 +202,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             float:
                                                 (Variable
@@ -218,6 +220,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -233,6 +236,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -273,6 +277,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

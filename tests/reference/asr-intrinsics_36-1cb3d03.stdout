@@ -38,6 +38,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             empty:
                                 (Variable
@@ -68,6 +69,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -102,6 +104,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             space_at_end:
                                 (Variable
@@ -132,6 +135,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -166,6 +170,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             space_in_between:
                                 (Variable
@@ -198,6 +203,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             spaces_with_symbols:
                                 (Variable
@@ -228,6 +234,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

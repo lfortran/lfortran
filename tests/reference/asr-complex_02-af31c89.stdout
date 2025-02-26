@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -38,6 +39,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -57,6 +59,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             w:
                                 (Variable
@@ -72,6 +75,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -91,6 +95,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -106,6 +111,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

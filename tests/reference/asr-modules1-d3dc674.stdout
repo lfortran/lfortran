@@ -28,6 +28,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -45,6 +46,7 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -177,6 +179,7 @@
                                                     Required
                                                     .false.
                                                     .true.
+                                                    .false.
                                                 )
                                         })
                                     sub
@@ -266,6 +269,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

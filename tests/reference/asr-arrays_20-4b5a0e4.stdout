@@ -30,6 +30,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             list_integer:
                                 (Variable
@@ -54,6 +55,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             list_logical:
                                 (Variable
@@ -76,6 +78,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )
