@@ -2743,10 +2743,10 @@ public:
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
-#if LLVM_VERSION_MAJOR > 16
+// #if LLVM_VERSION_MAJOR > 16
         ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(
             member_type, module.get());
-#endif
+// #endif
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = ASR::down_cast<ASR::StructType_t>(
                 member_type)->m_derived_type;
