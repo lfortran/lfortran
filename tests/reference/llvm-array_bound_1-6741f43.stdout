@@ -125,6 +125,7 @@ ifcont20:                                         ; preds = %else19, %then18, %t
   %7 = sext i32 %6 to i64
   %8 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 %3, i32 2, i64 %5, i32 2, i64 %7)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %8)
   br i1 true, label %then22, label %else23
 
 then22:                                           ; preds = %ifcont20
@@ -205,6 +206,7 @@ ifcont44:                                         ; preds = %else43, %then42, %t
   %14 = sext i32 %13 to i64
   %15 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 %10, i32 2, i64 %12, i32 2, i64 %14)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @_lfortran_free(i8* %15)
   br i1 true, label %then46, label %else47
 
 then46:                                           ; preds = %ifcont44
@@ -339,6 +341,7 @@ ifcont84:                                         ; preds = %else83, %then82, %t
   %23 = sext i32 %22 to i64
   %24 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 2, i64 %17, i32 2, i64 %19, i32 2, i64 %21, i32 2, i64 %23)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @_lfortran_free(i8* %24)
   br i1 true, label %then86, label %else87
 
 then86:                                           ; preds = %ifcont84
@@ -473,6 +476,7 @@ ifcont124:                                        ; preds = %else123, %then122, 
   %32 = sext i32 %31 to i64
   %33 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 2, i64 %26, i32 2, i64 %28, i32 2, i64 %30, i32 2, i64 %32)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
+  call void @_lfortran_free(i8* %33)
   br i1 true, label %then126, label %else127
 
 then126:                                          ; preds = %ifcont124
@@ -513,6 +517,7 @@ ifcont136:                                        ; preds = %else135, %then134, 
   %37 = sext i32 %36 to i64
   %38 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 %35, i32 2, i64 %37)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %38, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void @_lfortran_free(i8* %38)
   br i1 true, label %then138, label %else139
 
 then138:                                          ; preds = %ifcont136
@@ -553,6 +558,7 @@ ifcont148:                                        ; preds = %else147, %then146, 
   %42 = sext i32 %41 to i64
   %43 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 %40, i32 2, i64 %42)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  call void @_lfortran_free(i8* %43)
   br i1 true, label %then150, label %else151
 
 then150:                                          ; preds = %ifcont148
@@ -567,6 +573,7 @@ ifcont152:                                        ; preds = %else151, %then150
   %45 = sext i32 %44 to i64
   %46 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %45)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %46, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  call void @_lfortran_free(i8* %46)
   br i1 true, label %then154, label %else155
 
 then154:                                          ; preds = %ifcont152
@@ -581,6 +588,7 @@ ifcont156:                                        ; preds = %else155, %then154
   %48 = sext i32 %47 to i64
   %49 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %48)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %49, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
+  call void @_lfortran_free(i8* %49)
   call void @_lpython_free_argv()
   br label %return
 
@@ -593,5 +601,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

@@ -48,14 +48,17 @@ define i32 @__module_nested_04_a_c(i32* %z) {
   %1 = sext i32 %0 to i64
   %2 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %1)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %2)
   %3 = load i32, i32* @__lcompilers_created__nested_context__b_y, align 4
   %4 = sext i32 %3 to i64
   %5 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %4)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @_lfortran_free(i8* %5)
   %6 = load float, float* @__lcompilers_created__nested_context__b_yy, align 4
   %7 = fpext float %6 to double
   %8 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 6, double %7)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @_lfortran_free(i8* %8)
   %9 = load i32, i32* %z, align 4
   store i32 %9, i32* %c, align 4
   br label %return
@@ -68,6 +71,8 @@ return:                                           ; preds = %.entry
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

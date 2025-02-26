@@ -81,6 +81,7 @@ define i32 @main(i32 %0, i8** %1) {
   %23 = fpext float %22 to double
   %24 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 20, i8* null, i32 2, i64 1, i32 2, i64 2, i32 6, double 4.000000e+00, i32 6, double %19, i32 6, double %23, i32 2, i64 3, i32 8, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i32 8, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i32 6, double -4.000000e+00, i32 7, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0))
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0))
+  call void @_lfortran_free(i8* %24)
   call void @_lpython_free_argv()
   br label %return
 
@@ -99,5 +100,7 @@ declare void @_lfortran_strcpy_pointer_string(i8**, i8*)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

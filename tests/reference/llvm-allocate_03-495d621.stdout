@@ -265,6 +265,7 @@ ifcont11:                                         ; preds = %else10, %then9
   %154 = sext i32 %153 to i64
   %155 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %154)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @25, i32 0, i32 0), i8* %155, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0))
+  call void @_lfortran_free(i8* %155)
   %156 = load %array*, %array** %c, align 8
   %157 = getelementptr %array, %array* %156, i32 0, i32 0
   %158 = load i32*, i32** %157, align 8
@@ -432,6 +433,7 @@ define i32 @g(%array** %x) {
   %34 = sext i32 %33 to i64
   %35 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %34)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %35)
   %36 = load %array*, %array** %x, align 8
   %37 = getelementptr %array, %array* %36, i32 0, i32 2
   %38 = load %dimension_descriptor*, %dimension_descriptor** %37, align 8
@@ -539,6 +541,7 @@ ifcont3:                                          ; preds = %else2, %then1
   %116 = sext i32 %115 to i64
   %117 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %116)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i8* %117, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  call void @_lfortran_free(i8* %117)
   %118 = load %array*, %array** %x, align 8
   %119 = getelementptr %array, %array* %118, i32 0, i32 2
   %120 = load %dimension_descriptor*, %dimension_descriptor** %119, align 8
@@ -706,6 +709,7 @@ ifcont3:                                          ; preds = %else2, %then1
   %50 = sext i32 %49 to i64
   %51 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %50)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* %51, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
+  call void @_lfortran_free(i8* %51)
   %52 = load %array*, %array** %c, align 8
   %53 = getelementptr %array, %array* %52, i32 0, i32 2
   %54 = load %dimension_descriptor*, %dimension_descriptor** %53, align 8
@@ -798,11 +802,11 @@ declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 
+declare void @_lfortran_free(i8*)
+
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
-
-declare void @_lfortran_free(i8*)
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

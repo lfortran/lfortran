@@ -131,6 +131,7 @@ define i32 @main(i32 %0, i8** %1) {
   %18 = fpext float %17 to double
   %19 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 6, double %15, i32 6, double %18)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
+  call void @_lfortran_free(i8* %19)
   %20 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
   %21 = load float, float* %20, align 4
   %22 = fcmp une float %21, 2.000000e+00
@@ -173,6 +174,7 @@ ifcont5:                                          ; preds = %else4, %then3
   %34 = fpext float %33 to double
   %35 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 6, double %31, i32 6, double %34)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
+  call void @_lfortran_free(i8* %35)
   %36 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
   %37 = load float, float* %36, align 4
   %38 = fcmp une float %37, 1.000000e+00
@@ -211,6 +213,8 @@ return:                                           ; preds = %ifcont11
 declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

@@ -50,10 +50,12 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = ptrtoint i32* %8 to i64
   %10 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 19, i64 %9)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %10)
   %11 = load i32, i32* @associate_02.t1, align 4
   %12 = sext i32 %11 to i64
   %13 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %12)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @_lfortran_free(i8* %13)
   %14 = load double*, double** %p2, align 8
   %15 = load double, double* %14, align 8
   %16 = load i32*, i32** %p1, align 8
@@ -66,19 +68,23 @@ define i32 @main(i32 %0, i8** %1) {
   %22 = ptrtoint i32* %21 to i64
   %23 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 19, i64 %22)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %23, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @_lfortran_free(i8* %23)
   %24 = load i32, i32* @associate_02.t1, align 4
   %25 = sext i32 %24 to i64
   %26 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %25)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
+  call void @_lfortran_free(i8* %26)
   store i32 8, i32* @associate_02.t1, align 4
   %27 = load i32*, i32** %p1, align 8
   %28 = ptrtoint i32* %27 to i64
   %29 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 19, i64 %28)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void @_lfortran_free(i8* %29)
   %30 = load i32, i32* @associate_02.t1, align 4
   %31 = sext i32 %30 to i64
   %32 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %31)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %32, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  call void @_lfortran_free(i8* %32)
   %33 = load %complex_4*, %complex_4** %p3, align 8
   %34 = alloca %complex_4, align 8
   %35 = getelementptr %complex_4, %complex_4* %34, i32 0, i32 0
@@ -100,6 +106,7 @@ define i32 @main(i32 %0, i8** %1) {
   %45 = ptrtoint %complex_4* %44 to i64
   %46 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 19, i64 %45)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %46, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  call void @_lfortran_free(i8* %46)
   %47 = load %complex_4, %complex_4* @associate_02.t3, align 4
   %48 = alloca %complex_4, align 8
   store %complex_4 %47, %complex_4* %48, align 4
@@ -113,6 +120,7 @@ define i32 @main(i32 %0, i8** %1) {
   %55 = fpext float %54 to double
   %56 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 6, double %51, i32 6, double %55)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %56, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
+  call void @_lfortran_free(i8* %56)
   call void @_lpython_free_argv()
   br label %return
 
@@ -125,6 +133,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lfortran_complex_mul_32(%complex_4*, %complex_4*, %complex_4*)
 
