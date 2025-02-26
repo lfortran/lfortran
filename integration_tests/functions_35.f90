@@ -4,13 +4,13 @@ module global_dims
     integer, parameter :: np_g=7
 end module
 
-program POT3D
+program functions_35
     use global_dims
     implicit none
     real, dimension(:, :), allocatable, target :: br0_g
     allocate(br0_g(nt_g, np_g))
     call sub1(br0_g)
-end program pot3d
+end program functions_35
 
 subroutine sub1 (br0_g)
     use global_dims
