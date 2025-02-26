@@ -986,19 +986,19 @@ RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_289 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ishftc
 RUN(NAME intrinsics_290 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log10
 RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # gamma
-RUN(NAME intrinsics_292 LABELS gfortran llvm) # command_argument_count
+RUN(NAME intrinsics_292 LABELS gfortran llvm fortran) # command_argument_count
 RUN(NAME intrinsics_293 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dgamma
 RUN(NAME intrinsics_294 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log_gamma
 RUN(NAME intrinsics_295 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # exp
 RUN(NAME intrinsics_296 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # storage_size
 RUN(NAME intrinsics_297 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # poppar
 RUN(NAME intrinsics_298 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
-RUN(NAME intrinsics_299 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # command_argument_count
-RUN(NAME intrinsics_300 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # kind
+RUN(NAME intrinsics_299 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # command_argument_count
+RUN(NAME intrinsics_300 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # kind
 RUN(NAME intrinsics_301 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
-RUN(NAME intrinsics_302 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # is_contiguous
+RUN(NAME intrinsics_302 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
 RUN(NAME intrinsics_303 LABELS gfortran llvm) # random_seed
-RUN(NAME intrinsics_304 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sign
+RUN(NAME intrinsics_304 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
 RUN(NAME intrinsics_305 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # realpart
 RUN(NAME intrinsics_306 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # imagpart
 RUN(NAME intrinsics_307 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # imag
@@ -1007,14 +1007,14 @@ RUN(NAME intrinsics_309 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_310 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # digits
 RUN(NAME intrinsics_311 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs) # minloc
-RUN(NAME intrinsics_312 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
-RUN(NAME intrinsics_313 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxloc
-RUN(NAME intrinsics_314 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshift
+RUN(NAME intrinsics_312 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # minloc
+RUN(NAME intrinsics_313 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # maxloc
+RUN(NAME intrinsics_314 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dshift
 RUN(NAME intrinsics_315 LABELS llvm llvm_wasm llvm_wasm_emcc) # out_of_range
 RUN(NAME intrinsics_316 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max, min
 RUN(NAME intrinsics_317 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # get_command_argument
 RUN(NAME intrinsics_318 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cpu_time
-RUN(NAME intrinsics_319 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # system_clock
+RUN(NAME intrinsics_319 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # system_clock
 RUN(NAME intrinsics_320 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # len_trim
 RUN(NAME intrinsics_321 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trim
 RUN(NAME intrinsics_322 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # index
@@ -1024,21 +1024,21 @@ RUN(NAME intrinsics_325 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_326 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
 RUN(NAME intrinsics_327 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # transpose
 RUN(NAME intrinsics_328 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
-RUN(NAME intrinsics_329 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # idnint
-RUN(NAME intrinsics_330 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) #amax0, max1
-RUN(NAME intrinsics_331 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cshift
-RUN(NAME intrinsics_332 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_333 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_329 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # idnint
+RUN(NAME intrinsics_330 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #amax0, max1
+RUN(NAME intrinsics_331 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
+RUN(NAME intrinsics_332 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME intrinsics_333 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_334 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # move_alloc
 RUN(NAME intrinsics_335 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #kind, real
 RUN(NAME intrinsics_336 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #any
 RUN(NAME intrinsics_337 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dble, dfloat, float, shifta
 RUN(NAME intrinsics_338 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # compiler_options
 RUN(NAME intrinsics_339 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
-RUN(NAME intrinsics_340 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # leadz
-RUN(NAME intrinsics_341 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # trailz
-RUN(NAME intrinsics_342 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # spread
-RUN(NAME intrinsics_343 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cshift
+RUN(NAME intrinsics_340 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # leadz
+RUN(NAME intrinsics_341 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trailz
+RUN(NAME intrinsics_342 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
+RUN(NAME intrinsics_343 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
 RUN(NAME intrinsics_344 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl
 RUN(NAME intrinsics_345 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_346 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar
@@ -1051,12 +1051,12 @@ RUN(NAME intrinsics_352 LABELS gfortran llvm) # random_seed
 RUN(NAME intrinsics_353 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # random_number
 RUN(NAME intrinsics_354 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # minval
 RUN(NAME intrinsics_355 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # system_clock
-RUN(NAME intrinsics_356 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_357 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_356 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME intrinsics_357 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_358 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # getseed
 RUN(NAME intrinsics_359 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # pack
 RUN(NAME intrinsics_360 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
-RUN(NAME intrinsics_361 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_361 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_362 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
 RUN(NAME intrinsics_363 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
 RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
