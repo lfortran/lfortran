@@ -70,53 +70,40 @@ namespace LCompilers::LanguageServerProtocol {
                             bool success = true;
                             std::size_t i;
                             for (i = 0; (i < flags.size()) && success; ++i) {
+                                std::string value;
                                 const std::unique_ptr<LSPAny> &flag = flags[i];
                                 switch (flag->type()) {
                                 case LSPAnyType::OBJECT_TYPE: // fallthrough
                                 case LSPAnyType::ARRAY_TYPE: {
-                                    string_t string = serializer.serialize(*flag);
-                                    argv[i + 1] = new char[string.size() + 1];
-                                    std::strcpy(argv[i + 1], string.c_str());
+                                    value = serializer.serialize(*flag);
                                     break;
                                 }
                                 case LSPAnyType::STRING_TYPE: {
-                                    string_t string = transformer.anyToString(*flag);
-                                    argv[i + 1] = new char[string.size() + 1];
-                                    std::strcpy(argv[i + 1], string.c_str());
+                                    value = transformer.anyToString(*flag);
                                     break;
                                 }
                                 case LSPAnyType::INTEGER_TYPE: {
                                     integer_t integer = transformer.anyToInteger(*flag);
-                                    std::string string = std::to_string(integer);
-                                    argv[i + 1] = new char[string.size() + 1];
-                                    std::strcpy(argv[i + 1], string.c_str());
+                                    value = std::to_string(integer);
                                     break;
                                 }
                                 case LSPAnyType::UINTEGER_TYPE: {
                                     uinteger_t uinteger = transformer.anyToUInteger(*flag);
-                                    std::string string = std::to_string(uinteger);
-                                    argv[i + 1] = new char[string.size() + 1];
-                                    std::strcpy(argv[i + 1], string.c_str());
+                                    value = std::to_string(uinteger);
                                     break;
                                 }
                                 case LSPAnyType::DECIMAL_TYPE: {
                                     decimal_t decimal = transformer.anyToDecimal(*flag);
-                                    std::string string = std::to_string(decimal);
-                                    argv[i + 1] = new char[string.size() + 1];
-                                    std::strcpy(argv[i + 1], string.c_str());
+                                    value = std::to_string(decimal);
                                     break;
                                 }
                                 case LSPAnyType::BOOLEAN_TYPE: {
                                     boolean_t boolean = transformer.anyToBoolean(*flag);
-                                    std::string string = std::to_string(boolean);
-                                    argv[i + 1] = new char[string.size() + 1];
-                                    std::strcpy(argv[i + 1], string.c_str());
+                                    value = std::to_string(boolean);
                                     break;
                                 }
                                 case LSPAnyType::NULL_TYPE: {
-                                    std::string string = "";
-                                    argv[i + 1] = new char[string.size() + 1];
-                                    std::strcpy(argv[i + 1], string.c_str());
+                                    value = "";
                                     break;
                                 }
                                 case LSPAnyType::UNINITIALIZED: {
@@ -126,6 +113,10 @@ namespace LCompilers::LanguageServerProtocol {
                                     success = false;
                                     break;
                                 }
+                                }
+                                if (success) {
+                                    argv[i + 1] = new char[value.size() + 1];
+                                    std::strcpy(argv[i + 1], value.c_str());
                                 }
                             }
                             if (success) {

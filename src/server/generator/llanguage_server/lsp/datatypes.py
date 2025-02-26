@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
 from llanguage_server.lsp.utils import normalize_name, rename_type
@@ -7,7 +7,7 @@ from llanguage_server.lsp.utils import normalize_name, rename_type
 LspSpec = Dict[str, Any]
 
 
-class LspSymbolKind(StrEnum):
+class LspSymbolKind(str, Enum):
     ALIAS = 'alias'
     ARRAY = 'array'
     BASE = 'base'
