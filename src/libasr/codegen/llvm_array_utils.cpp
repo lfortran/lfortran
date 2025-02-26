@@ -749,7 +749,7 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::reshape(llvm::Value* array, llvm::Type* llvm_data_type,
-                                                  llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                                                  llvm::Value* shape, ASR::ttype_t* asr_shape_type, llvm::Value* pad,
                                                   llvm::Module* module) {
 #if LLVM_VERSION_MAJOR > 16
             llvm::Type *arr_type = llvm_utils->ptr_type[array];
@@ -759,20 +759,104 @@ namespace LCompilers {
             llvm::Value* reshaped = llvm_utils->CreateAlloca(*builder, arr_type, nullptr, "reshaped");
 
             // Deep copy data from array to reshaped.
-            llvm::Value* num_elements = this->get_array_size(array, nullptr, 4);
+            llvm::Value* original_size = this->get_array_size(array, nullptr, 4);
+            llvm::Value* new_total_elements = nullptr;
+
+            if (pad){
+                llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+                llvm::Value* n_dims = this->get_array_size(shape, nullptr, 4);
+                llvm::Value* shape_dims = llvm_utils->CreateLoad2(i32->getPointerTo(), this->get_pointer_to_data(shape));
+
+                llvm::Value* prod_alloca = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), prod_alloca);
+
+                llvm::Value* r_alloca = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r_alloca);
+
+                llvm::Function *current_function = builder->GetInsertBlock()->getParent();
+                llvm::BasicBlock *size_loop_head = llvm::BasicBlock::Create(context, "size_loop_head", current_function);
+                llvm::BasicBlock *size_loop_body = llvm::BasicBlock::Create(context, "size_loop_body", current_function);
+                llvm::BasicBlock *size_loop_end = llvm::BasicBlock::Create(context, "size_loop_end", current_function);
+
+                builder->CreateBr(size_loop_head);
+                builder->SetInsertPoint(size_loop_head);
+                llvm::Value *r_val = llvm_utils->CreateLoad(r_alloca);
+                llvm::Value *cond = builder->CreateICmpSLT(r_val, n_dims);
+                builder->CreateCondBr(cond, size_loop_body, size_loop_end);
+
+                builder->SetInsertPoint(size_loop_body);
+                llvm::Value* idx_ptr = llvm_utils->create_ptr_gep2(i32, shape_dims, r_val);
+                llvm::Value* dim_size = llvm_utils->CreateLoad2(i32, idx_ptr);
+                llvm::Value* prod_val = llvm_utils->CreateLoad(prod_alloca);
+                llvm::Value* new_prod = builder->CreateMul(prod_val, dim_size);
+                builder->CreateStore(new_prod, prod_alloca);
+                llvm::Value* r_next = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                builder->CreateStore(r_next, r_alloca);
+                builder->CreateBr(size_loop_head);
+
+                builder->SetInsertPoint(size_loop_end);
+                new_total_elements = llvm_utils->CreateLoad(prod_alloca);
+            } else {
+                new_total_elements = original_size;
+            }
 
             llvm::Value* first_ptr = this->get_pointer_to_data(reshaped);
-            llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
+            llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, new_total_elements);
             builder->CreateStore(arr_first, first_ptr);
 
-            llvm::Value* ptr2firstptr = this->get_pointer_to_data(array);
             llvm::DataLayout data_layout(module);
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-            num_elements = builder->CreateMul(num_elements, llvm_size);
+
+            llvm::Value* cmp_copy = builder->CreateICmpSLT(new_total_elements, original_size);
+            llvm::Value* copy_count = builder->CreateSelect(cmp_copy, new_total_elements, original_size);
+            llvm::Value* copy_bytes = builder->CreateMul(copy_count, llvm_size);
+            llvm::Value* ptr2firstptr = this->get_pointer_to_data(array);
             builder->CreateMemCpy(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr), llvm::MaybeAlign(),
-                                  llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
-                                  num_elements);
+                                llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
+                                copy_bytes);
+            
+            llvm::Value* need_pad = builder->CreateICmpSLT(original_size, new_total_elements);
+            llvm::Function *current_function = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock *pad_block    = llvm::BasicBlock::Create(context, "pad.fill", current_function);
+            llvm::BasicBlock *no_pad_block = llvm::BasicBlock::Create(context, "no.pad.fill", current_function);
+            builder->CreateCondBr(need_pad, pad_block, no_pad_block);
+
+            builder->SetInsertPoint(pad_block);
+            {
+                llvm::Value* pad_size = this->get_array_size(pad, nullptr, 4);
+                llvm::Value* pad_ptr = this->get_pointer_to_data(pad);
+
+                llvm::Value* i_alloca = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+                builder->CreateStore(original_size, i_alloca);
+
+                llvm::BasicBlock *pad_loop_head = llvm::BasicBlock::Create(context, "pad_loop_head", current_function);
+                llvm::BasicBlock *pad_loop_body = llvm::BasicBlock::Create(context, "pad_loop_body", current_function);
+                llvm::BasicBlock *pad_loop_end = llvm::BasicBlock::Create(context, "pad_loop_end", current_function);
+                
+                builder->CreateBr(pad_loop_head);
+                builder->SetInsertPoint(pad_loop_head);
+                llvm::Value* i_val = llvm_utils->CreateLoad(i_alloca);
+                llvm::Value* pad_loop_cond = builder->CreateICmpSLT(i_val, new_total_elements);
+                builder->CreateCondBr(pad_loop_cond, pad_loop_body, pad_loop_end);
+
+                builder->SetInsertPoint(pad_loop_body);
+                llvm::Value* pad_idx = builder->CreateURem(i_val, pad_size);
+                llvm::Value* pad_elem_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, pad_ptr, pad_idx);
+                llvm::Value* pad_elem = llvm_utils->CreateLoad2(llvm_data_type, pad_elem_ptr);
+                llvm::Value* reshaped_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr);
+                llvm::Value* target_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, reshaped_data, i_val);
+                builder->CreateStore(pad_elem, target_ptr);
+
+                llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                builder->CreateStore(i_next, i_alloca);
+                builder->CreateBr(pad_loop_head);
+
+                builder->SetInsertPoint(pad_loop_end);
+                builder->CreateBr(no_pad_block);        
+            }
+
+            builder->SetInsertPoint(no_pad_block);
 
             builder->CreateStore(
                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),

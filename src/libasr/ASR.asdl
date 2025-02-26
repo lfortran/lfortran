@@ -149,7 +149,7 @@ expr
     | ArrayBound(expr v, expr? dim, ttype type, arraybound bound, expr? value)
     | ArrayTranspose(expr matrix, ttype type, expr? value)
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
-    | ArrayReshape(expr array, expr shape, ttype type, expr? value)
+    | ArrayReshape(expr array, expr shape, ttype type, expr? value, expr? pad, expr? order)
     | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)

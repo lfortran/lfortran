@@ -282,7 +282,7 @@ namespace LCompilers {
 
                 virtual
                 llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,
-                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type, llvm::Value* pad,
                                      llvm::Module* module) = 0;
 
                 virtual
@@ -452,7 +452,7 @@ namespace LCompilers {
 
                 virtual
                 llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,
-                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type, llvm::Value* pad,
                                      llvm::Module* module);
 
                 virtual
