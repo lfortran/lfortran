@@ -9103,7 +9103,25 @@ public:
                             } else {
                                 if( arg->m_intent == intent_local && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) ) {
                                     // (FunctionType**) --> (FunctionType*)
-                                    tmp = llvm_utils->CreateLoad2(arg->m_type, tmp);
+                                    bool pass_by_value = true;
+                                    if ( ASR::is_a<ASR::Function_t>(*func_subrout) ) {
+                                        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_subrout);
+                                        if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ){
+                                            ASR::symbol_t* func_var_sym = ASRUtils::symbol_get_past_external(
+                                                ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
+                                            if ( ASR::is_a<ASR::Variable_t>(*func_var_sym) ) {
+                                                ASR::Variable_t* func_variable = ASR::down_cast<ASR::Variable_t>(func_var_sym);
+                                                if ( func_variable->m_intent != ASRUtils::intent_in ) {
+                                                    pass_by_value = false;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if ( pass_by_value ) {
+                                        // Pass-by-Value
+                                        tmp = llvm_utils->CreateLoad2(arg->m_type, tmp);
+                                    }   
                                 }
                                 if( orig_arg &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
@@ -9720,6 +9738,12 @@ public:
             llvm::Value* fn = llvm_symtab_fn_arg[h];
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
             std::string m_name = ASRUtils::symbol_name(x.m_name);
+            if ( ASR::is_a<ASR::Variable_t>(*x.m_original_name) ) {
+                ASR::Variable_t* x_m_original_name = ASR::down_cast<ASR::Variable_t>(x.m_original_name);
+                if ( x_m_original_name->m_intent != ASRUtils::intent_in && x_m_original_name->m_intent != ASRUtils::intent_local ) {
+                    fn = llvm_utils->CreateLoad2(x_m_original_name->m_type, fn);
+                }
+            }
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
