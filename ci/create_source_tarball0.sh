@@ -15,7 +15,7 @@ cmake -E copy_directory examples $dest/examples
 cmake -E copy_directory doc/man $dest/doc/man
 
 # Copy Files:
-cmake -E copy CMakeLists.txt README.md LICENSE version $dest
+cmake -E copy CMakePresets.json CMakeLists.txt README.md LICENSE version $dest
 
 # Create the tarball
 cmake -E make_directory dist

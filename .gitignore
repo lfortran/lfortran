@@ -201,6 +201,7 @@ MANIFEST
 *~
 
 ## Build Files
+build/
 */bin/lfortran
 output
 *.o
@@ -238,3 +239,6 @@ build.ninja
 doc/man/lfortran.1
 !doc/src/javascripts/*.js
 !pass_array_by_data_*.f90
+
+## CMake user presets
+CMakeUserPresets.json

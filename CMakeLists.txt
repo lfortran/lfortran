@@ -1,19 +1,15 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
-# We don't execute this if we have a tarball
-if (LFORTRAN_BUILD_ALL)
-    find_program(RE2C re2c REQUIRED)
-    find_program(BISON bison REQUIRED)
-    find_program(BASH_BIN bash REQUIRED)
-    execute_process(COMMAND "env" "RE2C=${RE2C}" "BISON=${BISON}" "${BASH_BIN}" "-e" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
-    if (NOT _BUILD0_EXIT EQUAL 0)
-        message(FATAL_ERROR "Running build0.sh failed (see error above)")
-    endif ()
-endif()
-
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
+# generate version from git
+find_package(Git)
+execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --dirty
+                OUTPUT_VARIABLE GIT_WORKDIR_VERSION
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ECHO_OUTPUT_VARIABLE)
+# removing 'v' prefix
+string(SUBSTRING ${GIT_WORKDIR_VERSION} 1 -1 LFORTRAN_VERSION)
 string(REGEX MATCH "^[^-]*" LFORTRAN_NO_TAG_VERSION ${LFORTRAN_VERSION})
 
 project(lfortran
@@ -23,6 +19,9 @@ project(lfortran
         LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+# As we generate a lot of files, we set some variables
+set(LFORTRAN_GENERATED_FILES_PATH "${CMAKE_BINARY_DIR}/generated")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release
@@ -113,15 +112,15 @@ if (LFORTRAN_BUILD_TO_WASM)
     SET(WITH_ZLIB no)
     SET(WITH_RUNTIME_LIBRARY no)
     SET(WITH_LCOMPILERS_FAST_ALLOC no)
-    add_definitions("-DHAVE_BUILD_TO_WASM=1")
+    add_compile_definitions("HAVE_BUILD_TO_WASM=1")
 endif()
 
 if (WITH_WHEREAMI)
-    add_definitions("-DHAVE_WHEREAMI=1")
+    add_compile_definitions("HAVE_WHEREAMI=1")
 endif()
 
 if (WITH_ZLIB)
-    add_definitions("-DHAVE_ZLIB=1")
+    add_compile_definitions("HAVE_ZLIB=1")
 
     # Find ZLIB with our custom finder before including LLVM since the finder for LLVM
     # might search for ZLIB again and find the shared libraries instead of the static ones
@@ -129,7 +128,7 @@ if (WITH_ZLIB)
 endif()
 
 if (WITH_LCOMPILERS_FAST_ALLOC)
-    add_definitions("-DLCOMPILERS_FAST_ALLOC=1")
+    add_compile_definitions("LCOMPILERS_FAST_ALLOC=1")
 endif()
 
 
@@ -236,7 +235,7 @@ if (WITH_LLVM)
         endif()
 
         list(APPEND LFORTRAN_LLVM_COMPONENTS aarch64info aarch64utils aarch64desc aarch64asmparser aarch64codegen aarch64disassembler)
-        add_definitions("-DHAVE_TARGET_AARCH64=1")
+        add_compile_definitions("HAVE_TARGET_AARCH64=1")
     endif()
 
     if (WITH_TARGET_X86)
@@ -245,7 +244,7 @@ if (WITH_LLVM)
         endif()
 
         list(APPEND LFORTRAN_LLVM_COMPONENTS x86info x86desc x86codegen x86asmparser x86disassembler)
-        add_definitions("-DHAVE_TARGET_X86=1")
+        add_compile_definitions("HAVE_TARGET_X86=1")
     endif()
 
     if (WITH_TARGET_WASM)
@@ -254,7 +253,7 @@ if (WITH_LLVM)
         endif()
 
         list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
-        add_definitions("-DHAVE_TARGET_WASM=1")
+        add_compile_definitions("HAVE_TARGET_WASM=1")
     endif()
 
     if (TARGET LLVMCore)
@@ -349,7 +348,8 @@ endif()
 set(HAVE_LFORTRAN_DEMANGLE yes
     CACHE BOOL "Build with C++ name demangling support (cxxabi.h)")
 
-if (MSVC)
+# to catch clang-cl as well, which uses same library as msvc
+if (MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
     # MSVC doesn't have cxxabi.h
     set(HAVE_LFORTRAN_DEMANGLE no)
 endif()
