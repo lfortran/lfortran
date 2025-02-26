@@ -2943,6 +2943,17 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         form = "formatted";
     }
     bool file_exists[1] = {false};
+
+    size_t len = strlen(f_name);
+    if (*(f_name + len - 1) == ' ') {
+        // trim trailing spaces
+        char* end = f_name + len - 1;
+        while (end > f_name && isspace((unsigned char) *end)) {
+            end--;
+        }
+        *(end + 1) = '\0';
+    }
+
     _lfortran_inquire(f_name, file_exists, -1, NULL, NULL);
     char *access_mode = NULL;
     /*
@@ -3022,6 +3033,19 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
         bool unit_file_bin;
         FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
         if( filep == NULL ) {
+            if ( unit_num == 6 ) {
+                // special case: flush OUTPUT_UNIT
+                fflush(stdout);
+                return;
+            } else if ( unit_num == 5 ) {
+                // special case: flush INPUT_UNIT
+                fflush(stdin);
+                return;
+            } else if ( unit_num == 0 ) {
+                // special case: flush ERROR_UNIT
+                fflush(stderr);
+                return;
+            }
             printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
             exit(1);
         }
@@ -4127,7 +4151,9 @@ LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
     if (name == NULL) {
         return NULL;
     } else {
-        return getenv("HOME");
+        // if the name is not found, return empty string
+        char* empty_string = "";
+        return getenv(name) ? getenv(name) : empty_string;
     }
 }
 

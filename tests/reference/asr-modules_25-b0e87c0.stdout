@@ -105,6 +105,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -120,6 +121,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -183,6 +185,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -273,6 +276,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -288,6 +292,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -353,6 +358,7 @@
                                                     Required
                                                     .false.
                                                     .true.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -372,6 +378,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -444,6 +451,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -492,6 +500,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),

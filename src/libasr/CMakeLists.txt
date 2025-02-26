@@ -30,9 +30,10 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
-    pass/simplifier.cpp
+    pass/array_struct_temporary.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
+    pass/array_passed_in_function_call.cpp
     pass/openmp.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
@@ -71,6 +72,7 @@ set(SRC
     pass/unique_symbols.cpp
     pass/insert_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
+    pass/replace_with_compile_time_values.cpp
 
     asr_verify.cpp
     asr_utils.cpp

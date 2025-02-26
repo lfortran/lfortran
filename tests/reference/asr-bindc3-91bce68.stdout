@@ -53,6 +53,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -68,6 +69,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -89,6 +91,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -106,6 +109,7 @@
                                     Required
                                     .false.
                                     .true.
+                                    .false.
                                 )
                         })
                     bindc3

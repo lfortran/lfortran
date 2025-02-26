@@ -42,6 +42,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             fullhex_digits:
                                 (Variable
@@ -63,6 +64,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -101,6 +103,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             letters:
                                 (Variable
@@ -122,6 +125,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -160,6 +164,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             lowerhex_digits:
                                 (Variable
@@ -181,6 +186,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -219,6 +225,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             string:
                                 (Variable
@@ -250,6 +257,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -286,6 +294,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             int_inp2:
                                 (Variable
@@ -38,6 +39,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -57,6 +59,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             output_amin1:
                                 (Variable
@@ -72,6 +75,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -91,6 +95,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             output_min:
                                 (Variable
@@ -106,6 +111,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -125,6 +131,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             output_min1:
                                 (Variable
@@ -140,6 +147,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -159,6 +167,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             real_inp1:
                                 (Variable
@@ -174,6 +183,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -193,6 +203,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             real_inp3:
                                 (Variable
@@ -208,6 +219,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -227,6 +239,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             real_inp5:
                                 (Variable
@@ -244,6 +257,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             real_inp6:
                                 (Variable
@@ -259,6 +273,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

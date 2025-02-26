@@ -49,6 +49,7 @@ std::string str_escape_fortran_double_quote(const std::string &s);
 char* str_unescape_fortran(Allocator &al, LCompilers::Str &s, char ch);
 
 bool str_compare(const unsigned char *pos, std::string s);
+void rtrim(std::string& str);
 
 } // namespace LCompilers
 

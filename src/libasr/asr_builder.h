@@ -196,6 +196,14 @@ class ASRBuilder {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
     }
 
+    inline ASR::expr_t* logical_true() {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, true, logical));
+    }
+
+    inline ASR::expr_t* logical_false() {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, false, logical));
+    }
+
     inline ASR::expr_t* i32(int64_t x) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32));
     }
@@ -977,6 +985,25 @@ class ASRBuilder {
         return STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, body.p, body.n, nullptr, 0));
     }
 
+    /*
+    if loop_body contains A(i, j, k) then set idx_vars=(k, j, i)
+    in order to iterate on the array left to right, the inner-most
+    loop on the fastest index on the left, as is common in Fortran
+    ```
+        idx_vars=(k, j, i)
+        body A(i, j, k)
+
+        produces
+
+        do k = 1, n
+            do j = 1, n
+                do i = 1, n
+                    A(i, j, k)
+                end do
+            end do
+        end do
+    ```
+    */
     template <typename LOOP_BODY>
     ASR::stmt_t* create_do_loop(
         const Location& loc, int rank, ASR::expr_t* array,
@@ -985,7 +1012,7 @@ class ASRBuilder {
         PassUtils::create_idx_vars(idx_vars, rank, loc, al, scope, "_i");
 
         ASR::stmt_t* doloop = nullptr;
-        for( int i = (int) idx_vars.size() - 1; i >= 0; i-- ) {
+        for ( int i = 0; i < (int) idx_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
             head.m_start = PassUtils::get_bound(array, i + 1, "lbound", al);
@@ -1012,7 +1039,7 @@ class ASRBuilder {
         Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body) {
 
         ASR::stmt_t* doloop = nullptr;
-        for( int i = (int) loop_vars.size() - 1; i >= 0; i-- ) {
+        for ( int i = 0; i < (int) loop_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = loop_vars[i];
             head.m_start = PassUtils::get_bound(array, loop_dims[i], "lbound", al);

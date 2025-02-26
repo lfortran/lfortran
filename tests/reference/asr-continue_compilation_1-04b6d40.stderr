@@ -335,25 +335,25 @@ semantic error: Different shape for arguments `array` and `mask` for pack intrin
 144 |     print *, pack([1, 2, 3], [.true., .true., .true., .true.])
     |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: reshape accepts arrays for `source` argument, found str instead.
+semantic error: reshape accepts arrays for `source` argument, found string instead.
    --> tests/errors/continue_compilation_1.f90:146:22
     |
 146 |     print *, reshape("hello", [2, 3])
     |                      ^^^^^^^ 
 
-semantic error: reshape accepts arrays for `source` argument, found bool instead.
+semantic error: reshape accepts arrays for `source` argument, found logical instead.
    --> tests/errors/continue_compilation_1.f90:147:22
     |
 147 |     print *, reshape(.true., [2, 3])
     |                      ^^^^^^ 
 
-semantic error: reshape accepts arrays for `shape` argument, found str instead.
+semantic error: reshape accepts arrays for `shape` argument, found string instead.
    --> tests/errors/continue_compilation_1.f90:148:36
     |
 148 |     print *, reshape([1, 2, 3, 4], "hello")
     |                                    ^^^^^^^ 
 
-semantic error: reshape accepts arrays for `shape` argument, found bool instead.
+semantic error: reshape accepts arrays for `shape` argument, found logical instead.
    --> tests/errors/continue_compilation_1.f90:149:36
     |
 149 |     print *, reshape([1, 2, 3, 4], .false.)
@@ -484,3 +484,69 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 182 |     z1 = y 
     |     ^^   ^ type mismatch (real and logical)
+
+semantic error: reshape accepts arrays for `pad` argument, found integer instead.
+   --> tests/errors/continue_compilation_1.f90:184:50
+    |
+184 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], 0)
+    |                                                  ^ 
+
+semantic error: reshape accepts arrays for `order` argument, found integer instead.
+   --> tests/errors/continue_compilation_1.f90:185:55
+    |
+185 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
+    |                                                       ^ 
+
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real[:] and kind 4 source type integer[:] and kind 4 instead.
+   --> tests/errors/continue_compilation_1.f90:186:50
+    |
+186 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
+    |                                                  ^^^^^ 
+
+semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer[:] and kind 8 source type integer[:] and kind 4 instead.
+   --> tests/errors/continue_compilation_1.f90:187:50
+    |
+187 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
+    |                                                  ^^^^^ 
+
+semantic error: reshape accepts `order` array with integer elements
+   --> tests/errors/continue_compilation_1.f90:189:58
+    |
+189 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [1.0, 2.0])
+    |                                                          ^^^^^^^^^^ 
+
+semantic error: reshape accepts `order` array as a permutation of elements from 1 to 2
+   --> tests/errors/continue_compilation_1.f90:190:58
+    |
+190 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
+    |                                                          ^^^^^^ 
+
+semantic error: `mask` argument to `count` intrinsic must be a logical array
+   --> tests/errors/continue_compilation_1.f90:192:20
+    |
+192 |     print *, count(1)
+    |                    ^ 
+
+semantic error: `mask` argument to `count` intrinsic must be a logical array
+   --> tests/errors/continue_compilation_1.f90:193:20
+    |
+193 |     print *, count([2])
+    |                    ^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_1.f90:196:5
+    |
+196 |     a_real = [logical::]
+    |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
+
+semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:199:22
+    |
+199 |     print *, iparity(["a", "b"])
+    |                      ^^^^^^^^^^ must be of integer type
+
+semantic error: The `mask` argument to `parity` must be logical, but got string[:]
+   --> tests/errors/continue_compilation_1.f90:200:21
+    |
+200 |     print *, parity(["a", "b"])
+    |                     ^^^^^^^^^^ must be logical type

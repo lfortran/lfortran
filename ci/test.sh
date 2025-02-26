@@ -1,11 +1,9 @@
-#!/usr/bin/env xonsh
+#!/usr/bin/env shell
+# This is a cross-platform `shell` script.
 
-$RAISE_SUBPROC_ERROR = True
-trace on
+set -ex
 
-import platform
-$IS_MAC = platform.system() == "Darwin"
-$IS_WIN = platform.system() == "Windows"
+echo "Running SHELL"
 
 # Run some simple compilation tests, works everywhere:
 src/bin/lfortran --version
@@ -18,13 +16,13 @@ src/bin/lfortran -o expr2 expr2.o
 src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
 src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
 
-if $IS_WIN:
+if [[ $WIN == "1" ]]; then # Windows
     cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
-elif $IS_MAC: # macOS
+elif [[ $MACOS == "1" ]]; then # macOS
     clang -c integration_tests/modules_15c.c -o modules_15c.o
-else:
-    # Linux
+else # Linux
     gcc -c integration_tests/modules_15c.c -o modules_15c.o
+fi
 
 src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
 ./modules_15
@@ -40,17 +38,17 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 
 # Run all tests (does not work on Windows yet):
 cmake --version
-if not $IS_WIN:
+if [[ $WIN != "1" ]]; then
     ./run_tests.py
 
     cd integration_tests
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
-    $FC="../../src/bin/lfortran"
-    cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
+    FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
     make
     ctest -L llvm
     cd ..
 
     ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma
     ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f
+fi

@@ -93,7 +93,9 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            xonsh ci/test.xsh
+            case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!'
+            shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
         shell: bash -e -l {0}
@@ -121,7 +123,7 @@ jobs:
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\test.xsh
+            shell ci\test.sh
 
   scipy:
     name: Check SciPy Build and Test Run
@@ -514,28 +516,45 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf-prima-2
-            git checkout fa45eea919af80282aaad2ce256d1e1d3bdb77a6
+            git checkout -t origin/lf-prima-11
+            git checkout c9dde2d4dec976dc802f14a875e63c5ea1792a19
+            git clean -dfx
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              export LFORTRAN_RUNNER_OS='macos';
+            fi
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              export LFORTRAN_RUNNER_OS='linux';
+            fi
             FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
-            ./build/fortran/example_newuoa_fortran_1_exe
-            ./build/fortran/example_newuoa_fortran_2_exe
             ./build/fortran/example_bobyqa_fortran_2_exe
-            ./build/fortran/example_uobyqa_fortran_1_exe
-            ./build/fortran/example_uobyqa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_1_exe
+            ./build/fortran/example_cobyla_fortran_2_exe
             ./build/fortran/example_lincoa_fortran_1_exe
             ./build/fortran/example_lincoa_fortran_2_exe
-            ./build/fortran/example_cobyla_fortran_2_exe
+            ./build/fortran/example_newuoa_fortran_1_exe
+            ./build/fortran/example_newuoa_fortran_2_exe
+            ./build/fortran/example_uobyqa_fortran_1_exe
+            ./build/fortran/example_uobyqa_fortran_2_exe
 
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               cd fortran/
-              export FC="$(pwd)/../../src/bin/lfortran"; ./script.sh
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              cd ../
+            fi
+
+            if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
+              cd fortran/
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
               cd ../
             fi
 
             git clean -dfx
-            FC="$(pwd)/../src/bin/lfortran --cpp --fast --skip-pass=fma" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            FC="$(pwd)/../src/bin/lfortran --cpp --fast" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_2_exe
@@ -554,7 +573,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 1aba062ac90c39e171f722c15b2bc6fafaaff251
+            git checkout 3c84e76c33cc2522c7ae8db910153dcf1a273a45
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
@@ -564,10 +583,12 @@ jobs:
             ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
             ${FC} -c mpi_c_bindings.f90
             ${FC} -c mpi.f90
-            ${FC} -c psi_io.f90
-            ${FC} -c --cpp --implicit-interface pot3d.F90
-            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi
+            ${FC} -c psi_io.f90 --no-style-warnings --no-warnings
+            ${FC} -c --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
+            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
             cp pot3d ../bin/
+            cd ..
+            ./validate.sh
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -628,7 +649,7 @@ jobs:
             make -f Makefile.manual quicktest
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
             make -f Makefile.manual quicktest
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -653,7 +674,15 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+
+            # downloading the repo containing model file using git-lfs
+            sudo apt update && sudo apt install -y git-lfs
+            git lfs install
+            git clone https://huggingface.co/datasets/certik/fastGPT
+            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
+            # we only need the model file
+            rm -rf fastGPT
+            # finished downloading the model file
 
             mkdir lf
             cd lf
@@ -678,13 +707,11 @@ jobs:
             ctest -V
             cd ..
 
-            git clean -dfx
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
-            mkdir lf
             cd lf
+            git clean -dfx
             FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
@@ -693,8 +720,8 @@ jobs:
             ./test_more_inputs
             cd ..
 
-            mkdir lf-fast
             cd lf-fast
+            git clean -dfx
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
@@ -716,7 +743,15 @@ jobs:
             git clean -dfx
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+
+            # downloading the repo containing model file using git-lfs
+            brew install git-lfs
+            git lfs install
+            git clone https://huggingface.co/datasets/certik/fastGPT
+            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
+            # we only need the model file
+            rm -rf fastGPT
+            # finished downloading the model file
 
             mkdir lf
             cd lf
@@ -773,7 +808,7 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
       - name: Test Numerical Methods Fortran
@@ -782,8 +817,8 @@ jobs:
             git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
             cd numerical-methods-fortran
             export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf3
-            git checkout a3cd1165832349e5c133681328d2f86fa48d650f
+            git checkout -t origin/lf5
+            git checkout 2af27a1239263cf4dbec2b464ea1d5af94667997
             FC=lfortran make
             ./test_fix_point.exe
             ./test_integrate_one.exe
@@ -1089,7 +1124,7 @@ jobs:
             ./tests/atom_U/F_atom_U
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
             ./tests/atom_U/F_atom_U
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -1101,7 +1136,7 @@ jobs:
             git checkout -t origin/lf6
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_Fortran_FLAGS="--realloc-lhs" .
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -1114,11 +1149,19 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+
+            # downloading the repo containing model file using git-lfs
+            sudo apt update && sudo apt install -y git-lfs
+            git lfs install
+            git clone https://huggingface.co/datasets/certik/fastGPT
+            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
+            # we only need the model file
+            rm -rf fastGPT
+            # finished downloading the model file
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1130,7 +1173,7 @@ jobs:
 
             mkdir lf-fast
             cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1144,7 +1187,7 @@ jobs:
 
             cd lf
             git clean -dfx
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1154,7 +1197,7 @@ jobs:
 
             cd lf-fast
             git clean -dfx
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1204,7 +1247,7 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:

@@ -53,11 +53,13 @@
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/insert_deallocate.h>
-#include <libasr/pass/simplifier.h>
+#include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -76,10 +78,11 @@ namespace LCompilers {
         private:
 
         std::vector<std::string> _passes;
-        std::vector<std::string> _with_optimization_passes;
+        std::vector<std::string> _optimization_passes;
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
+            {"replace_with_compile_time_values", &pass_replace_with_compile_time_values},
             {"do_loops", &pass_replace_do_loops},
             {"while_else", &pass_while_else},
             {"global_stmts", &pass_wrap_global_stmts},
@@ -112,12 +115,13 @@ namespace LCompilers {
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
+            {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
-            {"simplifier", &pass_simplifier}
+            {"array_struct_temporary", &pass_array_struct_temporary}
         };
 
         bool apply_default_passes;
@@ -129,6 +133,17 @@ namespace LCompilers {
                            std::vector<std::string>& passes, PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics) {
             if (pass_options.pass_cumulative) {
+                std::vector<std::string> _with_optimization_passes;
+                _with_optimization_passes.insert(
+                    _with_optimization_passes.end(),
+                    _passes.begin(),
+                    _passes.end()
+                );
+                _with_optimization_passes.insert(
+                    _with_optimization_passes.end(),
+                    _optimization_passes.begin(),
+                    _optimization_passes.end()
+                );
                 int _pass_max_idx = -1, _opt_max_idx = -1;
                 for (std::string &current_pass: passes) {
                     auto it1 = std::find(_passes.begin(), _passes.end(), current_pass);
@@ -216,7 +231,7 @@ namespace LCompilers {
                 "function_call_in_declaration",
                 "openmp",
                 "implied_do_loops",
-                "simplifier",
+                "array_struct_temporary",
                 "nested_vars",
                 "transform_optional_argument_functions",
                 "forall",
@@ -230,6 +245,7 @@ namespace LCompilers {
                 "intrinsic_subroutine",
                 "array_op",
                 "pass_array_by_data",
+                "array_passed_in_function_call",
                 "print_struct_type",
                 "print_arr",
                 "print_list_tuple",
@@ -238,55 +254,26 @@ namespace LCompilers {
                 "do_loops",
                 "while_else",
                 "select_case",
-                "inline_function_calls",
                 "unused_functions",
                 "unique_symbols",
                 "insert_deallocate",
             };
-            _with_optimization_passes = {
-                "global_stmts",
-                "init_expr",
-                "function_call_in_declaration",
-                "openmp",
-                "implied_do_loops",
-                "simplifier",
-                "nested_vars",
-                "transform_optional_argument_functions",
-                "forall",
-                "class_constructor",
-                "pass_list_expr",
-                "where",
-                "subroutine_from_function",
-                "array_op",
-                "symbolic",
-                "flip_sign",
-                "intrinsic_function",
-                "intrinsic_subroutine",
-                "array_op",
-                "pass_array_by_data",
-                "print_struct_type",
-                "print_arr",
-                "print_list_tuple",
-                "print_struct_type",
+            _optimization_passes = {
+                "replace_with_compile_time_values",
                 "loop_vectorise",
-                "array_dim_intrinsics_update",
-                "do_loops",
-                "while_else",
                 "dead_code_removal",
-                "select_case",
                 "unused_functions",
                 "sign_from_value",
                 "div_to_mul",
                 "fma",
-                "inline_function_calls",
-                "unique_symbols",
-                "insert_deallocate",
-                "promote_allocatable_to_nonallocatable"
+                // "inline_function_calls",
+                // "promote_allocatable_to_nonallocatable"
             };
 
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
+                "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",
                 "do_loops",
@@ -310,10 +297,9 @@ namespace LCompilers {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
+                apply_passes(al, asr, _passes, pass_options, diagnostics);
                 if (pass_options.fast ){
-                    apply_passes(al, asr, _with_optimization_passes, pass_options, diagnostics);
-                } else if (!pass_options.fast ) {
-                    apply_passes(al, asr, _passes, pass_options, diagnostics);
+                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics);
                 }
             }
         }
@@ -323,7 +309,12 @@ namespace LCompilers {
                            [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
             std::vector<std::string> passes;
             if (pass_options.fast) {
-                passes = _with_optimization_passes;
+                passes = _passes;
+                passes.insert(
+                    passes.end(),
+                    _optimization_passes.begin(),
+                    _optimization_passes.end()
+                );
             } else {
                 passes = _passes;
             }

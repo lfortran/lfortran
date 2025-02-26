@@ -593,7 +593,7 @@ static inline void encode_dimensions(size_t n_dims, std::string& res,
     }
 }
 
-static inline std::string type_to_str(const ASR::ttype_t *t)
+static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
 {
     switch (t->type) {
         case ASR::ttypeType::Integer: {
@@ -639,16 +639,16 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
             return "type(c_ptr)";
         }
         case ASR::ttypeType::Pointer: {
-            return type_to_str(ASRUtils::type_get_past_pointer(
+            return type_to_str_fortran(ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t))) + " pointer";
         }
         case ASR::ttypeType::Allocatable: {
-            return type_to_str(ASRUtils::type_get_past_allocatable(
+            return type_to_str_fortran(ASRUtils::type_get_past_allocatable(
                         const_cast<ASR::ttype_t*>(t))) + " allocatable";
         }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str(array_t->m_type);
+            std::string res = type_to_str_fortran(array_t->m_type);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
@@ -663,11 +663,11 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
             std::string result = "(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
-                result += type_to_str(ftp->m_arg_types[i]) + ", ";
+                result += type_to_str_fortran(ftp->m_arg_types[i]) + ", ";
             }
             result += "return_type: ";
             if( ftp->m_return_var_type ) {
-                result += type_to_str(ftp->m_return_var_type);
+                result += type_to_str_fortran(ftp->m_return_var_type);
             } else {
                 result += "void";
             }
@@ -679,7 +679,7 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
 }
 
 static inline std::string type_to_str_with_type(const ASR::ttype_t *t) {
-    std::string type = type_to_str(t);
+    std::string type = type_to_str_fortran(t);
     std::string kind = std::to_string(extract_kind_from_ttype_t(t));
     return type + "(" + kind + ")";
 }
@@ -721,7 +721,7 @@ static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
             result += ")";
             return result;
         }
-        default : return type_to_str(t);
+        default : return type_to_str_fortran(t);
     }
 }
 
@@ -1121,7 +1121,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::ImpliedDoLoop:
         case ASR::exprType::PointerNullConstant:
         case ASR::exprType::ArrayConstant:
-        case ASR::exprType::StringConstant: {
+        case ASR::exprType::StringConstant:
+        case ASR::exprType::StructConstant: {
             return true;
         }
         case ASR::exprType::RealBinOp:
@@ -1153,8 +1154,21 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                     return false;
                 }
             }
-
             return true;
+        } case ASR::exprType::IntrinsicArrayFunction: {
+            ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_value);
+
+            if (ASRUtils::is_value_constant(intrinsic_array_function->m_value)) {
+                return true;
+            }
+
+            for( size_t i = 0; i < intrinsic_array_function->n_args; i++ ) {
+                if( !ASRUtils::is_value_constant(intrinsic_array_function->m_args[i]) ) {
+                    return false;
+                }
+            }
+            return true;  
         } case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
             if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
@@ -1198,6 +1212,10 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             ASR::ArrayReshape_t*
                 array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_value);
             return is_value_constant(array_reshape->m_array) && is_value_constant(array_reshape->m_shape);
+        } case ASR::exprType::ArrayIsContiguous: {
+            ASR::ArrayIsContiguous_t*
+                array_is_contiguous = ASR::down_cast<ASR::ArrayIsContiguous_t>(a_value);
+            return is_value_constant(array_is_contiguous->m_array);
         } case ASR::exprType::ArrayPhysicalCast: {
             ASR::ArrayPhysicalCast_t*
                 array_physical_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
@@ -2549,9 +2567,9 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
-    bool a_value_attr, bool a_target_attr = false) {
+    bool a_value_attr, bool a_target_attr = false, bool contiguous_attr = false) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies, n_dependencies, a_intent,
-    a_symbolic_value,  a_value,  a_storage,  a_type,  a_type_declaration,  a_abi, a_access, a_presence, a_value_attr, a_target_attr);
+    a_symbolic_value,  a_value,  a_storage,  a_type,  a_type_declaration,  a_abi, a_access, a_presence, a_value_attr, a_target_attr, contiguous_attr);
 }
 
 inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
@@ -6313,6 +6331,54 @@ static inline bool is_argument_of_type_CPtr(ASR::expr_t *var) {
         }
     }
     return is_argument;
+}
+
+static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
+        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
+    int target_kind = -1;
+    for (size_t i = 0; i < args.size(); i++) {
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        if (is_array(arg_type)){
+            target_kind = kind;
+            break;
+        }
+        if (kind > target_kind) {
+            target_kind = kind;
+        }
+    }
+
+    for (size_t i = 0; i < args.size(); i++) {
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        if (kind==target_kind) {
+            continue;
+        }
+        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
+            if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
+                args.p[i] = EXPR(ASR::make_RealConstant_t(
+                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
+                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
+            } else {
+                args.p[i] = EXPR(ASR::make_Cast_t(
+                    al, loc, args.p[i], ASR::cast_kindType::RealToReal,
+                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
+            }
+        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
+                args.p[i] = EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind))));
+            } else {
+                args.p[i] = EXPR(ASR::make_Cast_t(
+                    al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
+            }
+        } else {
+            diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},
+                "help: ensure all arguments are of a convertible type");
+        }
+    }
 }
 
 class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer> {

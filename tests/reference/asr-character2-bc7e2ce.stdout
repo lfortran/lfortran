@@ -29,6 +29,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             char2:
                                 (Variable
@@ -44,6 +45,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -67,6 +69,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

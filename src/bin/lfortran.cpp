@@ -991,11 +991,22 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 
 int compile_src_to_object_file(const std::string &infile,
         const std::string &outfile,
+        bool time_report,
         bool assembly,
         CompilerOptions &compiler_options,
         LCompilers::PassManager& lpm)
 {
+    int time_file_read=0;
+    int time_src_to_asr=0;
+    int time_save_mod=0;
+    int time_opt=0;
+    int time_asr_to_llvm=0;
+    int time_llvm_to_bin=0;
+
+    auto t1 = std::chrono::high_resolution_clock::now();
     std::string input = read_file(infile);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -1011,8 +1022,11 @@ int compile_src_to_object_file(const std::string &infile,
         lm.file_ends.push_back(input.size());
     }
     LCompilers::diag::Diagnostics diagnostics;
+    t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
+    t2 = std::chrono::high_resolution_clock::now();
+    time_src_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
@@ -1024,7 +1038,10 @@ int compile_src_to_object_file(const std::string &infile,
 
     // Save .mod files
     {
+        t1 = std::chrono::high_resolution_clock::now();
         int err = save_mod_files(*asr, compiler_options, lm);
+        t2 = std::chrono::high_resolution_clock::now();
+        time_save_mod = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         if (err) return err;
     }
 
@@ -1054,8 +1071,11 @@ int compile_src_to_object_file(const std::string &infile,
         return 1;
 #endif
     }
+    t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+    t2 = std::chrono::high_resolution_clock::now();
+    time_asr_to_llvm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -1065,14 +1085,20 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     if (compiler_options.po.fast) {
+        t1 = std::chrono::high_resolution_clock::now();
         e.opt(*m->m_m);
+        t2 = std::chrono::high_resolution_clock::now();
+        time_opt = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
 
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
         e.save_asm_file(*(m->m_m), outfile);
     } else {
+        t1 = std::chrono::high_resolution_clock::now();
         e.save_object_file(*(m->m_m), outfile);
+        t2 = std::chrono::high_resolution_clock::now();
+        time_llvm_to_bin = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
 
     if(compiler_options.po.enable_gpu_offloading) {
@@ -1101,6 +1127,22 @@ int compile_src_to_object_file(const std::string &infile,
 #endif
     }
 
+    if (time_report) {
+        std::cout << "Allocator usage of last chunk (MB): "
+            << fe.get_al().size_current() / (1024. * 1024) << std::endl;
+        std::cout << "Allocator chunks: " << fe.get_al().num_chunks() << std::endl;
+        std::cout << std::endl;
+        std::cout << "Time report:" << std::endl;
+        std::cout << "File reading:" << std::setw(5) << time_file_read << " ms" << std::endl;
+        std::cout << "Src -> ASR:  " << std::setw(5) << time_src_to_asr << " ms" << std::endl;
+        std::cout << "ASR -> mod:  " << std::setw(5) << time_save_mod << " ms" << std::endl;
+        std::cout << "ASR -> LLVM: " << std::setw(5) << time_asr_to_llvm << " ms" << std::endl;
+        std::cout << "LLVM opt:    " << std::setw(5) << time_opt << " ms" << std::endl;
+        std::cout << "LLVM -> BIN: " << std::setw(5) << time_llvm_to_bin << " ms" << std::endl;
+        int total = time_file_read + time_src_to_asr + time_save_mod + time_asr_to_llvm + time_opt + time_llvm_to_bin;
+        std::cout << "Total:       " << std::setw(5) << total << " ms" << std::endl;
+    }
+
     return has_error_w_cc;
 }
 
@@ -1118,10 +1160,10 @@ int compile_llvm_to_object_file(const std::string& infile,
 }
 
 int compile_to_assembly_file(const std::string &infile,
-    const std::string &outfile, CompilerOptions &compiler_options,
+    const std::string &outfile, bool time_report, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
 {
-    return compile_src_to_object_file(infile, outfile, true, compiler_options, lpm);
+    return compile_src_to_object_file(infile, outfile, time_report, true, compiler_options, lpm);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -1609,6 +1651,7 @@ int compile_to_binary_fortran(const std::string &infile,
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
+    bool time_report,
     const std::string &runtime_library_dir, Backend backend,
     bool static_executable, bool shared_executable,
     std::string linker, std::string linker_path, bool kokkos,
@@ -1672,6 +1715,7 @@ int link_executable(const std::vector<std::string> &infiles,
     There are probably simpler ways.
     */
 
+    auto t1 = std::chrono::high_resolution_clock::now();
 #ifdef HAVE_LFORTRAN_LLVM
     std::string t = (compiler_options.target == "") ? LCompilers::LLVMEvaluator::get_default_target_triple() : compiler_options.target;
 #else
@@ -1978,6 +2022,12 @@ int link_executable(const std::vector<std::string> &infiles,
         } else {
             return LCompilers::LFortran::get_exit_status(err);
         }
+    }
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+    int time_total = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    if (time_report) {
+        std::cout << "Linking time:  " << std::setw(5) << time_total << " ms" << std::endl;
     }
     return 0;
 }
@@ -2616,7 +2666,7 @@ int main_app(int argc, char *argv[]) {
     if (arg_S) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_assembly_file(arg_file, outfile, compiler_options, lfortran_pass_manager);
+            return compile_to_assembly_file(arg_file, outfile, time_report, compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
@@ -2631,7 +2681,7 @@ int main_app(int argc, char *argv[]) {
     if (arg_c) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_src_to_object_file(arg_file, outfile, false,
+            return compile_src_to_object_file(arg_file, outfile, time_report, false,
                 compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2676,7 +2726,7 @@ int main_app(int argc, char *argv[]) {
             }
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-                err = compile_src_to_object_file(arg_file, tmp_o, false,
+                err = compile_src_to_object_file(arg_file, tmp_o, time_report, false,
                     compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2725,7 +2775,7 @@ int main_app(int argc, char *argv[]) {
     if (object_files.size() == 0) {
         return err_;
     } else {
-        return err_ + link_executable(object_files, outfile, runtime_library_dir,
+        return err_ + link_executable(object_files, outfile, time_report, runtime_library_dir,
                 backend, static_link, shared_link, linker, linker_path, true,
                 arg_v, arg_L, arg_l, linker_flags, compiler_options);
     }

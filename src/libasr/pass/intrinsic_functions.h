@@ -823,7 +823,7 @@ namespace Abs {
                 type = real_type;
             }
         }
-        // Simplifier: TODO: Calculate type according to input arguments
+        // array_struct_temporary: TODO: Calculate type according to input arguments
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
             static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
             ASRUtils::type_get_past_allocatable(type), diag);
@@ -889,30 +889,6 @@ namespace Radix {
     }
 
 }  // namespace Radix
-
-namespace IsContiguous {
-
-    static ASR::expr_t *eval_IsContiguous(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        if (args[0]->type == ASR::exprType::ArraySection) {
-            ASR::ArraySection_t *array_section = ASR::down_cast<ASR::ArraySection_t>(args[0]);
-            ASR::array_index_t *m_args = array_section->m_args;
-            ASR::expr_t *step = m_args->m_step;
-            int stride = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
-            if (stride == 1) {
-                return make_ConstantWithType(make_LogicalConstant_t, true, t1, loc);
-            } else {
-                return make_ConstantWithType(make_LogicalConstant_t, false, t1, loc);
-            }
-        } else if (args[0]->type == ASR::exprType::ArrayConstant || args[0]->type == ASR::exprType::Var) {
-            return make_ConstantWithType(make_LogicalConstant_t, true, t1, loc);
-        } else {
-            append_error(diag, "This Argument type is not supported for is_contiguous yet", loc);
-            return nullptr;
-        }
-    }
-
-}  // namespace IsContiguous
 
 namespace StorageSize {
 
@@ -1843,7 +1819,7 @@ namespace Present {
                 {arg->base.loc},
                 "Expected a variable here"
             );
-            
+
             return nullptr;
         }
 
@@ -6055,50 +6031,6 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 }
 
 } // namespace SetRemove
-
-static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
-        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
-    int target_kind = -1;
-    for (size_t i = 0; i < args.size(); i++) {
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
-        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (kind > target_kind) {
-            target_kind = kind;
-        }
-    }
-
-    for (size_t i = 0; i < args.size(); i++) {
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
-        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (kind==target_kind) {
-            continue;
-        }
-        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
-            if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
-            }
-        } else {
-            diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},
-                "help: ensure all arguments are of a convertible type");
-        }
-    }
-}
 
 namespace Max {
 

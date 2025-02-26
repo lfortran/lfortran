@@ -36,6 +36,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             integer_add_subrout:
                                                 (ClassProcedure
@@ -62,6 +63,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -130,6 +132,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -145,6 +148,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -166,6 +170,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -183,6 +188,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -319,6 +325,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -334,6 +341,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -355,6 +363,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -372,6 +381,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -536,6 +546,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -553,6 +564,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -582,6 +594,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             fptwo:
                                 (Variable
@@ -597,6 +610,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -616,6 +630,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             ione:
                                 (Variable
@@ -631,6 +646,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -650,6 +666,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             negfpone:
                                 (Variable
@@ -665,6 +682,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

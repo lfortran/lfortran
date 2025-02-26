@@ -432,7 +432,7 @@ public:
         std::cout << "Implicit Dictionary: " << std::endl;
         for (auto it: implicit_dictionary) {
             if (it.second) {
-                std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
+                std::cout << it.first << " " << ASRUtils::type_to_str_fortran(it.second) << std::endl;
             } else {
                 std::cout << it.first << " " << "NULL" << std::endl;
             }
@@ -3230,7 +3230,7 @@ public:
                 ASR::ttype_t *ttype = determine_type(attr->base.loc, req_param,
                     attr, false, false, dims, type_declaration, current_procedure_abi_type);
 
-                req_arg = ASRUtils::type_to_str(ttype);
+                req_arg = ASRUtils::type_to_str_fortran(ttype);
                 type_subs[req_param] = ttype;
             } else {
                 diag.add(diag::Diagnostic(
@@ -3396,7 +3396,7 @@ public:
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     diag.add(diag::Diagnostic(
-                        "The type " + ASRUtils::type_to_str(arg_type) +
+                        "The type " + ASRUtils::type_to_str_fortran(arg_type) +
                         " cannot be applied to non-type parameter " + param,
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_args[i]->base.loc})}));
@@ -3566,7 +3566,7 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
                     }
 
-                    //std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
+                    //std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str_fortran(ltype);
                     std::string func_name = parent_scope->get_unique_name(op_name + "_intrinsic");
 
                     ASR::ttype_t *return_type = nullptr;

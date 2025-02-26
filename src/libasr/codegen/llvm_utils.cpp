@@ -891,6 +891,10 @@ namespace LCompilers {
                 } else {
                     type = type_original;
                 }
+                if ( arg->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(arg->m_type_declaration)) &&
+                    (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) ) {
+                    type = type->getPointerTo();
+                }
                 if( (arg->m_intent == ASRUtils::intent_out || (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
                     ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
                     type = type->getPointerTo();
@@ -1519,7 +1523,7 @@ namespace LCompilers {
                 break;
             }
             default :
-                throw CodeGenError("Support for type " + ASRUtils::type_to_str(asr_type) +
+                throw CodeGenError("Support for type " + ASRUtils::type_to_str_fortran(asr_type) +
                                    " not yet implemented.");
         }
         return llvm_type;
@@ -2089,7 +2093,7 @@ namespace LCompilers {
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_type);
                     switch( physical_type ) {
                         case ASR::array_physical_typeType::DescriptorArray: {
-                            arr_api->copy_array(src, dest, module, asr_type, false, false);
+                            arr_api->copy_array(src, dest, module, asr_type, false);
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {
@@ -2193,7 +2197,7 @@ namespace LCompilers {
             }
             default: {
                 throw LCompilersException("LLVMUtils::deepcopy isn't implemented for " +
-                                          ASRUtils::type_to_str(asr_type));
+                                          ASRUtils::type_to_str_fortran(asr_type));
             }
         }
     }

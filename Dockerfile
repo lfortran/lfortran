@@ -21,7 +21,7 @@ SHELL ["/root/miniforge3/bin/mamba", "run", "-n", "lf", "/bin/bash", "-c"]
 RUN ./build_release.sh
 
 RUN ctest
-RUN python integration_tests/run_tests.py
+RUN LFORTRAN_TEST_ENV_VAR='STATUS OK!' python integration_tests/run_tests.py
 RUN python run_tests.py
 
 FROM ubuntu:22.04 AS app

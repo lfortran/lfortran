@@ -287,7 +287,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // TODO: Remove this because the ArrayConstructor node should
-        // be replaced with its value already (if present) in simplifier pass.
+        // be replaced with its value already (if present) in array_struct_temporary pass.
         if( x->m_value == nullptr ) {
             if( !are_all_elements_scalars(x->m_args, x->n_args) ) {
                 PassUtils::ReplacerUtils::replace_ArrayConstructor_(

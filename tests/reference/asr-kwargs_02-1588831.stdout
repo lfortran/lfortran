@@ -49,6 +49,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -68,6 +69,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -83,6 +85,7 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -145,6 +148,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             filename:
                                                 (Variable
@@ -160,6 +164,7 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -181,6 +186,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -196,6 +202,7 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

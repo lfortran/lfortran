@@ -1404,6 +1404,7 @@ public:
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
         else if(intrinsic_func_name == "CompilerOptions") intrinsic_func_name = "compiler_options";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
+        else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 
@@ -1419,6 +1420,7 @@ public:
         std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int64_t>(x.m_inquiry_id));
         if(intrinsic_func_name == "BitSize") intrinsic_func_name = "bit_size";
         else if(intrinsic_func_name == "NewLine") intrinsic_func_name = "new_line";
+        else if(intrinsic_func_name == "StorageSize") intrinsic_func_name = "storage_size";
         visit_TypeInquiry_helper(out, intrinsic_func_name, x);
     }
 
@@ -1639,6 +1641,20 @@ public:
         visit_expr_with_precedence(*x.m_right, current_precedence);
         r += src;
         last_expr_precedence = current_precedence;
+        src = r;
+    }
+
+    void visit_StringSection(const ASR::StringSection_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_arg);
+        r += src;
+        r += "(";
+        visit_expr(*x.m_start);
+        r += src;
+        r += ":";
+        visit_expr(*x.m_end);
+        r += src;
+        r += ")";
         src = r;
     }
 
@@ -1958,6 +1974,35 @@ public:
         visit_expr(*x.m_arg);
         src = "iachar(" + src + ")";
     }
+
+    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t &x) {
+        visit_expr(*x.m_array);
+        src = "is_contiguous(" + src + ")";
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        std::string r = indent;
+        r += "reallocate(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_a);
+            r += src;
+            if (x.m_args[i].n_dims > 0) {
+                r += "(";
+                for (size_t j = 0; j < x.m_args[i].n_dims; j++) {
+                    visit_expr(*x.m_args[i].m_dims[j].m_length);
+                    r += src;
+                    if (j < x.m_args[i].n_dims - 1) r += ", ";
+                }
+                r += ")";
+            }
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
 
     // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
 
