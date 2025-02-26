@@ -20,6 +20,14 @@ if (WITH_LSP)
     ${LFORTRAN_LINK_LIBRARIES}
     llanguage_server
   )
+else()
+  set(LFORTRAN_SRC
+    ../server/lsp_specification.cpp
+    lsp_utils.cpp
+    lfortran_accessor.cpp
+    lsp_cli.cpp
+    ${LFORTRAN_SRC}
+  )
 endif()
 
 add_executable(lfortran ${LFORTRAN_SRC})

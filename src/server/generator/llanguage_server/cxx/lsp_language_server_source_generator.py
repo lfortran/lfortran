@@ -550,7 +550,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             self.write('IncomingRequest method;')
             with self.gen_try():
                 self.write('method = incomingRequestByValue(request.method);')
-            with self.gen_catch('std::invalid_argument &e'):
+            with self.gen_catch('std::invalid_argument &/*e*/'):
                 self.write('goto invalidMethod;')
             self.write('assertRunning();')
             with self.gen_if('method != IncomingRequest::INITIALIZE', end=''):
@@ -631,7 +631,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             self.write('IncomingNotification method;')
             with self.gen_try():
                 self.write('method = incomingNotificationByValue(notification.method);')
-            with self.gen_catch('std::invalid_argument &e'):
+            with self.gen_catch('std::invalid_argument &/*e*/'):
                 self.write('goto invalidMethod;')
             with self.gen_if('method != IncomingNotification::EXIT'):
                 with self.gen_if('!_initialized'):
@@ -704,7 +704,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     self.write('OutgoingRequest request;')
                     with self.gen_try():
                         self.write('request = outgoingRequestByValue(method);')
-                    with self.gen_catch('std::invalid_argument &e'):
+                    with self.gen_catch('std::invalid_argument &/*e*/'):
                         self.write('goto invalidMethod;')
                     self.newline()
                     with self.gen_switch('request'):

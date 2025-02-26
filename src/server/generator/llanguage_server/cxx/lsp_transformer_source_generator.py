@@ -432,7 +432,7 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                     upper_enum = upper_first(enum_name)
                     any_to_enum = f'anyTo{upper_enum}'
                     self.gen_assign(f'{value_name}', f'{any_to_enum}(any)')
-                with self.gen_catch('LspException &e'):
+                with self.gen_catch('LspException &/*e*/'):
                     self.gen_rec_any_to_union_type(
                         union_name,
                         value_name,
@@ -464,7 +464,7 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.gen_try():
                 any_to_struct = f'anyTo{struct_name}'
                 self.gen_assign(f'{value_name}', f'{any_to_struct}(any)')
-            with self.gen_catch('LspException &e'):
+            with self.gen_catch('LspException &/*e*/'):
                 self.gen_rec_any_to_union_inner(
                     union_name,
                     value_name,
@@ -478,7 +478,7 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.gen_try():
                 any_to_inner = f'anyTo{inner_name}'
                 self.gen_assign(f'{value_name}', f'{any_to_inner}(any)')
-            with self.gen_catch('LspException &e'):
+            with self.gen_catch('LspException &/*e*/'):
                 self.gen_rec_any_to_union_inner(
                     union_name,
                     value_name,
@@ -492,7 +492,7 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.gen_try():
                 any_to_union = f'anyTo{union_name}'
                 self.gen_assign(f'{value_name}', f'{any_to_union}(any)')
-            with self.gen_catch('LspException &e'):
+            with self.gen_catch('LspException &/*e*/'):
                 self.gen_rec_any_to_union_inner(
                     union_name,
                     value_name,
@@ -544,7 +544,7 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                                     elem_expr = f'std::make_unique<{elem_type}>({elem_expr})'
                                 self.gen_call(f'{values_name}.push_back', elem_expr)
                             self.gen_assign(f'{value_name}', f'std::move({values_name})')
-                with self.gen_catch('LspException &e'):
+                with self.gen_catch('LspException &/*e*/'):
                     self.generate_any_to_union_array(
                         union_name,
                         value_name,
