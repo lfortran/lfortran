@@ -3189,6 +3189,7 @@ public:
                 ASR::presenceType s_presence = dflt_presence;
                 ASR::storage_typeType storage_type = dflt_storage;
                 bool target_attr = false;
+                bool contig_attr = false;
                 bool value_attr = false;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
@@ -3309,7 +3310,9 @@ public:
                                     throw SemanticAbort();
                                 }
                                 // Do nothing for now
-                            } else if (sa->m_attr == AST::simple_attributeType
+                            } else if (sa->m_attr == AST::AttrContiguous){
+                                contig_attr = true;
+                            }else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrAllocatable) {
                                 // TODO
                             } else if (sa->m_attr == AST::simple_attributeType
@@ -4003,7 +4006,7 @@ public:
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
-                                value_attr, target_attr);
+                                value_attr, target_attr, contig_attr);
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
