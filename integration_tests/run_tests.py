@@ -108,6 +108,8 @@ def main():
     # Setup
     global NO_OF_THREADS, fast_tests, std_f23_tests
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
+    # Set environment variable for testing
+    os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
     # delete previously created directories (if any)
     for backend in SUPPORTED_BACKENDS:
         run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
