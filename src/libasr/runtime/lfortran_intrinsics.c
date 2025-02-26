@@ -1087,8 +1087,9 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
                 continue;
             }
             // move the current_arg by the size of current_arg.
-            s_info->current_arg_info.current_arg = s_info->current_arg_info.current_arg +
-                                                    primitive_type_sizes[s_info->current_element_type];
+            s_info->current_arg_info.current_arg = (void*)
+                            ((char*)s_info->current_arg_info.current_arg +
+                                primitive_type_sizes[s_info->current_element_type]); // char* cast needed for windows MinGW.
             set_current_element_info(s_info);
             return true;
         }
