@@ -1,272 +1,391 @@
+import re
 from collections import defaultdict, deque
-from itertools import chain
+from contextlib import contextmanager
+from functools import wraps
 from pathlib import Path
-from typing import (Any, Callable, Deque, Dict, Iterator, List, Optional, Set,
-                    Tuple)
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
-from llanguage_server.auxiliary_schema import AUXILIARY_SCHEMA
-from llanguage_server.cxx.file_generator import CPlusPlusLspFileGenerator
-from llanguage_server.utils import (any_enum, lower_first,
-                                    method_to_camel_case, rename_enum,
-                                    rename_type, upper_first)
+from llanguage_server.cxx.lsp_file_generator import gensym_context
+from llanguage_server.cxx.visitors import BaseCPlusPlusLspVisitor
+from llanguage_server.lsp.datatypes import LspSpec, LspSymbol
+from llanguage_server.lsp.utils import (any_enum, lower_first,
+                                        method_to_camel_case, rename_enum,
+                                        rename_field, rename_type, upper_first, normalize_name)
+from llanguage_server.lsp.visitors import (LspAnalysisPipeline, LspSymbol,
+                                           LspSymbolKind)
+
+RE_VOWEL: re.Pattern = re.compile(r'^[aeiouy]', re.IGNORECASE)
 
 
-class CPlusPlusLspTransformerSourceGenerator(CPlusPlusLspFileGenerator):
-    generated_to_any: Set[str]
+SpecTypesAndTypeSpecs = List[
+    Tuple[str, LspSpec]
+]
+
+MapTypesAndTypeSpecs = List[
+    Tuple[
+        LspSpec,
+        Dict[str, List[Any]],
+        Dict[str, List[Any]]
+    ]
+]
+
+ArraySpecTypesAndTypeSpecs = List[
+    Tuple[
+        str,
+        LspSpec,
+        Dict[str, List[Any]]
+    ]
+]
+
+
+def type_symbol_or_spec_or_name_fn(fn: Callable) -> Callable:
+    memo = {}
+    @wraps(fn)
+    def wrapper(
+            self,
+            type_symbol_or_spec_or_name: Union[LspSymbol, LspSpec, str],
+            *args,
+            **kwargs
+    ):
+        match type_symbol_or_spec_or_name:
+            case LspSymbol():
+                type_symbol: LspSymbol = type_symbol_or_spec_or_name
+                type_name = type_symbol.name
+            case dict():
+                type_spec: LspSpec = type_symbol_or_spec_or_name
+                type_name = self.get_type_name(type_spec)
+            case str():
+                type_name: str = type_symbol_or_spec_or_name
+        if type_name in memo:
+            return memo[type_name]
+        retval = fn(self, type_name, *args, **kwargs)
+        memo[type_name] = retval
+        return retval
+    return wrapper
+
+
+class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
 
     def __init__(
-        self,
-        output_dir: Path,
-        schema: Dict[str, Any],
-        namespace: str,
-        symbols: Dict[str, Tuple[str, Dict[str, Any]]]
+            self,
+            output_dir: Path,
+            schema: LspSpec,
+            pipeline: LspAnalysisPipeline,
+            namespace: str
     ) -> None:
         specification_source = output_dir / "lsp_transformer.cpp"
-        super().__init__(specification_source, schema, namespace, symbols)
-        self.generated_to_any = set()
+        super().__init__(specification_source, schema, pipeline, namespace)
 
-    def generate_enumeration_transforms(self) -> None:
-        enum_specs = chain(
-            AUXILIARY_SCHEMA["enumerations"],
-            self.schema["enumerations"],
-        )
-        for enum_spec in enum_specs:
-            enum_name = enum_spec["name"]
-            inst_name = lower_first(enum_name)
-            type_spec = enum_spec["type"]
-            type_name = type_spec["name"]
-            enumerator = rename_enum(type_name)
-            value_type = rename_type(type_name)
-            self.write(f'auto LspTransformer::anyTo{upper_first(enum_name)}(')
-            with self.indent():
-                self.write('const LSPAny &any')
-            self.write(f') const -> {enum_name} {{')
-            with self.indent():
-                self.write('try {')
-                with self.indent():
-                    self.write('switch (static_cast<LSPAnyType>(any.index())) {')
+    def gen_as_any(self, value: str, move: bool = True) -> str:
+        any_name = self.gensym_init('any', 'std::make_unique<LSPAny>()')
+        expr = f'std::move({value})' if move else value
+        self.gen_assign(f'(*{any_name})', expr)
+        return any_name
+
+    def move_as_any(self, expr: str, move_expr: bool = True) -> str:
+        any_name = self.gen_as_any(expr, move=move_expr)
+        return f'std::move({any_name})'
+
+    def gen_return_as_any(self, value: str, move: bool = True) -> None:
+        any_name = self.gensym_decl('LSPAny', 'any')
+        expr = f'std::move({value})' if move else value
+        self.gen_assign(any_name, expr)
+        self.gen_return(any_name)
+
+    def article_for(self, name: str) -> str:
+        return 'an' if RE_VOWEL.match(name) else 'a'
+
+    @contextmanager
+    def gen_any_to_type(
+            self,
+            type_symbol_or_spec_or_name: Union[LspSymbol, LspSpec, str],
+            return_type_or_spec: Optional[Union[str, LspSpec]] = None
+    ) -> Iterator:
+        return_type: str
+        match return_type_or_spec:
+            case None:
+                match type_symbol_or_spec_or_name:
+                    case LspSymbol():
+                        type_symbol: LspSymbol = type_symbol_or_spec_or_name
+                        return_type = type_symbol.name
+                    case dict():
+                        type_spec: LspSpec = type_symbol_or_spec_or_name
+                        return_type = self.get_type_name(type_spec)
+                    case str():
+                        return_type = type_symbol_or_spec_or_name
+                    case _:
+                        raise ValueError(
+                            'Unsupported return type ({kind}): {spec}'.format(
+                                kind=type(type_symbol_or_spec_or_name),
+                                spec=type_symbol_or_spec_or_name,
+                            )
+                        )
+            case dict():
+                return_spec: LspSpec = return_type_or_spec
+                return_type = self.get_type_declaration(return_spec)
+            case str():
+                return_type = return_type_or_spec
+            case _:
+                raise ValueError(
+                    'Unsupported return type ({kind}): {spec}'.format(
+                        kind=type(return_type_or_spec),
+                        spec=return_type_or_spec,
+                    )
+                )
+        any_to_type = self.get_any_to_type_name(type_symbol_or_spec_or_name)
+        with self.gen_fn(
+            f'LspTransformer::{any_to_type}',
+            return_type,
+            params=[
+                'const LSPAny &any',
+            ],
+            specs='const'
+        ):
+            yield self
+        self.newline()
+
+    @contextmanager
+    def gen_type_to_any(
+            self,
+            type_symbol_or_spec_or_name: Union[LspSymbol, LspSpec, str],
+            type_param: str
+    ) -> Iterator:
+        type_to_any = self.get_type_to_any_name(type_symbol_or_spec_or_name)
+        with self.gen_fn(
+            f'LspTransformer::{type_to_any}',
+            'LSPAny',
+            params=[
+                type_param,
+            ],
+            specs='const'
+        ):
+            yield self
+        self.newline()
+
+    def value_of(self, value: str, is_optional: bool) -> str:
+        if is_optional:
+            return f'{value}.value()'
+        return value
+
+    def deref(
+            self,
+            symbol_or_spec_or_name: Union[LspSymbol, LspSpec, str],
+            value: str
+    ) -> str:
+        name: str
+        symbol: LspSymbol
+        match symbol_or_spec_or_name:
+            case LspSymbol():
+                symbol = symbol_or_spec_or_name
+            case dict():
+                spec: LspSpec = symbol_or_spec_or_name
+                if "name" in spec:
+                    name = spec["name"]
+                else:
+                    name = self.nested_name()
+                symbol = self.resolve(name)
+            case str():
+                name = symbol_or_spec_or_name
+                symbol = self.resolve(name)
+            case _:
+                raise ValueError(
+                    'Unsupported specification type ({kind}): {spec}'.format(
+                        kind=type(symbol_or_spec_or_name),
+                        spec=symbol_or_spec_or_name,
+                    )
+                )
+        if symbol.resolution is not None:
+            symbol = symbol.resolution
+        match symbol.kind:
+            case LspSymbolKind.BASE:
+                if symbol.normalized_name == "string":
+                    return f'*{value}'
+                return value
+            case _:
+                return f'*{value}'
+
+    @type_symbol_or_spec_or_name_fn
+    def get_any_to_type_name(self, type_name: str) -> str:
+        upper_type = upper_first(type_name)
+        return f'anyTo{upper_type}'
+
+    @type_symbol_or_spec_or_name_fn
+    def get_type_to_any_name(self, type_name: str) -> str:
+        lower_type = lower_first(type_name)
+        return f'{lower_type}ToAny'
+
+    @gensym_context
+    def gen_any_to_enum(self, enum_spec: LspSpec) -> None:
+        enum_name = enum_spec["name"]
+        type_spec = enum_spec["type"]
+        type_name = type_spec["name"]
+        value_type = rename_type(type_name)
+        field_name = self.name_field(type_spec)
+        lower_enum = lower_first(enum_name)
+        enum_by_value = f'{lower_enum}ByValue'
+        enumerator = rename_enum(type_name)
+        with self.gen_any_to_type(enum_name):
+            with self.gen_try():
+                with self.gen_switch('any.type()'):
                     match type_name:
                         case "string":
-                            self.write(f'case LSPAnyType::{any_enum("string")}: {{')
-                            with self.indent():
-                                self.write(f'const {value_type} &value = std::get<std::string>(any);')
-                                self.write(f'return {inst_name}ByValue(value);')
-                                self.write('break;')
-                            self.write('}')
+                            with self.gen_case('LSPAnyType', 'string'):
+                                self.gen_assign(f'const {value_type} &value', f'any.{field_name}()')
+                                self.gen_return(f'{enum_by_value}(value)')
                         case "integer":
-                            self.write(f'case LSPAnyType::{any_enum("integer")}: {{')
-                            with self.indent():
-                                self.write(f'{value_type} value = std::get<{value_type}>(any);')
-                                self.write(f'return {inst_name}ByValue(value);')
-                                self.write('break;')
-                            self.write('}')
-                            self.write(f'case LSPAnyType::{any_enum("uinteger")}: {{')
-                            with self.indent():
-                                self.write(f'{value_type} value = static_cast<{value_type}>(')
-                                with self.indent(): self.write(f'std::get<{rename_type("uinteger")}>(any)')
-                                self.write(');')
-                                self.write(f'return {inst_name}ByValue(value);')
-                                self.write('break;')
-                            self.write('}')
+                            with self.gen_case('LSPAnyType', 'integer'):
+                                self.gen_assign(f'{value_type} value', f'any.{field_name}()')
+                                self.gen_return(f'{enum_by_value}(value)')
+                            with self.gen_case('LSPAnyType', 'uinteger'):
+                                self.gen_assign(
+                                    f'{value_type} value',
+                                    f'static_cast<{value_type}>(any.{field_name}())'
+                                )
+                                self.gen_return(f'{enum_by_value}(value)')
                         case "uinteger":
-                            self.write(f'case LSPAnyType::{any_enum("uinteger")}: {{')
-                            with self.indent():
-                                self.write(f'{value_type} value = std::get<{value_type}>(any);')
-                                self.write(f'return {inst_name}ByValue(value);')
-                                self.write('break;')
-                            self.write('}')
-                            self.write(f'case LSPAnyType::{any_enum("integer")}: {{')
-                            with self.indent():
-                                self.write(f'{value_type} value = static_cast<{value_type}>(')
-                                with self.indent(): self.write(f'std::get<{rename_type("integer")}>(any)')
-                                self.write(');')
-                                self.write(f'return {inst_name}ByValue(value);')
-                                self.write('break;')
-                            self.write('}')
+                            with self.gen_case('LSPAnyType', 'uinteger'):
+                                self.gen_assign(f'{value_type} value', f'any.{field_name}()')
+                                self.gen_return(f'{enum_by_value}(value)')
+                            with self.gen_case('LSPAnyType', 'integer'):
+                                self.gen_assign(
+                                    f'{value_type} value',
+                                    f'static_cast<{value_type}>(any.{field_name}())'
+                                )
+                                self.gen_return(f'{enum_by_value}(value)')
                         case _:
                             raise ValueError(f'Unsupported enumeration type ({type_name}): {enum_spec}')
-                    self.write('default: {')
-                    with self.indent():
-                        self.write('throw LSP_EXCEPTION(')
-                        with self.indent():
-                            self.write('ErrorCodes::INVALID_PARAMS,')
-                            self.write(f'("LSPAnyType for a(n) {enum_name} must be of type LSPAnyType::{enumerator} but received type " +')
-                            self.write(f' LSPAnyTypeNames.at(static_cast<LSPAnyType>(any.index())))')
-                        self.write(');')
-                    self.write('}')
-                    self.write('}')
-                self.write('} catch (std::invalid_argument &e) {')
-                with self.indent():
-                    self.write('throw LSP_EXCEPTION(')
-                    with self.indent():
-                        self.write('ErrorCodes::INVALID_PARAMS,')
-                        self.write('e.what()')
-                    self.write(');')
-                self.write('}')
-            self.write('}')
-            self.newline()
-            fn_nym = f'{lower_first(enum_name)}ToAny'
-            self.write(f'auto LspTransformer::{fn_nym}(')
-            with self.indent():
-                self.write(f'{enum_name} enumerator')
-            self.write(') const -> std::unique_ptr<LSPAny> {')
-            with self.indent():
-                self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                if type_name == "string":
-                    self.write(f'(*any) = {enum_name}Values.at(enumerator);')
-                else:
-                    self.write(f'(*any) = static_cast<{value_type}>(enumerator);')
-                self.write('return any;')
-            self.write('}')
-            self.generated_to_any.add(fn_nym)
-            self.newline()
+                    with self.gen_default():
+                        self.gen_throw_invalid_params(
+                            f'("LSPAnyType for {self.article_for(enum_name)} "',
+                            f' "{enum_name}"',
+                            f' " must be of type LSPAnyType::{enumerator}"',
+                            f' " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))'
+                        )
+            with self.gen_catch('std::invalid_argument &e'):
+                self.gen_throw_invalid_params('e.what()')
 
-    def extract_nested_dependencies(
-        self,
-        nested_dependencies: Deque[
-            Tuple[
-                Deque[str],
-                Callable[
-                    [
-                        Deque[str],
-                        Dict[str, Any]
-                    ],
-                    None
-                ],
-                Dict[str, Any]
-            ]
-        ],
-        spec: Dict[str, Any]
-    ) -> None:
-        match spec["kind"]:
-            case "base" | "stringLiteral" | "integerLiteral" | "booleanLiteral" | "reference":
-                pass
-            case "array":
-                self.extract_nested_dependencies(nested_dependencies, spec["element"])
-            case "map":
-                self.extract_nested_dependencies(nested_dependencies, spec["key"])
-                self.extract_nested_dependencies(nested_dependencies, spec["value"])
-            case "and":
-                raise ValueError(
-                    f'AND types are not supported for type declarations: {spec}'
-                )
-            case "or":
-                nested_dependencies.append((
-                    deque(self.nested_names),
-                    self.generate_nested_variant,
-                    spec
-                ))
-                for index, item_spec in enumerate(spec["items"]):
-                    with self.nest_name(str(index)):
-                        self.extract_nested_dependencies(nested_dependencies, item_spec)
-            case "tuple":
-                for item_spec in spec["items"]:
-                    self.extract_nested_dependencies(nested_dependencies, item_spec)
-            case "literal":
-                nested_dependencies.append((
-                    deque(self.nested_names),
-                    self.generate_nested_structure,
-                    spec
-                ))
-                for prop_spec in spec["value"]["properties"]:
-                    with self.nest_name(prop_spec["name"]):
-                        self.extract_nested_dependencies(nested_dependencies, prop_spec["type"])
-            case _:
-                raise ValueError(f'Unsupported Type kind: {spec}')
+    @gensym_context
+    def gen_enum_to_any(self, enum_spec: LspSpec) -> None:
+        enum_name = enum_spec["name"]
+        type_spec = enum_spec["type"]
+        type_name = type_spec["name"]
+        value_type = rename_type(type_name)
+        enum_param =f'{enum_name} enumerator'
+        with self.gen_type_to_any(enum_name, enum_param):
+            any_name = self.gensym_decl('LSPAny', 'any')
+            if self.resolve(type_name).normalized_name == "string":
+                values_by_enum = f'{enum_name}Values'
+                self.gen_assign(any_name, f'{values_by_enum}.at(enumerator)')
+            else:
+                self.gen_assign(any_name, f'static_cast<{value_type}>(enumerator)')
+            self.gen_return(any_name)
 
-    def get_type_name(self, type_spec: Dict[str, Any]) -> str:
+    def generate_enumeration(self, enum_spec: LspSpec) -> None:
+        self.gen_any_to_enum(enum_spec)
+        self.gen_enum_to_any(enum_spec)
+
+    def get_type_name(self, type_spec: LspSpec) -> str:
         match type_spec["kind"]:
-            case "base" | "reference":
+            case "base" | "reference" | "enumeration":
                 return type_spec["name"]
-            case "literal":
+            case "literal" | "or" | "array" | "map" | "tuple":
                 return self.nested_name()
             case _:
                 raise ValueError(f'Cannot determine type name for: {type_spec}')
 
-    def generate_upper_type_name(self, type_spec: Dict[str, Any]) -> None:
+    def get_upper_type_name(self, type_spec: LspSpec) -> str:
         type_name = self.get_type_name(type_spec)
-        self.inline(upper_first(type_name))
+        return upper_first(type_name)
 
-    def generate_lower_type_name(self, type_spec: Dict[str, Any]) -> None:
+    def generate_upper_type_name(self, type_spec: LspSpec) -> None:
+        self.inline(self.get_upper_type_name(type_spec))
+
+    def get_lower_type_name(self, type_spec: LspSpec) -> str:
         type_name = self.get_type_name(type_spec)
-        self.inline(lower_first(type_name))
+        return lower_first(type_name)
+
+    def generate_lower_type_name(self, type_spec: LspSpec) -> None:
+        self.inline(self.get_lower_type_name(type_spec))
 
     def index_by_type(
-        self,
-        type_index: Dict[str, List[Any]],
-        type_spec: Dict[str, Any],
-        level: int = 0
+            self,
+            type_index: Dict[str, List[Any]],
+            type_spec: LspSpec,
+            level: int = 0,
+            type_name: Optional[str] = None
     ) -> None:
         type_kind = type_spec["kind"]
         match type_kind:
             case "base":
-                type_name = type_spec["name"]
-                match type_name:
-                    case "string" | "URI" | "DocumentUri" | "RegExp":
-                        index = type_index["string"]
-                    case _:
-                        index = type_index[type_name]
-                index.append(("base", type_spec))
+                base_spec = type_spec
+                base_name = base_spec["name"]
+                if self.resolve(base_name).normalized_name == "string":
+                    index = type_index["string"]
+                else:
+                    index = type_index[base_name]
+                index.append(("base", base_spec))
             case "reference":
-                type_name = type_spec["name"]
-                symbol_kind, symbol_spec = self.symbols[type_name]
-                match symbol_kind:
-                    case "enumeration":
-                        index = type_index[symbol_spec["type"]["name"]]
-                        index.append((symbol_kind, symbol_spec))
-                    case "union":
-                        if level == 0:
-                            for i, item_spec in enumerate(symbol_spec["items"]):
-                                with self.nest_name(str(i)):
-                                    self.index_by_type(type_index, item_spec, 1 + level)
-                        else:
-                            index = type_index[symbol_kind]
-                            index.append((type_name, symbol_spec))
-                    case "structure":
-                        index = type_index[symbol_kind]
-                        index.append((type_name, symbol_spec))
-                    case "literal":
-                        index = type_index[symbol_kind]
-                        index.append((self.nested_name(), symbol_spec))
-                    case "alias":
-                        match type_name:
-                            case "LSPAny" | "LSPObject":
-                                index = type_index["structure"]
-                                index.append((type_name, symbol_spec))
-
-                            case "LSPArray":
-                                elem_spec = symbol_spec["type"]["element"]
-                                elem_index = defaultdict(list)
-                                self.index_by_type(elem_index, elem_spec, 1 + level)
-                                index = type_index["array"]
-                                index.append((symbol_spec, elem_index))
-                            case _:
-                                self.index_by_type(type_index, symbol_spec["type"], 1 + level)
-                    case "request":
-                        raise ValueError(f'Cannot index requests: {type_spec}')
-                    case "notification":
-                        raise ValueError(f'Cannot index notifications: {type_spec}')
+                if type_name is None:
+                    type_name = type_spec["name"]
+                symbol = self.resolve(type_name)
+                with self.nested_name_as(symbol.name):
+                    match type_name:
+                        case "LSPAny" | "LSPObject":
+                            index = type_index["structure"]
+                            index.append((type_name, symbol.spec))
+                        case _:
+                            match symbol.kind:
+                                case LspSymbolKind.STRUCTURE:
+                                    struct_spec = type_spec
+                                    if type_name is not None:
+                                        struct_name = type_name
+                                    else:
+                                        struct_name = type_spec["name"]
+                                    index = type_index["structure"]
+                                    index.append((struct_name, struct_spec))
+                                case LspSymbolKind.ENUMERATION:
+                                    enum_spec = type_spec
+                                    if type_name is not None:
+                                        enum_name = type_name
+                                    else:
+                                        enum_name = enum_spec["name"]
+                                    index = type_index["enumeration"]
+                                    index.append((enum_name, enum_spec))
+                                case _:
+                                    self.index_by_type(type_index, symbol.spec, level, type_name)
             case "array":
-                elem_spec = type_spec["element"]
+                array_spec = type_spec
+                elem_spec = array_spec["element"]
                 elem_index = defaultdict(list)
-                self.index_by_type(elem_index, elem_spec, 1 + level)
-                index = type_index[type_kind]
-                index.append((type_spec, elem_index))
+                with self.nest_name('elem'):
+                    self.index_by_type(elem_index, elem_spec, 1 + level)
+                index = type_index["array"]
+                array_name = self.nested_name()
+                index.append((array_name, type_spec, elem_index))
             case "map":
                 key_spec = type_spec["key"]
                 key_index = defaultdict(list)
-                self.index_by_type(key_index, key_spec, 1 + level)
+                with self.nest_name('key'):
+                    self.index_by_type(key_index, key_spec, 1 + level)
                 value_spec = type_spec["value"]
                 value_index = defaultdict(list)
-                self.index_by_type(value_index, value_spec, 1 + level)
-                index = type_index[type_kind]
+                with self.nest_name('value'):
+                    self.index_by_type(value_index, value_spec, 1 + level)
+                index = type_index["map"]
                 index.append((type_spec, key_index, value_index))
             case "and":
                 raise ValueError(f'AND types are not supported: {type_spec}')
             case "or":
-                for i, item_spec in enumerate(type_spec["items"]):
-                    with self.nest_name(str(i)):
-                        self.index_by_type(type_index, item_spec, 1 + level)
+                union_spec = type_spec
+                if level == 0:
+                    for i, item_spec in enumerate(union_spec["items"]):
+                        with self.nest_name(str(i)):
+                            self.index_by_type(type_index, item_spec, 1 + level)
+                else:
+                    if type_name is None:
+                        type_name = self.nested_name()
+                    index = type_index['union']
+                    index.append((type_name, union_spec))
             case "tuple":
                 item_indices = []
                 for i, item_spec in enumerate(type_spec["items"]):
@@ -277,8 +396,12 @@ class CPlusPlusLspTransformerSourceGenerator(CPlusPlusLspFileGenerator):
                 index = type_index[type_kind]
                 index.append((self.nested_name(), type_spec, item_indices))
             case "literal":
-                index = type_index[type_kind]
-                index.append((self.nested_name(), type_spec))
+                index = type_index["inner"]
+                if type_name is not None:
+                    inner_name = type_name
+                else:
+                    inner_name = self.nested_name()
+                index.append((inner_name, type_spec))
             case "stringLiteral":
                 index = type_index["string"]
                 index.append(type_spec)
@@ -288,1780 +411,1469 @@ class CPlusPlusLspTransformerSourceGenerator(CPlusPlusLspFileGenerator):
             case "booleanLiteral":
                 index = type_index["boolean"]
                 index.append(type_spec)
-
-    def expand_fields(
-        self,
-        symbol_kind: str,
-        type_spec: Dict[str, Any]
-    ) -> Iterator[Tuple[str, Dict[str, Any]]]:
-        match symbol_kind:
-            case "structure":
-                type_name = type_spec["name"]
-                pending = deque([(type_name, symbol_kind, type_spec)])
-                visited_type_names = set()
-                visited_field_names = set()
-                while len(pending) > 0:
-                    spec_name, spec_kind, spec = pending.popleft()
-                    if spec_name not in visited_type_names:
-                        visited_type_names.add(spec_name)
-                        match spec_kind:
-                            case "structure":
-                                super_refs = spec.get("extends", None)
-                                if super_refs is not None:
-                                    for super_ref in super_refs:
-                                        super_name = super_ref["name"]
-                                        super_kind, super_spec = self.symbols[super_name]
-                                        pending.append((super_name, super_kind, super_spec))
-                                mixin_refs = spec.get("mixins", None)
-                                if mixin_refs is not None:
-                                    for mixin_ref in mixin_refs:
-                                        mixin_name = mixin_ref["name"]
-                                        mixin_kind, mixin_spec = self.symbols[mixin_name]
-                                        pending.append((mixin_name, mixin_kind, mixin_spec))
-                                for prop_spec in spec["properties"]:
-                                    prop_name = prop_spec["name"]
-                                    if prop_name not in visited_field_names:
-                                        visited_field_names.add(prop_name)
-                                        yield spec_name, prop_spec
-                            case "literal":
-                                for prop_spec in spec["value"]["properties"]:
-                                    prop_name = prop_spec["name"]
-                                    if prop_name not in visited_field_names:
-                                        visited_field_names.add(prop_name)
-                                        yield spec_name, prop_spec
-                            case _:
-                                pass
-            case "literal":
-                for prop_spec in type_spec["value"]["properties"]:
-                    prop_name = prop_spec["name"]
-                    yield self.nested_name(), prop_spec
             case _:
-                raise ValueError(f'Unsupported type ({type_spec["kind"]}): {type_spec}')
+                raise ValueError(
+                    f'Unsupported index type ({type_kind}): {type_spec}'
+                )
 
-    def generate_any_to_uinteger(
-        self,
-        type_name: str,
-        uinteger_specs: List[
-            Tuple[str, Dict[str, Any]]
-        ]
+    def gen_rec_any_to_union_type(
+            self,
+            union_name: str,
+            value_name: str,
+            type_name: str,
+            spec_types_and_type_specs: SpecTypesAndTypeSpecs
     ) -> None:
-        if len(uinteger_specs) > 0:
-            spec_type, uinteger_spec = uinteger_specs[0]
+        if len(spec_types_and_type_specs) > 0:
+            spec_type, type_spec = spec_types_and_type_specs[0]
             if spec_type == "enumeration":
-                self.write('try {')
-                with self.indent():
-                    enum_spec = uinteger_spec
+                with self.gen_try():
+                    enum_spec = type_spec
                     enum_name = enum_spec["name"]
-                    self.write(f'value = anyTo{upper_first(enum_name)}(any);')
-                self.write('} catch (LspException &e) {')
-                with self.indent():
-                    self.generate_any_to_uinteger(type_name, uinteger_specs[1:])
-                self.write('}')
-            elif len(uinteger_specs) == 1:
-                self.write('value = anyToUInteger(any);')
+                    upper_enum = upper_first(enum_name)
+                    any_to_enum = f'anyTo{upper_enum}'
+                    self.gen_assign(f'{value_name}', f'{any_to_enum}(any)')
+                with self.gen_catch('LspException &e'):
+                    self.gen_rec_any_to_union_type(
+                        union_name,
+                        value_name,
+                        type_name,
+                        spec_types_and_type_specs[1:]
+                    )
+            elif len(spec_types_and_type_specs) == 1:
+                upper_name = upper_first(type_name)
+                any_to_type = f'anyTo{upper_name}'
+                self.gen_assign(f'{value_name}', f'{any_to_type}(any)')
             else:
-                raise ValueError(f'Redundant uinteger specs detected')
+                raise ValueError(f'Redundant {type_name} specs detected')
         else:
-            self.write('throw LSP_EXCEPTION(')
-            with self.indent():
-                self.write('ErrorCodes::INVALID_PARAMS,')
-                self.write(f'"Failed to transform LSPAny to {type_name}"')
-            self.write(');')
+            self.gen_throw_invalid_params(
+                f'"Failed to transform LSPAny to {union_name}"'
+            )
 
-    def generate_any_to_integer(
-        self,
-        type_name: str,
-        integer_specs: List[
-            Tuple[str, Dict[str, Any]]
-        ]
-    ) -> None:
-        if len(integer_specs) > 0:
-            spec_type, integer_spec = integer_specs[0]
-            if spec_type == "enumeration":
-                self.write('try {')
-                with self.indent():
-                    enum_spec = integer_spec
-                    enum_name = enum_spec["name"]
-                    self.write(f'value = anyTo{upper_first(enum_name)}(any);')
-                self.write('} catch (LspException &e) {')
-                with self.indent():
-                    self.generate_any_to_integer(type_name, integer_specs[1:])
-                self.write('}')
-            elif len(integer_specs) == 1:
-                self.write('value = anyToInteger(any);')
-            else:
-                raise ValueError(f'Redundant integer specs detected')
-        else:
-            self.write('throw LSP_EXCEPTION(')
-            with self.indent():
-                self.write('ErrorCodes::INVALID_PARAMS,')
-                self.write(f'"Failed to transform LSPAny to {type_name}"')
-            self.write(');')
-
-    def generate_any_to_string(
-        self,
-        type_name: str,
-        string_specs: List[
-            Tuple[str, Dict[str, Any]]
-        ]
-    ) -> None:
-        if len(string_specs) > 0:
-            spec_type, string_spec = string_specs[0]
-            if spec_type == "enumeration":
-                self.write('try {')
-                with self.indent():
-                    enum_spec = string_spec
-                    enum_name = enum_spec["name"]
-                    self.write(f'value = anyTo{upper_first(enum_name)}(any);')
-                self.write('} catch (LspException &e) {')
-                with self.indent():
-                    self.generate_any_to_string(type_name, string_specs[1:])
-                self.write('}')
-            elif len(string_specs) == 1:
-                self.write('value = anyToString(any);')
-            else:
-                raise ValueError(f'Redundant string specs detected')
-        else:
-            self.write('throw LSP_EXCEPTION(')
-            with self.indent():
-                self.write('ErrorCodes::INVALID_PARAMS,')
-                self.write(f'"Failed to transform LSPAny to {type_name}"')
-            self.write(');')
-
-    def generate_any_to_nested_object(
-        self,
-        type_name: str,
-        struct_specs: Optional[
-            List[
-                Tuple[str, Dict[str, Any]]
-            ]
-        ],
-        literal_specs: Optional[
-            List[
-                Tuple[str, Dict[str, Any]]
-            ]
-        ],
-        union_specs: Optional[
-            List[
-                Tuple[str, Dict[str, Any]]
-            ]
-        ],
-        map_specs: Optional[
-            List[
-                Tuple[
-                    Dict[str, Any],
-                    Dict[str, List[Any]],
-                    Dict[str, List[Any]]
-                ]
-            ]
-        ]
+    def gen_rec_any_to_union_inner(
+            self,
+            union_name: str,
+            value_name: str,
+            struct_specs: Optional[SpecTypesAndTypeSpecs],
+            inner_specs: Optional[SpecTypesAndTypeSpecs],
+            union_specs: Optional[SpecTypesAndTypeSpecs],
+            map_specs: Optional[MapTypesAndTypeSpecs]
     ) -> None:
         if struct_specs is not None and len(struct_specs) > 0:
-            struct_name, struct_spec = struct_specs[0]
-            self.write('try {')
-            with self.indent():
-                if struct_name == "LSPObject":
-                    self.write('const LSPObject &object = std::get<LSPObject>(any);')
-                    self.write(f'value = copy(object);')
-                else:
-                    self.write(f'value = anyTo{struct_name}(any);')
-            self.write('} catch (LspException &e) {')
-            with self.indent():
-                self.generate_any_to_nested_object(
-                    type_name,
+            struct_name, _ = struct_specs[0]
+            with self.gen_try():
+                any_to_struct = f'anyTo{struct_name}'
+                self.gen_assign(f'{value_name}', f'{any_to_struct}(any)')
+            with self.gen_catch('LspException &e'):
+                self.gen_rec_any_to_union_inner(
+                    union_name,
+                    value_name,
                     struct_specs[1:],
-                    literal_specs,
+                    inner_specs,
                     union_specs,
                     map_specs
                 )
-            self.write('}')
-        elif literal_specs is not None and len(literal_specs) > 0:
-            literal_name, literal_spec = literal_specs[0]
-            self.write('try {')
-            with self.indent():
-                self.write(f'value = anyTo{literal_name}(any);')
-            self.write('} catch (LspException &e) {')
-            with self.indent():
-                self.generate_any_to_nested_object(
-                    type_name,
+        elif inner_specs is not None and len(inner_specs) > 0:
+            inner_name, _ = inner_specs[0]
+            with self.gen_try():
+                any_to_inner = f'anyTo{inner_name}'
+                self.gen_assign(f'{value_name}', f'{any_to_inner}(any)')
+            with self.gen_catch('LspException &e'):
+                self.gen_rec_any_to_union_inner(
+                    union_name,
+                    value_name,
                     struct_specs,
-                    literal_specs[1:],
+                    inner_specs[1:],
                     union_specs,
                     map_specs
                 )
-            self.write('}')
         elif union_specs is not None and len(union_specs) > 0:
-            union_name, union_spec = union_specs[0]
-            self.write('try {')
-            with self.indent():
-                self.write(f'value = anyTo{union_name}(any);')
-            self.write('} catch (LspException &e) {')
-            with self.indent():
-                self.generate_any_to_nested_object(
-                    type_name,
+            union_name, _ = union_specs[0]
+            with self.gen_try():
+                any_to_union = f'anyTo{union_name}'
+                self.gen_assign(f'{value_name}', f'{any_to_union}(any)')
+            with self.gen_catch('LspException &e'):
+                self.gen_rec_any_to_union_inner(
+                    union_name,
+                    value_name,
                     struct_specs,
-                    literal_specs,
+                    inner_specs,
                     union_specs[1:],
                     map_specs
                 )
-            self.write('}')
         elif map_specs is not None and len(map_specs) > 0:
-            raise ValueError(f'Unsupported spec type (map) for {type_name}: {map_specs}')
+            raise ValueError(
+                f'Unsupported spec type (map) for {union_name}: {map_specs}'
+            )
         else:
-            self.write('throw LSP_EXCEPTION(')
-            with self.indent():
-                self.write('ErrorCodes::INVALID_PARAMS,')
-                self.write(f'"Failed to transform LSPAny to {type_name}"')
-            self.write(');')
+            self.gen_throw_invalid_params(
+                f'"Failed to transform LSPAny to {union_name}"'
+            )
 
-    def generate_any_to_array(
-        self,
-        type_name: str,
-        array_specs: Optional[
-            List[
-                Tuple[
-                    Dict[str, Any],
-                    Dict[str, List[Any]]
-                ]
-            ]
-        ]
+    def generate_any_to_union_array(
+            self,
+            union_name: str,
+            value_name: str,
+            array_specs: Optional[ArraySpecTypesAndTypeSpecs]
     ) -> None:
-        if len(array_specs) > 0:
-            array_spec, elem_index = array_specs[0]
-            self.write('try {')
-            with self.indent():
-                match array_spec.get("name", None):
-                    case "LSPArray":
-                        self.write('const LSPArray &array = std::get<LSPArray>(any);')
-                        self.write('value = copy(array);')
-                    case _:
-                        elem_spec = array_spec["element"]
-                        self.inline('std::vector<', indent=True)
-                        self.generate_type_declaration(elem_spec)
-                        self.inline('> values;', end='\n')
-                        self.write('for (const std::unique_ptr<LSPAny> &elem')
-                        with self.indent(2): self.write(': std::get<LSPArray>(any)) {')
-                        with self.indent():
-                            match elem_spec["name"]:
-                                case "LSPAny":
-                                    self.write('values.push_back(copy(elem));')
-                                case "LSPObject":
-                                    self.write('values.push_back(copy(std::get<LSPObject>(*elem)));')
-                                case "LSPArray":
-                                    self.write('values.push_back(copy(std::get<LSPArray>(*elem)));')
-                                case _:
-                                    self.inline('values.push_back(anyTo', indent=True)
-                                    self.generate_upper_type_name(elem_spec)
-                                    self.inline('(*elem));', end='\n')
-                        self.write('}')
-                        self.write(f'value = std::move(values);')
-            self.write('} catch (LspException &e) {')
-            with self.indent():
-                self.generate_any_to_array(type_name, array_specs[1:])
-            self.write('}')
+        if array_specs is not None and len(array_specs) > 0:
+            array_name, array_spec, _ = array_specs[0]
+            with self.nested_name_as(array_name):
+                with self.gen_try():
+                    array_field = rename_field("LSPArray")
+                    match array_spec.get("name", None):
+                        case "LSPArray":
+                            self.gen_assign(
+                                f'{value_name}',
+                                f'copy(any.{array_field}())'
+                            )
+                        case _:
+                            values_name = self.gensym_array(
+                                array_spec, 'values',
+                                f'any.{array_field}().size()'
+                            )
+                            elem_spec = array_spec["element"]
+                            with self.nest_name('elem'):
+                                elem_type = self.get_type_declaration(elem_spec)
+                            with self.gensym_foreach(f'any.{array_field}()') as elem_name:
+                                elem_expr = f'*{elem_name}'
+                                with self.nest_name('elem'):
+                                    any_to_elem = self.get_any_to_type_name(elem_spec)
+                                elem_expr = f'{any_to_elem}({elem_expr})'
+                                if self.has_cycle(array_name, elem_spec):
+                                    elem_expr = f'std::make_unique<{elem_type}>({elem_expr})'
+                                self.gen_call(f'{values_name}.push_back', elem_expr)
+                            self.gen_assign(f'{value_name}', f'std::move({values_name})')
+                with self.gen_catch('LspException &e'):
+                    self.generate_any_to_union_array(
+                        union_name,
+                        value_name,
+                        array_specs[1:]
+                    )
         else:
-            self.write('throw LSP_EXCEPTION(')
-            with self.indent():
-                self.write('ErrorCodes::INVALID_PARAMS,')
-                self.write(f'"Failed to transform LSPAny to array"')
-            self.write(');')
+            self.gen_throw_invalid_params(
+                f'"Failed to transform LSPAny to array"'
+            )
 
-    def generate_any_to_nested_variant(self, spec: Dict[str, Any]) -> None:
-        nested_name = self.nested_name()
+    @gensym_context
+    def generate_any_to_union(self, union_symbol: LspSymbol) -> None:
+        union_spec = union_symbol.spec
+        union_name = union_symbol.name
         type_index = defaultdict(list)
-        self.index_by_type(type_index, spec)
+        self.index_by_type(type_index, union_spec)
         struct_specs = type_index.get("structure", None)
-        literal_specs = type_index.get("literal", None)
+        inner_specs = type_index.get("inner", None)
         union_specs = type_index.get("union", None)
         map_specs = type_index.get("map", None)
         has_object_type = (struct_specs is not None) \
-            or (literal_specs is not None) \
+            or (inner_specs is not None) \
             or (union_specs is not None) \
             or (map_specs is not None)
-
-        self.write(f'auto LspTransformer::anyTo{upper_first(nested_name)}(')
-        with self.indent():
-            self.write('const LSPAny &any')
-        symbol_name = nested_name
-        symbol_kind = spec["kind"]
-        while symbol_kind == "reference":
-            symbol_kind, symbol_spec = self.symbols[symbol_name]
-            symbol_name = symbol_spec["name"]
-        if symbol_kind == "structure":
-            self.write(f') const -> std::unique_ptr<{nested_name}> {{')
-            with self.indent():
-                self.write(f'std::unique_ptr<{nested_name}> value;')
-        else:
-            self.write(f') const -> {nested_name} {{')
-            with self.indent():
-                self.write(f'{nested_name} value;')
-        with self.indent():
+        with self.gen_any_to_type(union_name, union_name):
+            value_name = self.gensym_decl(union_name, 'value')
             self.newline()
-            self.write('switch (static_cast<LSPAnyType>(any.index())) {')
-            if has_object_type:
-                self.write('case LSPAnyType::OBJECT_TYPE: {')
-                with self.indent():
-                    self.generate_any_to_nested_object(
-                        nested_name,
-                        struct_specs,
-                        literal_specs,
-                        union_specs,
-                        map_specs
+            with self.gen_switch('any.type()'):
+                if has_object_type:
+                    with self.gen_case('LSPAnyType', 'object'):
+                        self.gen_rec_any_to_union_inner(
+                            union_name,
+                            value_name,
+                            struct_specs,
+                            inner_specs,
+                            union_specs,
+                            map_specs
+                        )
+                        self.gen_break()
+                array_specs = type_index.get("array", None)
+                if array_specs is not None:
+                    with self.gen_case('LSPAnyType', 'array'):
+                        self.generate_any_to_union_array(
+                            union_name,
+                            value_name,
+                            array_specs
+                        )
+                        self.gen_break()
+                string_specs = type_index.get("string", None)
+                if string_specs is not None:
+                    string_specs.sort(key=lambda pair: pair[0])
+                    with self.gen_case('LSPAnyType', 'string'):
+                        self.gen_rec_any_to_union_type(
+                            union_name,
+                            value_name,
+                            'string',
+                            string_specs
+                        )
+                        self.gen_break()
+                integer_specs = type_index.get("integer", None)
+                if integer_specs is not None:
+                    with self.gen_case('LSPAnyType', 'integer'):
+                        self.gen_rec_any_to_union_type(
+                            union_name,
+                            value_name,
+                            'integer',
+                            integer_specs
+                        )
+                        self.gen_break()
+                uinteger_specs = type_index.get("uinteger", None)
+                if uinteger_specs is not None:
+                    with self.gen_case('LSPAnyType', 'uinteger'):
+                        self.gen_rec_any_to_union_type(
+                            union_name,
+                            value_name,
+                            'uinteger',
+                            uinteger_specs
+                        )
+                        self.gen_break()
+                decimal_specs = type_index.get("decimal", None)
+                if decimal_specs is not None:
+                    with self.gen_case('LSPAnyType', 'decimal'):
+                        self.gen_assign(f'{value_name}', f'anyToDecimal(any)')
+                        self.gen_break()
+                boolean_specs = type_index.get("boolean", None)
+                if boolean_specs is not None:
+                    with self.gen_case('LSPAnyType', 'boolean'):
+                        self.gen_assign(f'{value_name}', f'anyToBoolean(any)')
+                        self.gen_break()
+                null_specs = type_index.get("null", None)
+                if null_specs is not None:
+                    with self.gen_case('LSPAnyType', 'null'):
+                        self.gen_assign(f'{value_name}', f'anyToNull(any)')
+                        self.gen_break()
+                with self.gen_default():
+                    self.gen_throw_invalid_params(
+                        f'("Invalid LSPAnyType for {self.article_for(union_name)} "',
+                        f' "{union_name}"',
+                        f' ": " + LSPAnyTypeNames.at(any.type()))'
                     )
-                    self.write('break;')
-                self.write('}')
-            array_specs = type_index.get("array", None)
-            if array_specs is not None:
-                self.write('case LSPAnyType::ARRAY_TYPE: {')
-                with self.indent():
-                    self.generate_any_to_array(nested_name, array_specs)
-                    self.write('break;')
-                self.write('}')
-            string_specs = type_index.get("string", None)
-            if string_specs is not None:
-                string_specs.sort(key=lambda pair: pair[0])
-                self.write('case LSPAnyType::STRING_TYPE: {')
-                with self.indent():
-                    self.generate_any_to_string(nested_name, string_specs)
-                    self.write('break;')
-                self.write('}')
-            integer_specs = type_index.get("integer", None)
-            if integer_specs is not None:
-                self.write('case LSPAnyType::INTEGER_TYPE: {')
-                with self.indent():
-                    self.generate_any_to_integer(nested_name, integer_specs)
-                    self.write('break;')
-                self.write('}')
-            uinteger_specs = type_index.get("uinteger", None)
-            if uinteger_specs is not None:
-                self.write('case LSPAnyType::UINTEGER_TYPE: {')
-                with self.indent():
-                    self.generate_any_to_uinteger(nested_name, uinteger_specs)
-                    self.write('break;')
-                self.write('}')
-            decimal_specs = type_index.get("decimal", None)
-            if decimal_specs is not None:
-                self.write('case LSPAnyType::DECIMAL_TYPE: {')
-                with self.indent():
-                    self.write('value = anyToDecimal(any);')
-                    self.write('break;')
-                self.write('}')
-            boolean_specs = type_index.get("boolean", None)
-            if boolean_specs is not None:
-                self.write('case LSPAnyType::BOOLEAN_TYPE: {')
-                with self.indent():
-                    self.write('value = anyToBoolean(any);')
-                    self.write('break;')
-                self.write('}')
-            null_specs = type_index.get("null", None)
-            if null_specs is not None:
-                self.write('case LSPAnyType::NULL_TYPE: {')
-                with self.indent():
-                    self.write('value = anyToNull(any);')
-                    self.write('break;')
-                self.write('}')
-            self.write('default: {')
-            with self.indent():
-                self.write('throw LSP_EXCEPTION(')
-                with self.indent():
-                    self.write('ErrorCodes::INVALID_PARAMS,')
-                    self.write(f'("Invalid LSPAnyType for a(n) {nested_name}: " +')
-                    self.write(' LSPAnyTypeNames.at(static_cast<LSPAnyType>(any.index())))')
-                self.write(');')
-            self.write('}')
-            self.write('}')
             self.newline()
-            self.write('return value;')
-        self.write('}')
-        self.newline()
+            self.gen_return(f'{value_name}')
 
-    def generate_nested_variant_to_any(self, spec: Dict[str, Any]) -> None:
-        nested_name = self.nested_name()
-        fn_nym = f'{lower_first(nested_name)}ToAny'
-        self.write(f'auto LspTransformer::{fn_nym}(')
-        with self.indent():
-            self.write(f'const {nested_name} &variant')
-        self.write(') const -> std::unique_ptr<LSPAny> {')
-        with self.indent():
-            self.write(f'switch (static_cast<{nested_name}Type>(variant.index())) {{')
-            for i, item_spec in enumerate(spec["items"]):
-                with self.nest_name(str(i)):
-                    self.inline(f'case {nested_name}Type::', indent=True)
-                    self.generate_variant_enumeration(item_spec)
-                    self.inline(': {', end='\n')
-                    with self.indent():
-                        match item_spec["kind"]:
+    @gensym_context
+    def generate_union_to_any(self, union_symbol: LspSymbol) -> None:
+        union_spec = union_symbol.spec
+        union_name = union_symbol.name
+        enum_name = f'{union_name}Type'
+        with self.gen_type_to_any(union_name, f'const {union_name} &value'):
+            with self.gen_switch('value.type()'):
+                for i, item_spec in enumerate(union_spec["items"]):
+                    with self.nest_name(str(i)):
+                        field_name = self.name_field(item_spec)
+                        with self.gen_case(enum_name, item_spec):
+                            match item_spec["kind"]:
+                                case "array":
+                                    array_spec = item_spec
+                                    elem_spec = array_spec["element"]
+                                    array_name = self.gensym_array(
+                                        "LSPArray", "array",
+                                        f'value.{field_name}().size()'
+                                    )
+                                    with self.gensym_foreach(f'value.{field_name}()') as elem_name:
+                                        with self.nest_name('elem'):
+                                            elem_to_any = self.get_type_to_any_name(elem_spec)
+                                        elem_expr = f'{elem_to_any}({elem_name})'
+                                        self.gen_call(
+                                            f'{array_name}.push_back',
+                                            self.move_as_any(elem_expr, move_expr=False)
+                                        )
+                                    any_name = self.gensym_decl('LSPAny', 'any')
+                                    self.gen_assign(any_name, f'std::move({array_name})')
+                                    self.gen_return(any_name)
+                                case "tuple":
+                                    tuple_spec = item_spec
+                                    item_specs = tuple_spec["items"]
+                                    array_name = self.gensym_array(
+                                        "LSPArray", "array",
+                                        str(len(item_specs))
+                                    )
+                                    tuple_type = self.get_type_declaration(tuple_spec)
+                                    tuple_name = self.gensym('tuple')
+                                    self.gen_assign(
+                                        f'const {tuple_type} &{tuple_name}',
+                                        f'value.{field_name}()'
+                                    )
+                                    for i, item_spec in enumerate(item_specs):
+                                        lower_item = self.get_lower_type_name(item_spec)
+                                        item_to_any = f'{lower_item}ToAny'
+                                        elem_expr = f'{item_to_any}(std::get<{i}>({tuple_name}))'
+                                        self.gen_call(
+                                            f'{array_name}.push_back',
+                                            self.move_as_any(elem_expr, move_expr=False)
+                                        )
+                                    any_name = self.gensym_decl('LSPAny', 'any')
+                                    self.gen_assign(any_name, f'std::move({array_name})')
+                                    self.gen_return(any_name)
+                                case "reference":
+                                    item_type_name = item_spec["name"]
+                                    match item_type_name:
+                                        case "LSPAny":
+                                            self.gen_return(f'copy(value.{field_name}())')
+                                        case "LSPObject" | "LSPArray":
+                                            any_name = self.gensym_decl('LSPAny', 'any')
+                                            self.gen_assign(any_name, f'copy(value.{field_name}())')
+                                            self.gen_return(any_name)
+                                        case _:
+                                            lower_item = self.get_lower_type_name(item_spec)
+                                            item_to_any = f'{lower_item}ToAny'
+                                            self.gen_return(f'{item_to_any}(value.{field_name}())')
+                                case _:
+                                    lower_item = self.get_lower_type_name(item_spec)
+                                    item_to_any = f'{lower_item}ToAny'
+                                    self.gen_return(f'{item_to_any}(value.{field_name}())')
+                with self.gen_default():
+                    self.gen_throw_invalid_params(
+                        f'("Unsupported {union_name}Type: " +',
+                        f' {union_name}TypeNames.at(value.type()))'
+                    )
+
+    def generate_union(self, union_symbol: LspSymbol) -> None:
+        self.generate_any_to_union(union_symbol)
+        self.generate_union_to_any(union_symbol)
+
+    def expand_fields(self, struct_spec_or_symbol: Union[LspSpec, LspSymbol]) -> Iterator[Tuple[str, LspSpec]]:
+        struct_name: str
+        match struct_spec_or_symbol:
+            case dict():
+                struct_spec: LspSpec = struct_spec_or_symbol
+                if "name" in struct_spec:
+                    struct_name = struct_spec["name"]
+                else:
+                    struct_name = self.nested_name()
+                struct_symbol = self.resolve(struct_name)
+            case LspSymbol():
+                struct_symbol: LspSymbol = struct_spec_or_symbol
+                struct_spec = struct_symbol.spec
+                struct_name = struct_symbol.name
+        extends_specs: Optional[List[LspSpec]] = struct_spec.get("extends", None)
+        if extends_specs is not None:
+            for extends_spec in extends_specs:
+                super_name = extends_spec['name']
+                super_symbol = self.resolve(super_name)
+                yield from self.expand_fields(super_symbol)
+        if struct_symbol.fields is not None:
+            for field_spec in struct_symbol.fields:
+                yield struct_name, field_spec
+
+    @gensym_context
+    def generate_any_to_struct(self, struct_symbol: LspSymbol) -> None:
+        struct_spec = struct_symbol.spec
+        if "name" in struct_spec:
+            struct_name = struct_spec["name"]
+        else:
+            struct_name = self.nested_name()
+        with self.gen_any_to_type(struct_name, struct_name):
+            enum_type = f'LSPAnyType::{rename_enum("object")}'
+            with self.gen_if_ne('any.type()', enum_type):
+                self.gen_throw_invalid_params(
+                    f'("LSPAnyType for {self.article_for(struct_name)} "',
+                    f' "{struct_name}"',
+                    f' " must be of type {enum_type}"',
+                    f' " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))'
+                )
+            self.newline()
+            value_name = self.gensym_decl(struct_name, 'value')
+            self.newline()
+            array_field = rename_field("array")
+            object_field = rename_field("object")
+            object_name = self.gensym_ref('object', f'any.{object_field}()')
+            iter_name = self.gensym_decl('LSPObject::const_iterator', 'iter')
+            type_names_and_field_specs = list(self.expand_fields(struct_spec))
+            self.newline()
+            num_fields = len(type_names_and_field_specs)
+            with self.gen_if(f'{object_name}.size() > {num_fields}'):
+                self.gen_throw_invalid_params(
+                    f'("Too many attributes to transform to {self.article_for(struct_name)} "',
+                    f' "{struct_name}"',
+                    f' ": " + std::to_string({object_name}.size()) + " > {num_fields}")'
+                )
+            for field_type_name, field_spec in type_names_and_field_specs:
+                field_name = field_spec["name"]
+                with self.nested_names_as(deque([field_type_name, field_name])):
+                    field_type_spec = field_spec["type"]
+                    self.newline()
+                    self.gen_assign(f'{iter_name}', f'{object_name}.find("{field_name}")')
+                    with self.gen_if_ne(iter_name, f'{object_name}.end()', end=''):
+                        match field_type_spec["kind"]:
+                            case "base":
+                                any_to_base = self.get_any_to_type_name(field_spec["type"])
+                                field_expr = f'{any_to_base}(*{iter_name}->second)'
+                            case "reference":
+                                ref_type_name = self.get_type_name(field_spec["type"])
+                                match ref_type_name:
+                                    case "LSPAny":
+                                        field_expr = f'copy(*{iter_name}->second)'
+                                    case "LSPObject":
+                                        field_expr = f'copy({iter_name}->second->{object_field}())'
+                                    case _:
+                                        any_to_ref = f'anyTo{ref_type_name}'
+                                        field_expr = f'{any_to_ref}(*{iter_name}->second)'
+                            case "literal" | "or":
+                                nested_name = self.nested_name([field_type_name, field_name])
+                                # nested_name = self.nested_name()
+                                any_to_nested = self.get_any_to_type_name(nested_name)
+                                field_expr = f'{any_to_nested}(*{iter_name}->second)'
                             case "array":
-                                elem_spec = item_spec["element"]
-                                self.write('LSPArray array;')
-                                self.inline('for (const ', indent=True)
-                                self.generate_type_declaration(elem_spec)
-                                self.inline(' &elem', end='\n')
-                                with self.indent(2):
-                                    self.inline(': std::get<std::vector<', indent=True)
-                                    self.generate_type_declaration(elem_spec)
-                                    self.inline('>>(variant)) {', end='\n')
-                                with self.indent():
-                                    self.inline(f'array.push_back(', indent=True)
-                                    self.generate_lower_type_name(elem_spec)
+                                array_spec = field_type_spec
+                                elem_spec = array_spec["element"]
+                                array_name = self.gensym_ref('array', f'{iter_name}->second->{array_field}()')
+                                values_name = self.gensym_decl(array_spec, 'values')
+                                with self.nest_name('elem'):
+                                    any_to_elem = self.get_any_to_type_name(elem_spec)
+                                with self.gensym_foreach(array_name) as elem_name:
                                     match elem_spec["kind"]:
                                         case "base":
-                                            self.inline('ToAny(elem));', end='\n')
+                                            array_expr = f'{any_to_elem}(*{elem_name})'
                                         case "reference":
-                                            elem_type_name = elem_spec["name"]
-                                            symbol_kind, symbol_spec = self.symbols[elem_type_name]
-                                            if symbol_kind == "structure":
-                                                self.inline('ToAny(*elem));', end='\n')
-                                            else:
-                                                self.inline('ToAny(elem));', end='\n')
-                                        case _:
-                                            raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                                self.write('}')
-                                self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                self.write('(*any) = std::move(array);')
-                                self.write('return any;')
-                            case "tuple":
-                                self.write('LSPArray array;')
-                                item_specs = item_spec["items"]
-                                if len(item_specs) == 2:
-                                    self.inline('const std::pair<', indent=True)
-                                    self.generate_type_declaration(item_specs[0])
-                                    self.inline(', ')
-                                    self.generate_type_declaration(item_specs[1])
-                                    self.inline('> &pair =', end='\n')
-                                    with self.indent():
-                                        self.inline('std::get<std::pair<', indent=True)
-                                        self.generate_type_declaration(item_specs[0])
-                                        self.inline(', ')
-                                        self.generate_type_declaration(item_specs[1])
-                                        self.inline('>>(variant);', end='\n')
-                                    self.inline(f'array.push_back(', indent=True)
-                                    self.generate_lower_type_name(item_specs[0])
-                                    self.inline('ToAny(pair.first));', end='\n')
-                                    self.inline(f'array.push_back(', indent=True)
-                                    self.generate_lower_type_name(item_specs[1])
-                                    self.inline('ToAny(pair.second));', end='\n')
-                                else:
-                                    self.inline('const std::tuple<', indent=True)
-                                    self.generate_type_declaration(item_specs[0])
-                                    for i in range(1, len(item_specs)):
-                                        self.inline(', ')
-                                        self.generate_type_declaration(item_specs[i])
-                                    self.inline('> &tuple =', end='\n')
-                                    with self.indent():
-                                        self.inline('std::get<std::tuple<', indent=True)
-                                        self.generate_type_declaration(item_specs[0])
-                                        for i in range(1, len(item_specs)):
-                                            self.inline(', ')
-                                            self.generate_type_declaration(item_specs[i])
-                                        self.inline('>>(variant);', end='\n')
-                                    for j, item_spec in enumerate(item_specs):
-                                        self.inline(f'array.push_back(', indent=True)
-                                        self.generate_lower_type_name(item_spec)
-                                        self.inline(f'ToAny(std::get<{j}>(tuple)));', end='\n')
-                                self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                self.write('(*any) = std::move(array);')
-                                self.write('return any;')
-                            case "reference":
-                                item_type_name = item_spec["name"]
-                                match item_type_name:
-                                    case "LSPAny":
-                                        self.write(f'return copy(std::get<std::unique_ptr<LSPAny>>(variant));')
-                                    case "LSPObject" | "LSPArray":
-                                        self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                        self.write(f'(*any) = copy(std::get<{item_type_name}>(variant));')
-                                        self.write('return any;')
-                                    case _:
-                                        symbol_kind, symbol_spec = self.symbols[item_type_name]
-                                        self.inline(f'return ', indent=True)
-                                        self.generate_lower_type_name(item_spec)
-                                        self.inline(f'ToAny(', end='\n')
-                                        with self.indent():
-                                            self.inline(indent=True)
-                                            if symbol_kind == "structure":
-                                                self.inline('*')
-                                            self.inline(f'std::get<')
-                                            self.generate_type_declaration(item_spec)
-                                            self.inline(f'>(variant)', end='\n')
-                                        self.write(');')
-                            case _:
-                                self.inline(f'return ', indent=True)
-                                self.generate_lower_type_name(item_spec)
-                                self.inline(f'ToAny(', end='\n')
-                                with self.indent():
-                                    self.inline(indent=True)
-                                    if item_spec["kind"] == "literal":
-                                        self.inline('*')
-                                    self.inline(f'std::get<')
-                                    self.generate_type_declaration(item_spec)
-                                    self.inline(f'>(variant)', end='\n')
-                                self.write(');')
-                    self.write('}')
-            self.write('default: {')
-            with self.indent():
-                self.write('throw LSP_EXCEPTION(')
-                with self.indent():
-                    self.write('ErrorCodes::INVALID_PARAMS,')
-                    self.write(f'("Unsupported {nested_name}Type: " +')
-                    self.write(f' {nested_name}TypeNames.at(static_cast<{nested_name}Type>(variant.index())))')
-                self.write(');')
-            self.write('}')
-            self.write('}')
-        self.write('}')
-        self.generated_to_any.add(fn_nym)
-        self.newline()
-
-    def generate_nested_variant(
-        self,
-        nested_names: Deque[str],
-        spec: Dict[str, Any]
-    ) -> None:
-        with self.nested_names_as(nested_names) as nested_name:
-            self.generate_any_to_nested_variant(spec)
-            self.generate_nested_variant_to_any(spec)
-
-    def generate_nested_any_to_structure(
-        self,
-        spec: Dict[str, Any]
-    ) -> None:
-        type_name = self.nested_name()
-        self.write(f'auto LspTransformer::anyTo{upper_first(type_name)}(')
-        with self.indent():
-            self.write('const LSPAny &any')
-        self.write(f') const -> std::unique_ptr<{type_name}> {{')
-        with self.indent():
-            self.inline(
-                'if (static_cast<LSPAnyType>(any.index()) != LSPAnyType::',
-                indent=True
-            )
-            self.inline(rename_enum("object"))
-            self.inline(') {', end='\n')
-            with self.indent():
-                self.write('throw LSP_EXCEPTION(')
-                with self.indent():
-                    self.write('ErrorCodes::INVALID_PARAMS,')
-                    self.write(f'("LSPAnyType for a(n) {type_name} must be of type LSPAnyType::{rename_enum("object")} but received type " +')
-                    self.write(' LSPAnyTypeNames.at(static_cast<LSPAnyType>(any.index())))')
-                self.write(');')
-            self.write('}')
-            self.newline()
-            self.write(f'std::unique_ptr<{type_name}> value =')
-            with self.indent(): self.write(f'std::make_unique<{type_name}>();')
-            self.newline()
-            self.write('const LSPObject &object = std::get<LSPObject>(any);')
-            self.write('LSPObject::const_iterator iter;')
-            symbol_kind = spec.get("kind", "structure")
-            type_names_and_prop_specs = list(self.expand_fields(symbol_kind, spec))
-            self.newline()
-            self.write(f'if (object.size() > {len(type_names_and_prop_specs)}) {{')
-            with self.indent():
-                self.write('throw LSP_EXCEPTION(')
-                with self.indent():
-                    self.write('ErrorCodes::INVALID_PARAMS,')
-                    self.write(f'"Too many attributes to transform to a(n) {type_name}: " + std::to_string(object.size())')
-                self.write(');')
-            self.write('}')
-            for prop_type_name, prop_spec in type_names_and_prop_specs:
-                prop_name = prop_spec["name"]
-                prop_type_spec = prop_spec["type"]
-                self.newline()
-                self.write(f'iter = object.find("{prop_name}");')
-                self.write('if (iter != object.end()) {')
-                with self.indent():
-                    match prop_type_spec["kind"]:
-                        case "base":
-                            self.inline(f'value->{prop_name} = anyTo', indent=True)
-                            self.generate_upper_type_name(prop_spec["type"])
-                            self.inline('(*iter->second);', end='\n')
-                        case "reference":
-                            ref_type_name = self.get_type_name(prop_spec["type"])
-                            match ref_type_name:
-                                case "LSPAny":
-                                    self.write(f'value->{prop_name} = copy(iter->second);')
-                                case "LSPObject":
-                                    self.write('const LSPObject &object = std::get<LSPObject>(*iter->second);')
-                                    self.write(f'value->{prop_name} = copy(object);')
-                                case _:
-                                    self.inline(f'value->{prop_name} = anyTo', indent=True)
-                                    self.inline(upper_first(ref_type_name))
-                                    self.inline('(*iter->second);', end='\n')
-                        case "literal":
-                            literal_name = self.nested_name([prop_type_name, prop_name])
-                            self.write(f'value->{prop_name} = anyTo{literal_name}(*iter->second);')
-                        case "or":
-                            self.inline(f'value->{prop_name} = anyTo', indent=True)
-                            self.inline(self.nested_name([prop_type_name, prop_name]))
-                            self.inline('(*iter->second);', end='\n')
-                        case "array":
-                            elem_spec = prop_type_spec["element"]
-                            self.write('const LSPArray &array = std::get<LSPArray>(*iter->second);')
-                            match elem_spec["kind"]:
-                                case "base":
-                                    self.inline('std::vector<', indent=True)
-                                    self.generate_type_declaration(elem_spec)
-                                    self.inline('> values;', end='\n')
-                                    self.write('for (const std::unique_ptr<LSPAny> &elem : array) {')
-                                    with self.indent():
-                                        self.inline('values.push_back(anyTo', indent=True)
-                                        self.generate_upper_type_name(elem_spec)
-                                        self.inline('(*elem));', end='\n')
-                                    self.write('}')
-                                    self.write(f'value->{prop_name} = std::move(values);')
-                                case "reference":
-                                    self.inline('std::vector<', indent=True)
-                                    self.generate_type_declaration(elem_spec)
-                                    self.inline('> values;', end='\n')
-                                    self.write('for (const std::unique_ptr<LSPAny> &elem : array) {')
-                                    with self.indent():
-                                        match elem_spec["name"]:
-                                            case "LSPAny":
-                                                self.write('values.push_back(copy(elem));')
-                                            case "LSPObject":
-                                                self.write('const LSPObject &object = std::get<LSPObject>(*elem);')
-                                                self.write('values.push_back(copy(object));')
-                                            case _:
-                                                self.inline('values.push_back(anyTo', indent=True)
-                                                self.generate_upper_type_name(elem_spec)
-                                                self.inline('(*elem));', end='\n')
-                                    self.write('}')
-                                    self.write(f'value->{prop_name} = std::move(values);')
-                                case "or":
-                                    elem_type_name = self.nested_name([prop_type_name, prop_name])
-                                    self.write(f'std::vector<{elem_type_name}> values;')
-                                    self.write('for (const std::unique_ptr<LSPAny> &elem : array) {')
-                                    with self.indent():
-                                        if elem_type_name == "LSPAny":
-                                            self.write(f'values.push_back(copy(elem));')
-                                        else:
-                                            self.write(f'values.push_back(anyTo{elem_type_name}(*elem));')
-                                    self.write('}')
-                                    self.write(f'value->{prop_name} = std::move(values);')
-                                case "literal":
-                                    elem_type_name = self.nested_name([prop_type_name, prop_name])
-                                    self.write(f'std::vector<std::unique_ptr<{elem_type_name}>> values;')
-                                    self.write('for (const std::unique_ptr<LSPAny> &elem : array) {')
-                                    with self.indent():
-                                        if elem_type_name == "LSPAny":
-                                            self.write(f'values.push_back(copy(elem));')
-                                        else:
-                                            self.write(f'values.push_back(anyTo{elem_type_name}(*elem));')
-                                    self.write('}')
-                                    self.write(f'value->{prop_name} = std::move(values);')
-                                case _:
-                                    raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                        case "map":
-                            key_spec = prop_type_spec["key"]
-                            value_spec = prop_type_spec["value"]
-                            self.write('const LSPObject &object_map = std::get<LSPObject>(*iter->second);')
-                            self.inline('std::map<', indent=True)
-                            self.generate_type_declaration(key_spec)
-                            self.inline(', ')
-                            if value_spec["kind"] == "or":
-                                elem_type_name = self.nested_name([prop_type_name, prop_name])
-                                self.inline(elem_type_name)
-                            else:
-                                self.generate_type_declaration(value_spec)
-                            self.inline('> map;', end='\n')
-                            self.write('for (const auto &[map_key, map_value] : object_map) {')
-                            with self.indent():
-                                match value_spec["kind"]:
-                                    case "base" | "reference":
-                                        self.inline('map.emplace(map_key, anyTo', indent=True)
-                                        self.generate_upper_type_name(value_spec)
-                                        self.inline('(*map_value));', end='\n')
-                                    case "array":
-                                        elem_spec = value_spec["element"]
-                                        self.inline('std::vector<', indent=True)
-                                        self.generate_type_declaration(elem_spec)
-                                        self.inline('> array;', end='\n')
-                                        self.write('for (const std::unique_ptr<LSPAny> &elem : std::get<LSPArray>(*map_value)) {')
-                                        with self.indent():
-                                            self.inline('array.push_back(anyTo', indent=True)
-                                            self.generate_upper_type_name(elem_spec)
-                                            self.inline('(*elem));', end='\n')
-                                        self.write('}')
-                                        self.write('map.emplace(map_key, std::move(array));')
-                                    case "or":
-                                        elem_type_name = self.nested_name([prop_type_name, prop_name])
-                                        self.write(f'map.emplace(map_key, anyTo{elem_type_name}(*map_value));')
-                                    case _:
-                                        raise ValueError(f'Unsupported map value type ({value_spec["kind"]}): {value_spec}')
-                            self.write('}')
-                            self.write(f'value->{prop_name} = std::move(map);')
-                        case "stringLiteral":
-                            expected_value = prop_type_spec["value"]
-                            self.write(f'const {rename_type("string")} &stringValue = anyToString(*iter->second);')
-                            self.write(f'if (stringValue != "{expected_value}") {{')
-                            with self.indent():
-                                self.write('throw LSP_EXCEPTION(')
-                                with self.indent():
-                                    self.write('ErrorCodes::INVALID_PARAMS,')
-                                    self.write(f'"String value for {type_name}.{prop_name} must be \\"{expected_value}\\" but was: \\"" + stringValue + "\\""')
-                                self.write(');')
-                            self.write('}')
-                            self.write(f'value->{prop_name} = stringValue;')
-                        case _:
-                            raise ValueError(f'Unsupported property type ({prop_type_spec["kind"]}) for {type_name}.{prop_name}: {prop_spec}')
-                if not prop_spec.get("optional", False):
-                    self.write('} else {')
-                    with self.indent():
-                        self.write('throw LSP_EXCEPTION(')
-                        with self.indent():
-                            self.write('ErrorCodes::INVALID_PARAMS,')
-                            self.write(f'"Missing required {type_name} attribute: {prop_name}"')
-                        self.write(');')
-                self.write('}')
-            self.newline()
-            self.write('return value;')
-        self.write('}')
-        self.newline()
-
-    def generate_nested_structure_to_any(
-        self,
-        spec: Dict[str, Any]
-    ) -> None:
-        type_name = self.nested_name()
-        symbol_kind = spec.get("kind", "structure")
-        field_types_and_specs = list(self.expand_fields(symbol_kind, spec))
-        fn_nym = f'{lower_first(type_name)}ToAny'
-        self.write(f'auto LspTransformer::{fn_nym}(')
-        with self.indent():
-            if len(field_types_and_specs) > 0:
-                self.write(f'const {type_name} &structure')
-            else:
-                self.write(f'const {type_name} &/*structure*/')
-        self.write(') const -> std::unique_ptr<LSPAny> {')
-        with self.indent():
-            self.write('LSPObject object;')
-            self.newline()
-            for prop_type_name, prop_spec in field_types_and_specs:
-                prop_name = prop_spec["name"]
-                prop_type = prop_spec["type"]
-                is_optional = prop_spec.get("optional", False)
-                num_levels = int(is_optional)
-                if is_optional:
-                    self.write(f'if (structure.{prop_name}.has_value()) {{')
-                match prop_type["kind"]:
-                    case "base":
-                        with self.indent(num_levels):
-                            self.inline(f'object.emplace("{prop_name}", ', indent=True)
-                            self.inline(lower_first(prop_type["name"]))
-                            if is_optional:
-                                self.inline(f'ToAny(structure.{prop_name}.value()));', end='\n')
-                            else:
-                                self.inline(f'ToAny(structure.{prop_name}));', end='\n')
-                    case "reference":
-                        with self.indent(num_levels):
-                            match prop_type["name"]:
-                                case "LSPAny":
-                                    self.inline(f'object.emplace("{prop_name}", ', indent=True)
-                                    if is_optional:
-                                        self.inline(f'copy(structure.{prop_name}.value()));', end='\n')
-                                    else:
-                                        self.inline(f'copy(structure.{prop_name}));', end='\n')
-                                case "LSPObject" | "LSPArray":
-                                    if not is_optional:
-                                        self.write('{')
-                                    with self.indent(int(not is_optional)):
-                                        self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                        if is_optional:
-                                            self.write(f'(*any) = copy(structure.{prop_name}.value());')
-                                        else:
-                                            self.write(f'(*any) = copy(structure.{prop_name});')
-                                        self.write(f'object.emplace("{prop_name}", std::move(any));')
-                                    if not is_optional:
-                                        self.write('}')
-                                case _:
-                                    symbol_kind, symbol_spec = self.symbols[prop_type["name"]]
-                                    self.inline(f'object.emplace("{prop_name}", ', indent=True)
-                                    self.inline(lower_first(prop_type["name"]))
-                                    if symbol_kind == "structure":
-                                        if is_optional:
-                                            self.inline(f'ToAny(*structure.{prop_name}.value()));', end='\n')
-                                        else:
-                                            self.inline(f'ToAny(*structure.{prop_name}));', end='\n')
-                                    else:
-                                        if is_optional:
-                                            self.inline(f'ToAny(structure.{prop_name}.value()));', end='\n')
-                                        else:
-                                            self.inline(f'ToAny(structure.{prop_name}));', end='\n')
-                    case "or":
-                        nested_type_name = self.nested_name([prop_type_name, prop_name])
-                        with self.indent(num_levels):
-                            self.inline(f'object.emplace("{prop_name}", ', indent=True)
-                            self.inline(lower_first(nested_type_name))
-                            if is_optional:
-                                self.inline(f'ToAny(structure.{prop_name}.value()));', end='\n')
-                            else:
-                                self.inline(f'ToAny(structure.{prop_name}));', end='\n')
-                    case "literal":
-                        nested_type_name = self.nested_name([prop_type_name, prop_name])
-                        with self.indent(num_levels):
-                            self.inline(f'object.emplace("{prop_name}", ', indent=True)
-                            self.inline(lower_first(nested_type_name))
-                            if is_optional:
-                                self.inline(f'ToAny(*structure.{prop_name}.value()));', end='\n')
-                            else:
-                                self.inline(f'ToAny(*structure.{prop_name}));', end='\n')
-                    case "array":
-                        if not is_optional:
-                            self.write('{')
-                            num_levels = 1
-                        with self.indent(num_levels):
-                            self.write('LSPArray array;')
-                            elem_spec = prop_type["element"]
-                            match elem_spec["kind"]:
-                                case "base":
-                                    self.inline('for (const ', indent=True)
-                                    self.generate_type_declaration(elem_spec)
-                                    if is_optional:
-                                        self.inline(f' &elem : structure.{prop_name}.value()) {{', end='\n')
-                                    else:
-                                        self.inline(f' &elem : structure.{prop_name}) {{', end='\n')
-                                    with self.indent():
-                                        self.inline('array.push_back(', indent=True)
-                                        self.inline(lower_first(elem_spec["name"]))
-                                        self.inline(f'ToAny(elem));', end='\n')
-                                    self.write('}')
-                                    self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                    self.write('(*any) = std::move(array);')
-                                    self.write(f'object.emplace("{prop_name}", std::move(any));')
-                                case "reference":
-                                    self.inline('for (const ', indent=True)
-                                    self.generate_type_declaration(elem_spec)
-                                    if is_optional:
-                                        self.inline(f' &elem : structure.{prop_name}.value()) {{', end='\n')
-                                    else:
-                                        self.inline(f' &elem : structure.{prop_name}) {{', end='\n')
-                                    with self.indent():
-                                        elem_type_name = elem_spec["name"]
-                                        match elem_type_name:
-                                            case "LSPAny" | "LSPObject" | "LSPArray":
-                                                self.write('array.push_back(copy(elem));')
-                                            case _:
-                                                symbol_kind, symbol_spec = self.symbols[elem_type_name]
-                                                self.inline('array.push_back(', indent=True)
-                                                self.inline(lower_first(elem_spec["name"]))
-                                                if symbol_kind == "structure":
-                                                    self.inline(f'ToAny(*elem));', end='\n')
-                                                else:
-                                                    self.inline(f'ToAny(elem));', end='\n')
-                                    self.write('}')
-                                    self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                    self.write('(*any) = std::move(array);')
-                                    self.write(f'object.emplace("{prop_name}", std::move(any));')
-                                case "or":
-                                    nested_type_name = self.nested_name([prop_type_name, prop_name])
-                                    self.inline('for (const ', indent=True)
-                                    self.inline(nested_type_name)
-                                    if is_optional:
-                                        self.inline(f' &elem : structure.{prop_name}.value()) {{', end='\n')
-                                    else:
-                                        self.inline(f' &elem : structure.{prop_name}) {{', end='\n')
-                                    with self.indent():
-                                        self.inline('array.push_back(', indent=True)
-                                        self.inline(lower_first(nested_type_name))
-                                        self.inline(f'ToAny(elem));', end='\n')
-                                    self.write('}')
-                                    self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                    self.write('(*any) = std::move(array);')
-                                    self.write(f'object.emplace("{prop_name}", std::move(any));')
-                                case "literal":
-                                    nested_type_name = self.nested_name([prop_type_name, prop_name])
-                                    self.inline('for (const ', indent=True)
-                                    self.inline(f'std::unique_ptr<{nested_type_name}>')
-                                    if is_optional:
-                                        self.inline(f' &elem : structure.{prop_name}.value()) {{', end='\n')
-                                    else:
-                                        self.inline(f' &elem : structure.{prop_name}) {{', end='\n')
-                                    with self.indent():
-                                        self.inline('array.push_back(', indent=True)
-                                        self.inline(lower_first(nested_type_name))
-                                        self.inline(f'ToAny(*elem));', end='\n')
-                                    self.write('}')
-                                    self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                    self.write('(*any) = std::move(array);')
-                                    self.write(f'object.emplace("{prop_name}", std::move(any));')
-                                case _:
-                                    raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                        if not is_optional:
-                            self.write('}')
-                    case "map":
-                        key_spec = prop_type["key"]
-                        value_spec = prop_type["value"]
-                        if not is_optional:
-                            self.write('{')
-                        with self.indent():
-                            self.write('LSPObject map;')
-                            if is_optional:
-                                self.write(f'for (const auto &[mapKey, mapValue] : structure.{prop_name}.value()) {{')
-                            else:
-                                self.write(f'for (const auto &[mapKey, mapValue] : structure.{prop_name}) {{')
-                            with self.indent():
-                                match value_spec["kind"]:
-                                    case "base":
-                                        self.inline(f'map.emplace(mapKey, ', indent=True)
-                                        self.generate_lower_type_name(value_spec)
-                                        self.inline('ToAny(mapValue));', end='\n')
-                                    case "reference":
-                                        self.inline(f'map.emplace(mapKey, ', indent=True)
-                                        self.generate_lower_type_name(value_spec)
-                                        self.inline('ToAny(*mapValue));', end='\n')
-                                    case "array":
-                                        array_elem_spec = value_spec["element"]
-                                        self.write('LSPArray array;')
-                                        self.inline('for (const ', indent=True)
-                                        self.generate_type_declaration(array_elem_spec)
-                                        self.inline(' &arrayElem : mapValue) {', end='\n')
-                                        with self.indent():
-                                            match array_elem_spec["kind"]:
-                                                case "base":
-                                                    self.inline(f'array.push_back(', indent=True)
-                                                    self.generate_lower_type_name(array_elem_spec)
-                                                    self.inline('ToAny(arrayElem));', end='\n')
-                                                case "reference":
-                                                    self.inline(f'array.push_back(', indent=True)
-                                                    self.generate_lower_type_name(array_elem_spec)
-                                                    self.inline('ToAny(*arrayElem));', end='\n')
+                                            match elem_spec["name"]:
+                                                case "LSPAny":
+                                                    array_expr = f'copy(*{elem_name})'
+                                                case "LSPObject":
+                                                    array_expr = f'{elem_name}->{object_field}()'
                                                 case _:
-                                                    raise ValueError(
-                                                        f'Unsupported array type ({array_elem_spec["kind"]}): {array_elem_spec}'
-                                                    )
-                                        self.write('}')
-                                        self.write('std::unique_ptr<LSPAny> arrayAny = std::make_unique<LSPAny>();')
-                                        self.write('(*arrayAny) = std::move(array);')
-                                        self.write('map.emplace(mapKey, std::move(arrayAny));')
-                                    case "or":
-                                        nested_item_name = self.nested_name([prop_type_name, prop_name])
-                                        self.inline('map.emplace(mapKey, ', indent=True)
-                                        self.inline(lower_first(nested_item_name))
-                                        self.inline('ToAny(mapValue));', end='\n')
-                                    case _:
-                                        raise ValueError(f'Unsupported map type ({value_spec["kind"]}): {value_spec}')
-                            self.write('}')
-                            self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                            self.write('(*any) = std::move(map);')
-                            self.write(f'object.emplace("{prop_name}", std::move(any));')
-                        if not is_optional:
-                            self.write('}')
-                    case "stringLiteral":
-                        if is_optional:
-                            self.write(f'object.emplace("{prop_name}", stringToAny(structure.{prop_name}.value()));')
-                        else:
-                            self.write(f'object.emplace("{prop_name}", stringToAny(structure.{prop_name}));')
-                    case _:
-                        raise ValueError(f'Unsupported type ({prop_type["kind"]}): {prop_spec}')
-                if is_optional:
-                    self.write('}')
-            if len(field_types_and_specs) == 0:
-                self.write('// empty')
-            self.newline()
-            self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-            self.write('(*any) = std::move(object);')
-            self.write('return any;')
-        self.write('}')
-        self.generated_to_any.add(fn_nym)
-        self.newline()
-
-    def generate_nested_structure(
-        self,
-        nested_names: Deque[str],
-        spec: Dict[str, Any]
-    ) -> None:
-        with self.nested_names_as(nested_names) as nested_name:
-            self.generate_nested_any_to_structure(spec)
-            self.generate_nested_structure_to_any(spec)
-
-    def generate_structure_transforms(self) -> None:
-        self.write('// =================================== //')
-        self.write('// LSPAny <-> LSP Structure Transforms //')
-        self.write('// =================================== //')
-        self.newline()
-        struct_specs = chain(
-            AUXILIARY_SCHEMA["structures"],
-            self.schema["structures"],
-        )
-        for struct_spec in struct_specs:
-            with self.nested_names_as(deque([struct_spec["name"]])) as struct_name:
-                nested_dependencies = deque()
-                pending = deque([struct_spec])
-                while len(pending) > 0:
-                    spec = pending.popleft()
-                    for prop_spec in reversed(spec["properties"]):
-                        with self.nest_name(prop_spec["name"]):
-                            self.extract_nested_dependencies(nested_dependencies, prop_spec["type"])
-                    spec_mixins = spec.get("mixins", None)
-                    if spec_mixins is not None:
-                        for type_spec in spec_mixins:
-                            mixin_name = type_spec["name"]
-                            _, mixin_spec = self.symbols[mixin_name]
-                            pending.append(mixin_spec)
-                while len(nested_dependencies) > 0:
-                    nested_names, generate_fn, nested_spec = nested_dependencies.pop()
-                    generate_fn(nested_names, nested_spec)
-                self.generate_nested_structure(deque([struct_name]), struct_spec)
-
-    def generate_any_to_type_alias(
-        self,
-        alias_name: str,
-        alias_spec: Dict[str, Any]
-    ) -> None:
-        self.write(f'auto LspTransformer::anyTo{upper_first(alias_name)}(')
-        with self.indent():
-            self.write('const LSPAny &any')
-        # self.write(f') const -> {rename_type(alias_name)} {{')
-        self.inline(') const -> ', indent=True)
-        self.generate_type_declaration(alias_spec["type"])
-        self.inline(' {', end='\n')
-        with self.indent():
-            type_spec = alias_spec["type"]
-            match type_spec["kind"]:
-                case "base":
-                    type_name = type_spec["name"]
-                    type_enum = any_enum(alias_name)
-                    self.write('switch (static_cast<LSPAnyType>(any.index())) {')
-                    self.write(f'case LSPAnyType::{type_enum}: {{')
-                    with self.indent():
-                        self.inline('return std::get<', indent=True)
-                        self.inline(rename_type(alias_name))
-                        self.inline('>(any);', end='\n')
-                    self.write('}')
-                    match alias_name:
-                        case "integer":
-                            integer_type = rename_type("integer")
-                            self.write(f'case LSPAnyType::{rename_enum("uinteger")}: {{')
-                            with self.indent():
-                                uinteger_type = rename_type("uinteger")
-                                self.write(f'{uinteger_type} value = std::get<{uinteger_type}>(any);')
-                                self.write(f'return static_cast<{integer_type}>(value);')
-                            self.write('}')
-                        case "uinteger":
-                            uinteger_type = rename_type("uinteger")
-                            self.write(f'case LSPAnyType::{rename_enum("integer")}: {{')
-                            with self.indent():
-                                integer_type = rename_type("integer")
-                                self.write(f'{integer_type} value = std::get<{integer_type}>(any);')
-                                self.write(f'return static_cast<{uinteger_type}>(value);')
-                            self.write('}')
-                        case "decimal":
-                            decimal_type = rename_type("decimal")
-                            self.write(f'case LSPAnyType::{rename_enum("integer")}: {{')
-                            with self.indent():
-                                integer_type = rename_type("integer")
-                                self.write(f'{integer_type} value = std::get<{integer_type}>(any);')
-                                self.write(f'return static_cast<{decimal_type}>(value);')
-                            self.write('}')
-                            self.write(f'case LSPAnyType::{rename_enum("uinteger")}: {{')
-                            with self.indent():
-                                uinteger_type = rename_type("uinteger")
-                                self.write(f'{uinteger_type} value = std::get<{uinteger_type}>(any);')
-                                self.write(f'return static_cast<{decimal_type}>(value);')
-                            self.write('}')
-                    self.write('default: {')
-                    with self.indent():
-                        self.write('throw LSP_EXCEPTION(')
-                        with self.indent():
-                            self.write('ErrorCodes::INVALID_PARAMS,')
-                            self.write('("Cannot transform LSPAny of type LSPAnyType::" +')
-                            self.write(' LSPAnyTypeNames.at(static_cast<LSPAnyType>(any.index())) +')
-                            self.write(f' " to type {rename_type(alias_name)}")')
-                        self.write(');')
-                    self.write('}')
-                    self.write('}')
-                case "reference":
-                    self.inline('return anyTo', indent=True)
-                    self.generate_upper_type_name(type_spec)
-                    self.inline('(any);', end='\n')
-                case "array":
-                    elem_spec = type_spec["element"]
-                    self.write('const LSPArray &array = std::get<LSPArray>(any);')
-                    if (elem_spec["kind"] == "reference") \
-                         and (elem_spec["name"] == "LSPAny"):
-                        self.write('return copy(array);')
+                                                    array_expr = f'{any_to_elem}(*{elem_name})'
+                                        case "or" | "literal":
+                                            # nested_name = self.nested_name([field_type_name, field_name])
+                                            with self.nest_name('elem') as nested_name:
+                                                if nested_name == "LSPAny":
+                                                    array_expr = f'copy(*{elem_name})'
+                                                else:
+                                                    any_to_nested = self.get_any_to_type_name(nested_name)
+                                                    array_expr = f'{any_to_nested}(*{elem_name})'
+                                        case _:
+                                            raise ValueError(
+                                                f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}'
+                                            )
+                                    if self.has_cycle(struct_symbol, elem_spec):
+                                        elem_type = self.get_type_declaration(elem_spec)
+                                        array_expr = f'std::make_unique<{elem_type}>({array_expr})'
+                                    self.gen_call(f'{values_name}.push_back', array_expr)
+                                field_expr = f'std::move({values_name})'
+                            case "map":
+                                map_spec = field_type_spec
+                                value_spec = field_type_spec["value"]
+                                map_type = self.get_type_declaration(map_spec)
+                                map_name = self.gensym_decl(map_type, 'map')
+                                with self.gensym_foreach_keyval(
+                                        f'{iter_name}->second->{object_field}()'
+                                ) as (map_key, map_value):
+                                    match value_spec["kind"]:
+                                        case "base" | "reference":
+                                            with self.nest_name('value'):
+                                                any_to_value = self.get_any_to_type_name(value_spec)
+                                            map_expr = f'{any_to_value}(*{map_value})'
+                                        case "array":
+                                            array_spec = value_spec
+                                            array_type = self.get_type_declaration(array_spec)
+                                            array_name = self.gensym_decl(array_type, 'array')
+                                            elem_spec = array_spec["element"]
+                                            with self.nest_name('elem'):
+                                                any_to_elem = self.get_any_to_type_name(elem_spec)
+                                            with self.gensym_foreach(f'{map_value}->{array_field}()') as elem_name:
+                                                self.gen_call(
+                                                    f'{array_name}.push_back',
+                                                    f'{any_to_elem}(*{elem_name})'
+                                                )
+                                            map_expr = f'std::move({array_name})'
+                                        case "literal" | "or":
+                                            with self.nest_name('value'):
+                                                nested_name = self.nested_name()
+                                                any_to_nested = self.get_any_to_type_name(nested_name)
+                                                map_expr = f'{any_to_nested}(*{map_value})'
+                                        case _:
+                                            raise ValueError(
+                                                f'Unsupported map value type ({value_spec["kind"]}): {value_spec}'
+                                            )
+                                    self.gen_call(f'{map_name}.emplace', map_key, map_expr)
+                                field_expr = f'std::move({map_name})'
+                            case "stringLiteral":
+                                expected_value = field_type_spec["value"]
+                                actual_value = self.gensym_ref('value', f'anyToString(*{iter_name}->second)')
+                                with self.gen_if_ne(actual_value, f'"{expected_value}"'):
+                                    self.gen_throw_invalid_params(
+                                        f'("String value for "',
+                                        f' "{struct_name}.{field_name}"',
+                                        f' " must be \\"{expected_value}\\""',
+                                        f' " but was: \\"{actual_value}\\"")'
+                                    )
+                                field_expr = actual_value
+                            case _:
+                                raise ValueError(
+                                    'Unsupported property type ({kind}) for {struct}.{field}: {spec}'.format(
+                                        kind=field_type_spec["kind"],
+                                        struct=struct_name,
+                                        field=field_name,
+                                        spec=field_spec,
+                                    )
+                                )
+                        if self.has_cycle(struct_symbol, field_spec["type"]):
+                            field_type = self.get_type_declaration(field_spec["type"])
+                            field_expr = f'std::make_unique<{field_type}>({field_expr})'
+                        self.gen_assign(f'{value_name}.{field_name}', field_expr)
+                    if not field_spec.get("optional", False):
+                        with self.gen_else():
+                            self.gen_throw_invalid_params(
+                                f'"Missing required {struct_name} attribute: {field_name}"'
+                            )
                     else:
-                        self.inline('std::vector<', indent=True)
-                        self.generate_upper_type_name(elem_spec)
-                        self.inline('> values;', end='\n')
-                        self.write('for (const std::unique_ptr<LSPAny> &elem : array) {')
-                        with self.indent():
-                            match elem_spec["kind"]:
-                                case "base" | "reference":
-                                    self.inline('values.push_back(anyTo', indent=True)
-                                    self.generate_upper_type_name(elem_spec)
-                                    self.inline('(*elem));', end='\n')
-                                case _:
-                                    raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                        self.write('}')
-                        self.write('return values;')
-                case _:
-                    raise ValueError(f'Unsupported alias type ({type_spec["kind"]}): {type_spec}')
-        self.write('}')
-        self.newline()
+                        self.inline(end='\n')
+            self.newline()
+            self.gen_return(value_name)
 
-    def generate_type_alias_to_any(
-        self,
-        alias_name: str,
-        alias_spec: Dict[str, Any]
+    def generate_struct_to_any_1(
+            self,
+            struct_symbol: LspSymbol,
+            object_name: str,
+            field_type_name: str,
+            field_spec: LspSpec,
+            field_value: str,
+            is_optional: bool
     ) -> None:
-        fn_nym = f'{lower_first(alias_name)}ToAny'
-        self.write(f'auto LspTransformer::{fn_nym}(')
-        with self.indent():
-            self.write(f'const {rename_type(alias_name)} &alias')
-        self.write(') const -> std::unique_ptr<LSPAny> {')
-        with self.indent():
-            type_spec = alias_spec["type"]
-            match type_spec["kind"]:
+        if is_optional:
+            with self.gen_if(f'{field_value}.has_value()'):
+                field_value = self.gensym_ref(
+                    field_spec["name"],
+                    f'{field_value}.value()'
+                )
+                if self.has_cycle(struct_symbol, field_spec["type"]):
+                    field_value = f'*{field_value}'
+                is_optional = False
+                self.generate_struct_to_any_1(
+                    struct_symbol,
+                    object_name,
+                    field_type_name,
+                    field_spec,
+                    field_value,
+                    is_optional
+                )
+        else:
+            field_name = field_spec["name"]
+            field_type = field_spec["type"]
+            match field_type["kind"]:
                 case "base":
-                    self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                    self.write('(*any) = alias;')
-                    self.write('return any;')
+                    field_to_any = self.get_type_to_any_name(field_type)
+                    field_expr = f'{field_to_any}({field_value})'
+                    field_expr = f'std::make_unique<LSPAny>({field_expr})'
                 case "reference":
-                    self.inline('return ', indent=True)
-                    self.generate_lower_type_name(type_spec)
-                    self.inline('ToAny(alias);', end='\n')
+                    match field_type["name"]:
+                        case "LSPAny":
+                            field_expr = f'copy({field_value})'
+                        case "LSPObject" | "LSPArray":
+                            any_name = self.gensym_decl('LSPAny', 'any')
+                            self.gen_assign(any_name, f'copy({field_value})')
+                            field_expr = f'std::move({any_name})'
+                        case _:
+                            field_to_any = self.get_type_to_any_name(field_type)
+                            field_expr = f'{field_to_any}({field_value})'
+                    field_expr = f'std::make_unique<LSPAny>({field_expr})'
+                case "or" | "literal":
+                    nested_name = self.nested_name()
+                    nested_to_any = self.get_type_to_any_name(nested_name)
+                    field_expr = f'{nested_to_any}({field_value})'
+                    field_expr = f'std::make_unique<LSPAny>({field_expr})'
                 case "array":
-                    elem_spec = type_spec["element"]
-                    self.write('LSPArray array;')
-                    self.inline('for (const ', indent=True)
-                    self.generate_type_declaration(elem_spec)
-                    self.inline(' &elem : alias) {', end='\n')
-                    with self.indent():
+                    array_name = self.gensym_array(
+                        'LSPArray', 'array',
+                        f'{field_value}.size()'
+                    )
+                    elem_spec = field_type["element"]
+                    with self.nest_name('elem'):
+                        elem_to_any = self.get_type_to_any_name(elem_spec)
+                    with self.gensym_foreach(field_value) as elem_name:
+                        array_expr = elem_name
+                        if self.has_cycle(struct_symbol, elem_spec):
+                            array_expr = f'*{array_expr}'
                         match elem_spec["kind"]:
-                            case "base":
-                                self.inline('array.push_back(', indent=True)
-                                self.generate_lower_type_name(elem_spec)
-                                self.inline('ToAny(elem));', end='\n')
-                            case "reference":
-                                ref_type_name = elem_spec["name"]
-                                symbol_kind, symbol_spec = self.symbols[ref_type_name]
-                                self.inline('array.push_back(', indent=True)
-                                self.generate_lower_type_name(elem_spec)
-                                if symbol_kind == "structure":
-                                    self.inline('ToAny(*elem));', end='\n')
-                                else:
-                                    self.inline('ToAny(elem));', end='\n')
+                            case "base" | "reference":
+                                array_expr = f'{elem_to_any}({array_expr})'
+                            case "or" | "literal":
+                                with self.nest_name('elem') as nested_name:
+                                    nested_to_any = self.get_type_to_any_name(nested_name)
+                                    array_expr = f'{nested_to_any}({array_expr})'
                             case _:
                                 raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                    self.write('}')
-                    self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                    self.write('(*any) = std::move(array);')
-                    self.write('return any;')
+                        self.gen_call(
+                            f'{array_name}.push_back',
+                            self.move_as_any(array_expr, move_expr=False)
+                        )
+                    any_name = self.gen_as_any(array_name)
+                    field_expr = f'std::move({any_name})'
+                case "map":
+                    map_spec = field_type
+                    value_spec = map_spec["value"]
+                    with self.nest_name('value'):
+                        value_to_any = self.get_type_to_any_name(value_spec)
+                    map_name = self.gensym_decl('LSPObject', 'map')
+                    with self.gensym_foreach_keyval(field_value) as (key_name, value_name):
+                        match value_spec["kind"]:
+                            case "base" | "reference" | "or":
+                                map_expr = f'{value_to_any}({value_name})'
+                            case "array":
+                                elem_spec = value_spec["element"]
+                                with self.nest_name('elem'):
+                                    elem_to_any = self.get_type_to_any_name(elem_spec)
+                                array_name = self.gensym_decl('LSPArray', 'array')
+                                with self.gensym_foreach(value_name) as elem_name:
+                                    match elem_spec["kind"]:
+                                        case "base":
+                                            array_expr = f'{elem_to_any}({elem_name})'
+                                        case "reference" | "or":
+                                            array_expr = f'{elem_to_any}({elem_name})'
+                                        case _:
+                                            raise ValueError(
+                                                f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}'
+                                            )
+                                    self.gen_call(
+                                        f'{array_name}.push_back',
+                                        self.move_as_any(array_expr, move_expr=False)
+                                    )
+                                map_expr = array_name
+                            case _:
+                                raise ValueError(f'Unsupported map type ({value_spec["kind"]}): {value_spec}')
+                        map_expr = self.move_as_any(map_expr, move_expr=False)
+                        self.gen_call(f'{map_name}.emplace', key_name, map_expr)
+                    field_expr = self.move_as_any(map_name)
+                case "stringLiteral":
+                    field_expr = f'stringToAny({field_value})'
+                    field_expr = f'std::make_unique<LSPAny>({field_expr})'
                 case _:
-                    raise ValueError(f'Unsupported alias type ({type_spec["kind"]}): {type_spec}')
-        self.write('}')
-        self.generated_to_any.add(fn_nym)
-        self.newline()
+                    raise ValueError(f'Unsupported type ({field_type["kind"]}): {field_spec}')
+            # if self.has_cycle(struct_symbol, field_type):
+            #     field_expr = f'std::make_unique<{field_type_name}>({field_expr})'
+            self.gen_call(f'{object_name}.emplace', f'"{field_name}"', field_expr)
 
-    def generate_type_alias_transforms(self) -> None:
-        self.write('// ==================================== //')
-        self.write('// LSPAny <-> LSP Type Alias Transforms //')
-        self.write('// ==================================== //')
-        self.newline()
-        alias_specs = chain(
-            AUXILIARY_SCHEMA["typeAliases"],
-            self.schema["typeAliases"],
+    @gensym_context
+    def generate_struct_to_any(self, struct_symbol: LspSymbol) -> None:
+        struct_spec = struct_symbol.spec
+        if "name" in struct_spec:
+            struct_name = struct_spec["name"]
+        else:
+            struct_name = self.nested_name()
+        field_types_and_specs = list(self.expand_fields(struct_spec))
+        param_name = 'param'
+        if len(field_types_and_specs) == 0:
+            param_name = f'/*{param_name}*/'
+        with self.gen_type_to_any(struct_name, f'const {struct_name} &{param_name}'):
+            object_name = self.gensym_decl('LSPObject', 'object')
+            self.newline()
+            for field_type_name, field_spec in field_types_and_specs:
+                field_name = field_spec["name"]
+                with self.nested_names_as(deque([field_type_name, field_name])):
+                    is_optional = field_spec.get("optional", False)
+                    field_value = f'{param_name}.{field_name}'
+                    self.generate_struct_to_any_1(
+                        struct_symbol,
+                        object_name,
+                        field_type_name,
+                        field_spec,
+                        field_value,
+                        is_optional
+                    )
+                    self.newline()
+            self.gen_return_as_any(object_name)
+
+    def generate_structure(self, struct_symbol: LspSymbol) -> None:
+        with self.nested_name_as(struct_symbol.name):
+            self.generate_any_to_struct(struct_symbol)
+            self.generate_struct_to_any(struct_symbol)
+
+    def generate_any_to_array_body(self, array_spec: LspSpec) -> None:
+        elem_spec = array_spec["element"]
+        array_field = rename_field("array")
+        array_name = self.gensym_ref('array', f'any.{array_field}()')
+        values_name = self.gensym_array(
+            array_spec, 'values',
+            f'{array_name}.size()'
         )
-        for alias_spec in alias_specs:
-            with self.nested_names_as(deque([alias_spec["name"]])) as alias_name:
-                match alias_name:
-                    case "LSPAny" | "LSPObject" | "LSPArray":
-                        pass
-                    case _:
-                        nested_dependencies = deque()
-                        type_spec = alias_spec["type"]
-                        self.extract_nested_dependencies(nested_dependencies, type_spec)
-                        while len(nested_dependencies) > 0:
-                            nested_names, generate_fn, nested_spec = nested_dependencies.pop()
-                            generate_fn(nested_names, nested_spec)
-                        if type_spec["kind"] != "or":
-                            with self.nested_names_as(deque([alias_name])):
-                                self.generate_any_to_type_alias(alias_name, alias_spec)
-                                self.generate_type_alias_to_any(alias_name, alias_spec)
+        with self.gensym_foreach(array_name) as elem_name:
+            elem_expr = elem_name
+            array_name = self.nested_name()
+            match elem_spec["kind"]:
+                case "base" | "reference" | "literal" | "or":
+                    with self.nest_name('elem'):
+                        any_to_elem = self.get_any_to_type_name(elem_spec)
+                    elem_expr = f'{any_to_elem}(*{elem_expr})'
+                case _:
+                    raise ValueError(
+                        f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}'
+                    )
+            if self.has_cycle(array_name, elem_spec):
+                elem_type = self.get_type_declaration(elem_spec)
+                elem_expr = f'std::make_unique<{elem_type}>({elem_expr})'
+            self.gen_call(f'{values_name}.push_back', elem_expr)
+        self.gen_return(values_name)
 
+    @gensym_context
+    def generate_any_to_array(self, array_symbol: LspSymbol) -> None:
+        array_name = array_symbol.name
+        with self.gen_any_to_type(array_name, array_name):
+            array_spec = array_symbol.spec
+            self.generate_any_to_array_body(array_spec)
+
+    @gensym_context
+    def generate_any_to_alias(self, alias_symbol: LspSymbol) -> None:
+        alias_name = alias_symbol.name
+        alias_spec = alias_symbol.spec
+        with self.gen_any_to_type(alias_name, alias_name):
+            type_spec = alias_spec["type"]
+            match type_spec["kind"]:
+                case "base":
+                    type_enum = any_enum(alias_name)
+                    with self.gen_switch('any.type()'):
+                        uinteger_field = rename_field('uinteger')
+                        integer_field = rename_field('integer')
+                        uinteger_type = rename_type('uinteger')
+                        integer_type = rename_type('integer')
+                        decimal_type = rename_type('decimal')
+                        with self.gen_case('LSPAnyType', type_enum):
+                            field_name = rename_field(alias_symbol.resolution.normalized_name)
+                            self.gen_return(f'any.{field_name}()')
+                        match alias_name:
+                            case "integer":
+                                with self.gen_case('LSPAnyType', 'uinteger'):
+                                    self.gen_return(
+                                        f'static_cast<{integer_type}>(any.{uinteger_field}())'
+                                    )
+                            case "uinteger":
+                                with self.gen_case('LSPAnyType', 'integer'):
+                                    self.gen_return(
+                                        f'static_cast<{uinteger_type}>(any.{integer_field}())'
+                                    )
+                            case "decimal":
+                                with self.gen_case('LSPAnyType', 'integer'):
+                                    self.gen_return(
+                                        f'static_cast<{decimal_type}>(any.{integer_field}())'
+                                    )
+                                with self.gen_case('LSPAnyType', 'uinteger'):
+                                    self.gen_return(
+                                        f'static_cast<{decimal_type}>(any.{uinteger_field}())'
+                                    )
+                        with self.gen_default():
+                            self.gen_throw_invalid_params(
+                                f'("Cannot transform LSPAny of type LSPAnyType::" +',
+                                f' LSPAnyTypeNames.at(any.type()) +',
+                                f' " to type {rename_type(alias_name)}")'
+                            )
+                case "reference":
+                    any_to_type = self.get_any_to_type_name(type_spec)
+                    self.gen_return(f'{any_to_type}(any)')
+                case "array":
+                    return self.generate_any_to_array_body(type_spec)
+                case _:
+                    raise ValueError(
+                        f'Unsupported alias type ({type_spec["kind"]}): {type_spec}'
+                    )
+
+    def generate_array_to_any_body(self, source_array: str, array_spec: LspSpec) -> None:
+        elem_spec = array_spec["element"]
+        target_array = \
+            self.gensym_array('LSPArray', 'array', f'{source_array}.size()')
+        with self.gensym_foreach(source_array) as elem_name:
+            elem_expr = elem_name
+            array_name = self.nested_name()
+            if self.has_cycle(array_name, elem_spec):
+                elem_expr = f'*{elem_expr}'
+            with self.nest_name('elem'):
+                elem_to_any = self.get_type_to_any_name(elem_spec)
+            elem_expr = f'{elem_to_any}({elem_expr})'
+            elem_expr = self.move_as_any(elem_expr, move_expr=False)
+            self.gen_call(f'{target_array}.push_back', elem_expr)
+        self.gen_return_as_any(target_array)
+
+    @gensym_context
+    def generate_array_to_any(self, array_symbol: LspSymbol) -> None:
+        array_name = array_symbol.name
+        array_type = rename_type(array_name)
+        with self.gen_type_to_any(
+                array_name,
+                f'const {array_type} &array'
+        ):
+            self.generate_array_to_any_body('array', array_symbol.spec)
+
+    @gensym_context
+    def generate_alias_to_any(self, alias_symbol: LspSymbol) -> None:
+        alias_name = alias_symbol.name
+        alias_type = rename_type(alias_name)
+        with self.gen_type_to_any(alias_name, f'const {alias_type} &alias'):
+            alias_spec = alias_symbol.spec
+            type_spec = alias_spec["type"]
+            match type_spec["kind"]:
+                case "base":
+                    self.gen_return_as_any('alias', move=False)
+                case "reference":
+                    type_to_any = self.get_type_to_any_name(type_spec)
+                    self.gen_return(f'{type_to_any}(alias)')
+                case "array":
+                    self.generate_array_to_any_body('alias', type_spec)
+                case _:
+                    raise ValueError(
+                        f'Unsupported alias type ({type_spec["kind"]}): {type_spec}'
+                    )
+
+    def visit_alias_symbol(self, alias_symbol: LspSymbol) -> None:
+        with self.nested_name_as(alias_symbol.name):
+            self.generate_any_to_alias(alias_symbol)
+            self.generate_alias_to_any(alias_symbol)
+
+    @gensym_context
+    def generate_base_to_any(self, base_symbol: LspSymbol) -> None:
+        base_name = base_symbol.name
+        base_type = rename_type(base_name)
+        if base_symbol.normalized_name == "string":
+            base_param = f'const {base_type} &param'
+        else:
+            base_param = f'{base_type} param'
+        with self.gen_type_to_any(base_name, base_param):
+            self.gen_return_as_any('param', move=False)
+
+    @gensym_context
+    def generate_any_to_base(self, base_symbol: LspSymbol) -> None:
+        base_name = base_symbol.name
+        base_type = rename_type(base_name)
+        integer_type = rename_type('integer')
+        uinteger_type = rename_type('uinteger')
+        decimal_type = rename_type('decimal')
+        integer_field = rename_field('integer')
+        uinteger_field = rename_field('uinteger')
+        with self.gen_any_to_type(base_name, base_type):
+            with self.gen_switch('any.type()'):
+                with self.gen_case('LSPAnyType', base_name):
+                    field_name = rename_field(base_symbol.resolution.normalized_name)
+                    self.gen_return(f'any.{field_name}()')
+                match base_name:
+                    case 'integer':
+                        with self.gen_case('LSPAnyType', 'uinteger'):
+                            self.gen_return(
+                                f'static_cast<{integer_type}>(any.{uinteger_field}())'
+                            )
+                    case 'uinteger':
+                        with self.gen_case('LSPAnyType', 'integer'):
+                            self.gen_return(
+                                f'static_cast<{uinteger_type}>(any.{integer_field}())'
+                            )
+                    case 'decimal':
+                        with self.gen_case('LSPAnyType', 'integer'):
+                            self.gen_return(
+                                f'static_cast<{decimal_type}>(any.{integer_field}())'
+                            )
+                        with self.gen_case('LSPAnyType', 'uinteger'):
+                            self.gen_return(
+                                f'static_cast<{decimal_type}>(any.{uinteger_field}())'
+                            )
+                with self.gen_default():
+                    self.gen_throw_invalid_params(
+                        f'("Cannot transform LSPAny of type LSPAnyType::" +',
+                        f' LSPAnyTypeNames.at(any.type()) +',
+                        f' " to type {base_type}")'
+                    )
+
+    def visit_base_symbol(self, base_symbol: LspSymbol) -> None:
+        with self.nested_name_as(base_symbol.name):
+            self.generate_base_to_any(base_symbol)
+            self.generate_any_to_base(base_symbol)
+
+    def visit_array_symbol(self, array_symbol: LspSymbol) -> None:
+        with self.nested_name_as(array_symbol.name):
+            self.generate_array_to_any(array_symbol)
+            self.generate_any_to_array(array_symbol)
+
+    @gensym_context
+    def generate_map_to_any(self, map_symbol: LspSymbol) -> None:
+        map_name = map_symbol.name
+        map_type = rename_type(map_name)
+        map_param = f'const {map_type} &map'
+        with self.gen_type_to_any(map_name, map_param):
+            map_spec = map_symbol.spec
+            value_spec = map_spec['value']
+            with self.nest_name('value'):
+                value_to_any = self.get_type_to_any_name(value_spec)
+            object_name = self.gensym_decl('LSPObject', 'object')
+            with self.gensym_foreach_keyval('map') as (map_key, map_value):
+                value_expr = map_value
+                if self.has_cycle(map_symbol, value_spec):
+                    value_expr = f'*{value_expr}'
+                value_expr = f'{value_to_any}({value_expr})'
+                value_expr = f'std::make_unique<LSPAny>({value_expr})'
+                self.gen_call(f'{object_name}.emplace', map_key, value_expr)
+            self.gen_return_as_any(object_name)
+
+    @gensym_context
+    def generate_any_to_map(self, map_symbol: LspSymbol) -> None:
+        map_name = map_symbol.name
+        with self.gen_any_to_type(map_name, map_name):
+            map_spec = map_symbol.spec
+            value_spec = map_spec['value']
+            with self.nest_name('value'):
+                any_to_value = self.get_any_to_type_name(value_spec)
+            map_name = self.gensym_decl(map_spec, 'map')
+            object_field = rename_field('object')
+            with self.gensym_foreach_keyval(f'any.{object_field}()') as (map_key, map_value):
+                value_expr = f'{any_to_value}(*{map_value})'
+                if self.has_cycle(map_symbol, value_spec):
+                    value_type = self.get_type_declaration(value_spec)
+                    value_expr = f'std::make_unique<{value_type}>({value_expr})'
+                self.gen_call(f'{map_name}.emplace', map_key, value_expr)
+            self.gen_return(map_name)
+
+    def visit_map_symbol(self, map_symbol: LspSymbol) -> None:
+        with self.nested_name_as(map_symbol.name):
+            self.generate_map_to_any(map_symbol)
+            self.generate_any_to_map(map_symbol)
+
+    @gensym_context
     def generate_copy_any(self) -> None:
-        self.write('auto LspTransformer::copy(const std::unique_ptr<LSPAny> &any) const -> std::unique_ptr<LSPAny> {')
-        with self.indent():
-            self.write('std::unique_ptr<LSPAny> clone = std::make_unique<LSPAny>();')
-            self.write('switch (static_cast<LSPAnyType>(any->index())) {')
-            self.write('case LSPAnyType::OBJECT_TYPE: {')
-            with self.indent():
-                self.write('(*clone) = copy(std::get<LSPObject>(*any));')
-                self.write('break;')
-            self.write('}')
-            self.write('case LSPAnyType::ARRAY_TYPE: {')
-            with self.indent():
-                self.write('(*clone) = copy(std::get<LSPArray>(*any));')
-                self.write('break;')
-            self.write('}')
-            self.write('case LSPAnyType::STRING_TYPE: {')
-            with self.indent():
-                self.write(f'(*clone) = std::get<{rename_type("string")}>(*any);')
-                self.write('break;')
-            self.write('}')
-            self.write('case LSPAnyType::INTEGER_TYPE: {')
-            with self.indent():
-                self.write(f'(*clone) = std::get<{rename_type("integer")}>(*any);')
-                self.write('break;')
-            self.write('}')
-            self.write('case LSPAnyType::UINTEGER_TYPE: {')
-            with self.indent():
-                self.write(f'(*clone) = std::get<{rename_type("uinteger")}>(*any);')
-                self.write('break;')
-            self.write('}')
-            self.write('case LSPAnyType::DECIMAL_TYPE: {')
-            with self.indent():
-                self.write(f'(*clone) = std::get<{rename_type("decimal")}>(*any);')
-                self.write('break;')
-            self.write('}')
-            self.write('case LSPAnyType::BOOLEAN_TYPE: {')
-            with self.indent():
-                self.write(f'(*clone) = std::get<{rename_type("boolean")}>(*any);')
-                self.write('break;')
-            self.write('}')
-            self.write('case LSPAnyType::NULL_TYPE: {')
-            with self.indent():
-                self.write(f'(*clone) = std::get<{rename_type("null")}>(*any);')
-                self.write('break;')
-            self.write('}')
-            self.write('}')
-            self.write('return clone;')
-        self.write('}')
+        with self.gen_fn(
+                'LspTransformer::copy',
+                'LSPAny',
+                params=[
+                    'const LSPAny &any',
+                ],
+                specs="const"
+        ):
+            copy_name = self.gensym_decl('LSPAny', 'any')
+            with self.gen_switch('any.type()'):
+                with self.gen_case("LSPAnyType", "object"):
+                    object_field = rename_field("LSPObject")
+                    self.gen_assign(copy_name, f'copy(any.{object_field}())')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', 'array'):
+                    array_field = rename_field("LSPArray")
+                    self.gen_assign(copy_name, f'copy(any.{array_field}())')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', 'string'):
+                    string_field = rename_field("string")
+                    self.gen_assign(copy_name, f'any.{string_field}()')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', 'integer'):
+                    integer_field = rename_field("integer")
+                    self.gen_assign(copy_name, f'any.{integer_field}()')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', 'uinteger'):
+                    uinteger_field = rename_field("uinteger")
+                    self.gen_assign(copy_name, f'any.{uinteger_field}()')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', 'decimal'):
+                    decimal_field = rename_field("decimal")
+                    self.gen_assign(copy_name, f'any.{decimal_field}()')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', f'boolean'):
+                    boolean_field = rename_field("boolean")
+                    self.gen_assign(copy_name, f'any.{boolean_field}()')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', 'null'):
+                    null_field = rename_field("null")
+                    self.gen_assign(copy_name, f'any.{null_field}()')
+                    self.gen_break()
+                with self.gen_case('LSPAnyType', 'UNINITIALIZED'):
+                    self.gen_throw(
+                        'std::invalid_argument',
+                        '"LSPAny has not been initialized."'
+                    )
+            self.gen_return(copy_name)
+        self.newline()
 
+    @gensym_context
+    def generate_copy_any_pointer(self) -> None:
+        with self.gen_fn(
+                'LspTransformer::copy',
+                'std::unique_ptr<LSPAny>',
+                params=[
+                    'const std::unique_ptr<LSPAny> &any',
+                ],
+                specs="const"
+        ):
+            any_name = self.gensym_init('any', 'std::make_unique<LSPAny>()')
+            self.gen_assign(f'(*{any_name})', 'copy(*any)')
+            self.gen_return(any_name)
+        self.newline()
+
+    @gensym_context
     def generate_copy_object(self) -> None:
-        self.write('auto LspTransformer::copy(const LSPObject &object) const -> LSPObject {')
-        with self.indent():
-            self.write('LSPObject clone;')
-            self.write('for (const auto &[key, value] : object) {')
-            with self.indent():
-                self.write('clone.emplace(key, copy(value));')
-            self.write('}')
-            self.write('return clone;')
-        self.write('}')
+        with self.gen_fn(
+                'LspTransformer::copy',
+                'LSPObject',
+                params=[
+                    'const LSPObject &object',
+                ],
+                specs='const'
+        ):
+            copy_name = self.gensym_decl('LSPObject', 'copy')
+            with self.gensym_foreach_keyval('object') as (key_name, value_name):
+                self.gen_call(
+                    f'{copy_name}.emplace',
+                    key_name,
+                    f'copy({value_name})'
+                )
+            self.gen_return(copy_name)
+        self.newline()
 
+    @gensym_context
     def generate_copy_array(self) -> None:
-        self.write('auto LspTransformer::copy(const LSPArray &array) const -> LSPArray {')
-        with self.indent():
-            self.write('LSPArray clone;')
-            self.write('for (const std::unique_ptr<LSPAny> &elem : array) {')
-            with self.indent():
-                self.write('clone.push_back(copy(elem));')
-            self.write('}')
-            self.write('return clone;')
-        self.write('}')
+        with self.gen_fn(
+                'LspTransformer::copy',
+                'LSPArray',
+                params=[
+                    'const LSPArray &array',
+                ],
+                specs='const'
+        ):
+            copy_name = self.gensym_array('LSPArray', 'copy', 'array.size()')
+            with self.gensym_foreach('array') as elem_name:
+                self.gen_call(f'{copy_name}.push_back', f'copy({elem_name})')
+            self.gen_return(copy_name)
+        self.newline()
 
     def generate_copy_methods(self) -> None:
-        self.write('// ============ //')
-        self.write('// Copy Methods //')
-        self.write('// ============ //')
-        self.newline()
         self.generate_copy_any()
-        self.newline()
+        self.generate_copy_any_pointer()
         self.generate_copy_object()
-        self.newline()
         self.generate_copy_array()
-        self.newline()
 
-    def generate_as_message_params_type(self, type_spec: Dict[str, Any]) -> None:
+    def get_as_message_params_type(self, type_spec: LspSpec) -> str:
         match type_spec["kind"]:
             case "reference":
-                self.inline(f'std::unique_ptr<{type_spec["name"]}>')
+                return type_spec["name"]
             case _:
                 raise ValueError(f'Unsupported request parameter type: {type_spec}')
 
+    @gensym_context
     def generate_as_incoming_params(
         self,
-        message_params_name: str,
-        message_spec: Dict[str, Any]
+        message_name: str,
+        message_spec: LspSpec
     ) -> None:
-        message_name = method_to_camel_case(message_spec["method"])
         params_spec = message_spec.get("params", None)
         if params_spec is not None:
-            incoming_params_name = lower_first(self.get_type_name(params_spec))
-            self.write(f'auto LspTransformer::as{message_name}Params(')
-            with self.indent():
-                self.write(f'const MessageParams &{message_params_name}')
-            self.inline(') const -> ', indent=True)
-            self.generate_as_message_params_type(params_spec)
-            self.inline(' {', end='\n')
-            with self.indent():
-                self.inline(f'if (static_cast<MessageParamsType>({message_params_name}.index()) != MessageParamsType::', indent=True)
-                match params_spec["kind"]:
-                    case "reference":
-                        self.inline(rename_enum("object"))
-                    case _:
-                        raise ValueError(f'Unsupported message parameter type ({params_spec["name"]}): {params_spec}')
-                self.inline(') {', end='\n')
-                with self.indent():
-                    self.write('throw LSP_EXCEPTION(')
-                    with self.indent():
-                        self.write('ErrorCodes::INVALID_PARAMS,')
-                        self.write('("Message parameter type must be MessageParamsType::" +')
-                        self.inline(' MessageParamsTypeNames.at(MessageParamsType::', indent=True)
-                        match params_spec["kind"]:
-                            case "reference":
-                                self.inline(rename_enum("object"))
-                            case _:
-                                raise ValueError(f'Unsupported message parameter type ({params_spec["name"]}): {params_spec}')
-                        self.inline(') +', end='\n')
-                        self.write(f' " for method=\\"{message_spec["method"]}\\" but received type " +')
-                        self.write(f' "MessageParamsType::" + MessageParamsTypeNames.at(static_cast<MessageParamsType>({message_params_name}.index())))')
-                    self.write(');')
-                self.write('}')
+            message_name = method_to_camel_case(message_spec["method"])
+            as_message_params = f'as{message_name}Params'
+            with self.gen_fn(
+                    f'LspTransformer::{as_message_params}',
+                    self.get_as_message_params_type(params_spec),
+                    params=[
+                        f'const MessageParams &{message_name}'
+                    ],
+                    specs='const'
+            ):
+                object_enum = rename_enum('object')
+                object_field = rename_field('LSPObject')
+                with self.gen_if_ne(f'{message_name}.type()', f'MessageParamsType::{object_enum}'):
+                    self.gen_throw_invalid_params(
+                        f'("Message parameter type must be MessageParamsType::{object_enum} "',
+                        f' "for method=\\"{message_spec["method"]}\\" but received "',
+                        f' "MessageParamsType::" + MessageParamsTypeNames.at({message_name}.type()))'
+                    )
                 self.newline()
                 match params_spec["kind"]:
                     case "reference":
-                        symbol_name = params_spec["name"]
-                        symbol_kind, symbol_spec = self.symbols[symbol_name]
-                        field_types_and_specs = list(self.expand_fields(symbol_kind, symbol_spec))
+                        params_type = self.get_type_declaration(params_spec)
+                        params_name = self.gensym_decl(params_type, 'params')
+                        field_types_and_specs = list(self.expand_fields(params_spec))
                         if len(field_types_and_specs) > 0:
-                            self.write(f'const LSPObject &object = std::get<LSPObject>({message_params_name});')
-                            self.write('LSPObject::const_iterator iter;')
+                            object_name = self.gensym_ref('object', f'{message_name}.{object_field}()')
+                            iter_name = self.gensym_decl('LSPObject::const_iterator', 'iter')
                             self.newline()
-                        self.inline(indent=True)
-                        self.generate_as_message_params_type(params_spec)
-                        self.inline(f' {incoming_params_name} =', end='\n')
-                        with self.indent():
-                            self.inline('std::make_unique<', indent=True)
-                            match params_spec["kind"]:
-                                case "base" | "reference":
-                                    self.inline(params_spec["name"])
-                                case _:
-                                    raise ValueError(f'Unsupported parameter type ({params_spec["kind"]}): {params_spec}')
-                            self.inline('>();', end='\n')
-                        self.newline()
-                        for prop_type_name, prop_spec in field_types_and_specs:
-                            prop_name = prop_spec["name"]
-                            prop_type = prop_spec["type"]
-                            self.write(f'iter = object.find("{prop_name}");')
-                            self.write('if (iter != object.end()) {')
-                            with self.indent():
-                                match prop_type["kind"]:
-                                    case "base":
-                                        self.inline(f'{incoming_params_name}->{prop_name} = anyTo', indent=True)
-                                        self.generate_upper_type_name(prop_type)
-                                        self.inline('(*iter->second);', end='\n')
-                                    case "reference":
-                                        match prop_type["name"]:
-                                            case "LSPAny":
-                                                self.write(f'{incoming_params_name}->{prop_name} = copy(iter->second);')
-                                            case "LSPObject" | "LSPArray":
-                                                self.write(f'{incoming_params_name}->{prop_name} = copy(*iter->second);')
+                            for field_type_name, field_spec in field_types_and_specs:
+                                field_name = field_spec["name"]
+                                with self.nested_names_as([field_type_name, field_name]):
+                                    field_type = field_spec["type"]
+                                    self.gen_assign(f'{iter_name}', f'{object_name}.find("{field_name}")')
+                                    with self.gen_if_ne(iter_name, f'{object_name}.end()', end=''):
+                                        match field_type["kind"]:
+                                            case "base":
+                                                base_spec = field_type
+                                                any_to_base = self.get_any_to_type_name(base_spec)
+                                                params_expr = f'{any_to_base}(*{iter_name}->second)'
+                                            case "reference":
+                                                match field_type["name"]:
+                                                    case "LSPAny":
+                                                        params_expr = f'copy(*{iter_name}->second)'
+                                                    case "LSPObject" | "LSPArray":
+                                                        params_expr = f'copy(*{iter_name}->second)'
+                                                    case _:
+                                                        type_spec = field_type
+                                                        any_to_type = self.get_any_to_type_name(type_spec)
+                                                        params_expr = f'{any_to_type}(*{iter_name}->second)'
+                                            case "array":
+                                                array_spec = field_type
+                                                elem_spec = array_spec["element"]
+                                                array_field = rename_field('LSPArray')
+                                                array_name = self.gensym_ref('array', f'{iter_name}->second->{array_field}()')
+                                                values_name = self.gensym_decl(array_spec, 'values')
+                                                self.write(f'{values_name}.reserve({array_name}.size());')
+                                                with self.gensym_foreach(array_name) as elem_name:
+                                                    match elem_spec["name"]:
+                                                        case "LSPAny":
+                                                            elem_expr = f'copy(*{elem_name})'
+                                                        case "LSPObject":
+                                                            elem_expr = f'copy({elem_name}->{object_field}())'
+                                                        case "LSPArray":
+                                                            elem_expr = f'copy({elem_name}->{array_field}())'
+                                                        case _:
+                                                            with self.nest_name('elem'):
+                                                                any_to_elem = self.get_any_to_type_name(elem_spec)
+                                                            elem_expr = f'{any_to_elem}(*{elem_name})'
+                                                    self.gen_call(f'{values_name}.push_back', elem_expr)
+                                                params_expr = f'std::move({values_name})'
+                                            case "or" | "literal":
+                                                nested_name = self.nested_name([field_type_name, field_name])
+                                                any_to_nested = self.get_any_to_type_name(nested_name)
+                                                params_expr = f'{any_to_nested}(*{iter_name}->second)'
                                             case _:
-                                                self.inline(f'{incoming_params_name}->{prop_name} = anyTo', indent=True)
-                                                self.generate_upper_type_name(prop_spec["type"])
-                                                self.inline('(*iter->second);', end='\n')
-                                    case "array":
-                                        elem_spec = prop_type["element"]
-                                        self.write('const LSPArray &array = std::get<LSPArray>(*iter->second);')
-                                        self.inline('std::vector<', indent=True)
-                                        match elem_spec["kind"]:
-                                            case "base" | "reference":
-                                                self.generate_type_declaration(elem_spec)
-                                            case _:
-                                                raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                                        self.inline('> values;', end='\n')
-                                        self.write('for (const std::unique_ptr<LSPAny> &elem : array) {')
-                                        with self.indent():
-                                            match elem_spec["name"]:
-                                                case "LSPAny":
-                                                    self.write('values.push_back(copy(elem));')
-                                                case "LSPObject":
-                                                    self.write('values.push_back(copy(std::get<LSPObject>(*elem)));')
-                                                case "LSPArray":
-                                                    self.write('values.push_back(copy(std::get<LSPArray>(*elem)));')
-                                                case _:
-                                                    self.inline('values.push_back(anyTo', indent=True)
-                                                    self.generate_upper_type_name(elem_spec)
-                                                    self.inline('(*elem));', end='\n')
-                                        self.write('}')
-                                        self.write(f'{incoming_params_name}->{prop_name} = std::move(values);')
-                                    case "or" | "literal":
-                                        or_type_name = self.nested_name([prop_type_name, prop_name])
-                                        self.inline(f'{incoming_params_name}->{prop_name} = anyTo', indent=True)
-                                        self.inline(upper_first(or_type_name))
-                                        self.inline('(*iter->second);', end='\n')
-                                    case _:
-                                        raise ValueError(f'Unsupported property kind ({prop_type["kind"]}): {prop_type}')
-                            if not prop_spec.get("optional", False):
-                                self.write('} else {')
-                                with self.indent():
-                                    self.write('throw LSP_EXCEPTION(')
-                                    with self.indent():
-                                        self.write('ErrorCodes::INVALID_PARAMS,')
-                                        self.write(f'"Missing required {params_spec["name"]} attribute: {prop_name}"')
-                                    self.write(');')
-                            self.write('}')
-                            self.newline()
-                        self.write(f'return {incoming_params_name};')
+                                                raise ValueError(
+                                                    f'Unsupported property kind ({field_type["kind"]}): {field_type}'
+                                                )
+                                        self.gen_assign(f'{params_name}.{field_name}', params_expr)
+                                    if not field_spec.get("optional", False):
+                                        with self.gen_else():
+                                            self.gen_throw_invalid_params(
+                                                f'"Missing required {params_spec["name"]} attribute: {field_name}"'
+                                            )
+                                    else:
+                                        self.inline(end='\n')
+                                    self.newline()
+                        self.gen_return(params_name)
                     case _:
-                        raise ValueError(f'Unsupported message parameter type ({params_spec["name"]}): {params_spec}')
-            self.write('}')
+                        raise ValueError(
+                            f'Unsupported message parameter type ({params_spec["name"]}): {params_spec}'
+                        )
             self.newline()
 
-    def generate_result_to_any(self, request_spec: Dict[str, Any]) -> None:
+    def generate_result_union_array_union_to_any(
+            self,
+            result_name: str,
+            array_name: str,
+            union_spec: LspSpec,
+            index: int
+    ) -> None:
+        union_name = self.nested_name([result_name, str(index)])
+        field_name = rename_field(union_name)
+        field_value = f'result.{field_name}()'
+        self.gen_call(
+            f'{array_name}.reserve',
+            f'{field_value}.size()'
+        )
+        union_enum = f'{union_name}Type'
+        with self.gensym_foreach(field_value) as elem_name:
+            with self.gen_switch(f'{elem_name}.type()'):
+                for union_item in union_spec["items"]:
+                    with self.gen_case(union_enum, union_item):
+                        match union_item["kind"]:
+                            case "base" | "reference":
+                                item_field = self.name_field(union_item)
+                                item_name = union_item["name"]
+                                match item_name:
+                                    case "LSPAny" | "LSPObject" | "LSPArray":
+                                        item_field = rename_field(item_name)
+                                        elem_expr = f'copy({elem_name}.{item_field}())'
+                                    case _:
+                                        item_to_any = self.get_type_to_any_name(union_item)
+                                        elem_expr = f'{item_to_any}({elem_name}.{item_field}())'
+                            case _:
+                                raise ValueError(
+                                    f'Unsupported item kind ({union_item["kind"]}): {union_item}'
+                                )
+                        self.gen_call(f'{array_name}.push_back', elem_expr)
+                        self.gen_break()
+                with self.gen_case(union_enum, 'UNINITIALIZED'):
+                    self.gen_throw(
+                        'LSP_EXCEPTION',
+                        'ErrorCodes::INTERNAL_ERROR',
+                        f'"{result_name} has not been initialized!"'
+                    )
+
+    def generate_result_union_array_to_any(
+            self,
+            result_name: str,
+            array_spec: LspSpec,
+            index: int
+    ) -> None:
+        field_name = self.name_field(array_spec)
+        elem_spec = array_spec["element"]
+        array_name = self.gensym_decl('LSPArray', 'array')
+        match elem_spec["kind"]:
+            case "base" | "reference":
+                field_value = f'result.{field_name}()'
+                self.gen_call(
+                    f'{array_name}.reserve',
+                    f'{field_value}.size()'
+                )
+                with self.gensym_foreach(field_value) as elem_name:
+                    with self.nest_name('elem'):
+                        elem_to_any = self.get_type_to_any_name(elem_spec)
+                    elem_expr = f'{elem_to_any}({elem_name})'
+                    self.gen_call(
+                        f'{array_name}.push_back',
+                        self.move_as_any(elem_expr, move_expr=False)
+                    )
+            case "or":
+                self.generate_result_union_array_union_to_any(
+                    result_name,
+                    array_name,
+                    elem_spec,
+                    index
+                )
+            case _:
+                raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
+        self.gen_return_as_any(array_name)
+
+    def generate_result_union_reference_to_any(
+            self,
+            reference_spec: LspSpec,
+            field_expr: str
+    ) -> None:
+        reference_to_any = self.get_type_to_any_name(reference_spec)
+        reference_name = reference_spec["name"]
+        match reference_name:
+            case "LSPAny" | "LSPObject" | "LSPArray":
+                self.gen_return(f'copy({field_expr})')
+            case _:
+                reference_symbol = self.resolve(reference_name)
+                match reference_symbol.kind:
+                    case LspSymbolKind.BASE:
+                        if reference_symbol.normalized_name == "string":
+                            field_expr = f'*{field_expr}'
+                    case LspSymbolKind.STRUCTURE | \
+                         LspSymbolKind.INNER | \
+                         LspSymbolKind.UNION:
+                        field_expr = f'*{field_expr}'
+                self.gen_return(f'{reference_to_any}({field_expr})')
+
+    def generate_result_union_to_any(
+            self,
+            result_type: str,
+            result_name: str,
+            symbol_spec: LspSpec
+    ) -> None:
+        with self.gen_switch('result.type()'):
+            for index, item_spec in enumerate(symbol_spec["items"]):
+                with self.gen_case(result_type, item_spec):
+                    match item_spec["kind"]:
+                        case "base":
+                            field_name = self.name_field(item_spec)
+                            item_to_any = self.get_type_to_any_name(item_spec)
+                            self.gen_return(f'{item_to_any}(result.{field_name}())')
+                        case "reference":
+                            reference_spec = item_spec
+                            reference_name = reference_spec["name"]
+                            field_name = rename_field(reference_name)
+                            field_expr = f'result.{field_name}()'
+                            self.generate_result_union_reference_to_any(
+                                reference_spec,
+                                field_expr
+                            )
+                        case "array":
+                            with self.nest_name('elem'):
+                                self.generate_result_union_array_to_any(
+                                    result_name,
+                                    item_spec,
+                                    index
+                                )
+                        case _:
+                            raise ValueError(f'Unsupported union type ({item_spec["kind"]}): {item_spec}')
+            with self.gen_case(result_type, 'UNINITIALIZED'):
+                self.gen_throw(
+                    'LSP_EXCEPTION',
+                    'ErrorCodes::INTERNAL_ERROR',
+                    f'"{result_name} has not been initialized!"'
+                )
+        self.write('throw LSP_EXCEPTION(')
+        with self.indent():
+            self.write('ErrorCodes::INTERNAL_ERROR,')
+            self.write('"Should be unreachable."')
+        self.write(');')
+
+    def generate_result_array_to_any(self, array_spec: LspSpec) -> None:
+        elem_spec = array_spec["element"]
+        array_name = self.gensym_array('LSPArray', 'array', 'result.size()')
+        with self.gensym_foreach('result') as elem_name:
+            with self.nest_name('elem'):
+                elem_to_any = self.get_type_to_any_name(elem_spec)
+            elem_expr = f'{elem_to_any}({elem_name})'
+            self.gen_call(
+                f'{array_name}.push_back',
+                self.move_as_any(elem_expr, move_expr=False)
+            )
+        self.gen_return_as_any(array_name)
+
+    @gensym_context
+    def generate_result_to_any(self, request_spec: LspSpec) -> None:
         request_method = request_spec["method"]
         request_name = method_to_camel_case(request_method)
         result_name = f'{request_name}Result'
         with self.nested_names_as(deque([result_name])):
             result_type = f'{result_name}Type'
-            symbol_kind, symbol_spec = self.symbols[result_name]
-            fn_nym = f'{lower_first(result_name)}ToAny'
-            if fn_nym not in self.generated_to_any:
-                self.write(f'auto LspTransformer::{fn_nym}(')
-                with self.indent():
-                    self.write(f'const {result_name} &result')
-                self.write(') -> std::unique_ptr<LSPAny> {')
-                with self.indent():
-                    if symbol_kind == "union":
-                        self.write(f'switch (static_cast<{result_type}>(result.index())) {{')
-                        for index, item_spec in enumerate(symbol_spec["items"]):
-                            self.inline(f'case {result_type}::', indent=True)
-                            self.generate_variant_enumeration(item_spec)
-                            self.inline(': {', end='\n')
-                            with self.indent():
-                                match item_spec["kind"]:
-                                    case "base":
-                                        item_name = item_spec["name"]
-                                        self.inline('return ', indent=True)
-                                        self.generate_lower_type_name(item_spec)
-                                        self.inline('ToAny(std::get<')
-                                        self.generate_type_declaration(item_spec)
-                                        self.inline('>(result));', end='\n')
-                                    case "reference":
-                                        item_name = item_spec["name"]
-                                        match item_name:
-                                            case "LSPAny":
-                                                self.write('return copy(std::get<std::unique_ptr<LSPAny>>(result));')
-                                            case "LSPObject" | "LSPArray":
-                                                self.write(f'return copy(std::get<{item_name}>(result));')
-                                            case _:
-                                                item_symbol_kind, item_symbol_spec = self.symbols[item_name]
-                                                self.inline('return ', indent=True)
-                                                self.generate_lower_type_name(item_spec)
-                                                self.inline('ToAny(')
-                                                if item_symbol_kind == "structure":
-                                                    self.inline('*')
-                                                self.inline('std::get<')
-                                                self.generate_type_declaration(item_spec)
-                                                self.inline('>(result));', end='\n')
-                                    case "array":
-                                        elem_spec = item_spec["element"]
-                                        self.write('LSPArray array;')
-                                        match elem_spec["kind"]:
-                                            case "base" | "reference":
-                                                elem_type_name = elem_spec["name"]
-                                                self.inline(f'for (const ', indent=True)
-                                                self.generate_type_declaration(elem_spec)
-                                                self.inline(' &elem', end='\n')
-                                                with self.indent(2):
-                                                    self.inline(': std::get<', indent=True)
-                                                    self.generate_type_declaration(item_spec)
-                                                    self.inline('>(result)) {', end='\n')
-                                                with self.indent():
-                                                    self.inline('array.push_back(', indent=True)
-                                                    self.generate_lower_type_name(elem_spec)
-                                                    if elem_spec["kind"] == "reference":
-                                                        elem_symbol_name = elem_type_name
-                                                        elem_symbol_kind, elem_symbol_spec = self.symbols[elem_symbol_name]
-                                                        while elem_symbol_kind == "alias":
-                                                            elem_symbol_name = elem_symbol_spec["type"]["name"]
-                                                            elem_symbol_kind, elem_symbol_spec = self.symbols[elem_symbol_name]
-                                                        if elem_symbol_kind == "structure":
-                                                            self.inline('ToAny(*elem));', end='\n')
-                                                        else:
-                                                            self.inline('ToAny(elem));', end='\n')
-                                                    else:
-                                                        self.inline('ToAny(elem));', end='\n')
-                                                self.write('}')
-                                            case "or":
-                                                union_type_name = self.nested_name([result_name, str(index)])
-                                                self.inline(f'for (const ', indent=True)
-                                                self.inline(union_type_name)
-                                                # self.generate_type_declaration(elem_spec)
-                                                self.inline(' &elem', end='\n')
-                                                with self.indent(2):
-                                                    self.inline(': std::get<std::vector<', indent=True)
-                                                    self.inline(union_type_name)
-                                                    self.inline('>>(result)) {', end='\n')
-                                                with self.indent():
-                                                    self.write(f'switch (static_cast<{union_type_name}Type>(elem.index())) {{')
-                                                    for elem_item_index, elem_item_spec in enumerate(elem_spec["items"]):
-                                                        self.inline(f'case {union_type_name}Type::', indent=True)
-                                                        self.generate_variant_enumeration(elem_item_spec)
-                                                        self.inline(': {', end='\n')
-                                                        with self.indent():
-                                                            match elem_item_spec["kind"]:
-                                                                case "base" | "reference":
-                                                                    elem_item_symbol_name = elem_item_spec["name"]
-                                                                    match elem_item_symbol_name:
-                                                                        case "LSPAny":
-                                                                            self.write(
-                                                                                f'array.push_back(copy(std::get<std::unique_ptr<LSPAny>>(elem)));'
-                                                                            )
-                                                                        case "LSPObject" | "LSPArray":
-                                                                            self.write(
-                                                                                f'array.push_back(copy(std::get<{elem_item_symbol_name}>(elem)));'
-                                                                            )
-                                                                        case _:
-                                                                            elem_item_symbol_kind, elem_item_symbol_spec = \
-                                                                                self.symbols[elem_item_symbol_name]
-                                                                            while elem_item_symbol_kind == "alias":
-                                                                                elem_item_symbol_name = elem_item_symbol_spec["type"]["name"]
-                                                                                elem_item_symbol_kind, elem_item_symbol_spec = \
-                                                                                    self.symbols[elem_item_symbol_name]
-                                                                            self.inline('array.push_back(', indent=True)
-                                                                            self.generate_lower_type_name(elem_item_spec)
-                                                                            self.inline('ToAny(')
-                                                                            if elem_item_symbol_kind == "structure":
-                                                                                self.inline('*')
-                                                                            self.inline('std::get<')
-                                                                            self.generate_type_declaration(elem_item_spec)
-                                                                            self.inline('>(elem)));', end='\n')
-                                                                case _:
-                                                                    raise ValueError(
-                                                                        f'Unsupported item kind ({elem_item_spec["kind"]}): {elem_item_spec}'
-                                                                    )
-                                                            self.write('break;')
-                                                        self.write('}')
-                                                    self.write('}')
-                                                self.write('}')
-                                            case _:
-                                                raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                                        self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                        self.write('(*any) = std::move(array);')
-                                        self.write('return any;')
-                                    case _:
-                                        raise ValueError(f'Unsupported union type ({item_spec["kind"]}): {item_spec}')
-                            self.write('}')
-                        self.write('}')
-                        self.write('throw LSP_EXCEPTION(')
-                        with self.indent():
-                            self.write('ErrorCodes::INTERNAL_ERROR,')
-                            self.write('"Should be unreachable."')
-                        self.write(');')
-                    else:
-                        match symbol_spec["kind"]:
-                            case "base" | "reference":
-                                self.inline('return ', indent=True)
-                                self.generate_lower_type_name(symbol_spec)
-                                self.inline('ToAny(result);', end='\n')
-                            case "array":
-                                elem_spec = symbol_spec["element"]
-                                self.write('LSPArray array;')
-                                match elem_spec["kind"]:
-                                    case "base":
-                                        self.inline('for (const ', indent=True)
-                                        self.generate_type_declaration(elem_spec)
-                                        self.inline(' &elem : result) {', end='\n')
-                                        with self.indent():
-                                            self.inline(f'array.push_back(', indent=True)
-                                            self.generate_lower_type_name(elem_spec)
-                                            self.inline('ToAny(elem));')
-                                        self.write('}')
-                                    case "reference":
-                                        self.inline('for (const ', indent=True)
-                                        self.generate_type_declaration(elem_spec)
-                                        self.inline(' &elem : result) {', end='\n')
-                                        with self.indent():
-                                            self.inline(f'array.push_back(', indent=True)
-                                            self.generate_lower_type_name(elem_spec)
-                                            self.inline('ToAny(*elem));')
-                                        self.write('}')
-                                    case _:
-                                        raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                                self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                self.write('(*any) = std::move(array);')
-                                self.write('return any;')
-                            case _:
-                                raise ValueError(f'Unsupported symbol kind ({symbol_spec["kind"]}): {symbol_spec}')
-                self.write('}')
-                self.generated_to_any.add(fn_nym)
-                self.newline()
+            symbol = self.resolve(result_name)
+            symbol_spec = symbol.spec
+            with self.gen_type_to_any(result_name, f'const {result_name} &result'):
+                match symbol.kind:
+                    case LspSymbolKind.UNION:
+                        self.generate_result_union_to_any(
+                            result_type,
+                            result_name,
+                            symbol_spec
+                        )
+                    case LspSymbolKind.BASE | LspSymbolKind.REFERENCE:
+                        type_to_any = self.get_type_to_any_name(symbol)
+                        self.gen_return(f'{type_to_any}(result)')
+                    case LspSymbolKind.ARRAY:
+                        self.generate_result_array_to_any(symbol_spec)
+                    case _:
+                        raise ValueError(f'Unsupported symbol kind ({symbol.kind}): {symbol}')
 
-    def generate_incoming_request_methods(self) -> None:
-        self.write('// ================= //')
-        self.write('// Incoming Requests //')
-        self.write('// ================= //')
-        self.newline()
-        for request_spec in self.schema["requests"]:
-            if request_spec["messageDirection"] == "clientToServer":
-                self.generate_as_incoming_params("requestParams", request_spec)
-                self.generate_result_to_any(request_spec)
+    def gen_struct_as_outgoing_params(
+            self,
+            object_name: str,
+            field_name: str,
+            field_spec: LspSpec,
+            field_value: str,
+            is_optional: bool
+    ) -> None:
+        if is_optional:
+            with self.gen_if(f'{field_value}.has_value()'):
+                is_optional = False
+                field_value = f'{field_value}.value()'
+                self.gen_struct_as_outgoing_params(
+                    object_name,
+                    field_name,
+                    field_spec,
+                    field_value,
+                    is_optional
+                )
+        else:
+            field_type = field_spec["type"]
+            match field_type["kind"]:
+                case 'base' | 'reference' | 'or' | 'literal':
+                    type_to_any = self.get_type_to_any_name(field_type)
+                    field_expr = f'{type_to_any}({field_value})'
+                case 'array':
+                    array_spec = field_type
+                    elem_spec: LspSpec = array_spec['element']
+                    with self.nest_name('elem'):
+                        elem_to_any = self.get_type_to_any_name(elem_spec)
+                    array_name = self.gensym_array(
+                        'LSPArray', 'array',
+                        f'{field_value}.size()'
+                    )
+                    with self.gensym_foreach(field_value) as elem_name:
+                        elem_expr = f'{elem_to_any}({elem_name})'
+                        elem_expr = self.move_as_any(elem_expr, move_expr=False)
+                        self.gen_call(f'{array_name}.push_back', elem_expr)
+                    field_expr = array_name
+                case _:
+                    raise ValueError(f'Unsupported property kind ({field_type["kind"]}): {field_type}')
+            self.gen_call(
+                f'{object_name}.emplace',
+                f'"{field_name}"',
+                self.move_as_any(field_expr, move_expr=False)
+            )
 
-    def generate_incoming_notification(self) -> None:
-        self.write('// ====================== //')
-        self.write('// Incoming Notifications //')
-        self.write('// ====================== //')
-        self.newline()
-        for notification_spec in self.schema["notifications"]:
-            if notification_spec["messageDirection"] == "clientToServer":
-                self.generate_as_incoming_params("notificationParams", notification_spec)
-
+    @gensym_context
     def generate_as_outgoing_params(
         self,
         params_name: str,
-        message_spec: Dict[str, Any]
+        message_spec: LspSpec
     ) -> None:
-        message_name = method_to_camel_case(message_spec["method"])
         params_spec = message_spec.get("params", None)
         if params_spec is not None:
-            self.write(f'auto LspTransformer::asMessageParams(')
-            with self.indent():
-                self.write(f'const {params_spec["name"]} &{params_name}')
-            self.write(') const -> MessageParams {')
-            with self.indent():
-                self.write('MessageParams messageParams;')
+            params_type = params_spec["name"]
+            with self.gen_fn(
+                    'LspTransformer::asMessageParams',
+                    'MessageParams',
+                    params=[
+                        f'const {params_type} &{params_name}',
+                    ],
+                    specs='const'
+            ):
+                outgoing_name = self.gensym_decl('MessageParams', 'messageParams')
                 match params_spec["kind"]:
                     case "reference":
-                        symbol_name = params_spec["name"]
-                        symbol_kind, symbol_spec = self.symbols[symbol_name]
-                        match symbol_name:
+                        type_name = params_spec["name"]
+                        match type_name:
                             case "LSPAny":
-                                self.write(f'switch (static_cast<LSPAnyType>({params_name}.index())) {{')
-                                self.write('case LSPAnyType::OBJECT_TYPE: {')
-                                with self.indent():
-                                    self.write(f'const LSPObject &object = std::get<LSPObject>({params_name});')
-                                    self.write('messageParams = copy(object);')
-                                    self.write('break;')
-                                self.write('}')
-                                self.write('case LSPAnyType::ARRAY_TYPE: {')
-                                with self.indent():
-                                    self.write(f'const LSPArray &array = std::get<LSPArray>({params_name});')
-                                    self.write('messageParams = copy(array);')
-                                    self.write('break;')
-                                self.write('}')
-                                self.write('default: {')
-                                with self.indent():
-                                    self.write('throw LSP_EXCEPTION(')
-                                    with self.indent():
-                                        self.write('ErrorCodes::INVALID_PARAMS,')
-                                        self.write(f'("Invalid LSPAny type for {params_spec["name"]}: " +')
-                                        self.write(f' LSPAnyTypeNames.at(static_cast<LSPAnyType>({params_name}.index())))')
-                                    self.write(');')
-                                self.write('}')
-                                self.write('}')
+                                with self.gen_switch(f'{params_name}.type()'):
+                                    with self.gen_case('LSPAnyType', 'object'):
+                                        object_field = rename_field("LSPObject")
+                                        object_name = self.gensym_ref('object', f'{params_name}.{object_field}()')
+                                        self.gen_assign(f'{outgoing_name}', f'copy({object_name})')
+                                        self.gen_break()
+                                    with self.gen_case('LSPAnyType', 'array'):
+                                        array_field = rename_field("LSPArray")
+                                        array_name = self.gensym_ref('array', f'{params_name}.{array_field}()')
+                                        self.gen_assign(f'{outgoing_name}', f'copy({array_name})')
+                                        self.gen_break()
+                                    with self.gen_default():
+                                        self.gen_throw_invalid_params(
+                                            f'("Invalid LSPAny type for {params_name}: LSPAnyType::" +',
+                                            f' LSPAnyTypeNames.at({params_name}.type()))'
+                                        )
                                 self.newline()
                             case _:
-                                self.write('LSPObject object;')
+                                symbol = self.resolve(type_name)
+                                object_name = self.gensym_decl('LSPObject', 'object')
                                 self.newline()
-                                for prop_type_name, prop_spec in self.expand_fields(symbol_kind, symbol_spec):
-                                    prop_name = prop_spec["name"]
-                                    prop_type = prop_spec["type"]
-                                    is_optional = prop_spec.get("optional", False)
-                                    num_levels = int(is_optional)
-                                    if is_optional:
-                                        self.write(f'if ({params_name}.{prop_name}.has_value()) {{')
-                                    with self.indent(num_levels):
-                                        match prop_type["kind"]:
-                                            case "base":
-                                                self.inline(f'object.emplace("{prop_name}", ', indent=True)
-                                                self.generate_lower_type_name(prop_type)
-                                                if is_optional:
-                                                    self.inline(f'ToAny({params_name}.{prop_name}.value()));', end='\n')
-                                                else:
-                                                    self.inline(f'ToAny({params_name}.{prop_name}));', end='\n')
-                                            case "reference":
-                                                prop_type_name = prop_type["name"]
-                                                symbol_kind, symbol_spec = self.symbols[prop_type_name]
-                                                self.inline(f'object.emplace("{prop_name}", ', indent=True)
-                                                self.generate_lower_type_name(prop_type)
-                                                if is_optional:
-                                                    if symbol_kind == "structure":
-                                                        self.inline(f'ToAny(*{params_name}.{prop_name}.value()));', end='\n')
-                                                    else:
-                                                        self.inline(f'ToAny({params_name}.{prop_name}.value()));', end='\n')
-                                                else:
-                                                    if symbol_kind == "structure":
-                                                        self.inline(f'ToAny(*{params_name}.{prop_name}));', end='\n')
-                                                    else:
-                                                        self.inline(f'ToAny({params_name}.{prop_name}));', end='\n')
-                                            case "array":
-                                                elem_spec = prop_type["element"]
-                                                self.write('{')
-                                                with self.indent():
-                                                    self.write('LSPArray array;')
-                                                    self.inline('for (const ', indent=True)
-                                                    self.generate_type_declaration(elem_spec)
-                                                    if is_optional:
-                                                        self.inline(f' &elem : {params_name}.{prop_name}.value()) {{', end='\n')
-                                                    else:
-                                                        self.inline(f' &elem : {params_name}.{prop_name}) {{', end='\n')
-                                                    with self.indent():
-                                                        match elem_spec["kind"]:
-                                                            case "base":
-                                                                self.inline('array.push_back(', indent=True)
-                                                                self.generate_lower_type_name(elem_spec)
-                                                                self.inline('ToAny(elem));', end='\n')
-                                                            case "reference":
-                                                                self.inline('array.push_back(', indent=True)
-                                                                self.generate_lower_type_name(elem_spec)
-                                                                self.inline('ToAny(*elem));', end='\n')
-                                                            case _:
-                                                                raise ValueError(f'Unsupported array type ({elem_spec["kind"]}): {elem_spec}')
-                                                    self.write('}')
-                                                    self.write('std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();')
-                                                    self.write('(*any) = std::move(array);')
-                                                    self.write(f'object.emplace("{prop_name}", std::move(any));')
-                                                self.write('}')
-                                            # case "or" | "literal":
-                                            #     pass
-                                            case _:
-                                                raise ValueError(f'Unsupported property kind ({prop_type["kind"]}): {prop_type}')
-                                    if is_optional:
-                                        self.write('}')
-                                self.newline()
-                                self.write('messageParams = std::move(object);')
+                                for field_type_name, field_spec in self.expand_fields(symbol.spec):
+                                    field_name = field_spec['name']
+                                    with self.nested_names_as(deque([field_type_name, field_name])):
+                                        is_optional = field_spec.get('optional', False)
+                                        field_value = f'{params_name}.{field_name}'
+                                        self.gen_struct_as_outgoing_params(
+                                            object_name,
+                                            field_name,
+                                            field_spec,
+                                            field_value,
+                                            is_optional
+                                        )
+                                        self.newline()
+                                self.gen_assign(
+                                    f'{outgoing_name}',
+                                    f'std::move({object_name})'
+                                )
                     case _:
-                        raise ValueError(f'Unsupported parameter type ({params_spec["kind"]}): {params_spec}')
-                self.write('return messageParams;')
-            self.write('}')
+                        raise ValueError(
+                            f'Unsupported parameter type ({params_spec["kind"]}): {params_spec}'
+                        )
+                self.gen_return(outgoing_name)
             self.newline()
 
-    def generate_outgoing_request_methods(self) -> None:
-        self.write('// ================= //')
-        self.write('// Outgoing Requests //')
-        self.write('// ================= //')
-        self.newline()
-        for request_spec in self.schema["requests"]:
-            if request_spec["messageDirection"] == "serverToClient":
+    def visit_request_symbol(self, request_symbol: LspSymbol) -> None:
+        request_spec = request_symbol.spec
+        match request_spec["messageDirection"]:
+            case "clientToServer":
+                self.generate_as_incoming_params("requestParams", request_spec)
+            case "serverToClient":
                 self.generate_as_outgoing_params("requestParams", request_spec)
-                result_spec = request_spec.get("result", None)
-                if result_spec is not None:
-                    request_method = request_spec["method"]
-                    request_name = method_to_camel_case(request_method)
-                    result_name = f'{request_name}Result'
-                    with self.nested_names_as(deque([result_name])):
-                        self.generate_any_to_nested_variant(result_spec)
+            case "both":
+                self.generate_as_incoming_params("requestParams", request_spec)
+                self.generate_as_outgoing_params("requestParams", request_spec)
+            case _:
+                raise ValueError(
+                    f'Unsupported messageDirection: {request_spec["messageDirection"]}'
+                )
 
-    def generate_outgoing_notification(self) -> None:
-        self.write('// ====================== //')
-        self.write('// Outgoing Notifications //')
-        self.write('// ====================== //')
-        self.newline()
-        for notification_spec in self.schema["notifications"]:
-            if notification_spec["messageDirection"] == "serverToClient":
+    def visit_notification_symbol(self, notification_symbol: LspSymbol) -> None:
+        notification_spec = notification_symbol.spec
+        match notification_spec["messageDirection"]:
+            case "clientToServer":
+                self.generate_as_incoming_params("notificationParams", notification_spec)
+            case "serverToClient":
                 self.generate_as_outgoing_params("notificationParams", notification_spec)
+            case "both":
+                self.generate_as_incoming_params("notificationParams", notification_spec)
+                self.generate_as_outgoing_params("notificationParams", notification_spec)
+            case _:
+                raise ValueError(
+                    f'Unsupported messageDirection: {notification_spec["messageDirection"]}'
+                )
 
     def generate_code(self) -> None:
         print(f'Generating: {self.file_path}')
         self.generate_disclaimer()
+        self.gen_include('cmath')
+        self.gen_include('stdexcept')
         self.newline()
-        self.write('#include <cmath>')
-        self.write('#include <stdexcept>')
+        self.gen_include('server/lsp_exception.h')
+        self.gen_include('server/lsp_specification.h')
+        self.gen_include('server/lsp_transformer.h')
         self.newline()
-        self.write('#include <server/specification.h>')
-        self.write('#include <server/lsp_exception.h>')
-        self.write('#include <server/lsp_transformer.h>')
-        self.newline()
-        self.write(f'namespace {self.namespace} {{')
-        self.newline()
-        with self.indent():
+        with self.gen_namespace(self.namespace):
+            self.newline()
+            super().generate_code()
             self.generate_copy_methods()
-            self.generate_enumeration_transforms()
-            self.generate_structure_transforms()
-            self.generate_type_alias_transforms()
-            self.generate_incoming_request_methods()
-            self.generate_incoming_notification()
-            self.generate_outgoing_request_methods()
-            self.generate_outgoing_notification()
-        self.write(f'}} // {self.namespace}')

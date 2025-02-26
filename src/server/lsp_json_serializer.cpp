@@ -1,10 +1,22 @@
 #include <utility>
 
-#include <server/specification.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_json_serializer.h>
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
+
+    LspJsonSerializer::LspJsonSerializer()
+        : _indent(DEFAULT_INDENT_PATTERN)
+    {
+        // empty
+    }
+
+    LspJsonSerializer::LspJsonSerializer(const std::string &indent)
+        : _indent(indent)
+    {
+        // empty
+    }
 
     auto LspJsonSerializer::serialize(const LSPAny &any) const -> std::string {
         std::string buffer;
@@ -14,43 +26,39 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LspJsonSerializer::pprint(
-        const LSPAny &any,
-        const std::string &indent
+        const LSPAny &any
     ) const -> std::string {
         std::string buffer;
         buffer.reserve(2048);
-        pprintValue(buffer, any, indent, 0);
+        pprintValue(buffer, any, 0);
         return buffer;
     }
 
     auto LspJsonSerializer::pprint(
-        const LSPArray &array,
-        const std::string &indent
+        const LSPArray &array
     ) const -> std::string {
         std::string buffer;
         buffer.reserve(2048);
-        pprintArray(buffer, array, indent, 0);
+        pprintArray(buffer, array, 0);
         return buffer;
     }
 
     auto LspJsonSerializer::pprint(
-        const LSPObject &object,
-        const std::string &indent
+        const LSPObject &object
     ) const -> std::string {
         std::string buffer;
         buffer.reserve(2048);
-        pprintObject(buffer, object, indent, 0);
+        pprintObject(buffer, object, 0);
         return buffer;
     }
 
     void LspJsonSerializer::newlineIndent(
         std::string &buffer,
-        const std::string &indent,
         std::size_t level
     ) const {
         buffer.push_back('\n');
         for (std::size_t i = 0; i < level; ++i) {
-            buffer.append(indent);
+            buffer.append(_indent);
         }
     }
 
@@ -73,21 +81,20 @@ namespace LCompilers::LanguageServerProtocol {
     void LspJsonSerializer::pprintArray(
         std::string &buffer,
         const LSPArray &array,
-        const std::string &indent,
         std::size_t level
     ) const {
         buffer.push_back('[');
         LSPArray::const_iterator iter = array.begin();
         if (iter != array.end()) {
             std::size_t nextLevel = level + 1;
-            newlineIndent(buffer, indent, nextLevel);
-            pprintValue(buffer, **iter++, indent, nextLevel);
+            newlineIndent(buffer, nextLevel);
+            pprintValue(buffer, **iter++, nextLevel);
             while (iter != array.end()) {
                 buffer.push_back(',');
-                newlineIndent(buffer, indent, nextLevel);
-                pprintValue(buffer, **iter++, indent, nextLevel);
+                newlineIndent(buffer, nextLevel);
+                pprintValue(buffer, **iter++, nextLevel);
             }
-            newlineIndent(buffer, indent, level);
+            newlineIndent(buffer, level);
         }
         buffer.push_back(']');
     }
@@ -115,25 +122,24 @@ namespace LCompilers::LanguageServerProtocol {
     void LspJsonSerializer::pprintObject(
         std::string &buffer,
         const LSPObject &object,
-        const std::string &indent,
         std::size_t level
     ) const {
         buffer.push_back('{');
         LSPObject::const_iterator iter = object.begin();
         if (iter != object.end()) {
             std::size_t nextLevel = level + 1;
-            newlineIndent(buffer, indent, nextLevel);
+            newlineIndent(buffer, nextLevel);
             serializeString(buffer, iter->first);
             buffer.append(": ");
-            pprintValue(buffer, *iter->second, indent, nextLevel);
+            pprintValue(buffer, *iter->second, nextLevel);
             while ((++iter) != object.end()) {
                 buffer.push_back(',');
-                newlineIndent(buffer, indent, nextLevel);
+                newlineIndent(buffer, nextLevel);
                 serializeString(buffer, iter->first);
                 buffer.push_back(':');
-                pprintValue(buffer, *iter->second, indent, nextLevel);
+                pprintValue(buffer, *iter->second, nextLevel);
             }
-            newlineIndent(buffer, indent, level);
+            newlineIndent(buffer, level);
         }
         buffer.push_back('}');
     }
@@ -142,13 +148,13 @@ namespace LCompilers::LanguageServerProtocol {
         std::string &buffer,
         const LSPAny &value
     ) const {
-        switch (static_cast<LSPAnyType>(value.index())) {
+        switch (value.type()) {
         case LSPAnyType::OBJECT_TYPE: {
-            serializeObject(buffer, std::get<LSPObject>(value));
+            serializeObject(buffer, value.object());
             break;
         }
         case LSPAnyType::ARRAY_TYPE: {
-            serializeArray(buffer, std::get<LSPArray>(value));
+            serializeArray(buffer, value.array());
             break;
         }
         case LSPAnyType::STRING_TYPE: {
@@ -168,6 +174,12 @@ namespace LCompilers::LanguageServerProtocol {
         case LSPAnyType::NULL_TYPE: {
             serializeNull(buffer, value);
             break;
+        }
+        case LSPAnyType::UNINITIALIZED: {
+            throw LSP_EXCEPTION(
+                ErrorCodes::INTERNAL_ERROR,
+                "Value was not initialized."
+            );
         }
         }
     }
@@ -175,16 +187,15 @@ namespace LCompilers::LanguageServerProtocol {
     void LspJsonSerializer::pprintValue(
         std::string &buffer,
         const LSPAny &value,
-        const std::string &indent,
         std::size_t level
     ) const {
-        switch (static_cast<LSPAnyType>(value.index())) {
+        switch (value.type()) {
         case LSPAnyType::OBJECT_TYPE: {
-            pprintObject(buffer, std::get<LSPObject>(value), indent, level);
+            pprintObject(buffer, value.object(), level);
             break;
         }
         case LSPAnyType::ARRAY_TYPE: {
-            pprintArray(buffer, std::get<LSPArray>(value), indent, level);
+            pprintArray(buffer, value.array(), level);
             break;
         }
         case LSPAnyType::STRING_TYPE: {
@@ -204,6 +215,12 @@ namespace LCompilers::LanguageServerProtocol {
         case LSPAnyType::NULL_TYPE: {
             serializeNull(buffer, value);
             break;
+        }
+        case LSPAnyType::UNINITIALIZED: {
+            throw LSP_EXCEPTION(
+                ErrorCodes::INTERNAL_ERROR,
+                "Value was not initialized."
+            );
         }
         }
     }
@@ -212,83 +229,88 @@ namespace LCompilers::LanguageServerProtocol {
         std::string &buffer,
         const LSPAny &value
     ) const {
-        LSPAnyType valueType = static_cast<LSPAnyType>(value.index());
-        switch (valueType) {
+        switch (value.type()) {
         case LSPAnyType::STRING_TYPE: {
-            const string_t &string = std::get<string_t>(value);
-            buffer.push_back('"');
-            for (std::size_t i = 0, k = string.length(); i < k; ++i) {
-                unsigned char c = string[i];
-                switch (c) {
-                case '"': {
-                    buffer.append("\\\"");
-                    break;
-                }
-                case '\\': {
-                    buffer.append("\\\\");
-                    break;
-                }
-                case '\n': {
-                    buffer.append("\\n");
-                    break;
-                }
-                case '\t': {
-                    buffer.append("\\t");
-                    break;
-                }
-                case '\b': {
-                    buffer.append("\\b");
-                    break;
-                }
-                case '\r': {
-                    buffer.append("\\r");
-                    break;
-                }
-                case '\f': {
-                    buffer.append("\\f");
-                    break;
-                }
-                default: {
-                    buffer.push_back(c);
-                }
-                }
-            }
-            buffer.push_back('"');
+            const string_t &string = value.string();
+            serializeString(buffer, string);
             break;
         }
         default: {
             throw LSP_EXCEPTION(
                 ErrorCodes::INVALID_PARAMS,
                 ("Cannot serialize JSON string of type " +
-                 LSPAnyTypeNames.at(valueType))
+                 LSPAnyTypeNames.at(value.type()))
             );
         }
         }
+    }
+
+    void LspJsonSerializer::serializeString(
+        std::string &buffer,
+        const std::string &string
+    ) const {
+        buffer.push_back('"');
+        for (std::size_t i = 0, k = string.length(); i < k; ++i) {
+            unsigned char c = string[i];
+            switch (c) {
+            case '"': {
+                buffer.append("\\\"");
+                break;
+            }
+            case '\\': {
+                buffer.append("\\\\");
+                break;
+            }
+            case '\n': {
+                buffer.append("\\n");
+                break;
+            }
+            case '\t': {
+                buffer.append("\\t");
+                break;
+            }
+            case '\b': {
+                buffer.append("\\b");
+                break;
+            }
+            case '\r': {
+                buffer.append("\\r");
+                break;
+            }
+            case '\f': {
+                buffer.append("\\f");
+                break;
+            }
+            default: {
+                buffer.push_back(c);
+            }
+            }
+        }
+        buffer.push_back('"');
     }
 
     void LspJsonSerializer::serializeNumber(
         std::string &buffer,
         const LSPAny &value
     ) const {
-        LSPAnyType valueType = static_cast<LSPAnyType>(value.index());
-        switch (valueType) {
+        switch (value.type()) {
         case LSPAnyType::INTEGER_TYPE: {
-            buffer.append(std::to_string(std::get<integer_t>(value)));
+            buffer.append(std::to_string(value.integer()));
             break;
         }
         case LSPAnyType::UINTEGER_TYPE: {
-            buffer.append(std::to_string(std::get<uinteger_t>(value)));
+            buffer.append(std::to_string(value.uinteger()));
             break;
         }
         case LSPAnyType::DECIMAL_TYPE: {
-            buffer.append(std::to_string(std::get<decimal_t>(value)));
+            buffer.append(std::to_string(value.decimal()));
             break;
         }
         default: {
             throw LSP_EXCEPTION(
                 ErrorCodes::INVALID_PARAMS,
                 ("Cannot serialize JSON number of type " +
-                 LSPAnyTypeNames.at(valueType))
+                 LSPAnyTypeNames.at(value.type()))
             );
         }
         }
@@ -298,17 +320,16 @@ namespace LCompilers::LanguageServerProtocol {
         std::string &buffer,
         const LSPAny &value
     ) const {
-        LSPAnyType valueType = static_cast<LSPAnyType>(value.index());
-        switch (valueType) {
+        switch (value.type()) {
         case LSPAnyType::BOOLEAN_TYPE: {
-            buffer.append(std::to_string(std::get<boolean_t>(value)));
+            buffer.append(std::to_string(value.boolean()));
             break;
         }
         default: {
             throw LSP_EXCEPTION(
                 ErrorCodes::INVALID_PARAMS,
                 ("Cannot serialize JSON boolean of type " +
-                 LSPAnyTypeNames.at(valueType))
+                 LSPAnyTypeNames.at(value.type()))
             );
         }
         }
@@ -318,8 +339,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::string &buffer,
         const LSPAny &value
     ) const {
-        LSPAnyType valueType = static_cast<LSPAnyType>(value.index());
-        switch (valueType) {
+        switch (value.type()) {
         case LSPAnyType::NULL_TYPE: {
             buffer.append("null");
             break;
@@ -328,7 +348,7 @@ namespace LCompilers::LanguageServerProtocol {
             throw LSP_EXCEPTION(
                 ErrorCodes::INVALID_PARAMS,
                 ("Cannot serialize JSON null of type " +
-                 LSPAnyTypeNames.at(valueType))
+                 LSPAnyTypeNames.at(value.type()))
             );
         }
         }

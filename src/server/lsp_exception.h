@@ -2,9 +2,8 @@
 
 #include <stdexcept>
 #include <string>
-#include <variant>
 
-#include <server/specification.h>
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
 
@@ -13,15 +12,24 @@ namespace LCompilers::LanguageServerProtocol {
         LSP_ERROR_CODES,
     };
 
-    typedef std::variant<
-        ErrorCodes,
-        LSPErrorCodes
-    > ErrorCode;
+    struct ErrorCode {
+        ErrorCodeType type;
+        union {
+            ErrorCodes errorCodes;
+            LSPErrorCodes lspErrorCodes;
+        };
+    };
 
     class LspException : public std::logic_error {
     public:
         LspException(
-            ErrorCode code,
+            ErrorCodes code,
+            const std::string &message,
+            const char *file,
+            int line
+        );
+        LspException(
+            LSPErrorCodes code,
             const std::string &message,
             const char *file,
             int line

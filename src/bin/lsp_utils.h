@@ -3,7 +3,7 @@
 #include <libasr/asr.h>
 #include <libasr/diagnostics.h>
 
-#include <server/specification.h>
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
 

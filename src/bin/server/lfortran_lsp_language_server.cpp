@@ -1,11 +1,8 @@
 #include <chrono>
 #include <cstring>
 
-#include <server/lsp_language_server.h>
-#include <server/specification.h>
-
-#include <bin/utils.h>
-#include <bin/server/utils.h>
+#include <bin/cli_utils.h>
+#include <bin/lsp_utils.h>
 #include <bin/server/lfortran_lsp_language_server.h>
 
 namespace LCompilers::LanguageServerProtocol {
@@ -54,92 +51,97 @@ namespace LCompilers::LanguageServerProtocol {
         compiler_options.continue_compilation = true;
 
         const LSPAny &config = getConfig(uri);
-        LSPAnyType configType = static_cast<LSPAnyType>(config.index());
-        switch (configType) {
+        switch (config.type()) {
         case LSPAnyType::OBJECT_TYPE: {
-            const LSPObject &object = std::get<LSPObject>(config);
+            const LSPObject &object = config.object();
             auto iter = object.find("compiler");
             if (iter != object.end()) {
-                const LSPAny &compilerAny = *iter->second;
-                LSPAnyType compilerType = static_cast<LSPAnyType>(compilerAny.index());
-                switch (compilerType) {
+                switch (iter->second->type()) {
                 case LSPAnyType::OBJECT_TYPE: {
-                    const LSPObject &compiler = std::get<LSPObject>(compilerAny);
+                    const LSPObject &compiler = iter->second->object();
                     if ((iter = compiler.find("flags")) != compiler.end()) {
-                        const LSPAny &flagsAny = *iter->second;
-                        LSPAnyType flagsType = static_cast<LSPAnyType>(flagsAny.index());
-                        switch (flagsType) {
+                        switch (iter->second->type()) {
                         case LSPAnyType::ARRAY_TYPE: {
-                            const LSPArray &flags = std::get<LSPArray>(flagsAny);
+                            const LSPArray &flags = iter->second->array();
                             int argc = 1 + flags.size();
                             char **argv = new char*[argc];
                             argv[0] = new char[source.length() + 1];
                             std::strcpy(argv[0], source.c_str());
-                            for (std::size_t i = 0; i < flags.size(); ++i) {
+                            bool success = true;
+                            std::size_t i;
+                            for (i = 0; (i < flags.size()) && success; ++i) {
                                 const std::unique_ptr<LSPAny> &flag = flags[i];
-                                LSPAnyType flagType = static_cast<LSPAnyType>(flag->index());
-                                switch (flagType) {
+                                switch (flag->type()) {
                                 case LSPAnyType::OBJECT_TYPE: // fallthrough
                                 case LSPAnyType::ARRAY_TYPE: {
-                                    string_t stringValue = serializer.serialize(*flag);
-                                    argv[i + 1] = new char[stringValue.size() + 1];
-                                    std::strcpy(argv[i + 1], stringValue.c_str());
+                                    string_t string = serializer.serialize(*flag);
+                                    argv[i + 1] = new char[string.size() + 1];
+                                    std::strcpy(argv[i + 1], string.c_str());
                                     break;
                                 }
                                 case LSPAnyType::STRING_TYPE: {
-                                    string_t stringValue = transformer.anyToString(*flag);
-                                    argv[i + 1] = new char[stringValue.size() + 1];
-                                    std::strcpy(argv[i + 1], stringValue.c_str());
+                                    string_t string = transformer.anyToString(*flag);
+                                    argv[i + 1] = new char[string.size() + 1];
+                                    std::strcpy(argv[i + 1], string.c_str());
                                     break;
                                 }
                                 case LSPAnyType::INTEGER_TYPE: {
-                                    integer_t integerValue = transformer.anyToInteger(*flag);
-                                    std::string stringValue = std::to_string(integerValue);
-                                    argv[i + 1] = new char[stringValue.size() + 1];
-                                    std::strcpy(argv[i + 1], stringValue.c_str());
+                                    integer_t integer = transformer.anyToInteger(*flag);
+                                    std::string string = std::to_string(integer);
+                                    argv[i + 1] = new char[string.size() + 1];
+                                    std::strcpy(argv[i + 1], string.c_str());
                                     break;
                                 }
                                 case LSPAnyType::UINTEGER_TYPE: {
-                                    uinteger_t uintegerValue = transformer.anyToUInteger(*flag);
-                                    std::string stringValue = std::to_string(uintegerValue);
-                                    argv[i + 1] = new char[stringValue.size() + 1];
-                                    std::strcpy(argv[i + 1], stringValue.c_str());
+                                    uinteger_t uinteger = transformer.anyToUInteger(*flag);
+                                    std::string string = std::to_string(uinteger);
+                                    argv[i + 1] = new char[string.size() + 1];
+                                    std::strcpy(argv[i + 1], string.c_str());
                                     break;
                                 }
                                 case LSPAnyType::DECIMAL_TYPE: {
-                                    decimal_t decimalValue = transformer.anyToDecimal(*flag);
-                                    std::string stringValue = std::to_string(decimalValue);
-                                    argv[i + 1] = new char[stringValue.size() + 1];
-                                    std::strcpy(argv[i + 1], stringValue.c_str());
+                                    decimal_t decimal = transformer.anyToDecimal(*flag);
+                                    std::string string = std::to_string(decimal);
+                                    argv[i + 1] = new char[string.size() + 1];
+                                    std::strcpy(argv[i + 1], string.c_str());
                                     break;
                                 }
                                 case LSPAnyType::BOOLEAN_TYPE: {
-                                    boolean_t booleanValue = transformer.anyToBoolean(*flag);
-                                    std::string stringValue = std::to_string(booleanValue);
-                                    argv[i + 1] = new char[stringValue.size() + 1];
-                                    std::strcpy(argv[i + 1], stringValue.c_str());
+                                    boolean_t boolean = transformer.anyToBoolean(*flag);
+                                    std::string string = std::to_string(boolean);
+                                    argv[i + 1] = new char[string.size() + 1];
+                                    std::strcpy(argv[i + 1], string.c_str());
                                     break;
                                 }
                                 case LSPAnyType::NULL_TYPE: {
-                                    std::string stringValue = "";
-                                    argv[i + 1] = new char[stringValue.size() + 1];
-                                    std::strcpy(argv[i + 1], stringValue.c_str());
+                                    std::string string = "";
+                                    argv[i + 1] = new char[string.size() + 1];
+                                    std::strcpy(argv[i + 1], string.c_str());
+                                    break;
+                                }
+                                case LSPAnyType::UNINITIALIZED: {
+                                    logger.error()
+                                        << "Attempted to copy a command-line argument from an uninitialized value."
+                                        << std::endl;
+                                    success = false;
                                     break;
                                 }
                                 }
                             }
-                            int exitCode = lcli::init_compiler_options(compiler_options, argc, argv);
-                            if (exitCode != 0) {
-                                std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-                                logger.error()
-                                    << "Failed to initialize compiler options for document with uri: " << uri
-                                    << std::endl;
-                                logger.error()
-                                    << "init_compiler_options(...) returned with status: " << exitCode
-                                    << std::endl;
+                            if (success) {
+                                int exitCode = lcli::init_compiler_options(compiler_options, argc, argv);
+                                if (exitCode != 0) {
+                                    std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+                                    logger.error()
+                                        << "Failed to initialize compiler options for document with uri: " << uri
+                                        << std::endl;
+                                    logger.error()
+                                        << "init_compiler_options(...) returned with status: " << exitCode
+                                        << std::endl;
+                                }
                             }
-                            for (int i = 0; i < argc; ++i) {
-                                delete[] argv[i];
+                            for (std::size_t j = 0; j < i + 1; ++j) {
+                                delete[] argv[j];
                             }
                             delete[] argv;
                             break;
@@ -147,7 +149,7 @@ namespace LCompilers::LanguageServerProtocol {
                         default: {
                             logger.error()
                                 << "Unsupported type of compiler flags: LSPAnyType::"
-                                << LSPAnyTypeNames.at(flagsType)
+                                << LSPAnyTypeNames.at(iter->second->type())
                                 << std::endl;
                         }
                         }
@@ -157,7 +159,7 @@ namespace LCompilers::LanguageServerProtocol {
                 default: {
                     logger.error()
                         << "Unsupported type of compiler options: LSPAnyType::"
-                        << LSPAnyTypeNames.at(compilerType)
+                        << LSPAnyTypeNames.at(iter->second->type())
                         << std::endl;
                 }
                 }
@@ -167,7 +169,7 @@ namespace LCompilers::LanguageServerProtocol {
         default: {
             logger.error()
                 << "Unsupported type of config: LSPAnyType::"
-                << LSPAnyTypeNames.at(configType)
+                << LSPAnyTypeNames.at(config.type())
                 << std::endl;
         }
         }
@@ -183,7 +185,7 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LFortranLspLanguageServer::validate(
-        TextDocument &document
+        LspTextDocument &document
     ) -> void {
         workerPool.execute([this, &document](
             const std::string &threadName,
@@ -204,26 +206,26 @@ namespace LCompilers::LanguageServerProtocol {
                     std::vector<LCompilers::error_highlight> highlights =
                         lfortran.showErrors(path, text, compiler_options);
 
-                    std::vector<std::unique_ptr<Diagnostic>> diagnostics;
+                    std::vector<Diagnostic> diagnostics;
                     for (const LCompilers::error_highlight &highlight : highlights) {
-                        std::unique_ptr<Position> start = std::make_unique<Position>();
-                        start->line = highlight.first_line - 1;
-                        start->character = highlight.first_column - 1;
+                        Position start;
+                        start.line = highlight.first_line - 1;
+                        start.character = highlight.first_column - 1;
 
-                        std::unique_ptr<Position> end = std::make_unique<Position>();
-                        end->line = highlight.last_line - 1;
-                        end->character = highlight.last_column;
+                        Position end;
+                        end.line = highlight.last_line - 1;
+                        end.character = highlight.last_column;
 
-                        std::unique_ptr<Range> range = std::make_unique<Range>();
-                        range->start = std::move(start);
-                        range->end = std::move(end);
+                        Range range;
+                        range.start = std::move(start);
+                        range.end = std::move(end);
 
-                        std::unique_ptr<Diagnostic> diagnostic = std::make_unique<Diagnostic>();
-                        diagnostic->range = std::move(range);
-                        diagnostic->severity =
+                        Diagnostic diagnostic;
+                        diagnostic.range = std::move(range);
+                        diagnostic.severity =
                             diagnostic_level_to_lsp_severity(highlight.severity);
-                        diagnostic->message = highlight.message;
-                        diagnostic->source = source;
+                        diagnostic.message = highlight.message;
+                        diagnostic.source = source;
 
                         diagnostics.push_back(std::move(diagnostic));
                     }
@@ -241,8 +243,8 @@ namespace LCompilers::LanguageServerProtocol {
                           "Sending response 'textDocument/publishDiagnostics'. Processing request took " +
                           std::to_string(duration.count()) + "ms";
                       if (trace >= TraceValues::VERBOSE) {
-                          std::unique_ptr<LSPAny> any = transformer.publishDiagnosticsParamsToAny(params);
-                          logTraceParams.verbose = "Result: " + serializer.pprint(*any, "    ");
+                          LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
+                          logTraceParams.verbose = "Result: " + serializer.pprint(any);
                       }
                       sendLogTrace(logTraceParams);
                     }
@@ -300,8 +302,8 @@ namespace LCompilers::LanguageServerProtocol {
         BaseLspLanguageServer::receiveTextDocument_didOpen(params);
         {
             std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            const DocumentUri &uri = params.textDocument->uri;
-            TextDocument &document = documentsByUri.at(uri);
+            const DocumentUri &uri = params.textDocument.uri;
+            LspTextDocument &document = documentsByUri.at(uri);
             validate(document);
         }
     }
@@ -313,8 +315,8 @@ namespace LCompilers::LanguageServerProtocol {
         BaseLspLanguageServer::receiveTextDocument_didChange(params);
         {
             std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            const DocumentUri &uri = params.textDocument->uri;
-            TextDocument &document = documentsByUri.at(uri);
+            const DocumentUri &uri = params.textDocument.uri;
+            LspTextDocument &document = documentsByUri.at(uri);
             validate(document);
         }
     }

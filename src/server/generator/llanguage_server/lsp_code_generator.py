@@ -1,14 +1,16 @@
 import argparse
 import json
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Dict,
-)
+
+from llanguage_server.lsp.auxiliary_schema import AUXILIARY_SCHEMA
+from llanguage_server.lsp.visitors import LspAnalysisPipeline
+from llanguage_server.lsp.datatypes import LspSpec
+
 
 class LspCodeGenerator(ABC):
     args: argparse.Namespace
-    schema: Dict[str, Any]
+    schema: LspSpec
+    pipeline: LspAnalysisPipeline
 
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
@@ -16,12 +18,21 @@ class LspCodeGenerator(ABC):
     def generate_code(self) -> None:
         print('Creating parent directories')
         self.args.output_dir.mkdir(parents=True, exist_ok=True)
+
         print('Loading schema')
         self.schema = json.loads(self.args.schema.read())
+        for key, values in AUXILIARY_SCHEMA.items():
+            self.schema[key].extend(values)
+
+        print('Preprocessing data types')
+        self.pipeline = LspAnalysisPipeline(self.schema)
+        self.pipeline.run()
+
         print('Generating files')
         self.generate_specification()
         self.generate_transformer()
         self.generate_server()
+
         print('Done.')
 
     @abstractmethod

@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <server/logger.h>
-#include <server/specification.h>
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace fs = std::filesystem;
@@ -20,16 +20,16 @@ namespace LCompilers::LanguageServerProtocol {
         std::regex_constants::ECMAScript | std::regex_constants::icase
     );
 
-    class TextDocument {
+    class LspTextDocument {
     public:
-        TextDocument(
+        LspTextDocument(
             const std::string &uri,
             const std::string &languageId,
             int version,
             const std::string &text,
             lsl::Logger &logger
         );
-        TextDocument(TextDocument &&other) noexcept;    // move constructor
+        LspTextDocument(LspTextDocument &&other) noexcept;    // move constructor
 
         inline auto uri() const -> const DocumentUri & {
             return _uri;

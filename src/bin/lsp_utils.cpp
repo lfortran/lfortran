@@ -1,4 +1,4 @@
-#include <bin/server/utils.h>
+#include <bin/lsp_utils.h>
 
 namespace LCompilers::LanguageServerProtocol {
 

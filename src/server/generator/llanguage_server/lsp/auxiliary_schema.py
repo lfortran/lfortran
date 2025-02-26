@@ -156,69 +156,6 @@ AUXILIARY_SCHEMA: Dict[str, Any] = {
     ],
     "typeAliases": [
         {
-            "name": "integer",
-            "type": {
-                "kind": "base",
-                "name": "int",
-            },
-        },
-        {
-            "name": "uinteger",
-            "type": {
-                "kind": "base",
-                "name": "unsigned int",
-            },
-        },
-        {
-            "name": "decimal",
-            "type": {
-                "kind": "base",
-                "name": "double",
-            },
-        },
-        {
-            "name": "boolean",
-            "type": {
-                "kind": "base",
-                "name": "bool",
-            },
-        },
-        {
-            "name": "null",
-            "type": {
-                "kind": "base",
-                "name": "std::nullptr_t",
-            },
-        },
-        {
-            "name": "string",
-            "type": {
-                "kind": "base",
-                "name": "std::string",
-            },
-        },
-        {
-            "name": "URI",
-            "type": {
-                "kind": "base",
-                "name": "string",
-            },
-        },
-        {
-            "name": "DocumentUri",
-            "type": {
-                "kind": "base",
-                "name": "string",
-            },
-        },
-        {
-            "name": "RegExp",
-            "type": {
-                "kind": "base",
-                "name": "string",
-            },
-        },
-        {
             "name": "RequestId",
             "type": {
                 "kind": "or",

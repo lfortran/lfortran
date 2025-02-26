@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 import os
 import sys
 import traceback
 from pathlib import Path
 
-from llanguage_server.cxx.code_generator import CPlusPlusLspCodeGenerator
+from llanguage_server.cxx.lsp_code_generator import CPlusPlusLspCodeGenerator
 
 EXIT_SUCCESS: int = 0
 EXIT_FAILURE: int = 1

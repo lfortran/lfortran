@@ -97,19 +97,36 @@ RESERVED_NAMES: Set[str] = {
 }
 
 @memoize
-def rename_enum(old_name: str) -> str:
-    match old_name:
+def normalize_name(name: str) -> str:
+    match name:
         case "LSPAny":
-            return rename_enum("any")
+            return normalize_name("any")
         case "LSPObject":
-            return rename_enum("object")
+            return normalize_name("object")
         case "LSPArray":
-            return rename_enum("array")
+            return normalize_name("array")
+        case "int":
+            return normalize_name("integer")
+        case "unsigned int":
+            return normalize_name("uinteger")
+        case "std::string" | "DocumentUri" | "RegExp" | "URI":
+            return normalize_name("string")
+        case "bool":
+            return normalize_name("boolean")
+        case "double":
+            return normalize_name("decimal")
+        case "std::nullptr_t":
+            return normalize_name("null")
         case _:
-            new_name = camel_case_to_underscore(old_name)
-            if new_name.lower() in RESERVED_NAMES:
-                new_name = f"{new_name}_TYPE"
-            return new_name
+            return name
+
+@memoize
+def rename_enum(old_name: str) -> str:
+    new_name = normalize_name(old_name)
+    new_name = camel_case_to_underscore(new_name)
+    if new_name.lower() in RESERVED_NAMES:
+        new_name = f"{new_name}_TYPE"
+    return new_name
 
 @memoize
 def rename_type(old_name: str) -> str:
@@ -117,6 +134,21 @@ def rename_type(old_name: str) -> str:
     if new_name.lower() in RESERVED_NAMES:
         new_name = f"{new_name}_t"
     return new_name
+
+@memoize
+def rename_field(field_name: str) -> str:
+    match field_name:
+        case 'LSPAny':
+            field_name = 'any'
+        case 'LSPObject':
+            field_name = 'object'
+        case 'LSPArray':
+            field_name = 'array'
+    # field_name = normalize_name(field_name)
+    field_name = lower_first(field_name)
+    # if field_name.lower() in RESERVED_NAMES or field_name.endswith("Value"):
+    #     field_name = f"{field_name}Value"
+    return field_name
 
 @memoize
 def any_enum(type_name: str) -> str:

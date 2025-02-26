@@ -2,14 +2,20 @@ cmake_minimum_required(VERSION 3.10)
 
 project(llanguage-server)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_definitions(DEBUG_MODE)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+  add_compile_definitions(NDEBUG)
+endif()
+
 set(LLANGUAGE_SERVER_SRC
-  specification.cpp
+  lsp_specification.cpp
   lsp_exception.cpp
   lsp_json_parser.cpp
   lsp_json_serializer.cpp
   logger.cpp
   queue.hpp
-  text_document.cpp
+  lsp_text_document.cpp
   thread_pool.cpp
   lsp_transformer.cpp
   language_server.cpp

@@ -7,9 +7,9 @@
 
 #include <server/base_lsp_language_server.h>
 #include <server/logger.h>
-#include <server/specification.h>
+#include <server/lsp_specification.h>
 
-#include <bin/server/lfortran_accessor.h>
+#include <bin/lfortran_accessor.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace ls = LCompilers::LLanguageServer;
@@ -67,7 +67,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::unordered_map<DocumentUri, CompilerOptions> optionsByUri;
         std::shared_mutex optionMutex;
 
-        auto validate(TextDocument &document) -> void;
+        auto validate(LspTextDocument &document) -> void;
         auto getCompilerOptions(const DocumentUri &uri) -> const CompilerOptions &;
     };
 

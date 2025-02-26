@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include <server/specification.h>
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
 

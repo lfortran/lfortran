@@ -52,8 +52,8 @@
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
 
-#include <bin/utils.h>
-#include <bin/server/cli.h>
+#include <bin/cli_utils.h>
+#include <bin/lsp_cli.h>
 #include <bin/server/interface.h>
 
 #ifdef HAVE_BUILD_TO_WASM

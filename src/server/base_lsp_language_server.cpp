@@ -1,11 +1,13 @@
 #include <cctype>
+#include <functional>
 #include <mutex>
 #include <shared_mutex>
 #include <stdexcept>
+#include <string>
 
-#include <server/specification.h>
-#include <server/lsp_exception.h>
 #include <server/base_lsp_language_server.h>
+#include <server/lsp_exception.h>
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
 
@@ -37,15 +39,14 @@ namespace LCompilers::LanguageServerProtocol {
         std::shared_lock<std::shared_mutex> readLock(configMutex);
         auto configIter = configsByUri.find(uri);
         if (configIter != configsByUri.end()) {
-            return *configIter->second;
+            return configIter->second;
         }
 
         readLock.unlock();
 
-        std::unique_ptr<ConfigurationItem> item =
-            std::make_unique<ConfigurationItem>();
-        item->scopeUri = uri;
-        item->section = configSection;
+        ConfigurationItem item;
+        item.scopeUri = uri;
+        item.section = configSection;
 
         ConfigurationParams params;
         params.items.push_back(std::move(item));
@@ -53,17 +54,17 @@ namespace LCompilers::LanguageServerProtocol {
         std::unique_lock<std::shared_mutex> writeLock(configMutex);
         configIter = configsByUri.find(uri);
         if (configIter != configsByUri.end()) {
-            return *configIter->second;
+            return configIter->second;
         }
 
-        std::shared_future<std::reference_wrapper<std::unique_ptr<LSPAny>>> future;
+        std::shared_future<std::reference_wrapper<LSPAny>> future;
 
         auto pendingIter = pendingConfigsByUri.find(uri);
         if (pendingIter != pendingConfigsByUri.end()) {
             future = pendingIter->second.second;
         } else {
             int requestId = sendWorkspace_configuration(params);
-            std::promise<std::reference_wrapper<std::unique_ptr<LSPAny>>> promise;
+            std::promise<std::reference_wrapper<LSPAny>> promise;
             future = promise.get_future().share();
             pendingConfigs.emplace(uri, requestId, std::move(promise));
             pendingConfigsByUri.emplace(
@@ -78,7 +79,7 @@ namespace LCompilers::LanguageServerProtocol {
         if (future.valid()) {
             future.wait();
             if (future.valid()) {
-                return *future.get().get();
+                return future.get().get();
             }
         }
 
@@ -106,44 +107,48 @@ namespace LCompilers::LanguageServerProtocol {
         InitializeResult result = LspLanguageServer::receiveInitialize(params);
 
         { // Initialize internal parameters
-            const ClientCapabilities &capabilities = *params.capabilities;
+            const ClientCapabilities &capabilities = params.capabilities;
             if (capabilities.workspace.has_value()) {
                 const WorkspaceClientCapabilities &workspace =
-                    *capabilities.workspace.value();
+                    capabilities.workspace.value();
 
                 clientSupportsWorkspaceConfigurationRequests =
                     workspace.configuration.has_value()
                     && workspace.configuration.value();
+                logger.debug()
+                    << "clientSupportsWorkspaceConfigurationRequests = "
+                    << (clientSupportsWorkspaceConfigurationRequests ? "true" : "false")
+                    << std::endl;
 
                 if (workspace.didChangeConfiguration.has_value()) {
                     const DidChangeConfigurationClientCapabilities &didChangeConfiguration =
-                        *workspace.didChangeConfiguration.value();
+                        workspace.didChangeConfiguration.value();
                     clientSupportsWorkspaceDidChangeConfigurationNotifications =
                         didChangeConfiguration.dynamicRegistration.has_value()
                         && didChangeConfiguration.dynamicRegistration.value();
+                    logger.debug()
+                        << "clientSupportsWorkspaceDidChangeConfigurationNotifications = "
+                        << (clientSupportsWorkspaceDidChangeConfigurationNotifications ? "true" : "false")
+                        << std::endl;
                 }
             }
         }
 
-        if (!result.capabilities) {
-            result.capabilities = std::make_unique<ServerCapabilities>();
-        }
-        ServerCapabilities &capabilities = *result.capabilities;
+        ServerCapabilities &capabilities = result.capabilities;
 
         {
             // ------------------------- //
             // TextDocument Sync Options //
             // ------------------------- //
             ServerCapabilities_textDocumentSync textDocumentSync;
-            std::unique_ptr<TextDocumentSyncOptions> textDocumentSyncOptions =
-                std::make_unique<TextDocumentSyncOptions>();
-            textDocumentSyncOptions->openClose = true;
-            textDocumentSyncOptions->change = TextDocumentSyncKind::INCREMENTAL;
+            TextDocumentSyncOptions textDocumentSyncOptions;
+            textDocumentSyncOptions.openClose = true;
+            textDocumentSyncOptions.change = TextDocumentSyncKind::INCREMENTAL;
             TextDocumentSyncOptions_save save;
-            std::unique_ptr<SaveOptions> saveOptions = std::make_unique<SaveOptions>();
-            saveOptions->includeText = false;
+            SaveOptions saveOptions;
+            saveOptions.includeText = false;
             save = std::move(saveOptions);
-            textDocumentSyncOptions->save = std::move(save);
+            textDocumentSyncOptions.save = std::move(save);
             textDocumentSync = std::move(textDocumentSyncOptions);
             capabilities.textDocumentSync = std::move(textDocumentSync);
         }
@@ -164,16 +169,19 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string method = "workspace/didChangeConfiguration";
 
             LSPObject configOptions;
-            configOptions.emplace("section", transformer.stringToAny(configSection));
+            {
+                std::unique_ptr<LSPAny> any = std::make_unique<LSPAny>();
+                (*any) = configSection;
+                configOptions.emplace("section", std::move(any));
+            }
 
-            std::unique_ptr<LSPAny> options = std::make_unique<LSPAny>();
-            (*options) = std::move(configOptions);
+            LSPAny options;
+            options = std::move(configOptions);
 
-            std::unique_ptr<Registration> registration =
-                std::make_unique<Registration>();
-            registration->id = method;
-            registration->method = method;
-            registration->registerOptions = std::move(options);
+            Registration registration;
+            registration.id = method;
+            registration.method = method;
+            registration.registerOptions = std::move(options);
 
             RegistrationParams params;
             params.registrations.push_back(std::move(registration));
@@ -186,16 +194,16 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::receiveWorkspace_didRenameFiles(
         RenameFilesParams &params
     ) -> void {
-        for (const std::unique_ptr<FileRename> &param : params.files) {
-            const std::string &oldUri = param->oldUri;
-            const std::string &newUri = param->newUri;
+        for (const FileRename &param : params.files) {
+            const std::string &oldUri = param.oldUri;
+            const std::string &newUri = param.newUri;
             {
                 std::shared_lock<std::shared_mutex> readLock(documentMutex);
                 auto iter = documentsByUri.find(oldUri);
                 if (iter != documentsByUri.end()) {
                     readLock.unlock();
                     std::unique_lock<std::shared_mutex> writeLock(documentMutex);
-                    TextDocument &textDocument = iter->second;
+                    LspTextDocument &textDocument = iter->second;
                     documentsByUri.emplace(newUri, std::move(textDocument));
                     documentsByUri.erase(iter);
                 }
@@ -207,19 +215,16 @@ namespace LCompilers::LanguageServerProtocol {
         try {
             std::shared_lock<std::shared_mutex> readLock(workspaceMutex);
             if (workspaceConfig) {
-                LSPAnyType configType = static_cast<LSPAnyType>(workspaceConfig->index());
-                switch (configType) {
+                switch (workspaceConfig->type()) {
                 case LSPAnyType::OBJECT_TYPE: {
-                    const LSPObject &config = std::get<LSPObject>(*workspaceConfig);
+                    const LSPObject &config = workspaceConfig->object();
                     auto iter = config.find("log");
                     if (iter != config.end()) {
-                        LSPAnyType logType = static_cast<LSPAnyType>(iter->second->index());
-                        switch (logType) {
+                        switch (iter->second->type()) {
                         case LSPAnyType::OBJECT_TYPE: {
-                            const LSPObject &logConfig = std::get<LSPObject>(*iter->second);
+                            const LSPObject &logConfig = iter->second->object();
                             if ((iter = logConfig.find("level")) != logConfig.end()) {
-                                LSPAnyType levelType = static_cast<LSPAnyType>(iter->second->index());
-                                switch (levelType) {
+                                switch (iter->second->type()) {
                                 case LSPAnyType::STRING_TYPE: {
                                     const string_t &value = transformer.anyToString(*iter->second);
                                     lsl::Level level = lsl::levelByValue(value);
@@ -241,7 +246,7 @@ namespace LCompilers::LanguageServerProtocol {
                                 default: {
                                     logger.error()
                                         << "Unable to update log level of type LSPAnyType::"
-                                        << LSPAnyTypeNames.at(levelType)
+                                        << LSPAnyTypeNames.at(iter->second->type())
                                         << std::endl;
                                 }
                                 }
@@ -255,7 +260,7 @@ namespace LCompilers::LanguageServerProtocol {
                         default: {
                             logger.error()
                                 << "Unsupported log configuration type: LSPAnyType::"
-                                << LSPAnyTypeNames.at(logType)
+                                << LSPAnyTypeNames.at(iter->second->type())
                                 << std::endl;
                         }
                         }
@@ -269,7 +274,7 @@ namespace LCompilers::LanguageServerProtocol {
                 default: {
                     logger.error()
                         << "Cannot update log level from config of type LSPAnyType::"
-                        << LSPAnyTypeNames.at(configType)
+                        << LSPAnyTypeNames.at(workspaceConfig->type())
                         << std::endl;
                 }
                 }
@@ -286,11 +291,10 @@ namespace LCompilers::LanguageServerProtocol {
         DidChangeConfigurationParams &params
     ) -> void {
         invalidateConfigCache();
-        LSPAny &settings = *params.settings;
-        LSPAnyType settingsType = static_cast<LSPAnyType>(settings.index());
-        switch (settingsType) {
+        LSPAny &settings = params.settings;
+        switch (settings.type()) {
         case LSPAnyType::OBJECT_TYPE: {
-            LSPObject &object = std::get<LSPObject>(settings);
+            const LSPObject &object = settings.object();
             auto iter = object.find(configSection);
             if (iter != object.end()) {
                 {
@@ -309,7 +313,7 @@ namespace LCompilers::LanguageServerProtocol {
         default: {
             logger.error()
                 << "Unsupported settings type: LSPAnyType::"
-                << LSPAnyTypeNames.at(settingsType)
+                << LSPAnyTypeNames.at(settings.type())
                 << std::endl;
         }
         }
@@ -319,7 +323,7 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::receiveTextDocument_didOpen(
         DidOpenTextDocumentParams &params
     ) -> void {
-        const TextDocumentItem &textDocumentItem = *params.textDocument;
+        const TextDocumentItem &textDocumentItem = params.textDocument;
         const DocumentUri &uri = textDocumentItem.uri;
         const std::string &languageId = textDocumentItem.languageId;
         int version = textDocumentItem.version;
@@ -338,7 +342,7 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::receiveWorkspace_configuration(
         WorkspaceConfigurationResult &params
     ) -> void {
-        for (std::unique_ptr<LSPAny> &config : params) {
+        for (LSPAny &config : params) {
             std::unique_lock<std::shared_mutex> writeLock(configMutex);
             if (pendingConfigs.empty()) {
                 throw LSP_EXCEPTION(
@@ -364,12 +368,12 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::receiveTextDocument_didChange(
         DidChangeTextDocumentParams &params
     ) -> void {
-        const VersionedTextDocumentIdentifier &versionedDocId = *params.textDocument;
+        const VersionedTextDocumentIdentifier &versionedDocId = params.textDocument;
         const DocumentUri &uri = versionedDocId.uri;
         integer_t version = versionedDocId.version;
         {
             std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            TextDocument &textDocument = documentsByUri.at(uri);
+            LspTextDocument &textDocument = documentsByUri.at(uri);
             readLock.unlock();
             textDocument.apply(params.contentChanges, version);
         }
@@ -379,7 +383,7 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::receiveTextDocument_didClose(
         DidCloseTextDocumentParams &params
     ) -> void {
-        const DocumentUri &uri = params.textDocument->uri;
+        const DocumentUri &uri = params.textDocument.uri;
         {
             std::shared_lock<std::shared_mutex> readLock(documentMutex);
             auto pos = documentsByUri.find(uri);

@@ -7,7 +7,7 @@
 
 #include <lfortran/fortran_evaluator.h>
 
-#include <bin/server/lfortran_accessor.h>
+#include <bin/lfortran_accessor.h>
 
 namespace LCompilers::LLanguageServer {
 

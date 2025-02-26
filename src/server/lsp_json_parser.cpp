@@ -2,7 +2,7 @@
 
 #include <server/lsp_exception.h>
 #include <server/lsp_json_parser.h>
-#include <server/specification.h>
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
 

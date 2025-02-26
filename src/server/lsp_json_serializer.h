@@ -1,16 +1,57 @@
 #pragma once
 
-#include <server/specification.h>
+#include <string>
+
+#include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol {
 
+    const std::string DEFAULT_INDENT_PATTERN = "    ";
+
     class LspJsonSerializer {
     public:
+        LspJsonSerializer();
+        LspJsonSerializer(const std::string &indent);
+
         auto serialize(const LSPAny &any) const -> std::string;
+
+        auto pprint(
+            const LSPArray &array
+        ) const -> std::string;
+
+        auto pprint(
+            const LSPObject &object
+        ) const -> std::string;
+
+        auto pprint(
+            const LSPAny &any
+        ) const -> std::string;
+
+        inline auto indent() const -> const std::string & {
+            return _indent;
+        }
+
+        inline void setIndent(const std::string &indent) {
+            _indent = indent;
+        }
+
+    private:
+        std::string _indent;
+
+        void newlineIndent(
+            std::string &buffer,
+            std::size_t level
+        ) const;
 
         void serializeArray(
             std::string &buffer,
             const LSPArray &array
+        ) const;
+
+        void pprintArray(
+            std::string &buffer,
+            const LSPArray &array,
+            std::size_t level
         ) const;
 
         void serializeObject(
@@ -18,14 +59,31 @@ namespace LCompilers::LanguageServerProtocol {
             const LSPObject &object
         ) const;
 
+        void pprintObject(
+            std::string &buffer,
+            const LSPObject &object,
+            std::size_t level
+        ) const;
+
         void serializeValue(
+            std::string &buffer,
+            const LSPAny &value
+        ) const;
+
+        void pprintValue(
+            std::string &buffer,
+            const LSPAny &value,
+            std::size_t level
+        ) const;
+
+        void serializeString(
             std::string &buffer,
             const LSPAny &value
         ) const;
 
         void serializeString(
             std::string &buffer,
-            const LSPAny &value
+            const std::string &string
         ) const;
 
         void serializeNumber(
@@ -41,48 +99,6 @@ namespace LCompilers::LanguageServerProtocol {
         void serializeNull(
             std::string &buffer,
             const LSPAny &value
-        ) const;
-
-        auto pprint(
-            const LSPArray &array,
-            const std::string &indent
-        ) const -> std::string;
-
-        auto pprint(
-            const LSPObject &object,
-            const std::string &indent
-        ) const -> std::string;
-
-        auto pprint(
-            const LSPAny &any,
-            const std::string &indent
-        ) const -> std::string;
-
-        void newlineIndent(
-            std::string &buffer,
-            const std::string &indent,
-            std::size_t level
-        ) const;
-
-        void pprintArray(
-            std::string &buffer,
-            const LSPArray &array,
-            const std::string &indent,
-            std::size_t level
-        ) const;
-
-        void pprintObject(
-            std::string &buffer,
-            const LSPObject &object,
-            const std::string &indent,
-            std::size_t level
-        ) const;
-
-        void pprintValue(
-            std::string &buffer,
-            const LSPAny &value,
-            const std::string &indent,
-            std::size_t level
         ) const;
     };
 

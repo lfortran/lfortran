@@ -1,6 +1,6 @@
 #include <lfortran/utils.h>
 
-#include <bin/utils.h>
+#include <bin/cli_utils.h>
 
 namespace LCompilers::CommandLineInterface {
 

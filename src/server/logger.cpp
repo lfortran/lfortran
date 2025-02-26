@@ -21,6 +21,74 @@ namespace LCompilers::LLanguageServer::Logging {
         }
     }
 
+    auto Logger::mutex() -> std::recursive_mutex & {
+        return _mutex;
+    }
+
+    auto Logger::setLevel(Level level) -> void {
+        _level = level;
+    }
+
+    auto Logger::level() const -> Level {
+        return _level;
+    }
+
+    auto Logger::isOff() const -> bool {
+        return _level == Level::OFF;
+    }
+
+    auto Logger::isFatalEnabled() const -> bool {
+        return _level >= Level::FATAL;
+    }
+
+    auto Logger::isErrorEnabled() const -> bool {
+        return _level >= Level::ERROR;
+    }
+
+    auto Logger::isWarnEnabled() const -> bool {
+        return _level >= Level::WARN;
+    }
+
+    auto Logger::isInfoEnabled() const -> bool {
+        return _level >= Level::INFO;
+    }
+
+    auto Logger::isDebugEnabled() const -> bool {
+        return _level >= Level::DEBUG;
+    }
+
+    auto Logger::isTraceEnabled() const -> bool {
+        return _level >= Level::TRACE;
+    }
+
+    auto Logger::areAllEnabled() const -> bool {
+        return _level == Level::ALL;
+    }
+
+    auto Logger::fatal() -> Formatter {
+        return Formatter(*this, Level::FATAL, "FATAL");
+    }
+
+    auto Logger::error() -> Formatter {
+        return Formatter(*this, Level::ERROR, "ERROR");
+    }
+
+    auto Logger::warn() -> Formatter {
+        return Formatter(*this, Level::WARN, "WARN");
+    }
+
+    auto Logger::info() -> Formatter {
+        return Formatter(*this, Level::INFO, "INFO");
+    }
+
+    auto Logger::debug() -> Formatter {
+        return Formatter(*this, Level::DEBUG, "DEBUG");
+    }
+
+    auto Logger::trace() -> Formatter {
+        return Formatter(*this, Level::TRACE, "TRACE");
+    }
+
     std::map<Level, std::string> LevelNames = {
         {Level::OFF, "OFF"},
         {Level::FATAL, "FATAL"},

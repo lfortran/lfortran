@@ -57,77 +57,30 @@ namespace LCompilers::LLanguageServer::Logging {
         Logger(const fs::path &logPath);
         ~Logger();
 
-        inline auto mutex() -> std::recursive_mutex & {
-            return _mutex;
-        }
+        auto mutex() -> std::recursive_mutex &;
 
         auto logPath() const -> const fs::path &;
         auto isOpen() const -> bool;
         auto close() -> void;
 
-        auto inline setLevel(Level level) -> void {
-            _level = level;
-        }
+        auto setLevel(Level level) -> void;
+        auto level() const -> Level;
 
-        inline auto level() const -> Level {
-            return _level;
-        }
+        auto isOff() const -> bool;
+        auto isFatalEnabled() const -> bool;
+        auto isErrorEnabled() const -> bool;
+        auto isWarnEnabled() const -> bool;
+        auto isInfoEnabled() const -> bool;
+        auto isDebugEnabled() const -> bool;
+        auto isTraceEnabled() const -> bool;
+        auto areAllEnabled() const -> bool;
 
-        inline auto isOff() const -> bool {
-            return _level == Level::OFF;
-        }
-
-        inline auto isFatalEnabled() const -> bool {
-            return _level >= Level::FATAL;
-        }
-
-        inline auto isErrorEnabled() const -> bool {
-            return _level >= Level::ERROR;
-        }
-
-        inline auto isWarnEnabled() const -> bool {
-            return _level >= Level::WARN;
-        }
-
-        inline auto isInfoEnabled() const -> bool {
-            return _level >= Level::INFO;
-        }
-
-        inline auto isDebugEnabled() const -> bool {
-            return _level >= Level::DEBUG;
-        }
-
-        inline auto isTraceEnabled() const -> bool {
-            return _level >= Level::TRACE;
-        }
-
-        inline auto areAllEnabled() const -> bool {
-            return _level == Level::ALL;
-        }
-
-        inline auto fatal() -> Formatter {
-            return Formatter(*this, Level::FATAL, "FATAL");
-        }
-
-        inline auto error() -> Formatter {
-            return Formatter(*this, Level::ERROR, "ERROR");
-        }
-
-        inline auto warn() -> Formatter {
-            return Formatter(*this, Level::WARN, "WARN");
-        }
-
-        inline auto info() -> Formatter {
-            return Formatter(*this, Level::INFO, "INFO");
-        }
-
-        inline auto debug() -> Formatter {
-            return Formatter(*this, Level::DEBUG, "DEBUG");
-        }
-
-        inline auto trace() -> Formatter {
-            return Formatter(*this, Level::TRACE, "TRACE");
-        }
+        auto fatal() -> Formatter;
+        auto error() -> Formatter;
+        auto warn() -> Formatter;
+        auto info() -> Formatter;
+        auto debug() -> Formatter;
+        auto trace() -> Formatter;
 
         auto operator<<(unsigned char c) -> Logger &;
         auto operator<<(char c) -> Logger &;

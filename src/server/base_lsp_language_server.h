@@ -4,14 +4,15 @@
 #include <future>
 #include <queue>
 #include <shared_mutex>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 
 #include <server/logger.h>
 #include <server/lsp_language_server.h>
-#include <server/specification.h>
-#include <server/text_document.h>
+#include <server/lsp_specification.h>
+#include <server/lsp_text_document.h>
 
 namespace LCompilers::LanguageServerProtocol {
 
@@ -26,22 +27,22 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &configSection
         );
     protected:
-        std::unordered_map<DocumentUri, TextDocument> documentsByUri;
+        std::unordered_map<DocumentUri, LspTextDocument> documentsByUri;
         std::shared_mutex documentMutex;
-        std::unordered_map<DocumentUri, std::unique_ptr<LSPAny>> configsByUri;
+        std::unordered_map<DocumentUri, LSPAny> configsByUri;
         std::unordered_map<
             DocumentUri,
-            std::pair<int, std::shared_future<std::reference_wrapper<std::unique_ptr<LSPAny>>>>
+            std::pair<int, std::shared_future<std::reference_wrapper<LSPAny>>>
         > pendingConfigsByUri;
         std::queue<
-            std::tuple<DocumentUri, int, std::promise<std::reference_wrapper<std::unique_ptr<LSPAny>>>>
+            std::tuple<DocumentUri, int, std::promise<std::reference_wrapper<LSPAny>>>
         > pendingConfigs;
         std::shared_mutex configMutex;
         std::unique_ptr<LSPAny> workspaceConfig;
         std::shared_mutex workspaceMutex;
 
-        bool clientSupportsWorkspaceDidChangeConfigurationNotifications = false;
-        bool clientSupportsWorkspaceConfigurationRequests = false;
+        std::atomic_bool clientSupportsWorkspaceDidChangeConfigurationNotifications = false;
+        std::atomic_bool clientSupportsWorkspaceConfigurationRequests = false;
 
         auto getConfig(
             const DocumentUri &uri,

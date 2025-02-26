@@ -11,11 +11,11 @@
 #include <libasr/location.h>
 #include <libasr/lsp_interface.h>
 
-#include <server/specification.h>
+#include <server/lsp_specification.h>
 
-#include <bin/server/utils.h>
-#include <bin/server/cli.h>
-#include <bin/server/lfortran_accessor.h>
+#include <bin/lfortran_accessor.h>
+#include <bin/lsp_cli.h>
+#include <bin/lsp_utils.h>
 
 namespace LCompilers {
     namespace lsp = LCompilers::LanguageServerProtocol;
