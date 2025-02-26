@@ -823,33 +823,36 @@ const int primitive_type_sizes[primitive_types_cnt] =
                                          sizeof(int8_t) , sizeof(double), sizeof(float), 
                                          sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/};
 
-
-bool is_format_match(char format_value, Primitive_Types current_arg_type){
-    char current_arg_correct_format; 
-    switch(current_arg_type){
+char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
+    switch(primitive_enum){
         case INTEGER_8_TYPE:
         case INTEGER_16_TYPE:
         case INTEGER_32_TYPE:
         case INTEGER_64_TYPE:
-            current_arg_correct_format = 'i';
+            return 'i';
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
-            current_arg_correct_format = 'f';
+            return 'f';
             break;
         case CHARACTER_TYPE:
-            current_arg_correct_format = 'a';
+            return 'a';
             break;
         case LOGICAL_TYPE:
-            current_arg_correct_format = 'l';
+            return 'l';
             break;
         case CPTR_VOID_PTR_TYPE:
-            current_arg_correct_format = 'P'; // Not actual fortran specifier.
+            return 'P'; // Not actual fortran specifier.
             break;
         default:
-            fprintf(stderr,"Compiler Error : Unidentified Type %d\n", current_arg_type);
+            fprintf(stderr,"Compiler Error : Unidentified Type %d\n", primitive_enum);
             exit(0);
     }
+
+}
+bool is_format_match(char format_value, Primitive_Types current_arg_type){
+    char current_arg_correct_format = 
+        primitive_enum_to_format_specifier(current_arg_type); 
 
     char lowered_format_value = tolower(format_value);
     if(lowered_format_value == 'd' || lowered_format_value == 'e'){
@@ -1028,7 +1031,7 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
                             (get_stack_top(s_info->array_sizes_stack) == 0)); 
         if(isdigit(cur)){ // ArraySize --> `50[I4]`
             int64_t array_size = get_serialized_array_size(s_info);
-            ASSERT_MSG(cur == '[',
+            ASSERT_MSG(s_info->serialization_string[s_info->current_stop] == '[',
                 "RunTime - Compiler Internal error "
                 ": Wrong serialization for print statement --> %s\n",
                 s_info->serialization_string);
@@ -1098,7 +1101,7 @@ void print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
     switch (s_info->current_element_type){
         case INTEGER_64_TYPE:
-            sprintf(result, "%lld", *(int64_t*)arg);
+            sprintf(result, "%"PRId64, *(int64_t*)arg);
             break;
         case INTEGER_32_TYPE:
             sprintf(result, "%d", *(int32_t*)arg);
@@ -1189,7 +1192,6 @@ void free_serialization_info(Serialization_Info* s_info){
     free(s_info->array_sizes.ptr);
     free_stack(s_info->array_sizes_stack);
     free_stack(s_info->array_serialiation_start_index);
-    free(s_info->array_serialiation_start_index->p);
 
     va_end(*s_info->current_arg_info.args);
 }
