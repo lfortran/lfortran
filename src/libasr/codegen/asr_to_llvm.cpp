@@ -5049,7 +5049,9 @@ public:
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         strings_to_be_deallocated.push_back(al, tmp); // char* returing from this call is dead after making the next str_copy call.
-        tmp = lfortran_str_copy(str, tmp, ASRUtils::is_descriptorString(expr_type(ss->m_arg)));
+        lfortran_str_copy(str, tmp, ASRUtils::is_descriptorString(expr_type(ss->m_arg)));
+        builder->CreateCall(_Deallocate(), tmp);
+        tmp = nullptr;
     }
 
     void visit_OverloadedStringConcat(const ASR::OverloadedStringConcat_t &x) {
@@ -6544,8 +6546,14 @@ public:
             tmp = llvm_utils->CreateGEP2(llvm::Type::getInt8Ty(context), str, idx_vec);
         } else {
             tmp = lfortran_str_item(str, idx);
-            strings_to_be_deallocated.push_back(al, tmp);
+            // strings_to_be_deallocated.push_back(al, tmp);
+            llvm::Value* str_item_size = llvm::ConstantInt::get(context, llvm::APInt(32, 2));
+            llvm::Value* str_item_on_stack = builder->CreateAlloca(llvm::Type::getInt8Ty(context), str_item_size, "str_item");
+            builder->CreateMemCpy(str_item_on_stack, llvm::MaybeAlign(), tmp, llvm::MaybeAlign(), str_item_size);
+            builder->CreateCall(_Deallocate(), {tmp});
+            tmp = str_item_on_stack;
         }
+
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
@@ -6596,6 +6604,13 @@ public:
             } else {
                 tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
             }
+            llvm::Value* ptr_char_ptr = builder->CreateAlloca(character_type);
+            builder->CreateStore(tmp, ptr_char_ptr);
+            llvm::Value* str_size = builder->CreateAdd(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), lfortran_str_len(ptr_char_ptr));
+            llvm::Value* str_on_stack = builder->CreateAlloca(llvm::Type::getInt8Ty(context), str_size, "str_slice");
+            builder->CreateMemCpy(str_on_stack, llvm::MaybeAlign(), tmp, llvm::MaybeAlign(), str_size);
+            builder->CreateCall(_Deallocate(), {tmp});
+            tmp = str_on_stack;
         }
     }
 
@@ -8880,6 +8895,9 @@ public:
         llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
         args[0] = fmt_ptr;
         printf(context, *module, *builder, args);
+        if(ASR::is_a<ASR::StringFormat_t>(*arg)){
+            builder->CreateCall( _Deallocate(), {args[args.size()-2]});
+        }
     }
 
     void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location loc) {

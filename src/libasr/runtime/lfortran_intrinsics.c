@@ -2380,8 +2380,12 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
     }
     if (idx1 == idx2 ||
         (step > 0 && (idx1 > idx2 || idx1 >= s_len)) ||
-        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1)))
-        return "";
+        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1))){
+        char* dest_char = (char*)malloc(1);
+        dest_char[0] = '\0';
+        return dest_char;
+    }
+    
     int dest_len = 0;
     if (step > 0) {
         idx2 = idx2 > s_len ? s_len : idx2;
@@ -2427,13 +2431,14 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, in
             idx2 = -1;
         }
     }
+    char* dest_char = (char*)malloc(s_len + 1);
     if (idx1 == idx2 ||
         (step > 0 && (idx1 > idx2 || idx1 >= s_len)) ||
         (step < 0 && (idx1 < idx2 || idx2 >= s_len-1))) {
-        return s;
+        strcpy(dest_char, s);
+        return dest_char;
     }
 
-    char* dest_char = (char*)malloc(s_len + 1);
     strcpy(dest_char, s);
     int s_i = idx1, d_i = 0;
     while((step > 0 && s_i >= idx1 && s_i < idx2) ||
