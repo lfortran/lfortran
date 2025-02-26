@@ -518,8 +518,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf-prima-10
-            git checkout 4de2d89340e10c382ef6db9415ed48a4b450b41b
+            git checkout -t origin/lf-prima-11
+            git checkout c9dde2d4dec976dc802f14a875e63c5ea1792a19
             git clean -dfx
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               export RUNNER_OS='macos';
