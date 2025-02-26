@@ -68,12 +68,12 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LspMessageStream::next() -> std::string {
-        std::size_t numBytes;
+        std::size_t numBytes = 0;
         bool hasContentLength = false;
         std::size_t start = 0;
-        std::size_t length;
+        std::size_t length = 0;
         std::string_view view;
-        char c;
+        char c = '\0';
     parse_header_name:
         start = position;
         do {

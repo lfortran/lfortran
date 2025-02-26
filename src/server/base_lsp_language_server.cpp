@@ -115,10 +115,6 @@ namespace LCompilers::LanguageServerProtocol {
                 clientSupportsWorkspaceConfigurationRequests =
                     workspace.configuration.has_value()
                     && workspace.configuration.value();
-                logger.debug()
-                    << "clientSupportsWorkspaceConfigurationRequests = "
-                    << (clientSupportsWorkspaceConfigurationRequests ? "true" : "false")
-                    << std::endl;
 
                 if (workspace.didChangeConfiguration.has_value()) {
                     const DidChangeConfigurationClientCapabilities &didChangeConfiguration =
@@ -126,12 +122,16 @@ namespace LCompilers::LanguageServerProtocol {
                     clientSupportsWorkspaceDidChangeConfigurationNotifications =
                         didChangeConfiguration.dynamicRegistration.has_value()
                         && didChangeConfiguration.dynamicRegistration.value();
-                    logger.debug()
-                        << "clientSupportsWorkspaceDidChangeConfigurationNotifications = "
-                        << (clientSupportsWorkspaceDidChangeConfigurationNotifications ? "true" : "false")
-                        << std::endl;
                 }
             }
+            logger.debug()
+                << "clientSupportsWorkspaceConfigurationRequests = "
+                << (clientSupportsWorkspaceConfigurationRequests ? "true" : "false")
+                << std::endl;
+            logger.debug()
+                << "clientSupportsWorkspaceDidChangeConfigurationNotifications = "
+                << (clientSupportsWorkspaceDidChangeConfigurationNotifications ? "true" : "false")
+                << std::endl;
         }
 
         ServerCapabilities &capabilities = result.capabilities;
