@@ -96,7 +96,7 @@ namespace LCompilers::LLanguageServer::Logging {
         fs::path _logPath;
         std::ofstream logFile;
         std::recursive_mutex _mutex;
-        std::atomic<Level> _level{Level::DEBUG};
+        std::atomic<Level> _level{Level::INFO};
     };
 
 } // namespace LCompilers::LLanguageServer::Logging

@@ -144,10 +144,7 @@ def rename_field(field_name: str) -> str:
             field_name = 'object'
         case 'LSPArray':
             field_name = 'array'
-    # field_name = normalize_name(field_name)
     field_name = lower_first(field_name)
-    # if field_name.lower() in RESERVED_NAMES or field_name.endswith("Value"):
-    #     field_name = f"{field_name}Value"
     return field_name
 
 @memoize

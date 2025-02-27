@@ -459,8 +459,8 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
             struct_specs: Optional[SpecTypesAndTypeSpecs],
             inner_specs: Optional[SpecTypesAndTypeSpecs],
             union_specs: Optional[SpecTypesAndTypeSpecs],
-            array_specs: Optional[ArraySpecTypesAndTypeSpecs],
-            map_specs: Optional[MapTypesAndTypeSpecs]
+            map_specs: Optional[MapTypesAndTypeSpecs],
+            array_specs: Optional[ArraySpecTypesAndTypeSpecs]
     ) -> None:
         type_name: Optional[str] = None
 
@@ -473,12 +473,12 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
         elif union_specs is not None and len(union_specs) > 0:
             type_name, _ = union_specs[0]
             union_specs = union_specs[1:]
-        elif array_specs is not None and len(array_specs) > 0:
-            type_name, _, _ = array_specs[0]
-            array_specs = array_specs[1:]
         elif map_specs is not None and len(map_specs) > 0:
             type_name, _, _, _ = map_specs[0]
             map_specs = map_specs[1:]
+        elif array_specs is not None and len(array_specs) > 0:
+            type_name, _, _ = array_specs[0]
+            array_specs = array_specs[1:]
 
         if type_name is not None:
             with self.gen_try():
@@ -491,8 +491,8 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                     struct_specs,
                     inner_specs,
                     union_specs,
-                    array_specs,
-                    map_specs
+                    map_specs,
+                    array_specs
                 )
         else:
             self.gen_throw_invalid_params(
@@ -508,27 +508,30 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
         struct_specs = type_index.get("structure", None)
         inner_specs = type_index.get("inner", None)
         union_specs = type_index.get("union", None)
-        array_specs = type_index.get("array", None)
         map_specs = type_index.get("map", None)
-        has_inner_type = (struct_specs is not None) \
+        has_object_type = (struct_specs is not None) \
             or (inner_specs is not None) \
             or (union_specs is not None) \
-            or (array_specs is not None) \
             or (map_specs is not None)
         with self.gen_any_to_type(union_name, union_name):
             value_name = self.gensym_decl(union_name, 'value')
             self.newline()
             with self.gen_switch('any.type()'):
-                if has_inner_type:
+                if has_object_type:
                     with self.gen_case('LSPAnyType', 'object'):
                         self.gen_rec_any_to_union_inner(
-                            union_name,
-                            value_name,
-                            struct_specs,
-                            inner_specs,
-                            union_specs,
-                            array_specs,
-                            map_specs
+                            union_name, value_name,
+                            struct_specs, inner_specs, union_specs, map_specs,
+                            None
+                        )
+                        self.gen_break()
+                array_specs = type_index.get("array", None)
+                if array_specs is not None:
+                    with self.gen_case('LSPAnyType', 'array'):
+                        self.gen_rec_any_to_union_inner(
+                            union_name, value_name,
+                            None, None, None, None,
+                            array_specs
                         )
                         self.gen_break()
                 string_specs = type_index.get("string", None)
@@ -667,26 +670,41 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
         self.generate_any_to_union(union_symbol)
         self.generate_union_to_any(union_symbol)
 
-    def expand_fields(self, struct_spec_or_symbol: Union[LspSpec, LspSymbol]) -> Iterator[Tuple[str, LspSpec]]:
+    def expand_fields(self, struct_spec_or_symbol_or_name: Union[LspSpec, LspSymbol, str]) -> Iterator[Tuple[str, LspSpec]]:
         struct_name: str
-        match struct_spec_or_symbol:
+        struct_spec: LspSpec
+        struct_symbol: LspSymbol
+        match struct_spec_or_symbol_or_name:
             case dict():
-                struct_spec: LspSpec = struct_spec_or_symbol
+                struct_spec = struct_spec_or_symbol_or_name
                 if "name" in struct_spec:
                     struct_name = struct_spec["name"]
                 else:
                     struct_name = self.nested_name()
                 struct_symbol = self.resolve(struct_name)
+                struct_spec = struct_symbol.spec
             case LspSymbol():
-                struct_symbol: LspSymbol = struct_spec_or_symbol
+                struct_symbol = struct_spec_or_symbol_or_name
                 struct_spec = struct_symbol.spec
                 struct_name = struct_symbol.name
+            case str():
+                struct_name = struct_spec_or_symbol_or_name
+                struct_symbol = self.resolve(struct_name)
+                struct_spec = struct_symbol.spec
         extends_specs: Optional[List[LspSpec]] = struct_spec.get("extends", None)
         if extends_specs is not None:
             for extends_spec in extends_specs:
                 super_name = extends_spec['name']
                 super_symbol = self.resolve(super_name)
                 yield from self.expand_fields(super_symbol)
+        mixin_specs: Optional[List[LspSpec]] = struct_spec.get("mixins", None)
+        if mixin_specs is not None:
+            for mixin_spec in mixin_specs:
+                mixin_name = mixin_spec['name']
+                mixin_symbol = self.resolve(mixin_name)
+                if mixin_symbol.resolution is not None:
+                    mixin_symbol = mixin_symbol.resolution
+                yield from self.expand_fields(mixin_symbol)
         if struct_symbol.fields is not None:
             for field_spec in struct_symbol.fields:
                 yield struct_name, field_spec
@@ -1050,11 +1068,14 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
     def generate_any_to_alias(self, alias_symbol: LspSymbol) -> None:
         alias_name = alias_symbol.name
         alias_spec = alias_symbol.spec
+        resolution = alias_symbol
+        if alias_symbol.resolution is not None:
+            resolution = alias_symbol.resolution
         with self.gen_any_to_type(alias_name, alias_name):
             type_spec = alias_spec["type"]
             match type_spec["kind"]:
                 case "base":
-                    type_enum = any_enum(alias_name)
+                    type_enum = any_enum(resolution.spec['name'])
                     with self.gen_switch('any.type()'):
                         uinteger_field = rename_field('uinteger')
                         integer_field = rename_field('integer')
@@ -1062,7 +1083,7 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                         integer_type = rename_type('integer')
                         decimal_type = rename_type('decimal')
                         with self.gen_case('LSPAnyType', type_enum):
-                            field_name = rename_field(alias_symbol.resolution.normalized_name)
+                            field_name = rename_field(resolution.normalized_name)
                             self.gen_return(f'any.{field_name}()')
                         match alias_name:
                             case "integer":
@@ -1376,12 +1397,14 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
     def generate_as_incoming_params(
         self,
         message_name: str,
-        message_spec: LspSpec
+        message_symbol: LspSymbol
     ) -> None:
+        message_spec = message_symbol.spec
         params_spec = message_spec.get("params", None)
         if params_spec is not None:
-            message_name = method_to_camel_case(message_spec["method"])
-            as_message_params = f'as{message_name}Params'
+            method_name = method_to_camel_case(message_spec["method"])
+            type_name = f'{method_name}Params'
+            as_message_params = f'as{type_name}'
             with self.gen_fn(
                     f'LspTransformer::{as_message_params}',
                     self.get_as_message_params_type(params_spec),
@@ -1707,8 +1730,9 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
     def generate_as_outgoing_params(
         self,
         params_name: str,
-        message_spec: LspSpec
+        message_symbol: LspSymbol
     ) -> None:
+        message_spec = message_symbol.spec
         params_spec = message_spec.get("params", None)
         if params_spec is not None:
             params_type = params_spec["name"]
@@ -1775,12 +1799,12 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
         request_spec = request_symbol.spec
         match request_spec["messageDirection"]:
             case "clientToServer":
-                self.generate_as_incoming_params("requestParams", request_spec)
+                self.generate_as_incoming_params("requestParams", request_symbol)
             case "serverToClient":
-                self.generate_as_outgoing_params("requestParams", request_spec)
+                self.generate_as_outgoing_params("requestParams", request_symbol)
             case "both":
-                self.generate_as_incoming_params("requestParams", request_spec)
-                self.generate_as_outgoing_params("requestParams", request_spec)
+                self.generate_as_incoming_params("requestParams", request_symbol)
+                self.generate_as_outgoing_params("requestParams", request_symbol)
             case _:
                 raise ValueError(
                     f'Unsupported messageDirection: {request_spec["messageDirection"]}'
@@ -1790,12 +1814,12 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
         notification_spec = notification_symbol.spec
         match notification_spec["messageDirection"]:
             case "clientToServer":
-                self.generate_as_incoming_params("notificationParams", notification_spec)
+                self.generate_as_incoming_params("notificationParams", notification_symbol)
             case "serverToClient":
-                self.generate_as_outgoing_params("notificationParams", notification_spec)
+                self.generate_as_outgoing_params("notificationParams", notification_symbol)
             case "both":
-                self.generate_as_incoming_params("notificationParams", notification_spec)
-                self.generate_as_outgoing_params("notificationParams", notification_spec)
+                self.generate_as_incoming_params("notificationParams", notification_symbol)
+                self.generate_as_outgoing_params("notificationParams", notification_symbol)
             case _:
                 raise ValueError(
                     f'Unsupported messageDirection: {notification_spec["messageDirection"]}'

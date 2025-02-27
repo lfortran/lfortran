@@ -139,8 +139,8 @@ namespace LCompilers::LanguageServerProtocol {
                         }
                         default: {
                             logger.error()
-                                << "Unsupported type of compiler flags: LSPAnyType::"
-                                << LSPAnyTypeNames.at(iter->second->type())
+                                << "Unsupported type of compiler flags for uri=\"" << uri << "\": "
+                                   "LSPAnyType::" << LSPAnyTypeNames.at(iter->second->type())
                                 << std::endl;
                         }
                         }
@@ -149,8 +149,8 @@ namespace LCompilers::LanguageServerProtocol {
                 }
                 default: {
                     logger.error()
-                        << "Unsupported type of compiler options: LSPAnyType::"
-                        << LSPAnyTypeNames.at(iter->second->type())
+                        << "Unsupported type of compiler options for uri=\"" << uri << "\": "
+                           "LSPAnyType::" << LSPAnyTypeNames.at(iter->second->type())
                         << std::endl;
                 }
                 }
@@ -159,8 +159,8 @@ namespace LCompilers::LanguageServerProtocol {
         }
         default: {
             logger.error()
-                << "Unsupported type of config: LSPAnyType::"
-                << LSPAnyTypeNames.at(config.type())
+                << "Unsupported type of config for uri=\"" << uri << "\": "
+                   "LSPAnyType::" << LSPAnyTypeNames.at(config.type())
                 << std::endl;
         }
         }

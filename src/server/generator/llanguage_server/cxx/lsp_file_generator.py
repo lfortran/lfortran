@@ -1216,7 +1216,7 @@ class CPlusPlusLspFileGenerator(FileGenerator):
     def generate_enumeration(self, enum_spec: LspSpec) -> None:
         pass
 
-    def generate_message_enum(self, enum_name: str, symbols: List[LspSymbol]) -> None:
+    def generate_message_enums(self, enum_name: str, symbols: List[LspSymbol]) -> None:
         enumeration = []
         for symbol in symbols:
             message_method = symbol.name
@@ -1226,21 +1226,21 @@ class CPlusPlusLspFileGenerator(FileGenerator):
         self.generate_enumeration(enum_spec)
 
     def generate_request_enums(self) -> None:
-        self.generate_message_enum(
+        self.generate_message_enums(
             'IncomingRequest',
             self.pipeline.indexer.request_index["clientToServer"]
         )
-        self.generate_message_enum(
+        self.generate_message_enums(
             'OutgoingRequest',
             self.pipeline.indexer.request_index["serverToClient"]
         )
 
     def generate_notification_enums(self) -> None:
-        self.generate_message_enum(
+        self.generate_message_enums(
             'IncomingNotification',
             self.pipeline.indexer.notification_index["clientToServer"]
         )
-        self.generate_message_enum(
+        self.generate_message_enums(
             'OutgoingNotification',
             self.pipeline.indexer.notification_index["serverToClient"]
         )

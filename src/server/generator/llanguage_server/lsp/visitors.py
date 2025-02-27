@@ -308,21 +308,26 @@ class LspIndexer(BaseLspSpecVisitor):
             self.kind_index[kind] = symbols
         symbols.append(symbol)
 
+    def index_by_direction(self, index: LspMessageIndex, direction: str, symbol: LspSymbol) -> None:
+        match direction:
+            case "both":
+                self.index_by_direction(index, "clientToServer", symbol)
+                self.index_by_direction(index, "serverToClient", symbol)
+            case "clientToServer" | "serverToClient":
+                if direction in index:
+                    requests = index[direction]
+                else:
+                    requests = []
+                    index[direction] = requests
+                requests.append(symbol)
+            case _:
+                raise ValueError(f'Unsupported direction: "{direction}"')
+
     def index_request_by_direction(self, direction: str, symbol: LspSymbol) -> None:
-        if direction in self.request_index:
-            requests = self.request_index[direction]
-        else:
-            requests = []
-            self.request_index[direction] = requests
-        requests.append(symbol)
+        self.index_by_direction(self.request_index, direction, symbol)
 
     def index_notification_by_direction(self, direction: str, symbol: LspSymbol) -> None:
-        if direction in self.notification_index:
-            notifications = self.notification_index[direction]
-        else:
-            notifications = []
-            self.notification_index[direction] = notifications
-        notifications.append(symbol)
+        self.index_by_direction(self.notification_index, direction, symbol)
 
     def topological_sort(self) -> Iterable[LspSymbol]:
         return LspTopologicalIterator(self)

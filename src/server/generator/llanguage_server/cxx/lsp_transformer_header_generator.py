@@ -207,5 +207,5 @@ class CPlusPlusLspTransformerHeaderGenerator(BaseCPlusPlusLspVisitor):
             with self.gen_class('LspTransformer'):
                 with self.gen_public():
                     super().generate_code()
-                self.generate_copy_methods()
+                    self.generate_copy_methods()
             self.newline()
