@@ -1,7 +1,6 @@
 #include <cctype>
-#include <functional>
+#include <memory>
 #include <mutex>
-#include <optional>
 #include <shared_mutex>
 #include <stdexcept>
 #include <string>
@@ -58,40 +57,35 @@ namespace LCompilers::LanguageServerProtocol {
             return configIter->second;
         }
 
-        std::optional<std::shared_future<std::reference_wrapper<LSPAny>>> maybe;
+        std::shared_ptr<std::promise<std::reference_wrapper<LSPAny>>> promise;
 
         auto pendingIter = pendingConfigsByUri.find(uri);
         if (pendingIter != pendingConfigsByUri.end()) {
-            maybe = pendingIter->second.second;
+            promise = pendingIter->second.second;
         } else {
             int requestId = sendWorkspace_configuration(params);
-            std::promise<std::reference_wrapper<LSPAny>> promise;
-            maybe = promise.get_future().share();
-            pendingConfigs.emplace(uri, requestId, std::move(promise));
+            promise = std::make_shared<std::promise<std::reference_wrapper<LSPAny>>>();
+            pendingConfigs.emplace(uri, requestId, promise);
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
                 std::make_tuple(uri),
-                std::make_tuple(requestId, maybe)
+                std::make_tuple(requestId, promise)
             );
         }
 
         writeLock.unlock();
 
-        if (maybe.has_value()) {
-            std::shared_future<std::reference_wrapper<LSPAny>> &future = maybe.value();
+        std::shared_future<std::reference_wrapper<LSPAny>> future = promise->get_future().share();
+        if (future.valid()) {
+            future.wait();
             if (future.valid()) {
-                future.wait();
-                if (future.valid()) {
-                    return future.get().get();
-                }
+                return future.get().get();
             }
-
-            throw std::runtime_error(
-                "Future config became invalid while waiting for it."
-            );
-        } else {
-            throw std::runtime_error("Failed to initialize future config.");
         }
+
+        throw std::runtime_error(
+            "Future config became invalid while waiting for it."
+        );
     }
 
     auto BaseLspLanguageServer::invalidateConfigCache() -> void {
@@ -361,7 +355,7 @@ namespace LCompilers::LanguageServerProtocol {
             // const int requestId = std::get<1>(triple);
             auto &promise = std::get<2>(triple);
             auto record = configsByUri.emplace(uri, std::move(config));
-            promise.set_value(std::ref(record.first->second));
+            promise->set_value(std::ref(record.first->second));
             auto pendingIter = pendingConfigsByUri.find(uri);
             if (pendingIter != pendingConfigsByUri.end()) {
                 pendingConfigsByUri.erase(pendingIter);

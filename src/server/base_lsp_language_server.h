@@ -2,7 +2,7 @@
 
 #include <functional>
 #include <future>
-#include <optional>
+#include <memory>
 #include <queue>
 #include <shared_mutex>
 #include <string>
@@ -33,10 +33,10 @@ namespace LCompilers::LanguageServerProtocol {
         std::unordered_map<DocumentUri, LSPAny> configsByUri;
         std::unordered_map<
             DocumentUri,
-            std::pair<int, std::optional<std::shared_future<std::reference_wrapper<LSPAny>>>>
+            std::pair<int, std::shared_ptr<std::promise<std::reference_wrapper<LSPAny>>>>
         > pendingConfigsByUri;
         std::queue<
-            std::tuple<DocumentUri, int, std::promise<std::reference_wrapper<LSPAny>>>
+            std::tuple<DocumentUri, int, std::shared_ptr<std::promise<std::reference_wrapper<LSPAny>>>>
         > pendingConfigs;
         std::shared_mutex configMutex;
         std::unique_ptr<LSPAny> workspaceConfig;
