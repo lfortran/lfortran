@@ -14,18 +14,18 @@ namespace LCompilers::LLanguageServer::Logging {
     namespace fs = std::filesystem;
 
     enum class Level {
-        OFF,
-        FATAL,
-        ERROR,
-        WARN,
-        INFO,
-        DEBUG,
-        TRACE,
-        ALL,
+        LOG_LEVEL_OFF,
+        LOG_LEVEL_FATAL,
+        LOG_LEVEL_ERROR,
+        LOG_LEVEL_WARN,
+        LOG_LEVEL_INFO,
+        LOG_LEVEL_DEBUG,
+        LOG_LEVEL_TRACE,
+        LOG_LEVEL_ALL,
     };
 
-    extern std::map<Level, std::string> LevelNames;
-    extern std::map<Level, std::string> LevelValues;
+    extern const std::map<Level, std::string> LevelNames;
+    extern const std::map<Level, std::string> LevelValues;
 
     auto levelByName(const std::string &name) -> Level;
     auto levelByValue(const std::string &value) -> Level;
@@ -96,7 +96,7 @@ namespace LCompilers::LLanguageServer::Logging {
         fs::path _logPath;
         std::ofstream logFile;
         std::recursive_mutex _mutex;
-        std::atomic<Level> _level{Level::INFO};
+        std::atomic<Level> _level{Level::LOG_LEVEL_INFO};
     };
 
 } // namespace LCompilers::LLanguageServer::Logging

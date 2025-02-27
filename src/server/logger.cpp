@@ -34,81 +34,81 @@ namespace LCompilers::LLanguageServer::Logging {
     }
 
     auto Logger::isOff() const -> bool {
-        return _level == Level::OFF;
+        return _level == Level::LOG_LEVEL_OFF;
     }
 
     auto Logger::isFatalEnabled() const -> bool {
-        return _level >= Level::FATAL;
+        return _level >= Level::LOG_LEVEL_FATAL;
     }
 
     auto Logger::isErrorEnabled() const -> bool {
-        return _level >= Level::ERROR;
+        return _level >= Level::LOG_LEVEL_ERROR;
     }
 
     auto Logger::isWarnEnabled() const -> bool {
-        return _level >= Level::WARN;
+        return _level >= Level::LOG_LEVEL_WARN;
     }
 
     auto Logger::isInfoEnabled() const -> bool {
-        return _level >= Level::INFO;
+        return _level >= Level::LOG_LEVEL_INFO;
     }
 
     auto Logger::isDebugEnabled() const -> bool {
-        return _level >= Level::DEBUG;
+        return _level >= Level::LOG_LEVEL_DEBUG;
     }
 
     auto Logger::isTraceEnabled() const -> bool {
-        return _level >= Level::TRACE;
+        return _level >= Level::LOG_LEVEL_TRACE;
     }
 
     auto Logger::areAllEnabled() const -> bool {
-        return _level == Level::ALL;
+        return _level == Level::LOG_LEVEL_ALL;
     }
 
     auto Logger::fatal() -> Formatter {
-        return Formatter(*this, Level::FATAL, "FATAL");
+        return Formatter(*this, Level::LOG_LEVEL_FATAL, "FATAL");
     }
 
     auto Logger::error() -> Formatter {
-        return Formatter(*this, Level::ERROR, "ERROR");
+        return Formatter(*this, Level::LOG_LEVEL_ERROR, "ERROR");
     }
 
     auto Logger::warn() -> Formatter {
-        return Formatter(*this, Level::WARN, "WARN");
+        return Formatter(*this, Level::LOG_LEVEL_WARN, "WARN");
     }
 
     auto Logger::info() -> Formatter {
-        return Formatter(*this, Level::INFO, "INFO");
+        return Formatter(*this, Level::LOG_LEVEL_INFO, "INFO");
     }
 
     auto Logger::debug() -> Formatter {
-        return Formatter(*this, Level::DEBUG, "DEBUG");
+        return Formatter(*this, Level::LOG_LEVEL_DEBUG, "DEBUG");
     }
 
     auto Logger::trace() -> Formatter {
-        return Formatter(*this, Level::TRACE, "TRACE");
+        return Formatter(*this, Level::LOG_LEVEL_TRACE, "TRACE");
     }
 
-    std::map<Level, std::string> LevelNames = {
-        {Level::OFF, "OFF"},
-        {Level::FATAL, "FATAL"},
-        {Level::ERROR, "ERROR"},
-        {Level::WARN, "WARN"},
-        {Level::INFO, "INFO"},
-        {Level::DEBUG, "DEBUG"},
-        {Level::TRACE, "TRACE"},
-        {Level::ALL, "ALL"},
+    const std::map<Level, std::string> LevelNames = {
+        {Level::LOG_LEVEL_OFF, "LOG_LEVEL_OFF"},
+        {Level::LOG_LEVEL_FATAL, "LOG_LEVEL_FATAL"},
+        {Level::LOG_LEVEL_ERROR, "LOG_LEVEL_ERROR"},
+        {Level::LOG_LEVEL_WARN, "LOG_LEVEL_WARN"},
+        {Level::LOG_LEVEL_INFO, "LOG_LEVEL_INFO"},
+        {Level::LOG_LEVEL_DEBUG, "LOG_LEVEL_DEBUG"},
+        {Level::LOG_LEVEL_TRACE, "LOG_LEVEL_TRACE"},
+        {Level::LOG_LEVEL_ALL, "LOG_LEVEL_ALL"},
     };
 
-    std::map<Level, std::string> LevelValues = {
-        {Level::OFF, "off"},
-        {Level::FATAL, "fatal"},
-        {Level::ERROR, "error"},
-        {Level::WARN, "warn"},
-        {Level::INFO, "info"},
-        {Level::DEBUG, "debug"},
-        {Level::TRACE, "trace"},
-        {Level::ALL, "all"},
+    const std::map<Level, std::string> LevelValues = {
+        {Level::LOG_LEVEL_OFF, "off"},
+        {Level::LOG_LEVEL_FATAL, "fatal"},
+        {Level::LOG_LEVEL_ERROR, "error"},
+        {Level::LOG_LEVEL_WARN, "warn"},
+        {Level::LOG_LEVEL_INFO, "info"},
+        {Level::LOG_LEVEL_DEBUG, "debug"},
+        {Level::LOG_LEVEL_TRACE, "trace"},
+        {Level::LOG_LEVEL_ALL, "all"},
     };
 
     auto levelByName(const std::string &name) -> Level {
