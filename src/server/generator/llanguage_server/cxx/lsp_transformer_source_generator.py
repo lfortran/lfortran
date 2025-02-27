@@ -23,6 +23,7 @@ SpecTypesAndTypeSpecs = List[
 
 MapTypesAndTypeSpecs = List[
     Tuple[
+        str,
         LspSpec,
         Dict[str, List[Any]],
         Dict[str, List[Any]]
@@ -372,7 +373,8 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                 with self.nest_name('value'):
                     self.index_by_type(value_index, value_spec, 1 + level)
                 index = type_index["map"]
-                index.append((type_spec, key_index, value_index))
+                map_name = self.nested_name()
+                index.append((map_name, type_spec, key_index, value_index))
             case "and":
                 raise ValueError(f'AND types are not supported: {type_spec}')
             case "or":
@@ -457,102 +459,44 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
             struct_specs: Optional[SpecTypesAndTypeSpecs],
             inner_specs: Optional[SpecTypesAndTypeSpecs],
             union_specs: Optional[SpecTypesAndTypeSpecs],
+            array_specs: Optional[ArraySpecTypesAndTypeSpecs],
             map_specs: Optional[MapTypesAndTypeSpecs]
     ) -> None:
+        type_name: Optional[str] = None
+
         if struct_specs is not None and len(struct_specs) > 0:
-            struct_name, _ = struct_specs[0]
-            with self.gen_try():
-                any_to_struct = f'anyTo{struct_name}'
-                self.gen_assign(f'{value_name}', f'{any_to_struct}(any)')
-            with self.gen_catch('LspException &/*e*/'):
-                self.gen_rec_any_to_union_inner(
-                    union_name,
-                    value_name,
-                    struct_specs[1:],
-                    inner_specs,
-                    union_specs,
-                    map_specs
-                )
+            type_name, _ = struct_specs[0]
+            struct_specs = struct_specs[1:]
         elif inner_specs is not None and len(inner_specs) > 0:
-            inner_name, _ = inner_specs[0]
-            with self.gen_try():
-                any_to_inner = f'anyTo{inner_name}'
-                self.gen_assign(f'{value_name}', f'{any_to_inner}(any)')
-            with self.gen_catch('LspException &/*e*/'):
-                self.gen_rec_any_to_union_inner(
-                    union_name,
-                    value_name,
-                    struct_specs,
-                    inner_specs[1:],
-                    union_specs,
-                    map_specs
-                )
+            type_name, _ = inner_specs[0]
+            inner_specs = inner_specs[1:]
         elif union_specs is not None and len(union_specs) > 0:
-            union_name, _ = union_specs[0]
+            type_name, _ = union_specs[0]
+            union_specs = union_specs[1:]
+        elif array_specs is not None and len(array_specs) > 0:
+            type_name, _, _ = array_specs[0]
+            array_specs = array_specs[1:]
+        elif map_specs is not None and len(map_specs) > 0:
+            type_name, _, _, _ = map_specs[0]
+            map_specs = map_specs[1:]
+
+        if type_name is not None:
             with self.gen_try():
-                any_to_union = f'anyTo{union_name}'
-                self.gen_assign(f'{value_name}', f'{any_to_union}(any)')
+                any_to_type = self.get_any_to_type_name(type_name)
+                self.gen_assign(f'{value_name}', f'{any_to_type}(any)')
             with self.gen_catch('LspException &/*e*/'):
                 self.gen_rec_any_to_union_inner(
                     union_name,
                     value_name,
                     struct_specs,
                     inner_specs,
-                    union_specs[1:],
+                    union_specs,
+                    array_specs,
                     map_specs
                 )
-        elif map_specs is not None and len(map_specs) > 0:
-            raise ValueError(
-                f'Unsupported spec type (map) for {union_name}: {map_specs}'
-            )
         else:
             self.gen_throw_invalid_params(
                 f'"Failed to transform LSPAny to {union_name}"'
-            )
-
-    def generate_any_to_union_array(
-            self,
-            union_name: str,
-            value_name: str,
-            array_specs: Optional[ArraySpecTypesAndTypeSpecs]
-    ) -> None:
-        if array_specs is not None and len(array_specs) > 0:
-            array_name, array_spec, _ = array_specs[0]
-            with self.nested_name_as(array_name):
-                with self.gen_try():
-                    array_field = rename_field("LSPArray")
-                    match array_spec.get("name", None):
-                        case "LSPArray":
-                            self.gen_assign(
-                                f'{value_name}',
-                                f'copy(any.{array_field}())'
-                            )
-                        case _:
-                            values_name = self.gensym_array(
-                                array_spec, 'values',
-                                f'any.{array_field}().size()'
-                            )
-                            elem_spec = array_spec["element"]
-                            with self.nest_name('elem'):
-                                elem_type = self.get_type_declaration(elem_spec)
-                            with self.gensym_foreach(f'any.{array_field}()') as elem_name:
-                                elem_expr = f'*{elem_name}'
-                                with self.nest_name('elem'):
-                                    any_to_elem = self.get_any_to_type_name(elem_spec)
-                                elem_expr = f'{any_to_elem}({elem_expr})'
-                                if self.has_cycle(array_name, elem_spec):
-                                    elem_expr = f'std::make_unique<{elem_type}>({elem_expr})'
-                                self.gen_call(f'{values_name}.push_back', elem_expr)
-                            self.gen_assign(f'{value_name}', f'std::move({values_name})')
-                with self.gen_catch('LspException &/*e*/'):
-                    self.generate_any_to_union_array(
-                        union_name,
-                        value_name,
-                        array_specs[1:]
-                    )
-        else:
-            self.gen_throw_invalid_params(
-                f'"Failed to transform LSPAny to array"'
             )
 
     @gensym_context
@@ -564,16 +508,18 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
         struct_specs = type_index.get("structure", None)
         inner_specs = type_index.get("inner", None)
         union_specs = type_index.get("union", None)
+        array_specs = type_index.get("array", None)
         map_specs = type_index.get("map", None)
-        has_object_type = (struct_specs is not None) \
+        has_inner_type = (struct_specs is not None) \
             or (inner_specs is not None) \
             or (union_specs is not None) \
+            or (array_specs is not None) \
             or (map_specs is not None)
         with self.gen_any_to_type(union_name, union_name):
             value_name = self.gensym_decl(union_name, 'value')
             self.newline()
             with self.gen_switch('any.type()'):
-                if has_object_type:
+                if has_inner_type:
                     with self.gen_case('LSPAnyType', 'object'):
                         self.gen_rec_any_to_union_inner(
                             union_name,
@@ -581,16 +527,8 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                             struct_specs,
                             inner_specs,
                             union_specs,
+                            array_specs,
                             map_specs
-                        )
-                        self.gen_break()
-                array_specs = type_index.get("array", None)
-                if array_specs is not None:
-                    with self.gen_case('LSPAnyType', 'array'):
-                        self.generate_any_to_union_array(
-                            union_name,
-                            value_name,
-                            array_specs
                         )
                         self.gen_break()
                 string_specs = type_index.get("string", None)

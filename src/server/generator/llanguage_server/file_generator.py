@@ -30,7 +30,7 @@ class FileGenerator(ABC):
         self.close()
 
     def open(self):
-        self.file_handle = self.file_path.open("w")
+        self.file_handle = self.file_path.open("w", encoding="utf-8")
         return self
 
     def close(self):
