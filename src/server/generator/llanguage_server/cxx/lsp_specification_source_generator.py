@@ -722,7 +722,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                     field_type = field_spec["type"]
                     match field_type["kind"]:
                         case "base":
-                            if self.resolve(field_type["name"]).normalized_name == "string":
+                            if self.resolve(field_type["name"]).normalized_name == "string" \
+                               or field_spec.get('optional', False):
                                 self.gen_assign(field_name, f'std::move(other.{field_name})')
                             else:
                                 self.gen_assign(field_name, f'other.{field_name}')
@@ -751,7 +752,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                 field_type = field_spec["type"]
                 match field_type["kind"]:
                     case "base":
-                        if self.resolve(field_type["name"]).normalized_name == "string":
+                        if self.resolve(field_type["name"]).normalized_name == "string" \
+                           or field_spec.get('optional', False):
                             inits.append((field_name, [f'std::move(other.{field_name})']))
                         else:
                             inits.append((field_name, [f'other.{field_name}']))
@@ -828,7 +830,10 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                 specs=specs,
                 sups=sup_inits
         ):
-            self.generate_struct_copy_body(struct_symbol, gen_required=False)
+            self.generate_struct_copy_body(
+                struct_symbol,
+                gen_required=False
+            )
         self.newline()
 
     @gensym_context

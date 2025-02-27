@@ -1,33 +1,33 @@
 set(LFORTRAN_SRC
-  cli_utils.cpp
-  lfortran.cpp
+    cli_utils.cpp
+    lfortran.cpp
 )
 set(LFORTRAN_LINK_LIBRARIES
-  lfortran_lib
+    lfortran_lib
 )
 
 if (WITH_LSP)
-  add_compile_definitions(WITH_LSP)
-  set(LFORTRAN_SRC
-    lsp_utils.cpp
-    lfortran_accessor.cpp
-    lsp_cli.cpp
-    server/lfortran_lsp_language_server.cpp
-    server/interface.cpp
-    ${LFORTRAN_SRC}
-  )
-  set(LFORTRAN_LINK_LIBRARIES
-    ${LFORTRAN_LINK_LIBRARIES}
-    llanguage_server
-  )
+    add_compile_definitions(WITH_LSP)
+    set(LFORTRAN_SRC
+        lsp_utils.cpp
+        lfortran_accessor.cpp
+        lsp_cli.cpp
+        server/lfortran_lsp_language_server.cpp
+        server/interface.cpp
+        ${LFORTRAN_SRC}
+    )
+    set(LFORTRAN_LINK_LIBRARIES
+        ${LFORTRAN_LINK_LIBRARIES}
+        llanguage_server
+    )
 else()
-  set(LFORTRAN_SRC
-    ../server/lsp_specification.cpp
-    lsp_utils.cpp
-    lfortran_accessor.cpp
-    lsp_cli.cpp
-    ${LFORTRAN_SRC}
-  )
+    set(LFORTRAN_SRC
+        ../server/lsp_specification.cpp
+        lsp_utils.cpp
+        lfortran_accessor.cpp
+        lsp_cli.cpp
+        ${LFORTRAN_SRC}
+    )
 endif()
 
 add_executable(lfortran ${LFORTRAN_SRC})
