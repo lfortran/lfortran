@@ -6502,7 +6502,13 @@ public:
         }
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                             ASRUtils::expr_type(array));
-
+        ASR::ttype_t* shape_type = ASRUtils::expr_type(newshape);
+        ASR::array_physical_typeType shape_physical_type = ASRUtils::extract_physical_type(shape_type);
+        if (shape_physical_type != ASR::array_physical_typeType::FixedSizeArray){
+            diag.add(Diagnostic("`shape` array in reshape intrinsic should be of constant size",
+                            Level::Error, Stage::Semantic, {Label("shape should be array of constant size", {newshape->base.loc})}));
+            throw SemanticAbort();
+        }
         // the size (i.e. number of elements) of 'newshape' array determines
         // the dimension size of 'ArrayReshape'
         ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));

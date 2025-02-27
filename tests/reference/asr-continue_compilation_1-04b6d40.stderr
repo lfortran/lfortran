@@ -550,3 +550,15 @@ semantic error: The `mask` argument to `parity` must be logical, but got string[
     |
 200 |     print *, parity(["a", "b"])
     |                     ^^^^^^^^^^ must be logical type
+
+semantic error: `shape` array in reshape intrinsic should be of constant size
+   --> tests/errors/continue_compilation_1.f90:209:30
+    |
+209 |     matrix = reshape(source, shape_, pad=[0])
+    |                              ^^^^^^ shape should be array of constant size
+
+semantic error: Incompatible ranks 2 and 1 in assignment
+   --> tests/errors/continue_compilation_1.f90:209:5
+    |
+209 |     matrix = reshape(source, shape_, pad=[0])
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
