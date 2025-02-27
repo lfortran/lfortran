@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-return_02-99fb0b3.stdout",
-    "stdout_hash": "5e27debbf408dd751229b64b8ff82eea490ae161307653da8a5024dc",
+    "stdout_hash": "c4bf2c6a63af83c2b0beb409f007d8417edd9a2edce2b36d2cb0e955",
     "stderr": "llvm-return_02-99fb0b3.stderr",
     "stderr_hash": "efcbccc2e2e71c4026b6ef48d5fa977b7432890f8fc2395640038aa4",
     "returncode": 0

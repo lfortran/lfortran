@@ -49,6 +49,7 @@ loop.end:                                         ; preds = %loop.head
   %16 = sext i32 %15 to i64
   %17 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %16)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %17)
   %18 = load i32, i32* %s2, align 4
   %19 = icmp ne i32 %18, 55
   br i1 %19, label %then, label %else
@@ -116,6 +117,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

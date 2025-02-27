@@ -42,6 +42,7 @@ define i32 @main(i32 %0, i8** %1) {
   %5 = sext i32 %4 to i64
   %6 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 %3, i32 2, i64 %5)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %6)
   %7 = load i32, i32* %i1, align 4
   %8 = icmp ne i32 %7, 1
   br i1 %8, label %then, label %else
@@ -75,6 +76,7 @@ ifcont5:                                          ; preds = %else4, %then3
   %14 = sext i32 %13 to i64
   %15 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 %12, i32 2, i64 %14)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void @_lfortran_free(i8* %15)
   %16 = load i32, i32* %i1, align 4
   %17 = icmp ne i32 %16, 1
   br i1 %17, label %then6, label %else7
@@ -108,6 +110,7 @@ ifcont11:                                         ; preds = %else10, %then9
   %23 = sext i32 %22 to i64
   %24 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 2, i64 %21, i32 2, i64 %23)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
+  call void @_lfortran_free(i8* %24)
   %25 = load i32, i32* %i1, align 4
   %26 = icmp ne i32 %25, 1
   br i1 %26, label %then12, label %else13
@@ -177,6 +180,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
