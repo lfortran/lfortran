@@ -281,17 +281,17 @@ class CPlusPlusLspFileGenerator(FileGenerator):
         self.write('}')
 
     def gen_map_decl(self, map_name: str, key_type: str, val_type: str) -> None:
-        line = f'{self.indentation()}extern std::map<{key_type}, {val_type}> {map_name};'
+        line = f'{self.indentation()}extern const std::map<{key_type}, {val_type}> {map_name};'
         if len(line) < self.column_width:
             self.inline(line, end='\n')
         else:
-            line = f'{self.indentation()}extern std::map<{key_type}, {val_type}>'
+            line = f'{self.indentation()}extern const std::map<{key_type}, {val_type}>'
             if len(line) < self.column_width:
                 self.inline(line, end='\n')
                 with self.indent():
                     self.write(f'{map_name};')
             else:
-                self.write('extern std::map<')
+                self.write('extern const std::map<')
                 with self.indent():
                     self.write(f'{key_type},')
                     self.write(val_type)
@@ -304,16 +304,16 @@ class CPlusPlusLspFileGenerator(FileGenerator):
             key_type: str,
             val_type: str
     ) -> Iterator:
-        line = f'{self.indentation()}std::map<{key_type}, {val_type}> {map_name} = {{'
+        line = f'{self.indentation()}const std::map<{key_type}, {val_type}> {map_name} = {{'
         if len(line) < self.column_width:
             self.inline(line, end='\n')
         else:
-            line = f'{self.indentation()}std::map<{key_type}, {val_type}>'
+            line = f'{self.indentation()}const std::map<{key_type}, {val_type}>'
             if len(line) < self.column_width:
                 self.inline(line, end='\n')
                 self.write(f'{map_name} = {{')
             else:
-                self.write('std::map<')
+                self.write('const std::map<')
                 with self.indent():
                     self.write(f'{key_type},')
                     self.write(val_type)

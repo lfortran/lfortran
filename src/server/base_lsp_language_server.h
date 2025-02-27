@@ -30,13 +30,13 @@ namespace LCompilers::LanguageServerProtocol {
     protected:
         std::unordered_map<DocumentUri, LspTextDocument> documentsByUri;
         std::shared_mutex documentMutex;
-        std::unordered_map<DocumentUri, LSPAny> configsByUri;
+        std::unordered_map<DocumentUri, std::shared_ptr<LSPAny>> configsByUri;
         std::unordered_map<
             DocumentUri,
-            std::pair<int, std::shared_ptr<std::promise<std::reference_wrapper<LSPAny>>>>
+            std::pair<int, std::shared_future<std::shared_ptr<LSPAny>>>
         > pendingConfigsByUri;
         std::queue<
-            std::tuple<DocumentUri, int, std::shared_ptr<std::promise<std::reference_wrapper<LSPAny>>>>
+            std::tuple<DocumentUri, int, std::promise<std::shared_ptr<LSPAny>>>
         > pendingConfigs;
         std::shared_mutex configMutex;
         std::unique_ptr<LSPAny> workspaceConfig;
@@ -48,13 +48,11 @@ namespace LCompilers::LanguageServerProtocol {
         auto getConfig(
             const DocumentUri &uri,
             const std::string &configSection
-        ) -> const LSPAny &;
+        ) -> const std::shared_ptr<LSPAny>;
 
-        inline auto getConfig(
+        auto getConfig(
             const DocumentUri &uri
-        ) -> const LSPAny & {
-            return getConfig(uri, configSection);
-        }
+        ) -> const std::shared_ptr<LSPAny>;
 
         virtual auto invalidateConfigCache() -> void;
         auto updateLogLevel() -> void;

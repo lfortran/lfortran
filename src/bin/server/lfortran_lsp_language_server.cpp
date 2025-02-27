@@ -50,10 +50,10 @@ namespace LCompilers::LanguageServerProtocol {
         CompilerOptions compiler_options;
         compiler_options.continue_compilation = true;
 
-        const LSPAny &config = getConfig(uri);
-        switch (config.type()) {
+        const std::shared_ptr<LSPAny> config = getConfig(uri);
+        switch (config->type()) {
         case LSPAnyType::OBJECT_TYPE: {
-            const LSPObject &object = config.object();
+            const LSPObject &object = config->object();
             auto iter = object.find("compiler");
             if (iter != object.end()) {
                 switch (iter->second->type()) {
@@ -160,7 +160,7 @@ namespace LCompilers::LanguageServerProtocol {
         default: {
             logger.error()
                 << "Unsupported type of config for uri=\"" << uri << "\": "
-                   "LSPAnyType::" << LSPAnyTypeNames.at(config.type())
+                   "LSPAnyType::" << LSPAnyTypeNames.at(config->type())
                 << std::endl;
         }
         }

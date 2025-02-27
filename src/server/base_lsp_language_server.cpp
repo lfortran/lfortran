@@ -33,9 +33,15 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto BaseLspLanguageServer::getConfig(
+        const DocumentUri &uri
+    ) -> const std::shared_ptr<LSPAny> {
+        return getConfig(uri, configSection);
+    }
+
+    auto BaseLspLanguageServer::getConfig(
         const DocumentUri &uri,
         const std::string &configSection
-    ) -> const LSPAny & {
+    ) -> const std::shared_ptr<LSPAny> {
         std::shared_lock<std::shared_mutex> readLock(configMutex);
         auto configIter = configsByUri.find(uri);
         if (configIter != configsByUri.end()) {
@@ -57,29 +63,29 @@ namespace LCompilers::LanguageServerProtocol {
             return configIter->second;
         }
 
-        std::shared_ptr<std::promise<std::reference_wrapper<LSPAny>>> promise;
+        std::shared_future<std::shared_ptr<LSPAny>> future;
 
         auto pendingIter = pendingConfigsByUri.find(uri);
         if (pendingIter != pendingConfigsByUri.end()) {
-            promise = pendingIter->second.second;
+            future = pendingIter->second.second;
         } else {
             int requestId = sendWorkspace_configuration(params);
-            promise = std::make_shared<std::promise<std::reference_wrapper<LSPAny>>>();
-            pendingConfigs.emplace(uri, requestId, promise);
+            std::promise<std::shared_ptr<LSPAny>> promise;
+            future = promise.get_future().share();
+            pendingConfigs.emplace(uri, requestId, std::move(promise));
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
                 std::make_tuple(uri),
-                std::make_tuple(requestId, promise)
+                std::make_tuple(requestId, future)
             );
         }
 
         writeLock.unlock();
 
-        std::shared_future<std::reference_wrapper<LSPAny>> future = promise->get_future().share();
         if (future.valid()) {
             future.wait();
             if (future.valid()) {
-                return future.get().get();
+                return future.get();
             }
         }
 
@@ -354,8 +360,11 @@ namespace LCompilers::LanguageServerProtocol {
             const DocumentUri &uri = std::get<0>(triple);
             // const int requestId = std::get<1>(triple);
             auto &promise = std::get<2>(triple);
-            auto record = configsByUri.emplace(uri, std::move(config));
-            promise->set_value(std::ref(record.first->second));
+            auto record = configsByUri.emplace(
+                uri,
+                std::make_unique<LSPAny>(std::move(config))
+            );
+            promise.set_value(record.first->second);
             auto pendingIter = pendingConfigsByUri.find(uri);
             if (pendingIter != pendingConfigsByUri.end()) {
                 pendingConfigsByUri.erase(pendingIter);
