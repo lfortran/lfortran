@@ -1,13 +1,16 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%complex_4 = type { float, float }
+%complex_4 = type <{ float, float }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [8 x i8] c"{R4,R4}\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.1 = private unnamed_addr constant [8 x i8] c"{R4,R4}\00", align 1
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.2 = private unnamed_addr constant [8 x i8] c"{R4,R4}\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
@@ -19,105 +22,72 @@ define i32 @main(i32 %0, i8** %1) {
   %4 = getelementptr %complex_4, %complex_4* %2, i32 0, i32 1
   store float 3.000000e+00, float* %3, align 4
   store float 4.000000e+00, float* %4, align 4
-  %5 = load %complex_4, %complex_4* %2, align 4
-  store %complex_4 %5, %complex_4* %x, align 4
-  %6 = load %complex_4, %complex_4* %x, align 4
+  %5 = load %complex_4, %complex_4* %2, align 1
+  store %complex_4 %5, %complex_4* %x, align 1
+  %6 = load %complex_4, %complex_4* %x, align 1
   %7 = alloca %complex_4, align 8
   %8 = getelementptr %complex_4, %complex_4* %7, i32 0, i32 0
   %9 = getelementptr %complex_4, %complex_4* %7, i32 0, i32 1
   store float 4.000000e+00, float* %8, align 4
   store float 0.000000e+00, float* %9, align 4
-  %10 = load %complex_4, %complex_4* %7, align 4
+  %10 = load %complex_4, %complex_4* %7, align 1
   %11 = alloca %complex_4, align 8
-  store %complex_4 %6, %complex_4* %11, align 4
+  store %complex_4 %6, %complex_4* %11, align 1
   %12 = alloca %complex_4, align 8
-  store %complex_4 %10, %complex_4* %12, align 4
+  store %complex_4 %10, %complex_4* %12, align 1
   %13 = alloca %complex_4, align 8
   call void @_lfortran_complex_div_32(%complex_4* %11, %complex_4* %12, %complex_4* %13)
-  %14 = load %complex_4, %complex_4* %13, align 4
-  store %complex_4 %14, %complex_4* %x, align 4
-  %15 = load %complex_4, %complex_4* %x, align 4
+  %14 = load %complex_4, %complex_4* %13, align 1
+  store %complex_4 %14, %complex_4* %x, align 1
+  %15 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info, i32 0, i32 0), i32 0, %complex_4* %x)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   %16 = alloca %complex_4, align 8
-  store %complex_4 %15, %complex_4* %16, align 4
   %17 = getelementptr %complex_4, %complex_4* %16, i32 0, i32 0
-  %18 = load float, float* %17, align 4
-  %19 = fpext float %18 to double
-  %20 = alloca %complex_4, align 8
-  store %complex_4 %15, %complex_4* %20, align 4
-  %21 = getelementptr %complex_4, %complex_4* %20, i32 0, i32 1
-  %22 = load float, float* %21, align 4
-  %23 = fpext float %22 to double
-  %24 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 6, double %19, i32 6, double %23)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %25 = alloca %complex_4, align 8
-  %26 = getelementptr %complex_4, %complex_4* %25, i32 0, i32 0
-  %27 = getelementptr %complex_4, %complex_4* %25, i32 0, i32 1
-  store float 2.000000e+00, float* %26, align 4
-  store float 0.000000e+00, float* %27, align 4
-  %28 = load %complex_4, %complex_4* %25, align 4
-  %29 = load %complex_4, %complex_4* %x, align 4
-  %30 = alloca %complex_4, align 8
-  store %complex_4 %28, %complex_4* %30, align 4
+  %18 = getelementptr %complex_4, %complex_4* %16, i32 0, i32 1
+  store float 2.000000e+00, float* %17, align 4
+  store float 0.000000e+00, float* %18, align 4
+  %19 = load %complex_4, %complex_4* %16, align 1
+  %20 = load %complex_4, %complex_4* %x, align 1
+  %21 = alloca %complex_4, align 8
+  store %complex_4 %19, %complex_4* %21, align 1
+  %22 = alloca %complex_4, align 8
+  store %complex_4 %20, %complex_4* %22, align 1
+  %23 = alloca %complex_4, align 8
+  call void @_lfortran_complex_div_32(%complex_4* %21, %complex_4* %22, %complex_4* %23)
+  %24 = load %complex_4, %complex_4* %23, align 1
+  store %complex_4 %24, %complex_4* %x, align 1
+  %25 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, %complex_4* %x)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %26 = alloca %complex_4, align 8
+  %27 = getelementptr %complex_4, %complex_4* %26, i32 0, i32 0
+  %28 = getelementptr %complex_4, %complex_4* %26, i32 0, i32 1
+  store float 1.000000e+00, float* %27, align 4
+  store float 0.000000e+00, float* %28, align 4
+  %29 = load %complex_4, %complex_4* %26, align 1
+  %30 = load %complex_4, %complex_4* %x, align 1
   %31 = alloca %complex_4, align 8
-  store %complex_4 %29, %complex_4* %31, align 4
-  %32 = alloca %complex_4, align 8
-  call void @_lfortran_complex_div_32(%complex_4* %30, %complex_4* %31, %complex_4* %32)
-  %33 = load %complex_4, %complex_4* %32, align 4
-  store %complex_4 %33, %complex_4* %x, align 4
-  %34 = load %complex_4, %complex_4* %x, align 4
+  %32 = getelementptr %complex_4, %complex_4* %31, i32 0, i32 0
+  %33 = getelementptr %complex_4, %complex_4* %31, i32 0, i32 1
+  store float 0.000000e+00, float* %32, align 4
+  store float 3.000000e+00, float* %33, align 4
+  %34 = load %complex_4, %complex_4* %31, align 1
   %35 = alloca %complex_4, align 8
-  store %complex_4 %34, %complex_4* %35, align 4
-  %36 = getelementptr %complex_4, %complex_4* %35, i32 0, i32 0
-  %37 = load float, float* %36, align 4
-  %38 = fpext float %37 to double
+  store %complex_4 %30, %complex_4* %35, align 1
+  %36 = alloca %complex_4, align 8
+  store %complex_4 %34, %complex_4* %36, align 1
+  %37 = alloca %complex_4, align 8
+  call void @_lfortran_complex_add_32(%complex_4* %35, %complex_4* %36, %complex_4* %37)
+  %38 = load %complex_4, %complex_4* %37, align 1
   %39 = alloca %complex_4, align 8
-  store %complex_4 %34, %complex_4* %39, align 4
-  %40 = getelementptr %complex_4, %complex_4* %39, i32 0, i32 1
-  %41 = load float, float* %40, align 4
-  %42 = fpext float %41 to double
-  %43 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 6, double %38, i32 6, double %42)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  %44 = alloca %complex_4, align 8
-  %45 = getelementptr %complex_4, %complex_4* %44, i32 0, i32 0
-  %46 = getelementptr %complex_4, %complex_4* %44, i32 0, i32 1
-  store float 1.000000e+00, float* %45, align 4
-  store float 0.000000e+00, float* %46, align 4
-  %47 = load %complex_4, %complex_4* %44, align 4
-  %48 = load %complex_4, %complex_4* %x, align 4
-  %49 = alloca %complex_4, align 8
-  %50 = getelementptr %complex_4, %complex_4* %49, i32 0, i32 0
-  %51 = getelementptr %complex_4, %complex_4* %49, i32 0, i32 1
-  store float 0.000000e+00, float* %50, align 4
-  store float 3.000000e+00, float* %51, align 4
-  %52 = load %complex_4, %complex_4* %49, align 4
-  %53 = alloca %complex_4, align 8
-  store %complex_4 %48, %complex_4* %53, align 4
-  %54 = alloca %complex_4, align 8
-  store %complex_4 %52, %complex_4* %54, align 4
-  %55 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(%complex_4* %53, %complex_4* %54, %complex_4* %55)
-  %56 = load %complex_4, %complex_4* %55, align 4
-  %57 = alloca %complex_4, align 8
-  store %complex_4 %47, %complex_4* %57, align 4
-  %58 = alloca %complex_4, align 8
-  store %complex_4 %56, %complex_4* %58, align 4
-  %59 = alloca %complex_4, align 8
-  call void @_lfortran_complex_div_32(%complex_4* %57, %complex_4* %58, %complex_4* %59)
-  %60 = load %complex_4, %complex_4* %59, align 4
-  store %complex_4 %60, %complex_4* %x, align 4
-  %61 = load %complex_4, %complex_4* %x, align 4
-  %62 = alloca %complex_4, align 8
-  store %complex_4 %61, %complex_4* %62, align 4
-  %63 = getelementptr %complex_4, %complex_4* %62, i32 0, i32 0
-  %64 = load float, float* %63, align 4
-  %65 = fpext float %64 to double
-  %66 = alloca %complex_4, align 8
-  store %complex_4 %61, %complex_4* %66, align 4
-  %67 = getelementptr %complex_4, %complex_4* %66, i32 0, i32 1
-  %68 = load float, float* %67, align 4
-  %69 = fpext float %68 to double
-  %70 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 6, double %65, i32 6, double %69)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %70, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  store %complex_4 %29, %complex_4* %39, align 1
+  %40 = alloca %complex_4, align 8
+  store %complex_4 %38, %complex_4* %40, align 1
+  %41 = alloca %complex_4, align 8
+  call void @_lfortran_complex_div_32(%complex_4* %39, %complex_4* %40, %complex_4* %41)
+  %42 = load %complex_4, %complex_4* %41, align 1
+  store %complex_4 %42, %complex_4* %x, align 1
+  %43 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.2, i32 0, i32 0), i32 0, %complex_4* %x)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
 
@@ -129,7 +99,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_complex_div_32(%complex_4*, %complex_4*, %complex_4*)
 
-declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 
