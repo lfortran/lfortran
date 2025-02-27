@@ -159,7 +159,7 @@ public:
     }
 
 
-    std::string get_type(const ASR::ttype_t *t) {
+    std::string get_type(const ASR::ttype_t *t, ASR::symbol_t *type_decl = nullptr) {
         std::string r = "";
         switch (t->type) {
             case ASR::ttypeType::Integer: {
@@ -248,6 +248,11 @@ public:
                 break;
             } case ASR::ttypeType::CPtr: {
                 r = "type(c_ptr)";
+                break;
+            } case ASR::ttypeType::FunctionType: {
+                r = "procedure(";
+                r += ASRUtils::symbol_name(type_decl);
+                r += ")";
                 break;
             }
             default:
@@ -686,7 +691,7 @@ public:
     void visit_Variable(const ASR::Variable_t &x) {
         std::string r = indent;
         std::string dims = "(";
-        r += get_type(x.m_type);
+        r += get_type(x.m_type, x.m_type_declaration);
         switch (x.m_intent) {
             case ASR::intentType::In : {
                 r += ", intent(in)";
