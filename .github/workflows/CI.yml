@@ -572,8 +572,8 @@ jobs:
             FC="$(pwd)/src/bin/lfortran"
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
-            git checkout -t origin/segfault_removal
-            git checkout b91b08a1e2ac9e2dea1b3c735f3b0bf10a978b5e
+            git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
+            git checkout 0002f048c4501e7000af91408a2b5d02645ddc32
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
