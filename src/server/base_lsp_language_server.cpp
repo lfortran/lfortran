@@ -1,6 +1,7 @@
 #include <cctype>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 #include <stdexcept>
 #include <string>
@@ -57,35 +58,40 @@ namespace LCompilers::LanguageServerProtocol {
             return configIter->second;
         }
 
-        std::shared_future<std::reference_wrapper<LSPAny>> future;
+        std::optional<std::shared_future<std::reference_wrapper<LSPAny>>> maybe;
 
         auto pendingIter = pendingConfigsByUri.find(uri);
         if (pendingIter != pendingConfigsByUri.end()) {
-            future = pendingIter->second.second;
+            maybe = pendingIter->second.second;
         } else {
             int requestId = sendWorkspace_configuration(params);
             std::promise<std::reference_wrapper<LSPAny>> promise;
-            future = promise.get_future().share();
+            maybe = promise.get_future().share();
             pendingConfigs.emplace(uri, requestId, std::move(promise));
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
                 std::make_tuple(uri),
-                std::make_tuple(requestId, future)
+                std::make_tuple(requestId, maybe.value())
             );
         }
 
         writeLock.unlock();
 
-        if (future.valid()) {
-            future.wait();
+        if (maybe.has_value()) {
+            std::shared_future<std::reference_wrapper<LSPAny>> &future = maybe.value();
             if (future.valid()) {
-                return future.get().get();
+                future.wait();
+                if (future.valid()) {
+                    return future.get().get();
+                }
             }
-        }
 
-        throw std::runtime_error(
-            "Future config became invalid while waiting for it."
-        );
+            throw std::runtime_error(
+                "Future config became invalid while waiting for it."
+            );
+        } else {
+            throw std::runtime_error("Failed to initialize future config.");
+        }
     }
 
     auto BaseLspLanguageServer::invalidateConfigCache() -> void {
