@@ -1143,6 +1143,9 @@ public:
             } else {
                 throw CodeGenError("Only StructInstanceMember and Variable are supported Nullify type");
             }
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*tmp_sym)) {
+                tmp_sym = ASRUtils::symbol_get_past_external(tmp_sym);
+            }
             std::uint32_t h = get_hash((ASR::asr_t*)tmp_sym);
             llvm::Value *target = llvm_symtab[h];
             llvm::Type* tp = llvm_utils->get_type_from_ttype_t_util(
