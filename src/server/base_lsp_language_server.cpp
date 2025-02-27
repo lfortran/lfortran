@@ -71,7 +71,7 @@ namespace LCompilers::LanguageServerProtocol {
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
                 std::make_tuple(uri),
-                std::make_tuple(requestId, maybe.value())
+                std::make_tuple(requestId, maybe)
             );
         }
 
