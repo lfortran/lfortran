@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <cstring>
+#include <string>
+#include <vector>
 
 #include <bin/cli_utils.h>
-#include <bin/lsp_utils.h>
 #include <bin/server/lfortran_lsp_language_server.h>
 
 namespace LCompilers::LanguageServerProtocol {
@@ -25,6 +28,52 @@ namespace LCompilers::LanguageServerProtocol {
         )
     {
         optionsByUri.reserve(256);
+    }
+
+    auto LFortranLspLanguageServer::diagnosticLevelToLspSeverity(
+        diag::Level level
+    ) const -> DiagnosticSeverity {
+        switch (level) {
+        case diag::Level::Error:
+            return DiagnosticSeverity::ERROR;
+        case diag::Level::Warning:
+            return DiagnosticSeverity::WARNING;
+        case diag::Level::Note:
+            return DiagnosticSeverity::INFORMATION;
+        case diag::Level::Help:
+            return DiagnosticSeverity::HINT;
+        default:
+            return DiagnosticSeverity::WARNING;
+        }
+    }
+
+    auto LFortranLspLanguageServer::asrSymbolTypeToLspSymbolKind(
+        ASR::symbolType symbolType
+    ) const -> SymbolKind {
+        switch (symbolType) {
+        case ASR::symbolType::Module:
+            return SymbolKind::MODULE;
+        case ASR::symbolType::Function:
+            return SymbolKind::FUNCTION;
+        case ASR::symbolType::GenericProcedure:
+            return SymbolKind::FUNCTION;
+        case ASR::symbolType::CustomOperator:
+            return SymbolKind::OPERATOR;
+        case ASR::symbolType::Struct:
+            return SymbolKind::STRUCT;
+        case ASR::symbolType::Enum:
+            return SymbolKind::ENUM;
+        case ASR::symbolType::Variable:
+            return SymbolKind::VARIABLE;
+        case ASR::symbolType::Class:
+            return SymbolKind::CLASS;
+        case ASR::symbolType::ClassProcedure:
+            return SymbolKind::METHOD;
+        case ASR::symbolType::Template:
+            return SymbolKind::TYPE_PARAMETER;
+        default:
+            return SymbolKind::FUNCTION;
+        }
     }
 
     auto LFortranLspLanguageServer::invalidateConfigCache() -> void {
@@ -214,7 +263,7 @@ namespace LCompilers::LanguageServerProtocol {
                         Diagnostic diagnostic;
                         diagnostic.range = std::move(range);
                         diagnostic.severity =
-                            diagnostic_level_to_lsp_severity(highlight.severity);
+                            diagnosticLevelToLspSeverity(highlight.severity);
                         diagnostic.message = highlight.message;
                         diagnostic.source = source;
 
@@ -226,31 +275,34 @@ namespace LCompilers::LanguageServerProtocol {
                     params.version = version;
                     params.diagnostics = std::move(diagnostics);
                     if (trace >= TraceValues::MESSAGES) {
-                      const auto end = std::chrono::high_resolution_clock::now();
-                      const auto duration =
-                          std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-                      LogTraceParams logTraceParams;
-                      logTraceParams.message =
-                          "Sending response 'textDocument/publishDiagnostics'. Processing request took " +
-                          std::to_string(duration.count()) + "ms";
-                      if (trace >= TraceValues::VERBOSE) {
-                          LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
-                          logTraceParams.verbose = "Result: " + serializer.pprint(any);
-                      }
-                      sendLogTrace(logTraceParams);
+                        const auto end = std::chrono::high_resolution_clock::now();
+                        const auto duration =
+                            std::chrono::duration_cast<std::chrono::milliseconds>(
+                                (end - start)
+                            );
+                        LogTraceParams logTraceParams;
+                        logTraceParams.message =
+                            "Sending response 'textDocument/publishDiagnostics'. "
+                            "Processing request took " +
+                            std::to_string(duration.count()) + "ms";
+                        if (trace >= TraceValues::VERBOSE) {
+                            LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
+                            logTraceParams.verbose = "Result: " + serializer.pprint(any);
+                        }
+                        sendLogTrace(logTraceParams);
                     }
                     sendTextDocument_publishDiagnostics(params);
                 } catch (std::exception &e) {
                     logger.error()
                         << "[" << threadName << "_" << threadId << "] "
-                        << "Failed to validate document (uri=\""
+                           "Failed to validate document (uri=\""
                         << uri << "\"): " << e.what()
                         << std::endl;
                 }
             } catch (std::exception &e) {
                 logger.error()
                     << "[" << threadName << "_" << threadId << "] "
-                    << "Failed to read document attributes: " << e.what()
+                       "Failed to read document attributes: " << e.what()
                     << std::endl;
             }
         });

@@ -1,8 +1,11 @@
 #pragma once
 
 #include <shared_mutex>
+#include <string>
 #include <unordered_map>
 
+#include <libasr/asr.h>
+#include <libasr/diagnostics.h>
 #include <libasr/utils.h>
 
 #include <server/base_lsp_language_server.h>
@@ -69,6 +72,10 @@ namespace LCompilers::LanguageServerProtocol {
 
         auto validate(LspTextDocument &document) -> void;
         auto getCompilerOptions(const DocumentUri &uri) -> const CompilerOptions &;
+
+        auto diagnosticLevelToLspSeverity(diag::Level level) const -> DiagnosticSeverity;
+
+        auto asrSymbolTypeToLspSymbolKind(ASR::symbolType symbol_type) const -> SymbolKind;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

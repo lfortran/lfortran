@@ -9,9 +9,6 @@ set(LFORTRAN_LINK_LIBRARIES
 if (WITH_LSP)
     add_compile_definitions(WITH_LSP)
     set(LFORTRAN_SRC
-        lsp_utils.cpp
-        lfortran_accessor.cpp
-        lsp_cli.cpp
         server/lfortran_lsp_language_server.cpp
         server/interface.cpp
         ${LFORTRAN_SRC}
@@ -20,15 +17,13 @@ if (WITH_LSP)
         ${LFORTRAN_LINK_LIBRARIES}
         llanguage_server
     )
-else()
-    set(LFORTRAN_SRC
-        ../server/lsp_specification.cpp
-        lsp_utils.cpp
-        lfortran_accessor.cpp
-        lsp_cli.cpp
-        ${LFORTRAN_SRC}
-    )
 endif()
+
+set(LFORTRAN_SRC
+    lfortran_accessor.cpp
+    lsp_cli.cpp
+    ${LFORTRAN_SRC}
+)
 
 add_executable(lfortran ${LFORTRAN_SRC})
 target_include_directories(lfortran PRIVATE "tpl")

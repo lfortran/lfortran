@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include <libasr/asr_builder.h>
 #include <libasr/asr.h>
@@ -11,14 +13,10 @@
 #include <libasr/location.h>
 #include <libasr/lsp_interface.h>
 
-#include <server/lsp_specification.h>
-
 #include <bin/lfortran_accessor.h>
 #include <bin/lsp_cli.h>
-#include <bin/lsp_utils.h>
 
 namespace LCompilers {
-    namespace lsp = LCompilers::LanguageServerProtocol;
 
     LFortranJSON::LFortranJSON(LFortranJSONType type)
         : type(type)
@@ -140,8 +138,7 @@ namespace LCompilers {
             uint32_t end_character = symbol.last_column;
             uint32_t end_line = symbol.last_line;
             std::string name = symbol.symbol_name;
-            lsp::SymbolKind kind =
-                lsp::asr_symbol_type_to_lsp_symbol_kind(symbol.symbol_type);
+            ASR::symbolType kind = symbol.symbol_type;
 
             range_object.SetObject();
 
@@ -195,8 +192,7 @@ namespace LCompilers {
             uint32_t start_column = diag.first_column;
             uint32_t end_line = diag.last_line;
             uint32_t end_column = diag.last_column;
-            lsp::DiagnosticSeverity severity =
-                lsp::diagnostic_level_to_lsp_severity(diag.severity);
+            diag::Level severity = diag.severity;
             std::string msg = diag.message;
 
             range_obj.SetObject();
@@ -298,8 +294,7 @@ namespace LCompilers {
             uint32_t end_character = symbol.last_column;
             uint32_t end_line = symbol.last_line;
             std::string name = symbol.symbol_name;
-            lsp::SymbolKind kind =
-                lsp::asr_symbol_type_to_lsp_symbol_kind(symbol.symbol_type);
+            ASR::symbolType kind = symbol.symbol_type;
 
             range_object.SetObject();
 
@@ -384,8 +379,7 @@ namespace LCompilers {
             uint32_t end_character = symbol.last_column;
             uint32_t end_line = symbol.last_line;
             std::string name = symbol.symbol_name;
-            lsp::SymbolKind kind =
-                lsp::asr_symbol_type_to_lsp_symbol_kind(symbol.symbol_type);
+            ASR::symbolType kind = symbol.symbol_type;
 
             range_object.SetObject();
 
