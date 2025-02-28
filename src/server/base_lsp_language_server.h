@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <future>
 #include <memory>
 #include <queue>
@@ -11,25 +10,32 @@
 #include <utility>
 
 #include <server/logger.h>
+#include <server/lsp_config.h>
 #include <server/lsp_language_server.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    namespace lsc = LCompilers::LanguageServerProtocol::Config;
 
     class BaseLspLanguageServer : public LspLanguageServer {
-    public:
+    protected:
         BaseLspLanguageServer(
             ls::MessageQueue &incomingMessages,
             ls::MessageQueue &outgoingMessages,
             std::size_t numRequestThreads,
             std::size_t numWorkerThreads,
             lsl::Logger &logger,
-            const std::string &configSection
+            const std::string &configSection,
+            std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
+            std::shared_ptr<lsc::LspConfig> workspaceConfig
         );
-    protected:
+
+        std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer;
+
         std::unordered_map<DocumentUri, LspTextDocument> documentsByUri;
         std::shared_mutex documentMutex;
+
         std::unordered_map<DocumentUri, std::shared_ptr<LSPAny>> configsByUri;
         std::unordered_map<
             DocumentUri,
@@ -39,8 +45,12 @@ namespace LCompilers::LanguageServerProtocol {
             std::tuple<DocumentUri, int, std::promise<std::shared_ptr<LSPAny>>>
         > pendingConfigs;
         std::shared_mutex configMutex;
-        std::unique_ptr<LSPAny> workspaceConfig;
+
+        std::shared_ptr<lsc::LspConfig> workspaceConfig;
         std::shared_mutex workspaceMutex;
+
+        std::unordered_map<DocumentUri, std::shared_ptr<lsc::LspConfig>> lspConfigsByUri;
+        std::shared_mutex lspConfigMutex;
 
         std::atomic_bool clientSupportsWorkspaceDidChangeConfigurationNotifications = false;
         std::atomic_bool clientSupportsWorkspaceConfigurationRequests = false;
@@ -52,26 +62,22 @@ namespace LCompilers::LanguageServerProtocol {
 
         auto getConfig(
             const DocumentUri &uri
-        ) -> const std::shared_ptr<LSPAny>;
+        ) -> const std::shared_ptr<lsc::LspConfig>;
 
         virtual auto invalidateConfigCache() -> void;
         auto updateLogLevel() -> void;
-
-        // ================= //
-        // Incoming Requests //
-        // ================= //
 
         auto receiveInitialize(
             InitializeParams &params
         ) -> InitializeResult override;
 
+        auto receiveClient_registerCapability(
+            ClientRegisterCapabilityResult params
+        ) -> void override;
+
         auto receiveInitialized(
             InitializedParams &params
         ) -> void override;
-
-        // ====================== //
-        // Incoming Notifications //
-        // ====================== //
 
         auto receiveWorkspace_didRenameFiles(
             RenameFilesParams &params

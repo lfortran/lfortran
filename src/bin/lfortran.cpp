@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
+#ifndef CLI11_HAS_FILESYSTEM
 #define CLI11_HAS_FILESYSTEM 0
+#endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 
 #include <libasr/stacktrace.h>
@@ -2346,8 +2348,8 @@ int main_app(int argc, char *argv[]) {
 
 #ifdef WITH_LSP
     // server
-    lsi::CommandLineInterface lsp_cli;
-    CLI::App &server = lsp_cli.prepare(app);
+    lsi::CommandLineInterface lfortranLanguageServerInterface;
+    CLI::App &server = lfortranLanguageServerInterface.prepare(app);
 #endif
 
     app.get_formatter()->column_width(25);
@@ -2492,11 +2494,20 @@ int main_app(int argc, char *argv[]) {
 
 #ifdef WITH_LSP
     if (server) {
-      lsi::ExitCode exit_code = lsp_cli.validate();
-      if (exit_code == lsi::ExitCode::SUCCESS) {
-        exit_code = lsp_cli.serve();
-      }
-      return static_cast<int>(exit_code);
+        lsi::ExitCode exitCode;
+        try {
+            lfortranLanguageServerInterface.serve();
+            exitCode = lsi::ExitCode::SUCCESS;
+        } catch (const lsi::ExitError &e) {
+            std::cerr << e.what() << std::endl;
+            exitCode = e.code();
+        } catch (const std::exception &e) {
+            std::cerr
+                << "Caught unhandled exception: " << e.what()
+                << std::endl;
+            exitCode = lsi::ExitCode::UNHANDLED_EXCEPTION;
+        }
+        return static_cast<int>(exitCode);
     }
 #endif
 

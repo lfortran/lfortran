@@ -9,6 +9,7 @@ set(LFORTRAN_LINK_LIBRARIES
 if (WITH_LSP)
     add_compile_definitions(WITH_LSP)
     set(LFORTRAN_SRC
+        server/lfortran_lsp_config.cpp
         server/lfortran_lsp_language_server.cpp
         server/interface.cpp
         ${LFORTRAN_SRC}

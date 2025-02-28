@@ -72,15 +72,4 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
     }
 
-    auto init_compiler_options(
-        CompilerOptions &compiler_options,
-        int argc,
-        const char *const *argv
-    ) -> int {
-        CLI::App app{"LFortran: modern interactive LLVM-based Fortran compiler"};
-        init_compiler_options(compiler_options, app);
-        CLI11_PARSE(app, argc, argv);
-        return 0;
-    }
-
 } // namespace LCompilers::CommandLineInterface

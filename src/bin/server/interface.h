@@ -1,13 +1,16 @@
 #pragma once
 
 #include <cstddef>
-#include <filesystem>
 #include <map>
 #include <memory>
 #include <regex>
+#include <stdexcept>
 #include <string>
 
+#ifndef CLI11_HAS_FILESYSTEM
 #define CLI11_HAS_FILESYSTEM 0
+#endif // CLI11_HAS_FILESYSTEM
+
 #include <bin/CLI11.hpp>
 
 #include <server/communication_protocol.h>
@@ -16,11 +19,12 @@
 #include <server/message_stream.h>
 #include <server/thread_pool.h>
 
-namespace LCompilers::LLanguageServer::Interface {
-    namespace fs = std::filesystem;
+#include <bin/server/lfortran_lsp_config.h>
 
+namespace LCompilers::LLanguageServer::Interface {
     namespace ls = LCompilers::LLanguageServer;
     namespace lsl = LCompilers::LLanguageServer::Logging;
+    namespace lsc = LCompilers::LanguageServerProtocol::Config;
 
     const std::regex RE_CONFIG_SECTION(
         "^(?:[a-z_$][a-z_$0-9]*)(?:\\.(?:[a-z_$][a-z_$0-9]*))*$",
@@ -32,7 +36,11 @@ namespace LCompilers::LLanguageServer::Interface {
         std::regex_constants::ECMAScript
     );
 
-    auto isValidConfigSection(const std::string &configSection) -> bool;
+    auto validateConfigSection(const std::string &configSection) -> std::string;
+
+    auto existsAndIsWritable(const std::string &pathString) -> std::string;
+
+    auto existsAndIsExecutable(const std::string &pathString) -> std::string;
 
     enum class ExitCode {
         SUCCESS = 0,
@@ -41,15 +49,23 @@ namespace LCompilers::LLanguageServer::Interface {
         UNHANDLED_EXCEPTION = 3,
     };
 
-    extern std::map<ExitCode, std::string> ExitCodeNames;
+    extern const std::map<ExitCode, std::string> ExitCodeNames;
+
+    class ExitError : public std::logic_error {
+    public:
+        ExitError(ExitCode code, const std::string &message);
+        auto code() const -> ExitCode;
+    private:
+        ExitCode _code;
+    };
 
     enum class Language {
         FORTRAN,
     };
 
-    extern std::map<Language, std::string> LanguageNames;
+    extern const std::map<Language, std::string> LanguageNames;
 
-    extern std::map<Language, std::string> LanguageValues;
+    extern const std::map<Language, std::string> LanguageValues;
 
     auto languageByValue(const std::string &value) -> Language;
 
@@ -57,9 +73,9 @@ namespace LCompilers::LLanguageServer::Interface {
         JSON_RPC,
     };
 
-    extern std::map<DataFormat, std::string> DataFormatNames;
+    extern const std::map<DataFormat, std::string> DataFormatNames;
 
-    extern std::map<DataFormat, std::string> DataFormatValues;
+    extern const std::map<DataFormat, std::string> DataFormatValues;
 
     auto dataFormatByValue(const std::string &value) -> DataFormat;
 
@@ -67,9 +83,9 @@ namespace LCompilers::LLanguageServer::Interface {
         STDIO,
     };
 
-    extern std::map<CommunicationProtocol, std::string> CommunicationProtocolNames;
+    extern const std::map<CommunicationProtocol, std::string> CommunicationProtocolNames;
 
-    extern std::map<CommunicationProtocol, std::string> CommunicationProtocolValues;
+    extern const std::map<CommunicationProtocol, std::string> CommunicationProtocolValues;
 
     auto communicationProtocolByValue(const std::string &value) -> CommunicationProtocol;
 
@@ -77,26 +93,20 @@ namespace LCompilers::LLanguageServer::Interface {
         LSP,
     };
 
-    extern std::map<ServerProtocol, std::string> ServerProtocolNames;
+    extern const std::map<ServerProtocol, std::string> ServerProtocolNames;
 
-    extern std::map<ServerProtocol, std::string> ServerProtocolValues;
+    extern const std::map<ServerProtocol, std::string> ServerProtocolValues;
 
     auto serverProtocolByValue(const std::string &value) -> ServerProtocol;
 
-    /**
-     * Literal argument values from the command line.
-     */
-    struct CommandLineArguments {
-        std::string language = LanguageValues.at(Language::FORTRAN);
-        std::string dataFormat = DataFormatValues.at(DataFormat::JSON_RPC);
-        std::string communicationProtocol =
-            CommunicationProtocolValues.at(CommunicationProtocol::STDIO);
-        std::string serverProtocol = ServerProtocolValues.at(ServerProtocol::LSP);
-        std::size_t numRequestThreads = 5;
-        std::size_t numWorkerThreads;
-        std::string logPath = "llanguage-server.log";
-        std::string configSection = "LFortranLanguageServer";
-    };
+    template <typename T, typename U>
+    auto transpose(const std::map<T, U> &map) -> std::map<U, T> {
+        std::map<U, T> transposed;
+        for (const auto &[key, value] : map) {
+            transposed.emplace(value, key);
+        }
+        return transposed;
+    }
 
     /**
      * Parsed argument values from the command line.
@@ -108,28 +118,17 @@ namespace LCompilers::LLanguageServer::Interface {
         ServerProtocol serverProtocol;
         std::size_t numRequestThreads;
         std::size_t numWorkerThreads;
-        fs::path logPath;
         std::string configSection;
     };
 
     class CommandLineInterface {
     public:
+        CommandLineInterface();
         auto prepare(CLI::App &app) -> CLI::App &;
-        auto validate() -> ExitCode;
-        auto serve() -> ExitCode;
+        auto serve() -> void;
     private:
-        CommandLineArguments args;
         CommandLineOptions opts;
-
-        auto validateAndSetLogPath() -> ExitCode;
-        auto validateAndSetLanguage() -> ExitCode;
-        auto validateAndSetDataFormat() -> ExitCode;
-        auto validateAndSetCommunicationProtocol() -> ExitCode;
-        auto validateAndSetServerProtocol() -> ExitCode;
-        auto validateAndSetInteractive() -> ExitCode;
-        auto validateAndSetNumRequestThreads() -> ExitCode;
-        auto validateAndSetNumWorkerThreads() -> ExitCode;
-        auto validateAndSetConfigSection() -> ExitCode;
+        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig;
 
         auto buildMessageStream(
             lsl::Logger &logger

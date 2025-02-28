@@ -15,6 +15,7 @@ set(LLANGUAGE_SERVER_SRC
   lsp_json_serializer.cpp
   logger.cpp
   queue.hpp
+  lsp_config.cpp
   lsp_text_document.cpp
   thread_pool.cpp
   lsp_transformer.cpp
