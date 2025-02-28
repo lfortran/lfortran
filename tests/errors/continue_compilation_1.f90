@@ -199,4 +199,14 @@ program continue_compilation_1
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
 
+    integer, allocatable ::  shape_(:)
+    integer, dimension(2, 3) :: matrix
+
+    integer, dimension(4) :: source = [1, 2, 3, 4]
+    
+    allocate(shape_(2))
+    shape_ = [2, 3]
+    matrix = reshape(source, shape_, pad=[0])
+
+    deallocate(shape_)
 end program
