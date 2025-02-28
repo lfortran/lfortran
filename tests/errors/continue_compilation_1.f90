@@ -10,8 +10,44 @@ program continue_compilation_1
     integer, parameter :: i1 = 2
     character(len=5) :: string = "hello"
 	character(len=1) :: set(2) = ["l", "h"]
+
+    integer :: q1
+    real :: r1
+    character :: c1
+
+    complex :: c = (1.0, 2.0)
+
+    real a_real(0)
+
+    integer, allocatable ::  shape_(:)
+    integer, dimension(2, 3) :: matrix
+    integer, dimension(4) :: source = [1, 2, 3, 4]
+    allocate(shape_(2))
+
+    real :: v
+    character(10) :: str
+
+    character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+
+    integer, parameter :: zero = 0
+    integer :: x = 1
      
     real :: adwf = .true.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     a5 = 8
     b5 = 12_8
@@ -85,7 +121,6 @@ program continue_compilation_1
 
     print*, verify(string, set, kind= [4, 4] )
     print *, and([1, 2, 3], [1, 2, 3])
-    character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
 
     print *, dshiftl(1, 2, 34)
     print *, dshiftl(1, 2, -2)
@@ -119,10 +154,6 @@ program continue_compilation_1
     print *, iparity(arr3, mask = mask3, dim = 4)
     print *, iparity(arr3, mask = mask3, dim = -1)
 
-    integer :: q1
-    real :: r1
-    character :: c1
-
     if (q1) q1 = 1
     if (r1) r1 = 1.0
     if (c1) c1 = 'a'
@@ -152,11 +183,7 @@ program continue_compilation_1
 
     ! Division by zero
     print *, 1/0
-    integer, parameter :: zero = 0
-    integer :: x = 1
     print *, x/zero
-    real :: v
-    character(10) :: str
     print *, v**str
     print *, str**v
 
@@ -167,7 +194,6 @@ program continue_compilation_1
     print *, rshift(2, 34)
     print *, rshift(2, -3)
 
-    complex :: c = (1.0, 2.0)
     print *, sum([c1])
     print *, product([c1])
     print *, minval([c])
@@ -192,19 +218,12 @@ program continue_compilation_1
     print *, count(1)
     print *, count([2])
 
-    real a_real(0)
     a_real = [logical::]
     print *,size(a_real)
 
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
-
-    integer, allocatable ::  shape_(:)
-    integer, dimension(2, 3) :: matrix
-
-    integer, dimension(4) :: source = [1, 2, 3, 4]
     
-    allocate(shape_(2))
     shape_ = [2, 3]
     matrix = reshape(source, shape_, pad=[0])
 
