@@ -516,8 +516,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/prima.git
             cd prima
-            git checkout -t origin/lf-prima-11
-            git checkout c9dde2d4dec976dc802f14a875e63c5ea1792a19
+            git checkout -t origin/lf-prima-12
+            git checkout e681eea9b3f27930c50cffd14dd566b39f01c642
             git clean -dfx
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               export LFORTRAN_RUNNER_OS='macos';
@@ -573,7 +573,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 3c84e76c33cc2522c7ae8db910153dcf1a273a45
+            git checkout 0002f048c4501e7000af91408a2b5d02645ddc32
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang

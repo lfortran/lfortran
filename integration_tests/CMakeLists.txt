@@ -420,6 +420,7 @@ RUN(NAME subroutines_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23
 RUN(NAME subroutines_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME subroutines_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME subroutines_18 LABELS gfortran llvm NO_STD_F23)
+RUN(NAME subroutines_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME functions_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm mlir)
 RUN(NAME functions_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -2059,6 +2060,8 @@ RUN(NAME openmp_43 LABELS llvm_omp llvm)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
+RUN(NAME nullify_03 LABELS gfortran llvm)
+RUN(NAME nullify_04 LABELS gfortran llvm)
 RUN(NAME nullify_05 LABELS gfortran llvm)
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
