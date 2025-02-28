@@ -28,7 +28,7 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &configSection
         );
     protected:
-        std::unordered_map<DocumentUri, LspTextDocument> documentsByUri;
+        std::unordered_map<DocumentUri, std::shared_ptr<LspTextDocument>> documentsByUri;
         std::shared_mutex documentMutex;
         std::unordered_map<DocumentUri, std::shared_ptr<LSPAny>> configsByUri;
         std::unordered_map<
@@ -42,8 +42,12 @@ namespace LCompilers::LanguageServerProtocol {
         std::unique_ptr<LSPAny> workspaceConfig;
         std::shared_mutex workspaceMutex;
 
-        std::atomic_bool clientSupportsWorkspaceDidChangeConfigurationNotifications = false;
-        std::atomic_bool clientSupportsWorkspaceConfigurationRequests = false;
+        std::atomic_bool clientSupportsWorkspaceConfigRequests = false;
+        std::atomic_bool clientSupportsWorkspaceConfigChangeNotifications = false;
+
+        auto getDocument(
+            const DocumentUri &uri
+        ) -> std::shared_ptr<LspTextDocument>;
 
         auto getConfig(
             const DocumentUri &uri,

@@ -1,3 +1,4 @@
+#include "server/lsp_text_document.h"
 #include <cctype>
 #include <memory>
 #include <mutex>
@@ -118,25 +119,25 @@ namespace LCompilers::LanguageServerProtocol {
                 const WorkspaceClientCapabilities &workspace =
                     capabilities.workspace.value();
 
-                clientSupportsWorkspaceConfigurationRequests =
+                clientSupportsWorkspaceConfigRequests =
                     workspace.configuration.has_value()
                     && workspace.configuration.value();
 
                 if (workspace.didChangeConfiguration.has_value()) {
                     const DidChangeConfigurationClientCapabilities &didChangeConfiguration =
                         workspace.didChangeConfiguration.value();
-                    clientSupportsWorkspaceDidChangeConfigurationNotifications =
+                    clientSupportsWorkspaceConfigChangeNotifications =
                         didChangeConfiguration.dynamicRegistration.has_value()
                         && didChangeConfiguration.dynamicRegistration.value();
                 }
             }
             logger.debug()
-                << "clientSupportsWorkspaceConfigurationRequests = "
-                << (clientSupportsWorkspaceConfigurationRequests ? "true" : "false")
+                << "clientSupportsWorkspaceConfigRequests = "
+                << clientSupportsWorkspaceConfigRequests
                 << std::endl;
             logger.debug()
-                << "clientSupportsWorkspaceDidChangeConfigurationNotifications = "
-                << (clientSupportsWorkspaceDidChangeConfigurationNotifications ? "true" : "false")
+                << "clientSupportsWorkspaceConfigChangeNotifications = "
+                << clientSupportsWorkspaceConfigChangeNotifications
                 << std::endl;
         }
 
@@ -146,16 +147,20 @@ namespace LCompilers::LanguageServerProtocol {
             // ------------------------- //
             // TextDocument Sync Options //
             // ------------------------- //
-            ServerCapabilities_textDocumentSync textDocumentSync;
+            SaveOptions saveOptions;
+            saveOptions.includeText = false;
+
+            TextDocumentSyncOptions_save save;
+            save = std::move(saveOptions);
+
             TextDocumentSyncOptions textDocumentSyncOptions;
             textDocumentSyncOptions.openClose = true;
             textDocumentSyncOptions.change = TextDocumentSyncKind::INCREMENTAL;
-            TextDocumentSyncOptions_save save;
-            SaveOptions saveOptions;
-            saveOptions.includeText = false;
-            save = std::move(saveOptions);
             textDocumentSyncOptions.save = std::move(save);
+
+            ServerCapabilities_textDocumentSync textDocumentSync;
             textDocumentSync = std::move(textDocumentSyncOptions);
+
             capabilities.textDocumentSync = std::move(textDocumentSync);
         }
 
@@ -171,7 +176,7 @@ namespace LCompilers::LanguageServerProtocol {
         InitializedParams &params
     ) -> void {
         LspLanguageServer::receiveInitialized(params);
-        if (clientSupportsWorkspaceDidChangeConfigurationNotifications) {
+        if (clientSupportsWorkspaceConfigChangeNotifications) {
             const std::string method = "workspace/didChangeConfiguration";
 
             LSPObject configOptions;
@@ -209,7 +214,7 @@ namespace LCompilers::LanguageServerProtocol {
                 if (iter != documentsByUri.end()) {
                     readLock.unlock();
                     std::unique_lock<std::shared_mutex> writeLock(documentMutex);
-                    LspTextDocument &textDocument = iter->second;
+                    std::shared_ptr<LspTextDocument> &textDocument = iter->second;
                     documentsByUri.emplace(newUri, std::move(textDocument));
                     documentsByUri.erase(iter);
                 }
@@ -337,9 +342,8 @@ namespace LCompilers::LanguageServerProtocol {
         {
             std::unique_lock<std::shared_mutex> writeLock(documentMutex);
             documentsByUri.emplace(
-                std::piecewise_construct,
-                std::forward_as_tuple(uri),
-                std::forward_as_tuple(uri, languageId, version, text, logger)
+                uri,
+                std::make_shared<LspTextDocument>(uri, languageId, version, text, logger)
             );
         }
     }
@@ -373,6 +377,20 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
+    auto BaseLspLanguageServer::getDocument(
+        const DocumentUri &uri
+    ) -> std::shared_ptr<LspTextDocument> {
+        std::shared_lock<std::shared_mutex> readLock(documentMutex);
+        auto iter = documentsByUri.find(uri);
+        if (iter != documentsByUri.end()) {
+            return iter->second;
+        }
+        throw LSP_EXCEPTION(
+            ErrorCodes::INVALID_PARAMS,
+            "No document exists with uri=\"" + uri + "\""
+        );
+    }
+
     // notification: "textDocument/didChange"
     auto BaseLspLanguageServer::receiveTextDocument_didChange(
         DidChangeTextDocumentParams &params
@@ -380,12 +398,8 @@ namespace LCompilers::LanguageServerProtocol {
         const VersionedTextDocumentIdentifier &versionedDocId = params.textDocument;
         const DocumentUri &uri = versionedDocId.uri;
         integer_t version = versionedDocId.version;
-        {
-            std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            LspTextDocument &textDocument = documentsByUri.at(uri);
-            readLock.unlock();
-            textDocument.apply(params.contentChanges, version);
-        }
+        std::shared_ptr<LspTextDocument> textDocument = getDocument(uri);
+        textDocument->apply(params.contentChanges, version);
     }
 
     // notification: "textDocument/didClose"
@@ -395,13 +409,13 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri = params.textDocument.uri;
         {
             std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            auto pos = documentsByUri.find(uri);
-            if (pos != documentsByUri.end()) {
+            auto iter = documentsByUri.find(uri);
+            if (iter != documentsByUri.end()) {
                 readLock.unlock();
                 std::unique_lock<std::shared_mutex> writeLock(documentMutex);
-                pos = documentsByUri.find(uri);
-                if (pos != documentsByUri.end()) {
-                    documentsByUri.erase(pos);
+                iter = documentsByUri.find(uri);
+                if (iter != documentsByUri.end()) {
+                    documentsByUri.erase(iter);
                 }
             }
         }
