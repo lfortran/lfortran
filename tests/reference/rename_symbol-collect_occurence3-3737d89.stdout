@@ -1,1 +1,1 @@
-[{"kind":12,"location":{"range":{"start":{"character":9,"line":6},"end":{"character":13,"line":6}},"uri":"uri"},"name":"main"},{"kind":12,"location":{"range":{"start":{"character":13,"line":8},"end":{"character":17,"line":8}},"uri":"uri"},"name":"main"}]
+[{"kind":0,"location":{"range":{"start":{"character":9,"line":6},"end":{"character":13,"line":6}},"uri":"uri"},"name":"main"},{"kind":0,"location":{"range":{"start":{"character":13,"line":8},"end":{"character":17,"line":8}},"uri":"uri"},"name":"main"}]
