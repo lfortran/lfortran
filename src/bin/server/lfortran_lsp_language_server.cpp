@@ -442,11 +442,8 @@ namespace LCompilers::LanguageServerProtocol {
         DidOpenTextDocumentParams &params
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didOpen(params);
-        {
-            std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            const DocumentUri &uri = params.textDocument.uri;
-            validate(getDocument(uri));
-        }
+        const DocumentUri &uri = params.textDocument.uri;
+        validate(getDocument(uri));
     }
 
     // notification: "textDocument/didChange"
@@ -454,11 +451,8 @@ namespace LCompilers::LanguageServerProtocol {
         DidChangeTextDocumentParams &params
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didChange(params);
-        {
-            std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            const DocumentUri &uri = params.textDocument.uri;
-            validate(getDocument(uri));
-        }
+        const DocumentUri &uri = params.textDocument.uri;
+        validate(getDocument(uri));
     }
 
     // notification: "workspace/didChangeWatchedFiles"
