@@ -1,4 +1,3 @@
-#include "server/lsp_text_document.h"
 #include <cctype>
 #include <memory>
 #include <mutex>
@@ -9,6 +8,7 @@
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_specification.h>
+#include <server/lsp_text_document.h>
 
 namespace LCompilers::LanguageServerProtocol {
 

@@ -1,11 +1,12 @@
-#include "server/lsp_specification.h"
-#include "server/lsp_text_document.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
+
+#include <server/lsp_specification.h>
+#include <server/lsp_text_document.h>
 
 #include <bin/cli_utils.h>
 #include <bin/server/lfortran_lsp_language_server.h>
@@ -321,9 +322,8 @@ namespace LCompilers::LanguageServerProtocol {
             if (capabilities.textDocument.has_value()) {
                 const TextDocumentClientCapabilities &textDocument =
                     capabilities.textDocument.value();
-                clientSupportsGotoDefinition =
-                    textDocument.definition.has_value();
                 if (textDocument.definition.has_value()) {
+                    clientSupportsGotoDefinition = true;
                     const DefinitionClientCapabilities &definition =
                         textDocument.definition.value();
                     clientSupportsGotoDefinitionLinks =
@@ -445,8 +445,7 @@ namespace LCompilers::LanguageServerProtocol {
         {
             std::shared_lock<std::shared_mutex> readLock(documentMutex);
             const DocumentUri &uri = params.textDocument.uri;
-            std::shared_ptr<LspTextDocument> document = getDocument(uri);
-            validate(std::move(document));
+            validate(getDocument(uri));
         }
     }
 
@@ -458,8 +457,7 @@ namespace LCompilers::LanguageServerProtocol {
         {
             std::shared_lock<std::shared_mutex> readLock(documentMutex);
             const DocumentUri &uri = params.textDocument.uri;
-            std::shared_ptr<LspTextDocument> document = getDocument(uri);
-            validate(std::move(document));
+            validate(getDocument(uri));
         }
     }
 
