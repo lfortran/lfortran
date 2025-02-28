@@ -3163,6 +3163,34 @@ public:
                             );
                         }
                     }
+                } else if (AST::is_a<AST::AttrIntent_t>(*x.m_attributes[i])) {
+                    AST::AttrIntent_t* ai = AST::down_cast<AST::AttrIntent_t>(x.m_attributes[i]);
+                    ASR::intentType s_intent;
+                    switch (ai->m_intent) {
+                        case (AST::attr_intentType::In) : {
+                            s_intent = ASRUtils::intent_in;
+                            break;
+                        }
+                        case (AST::attr_intentType::Out) : {
+                            s_intent = ASRUtils::intent_out;
+                            break;
+                        }
+                        case (AST::attr_intentType::InOut) : {
+                            s_intent = ASRUtils::intent_inout;
+                            break;
+                        }
+                        default : {
+                            s_intent = ASRUtils::intent_unspecified;
+                            break;
+                        }
+                    }
+                    AST::var_sym_t* s = x.m_syms;
+                    std::string sym = to_lower(s->m_name);
+                    ASR::symbol_t* orig_decl = current_scope->get_symbol(sym);
+                    if ( orig_decl && ASR::is_a<ASR::Variable_t>(*orig_decl) ) {
+                        ASR::Variable_t* orig_decl_variable = ASR::down_cast<ASR::Variable_t>(orig_decl);
+                        orig_decl_variable->m_intent = s_intent;
+                    }
                 } else {
                     diag.add(Diagnostic(
                         "Attribute declaration not supported",
