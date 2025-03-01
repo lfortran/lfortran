@@ -28,7 +28,6 @@ namespace LCompilers::LanguageServerProtocol::Config {
     class LFortranLspConfigTransformer : public LspConfigTransformer {
     public:
         LFortranLspConfigTransformer(
-            lsp::LspTransformer &transformer,
             lsp::LspJsonSerializer &serializer
         );
 
@@ -40,7 +39,6 @@ namespace LCompilers::LanguageServerProtocol::Config {
             const lsp::LSPAny &any
         ) const -> std::shared_ptr<LspConfig> override;
     private:
-        lsp::LspTransformer &transformer;
         lsp::LspJsonSerializer &serializer;
 
         auto makeConfig() const -> std::shared_ptr<LspConfig> override;

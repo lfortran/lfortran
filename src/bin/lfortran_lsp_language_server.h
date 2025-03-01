@@ -14,7 +14,7 @@
 #include <server/lsp_specification.h>
 
 #include <bin/lfortran_accessor.h>
-#include <bin/server/lfortran_lsp_config.h>
+#include <bin/lfortran_lsp_config.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace ls = LCompilers::LLanguageServer;
@@ -75,7 +75,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::shared_mutex optionMutex;
 
         auto validate(LspTextDocument &document) -> void;
-        auto getCompilerOptions(const DocumentUri &uri) -> const CompilerOptions &;
+        auto getCompilerOptions(const LspTextDocument &document) -> const CompilerOptions &;
 
         auto diagnosticLevelToLspSeverity(diag::Level level) const -> DiagnosticSeverity;
 

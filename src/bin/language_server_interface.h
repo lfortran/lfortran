@@ -19,7 +19,7 @@
 #include <server/message_stream.h>
 #include <server/thread_pool.h>
 
-#include <bin/server/lfortran_lsp_config.h>
+#include <bin/lfortran_lsp_config.h>
 
 namespace LCompilers::LLanguageServer::Interface {
     namespace ls = LCompilers::LLanguageServer;
@@ -41,23 +41,6 @@ namespace LCompilers::LLanguageServer::Interface {
     auto existsAndIsWritable(const std::string &pathString) -> std::string;
 
     auto existsAndIsExecutable(const std::string &pathString) -> std::string;
-
-    enum class ExitCode {
-        SUCCESS = 0,
-        INVALID_VALUE = 1,
-        BAD_ARG_COMBO = 2,
-        UNHANDLED_EXCEPTION = 3,
-    };
-
-    extern const std::map<ExitCode, std::string> ExitCodeNames;
-
-    class ExitError : public std::logic_error {
-    public:
-        ExitError(ExitCode code, const std::string &message);
-        auto code() const -> ExitCode;
-    private:
-        ExitCode _code;
-    };
 
     enum class Language {
         FORTRAN,
@@ -121,10 +104,10 @@ namespace LCompilers::LLanguageServer::Interface {
         std::string configSection;
     };
 
-    class CommandLineInterface {
+    class LanguageServerInterface {
     public:
-        CommandLineInterface();
-        auto prepare(CLI::App &app) -> CLI::App &;
+        LanguageServerInterface();
+        auto prepare(CLI::App &app) -> CLI::App *;
         auto serve() -> void;
     private:
         CommandLineOptions opts;

@@ -1,18 +1,17 @@
-#include "server/base_lsp_language_server.h"
-#include "server/lsp_exception.h"
-#include "server/lsp_specification.h"
 #include <memory>
-#include <server/lsp_exception.h>
 
-#include <bin/server/lfortran_lsp_config.h>
+#include <server/base_lsp_language_server.h>
+#include <server/lsp_exception.h>
+#include <server/lsp_exception.h>
+#include <server/lsp_specification.h>
+
+#include <bin/lfortran_lsp_config.h>
 
 namespace LCompilers::LanguageServerProtocol::Config {
 
     LFortranLspConfigTransformer::LFortranLspConfigTransformer(
-        lsp::LspTransformer &transformer,
         lsp::LspJsonSerializer &serializer
     ) : LspConfigTransformer()
-      , transformer(transformer)
       , serializer(serializer)
     {
         // empty

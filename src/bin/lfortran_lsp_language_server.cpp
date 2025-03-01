@@ -8,14 +8,15 @@
 
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
+#include <server/lsp_specification.h>
 
 #ifndef CLI11_HAS_FILESYSTEM
 #define CLI11_HAS_FILESYSTEM 0
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 
-#include <bin/cli_utils.h>
-#include <bin/server/lfortran_lsp_language_server.h>
+#include <bin/lfortran_command_line_parser.h>
+#include <bin/lfortran_lsp_language_server.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace lcli = LCompilers::CommandLineInterface;
@@ -36,7 +37,6 @@ namespace LCompilers::LanguageServerProtocol {
         logger,
         configSection,
         std::make_shared<lsc::LFortranLspConfigTransformer>(
-            transformer,
             serializer
         ),
         std::move(workspaceConfig)
@@ -109,8 +109,10 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LFortranLspLanguageServer::getCompilerOptions(
-        const DocumentUri &uri
+        const LspTextDocument &document
     ) -> const CompilerOptions & {
+        const DocumentUri &uri = document.uri();
+
         std::shared_lock<std::shared_mutex> readLock(optionMutex);
         auto optionIter = optionsByUri.find(uri);
         if (optionIter != optionsByUri.end()) {
@@ -119,31 +121,22 @@ namespace LCompilers::LanguageServerProtocol {
 
         readLock.unlock();
 
-        CompilerOptions compiler_options;
-        compiler_options.continue_compilation = true;
+        const std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(uri);
+        std::vector<std::string> argv(config->compiler.flags);
+        argv.push_back(document.path());
 
-        const std::shared_ptr<lsc::LFortranLspConfig> config =
-            getLFortranConfig(uri);
-
-        CLI::App app;
-        lcli::init_compiler_options(compiler_options, app);
+        lcli::LFortranCommandLineParser parser(argv);
         try {
-            app.parse(config->compiler.flags);
-        } catch (CLI::ParseError &e) {
-            std::unique_lock<std::recursive_mutex> stderrLock(logger.mutex());
-            int exitCode = app.exit(e);
-            stderrLock.unlock();
-
-            if (exitCode != 0) {
-                std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-                logger.error()
-                    << "Failed to initialize compiler options for document with uri: "
-                    << uri << std::endl;
-                logger.error()
-                    << "init_compiler_options(...) returned with status: " << exitCode
-                    << std::endl;
-            }
+            parser.parse();
+        } catch (const LCompilers::LCompilersException &e) {
+            logger.error()
+                << "Failed to initialize compiler options for document with uri=\""
+                << uri << "\": " << e.what() << std::endl;
+            throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, e.what());
         }
+
+        CompilerOptions &compiler_options = parser.opts.compiler_options;
+        compiler_options.continue_compilation = true;
 
         std::unique_lock<std::shared_mutex> writeLock(configMutex);
         optionIter = optionsByUri.find(uri);
@@ -173,7 +166,7 @@ namespace LCompilers::LanguageServerProtocol {
                 const std::string &text = document.text();
                 int version = document.version();
                 try {
-                    CompilerOptions compiler_options = getCompilerOptions(uri);
+                    CompilerOptions compiler_options = getCompilerOptions(document);
                     std::vector<LCompilers::error_highlight> highlights =
                         lfortran.showErrors(path, text, compiler_options);
 
