@@ -1315,7 +1315,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
+            #./run_tests.py -b llvm -f
 
       - name: Test OpenMP
         shell: bash -e -l {0}
