@@ -2694,10 +2694,12 @@ public:
         current_der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
         int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = (ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
-                 ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)))
-                ? 0 : 2 - LLVM::is_llvm_pointer(*x_m_v_type);
-
+        if( ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
+            ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)) ) {
+            ptr_loads = 0;
+        } else {
+            ptr_loads = 2 - LLVM::is_llvm_pointer(*x_m_v_type);
+        }
 
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
