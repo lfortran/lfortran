@@ -2208,9 +2208,6 @@ int main_app(int argc, char *argv[]) {
     } catch (const CLI::ParseError &e) {
         return parser.app.exit(e);
     } catch (const LCompilers::LCompilersException &e) {
-        if (lcli::EXIT_SUCCESS_MSG == e.what()) {
-            return 0;
-        }
         std::cerr << e.what() << std::endl;
         return 1;
     }

@@ -19,9 +19,6 @@ namespace LCompilers::CommandLineInterface {
     namespace lsi = LCompilers::LLanguageServer::Interface;
 #endif
 
-    const std::string EXIT_SUCCESS_MSG =
-        "Command-line parser terminated successfully.";
-
     struct LFortranCommandLineOpts {
         bool arg_S = false;
         bool arg_c = false;
