@@ -40,6 +40,11 @@ if (NOT WITH_XEUS)
     endif ()
 endif(NOT WITH_XEUS)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /bigobj")
+endif ()
+
 # For CMAKE_INSTALL_BINDIR:
 include(GNUInstallDirs)
 
