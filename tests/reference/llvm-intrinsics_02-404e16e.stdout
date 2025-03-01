@@ -118,6 +118,7 @@ define i32 @main(i32 %0, i8** %1) {
   %4 = load double, double* %y, align 8
   %5 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 6, double %3, i32 5, double %4)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %5)
   %6 = load float, float* @intrinsics_02.x, align 4
   %7 = fsub float %6, 0x3FEFEB7AA0000000
   store float %7, float* %call_arg_value, align 4
@@ -214,6 +215,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

@@ -189,6 +189,7 @@ ifcont17:                                         ; preds = %ifcont16, %then
   %35 = sext i32 %34 to i64
   %36 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @22, i32 0, i32 0), i32 2, i64 %35)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* %36, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @21, i32 0, i32 0))
+  call void @_lfortran_free(i8* %36)
   %37 = load i32, i32* %out2, align 4
   %38 = icmp ne i32 %37, 1
   br i1 %38, label %then18, label %else19
@@ -299,6 +300,7 @@ ifcont38:                                         ; preds = %ifcont37, %then21
   %72 = sext i32 %71 to i64
   %73 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @49, i32 0, i32 0), i32 2, i64 %72)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @50, i32 0, i32 0), i8* %73, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
+  call void @_lfortran_free(i8* %73)
   %74 = load i32, i32* %marks1, align 4
   %75 = icmp sle i32 91, %74
   %76 = load i32, i32* %marks1, align 4
@@ -396,6 +398,7 @@ ifcont56:                                         ; preds = %ifcont55, %then39
   %107 = sext i32 %106 to i64
   %108 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 4, i8* null, i32 7, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @73, i32 0, i32 0), i32 2, i64 %107)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @74, i32 0, i32 0), i8* %108, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0))
+  call void @_lfortran_free(i8* %108)
   call void @_lpython_free_argv()
   br label %return
 
@@ -408,6 +411,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare void @_lfortran_printf(i8*, ...)
 
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

@@ -62,6 +62,7 @@ define i32 @main(i32 %0, i8** %1) {
   %19 = ptrtoint float* %18 to i64
   %20 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 6, double %13, i32 6, double %17, i32 19, i64 %19)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %20)
   %21 = load float*, float** %v, align 8
   %22 = load float*, float** %v, align 8
   %23 = load float, float* %22, align 4
@@ -71,6 +72,7 @@ define i32 @main(i32 %0, i8** %1) {
   %26 = fpext float %25 to double
   %27 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 6, double %26)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @_lfortran_free(i8* %27)
   %28 = load float, float* %myreal, align 4
   %29 = fsub float %28, 0x4044EE1480000000
   %30 = fcmp ogt float %29, 0x3EE4F8B580000000
@@ -102,6 +104,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
