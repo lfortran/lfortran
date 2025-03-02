@@ -2344,6 +2344,12 @@ int main_app(int argc, char *argv[]) {
         return 1;
     }
 
+    if (CLI::NonexistentPath(opts.arg_file).empty()) {
+        throw LCompilers::LCompilersException(
+            "error: no such file or directory: '" + opts.arg_file + "'"
+        );
+    }
+
     std::string outfile;
     std::filesystem::path basename = std::filesystem::path(opts.arg_file).filename();
     if (compiler_options.arg_o.size() > 0) {
