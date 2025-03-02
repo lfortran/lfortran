@@ -11,9 +11,9 @@ syntax error: kind 16 is not supported yet.
     |     ^^^^^^^ 
 
 tokenizer error: Token '?' is not recognized
-   --> tests/errors/continue_compilation_2.f90:325:17
+   --> tests/errors/continue_compilation_2.f90:328:17
     |
-325 |     integer  :: ? tokenizer_error
+328 |     integer  :: ? tokenizer_error
     |                 ^ token not recognized
 
 tokenizer error: Token '@' is not recognized in `format` statement
@@ -23,43 +23,43 @@ tokenizer error: Token '@' is not recognized in `format` statement
   |  ^ 
 
 syntax error: End module name does not match module name
-   --> tests/errors/continue_compilation_2.f90:342:1 - 344:28
+   --> tests/errors/continue_compilation_2.f90:345:1 - 347:28
     |
-342 |    module my_module
+345 |    module my_module
     |    ^^^^^^^^^^^^^^^^...
 ...
     |
-344 |    end module wrong_module_name 
+347 |    end module wrong_module_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:346:1 - 348:29
+   --> tests/errors/continue_compilation_2.f90:349:1 - 351:29
     |
-346 |    subroutine my_subroutine1()
+349 |    subroutine my_subroutine1()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-348 |    end subroutine different_name
+351 |    end subroutine different_name
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End function name does not match function name
-   --> tests/errors/continue_compilation_2.f90:350:1 - 353:28
+   --> tests/errors/continue_compilation_2.f90:353:1 - 356:28
     |
-350 |    function my_function() result(res)
+353 |    function my_function() result(res)
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-353 |    end function not_my_function
+356 |    end function not_my_function
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:355:1 - 357:29
+   --> tests/errors/continue_compilation_2.f90:358:1 - 360:29
     |
-355 |    subroutine my_subroutine2()
+358 |    subroutine my_subroutine2()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-357 |    end subroutine different_name 
+360 |    end subroutine different_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate DIMENSION attribute specified
@@ -672,8 +672,14 @@ semantic error: Variable 'foo' is not declared
 315 |     print *,foo
     |             ^^^ 'foo' is undeclared
 
-semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:339:5
+semantic error: Variable 'mycircle' doesn't have any member named, 'mymember'.
+   --> tests/errors/continue_compilation_2.f90:325:14
     |
-339 |     y = 99  
+325 |     print *, myCircle%mymember
+    |              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot assign to an intent(in) variable `y`
+   --> tests/errors/continue_compilation_2.f90:342:5
+    |
+342 |     y = 99  
     |     ^ 
