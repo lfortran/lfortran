@@ -20,12 +20,12 @@ namespace LCompilers::LanguageServerProtocol::Config {
     auto LFortranLspConfigTransformer::anyToLFortranLspConfig_compiler(
         const lsp::LSPAny &any
     ) const -> LFortranLspConfig_compiler {
-        if (any.type() != LSPAnyType::OBJECT_TYPE) {
+        if (any.type() != LSPAnyType::Object) {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("LSPAnyType for a "
                  "LFortranLspConfig_compiler"
-                 " must be of type LSPAnyType::OBJECT_TYPE"
+                 " must be of type LSPAnyType::OBJECT"
                  " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))
             );
         }
@@ -40,11 +40,11 @@ namespace LCompilers::LanguageServerProtocol::Config {
             try {
                 compiler.path = fs::absolute(path).lexically_normal();
             } catch (std::exception &e) {
-                throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, e.what());
+                throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
             }
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LFortranLspConfig_compiler attribute: path"
             );
         }
@@ -52,48 +52,48 @@ namespace LCompilers::LanguageServerProtocol::Config {
         if ((iter = object.find("flags")) != object.end()) {
             for (const auto &flag : iter->second->array()) {
                 switch (flag->type()) {
-                case LSPAnyType::OBJECT_TYPE: // fallthrough
-                case LSPAnyType::ARRAY_TYPE: {
+                case LSPAnyType::Object: // fallthrough
+                case LSPAnyType::Array: {
                     compiler.flags.push_back(
                         serializer.serialize(*flag)
                     );
                     break;
                 }
-                case LSPAnyType::STRING_TYPE: {
+                case LSPAnyType::String: {
                     compiler.flags.push_back(flag->string());
                     break;
                 }
-                case LSPAnyType::INTEGER_TYPE: {
+                case LSPAnyType::Integer: {
                     compiler.flags.push_back(
                         std::to_string(flag->integer())
                     );
                     break;
                 }
-                case LSPAnyType::UINTEGER_TYPE: {
+                case LSPAnyType::UInteger: {
                     compiler.flags.push_back(
                         std::to_string(flag->uinteger())
                     );
                     break;
                 }
-                case LSPAnyType::DECIMAL_TYPE: {
+                case LSPAnyType::Decimal: {
                     compiler.flags.push_back(
                         std::to_string(flag->decimal())
                     );
                     break;
                 }
-                case LSPAnyType::BOOLEAN_TYPE: {
+                case LSPAnyType::Boolean: {
                     compiler.flags.push_back(
                         std::to_string(flag->boolean())
                     );
                     break;
                 }
-                case LSPAnyType::NULL_TYPE: {
+                case LSPAnyType::Null: {
                     compiler.flags.push_back("");
                     break;
                 }
-                case LSPAnyType::UNINITIALIZED: {
+                case LSPAnyType::Uninitialized: {
                     throw LSP_EXCEPTION(
-                        ErrorCodes::INVALID_PARAMS,
+                        ErrorCodes::InvalidParams,
                         ("Attempted to copy a command-line argument from an "
                          "uninitialized value.")
                     );
@@ -103,7 +103,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             }
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LFortranLspConfig_compiler attribute: flags"
             );
         }
@@ -126,7 +126,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             config->openIssueReporterOnError = iter->second->boolean();
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("Missing required LFortranLspConfig attribute: "
                  "openIssueReporterOnError")
             );
@@ -136,7 +136,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             config->maxNumberOfProblems = iter->second->uinteger();
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("Missing required LFortranLspConfig attribute: "
                  "maxNumberOfProblems")
             );
@@ -146,7 +146,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             config->compiler = anyToLFortranLspConfig_compiler(*iter->second);
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LFortranLspConfig attribute: compiler"
             );
         }

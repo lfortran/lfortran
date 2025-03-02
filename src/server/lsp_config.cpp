@@ -8,12 +8,12 @@ namespace LCompilers::LanguageServerProtocol::Config {
     auto LspConfigTransformer::anyToLspConfig_trace(
         const lsp::LSPAny &any
     ) const -> LspConfig_trace {
-        if (any.type() != LSPAnyType::OBJECT_TYPE) {
+        if (any.type() != LSPAnyType::Object) {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("LSPAnyType for a "
                  "LspConfig_trace"
-                 " must be of type LSPAnyType::OBJECT_TYPE"
+                 " must be of type LSPAnyType::Object"
                  " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))
             );
         }
@@ -28,7 +28,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             try {
                 trace.server = traceValuesByValue(server);
             } catch (std::exception &e) {
-                throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, e.what());
+                throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
             }
         }
 
@@ -38,12 +38,12 @@ namespace LCompilers::LanguageServerProtocol::Config {
     auto LspConfigTransformer::anyToLspConfig_log(
         const lsp::LSPAny &any
     ) const -> LspConfig_log {
-        if (any.type() != LSPAnyType::OBJECT_TYPE) {
+        if (any.type() != LSPAnyType::Object) {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("LSPAnyType for a "
                  "LspConfig_log"
-                 " must be of type LSPAnyType::OBJECT_TYPE"
+                 " must be of type LSPAnyType::Object"
                  " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))
             );
         }
@@ -58,11 +58,11 @@ namespace LCompilers::LanguageServerProtocol::Config {
             try {
                 log.path = fs::absolute(path).lexically_normal();
             } catch (std::exception &e) {
-                throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, e.what());
+                throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
             }
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LspConfig_log attribute: path"
             );
         }
@@ -72,11 +72,11 @@ namespace LCompilers::LanguageServerProtocol::Config {
             try {
                 log.level = lsl::levelByValue(level);
             } catch (std::exception &e) {
-                throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, e.what());
+                throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
             }
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LspConfig_log attribute: level"
             );
         }
@@ -85,7 +85,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             log.prettyPrint = iter->second->boolean();
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LspConfig_log attribute: prettyPrint"
             );
         }
@@ -94,7 +94,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             log.indentSize = iter->second->uinteger();
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LspConfig_log attribute: indentSize"
             );
         }
@@ -105,12 +105,12 @@ namespace LCompilers::LanguageServerProtocol::Config {
     auto LspConfigTransformer::anyToLspConfig(
         const lsp::LSPAny &any
     ) const -> std::shared_ptr<LspConfig> {
-        if (any.type() != LSPAnyType::OBJECT_TYPE) {
+        if (any.type() != LSPAnyType::Object) {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("LSPAnyType for a "
                  "LspConfig"
-                 " must be of type LSPAnyType::OBJECT_TYPE"
+                 " must be of type LSPAnyType::Object"
                  " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))
             );
         }
@@ -124,7 +124,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             config->trace = anyToLspConfig_trace(*iter->second);
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LspConfig attribute: trace"
             );
         }
@@ -133,7 +133,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             config->log = anyToLspConfig_log(*iter->second);
         } else {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 "Missing required LspConfig attribute: log"
             );
         }

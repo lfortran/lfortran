@@ -98,13 +98,13 @@ namespace LCompilers::LanguageServerProtocol {
         const TextDocumentContentChangeEvent &event
     ) const -> std::size_t {
         switch (event.type()) {
-        case TextDocumentContentChangeEventType::TEXT_DOCUMENT_CONTENT_CHANGE_EVENT_0: {
+        case TextDocumentContentChangeEventType::TextDocumentContentChangeEvent_0: {
             return from(event.textDocumentContentChangeEvent_0());
         }
-        case TextDocumentContentChangeEventType::TEXT_DOCUMENT_CONTENT_CHANGE_EVENT_1: {
+        case TextDocumentContentChangeEventType::TextDocumentContentChangeEvent_1: {
             return from(event.textDocumentContentChangeEvent_1());
         }
-        case TextDocumentContentChangeEventType::UNINITIALIZED: {
+        case TextDocumentContentChangeEventType::Uninitialized: {
             throw std::invalid_argument("event has not been initialized!");
         }
         }
@@ -133,17 +133,17 @@ namespace LCompilers::LanguageServerProtocol {
         std::string &patch
     ) -> void {
         switch (event.type()) {
-        case TextDocumentContentChangeEventType::TEXT_DOCUMENT_CONTENT_CHANGE_EVENT_0: {
+        case TextDocumentContentChangeEventType::TextDocumentContentChangeEvent_0: {
             const TextDocumentContentChangeEvent_0 &partial = event.textDocumentContentChangeEvent_0();
             decompose(partial, j, k, patch);
             break;
         }
-        case TextDocumentContentChangeEventType::TEXT_DOCUMENT_CONTENT_CHANGE_EVENT_1: {
+        case TextDocumentContentChangeEventType::TextDocumentContentChangeEvent_1: {
             const TextDocumentContentChangeEvent_1 &whole = event.textDocumentContentChangeEvent_1();
             decompose(whole, j, k, patch);
             break;
         }
-        case TextDocumentContentChangeEventType::UNINITIALIZED: {
+        case TextDocumentContentChangeEventType::Uninitialized: {
             throw std::invalid_argument("event has not been initialized!");
         }
         }
@@ -165,7 +165,7 @@ namespace LCompilers::LanguageServerProtocol {
             buffer.append(std::to_string(start.line));
             buffer.append(" > ");
             buffer.append(std::to_string(end.line));
-            throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, buffer);
+            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, buffer);
         }
 
         if ((start.line == end.line) && (start.character > end.character)) {
@@ -174,7 +174,7 @@ namespace LCompilers::LanguageServerProtocol {
             buffer.append(std::to_string(start.character));
             buffer.append(" > ");
             buffer.append(std::to_string(end.character));
-            throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, buffer);
+            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, buffer);
         }
 
         if (start.line < lineIndices.size()) {
@@ -187,7 +187,7 @@ namespace LCompilers::LanguageServerProtocol {
             buffer.append(std::to_string(lineIndices[lineIndices.size() - 1] + 1));
             buffer.append(" but was: ");
             buffer.append(std::to_string(start.line));
-            throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, buffer);
+            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, buffer);
         }
 
         if (end.line < lineIndices.size()) {

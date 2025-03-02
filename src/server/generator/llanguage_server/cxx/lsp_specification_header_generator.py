@@ -1,11 +1,10 @@
-from functools import wraps
 from pathlib import Path
-from typing import Callable, Dict, Set, Tuple
+from typing import Set
 
 from llanguage_server.cxx.visitors import BaseCPlusPlusLspVisitor
 from llanguage_server.lsp.datatypes import LspSpec, LspSymbol, LspSymbolKind
-from llanguage_server.lsp.utils import (lower_first, normalize_name, rename_enum,
-                                        rename_type, upper_first)
+from llanguage_server.lsp.utils import (lower_first, rename_enum, rename_type,
+                                        upper_first)
 from llanguage_server.lsp.visitors import LspAnalysisPipeline
 
 

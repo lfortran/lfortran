@@ -263,7 +263,7 @@ namespace LCompilers::LLanguageServer::Interface {
             "Maximum number of errors and warnings to report."
         )->capture_default_str();
 
-        workspaceConfig->trace.server = lsp::TraceValues::OFF;
+        workspaceConfig->trace.server = lsp::TraceValues::Off;
         server->add_option(
             "--trace-server", workspaceConfig->trace.server,
             "Traces the communication between the language client and server."

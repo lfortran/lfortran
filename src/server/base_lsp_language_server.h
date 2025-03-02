@@ -72,7 +72,7 @@ namespace LCompilers::LanguageServerProtocol {
         ) -> InitializeResult override;
 
         auto receiveClient_registerCapability(
-            ClientRegisterCapabilityResult params
+            Client_RegisterCapabilityResult params
         ) -> void override;
 
         auto receiveInitialized(
@@ -88,7 +88,7 @@ namespace LCompilers::LanguageServerProtocol {
         ) -> void override;
 
         auto receiveWorkspace_configuration(
-            WorkspaceConfigurationResult &params
+            Workspace_ConfigurationResult &params
         ) -> void override;
 
         auto receiveTextDocument_didOpen(

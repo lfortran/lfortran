@@ -180,7 +180,7 @@ namespace LCompilers::LanguageServerProtocol {
             ServerCapabilities_textDocumentSync textDocumentSync;
             TextDocumentSyncOptions textDocumentSyncOptions;
             textDocumentSyncOptions.openClose = true;
-            textDocumentSyncOptions.change = TextDocumentSyncKind::INCREMENTAL;
+            textDocumentSyncOptions.change = TextDocumentSyncKind::Incremental;
             TextDocumentSyncOptions_save save;
             SaveOptions saveOptions;
             saveOptions.includeText = false;
@@ -224,7 +224,7 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto BaseLspLanguageServer::receiveClient_registerCapability(
-        ClientRegisterCapabilityResult /*params*/
+        Client_RegisterCapabilityResult /*params*/
     ) -> void {
         // empty
     }
@@ -270,7 +270,7 @@ namespace LCompilers::LanguageServerProtocol {
         invalidateConfigCache();
         LSPAny &settings = params.settings;
         switch (settings.type()) {
-        case LSPAnyType::OBJECT_TYPE: {
+        case LSPAnyType::Object: {
             const LSPObject &object = settings.object();
             auto iter = object.find(configSection);
             if (iter != object.end()) {
@@ -319,13 +319,13 @@ namespace LCompilers::LanguageServerProtocol {
 
     // request: "workspace/configuration"
     auto BaseLspLanguageServer::receiveWorkspace_configuration(
-        WorkspaceConfigurationResult &params
+        Workspace_ConfigurationResult &params
     ) -> void {
         for (LSPAny &config : params) {
             std::unique_lock<std::shared_mutex> writeLock(configMutex);
             if (pendingConfigs.empty()) {
                 throw LSP_EXCEPTION(
-                    ErrorCodes::INTERNAL_ERROR,
+                    ErrorCodes::InternalError,
                     "No record exists of this config being requested. Please file a ticket."
                 );
             }

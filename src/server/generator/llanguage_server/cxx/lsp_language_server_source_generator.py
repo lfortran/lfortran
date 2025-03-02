@@ -4,11 +4,9 @@ from llanguage_server.cxx.lsp_file_generator import gensym_context
 from llanguage_server.cxx.visitors import BaseCPlusPlusLspVisitor
 from llanguage_server.lsp.datatypes import LspSpec
 from llanguage_server.lsp.utils import (lower_first, method_to_camel_case,
-                                        method_to_underscore, receive_fn,
-                                        rename_enum, rename_field, send_fn,
-                                        upper_first)
-from llanguage_server.lsp.visitors import (LspAnalysisPipeline, LspSymbol,
-                                           LspSymbolKind)
+                                        receive_fn, rename_enum, rename_field,
+                                        send_fn, upper_first)
+from llanguage_server.lsp.visitors import (LspAnalysisPipeline, LspSymbol)
 
 
 class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
@@ -212,13 +210,13 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     'const std::optional<MessageParams> &optionalParams'
                 ]
         ):
-            with self.gen_if('(trace >= TraceValues::MESSAGES) && (traceId.length() > 0)'):
+            with self.gen_if('(trace >= TraceValues::Messages) && (traceId.length() > 0)'):
                 self.write('LogTraceParams params;')
                 self.gen_assign(
                     'params.message',
                     '"Received " + messageType + " \'" + traceId + "\'."'
                 )
-                with self.gen_if('(trace >= TraceValues::VERBOSE) && optionalParams.has_value()'):
+                with self.gen_if('(trace >= TraceValues::Verbose) && optionalParams.has_value()'):
                     self.gen_assign(
                         'const MessageParams &messageParams',
                         'optionalParams.value()'
@@ -246,10 +244,10 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                 '"Params: " + serializer.pprint(array)'
                             )
                             self.write('break;')
-                        with self.gen_case('MessageParamsType', 'UNINITIALIZED'):
+                        with self.gen_case('MessageParamsType', 'Uninitialized'):
                             self.gen_throw(
                                 'LSP_EXCEPTION',
-                                'ErrorCodes::INTERNAL_ERROR',
+                                'ErrorCodes::InternalError',
                                 '"MessageParams has not been initialized"'
                             )
                 self.write('sendLogTrace(params);')
@@ -264,13 +262,13 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     'const LSPAny &document'
                 ]
         ):
-            with self.gen_if('trace >= TraceValues::MESSAGES'):
+            with self.gen_if('trace >= TraceValues::Messages'):
                 self.write('LogTraceParams params;')
                 with self.gen_if('traceId.length() > 0', end=''):
                     self.write(f'params.message = "Received response \'" + traceId + "\'.";')
                 with self.gen_else():
                     self.write(f'params.message = "Received response.";')
-                with self.gen_if('trace >= TraceValues::VERBOSE'):
+                with self.gen_if('trace >= TraceValues::Verbose'):
                     object_enum = rename_enum('object')
                     with self.gen_if(f'document.type() == LSPAnyType::{object_enum}', end=''):
                         object_field = rename_field('object')
@@ -306,7 +304,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     'const LSPAny &response'
                 ]
         ):
-            with self.gen_if('(trace >= TraceValues::MESSAGES) && (traceId.length() > 0)'):
+            with self.gen_if('(trace >= TraceValues::Messages) && (traceId.length() > 0)'):
                 end_name = self.gensym_init('end', 'std::chrono::high_resolution_clock::now()')
                 duration_name = self.gensym_init(
                     'duration',
@@ -317,7 +315,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 with self.indent():
                     self.write('"Sending response \'" + traceId + "\'. Processing request took " +')
                     self.write(f'std::to_string({duration_name}.count()) + "ms";')
-                with self.gen_if('trace >= TraceValues::VERBOSE'):
+                with self.gen_if('trace >= TraceValues::Verbose'):
                     object_enum = rename_enum('object')
                     object_field = rename_field('object')
                     with self.gen_if(f'response.type() == LSPAnyType::{object_enum}', end=''):
@@ -387,29 +385,29 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     with self.indent():
                         self.write('transformer.anyToString(*iter->second);')
                     with self.gen_if('isIncomingRequest(method)', end=''):
-                        with self.gen_if('response.id.type() == ResponseIdType::NULL_TYPE'):
+                        with self.gen_if('response.id.type() == ResponseIdType::Null'):
                             self.gen_throw(
                                 'LSP_EXCEPTION',
-                                'ErrorCodes::INVALID_PARAMS',
+                                'ErrorCodes::InvalidParams',
                                 '"Missing request method=\\"" + method + "\\" attribute: id"'
                             )
                         self.write('RequestMessage request =')
                         with self.indent():
                             self.write('transformer.anyToRequestMessage(*document);')
-                        with self.gen_if('trace >= TraceValues::MESSAGES'):
+                        with self.gen_if('trace >= TraceValues::Messages'):
                             self.write(f'traceId = request.method + " - (" + to_string(request.id) + ")";')
                             self.write(f'logReceiveTrace("request", traceId, request.params);')
                         self.write(f'response.jsonrpc = request.jsonrpc;')
                         self.write(f'dispatch(response, request);')
                     with self.gen_elif('isIncomingNotification(method)', end=''):
-                        with self.gen_if('response.id.type() != ResponseIdType::NULL_TYPE'):
+                        with self.gen_if('response.id.type() != ResponseIdType::Null'):
                             self.gen_throw_invalid_params(
                                 '"Notification method=\\"" + method + "\\" must not contain the attribute: id"'
                             )
                         self.write('NotificationMessage notification =')
                         with self.indent():
                             self.write('transformer.anyToNotificationMessage(*document);')
-                        with self.gen_if('trace >= TraceValues::MESSAGES'):
+                        with self.gen_if('trace >= TraceValues::Messages'):
                             self.write(f'traceId = notification.method;')
                             self.write(f'logReceiveTrace("notification", traceId, notification.params);')
                         self.write(f'response.jsonrpc = notification.jsonrpc;')
@@ -417,7 +415,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     with self.gen_else():
                         self.gen_throw(
                             'LSP_EXCEPTION',
-                            'ErrorCodes::INVALID_REQUEST',
+                            'ErrorCodes::InvalidRequest',
                             '"Unsupported method: \\"" + method + "\\""'
                         )
                 with self.gen_elif(f'(iter = object.find("result")) != object.end()', end=''):
@@ -433,7 +431,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 with self.gen_else():
                     self.gen_throw(
                         'LSP_EXCEPTION',
-                        'ErrorCodes::INVALID_REQUEST',
+                        'ErrorCodes::InvalidRequest',
                         '"Missing required attribute: method"'
                     )
             with self.gen_catch('const LspException &e', end=''):
@@ -462,7 +460,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     self.write('<< "Caught unhandled exception: "')
                     self.write('<< e.what() << std::endl;')
                 self.write('ResponseError error;')
-                self.write('error.code = static_cast<int>(ErrorCodes::INTERNAL_ERROR);')
+                self.write('error.code = static_cast<int>(ErrorCodes::InternalError);')
                 self.write('error.message =')
                 with self.indent():
                     self.write('("An unexpected exception occurred. If it continues, "')
@@ -502,7 +500,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.gen_if('!_initialized'):
                 self.write('throw LSP_EXCEPTION(')
                 with self.indent():
-                    self.write('ErrorCodes::SERVER_NOT_INITIALIZED,')
+                    self.write('ErrorCodes::ServerNotInitialized,')
                     self.write('"Method \\"initialize\\" must be called first."')
                 self.write(');')
         self.newline()
@@ -512,7 +510,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.gen_if('_shutdown'):
                 self.write('throw LSP_EXCEPTION(')
                 with self.indent():
-                    self.write('LSPErrorCodes::REQUEST_FAILED,')
+                    self.write('LSPErrorCodes::RequestFailed,')
                     self.write('"Server has shutdown and cannot accept new requests."')
                 self.write(');')
         self.newline()
@@ -553,14 +551,14 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.gen_catch('std::invalid_argument &/*e*/'):
                 self.write('goto invalidMethod;')
             self.write('assertRunning();')
-            with self.gen_if('method != IncomingRequest::INITIALIZE', end=''):
+            with self.gen_if('method != IncomingRequest::Initialize', end=''):
                 self.write('assertInitialized();')
             with self.gen_else():
                 self.write('bool expected = false;    // a reference is required')
                 with self.gen_if('!_initialized.compare_exchange_strong(expected, true)'):
                     self.gen_throw(
                         'LSP_EXCEPTION',
-                        'ErrorCodes::INVALID_REQUEST',
+                        'ErrorCodes::InvalidRequest',
                         '"Server may be initialized only once."'
                     )
             with self.gen_switch('method'):
@@ -569,7 +567,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                         request_method = request_spec["method"]
                         request_name = method_to_camel_case(request_method)
                         result_name = f'{request_name}Result'
-                        method_enum = method_to_underscore(request_method)
+                        method_enum = method_to_camel_case(request_method)
                         with self.gen_case('IncomingRequest', method_enum):
                             params_spec = request_spec.get("params", None)
                             if params_spec is not None:
@@ -599,7 +597,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                         with self.indent():
                                             self.write('throw LSP_EXCEPTION(')
                                             with self.indent():
-                                                self.write('ErrorCodes::INVALID_REQUEST,')
+                                                self.write('ErrorCodes::InvalidRequest,')
                                                 self.write('"Server initialization out of sync."')
                                             self.write(');')
                                         self.write('}')
@@ -615,7 +613,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     self.write('invalidMethod:')
                     self.gen_throw(
                         'LSP_EXCEPTION',
-                        'ErrorCodes::METHOD_NOT_FOUND',
+                        'ErrorCodes::MethodNotFound',
                         '"Unsupported request method: \\"" + request.method + "\\""'
                     )
         self.newline()
@@ -633,7 +631,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 self.write('method = incomingNotificationByValue(notification.method);')
             with self.gen_catch('std::invalid_argument &/*e*/'):
                 self.write('goto invalidMethod;')
-            with self.gen_if('method != IncomingNotification::EXIT'):
+            with self.gen_if('method != IncomingNotification::Exit'):
                 with self.gen_if('!_initialized'):
                     self.write('// Notifications should be dropped, except for the exit notification.')
                     self.write('// This will allow the exit of a server without an initialize request.')
@@ -644,7 +642,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     if notification_spec["messageDirection"] == "clientToServer":
                         notification_method = notification_spec["method"]
                         notification_name = method_to_camel_case(notification_method)
-                        notification_enum = method_to_underscore(notification_method)
+                        notification_enum = method_to_camel_case(notification_method)
                         with self.gen_case('IncomingNotification', notification_enum):
                             params_spec = notification_spec.get("params", None)
                             if params_spec is not None:
@@ -670,7 +668,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     with self.gen_else():
                         self.gen_throw(
                             'LSP_EXCEPTION',
-                            'ErrorCodes::METHOD_NOT_FOUND',
+                            'ErrorCodes::MethodNotFound',
                             '"Unsupported notification method: \\"" + notification.method + "\\""'
                         )
         self.newline()
@@ -713,7 +711,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                 request_method = request_spec["method"]
                                 request_name = method_to_camel_case(request_method)
                                 result_name = f'{request_name}Result'
-                                request_enum = method_to_underscore(request_method)
+                                request_enum = method_to_camel_case(request_method)
                                 with self.gen_case('OutgoingRequest', request_enum):
                                     result_spec = request_spec.get("result", None)
                                     if result_spec is not None:
@@ -826,7 +824,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 case _:
                     self.gen_throw(
                         'LSP_EXCEPTION',
-                        'ErrorCodes::METHOD_NOT_FOUND',
+                        'ErrorCodes::MethodNotFound',
                         f'"No handler exists for method: \\"{request_method}\\""'
                     )
         self.newline()
@@ -877,7 +875,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     else:
                         self.gen_throw(
                             'LSP_EXCEPTION',
-                            'ErrorCodes::METHOD_NOT_FOUND',
+                            'ErrorCodes::MethodNotFound',
                             f'"No handler exists for method: \\"{notification_method}\\""'
                         )
         self.newline()

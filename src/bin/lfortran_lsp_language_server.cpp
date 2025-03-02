@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -50,15 +49,15 @@ namespace LCompilers::LanguageServerProtocol {
     ) const -> DiagnosticSeverity {
         switch (level) {
         case diag::Level::Error:
-            return DiagnosticSeverity::ERROR_TYPE;
+            return DiagnosticSeverity::Error;
         case diag::Level::Warning:
-            return DiagnosticSeverity::WARNING_TYPE;
+            return DiagnosticSeverity::Warning;
         case diag::Level::Note:
-            return DiagnosticSeverity::INFORMATION;
+            return DiagnosticSeverity::Information;
         case diag::Level::Help:
-            return DiagnosticSeverity::HINT;
+            return DiagnosticSeverity::Hint;
         default:
-            return DiagnosticSeverity::WARNING_TYPE;
+            return DiagnosticSeverity::Warning;
         }
     }
 
@@ -67,27 +66,27 @@ namespace LCompilers::LanguageServerProtocol {
     ) const -> SymbolKind {
         switch (symbolType) {
         case ASR::symbolType::Module:
-            return SymbolKind::MODULE;
+            return SymbolKind::Module;
         case ASR::symbolType::Function:
-            return SymbolKind::FUNCTION;
+            return SymbolKind::Function;
         case ASR::symbolType::GenericProcedure:
-            return SymbolKind::FUNCTION;
+            return SymbolKind::Function;
         case ASR::symbolType::CustomOperator:
-            return SymbolKind::OPERATOR;
+            return SymbolKind::Operator;
         case ASR::symbolType::Struct:
-            return SymbolKind::STRUCT;
+            return SymbolKind::Struct;
         case ASR::symbolType::Enum:
-            return SymbolKind::ENUM;
+            return SymbolKind::Enum;
         case ASR::symbolType::Variable:
-            return SymbolKind::VARIABLE;
+            return SymbolKind::Variable;
         case ASR::symbolType::Class:
-            return SymbolKind::CLASS;
+            return SymbolKind::Class;
         case ASR::symbolType::ClassProcedure:
-            return SymbolKind::METHOD;
+            return SymbolKind::Method;
         case ASR::symbolType::Template:
-            return SymbolKind::TYPE_PARAMETER;
+            return SymbolKind::TypeParameter;
         default:
-            return SymbolKind::FUNCTION;
+            return SymbolKind::Function;
         }
     }
 
@@ -123,7 +122,7 @@ namespace LCompilers::LanguageServerProtocol {
 
         const std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(uri);
         std::vector<std::string> argv(config->compiler.flags);
-        argv.push_back(document.path());
+        argv.push_back(document.path().string());
 
         lcli::LFortranCommandLineParser parser(argv);
         try {
@@ -132,7 +131,7 @@ namespace LCompilers::LanguageServerProtocol {
             logger.error()
                 << "Failed to initialize compiler options for document with uri=\""
                 << uri << "\": " << e.what() << std::endl;
-            throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, e.what());
+            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
         }
 
         CompilerOptions &compiler_options = parser.opts.compiler_options;
@@ -198,7 +197,7 @@ namespace LCompilers::LanguageServerProtocol {
                     params.uri = uri;
                     params.version = version;
                     params.diagnostics = std::move(diagnostics);
-                    if (trace >= TraceValues::MESSAGES) {
+                    if (trace >= TraceValues::Messages) {
                         const auto end = std::chrono::high_resolution_clock::now();
                         const auto duration =
                             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -209,7 +208,7 @@ namespace LCompilers::LanguageServerProtocol {
                             "Sending response 'textDocument/publishDiagnostics'. "
                             "Processing request took " +
                             std::to_string(duration.count()) + "ms";
-                        if (trace >= TraceValues::VERBOSE) {
+                        if (trace >= TraceValues::Verbose) {
                             LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
                             logTraceParams.verbose = "Result: " + serializer.pprint(any);
                         }
