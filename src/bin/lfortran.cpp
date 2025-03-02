@@ -2430,7 +2430,7 @@ int main_app(int argc, char *argv[]) {
     if (opts.show_mlir || opts.show_llvm_from_mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
         return handle_mlir(opts.arg_file, outfile, compiler_options,
-            show_mlir, show_llvm_from_mlir);
+            opts.show_mlir, opts.show_llvm_from_mlir);
 #else
         std::cerr << "The `--show-mlir` option requires the MLIR backend to be "
             "enabled. Recompile with `WITH_MLIR=yes`." << std::endl;
