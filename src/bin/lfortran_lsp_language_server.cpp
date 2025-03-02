@@ -50,15 +50,15 @@ namespace LCompilers::LanguageServerProtocol {
     ) const -> DiagnosticSeverity {
         switch (level) {
         case diag::Level::Error:
-            return DiagnosticSeverity::ERROR;
+            return DiagnosticSeverity::ERROR_TYPE;
         case diag::Level::Warning:
-            return DiagnosticSeverity::WARNING;
+            return DiagnosticSeverity::WARNING_TYPE;
         case diag::Level::Note:
             return DiagnosticSeverity::INFORMATION;
         case diag::Level::Help:
             return DiagnosticSeverity::HINT;
         default:
-            return DiagnosticSeverity::WARNING;
+            return DiagnosticSeverity::WARNING_TYPE;
         }
     }
 

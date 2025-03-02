@@ -88,12 +88,17 @@ RESERVED_NAMES: Set[str] = {
     "any",
     "array",
     "boolean",
+    "debug",
     "decimal",
+    "error",
+    "info",
     "integer",
+    "log",
     "null",
     "object",
     "string",
     "uinteger",
+    "warning",
 }
 
 @memoize
