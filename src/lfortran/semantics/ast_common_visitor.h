@@ -6062,14 +6062,25 @@ public:
                 make_ArrayItem_from_struct_m_args(
                     member_struct_m_args, member_struct_n_args, ASRUtils::EXPR(expr_), expr_, loc);
                 return expr_;
-            } else {
-                diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
-                    Level::Error, Stage::Semantic, {Label("", {loc})}));
-                throw SemanticAbort();
             }
-        } else if (ASR::is_a<ASR::Complex_t>(*v_variable_m_type)) {
+            diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+
+        // Handle type parameter inquiry kind first because others depend on their type
+        if (var_name == "kind") {
+            ASRUtils::create_intrinsic_function create_func = ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+            args.push_back(al, ASRUtils::EXPR(v_var));
+            return create_func(al, loc, args, diag);
+        }
+
+        if (ASR::is_a<ASR::Complex_t>(*v_variable_m_type)) {
             if (var_name != "re" && var_name != "im") {
-                diag.add(Diagnostic("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'",
+                diag.add(Diagnostic("Complex variable '" + dt_name + "' only has %re, %im and %kind members, not '" + var_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -6108,6 +6119,16 @@ public:
                         ASR::make_Var_t(al, loc, v)), real_type, nullptr);
                 }
             }
+        } else if (ASR::is_a<ASR::String_t>(*v_variable_m_type)) {
+            if (var_name != "len") {
+                diag.add(Diagnostic("Character variable '" + dt_name + "' only has %len and %kind, not '" + var_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+            make_ArrayItem_from_struct_m_args(
+                dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
+            return create_StringLen_from_expr(ASRUtils::EXPR(v_var), int32, loc);
         } else {
             diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -6405,38 +6426,42 @@ public:
         return ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, v_Var, dim, type, size_compiletime, false);
     }
 
-    ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"string", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
-        ASR::expr_t *v_Var = args[0], *kind = args[1];
-        int64_t kind_const = handle_kind(kind);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
-        if( ASRUtils::is_array(ASRUtils::expr_type(v_Var)) ) {
+    ASR::asr_t* create_StringLen_from_expr(ASR::expr_t* v, ASR::ttype_t* type, const Location& loc) {
+        if( ASRUtils::is_array(ASRUtils::expr_type(v)) ) {
             // TODO: If possible try to use m_len_expr of `character(len=m_len_expr)`
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v));
             Vec<ASR::array_index_t> lbs; lbs.reserve(al, n_dims);
             for( int i = 0; i < n_dims; i++ ) {
                 ASR::array_index_t index;
-                index.loc = x.base.base.loc;
+                index.loc = loc;
                 index.m_left = nullptr;
-                index.m_right = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
+                index.m_right = ASRUtils::get_bound<SemanticAbort>(v, i + 1, "lbound", al, diag);
                 index.m_step = nullptr;
                 lbs.push_back(al, index);
             }
-            v_Var = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, x.base.base.loc, v_Var, lbs.p, lbs.size(),
+            v = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, v, lbs.p, lbs.size(),
                 ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)))),
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v)))),
                         ASR::arraystorageType::ColMajor, nullptr));
         }
         ASR::expr_t* len_compiletime = nullptr;
         std::string input_string;
-        if( ASRUtils::extract_string_value(ASRUtils::expr_value(v_Var), input_string) ) {
+        if( ASRUtils::extract_string_value(ASRUtils::expr_value(v), input_string) ) {
             len_compiletime = make_ConstantWithType(
-                make_IntegerConstant_t, input_string.size(), type, x.base.base.loc);
+                make_IntegerConstant_t, input_string.size(), type, loc);
         }
-        return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
+        return ASR::make_StringLen_t(al, loc, v, type, len_compiletime);
+    }
+
+    ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"string", "kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
+        ASR::expr_t *v_var = args[0], *kind = args[1];
+        int64_t kind_const = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
+        return create_StringLen_from_expr(v_var, type, x.base.base.loc);
     }
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
