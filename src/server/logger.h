@@ -45,6 +45,7 @@ namespace LCompilers::LLanguageServer::Logging {
         auto operator<<(const char *str) -> Formatter &;
         auto operator<<(const std::string &str) -> Formatter &;
         auto operator<<(const std::string_view &view) -> Formatter &;
+        auto operator<<(const fs::path &path) -> Formatter &;
         auto operator<<(std::ostream& (*manip)(std::ostream&)) -> Formatter &;
     private:
         Logger &logger;
@@ -91,6 +92,7 @@ namespace LCompilers::LLanguageServer::Logging {
         auto operator<<(const char *str) -> Logger &;
         auto operator<<(const std::string &str) -> Logger &;
         auto operator<<(const std::string_view &view) -> Logger &;
+        auto operator<<(const fs::path &path) -> Logger &;
         auto operator<<(std::ostream& (*manip)(std::ostream&)) -> Logger &;
     private:
         fs::path _logPath;
