@@ -30,7 +30,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             );
         }
 
-        LFortranLspConfig_compiler compiler;
+        LFortranLspConfig_compiler compiler{};
 
         const LSPObject &object = any.object();
         LSPObject::const_iterator iter;

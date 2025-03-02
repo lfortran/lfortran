@@ -18,7 +18,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             );
         }
 
-        LspConfig_trace trace;
+        LspConfig_trace trace{};
 
         const LSPObject &object = any.object();
         LSPObject::const_iterator iter;
@@ -48,7 +48,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
             );
         }
 
-        LspConfig_log log;
+        LspConfig_log log{};
 
         const LSPObject &object = any.object();
         LSPObject::const_iterator iter;
