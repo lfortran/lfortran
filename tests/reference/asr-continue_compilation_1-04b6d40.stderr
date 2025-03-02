@@ -562,3 +562,15 @@ semantic error: Incompatible ranks 2 and 1 in assignment
     |
 228 |     matrix = reshape(source, shape_, pad=[0])
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'mymember'
+   --> tests/errors/continue_compilation_1.f90:233:14
+    |
+233 |     print *, c%mymember
+    |              ^^^^^^^^^^ 
+
+semantic error: Character variable 'c1' only has %len and %kind members, not 'mymember'
+   --> tests/errors/continue_compilation_1.f90:235:14
+    |
+235 |     print *, c1%mymember
+    |              ^^^^^^^^^^^ 

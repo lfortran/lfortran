@@ -6080,7 +6080,7 @@ public:
 
         if (ASR::is_a<ASR::Complex_t>(*v_variable_m_type)) {
             if (var_name != "re" && var_name != "im") {
-                diag.add(Diagnostic("Complex variable '" + dt_name + "' only has %re, %im and %kind members, not '" + var_name + "'",
+                diag.add(Diagnostic("Complex variable '" + dt_name + "' only has %re, %im, and %kind members, not '" + var_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -6121,7 +6121,7 @@ public:
             }
         } else if (ASR::is_a<ASR::String_t>(*v_variable_m_type)) {
             if (var_name != "len") {
-                diag.add(Diagnostic("Character variable '" + dt_name + "' only has %len and %kind, not '" + var_name + "'",
+                diag.add(Diagnostic("Character variable '" + dt_name + "' only has %len and %kind members, not '" + var_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }

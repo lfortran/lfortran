@@ -228,4 +228,9 @@ program continue_compilation_1
     matrix = reshape(source, shape_, pad=[0])
 
     deallocate(shape_)
+
+    ! c is Complex
+    print *, c%mymember
+    ! c1 is Character
+    print *, c1%mymember
 end program
