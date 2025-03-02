@@ -26,6 +26,19 @@ src/lfortran/tests/print_integer
 src/lfortran/tests/cmp32
 src/lfortran/tests/x
 src/lfortran/tests/ref_pickle.txt.new
+src/server/lsp_language_server.cpp
+src/server/lsp_language_server.h
+src/server/lsp_specification.cpp
+src/server/lsp_specification.h
+src/server/lsp_transformer.cpp
+src/server/lsp_transformer.h
+**/lfortran-language-server.log
+
+.#*
+*.sw?
+
+expr2
+lfortran-*-dirty/
 
 # fortran_parser
 

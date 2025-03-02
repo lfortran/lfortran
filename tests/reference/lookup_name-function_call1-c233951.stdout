@@ -1,1 +1,1 @@
-[{"kind":12,"location":{"range":{"start":{"character":5,"line":8},"end":{"character":24,"line":12}},"uri":"tests/function_call1.f90"},"name":"eval_1d","filename":"tests/function_call1.f90"}]
+[{"kind":2,"location":{"range":{"start":{"character":5,"line":8},"end":{"character":24,"line":12}},"uri":"tests/function_call1.f90"},"name":"eval_1d","filename":"tests/function_call1.f90"}]
