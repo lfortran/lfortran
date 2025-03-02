@@ -2,11 +2,21 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <bin/cli_utils.h>
-#include <bin/server/lfortran_lsp_language_server.h>
+#include <server/base_lsp_language_server.h>
+#include <server/lsp_exception.h>
+#include <server/lsp_specification.h>
+
+#ifndef CLI11_HAS_FILESYSTEM
+#define CLI11_HAS_FILESYSTEM 0
+#endif // CLI11_HAS_FILESYSTEM
+#include <bin/CLI11.hpp>
+
+#include <bin/lfortran_command_line_parser.h>
+#include <bin/lfortran_lsp_language_server.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace lcli = LCompilers::CommandLineInterface;
@@ -17,15 +27,20 @@ namespace LCompilers::LanguageServerProtocol {
         std::size_t numRequestThreads,
         std::size_t numWorkerThreads,
         lsl::Logger &logger,
-        const std::string &configSection
+        const std::string &configSection,
+        std::shared_ptr<lsc::LspConfig> workspaceConfig
     ) : BaseLspLanguageServer(
-            incomingMessages,
-            outgoingMessages,
-            numRequestThreads,
-            numWorkerThreads,
-            logger,
-            configSection
-        )
+        incomingMessages,
+        outgoingMessages,
+        numRequestThreads,
+        numWorkerThreads,
+        logger,
+        configSection,
+        std::make_shared<lsc::LFortranLspConfigTransformer>(
+            serializer
+        ),
+        std::move(workspaceConfig)
+      )
     {
         optionsByUri.reserve(256);
     }
@@ -81,13 +96,23 @@ namespace LCompilers::LanguageServerProtocol {
         {
             std::unique_lock<std::shared_mutex> writeLock(optionMutex);
             optionsByUri.clear();
+            logger.debug() << "Invalidated compiler options cache." << std::endl;
         }
-        logger.debug() << "Invalidated compiler options cache." << std::endl;
+    }
+
+    auto LFortranLspLanguageServer::getLFortranConfig(
+        const DocumentUri &uri
+    ) -> const std::shared_ptr<lsc::LFortranLspConfig> {
+        return std::static_pointer_cast<lsc::LFortranLspConfig>(
+            BaseLspLanguageServer::getConfig(uri)
+        );
     }
 
     auto LFortranLspLanguageServer::getCompilerOptions(
-        const DocumentUri &uri
+        const LspTextDocument &document
     ) -> const CompilerOptions & {
+        const DocumentUri &uri = document.uri();
+
         std::shared_lock<std::shared_mutex> readLock(optionMutex);
         auto optionIter = optionsByUri.find(uri);
         if (optionIter != optionsByUri.end()) {
@@ -96,123 +121,22 @@ namespace LCompilers::LanguageServerProtocol {
 
         readLock.unlock();
 
-        CompilerOptions compiler_options;
-        compiler_options.continue_compilation = true;
+        const std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(uri);
+        std::vector<std::string> argv(config->compiler.flags);
+        argv.push_back(document.path());
 
-        const std::shared_ptr<LSPAny> config = getConfig(uri);
-        switch (config->type()) {
-        case LSPAnyType::OBJECT_TYPE: {
-            const LSPObject &object = config->object();
-            auto iter = object.find("compiler");
-            if (iter != object.end()) {
-                switch (iter->second->type()) {
-                case LSPAnyType::OBJECT_TYPE: {
-                    const LSPObject &compiler = iter->second->object();
-                    if ((iter = compiler.find("flags")) != compiler.end()) {
-                        switch (iter->second->type()) {
-                        case LSPAnyType::ARRAY_TYPE: {
-                            const LSPArray &flags = iter->second->array();
-                            int argc = 1 + flags.size();
-                            char **argv = new char*[argc];
-                            argv[0] = new char[source.length() + 1];
-                            std::strcpy(argv[0], source.c_str());
-                            bool success = true;
-                            std::size_t i;
-                            for (i = 0; (i < flags.size()) && success; ++i) {
-                                std::string value;
-                                const std::unique_ptr<LSPAny> &flag = flags[i];
-                                switch (flag->type()) {
-                                case LSPAnyType::OBJECT_TYPE: // fallthrough
-                                case LSPAnyType::ARRAY_TYPE: {
-                                    value = serializer.serialize(*flag);
-                                    break;
-                                }
-                                case LSPAnyType::STRING_TYPE: {
-                                    value = transformer.anyToString(*flag);
-                                    break;
-                                }
-                                case LSPAnyType::INTEGER_TYPE: {
-                                    integer_t integer = transformer.anyToInteger(*flag);
-                                    value = std::to_string(integer);
-                                    break;
-                                }
-                                case LSPAnyType::UINTEGER_TYPE: {
-                                    uinteger_t uinteger = transformer.anyToUInteger(*flag);
-                                    value = std::to_string(uinteger);
-                                    break;
-                                }
-                                case LSPAnyType::DECIMAL_TYPE: {
-                                    decimal_t decimal = transformer.anyToDecimal(*flag);
-                                    value = std::to_string(decimal);
-                                    break;
-                                }
-                                case LSPAnyType::BOOLEAN_TYPE: {
-                                    boolean_t boolean = transformer.anyToBoolean(*flag);
-                                    value = std::to_string(boolean);
-                                    break;
-                                }
-                                case LSPAnyType::NULL_TYPE: {
-                                    value = "";
-                                    break;
-                                }
-                                case LSPAnyType::UNINITIALIZED: {
-                                    logger.error()
-                                        << "Attempted to copy a command-line argument from an uninitialized value."
-                                        << std::endl;
-                                    success = false;
-                                    break;
-                                }
-                                }
-                                if (success) {
-                                    argv[i + 1] = new char[value.size() + 1];
-                                    std::strcpy(argv[i + 1], value.c_str());
-                                }
-                            }
-                            if (success) {
-                                int exitCode = lcli::init_compiler_options(compiler_options, argc, argv);
-                                if (exitCode != 0) {
-                                    std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-                                    logger.error()
-                                        << "Failed to initialize compiler options for document with uri: " << uri
-                                        << std::endl;
-                                    logger.error()
-                                        << "init_compiler_options(...) returned with status: " << exitCode
-                                        << std::endl;
-                                }
-                            }
-                            for (std::size_t j = 0; j < i + 1; ++j) {
-                                delete[] argv[j];
-                            }
-                            delete[] argv;
-                            break;
-                        }
-                        default: {
-                            logger.error()
-                                << "Unsupported type of compiler flags for uri=\"" << uri << "\": "
-                                   "LSPAnyType::" << LSPAnyTypeNames.at(iter->second->type())
-                                << std::endl;
-                        }
-                        }
-                    }
-                    break;
-                }
-                default: {
-                    logger.error()
-                        << "Unsupported type of compiler options for uri=\"" << uri << "\": "
-                           "LSPAnyType::" << LSPAnyTypeNames.at(iter->second->type())
-                        << std::endl;
-                }
-                }
-            }
-            break;
-        }
-        default: {
+        lcli::LFortranCommandLineParser parser(argv);
+        try {
+            parser.parse();
+        } catch (const LCompilers::LCompilersException &e) {
             logger.error()
-                << "Unsupported type of config for uri=\"" << uri << "\": "
-                   "LSPAnyType::" << LSPAnyTypeNames.at(config->type())
-                << std::endl;
+                << "Failed to initialize compiler options for document with uri=\""
+                << uri << "\": " << e.what() << std::endl;
+            throw LSP_EXCEPTION(ErrorCodes::INVALID_PARAMS, e.what());
         }
-        }
+
+        CompilerOptions &compiler_options = parser.opts.compiler_options;
+        compiler_options.continue_compilation = true;
 
         std::unique_lock<std::shared_mutex> writeLock(configMutex);
         optionIter = optionsByUri.find(uri);
@@ -242,7 +166,7 @@ namespace LCompilers::LanguageServerProtocol {
                 const std::string &text = document.text();
                 int version = document.version();
                 try {
-                    CompilerOptions compiler_options = getCompilerOptions(uri);
+                    CompilerOptions compiler_options = getCompilerOptions(document);
                     std::vector<LCompilers::error_highlight> highlights =
                         lfortran.showErrors(path, text, compiler_options);
 

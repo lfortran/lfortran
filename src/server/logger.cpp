@@ -13,6 +13,7 @@ namespace LCompilers::LLanguageServer::Logging {
                 "Failed to open log file for writing: " + logPath.string()
             );
         }
+        info() << "Logging to: " << logPath << std::endl;
     }
 
     Logger::~Logger() {

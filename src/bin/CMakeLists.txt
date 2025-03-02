@@ -1,5 +1,5 @@
 set(LFORTRAN_SRC
-    cli_utils.cpp
+    lfortran_command_line_parser.cpp
     lfortran.cpp
 )
 set(LFORTRAN_LINK_LIBRARIES
@@ -9,8 +9,9 @@ set(LFORTRAN_LINK_LIBRARIES
 if (WITH_LSP)
     add_compile_definitions(WITH_LSP)
     set(LFORTRAN_SRC
-        server/lfortran_lsp_language_server.cpp
-        server/interface.cpp
+        lfortran_lsp_config.cpp
+        lfortran_lsp_language_server.cpp
+        language_server_interface.cpp
         ${LFORTRAN_SRC}
     )
     set(LFORTRAN_LINK_LIBRARIES
