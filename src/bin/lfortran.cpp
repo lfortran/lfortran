@@ -2429,7 +2429,7 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.show_mlir || opts.show_llvm_from_mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-        return handle_mlir(arg_file, outfile, compiler_options,
+        return handle_mlir(opts.arg_file, outfile, compiler_options,
             show_mlir, show_llvm_from_mlir);
 #else
         std::cerr << "The `--show-mlir` option requires the MLIR backend to be "
@@ -2498,7 +2498,7 @@ int main_app(int argc, char *argv[]) {
             return compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
         } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-            return handle_mlir(arg_file, outfile, compiler_options, false, false);
+            return handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
 #else
             std::cerr << "The -c option with `--backend=mlir` requires the "
                 "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
