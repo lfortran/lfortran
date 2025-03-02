@@ -2272,7 +2272,7 @@ int main_app(int argc, char *argv[]) {
 
     if (kernel) {
 #ifdef HAVE_LFORTRAN_XEUS
-        return LCompilers::LFortran::run_kernel(arg_kernel_f);
+        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f);
 #else
         std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;
         return 1;
