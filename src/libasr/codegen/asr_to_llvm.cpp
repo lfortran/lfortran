@@ -163,7 +163,7 @@ public:
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
-
+    std::set<uint32_t> global_string_allocated;
     const ASR::Function_t *parent_function = nullptr;
 
     std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop,
@@ -5383,6 +5383,19 @@ public:
                     return;
                 } else if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
                     ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
+                    uint32_t h = get_hash((ASR::asr_t*)asr_target);
+                    bool already_allocated = global_string_allocated.find(h) != global_string_allocated.end();
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ASR::down_cast<ASR::Var_t>(x.m_target)->m_v) && 
+                        asr_target->m_symbolic_value != nullptr && !already_allocated) {
+                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_target->m_type); 
+                        llvm::Value *arg_size = llvm::ConstantInt::get(
+                            context, llvm::APInt(32, str_type->m_len+1));
+                        llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
+                        string_init(context, *module, *builder, arg_size, init_value);
+                        builder->CreateStore(init_value, target);
+                        strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(asr_target->m_type, target));
+                        global_string_allocated.insert(h);
+                    }
                     tmp = lfortran_str_copy(target, value,
                         ASRUtils::is_descriptorString(asr_target->m_type));
                     return;
@@ -8163,6 +8176,25 @@ public:
                 ptr_loads = ptr_copy;
                 ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
                 llvm::Function *fn;
+                if (ASR::is_a<ASR::Var_t>(*x.m_values[i]) && 
+                    ASR::is_a<ASR::ExternalSymbol_t>(*ASR::down_cast<ASR::Var_t>(x.m_values[i])->m_v)) {
+                    ASR::Variable_t *asr_target = EXPR2VAR(x.m_values[i]);
+                    uint32_t h = get_hash((ASR::asr_t*)asr_target);
+                    llvm::Value *target = llvm_symtab[h];
+                    bool already_allocated = global_string_allocated.find(h) != global_string_allocated.end();
+                    if (ASR::is_a<ASR::String_t>(*asr_target->m_type) && 
+                        asr_target->m_symbolic_value != nullptr && 
+                        !already_allocated) {
+                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_target->m_type); 
+                        llvm::Value *arg_size = llvm::ConstantInt::get(
+                            context, llvm::APInt(32, str_type->m_len+1));
+                        llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
+                        string_init(context, *module, *builder, arg_size, init_value);
+                        builder->CreateStore(init_value, target);
+                        strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(asr_target->m_type, target));
+                        global_string_allocated.insert(h);
+                    }
+                }
                 if (is_string) {
                     // TODO: Support multiple arguments and fmt
                     std::string runtime_func_name = "_lfortran_string_read_" +
