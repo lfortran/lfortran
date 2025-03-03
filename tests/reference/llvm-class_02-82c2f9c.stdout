@@ -49,6 +49,7 @@ define void @__module_class_circle2_circle_print(%circle_polymorphic* %this) {
   %9 = fpext float %8 to double
   %10 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 7, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @1, i32 0, i32 0), i32 6, double %7, i32 7, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @2, i32 0, i32 0), i32 6, double %9)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_free(i8* %10)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -81,6 +82,8 @@ declare float @llvm.powi.f32(float, i32) #0
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

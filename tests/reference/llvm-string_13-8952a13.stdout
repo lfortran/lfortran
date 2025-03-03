@@ -63,6 +63,7 @@ else8:                                            ; preds = %ifcont6
 ifcont9:                                          ; preds = %else8, %then7
   %2 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 48, i32 2, i64 53, i32 2, i64 57)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  call void @_lfortran_free(i8* %2)
   call void @_lpython_free_argv()
   br label %return
 
@@ -79,5 +80,7 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
