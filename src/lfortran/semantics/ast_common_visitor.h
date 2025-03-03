@@ -2017,7 +2017,13 @@ public:
         } else {
             Vec<ASR::expr_t*> body;
             body.reserve(al, a->n_value);
-            size_t size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+            size_t size_of_array;
+            if (ASR::is_a<ASR::ArraySection_t>(*object)) {
+                size_of_array = ASRUtils::get_fixed_size_of_ArraySection(ASR::down_cast<ASR::ArraySection_t>(object));
+                object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
+            } else {
+                size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+            }
             curr_value += size_of_array;
             for (size_t j=0; j < size_of_array; j++) {
                 this->visit_expr(*a->m_value[j]);
@@ -2058,9 +2064,6 @@ public:
             tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
                 body.size(), obj_type, ASR::arraystorageType::ColMajor);
             ASR::Variable_t* v2 = nullptr;
-            if (ASR::is_a<ASR::ArraySection_t>(*object)) {
-                object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
-            }
             if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
                 ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
@@ -4988,14 +4991,6 @@ public:
                     empty_dim.loc = loc;
                     empty_dim.m_start = nullptr;
                     empty_dim.m_length = nullptr;
-                    if (args.p[i].m_left && args.p[i].m_right && ASRUtils::is_value_constant(args.p[i].m_right) &&
-                        ASRUtils::is_value_constant(args.p[i].m_left)) {
-                        empty_dim.m_start = ASRUtils::expr_value(args.p[i].m_left);
-                        ASR::IntegerConstant_t* start = ASR::down_cast<ASR::IntegerConstant_t>(empty_dim.m_start);
-                        ASR::IntegerConstant_t* end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_right));
-                        empty_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, end->m_n - start->m_n + 1,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind))));
-                    }
                     array_section_dims.push_back(al, empty_dim);
                 }
             }

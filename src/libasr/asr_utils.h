@@ -2382,6 +2382,24 @@ static inline int64_t get_fixed_size_of_array(ASR::dimension_t* m_dims, size_t n
     return array_size;
 }
 
+static inline int64_t get_fixed_size_of_ArraySection(ASR::ArraySection_t* x) {
+    if (x->n_args == 0) {
+        return 0;
+    }
+    int64_t array_size = 1;
+    for (size_t i = 0; i < x->n_args; i++) {
+        if (x->m_args[i].m_left && x->m_args[i].m_right && ASRUtils::is_value_constant(x->m_args[i].m_right) &&
+            ASRUtils::is_value_constant(x->m_args[i].m_left)) {
+            ASR::IntegerConstant_t* start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(x->m_args[i].m_left));
+            ASR::IntegerConstant_t* end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(x->m_args[i].m_right));
+            array_size = array_size * (end->m_n - start->m_n + 1);
+        } else {
+            return -1;
+        }
+    }
+    return array_size;
+}
+
 static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
     ASR::dimension_t* m_dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
