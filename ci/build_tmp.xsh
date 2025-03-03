@@ -48,6 +48,9 @@ pushd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && popd
 pushd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && popd
 pushd src/lfortran/parser && bison -Wall -d -r all parser.yy && popd
 
+# Generate the LSP sources
+python src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
+
 pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
 
 $lfortran_version=$(cat version).strip()
