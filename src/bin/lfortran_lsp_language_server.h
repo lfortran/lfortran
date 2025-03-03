@@ -91,6 +91,11 @@ namespace LCompilers::LanguageServerProtocol {
         auto getLFortranConfig(
             const DocumentUri &uri
         ) -> const std::shared_ptr<lsc::LFortranLspConfig>;
+
+        auto resolve(
+            const std::string &filename,
+            const CompilerOptions &compilerOptions
+        ) -> fs::path;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

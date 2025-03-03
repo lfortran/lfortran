@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -293,7 +294,10 @@ namespace LCompilers::LanguageServerProtocol {
                 links->reserve(symbols.size());
                 for (const auto &symbol : symbols) {
                     DefinitionLink &link = links->emplace_back();
-                    link.targetUri = uri;
+                    link.targetUri = "file://" + resolve(
+                        symbol.filename,
+                        compilerOptions
+                    ).string();
                     Position &targetRangeStart = link.targetRange.start;
                     Position &targetSelectionRangeStart =
                         link.targetSelectionRange.start;
@@ -320,7 +324,10 @@ namespace LCompilers::LanguageServerProtocol {
                 locations->reserve(symbols.size());
                 for (const auto &symbol : symbols) {
                     Location &location = locations->emplace_back();
-                    location.uri = uri;
+                    location.uri = "file://" + resolve(
+                        symbol.filename,
+                        compilerOptions
+                    ).string();
                     Position &start = location.range.start;
                     Position &end = location.range.end;
                     start.line = symbol.first_line - 1;  // 1-to-0 index
@@ -334,6 +341,26 @@ namespace LCompilers::LanguageServerProtocol {
             result = nullptr;
         }
         return result;
+    }
+
+    auto LFortranLspLanguageServer::resolve(
+        const std::string &filename,
+        const CompilerOptions &compilerOptions
+    ) -> fs::path {
+        fs::path path = fs::absolute(filename).lexically_normal();
+        if (fs::exists(path)) {
+            return path;
+        }
+        for (const fs::path &includeDir : compilerOptions.po.include_dirs) {
+            path = fs::absolute(includeDir / filename).lexically_normal();
+            if (fs::exists(path)) {
+                return path;
+            }
+        }
+        throw LSP_EXCEPTION(
+            ErrorCodes::InvalidParams,
+            "File not found: " + filename
+        );
     }
 
     // notification: "workspace/didDeleteFiles"
