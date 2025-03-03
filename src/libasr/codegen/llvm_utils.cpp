@@ -118,8 +118,8 @@ namespace LCompilers {
                 llvm::Type::getInt64Ty(context),  // size
                 llvm::Type::getInt64Ty(context)  // capacity
             };
-            complex_type_4 = llvm::StructType::create(context, els_4, "complex_4");
-            complex_type_8 = llvm::StructType::create(context, els_8, "complex_8");
+            complex_type_4 = llvm::StructType::create(context, els_4, "complex_4", true);
+            complex_type_8 = llvm::StructType::create(context, els_8, "complex_8", true);
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
@@ -244,7 +244,7 @@ namespace LCompilers {
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
-            (*der_type_llvm)->setBody(member_types);
+            (*der_type_llvm)->setBody(member_types, true);
             name2dertype[der_type_name] = *der_type_llvm;
         }
         struct_type_stack.pop_back();

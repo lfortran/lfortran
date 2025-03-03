@@ -80,7 +80,9 @@ namespace LCompilers {
         std::vector<std::string> _passes;
         std::vector<std::string> _optimization_passes;
         std::vector<std::string> _user_defined_passes;
-        std::vector<std::string> _skip_passes, _c_skip_passes;
+        std::vector<std::string> _skip_passes, 
+                _c_skip_passes, 
+                _llvm_skip_passes /*Contains passes that get skipped with llvm backend*/;
         std::map<std::string, pass_function> _passes_db = {
             {"replace_with_compile_time_values", &pass_replace_with_compile_time_values},
             {"do_loops", &pass_replace_do_loops},
@@ -128,10 +130,11 @@ namespace LCompilers {
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
 
         public:
+        enum class backend {llvm, c, cpp, x86, wasm, fortran, mlir};
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics) {
+                           [[maybe_unused]] diag::Diagnostics &diagnostics, PassManager::backend Backend){
             if (pass_options.pass_cumulative) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(
@@ -181,6 +184,11 @@ namespace LCompilers {
                 if (c_skip_pass && std::find(_c_skip_passes.begin(),
                         _c_skip_passes.end(), passes[i]) != _c_skip_passes.end())
                     continue;
+                if(Backend == backend::llvm && 
+                        std::find(_llvm_skip_passes.begin(), _llvm_skip_passes.end(), passes[i])
+                        != _llvm_skip_passes.end()) 
+                    continue;
+                
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
@@ -288,6 +296,11 @@ namespace LCompilers {
                 "select_case",
                 "inline_function_calls"
             };
+            // These passes' job is handled in LLVM backend;
+            _llvm_skip_passes = {
+                "print_arr",
+                "print_struct_type"
+            };
             _user_defined_passes.clear();
         }
 
@@ -300,21 +313,21 @@ namespace LCompilers {
 
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                           PassOptions& pass_options,
-                          diag::Diagnostics &diagnostics) {
+                          diag::Diagnostics &diagnostics, PassManager::backend Backend) {
             if( !_user_defined_passes.empty() ) {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
-                    diagnostics);
+                    diagnostics, Backend);
             } else if( apply_default_passes ) {
-                apply_passes(al, asr, _passes, pass_options, diagnostics);
+                apply_passes(al, asr, _passes, pass_options, diagnostics, Backend);
                 if (pass_options.fast ){
-                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics);
+                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics, Backend);
                 }
             }
         }
 
         void dump_all_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
+                           [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm, backend Backend) {
             std::vector<std::string> passes;
             if (pass_options.fast) {
                 passes = _passes;
@@ -326,19 +339,25 @@ namespace LCompilers {
             } else {
                 passes = _passes;
             }
+            int pass_number = 0;
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
                 // ahead of time (not at the last minute), and remove this much
                 // earlier
                 // Note: this is not enough for rtlib, we also need to include
                 // it
+                if( Backend == backend::llvm && 
+                    std::find( _llvm_skip_passes.begin(), _llvm_skip_passes.end(), passes[i]) != _llvm_skip_passes.end())
+                    {continue;}
+
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
                 _passes_db[passes[i]](al, *asr, pass_options);
                 if (pass_options.dump_all_passes) {
-                    std::string str_i = std::to_string(i+1);
-                    if ( i < 9 )  str_i = "0" + str_i;
+                    std::string str_i = std::to_string(pass_number+1);
+                    if ( pass_number < 9 )  str_i = "0" + str_i;
+                    ++pass_number;
                     if (pass_options.json) {
                         std::ofstream outfile ("pass_json_" + str_i + "_" + passes[i] + ".json");
                         outfile << pickle_json(*asr, lm, pass_options.no_loc, pass_options.with_intrinsic_mods) << "\n";

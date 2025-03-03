@@ -2581,6 +2581,7 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
 
 size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x);
 
+ASR::expr_t* GetCompileTimeArraySize(Allocator& al, ASR::ttype_t* array_type);
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);

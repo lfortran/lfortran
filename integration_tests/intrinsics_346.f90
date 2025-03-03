@@ -15,7 +15,7 @@ module asciimod ! f95-compliant file asciiB.f90: [] only in character strings
   
     pure function asciiarray(      codes)
       integer,intent(in)::         codes(:)
-      character   asciiarray*(size(codes))
+      character(len = size(codes)) :: asciiarray
       integer i
       do i = 1, size(codes)
          asciiarray(i:i) = achar(codes(i))
