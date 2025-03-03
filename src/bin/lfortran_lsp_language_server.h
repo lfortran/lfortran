@@ -75,18 +75,27 @@ namespace LCompilers::LanguageServerProtocol {
     private:
         const std::string source = "lfortran";
         ls::LFortranAccessor lfortran;
-        std::unordered_map<DocumentUri, CompilerOptions> optionsByUri;
+        std::unordered_map<
+            DocumentUri,
+            std::shared_ptr<CompilerOptions>
+        > optionsByUri;
         std::shared_mutex optionMutex;
 
         std::atomic_bool clientSupportsGotoDefinition = false;
         std::atomic_bool clientSupportsGotoDefinitionLinks = false;
 
         auto validate(std::shared_ptr<LspTextDocument> document) -> void;
-        auto getCompilerOptions(const LspTextDocument &document) -> const CompilerOptions &;
+        auto getCompilerOptions(
+            const LspTextDocument &document
+        ) -> const std::shared_ptr<CompilerOptions>;
 
-        auto diagnosticLevelToLspSeverity(diag::Level level) const -> DiagnosticSeverity;
+        auto diagnosticLevelToLspSeverity(
+            diag::Level level
+        ) const -> DiagnosticSeverity;
 
-        auto asrSymbolTypeToLspSymbolKind(ASR::symbolType symbol_type) const -> SymbolKind;
+        auto asrSymbolTypeToLspSymbolKind(
+            ASR::symbolType symbol_type
+        ) const -> SymbolKind;
 
         auto getLFortranConfig(
             const DocumentUri &uri

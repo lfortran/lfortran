@@ -110,7 +110,7 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto LFortranLspLanguageServer::getCompilerOptions(
         const LspTextDocument &document
-    ) -> const CompilerOptions & {
+    ) -> const std::shared_ptr<CompilerOptions> {
         const DocumentUri &uri = document.uri();
 
         std::shared_lock<std::shared_mutex> readLock(optionMutex);
@@ -135,8 +135,8 @@ namespace LCompilers::LanguageServerProtocol {
             throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
         }
 
-        CompilerOptions &compiler_options = parser.opts.compiler_options;
-        compiler_options.continue_compilation = true;
+        CompilerOptions &compilerOptions = parser.opts.compiler_options;
+        compilerOptions.continue_compilation = true;
 
         std::unique_lock<std::shared_mutex> writeLock(configMutex);
         optionIter = optionsByUri.find(uri);
@@ -144,7 +144,12 @@ namespace LCompilers::LanguageServerProtocol {
             return optionIter->second;
         }
 
-        auto record = optionsByUri.emplace(uri, std::move(compiler_options));
+        auto record = optionsByUri.emplace(
+            uri,
+            std::make_shared<CompilerOptions>(
+                std::move(compilerOptions)
+            )
+        );
         return record.first->second;
     }
 
@@ -166,9 +171,10 @@ namespace LCompilers::LanguageServerProtocol {
                 const std::string &text = document->text();
                 int version = document->version();
                 try {
-                    CompilerOptions compilerOptions = getCompilerOptions(*document);
+                    std::shared_ptr<CompilerOptions> compilerOptions =
+                        getCompilerOptions(*document);
                     std::vector<LCompilers::error_highlight> highlights =
-                        lfortran.showErrors(path, text, compilerOptions);
+                        lfortran.showErrors(path, text, *compilerOptions);
 
                     std::vector<Diagnostic> diagnostics;
                     for (const LCompilers::error_highlight &highlight : highlights) {
@@ -281,7 +287,8 @@ namespace LCompilers::LanguageServerProtocol {
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
         const std::string &path = document->path().string();
         const std::string &text = document->text();
-        CompilerOptions compilerOptions = getCompilerOptions(*document);
+        // NOTE: Copy the compiler options since we will modify them.
+        CompilerOptions compilerOptions = *getCompilerOptions(*document);
         compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
         compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
         std::vector<LCompilers::document_symbols> symbols =
