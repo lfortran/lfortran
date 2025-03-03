@@ -3431,8 +3431,8 @@ namespace FindLoc {
             }
         } else if (is_integer(*array_type) && is_real(*value_type)){
             if (ASR::is_a<ASR::RealConstant_t>(*value)){
-                ASR::RealConstant_t *value_int = ASR::down_cast<ASR::RealConstant_t>(value);
-                value = EXPR(ASR::make_IntegerConstant_t(al, loc, value_int->m_r, 
+                ASR::RealConstant_t *value_real = ASR::down_cast<ASR::RealConstant_t>(value);
+                value = EXPR(ASR::make_IntegerConstant_t(al, loc, value_real->m_r, 
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type)))));
             } else{
                 value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::RealToInteger, 

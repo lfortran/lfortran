@@ -1,4 +1,4 @@
-program main
+program subroutines_18
    procedure(OBJ), pointer :: proc_ptr
 
    call sub(proc_ptr)

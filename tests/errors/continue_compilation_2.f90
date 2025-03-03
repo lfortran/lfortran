@@ -321,6 +321,9 @@ program continue_compilation_2
     !unsupported kind
     real*16 :: unsupported_kind
 
+    ! member not found
+    print *, myCircle%mymember
+
     !tokenizer error
     integer  :: ? tokenizer_error
     100 FORMAT(A10, @)
