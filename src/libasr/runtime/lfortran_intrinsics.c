@@ -468,9 +468,6 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     int decimal = 1;
-    if (val < 0 &&  val_str[0] == '0') {
-        decimal = 0;
-    }
     while (val_str[0] == '0') {
         // Used for the case: 1.123e-10
         memmove(val_str, val_str + 1, strlen(val_str));
@@ -488,7 +485,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     if (width_digits == 0) {
         sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
-        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        if (tolower(format[0]) == 'e' && isdigit(format[1]) && val != 0) {
+            sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal - scale));
+        } else {
+            sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        }
         // exponent = "+10"
     }
 
