@@ -1410,6 +1410,7 @@ public:
         else if(intrinsic_func_name == "CompilerOptions") intrinsic_func_name = "compiler_options";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
+        else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 
@@ -1916,6 +1917,7 @@ public:
             {ASR::cast_kindType::ComplexToReal, {"real", {4, 8}}},
             {ASR::cast_kindType::RealToComplex, {"cmplx", {4, 8}}},
             {ASR::cast_kindType::LogicalToInteger, {"int", {1, 2, 4, 8}}},
+            {ASR::cast_kindType::ComplexToInteger, {"int", {4, 8}}},
         };
 
         if (cast_map.find(x.m_kind) != cast_map.end()) {
