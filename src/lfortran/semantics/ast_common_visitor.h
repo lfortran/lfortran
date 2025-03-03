@@ -9865,6 +9865,21 @@ public:
                     array_found = true;
                     array_type = ASRUtils::duplicate_type(al,var_type);
                 }
+            } else if ( tmp2->m_v->type == ASR::exprType::ArraySection ) {
+                ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(tmp2->m_v);
+
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                dim.m_length = ASRUtils::compute_length_from_start_end(al, array_section->m_args->m_left, array_section->m_args->m_right);
+                dims.push_back(al, dim);
+
+                array_found = true;
+                array_type = ASRUtils::TYPE(ASR::make_Array_t(
+                    al, array_section->base.base.loc, tmp2->m_type, dims.p, dims.size(), ASR::array_physical_typeType::FixedSizeArray));
             }
             tmp_copy = (ASR::asr_t*)(tmp2->m_v);
         }
