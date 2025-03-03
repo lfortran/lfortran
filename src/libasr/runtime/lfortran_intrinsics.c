@@ -480,7 +480,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
 
     char exponent[12];
     if (width_digits == 0) {
-        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal - scale));
     } else {
         if (val != 0) {
             sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal - scale));
