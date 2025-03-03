@@ -994,12 +994,12 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                         else:
                             self.gen_assign(field_name, f'other.{field_name}')
                         self.write('break;')
-            with self.gen_case(enum_name, "UNINITIALIZED"):
+            with self.gen_case(enum_name, "Uninitialized"):
                 self.write('// other has not been initialized, there is nothing to do ...')
                 self.write('break;')
         self.gen_assign(
             f'other._type',
-            f'{enum_name}::UNINITIALIZED'
+            f'{enum_name}::Uninitialized'
         )
 
     def generate_union_copy_field(
@@ -1108,7 +1108,7 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                             qualifier='other._'
                         )
                         self.gen_break()
-            with self.gen_case(enum_name, "UNINITIALIZED"):
+            with self.gen_case(enum_name, "Uninitialized"):
                 self.write('// other has not been initialized, there is nothing to do ...')
                 self.gen_break()
 
@@ -1239,7 +1239,7 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
     def gen_union_enum_names(self, enum_name: str, item_specs: List[LspSpec]) -> None:
         names_by_enum = f'{enum_name}Names'
         with self.gen_map(names_by_enum, enum_name, 'std::string'):
-            self.gen_enum_map_entry(enum_name, 'UNINITIALIZED', 'UNINITIALIZED')
+            self.gen_enum_map_entry(enum_name, 'Uninitialized', 'Uninitialized')
             for index, item_spec in enumerate(item_specs):
                 with self.nest_name(str(index)):
                     self.gen_enum_map_entry(enum_name, item_spec, item_spec)
@@ -1295,7 +1295,7 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                 params=params,
         ):
             if has_pointer:
-                with self.gen_if_ne('_type', f'{enum_name}::UNINITIALIZED'):
+                with self.gen_if_ne('_type', f'{enum_name}::Uninitialized'):
                     self.gen_call('reset')
             if self.gen_debug_check(field_spec):
                 with self.gen_if_debug_enabled(f'!{field_name}'):
@@ -1326,7 +1326,7 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                 ],
         ):
             if has_pointer:
-                with self.gen_if_ne('_type', f'{enum_name}::UNINITIALIZED'):
+                with self.gen_if_ne('_type', f'{enum_name}::Uninitialized'):
                     self.gen_call('reset')
             if self.gen_debug_check(field_spec):
                 with self.gen_if_debug_enabled(f'!{field_name}'):
@@ -1371,7 +1371,7 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                                for field_spec in field_specs))
             if has_pointer:
                 with self.gen_switch('_type'):
-                    with self.gen_case(enum_name, 'UNINITIALIZED'):
+                    with self.gen_case(enum_name, 'Uninitialized'):
                         self.write('// nothing to do')
                         self.write('break;')
                     for field_index, field_spec in enumerate(field_specs):
@@ -1387,12 +1387,12 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                                         )
                                     # self.write(f'_{field_name}.reset();')
                                     self.write(f'_{field_name}.~unique_ptr<{field_type}>();')
-                                    self.gen_assign('_type', f'{enum_name}::UNINITIALIZED')
+                                    self.gen_assign('_type', f'{enum_name}::Uninitialized')
                                     self.gen_break()
                     with self.gen_default():
-                        self.write(f'_type = {enum_name}::UNINITIALIZED;')
+                        self.write(f'_type = {enum_name}::Uninitialized;')
             else:
-                self.write(f'_type = {enum_name}::UNINITIALIZED;')
+                self.write(f'_type = {enum_name}::Uninitialized;')
         self.newline()
 
     def generate_union_additional_pointer_setters(

@@ -275,7 +275,7 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
                     self.write('std::atomic_int serialRequestId = 0;')
                     self.write('std::unordered_map<int, std::string> callbacksById;')
                     self.write('std::mutex callbackMutex;')
-                    self.write('std::atomic<TraceValues> trace{TraceValues::OFF};')
+                    self.write('std::atomic<TraceValues> trace{TraceValues::Off};')
                     self.newline()
                     self.write('auto nextSendId() -> std::size_t;')
                     self.write('auto nextRequestId() -> int;')

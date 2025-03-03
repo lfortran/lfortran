@@ -73,16 +73,9 @@ def upper_first(name: str) -> str:
 
 @memoize
 def method_to_camel_case(method: str) -> str:
-    if method.startswith("$"):
-        method = method[1:]
-    return "".join(map(upper_first, method.split("/")))
-
-@memoize
-def method_to_underscore(method: str) -> str:
-    if method.startswith("$"):
-        method = method[1:]
-    camel_case = method_to_camel_case(method)
-    return camel_case_to_underscore(camel_case)
+    if method.startswith(r'$/'):
+        method = method[2:]
+    return "_".join(map(upper_first, method.split(r'/')))
 
 RESERVED_NAMES: Set[str] = {
     "any",
@@ -121,12 +114,10 @@ def normalize_name(name: str) -> str:
             return name
 
 @memoize
-def rename_enum(old_name: str) -> str:
-    new_name = normalize_name(old_name)
-    new_name = camel_case_to_underscore(new_name)
-    if new_name.lower() in RESERVED_NAMES:
-        new_name = f"{new_name}_TYPE"
-    return new_name
+def rename_enum(enum_name: str) -> str:
+    enum_name = normalize_name(enum_name)
+    enum_name = upper_first(enum_name)
+    return enum_name
 
 @memoize
 def rename_type(old_name: str) -> str:
@@ -159,7 +150,7 @@ def any_enum(type_name: str) -> str:
 
 @memoize
 def send_fn(method: str) -> str:
-    if method.startswith("$/"):
+    if method.startswith(r'$/'):
         method = method[2:]
     fn_nym = method.replace(r'/', '_')
     fn_nym = upper_first(fn_nym)
@@ -167,7 +158,7 @@ def send_fn(method: str) -> str:
 
 @memoize
 def receive_fn(method: str) -> str:
-    if method.startswith("$/"):
+    if method.startswith(r'$/'):
         method = method[2:]
     fn_nym = method.replace(r'/', '_')
     fn_nym = upper_first(fn_nym)

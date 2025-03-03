@@ -10,7 +10,7 @@ from llanguage_server.cxx.visitors import BaseCPlusPlusLspVisitor
 from llanguage_server.lsp.datatypes import LspSpec, LspSymbol
 from llanguage_server.lsp.utils import (any_enum, lower_first,
                                         method_to_camel_case, rename_enum,
-                                        rename_field, rename_type, upper_first, normalize_name)
+                                        rename_field, rename_type, upper_first)
 from llanguage_server.lsp.visitors import (LspAnalysisPipeline, LspSymbol,
                                            LspSymbolKind)
 
@@ -1321,7 +1321,7 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                     null_field = rename_field("null")
                     self.gen_assign(copy_name, f'any.{null_field}()')
                     self.gen_break()
-                with self.gen_case('LSPAnyType', 'UNINITIALIZED'):
+                with self.gen_case('LSPAnyType', 'Uninitialized'):
                     self.gen_throw(
                         'std::invalid_argument',
                         '"LSPAny has not been initialized."'
@@ -1533,10 +1533,10 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                                 )
                         self.gen_call(f'{array_name}.push_back', elem_expr)
                         self.gen_break()
-                with self.gen_case(union_enum, 'UNINITIALIZED'):
+                with self.gen_case(union_enum, 'Uninitialized'):
                     self.gen_throw(
                         'LSP_EXCEPTION',
-                        'ErrorCodes::INTERNAL_ERROR',
+                        'ErrorCodes::InternalError',
                         f'"{result_name} has not been initialized!"'
                     )
 
@@ -1629,15 +1629,15 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
                                 )
                         case _:
                             raise ValueError(f'Unsupported union type ({item_spec["kind"]}): {item_spec}')
-            with self.gen_case(result_type, 'UNINITIALIZED'):
+            with self.gen_case(result_type, 'Uninitialized'):
                 self.gen_throw(
                     'LSP_EXCEPTION',
-                    'ErrorCodes::INTERNAL_ERROR',
+                    'ErrorCodes::InternalError',
                     f'"{result_name} has not been initialized!"'
                 )
         self.write('throw LSP_EXCEPTION(')
         with self.indent():
-            self.write('ErrorCodes::INTERNAL_ERROR,')
+            self.write('ErrorCodes::InternalError,')
             self.write('"Should be unreachable."')
         self.write(');')
 
@@ -1828,7 +1828,6 @@ class CPlusPlusLspTransformerSourceGenerator(BaseCPlusPlusLspVisitor):
     def generate_code(self) -> None:
         print(f'Generating: {self.file_path}')
         self.generate_disclaimer()
-        self.gen_include('cmath')
         self.gen_include('stdexcept')
         self.newline()
         self.gen_include('server/lsp_exception.h')

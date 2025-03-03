@@ -9,9 +9,9 @@ from typing import Callable, Dict, Iterator, List, Optional, Tuple, Union
 from llanguage_server.file_generator import FileGenerator
 from llanguage_server.lsp.datatypes import LspSpec, LspSymbol, LspSymbolKind
 from llanguage_server.lsp.utils import (as_enumeration_spec,
-                                        method_to_underscore, rename_enum,
+                                        method_to_camel_case, rename_enum,
                                         rename_field, rename_type, upper_first)
-from llanguage_server.lsp.visitors import LspAnalysisPipeline
+from llanguage_server.lsp.visitors import LspAnalysisPipeline, NestedContext
 
 
 def gensym_context(fn: Callable) -> Callable:
@@ -26,7 +26,7 @@ def gensym_context(fn: Callable) -> Callable:
     return wrapper
 
 
-class CPlusPlusLspFileGenerator(FileGenerator):
+class CPlusPlusLspFileGenerator(FileGenerator, NestedContext):
     schema: LspSpec
     pipeline: LspAnalysisPipeline
     namespace: str
@@ -259,19 +259,19 @@ class CPlusPlusLspFileGenerator(FileGenerator):
 
     def gen_enum_with(self, enum_name: str, item_specs: List[LspSpec]) -> None:
         with self.gen_enum(enum_name):
-            self.write('UNINITIALIZED = -1,')
+            self.write('Uninitialized = -1,')
             for index, item_spec in enumerate(item_specs):
                 with self.nest_name(str(index)):
                     self.write(f'{self.get_union_enumeration(item_spec)} = {index},')
 
     def gen_union_tag_field(self, enum_name: str) -> None:
-        line = f'{self.indentation()}{enum_name} _type{{{enum_name}::UNINITIALIZED}};'
+        line = f'{self.indentation()}{enum_name} _type{{{enum_name}::Uninitialized}};'
         if len(line) < self.column_width:
             self.inline(line, end='\n')
         else:
             self.write(f'{enum_name} _type{{')
             with self.indent():
-                self.write(f'{enum_name}::UNINITIALIZED')
+                self.write(f'{enum_name}::Uninitialized')
             self.write('};')
 
     @contextmanager
@@ -919,7 +919,7 @@ class CPlusPlusLspFileGenerator(FileGenerator):
                     case "booleanLiteral":
                         return rename_enum("boolean")
                     case "array":
-                        return f'{self.get_union_enumeration(spec["element"])}_ARRAY'
+                        return f'{self.get_union_enumeration(spec["element"])}Array'
                     case "map":
                         key = self.get_union_enumeration(spec["key"])
                         val = self.get_union_enumeration(spec["value"])
@@ -933,19 +933,19 @@ class CPlusPlusLspFileGenerator(FileGenerator):
                         for index, item_spec in enumerate(spec["items"]):
                             with self.nest_name(str(index)):
                                 if index > 0:
-                                    buffer.append('_OR_')
+                                    buffer.append('Or')
                                 buffer.append(self.get_union_enumeration(item_spec))
                         return "".join(buffer)
                     case "tuple":
                         buffer = []
                         item_specs = spec["items"]
                         if len(item_specs) == 2:
-                            buffer.append('PAIR_OF_')
+                            buffer.append('PairOf')
                         else:
-                            buffer.append('TUPLE_OF_')
+                            buffer.append('TupleOf')
                         for index, item_spec in enumerate(item_specs):
                             if index > 0:
-                                buffer.append('_AND_')
+                                buffer.append('And')
                             buffer.append(self.get_union_enumeration(item_spec))
                         return "".join(buffer)
                     case "literal":
@@ -1220,7 +1220,7 @@ class CPlusPlusLspFileGenerator(FileGenerator):
         enumeration = []
         for symbol in symbols:
             message_method = symbol.name
-            enumerator = method_to_underscore(message_method)
+            enumerator = method_to_camel_case(message_method)
             enumeration.append((enumerator, message_method))
         enum_spec = as_enumeration_spec(enum_name, enumeration)
         self.generate_enumeration(enum_spec)
@@ -1264,7 +1264,7 @@ class CPlusPlusLspFileGenerator(FileGenerator):
         self.write(');')
 
     def gen_throw_invalid_params(self, *fragments: str) -> None:
-        with self.gen_throw_lsp_exception('ErrorCodes::INVALID_PARAMS'):
+        with self.gen_throw_lsp_exception('ErrorCodes::InvalidParams'):
             for fragment in fragments:
                 self.write(fragment)
 

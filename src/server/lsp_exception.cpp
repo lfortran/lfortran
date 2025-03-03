@@ -11,7 +11,7 @@ namespace LCompilers::LanguageServerProtocol {
       , _file(file)
       , _line(line)
     {
-        _code.type = ErrorCodeType::ERROR_CODES;
+        _code.type = ErrorCodeType::ErrorCodes;
         _code.errorCodes = code;
     }
 
@@ -24,7 +24,7 @@ namespace LCompilers::LanguageServerProtocol {
       , _file(file)
       , _line(line)
     {
-        _code.type = ErrorCodeType::LSP_ERROR_CODES;
+        _code.type = ErrorCodeType::LspErrorCodes;
         _code.lspErrorCodes = code;
     }
 

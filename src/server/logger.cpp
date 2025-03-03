@@ -13,6 +13,7 @@ namespace LCompilers::LLanguageServer::Logging {
                 "Failed to open log file for writing: " + logPath.string()
             );
         }
+        info() << "Logging to: " << logPath << std::endl;
     }
 
     Logger::~Logger() {
@@ -225,6 +226,13 @@ namespace LCompilers::LLanguageServer::Logging {
         return *this;
     }
 
+    auto Formatter::operator<<(const fs::path &path) -> Formatter & {
+        if (enabled) {
+            logger << path;
+        }
+        return *this;
+    }
+
     auto Formatter::operator<<(std::ostream& (*manip)(std::ostream&)) -> Formatter & {
         if (enabled) {
             logger << manip;
@@ -305,6 +313,10 @@ namespace LCompilers::LLanguageServer::Logging {
         logFile << view;
         std::cerr << view;
         return *this;
+    }
+
+    auto Logger::operator<<(const fs::path &path) -> Logger & {
+        return this->operator<<(path.string());
     }
 
     auto Logger::operator<<(std::ostream& (*manip)(std::ostream&)) -> Logger & {

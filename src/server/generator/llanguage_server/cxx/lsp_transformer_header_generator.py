@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 from llanguage_server.cxx.visitors import BaseCPlusPlusLspVisitor
 from llanguage_server.lsp.datatypes import LspSpec, LspSymbol

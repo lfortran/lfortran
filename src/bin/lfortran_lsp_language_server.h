@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
@@ -13,10 +14,12 @@
 #include <server/lsp_specification.h>
 
 #include <bin/lfortran_accessor.h>
+#include <bin/lfortran_lsp_config.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace ls = LCompilers::LLanguageServer;
     namespace lsl = LCompilers::LLanguageServer::Logging;
+    namespace lsc = LCompilers::LanguageServerProtocol::Config;
 
     class LFortranLspLanguageServer : public BaseLspLanguageServer {
     public:
@@ -26,7 +29,8 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t numRequestThreads,
             std::size_t numWorkerThreads,
             lsl::Logger &logger,
-            const std::string &configSection
+            const std::string &configSection,
+            std::shared_ptr<lsc::LspConfig> workspaceConfig
         );
     protected:
 
@@ -42,7 +46,7 @@ namespace LCompilers::LanguageServerProtocol {
 
         auto receiveTextDocument_definition(
             DefinitionParams &params
-        ) -> TextDocumentDefinitionResult override;
+        ) -> TextDocument_DefinitionResult override;
 
         // ====================== //
         // Incoming Notifications //
@@ -78,11 +82,15 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool clientSupportsGotoDefinitionLinks = false;
 
         auto validate(std::shared_ptr<LspTextDocument> document) -> void;
-        auto getCompilerOptions(const DocumentUri &uri) -> const CompilerOptions &;
+        auto getCompilerOptions(const LspTextDocument &document) -> const CompilerOptions &;
 
         auto diagnosticLevelToLspSeverity(diag::Level level) const -> DiagnosticSeverity;
 
         auto asrSymbolTypeToLspSymbolKind(ASR::symbolType symbol_type) const -> SymbolKind;
+
+        auto getLFortranConfig(
+            const DocumentUri &uri
+        ) -> const std::shared_ptr<lsc::LFortranLspConfig>;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

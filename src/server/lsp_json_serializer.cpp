@@ -149,35 +149,35 @@ namespace LCompilers::LanguageServerProtocol {
         const LSPAny &value
     ) const {
         switch (value.type()) {
-        case LSPAnyType::OBJECT_TYPE: {
+        case LSPAnyType::Object: {
             serializeObject(buffer, value.object());
             break;
         }
-        case LSPAnyType::ARRAY_TYPE: {
+        case LSPAnyType::Array: {
             serializeArray(buffer, value.array());
             break;
         }
-        case LSPAnyType::STRING_TYPE: {
+        case LSPAnyType::String: {
             serializeString(buffer, value);
             break;
         }
-        case LSPAnyType::INTEGER_TYPE: // fallthrough
-        case LSPAnyType::UINTEGER_TYPE: // fallthrough
-        case LSPAnyType::DECIMAL_TYPE: {
+        case LSPAnyType::Integer: // fallthrough
+        case LSPAnyType::UInteger: // fallthrough
+        case LSPAnyType::Decimal: {
             serializeNumber(buffer, value);
             break;
         }
-        case LSPAnyType::BOOLEAN_TYPE: {
+        case LSPAnyType::Boolean: {
             serializeBoolean(buffer, value);
             break;
         }
-        case LSPAnyType::NULL_TYPE: {
+        case LSPAnyType::Null: {
             serializeNull(buffer, value);
             break;
         }
-        case LSPAnyType::UNINITIALIZED: {
+        case LSPAnyType::Uninitialized: {
             throw LSP_EXCEPTION(
-                ErrorCodes::INTERNAL_ERROR,
+                ErrorCodes::InternalError,
                 "Value was not initialized."
             );
         }
@@ -190,35 +190,35 @@ namespace LCompilers::LanguageServerProtocol {
         std::size_t level
     ) const {
         switch (value.type()) {
-        case LSPAnyType::OBJECT_TYPE: {
+        case LSPAnyType::Object: {
             pprintObject(buffer, value.object(), level);
             break;
         }
-        case LSPAnyType::ARRAY_TYPE: {
+        case LSPAnyType::Array: {
             pprintArray(buffer, value.array(), level);
             break;
         }
-        case LSPAnyType::STRING_TYPE: {
+        case LSPAnyType::String: {
             serializeString(buffer, value);
             break;
         }
-        case LSPAnyType::INTEGER_TYPE: // fallthrough
-        case LSPAnyType::UINTEGER_TYPE: // fallthrough
-        case LSPAnyType::DECIMAL_TYPE: {
+        case LSPAnyType::Integer: // fallthrough
+        case LSPAnyType::UInteger: // fallthrough
+        case LSPAnyType::Decimal: {
             serializeNumber(buffer, value);
             break;
         }
-        case LSPAnyType::BOOLEAN_TYPE: {
+        case LSPAnyType::Boolean: {
             serializeBoolean(buffer, value);
             break;
         }
-        case LSPAnyType::NULL_TYPE: {
+        case LSPAnyType::Null: {
             serializeNull(buffer, value);
             break;
         }
-        case LSPAnyType::UNINITIALIZED: {
+        case LSPAnyType::Uninitialized: {
             throw LSP_EXCEPTION(
-                ErrorCodes::INTERNAL_ERROR,
+                ErrorCodes::InternalError,
                 "Value was not initialized."
             );
         }
@@ -230,14 +230,14 @@ namespace LCompilers::LanguageServerProtocol {
         const LSPAny &value
     ) const {
         switch (value.type()) {
-        case LSPAnyType::STRING_TYPE: {
+        case LSPAnyType::String: {
             const string_t &string = value.string();
             serializeString(buffer, string);
             break;
         }
         default: {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("Cannot serialize JSON string of type " +
                  LSPAnyTypeNames.at(value.type()))
             );
@@ -294,21 +294,21 @@ namespace LCompilers::LanguageServerProtocol {
         const LSPAny &value
     ) const {
         switch (value.type()) {
-        case LSPAnyType::INTEGER_TYPE: {
+        case LSPAnyType::Integer: {
             buffer.append(std::to_string(value.integer()));
             break;
         }
-        case LSPAnyType::UINTEGER_TYPE: {
+        case LSPAnyType::UInteger: {
             buffer.append(std::to_string(value.uinteger()));
             break;
         }
-        case LSPAnyType::DECIMAL_TYPE: {
+        case LSPAnyType::Decimal: {
             buffer.append(std::to_string(value.decimal()));
             break;
         }
         default: {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("Cannot serialize JSON number of type " +
                  LSPAnyTypeNames.at(value.type()))
             );
@@ -321,13 +321,13 @@ namespace LCompilers::LanguageServerProtocol {
         const LSPAny &value
     ) const {
         switch (value.type()) {
-        case LSPAnyType::BOOLEAN_TYPE: {
+        case LSPAnyType::Boolean: {
             buffer.append(std::to_string(value.boolean()));
             break;
         }
         default: {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("Cannot serialize JSON boolean of type " +
                  LSPAnyTypeNames.at(value.type()))
             );
@@ -340,13 +340,13 @@ namespace LCompilers::LanguageServerProtocol {
         const LSPAny &value
     ) const {
         switch (value.type()) {
-        case LSPAnyType::NULL_TYPE: {
+        case LSPAnyType::Null: {
             buffer.append("null");
             break;
         }
         default: {
             throw LSP_EXCEPTION(
-                ErrorCodes::INVALID_PARAMS,
+                ErrorCodes::InvalidParams,
                 ("Cannot serialize JSON null of type " +
                  LSPAnyTypeNames.at(value.type()))
             );

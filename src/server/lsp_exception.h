@@ -8,8 +8,8 @@
 namespace LCompilers::LanguageServerProtocol {
 
     enum class ErrorCodeType {
-        ERROR_CODES,
-        LSP_ERROR_CODES,
+        ErrorCodes,
+        LspErrorCodes,
     };
 
     struct ErrorCode {
