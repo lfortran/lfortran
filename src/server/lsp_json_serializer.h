@@ -14,18 +14,12 @@ namespace LCompilers::LanguageServerProtocol {
         LspJsonSerializer(const std::string &indent);
 
         auto serialize(const LSPAny &any) const -> std::string;
+        auto serialize(const LSPObject &object) const -> std::string;
+        auto serialize(const LSPArray &array) const -> std::string;
 
-        auto pprint(
-            const LSPArray &array
-        ) const -> std::string;
-
-        auto pprint(
-            const LSPObject &object
-        ) const -> std::string;
-
-        auto pprint(
-            const LSPAny &any
-        ) const -> std::string;
+        auto pprint(const LSPAny &any) const -> std::string;
+        auto pprint(const LSPObject &object) const -> std::string;
+        auto pprint(const LSPArray &array) const -> std::string;
 
         inline auto indent() const -> const std::string & {
             return _indent;

@@ -88,6 +88,10 @@ namespace LCompilers::LanguageServerProtocol {
         auto notifySent() -> void;
         auto to_string(const RequestId &requestId) -> std::string;
 
+        auto toJsonString(const LSPAny &any) -> std::string;
+        auto toJsonString(const LSPArray &array) -> std::string;
+        auto toJsonString(const LSPObject &object) -> std::string;
+
         auto initializeParams() const -> const InitializeParams &;
         auto assertInitialized() -> void;
         auto assertRunning() -> void;

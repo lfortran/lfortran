@@ -460,6 +460,27 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
+    auto BaseLspLanguageServer::toJsonString(const LSPAny &any) -> std::string {
+        if (workspaceConfig->log.prettyPrint) {
+            return serializer.pprint(any);
+        }
+        return serializer.serialize(any);
+    }
+
+    auto BaseLspLanguageServer::toJsonString(const LSPArray &array) -> std::string {
+        if (workspaceConfig->log.prettyPrint) {
+            return serializer.pprint(array);
+        }
+        return serializer.serialize(array);
+    }
+
+    auto BaseLspLanguageServer::toJsonString(const LSPObject &object) -> std::string {
+        if (workspaceConfig->log.prettyPrint) {
+            return serializer.pprint(object);
+        }
+        return serializer.serialize(object);
+    }
+
     auto BaseLspLanguageServer::logReceiveTrace(
         const std::string &messageType,
         const std::string &traceId,
@@ -474,12 +495,12 @@ namespace LCompilers::LanguageServerProtocol {
                 switch (messageParams.type()) {
                 case MessageParamsType::Object: {
                     const LSPObject &object = messageParams.object();
-                    params.verbose = "Params: " + serializer.pprint(object);
+                    params.verbose = "Params: " + toJsonString(object);
                     break;
                 }
                 case MessageParamsType::Array: {
                     const LSPArray &array = messageParams.array();
-                    params.verbose = "Params: " + serializer.pprint(array);
+                    params.verbose = "Params: " + toJsonString(array);
                     break;
                 }
                 case MessageParamsType::Uninitialized: {
@@ -512,11 +533,11 @@ namespace LCompilers::LanguageServerProtocol {
                     auto iter_0 = object_0.find("result");
                     if (iter_0 != object_0.end()) {
                         const LSPAny &result = *iter_0->second;
-                        params.verbose = "Result: " + serializer.pprint(result);
+                        params.verbose = "Result: " + toJsonString(result);
                     } else if ((iter_0 = object_0.find("error")) != object_0.end()) {
                         const auto &error_0 = *iter_0->second;
                         params.verbose =
-                            "Error: " + serializer.pprint(error_0);
+                            "Error: " + toJsonString(error_0);
                     } else {
                         params.verbose = "No result returned.";
                     }
@@ -552,11 +573,11 @@ namespace LCompilers::LanguageServerProtocol {
                     if (iter_0 != object_0.end()) {
                         const auto &result_0 = *iter_0->second;
                         params.verbose =
-                            "Result: " + serializer.pprint(result_0);
+                            "Result: " + toJsonString(result_0);
                     } else if ((iter_0 = object_0.find("error")) != object_0.end()) {
                         const auto &error_0 = *iter_0->second;
                         params.verbose =
-                            "Error: " + serializer.pprint(error_0);
+                            "Error: " + toJsonString(error_0);
                     } else {
                         params.verbose = "No result returned.";
                     }

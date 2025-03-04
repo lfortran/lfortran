@@ -217,7 +217,7 @@ namespace LCompilers::LanguageServerProtocol {
                             std::to_string(duration.count()) + "ms";
                         if (trace >= TraceValues::Verbose) {
                             LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
-                            logTraceParams.verbose = "Result: " + serializer.pprint(any);
+                            logTraceParams.verbose = "Result: " + toJsonString(any);
                         }
                         sendLogTrace(logTraceParams);
                     }
