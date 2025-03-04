@@ -158,8 +158,8 @@ namespace LCompilers {
             like fixed strings or allocatables.
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
-            // TODO : Handle other allocatable types and fixed strings.
-            return ASRUtils::is_descriptorString(x);
+            // TODO : Handle other allocatable types.
+            return ASRUtils::is_character(*x);
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
