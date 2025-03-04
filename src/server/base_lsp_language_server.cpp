@@ -1,3 +1,4 @@
+#include "server/lsp_language_server.h"
 #include <cctype>
 #include <memory>
 #include <mutex>
@@ -7,6 +8,7 @@
 
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
+#include <server/lsp_json_parser.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
 
@@ -24,18 +26,549 @@ namespace LCompilers::LanguageServerProtocol {
     ) : LspLanguageServer(
         incomingMessages,
         outgoingMessages,
-        numRequestThreads,
-        numWorkerThreads,
-        logger,
-        configSection
+        logger
       )
+      , configSection(configSection)
+      , listener([this]{ listen(); })
+      , requestPool("request", numRequestThreads, logger)
+      , workerPool("worker", numWorkerThreads, logger)
       , lspConfigTransformer(std::move(lspConfigTransformer))
     {
+        callbacksById.reserve(256);
         documentsByUri.reserve(256);
         configsByUri.reserve(256);
         pendingConfigsByUri.reserve(256);
         lspConfigsByUri.reserve(256);
         updateWorkspaceConfig(std::move(workspaceConfig));
+    }
+
+    auto BaseLspLanguageServer::nextSendId() -> std::size_t
+    {
+        return serialSendId++;
+    }
+
+    auto BaseLspLanguageServer::nextRequestId(const std::string &method) -> int
+    {
+        int requestId = serialRequestId++;
+        {
+            std::unique_lock<std::mutex> callbackLock(callbackMutex);
+            callbacksById.emplace(requestId, method);
+        }
+        return requestId;
+    }
+
+    auto BaseLspLanguageServer::isInitialized() const -> bool
+    {
+        return _initialized;
+    }
+
+    auto BaseLspLanguageServer::isShutdown() const -> bool
+    {
+        return _shutdown;
+    }
+
+    auto BaseLspLanguageServer::isRunning() const -> bool
+    {
+        return !_shutdown;
+    }
+
+    auto BaseLspLanguageServer::isTerminated() const -> bool
+    {
+        return _exit;
+    }
+
+    auto BaseLspLanguageServer::initializeParams() const
+    -> const InitializeParams &
+    {
+        if (_initializeParams) {
+            return *_initializeParams;
+        }
+        throw std::logic_error("Server has not been initialized.");
+    }
+
+    auto BaseLspLanguageServer::assertInitialized() -> void
+    {
+        if (!_initialized) {
+            throw LSP_EXCEPTION(
+                ErrorCodes::ServerNotInitialized,
+                "Method \"initialize\" must be called first."
+            );
+        }
+    }
+
+    auto BaseLspLanguageServer::assertRunning() -> void
+    {
+        if (_shutdown) {
+            throw LSP_EXCEPTION(
+                LSPErrorCodes::RequestFailed,
+                "Server has shutdown and cannot accept new requests."
+            );
+        }
+    }
+
+    auto BaseLspLanguageServer::prepare(
+        std::string &buffer,
+        const std::string &response
+    ) const -> void
+    {
+        buffer.append("Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n");
+        buffer.append("Content-Length: ");
+        buffer.append(std::to_string(response.length()));
+        buffer.append("\r\n");
+        buffer.append("\r\n");
+        buffer.append(response);
+    }
+
+    auto BaseLspLanguageServer::join() -> void
+    {
+        if (listener.joinable()) {
+            listener.join();
+            logger.debug()
+                << "[LspLanguageServer] Incoming-message listener terminated."
+                << std::endl;
+        }
+        requestPool.join();
+        logger.debug()
+            << "[LspLanguageServer] Request thread-pool terminated."
+            << std::endl;
+        workerPool.join();
+        logger.debug()
+            << "[LspLanguageServer] Worker thread-pool terminated."
+            << std::endl;
+    }
+
+    auto BaseLspLanguageServer::listen() -> void
+    {
+        try {
+            while (!_exit) {
+                const std::string message = incomingMessages.dequeue();
+                if (!_exit) {
+                    std::size_t sendId = nextSendId();
+                    requestPool.execute([this, message, sendId](
+                        const std::string &threadName,
+                        const std::size_t threadId
+                    ) {
+                        try {
+                            handle(message, sendId);
+                        } catch (std::exception &e) {
+                            std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+                            logger.error()
+                                << "[" << threadName << "_" << threadId << "] "
+                                "Failed to handle message: " << message
+                                << std::endl;
+                            logger.error()
+                                << "[" << threadName << "_" << threadId << "] "
+                                "Caught unhandled exception: " << e.what()
+                                << std::endl;
+                        }
+                    });
+                }
+            }
+        } catch (std::exception &e) {
+            if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
+                logger.error()
+                    << "[LspLanguageServer] "
+                    "Unhandled exception caught: " << e.what()
+                    << std::endl;
+            } else {
+                logger.trace()
+                    << "[LspLanguageServer] "
+                    "Interrupted while dequeuing messages: " << e.what()
+                    << std::endl;
+            }
+        }
+    }
+
+    auto BaseLspLanguageServer::notifySent() -> void
+    {
+        ++pendingSendId;
+        {
+            std::unique_lock<std::mutex> sentLock(sentMutex);
+            sent.notify_all();
+        }
+    }
+
+    auto BaseLspLanguageServer::send(
+        const std::string &message,
+        std::size_t sendId
+    ) -> void
+    {
+        // -------------------------------------------------------------------------
+        // NOTE: The LSP spec requires responses to be returned in roughly the same
+        // order of receipt of their corresponding requests. Some types of responses
+        // may be returned out-of-order, but in order to support those we will need
+        // to implement a sort of dependency graph. Without knowledge of their
+        // dependencies, we must respond to all requests in order of receipt.
+        // -------------------------------------------------------------------------
+        {
+            std::unique_lock<std::mutex> sentLock(sentMutex);
+            sent.wait(sentLock, [this, sendId]{
+                return (pendingSendId == sendId) || _exit;
+            });
+        }
+        if ((pendingSendId == sendId) && !_exit) {
+            ls::LanguageServer::send(message);
+            notifySent();
+        }
+    }
+
+    auto BaseLspLanguageServer::handle(
+        const std::string &incoming,
+        std::size_t sendId
+    ) -> void
+    {
+        const auto start = std::chrono::high_resolution_clock::now();
+        ResponseMessage response;
+        std::string traceId;
+        try {
+            // The language server protocol always uses “2.0” as the jsonrpc version.
+            response.jsonrpc = JSON_RPC_VERSION;
+            response.id = nullptr;
+
+            LspJsonParser parser(incoming);
+            std::unique_ptr<LSPAny> document = parser.parse();
+
+            if (document->type() != LSPAnyType::Object) {
+                // TODO: Add support for batched messages, i.e. multiple messages within
+                // an array.
+                if (document->type() == LSPAnyType::Array) {
+                    throw LSP_EXCEPTION(
+                        ErrorCodes::InvalidParams,
+                        "Batched requests are not supported (currently)."
+                    );
+                }
+                throw LSP_EXCEPTION(
+                    ErrorCodes::InvalidParams,
+                    "Invalid request message: " + incoming
+                );
+            }
+
+            const LSPObject &object = document->object();
+            LSPObject::const_iterator iter;
+
+            if ((iter = object.find("id")) != object.end()) {
+                response.id = transformer.anyToResponseId(*iter->second);
+            }
+
+            if ((iter = object.find("method")) != object.end()) {
+                const std::string &method =
+                    transformer.anyToString(*iter->second);
+                if (isIncomingRequest(method)) {
+                    if (response.id.type() == ResponseIdType::Null) {
+                        throw LSP_EXCEPTION(
+                            ErrorCodes::InvalidParams,
+                            "Missing request method=\"" + method + "\" attribute: id"
+                        );
+                    }
+                    RequestMessage request =
+                        transformer.anyToRequestMessage(*document);
+                    if (trace >= TraceValues::Messages) {
+                        traceId = request.method + " - (" + to_string(request.id) + ")";
+                        logReceiveTrace("request", traceId, request.params);
+                    }
+                    response.jsonrpc = request.jsonrpc;
+                    dispatch(response, request);
+                } else if (isIncomingNotification(method)) {
+                    if (response.id.type() != ResponseIdType::Null) {
+                        throw LSP_EXCEPTION(
+                            ErrorCodes::InvalidParams,
+                            "Notification method=\"" + method + "\" must not contain the attribute: id"
+                        );
+                    }
+                    NotificationMessage notification =
+                        transformer.anyToNotificationMessage(*document);
+                    if (trace >= TraceValues::Messages) {
+                        traceId = notification.method;
+                        logReceiveTrace("notification", traceId, notification.params);
+                    }
+                    response.jsonrpc = notification.jsonrpc;
+                    dispatch(response, notification);
+                } else {
+                    throw LSP_EXCEPTION(
+                        ErrorCodes::InvalidRequest,
+                        "Unsupported method: \"" + method + "\""
+                    );
+                }
+            } else if ((iter = object.find("result")) != object.end()) {
+                notifySent();
+                response.result = transformer.copy(*iter->second);
+                dispatch(response, traceId, *document);
+                return;
+            } else if ((iter = object.find("error")) != object.end()) {
+                notifySent();
+                response.error = transformer.anyToResponseError(*iter->second);
+                dispatch(response, traceId, *document);
+                return;
+            } else {
+                throw LSP_EXCEPTION(
+                    ErrorCodes::InvalidRequest,
+                    "Missing required attribute: method"
+                );
+            }
+        } catch (const LspException &e) {
+            logger.error()
+                << "[" << e.file() << ":" << e.line() << "] "
+                << e.what()
+                << std::endl;
+            ResponseError error;
+            switch (e.code().type) {
+            case ErrorCodeType::ErrorCodes: {
+                ErrorCodes errorCode = e.code().errorCodes;
+                error.code = static_cast<int>(errorCode);
+                break;
+            }
+            case ErrorCodeType::LspErrorCodes: {
+                LSPErrorCodes errorCode = e.code().lspErrorCodes;
+                error.code = static_cast<int>(errorCode);
+                break;
+            }
+            }
+            error.message = e.what();
+            response.error = std::move(error);
+        } catch (const std::exception &e) {
+            logger.error()
+                << "Caught unhandled exception: "
+                << e.what() << std::endl;
+            ResponseError error;
+            error.code = static_cast<int>(ErrorCodes::InternalError);
+            error.message =
+                ("An unexpected exception occurred. If it continues, "
+                 "please file a ticket.");
+            response.error = std::move(error);
+        }
+        LSPAny any = transformer.responseMessageToAny(response);
+        logSendResponseTrace(traceId, start, any);
+        const std::string outgoing = serializer.serialize(any);
+        send(outgoing, sendId);
+    }
+
+    auto BaseLspLanguageServer::dispatch(
+        ResponseMessage &response,
+        RequestMessage &request
+    ) -> void {
+        IncomingRequest method;
+        try {
+            method = incomingRequestByValue(request.method);
+        } catch (std::invalid_argument &/*e*/) {
+            throw LSP_EXCEPTION(
+                ErrorCodes::MethodNotFound,
+                "Unsupported request method: \"" + request.method + "\""
+            );
+        }
+        assertRunning();
+        if (method != IncomingRequest::Initialize) {
+            assertInitialized();
+        } else {
+            bool expected = false;    // a reference is required
+            if (!_initialized.compare_exchange_strong(expected, true)) {
+                throw LSP_EXCEPTION(
+                    ErrorCodes::InvalidRequest,
+                    "Server may be initialized only once."
+                );
+            }
+        }
+        LspLanguageServer::dispatch(response, request, method);
+    }
+
+    auto BaseLspLanguageServer::dispatch(
+        ResponseMessage &response,
+        NotificationMessage &notification
+    ) -> void {
+        IncomingNotification method;
+        try {
+            method = incomingNotificationByValue(notification.method);
+        } catch (std::invalid_argument &/*e*/) {
+            if (notification.method.compare(0, 2, "$/") == 0) {
+                // NOTE: If a server or client receives notifications starting with "$/"
+                // it is free to ignore the notification:
+                logger.debug()
+                    << "No handler exists for method: \"" << notification.method << "\""
+                    << std::endl;
+            } else {
+                throw LSP_EXCEPTION(
+                    ErrorCodes::MethodNotFound,
+                    "Unsupported notification method: \"" + notification.method + "\""
+                );
+            }
+        }
+        if (method != IncomingNotification::Exit) {
+            if (!_initialized) {
+                // Notifications should be dropped, except for the exit notification.
+                // This will allow the exit of a server without an initialize request.
+                return;
+            }
+            assertRunning();
+        }
+        LspLanguageServer::dispatch(response, notification, method);
+    }
+
+    auto BaseLspLanguageServer::dispatch(
+        ResponseMessage &response,
+        std::string &traceId,
+        const LSPAny &document
+    ) -> void
+    {
+        switch (response.id.type()) {
+        case ResponseIdType::Integer: {
+            int responseId = response.id.integer();
+            std::unique_lock<std::mutex> callbackLock(callbackMutex);
+            auto iter = callbacksById.find(responseId);
+            if (iter == callbacksById.end()) {
+                logger.error() << "Cannot locate request with id: " << responseId << std::endl;
+                return;
+            }
+            const std::string method = iter->second;  // copy before delete
+            callbacksById.erase(iter);
+            callbackLock.unlock();
+            traceId = method + " - (" + std::to_string(responseId) + ")";
+            logReceiveResponseTrace(traceId, document);
+            LspLanguageServer::dispatch(response, method);
+            break;
+        }
+        case ResponseIdType::Null: {
+            logReceiveResponseTrace(traceId, document);
+            break;
+        }
+        default: {
+            logger.error()
+                << "Cannot dispatch response with id of type ResponseIdType::"
+                << ResponseIdTypeNames.at(response.id.type())
+                << std::endl;
+            return;
+        }
+        }
+    }
+
+    auto BaseLspLanguageServer::to_string(
+        const RequestId &requestId
+    ) -> std::string
+    {
+        switch (requestId.type()) {
+        case RequestIdType::Integer: {
+            return std::to_string(requestId.integer());
+        }
+        case RequestIdType::String: {
+            return requestId.string();
+        }
+        default: {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                ("Cannot log request trace with Id of type RequestIdType::" +
+                 RequestIdTypeNames.at(requestId.type()))
+            );
+        }
+        }
+    }
+
+    auto BaseLspLanguageServer::logReceiveTrace(
+        const std::string &messageType,
+        const std::string &traceId,
+        const std::optional<MessageParams> &optionalParams
+    ) -> void
+    {
+        if ((trace >= TraceValues::Messages) && (traceId.length() > 0)) {
+            LogTraceParams params;
+            params.message = "Received " + messageType + " '" + traceId + "'.";
+            if ((trace >= TraceValues::Verbose) && optionalParams.has_value()) {
+                const MessageParams &messageParams = optionalParams.value();
+                switch (messageParams.type()) {
+                case MessageParamsType::Object: {
+                    const LSPObject &object = messageParams.object();
+                    params.verbose = "Params: " + serializer.pprint(object);
+                    break;
+                }
+                case MessageParamsType::Array: {
+                    const LSPArray &array = messageParams.array();
+                    params.verbose = "Params: " + serializer.pprint(array);
+                    break;
+                }
+                case MessageParamsType::Uninitialized: {
+                    throw LSP_EXCEPTION(
+                        ErrorCodes::InternalError,
+                        "MessageParams has not been initialized"
+                    );
+                }
+                }
+            }
+            sendLogTrace(params);
+        }
+    }
+
+    auto BaseLspLanguageServer::logReceiveResponseTrace(
+        const std::string &traceId,
+        const LSPAny &document
+    ) -> void
+    {
+        if (trace >= TraceValues::Messages) {
+            LogTraceParams params;
+            if (traceId.length() > 0) {
+                params.message = "Received response '" + traceId + "'.";
+            } else {
+                params.message = "Received response.";
+            }
+            if (trace >= TraceValues::Verbose) {
+                if (document.type() == LSPAnyType::Object) {
+                    const auto &object_0 = document.object();
+                    auto iter_0 = object_0.find("result");
+                    if (iter_0 != object_0.end()) {
+                        const LSPAny &result = *iter_0->second;
+                        params.verbose = "Result: " + serializer.pprint(result);
+                    } else if ((iter_0 = object_0.find("error")) != object_0.end()) {
+                        const auto &error_0 = *iter_0->second;
+                        params.verbose =
+                            "Error: " + serializer.pprint(error_0);
+                    } else {
+                        params.verbose = "No result returned.";
+                    }
+                } else {
+                    logger.error()
+                        << "Cannot log verbose message for response of type LSPAnyType::"
+                        << LSPAnyTypeNames.at(document.type())
+                        << std::endl;
+                }
+            }
+            sendLogTrace(params);
+        }
+    }
+
+    auto BaseLspLanguageServer::logSendResponseTrace(
+        const std::string &traceId,
+        const std::chrono::time_point<std::chrono::high_resolution_clock> &start,
+        const LSPAny &response
+    ) -> void
+    {
+        if ((trace >= TraceValues::Messages) && (traceId.length() > 0)) {
+            auto end_0 = std::chrono::high_resolution_clock::now();
+            auto duration_0 =
+                std::chrono::duration_cast<std::chrono::milliseconds>(end_0 - start);
+            LogTraceParams params;
+            params.message =
+                "Sending response '" + traceId + "'. Processing request took " +
+                std::to_string(duration_0.count()) + "ms";
+            if (trace >= TraceValues::Verbose) {
+                if (response.type() == LSPAnyType::Object) {
+                    const auto &object_0 = response.object();
+                    auto iter_0 = object_0.find("result");
+                    if (iter_0 != object_0.end()) {
+                        const auto &result_0 = *iter_0->second;
+                        params.verbose =
+                            "Result: " + serializer.pprint(result_0);
+                    } else if ((iter_0 = object_0.find("error")) != object_0.end()) {
+                        const auto &error_0 = *iter_0->second;
+                        params.verbose =
+                            "Error: " + serializer.pprint(error_0);
+                    } else {
+                        params.verbose = "No result returned.";
+                    }
+                } else {
+                    logger.error()
+                        << "Cannot log verbose message for response of type LSPAnyType::"
+                        << LSPAnyTypeNames.at(response.type())
+                        << std::endl;
+                }
+            }
+            sendLogTrace(params);
+        }
     }
 
     auto BaseLspLanguageServer::getConfig(
@@ -141,7 +674,11 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::receiveInitialize(
         InitializeParams &params
     ) -> InitializeResult {
-        InitializeResult result = LspLanguageServer::receiveInitialize(params);
+        if (params.trace.has_value()) {
+            trace = params.trace.value();
+        }
+
+        InitializeResult result;
 
         { // Initialize internal parameters
             const ClientCapabilities &capabilities = params.capabilities;
@@ -194,14 +731,26 @@ namespace LCompilers::LanguageServerProtocol {
             capabilities.textDocumentSync = std::move(textDocumentSync);
         }
 
+        _initializeParams =
+            std::make_unique<InitializeParams>(std::move(params));
+
         return result;
+    }
+
+    // request: "shutdown"
+    auto BaseLspLanguageServer::receiveShutdown() -> ShutdownResult
+    {
+        bool expected = false;
+        if (_shutdown.compare_exchange_strong(expected, true)) {
+            logger.info() << "Shutting down server." << std::endl;
+        }
+        return nullptr;
     }
 
     // notification: "initialized"
     auto BaseLspLanguageServer::receiveInitialized(
-        InitializedParams &params
+        InitializedParams &/*params*/
     ) -> void {
-        LspLanguageServer::receiveInitialized(params);
         if (clientSupportsWorkspaceConfigChangeNotifications) {
             const std::string method = "workspace/didChangeConfiguration";
 
@@ -224,6 +773,34 @@ namespace LCompilers::LanguageServerProtocol {
             params.registrations.push_back(std::move(registration));
 
             sendClient_registerCapability(params);
+        }
+    }
+
+    // notification: "$/setTrace"
+    auto BaseLspLanguageServer::receiveSetTrace(SetTraceParams &params) -> void
+    {
+        trace = params.value;
+    }
+
+    // notification: "exit"
+    auto BaseLspLanguageServer::receiveExit() -> void
+    {
+        bool expected = false;
+        if (_exit.compare_exchange_strong(expected, true)) {
+            logger.info() << "Exiting server." << std::endl;
+            expected = false;
+            if (_shutdown.compare_exchange_strong(expected, true)) {
+                logger.error()
+                    << "Server exited before being notified to shutdown!"
+                    << std::endl;
+            }
+            incomingMessages.stopNow();
+            requestPool.stopNow();
+            workerPool.stopNow();
+            // NOTE: Notify the message stream that the server is terminating.
+            // NOTE: This works because the null character is not included in
+            // the JSON spec.
+            std::cin.putback('\0');
         }
     }
 
@@ -269,7 +846,6 @@ namespace LCompilers::LanguageServerProtocol {
         if (!this->workspaceConfig ||
             (this->workspaceConfig->log.level != workspaceConfig.log.level)) {
             try {
-                std::shared_lock<std::shared_mutex> readLock(workspaceMutex);
                 logger.setLevel(workspaceConfig.log.level);
             } catch (std::exception &e) {
                 logger.error()
