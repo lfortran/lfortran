@@ -40,50 +40,71 @@ namespace LCompilers::LanguageServerProtocol {
         // Incoming Requests //
         // ================= //
 
-        InitializeResult receiveInitialize(
+        auto receiveInitialize(
             InitializeParams &params
-        ) override;
+        ) -> InitializeResult override;
+
+        auto receiveTextDocument_definition(
+            DefinitionParams &params
+        ) -> TextDocument_DefinitionResult override;
 
         // ====================== //
         // Incoming Notifications //
         // ====================== //
 
-        void receiveWorkspace_didDeleteFiles(
+        auto receiveWorkspace_didDeleteFiles(
             DeleteFilesParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveWorkspace_didChangeConfiguration(
+        auto receiveWorkspace_didChangeConfiguration(
             DidChangeConfigurationParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveTextDocument_didOpen(
+        auto receiveTextDocument_didOpen(
             DidOpenTextDocumentParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveTextDocument_didChange(
+        auto receiveTextDocument_didChange(
             DidChangeTextDocumentParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveWorkspace_didChangeWatchedFiles(
+        auto receiveWorkspace_didChangeWatchedFiles(
             DidChangeWatchedFilesParams &params
-        ) override;
+        ) -> void override;
 
     private:
         const std::string source = "lfortran";
         ls::LFortranAccessor lfortran;
-        std::unordered_map<DocumentUri, CompilerOptions> optionsByUri;
+        std::unordered_map<
+            DocumentUri,
+            std::shared_ptr<CompilerOptions>
+        > optionsByUri;
         std::shared_mutex optionMutex;
 
-        auto validate(LspTextDocument &document) -> void;
-        auto getCompilerOptions(const LspTextDocument &document) -> const CompilerOptions &;
+        std::atomic_bool clientSupportsGotoDefinition = false;
+        std::atomic_bool clientSupportsGotoDefinitionLinks = false;
 
-        auto diagnosticLevelToLspSeverity(diag::Level level) const -> DiagnosticSeverity;
+        auto validate(std::shared_ptr<LspTextDocument> document) -> void;
+        auto getCompilerOptions(
+            const LspTextDocument &document
+        ) -> const std::shared_ptr<CompilerOptions>;
 
-        auto asrSymbolTypeToLspSymbolKind(ASR::symbolType symbol_type) const -> SymbolKind;
+        auto diagnosticLevelToLspSeverity(
+            diag::Level level
+        ) const -> DiagnosticSeverity;
+
+        auto asrSymbolTypeToLspSymbolKind(
+            ASR::symbolType symbol_type
+        ) const -> SymbolKind;
 
         auto getLFortranConfig(
             const DocumentUri &uri
         ) -> const std::shared_ptr<lsc::LFortranLspConfig>;
+
+        auto resolve(
+            const std::string &filename,
+            const CompilerOptions &compilerOptions
+        ) -> fs::path;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

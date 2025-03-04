@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -109,7 +110,7 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto LFortranLspLanguageServer::getCompilerOptions(
         const LspTextDocument &document
-    ) -> const CompilerOptions & {
+    ) -> const std::shared_ptr<CompilerOptions> {
         const DocumentUri &uri = document.uri();
 
         std::shared_lock<std::shared_mutex> readLock(optionMutex);
@@ -134,8 +135,8 @@ namespace LCompilers::LanguageServerProtocol {
             throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
         }
 
-        CompilerOptions &compiler_options = parser.opts.compiler_options;
-        compiler_options.continue_compilation = true;
+        CompilerOptions &compilerOptions = parser.opts.compiler_options;
+        compilerOptions.continue_compilation = true;
 
         std::unique_lock<std::shared_mutex> writeLock(configMutex);
         optionIter = optionsByUri.find(uri);
@@ -143,14 +144,19 @@ namespace LCompilers::LanguageServerProtocol {
             return optionIter->second;
         }
 
-        auto record = optionsByUri.emplace(uri, std::move(compiler_options));
+        auto record = optionsByUri.emplace(
+            uri,
+            std::make_shared<CompilerOptions>(
+                std::move(compilerOptions)
+            )
+        );
         return record.first->second;
     }
 
     auto LFortranLspLanguageServer::validate(
-        LspTextDocument &document
+        std::shared_ptr<LspTextDocument> document
     ) -> void {
-        workerPool.execute([this, &document](
+        workerPool.execute([this, document = std::move(document)](
             const std::string &threadName,
             const std::size_t threadId
         ) {
@@ -159,15 +165,16 @@ namespace LCompilers::LanguageServerProtocol {
                 // NOTE: These value may have been updated since the validation was
                 // requested, but that's okay because we want to validate the latest
                 // version anyway:
-                std::unique_lock<std::shared_mutex> readLock(document.mutex());
-                const std::string &uri = document.uri();
-                const std::string &path = document.path().string();
-                const std::string &text = document.text();
-                int version = document.version();
+                std::unique_lock<std::shared_mutex> readLock(document->mutex());
+                const std::string &uri = document->uri();
+                const std::string &path = document->path().string();
+                const std::string &text = document->text();
+                int version = document->version();
                 try {
-                    CompilerOptions compiler_options = getCompilerOptions(document);
+                    std::shared_ptr<CompilerOptions> compilerOptions =
+                        getCompilerOptions(*document);
                     std::vector<LCompilers::error_highlight> highlights =
-                        lfortran.showErrors(path, text, compiler_options);
+                        lfortran.showErrors(path, text, *compilerOptions);
 
                     std::vector<Diagnostic> diagnostics;
                     for (const LCompilers::error_highlight &highlight : highlights) {
@@ -236,8 +243,131 @@ namespace LCompilers::LanguageServerProtocol {
         InitializeParams &params
     ) -> InitializeResult {
         InitializeResult result = BaseLspLanguageServer::receiveInitialize(params);
-        // add additional function for lfortran
+
+        { // Initialize internal parameters
+            const ClientCapabilities &capabilities = params.capabilities;
+            if (capabilities.textDocument.has_value()) {
+                const TextDocumentClientCapabilities &textDocument =
+                    capabilities.textDocument.value();
+                if (textDocument.definition.has_value()) {
+                    clientSupportsGotoDefinition = true;
+                    const DefinitionClientCapabilities &definition =
+                        textDocument.definition.value();
+                    clientSupportsGotoDefinitionLinks =
+                        definition.linkSupport.has_value() &&
+                        definition.linkSupport.value();
+                }
+            }
+            logger.debug()
+                << "clientSupportsGotoDefinition = "
+                << clientSupportsGotoDefinition
+                << std::endl;
+            logger.debug()
+                << "clientSupportsGotoDefinitionLinks = "
+                << clientSupportsGotoDefinitionLinks
+                << std::endl;
+        }
+
+        ServerCapabilities &capabilities = result.capabilities;
+
+        if (clientSupportsGotoDefinition) {
+            ServerCapabilities_definitionProvider definitionProvider;
+            definitionProvider = true;
+            capabilities.definitionProvider = std::move(definitionProvider);
+        }
+
         return result;
+    }
+
+    auto LFortranLspLanguageServer::receiveTextDocument_definition(
+        DefinitionParams &params
+    ) -> TextDocument_DefinitionResult {
+        const DocumentUri &uri = params.textDocument.uri;
+        const Position &pos = params.position;
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        const std::string &path = document->path().string();
+        const std::string &text = document->text();
+        // NOTE: Copy the compiler options since we will modify them.
+        CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
+        compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
+        std::vector<LCompilers::document_symbols> symbols =
+            lfortran.lookupName(path, text, compilerOptions);
+        TextDocument_DefinitionResult result;
+        if (symbols.size() > 0) {
+            if (clientSupportsGotoDefinitionLinks) {
+                std::unique_ptr<std::vector<DefinitionLink>> links =
+                    std::make_unique<std::vector<DefinitionLink>>();
+                links->reserve(symbols.size());
+                for (const auto &symbol : symbols) {
+                    DefinitionLink &link = links->emplace_back();
+                    link.targetUri = "file://" + resolve(
+                        symbol.filename,
+                        compilerOptions
+                    ).string();
+                    Position &targetRangeStart = link.targetRange.start;
+                    Position &targetSelectionRangeStart =
+                        link.targetSelectionRange.start;
+                    targetRangeStart.line =
+                        targetSelectionRangeStart.line =
+                        symbol.first_line - 1;  // 1-to-0 index
+                    targetRangeStart.character =
+                        targetSelectionRangeStart.character =
+                        symbol.first_column - 1;  // 1-to-0 index
+                    Position &targetRangeEnd = link.targetRange.end;
+                    Position &targetSelectionRangeEnd =
+                        link.targetSelectionRange.end;
+                    targetRangeEnd.line =
+                        targetSelectionRangeEnd.line =
+                        symbol.last_line - 1;  // 1-to-0 index
+                    targetRangeEnd.character =
+                        targetSelectionRangeEnd.character =
+                        symbol.last_column - 1;  // 1-to-0 index
+                }
+                result = std::move(links);
+            } else {
+                std::unique_ptr<std::vector<Location>> locations =
+                    std::make_unique<std::vector<Location>>();
+                locations->reserve(symbols.size());
+                for (const auto &symbol : symbols) {
+                    Location &location = locations->emplace_back();
+                    location.uri = "file://" + resolve(
+                        symbol.filename,
+                        compilerOptions
+                    ).string();
+                    Position &start = location.range.start;
+                    Position &end = location.range.end;
+                    start.line = symbol.first_line - 1;  // 1-to-0 index
+                    start.character = symbol.first_column - 1;  // 1-to-0 index
+                    end.line = symbol.last_line - 1;  // 1-to-0 index
+                    end.character = symbol.last_column - 1;  // 1-to-0 index
+                }
+                result = std::move(locations);
+            }
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    auto LFortranLspLanguageServer::resolve(
+        const std::string &filename,
+        const CompilerOptions &compilerOptions
+    ) -> fs::path {
+        fs::path path = fs::absolute(filename).lexically_normal();
+        if (fs::exists(path)) {
+            return path;
+        }
+        for (const fs::path &includeDir : compilerOptions.po.include_dirs) {
+            path = fs::absolute(includeDir / filename).lexically_normal();
+            if (fs::exists(path)) {
+                return path;
+            }
+        }
+        throw LSP_EXCEPTION(
+            ErrorCodes::InvalidParams,
+            "File not found: " + filename
+        );
     }
 
     // notification: "workspace/didDeleteFiles"
@@ -266,12 +396,8 @@ namespace LCompilers::LanguageServerProtocol {
         DidOpenTextDocumentParams &params
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didOpen(params);
-        {
-            std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            const DocumentUri &uri = params.textDocument.uri;
-            LspTextDocument &document = documentsByUri.at(uri);
-            validate(document);
-        }
+        const DocumentUri &uri = params.textDocument.uri;
+        validate(getDocument(uri));
     }
 
     // notification: "textDocument/didChange"
@@ -279,12 +405,8 @@ namespace LCompilers::LanguageServerProtocol {
         DidChangeTextDocumentParams &params
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didChange(params);
-        {
-            std::shared_lock<std::shared_mutex> readLock(documentMutex);
-            const DocumentUri &uri = params.textDocument.uri;
-            LspTextDocument &document = documentsByUri.at(uri);
-            validate(document);
-        }
+        const DocumentUri &uri = params.textDocument.uri;
+        validate(getDocument(uri));
     }
 
     // notification: "workspace/didChangeWatchedFiles"

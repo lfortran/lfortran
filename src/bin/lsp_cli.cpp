@@ -225,59 +225,9 @@ namespace LCompilers {
     {
         std::string input = read_file(infile);
         LCompilers::FortranEvaluator fe(compiler_options);
-        std::vector<LCompilers::document_symbols> symbol_lists;
-
-        LCompilers::LocationManager lm;
-        {
-            LCompilers::LocationManager::FileLocations fl;
-            fl.in_filename = infile;
-            lm.files.push_back(fl);
-            lm.file_ends.push_back(input.size());
-        }
-        {
-            LCompilers::diag::Diagnostics diagnostics;
-            LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-                x = fe.get_asr2(input, lm, diagnostics);
-            if (x.ok) {
-                // populate_symbol_lists(x.result, lm, symbol_lists);
-                uint16_t l = std::stoi(compiler_options.line);
-                uint16_t c = std::stoi(compiler_options.column);
-                uint64_t input_pos = lm.linecol_to_pos(l, c);
-                if (c > 0 && input_pos > 0 && !is_id_chr(input[input_pos]) && is_id_chr(input[input_pos - 1])) {
-                    // input_pos is to the right of the word boundary
-                    input_pos--;
-                }
-                uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
-                LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
-                LCompilers::document_symbols loc;
-                if (!ASR::is_a<ASR::symbol_t>(*asr)) {
-                    std::cout << "[]";
-                    return 0;
-                }
-                ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
-                std::string symbol_name = ASRUtils::symbol_name( s );
-                uint32_t first_line;
-                uint32_t last_line;
-                uint32_t first_column;
-                uint32_t last_column;
-                std::string filename;
-                lm.pos_to_linecol(lm.output_to_input_pos(asr->loc.first, false), first_line,
-                    first_column, filename);
-                lm.pos_to_linecol(lm.output_to_input_pos(asr->loc.last, true), last_line,
-                    last_column, filename);
-                loc.first_column = first_column;
-                loc.last_column = last_column;
-                loc.first_line = first_line;
-                loc.last_line = last_line;
-                loc.symbol_name = symbol_name;
-                loc.filename = filename;
-                loc.symbol_type = s->type;
-                symbol_lists.push_back(loc);
-            } else {
-                std::cout << "[]";
-                return 0;
-            }
-        }
+        LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
+        std::vector<LCompilers::document_symbols> symbol_lists =
+            lfortran_accessor.lookupName(infile, input, compiler_options);
 
         LFortranJSON start_detail(LFortranJSONType::kObjectType);
         LFortranJSON range_object(LFortranJSONType::kObjectType);
