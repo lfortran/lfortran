@@ -30,13 +30,12 @@ namespace LCompilers::LanguageServerProtocol {
         configSection
       )
       , lspConfigTransformer(std::move(lspConfigTransformer))
-      , workspaceConfig(std::move(workspaceConfig))
     {
         documentsByUri.reserve(256);
         configsByUri.reserve(256);
         pendingConfigsByUri.reserve(256);
         lspConfigsByUri.reserve(256);
-        updateLogLevel();
+        updateWorkspaceConfig(std::move(workspaceConfig));
     }
 
     auto BaseLspLanguageServer::getConfig(
@@ -121,7 +120,7 @@ namespace LCompilers::LanguageServerProtocol {
         );
     }
 
-    auto BaseLspLanguageServer::invalidateConfigCache() -> void {
+    auto BaseLspLanguageServer::invalidateConfigCaches() -> void {
         {
             std::unique_lock<std::shared_mutex> writeLock(configMutex);
             configsByUri.clear();
@@ -255,16 +254,41 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
-    auto BaseLspLanguageServer::updateLogLevel() -> void {
-        try {
-            std::shared_lock<std::shared_mutex> readLock(workspaceMutex);
-            if (workspaceConfig) {
-                logger.setLevel(workspaceConfig->log.level);
+    auto BaseLspLanguageServer::updateWorkspaceConfig(
+        std::shared_ptr<lsc::LspConfig> workspaceConfig
+    ) -> void {
+        std::unique_lock<std::shared_mutex> writeLock(workspaceMutex);
+        updateLogLevel(*workspaceConfig);
+        updatePrettyPrintIndentSize(*workspaceConfig);
+        this->workspaceConfig = std::move(workspaceConfig);
+    }
+
+    auto BaseLspLanguageServer::updateLogLevel(
+        lsc::LspConfig &workspaceConfig
+    ) -> void {
+        if (!this->workspaceConfig ||
+            (this->workspaceConfig->log.level != workspaceConfig.log.level)) {
+            try {
+                std::shared_lock<std::shared_mutex> readLock(workspaceMutex);
+                logger.setLevel(workspaceConfig.log.level);
+            } catch (std::exception &e) {
+                logger.error()
+                    << "Caught unhandled exception while updating log level: " << e.what()
+                    << std::endl;
             }
-        } catch (std::exception &e) {
-            logger.error()
-                << "Caught unhandled exception while updating log level: " << e.what()
-                << std::endl;
+        }
+    }
+
+    auto BaseLspLanguageServer::updatePrettyPrintIndentSize(
+        lsc::LspConfig &workspaceConfig
+    ) -> void {
+        if (!this->workspaceConfig ||
+            (this->workspaceConfig->log.indentSize != workspaceConfig.log.indentSize)) {
+            std::string indent{""};
+            for (unsigned int i = 0; i < workspaceConfig.log.indentSize; ++i) {
+                indent.append(" ");
+            }
+            serializer.setIndent(indent);
         }
     }
 
@@ -272,7 +296,7 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::receiveWorkspace_didChangeConfiguration(
         DidChangeConfigurationParams &params
     ) -> void {
-        invalidateConfigCache();
+        invalidateConfigCaches();
         LSPAny &settings = params.settings;
         switch (settings.type()) {
         case LSPAnyType::Object: {
@@ -281,11 +305,7 @@ namespace LCompilers::LanguageServerProtocol {
             if (iter != object.end()) {
                 std::shared_ptr<lsc::LspConfig> lspConfig =
                     lspConfigTransformer->anyToLspConfig(*iter->second);
-                {
-                    std::unique_lock<std::shared_mutex> writeLock(workspaceMutex);
-                    workspaceConfig = std::move(lspConfig);
-                }
-                updateLogLevel();
+                updateWorkspaceConfig(std::move(lspConfig));
             } else {
                 logger.warn()
                     << "Unable to locate configuration settings for section: "

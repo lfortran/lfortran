@@ -30,7 +30,7 @@ namespace LCompilers::LanguageServerProtocol {
             std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
             std::shared_ptr<lsc::LspConfig> workspaceConfig
         );
-    protected:
+
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer;
         std::unordered_map<DocumentUri, std::shared_ptr<LspTextDocument>> documentsByUri;
         std::shared_mutex documentMutex;
@@ -67,8 +67,10 @@ namespace LCompilers::LanguageServerProtocol {
             const DocumentUri &uri
         ) -> const std::shared_ptr<lsc::LspConfig>;
 
-        virtual auto invalidateConfigCache() -> void;
-        auto updateLogLevel() -> void;
+        virtual auto invalidateConfigCaches() -> void;
+        auto updateWorkspaceConfig(std::shared_ptr<lsc::LspConfig> workspaceConfig) -> void;
+        auto updateLogLevel(lsc::LspConfig &workspaceConfig) -> void;
+        auto updatePrettyPrintIndentSize(lsc::LspConfig &workspaceConfig) -> void;
 
         auto receiveInitialize(
             InitializeParams &params

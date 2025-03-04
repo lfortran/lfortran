@@ -28,7 +28,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::size_t numWorkerThreads,
         lsl::Logger &logger,
         const std::string &configSection,
-        std::shared_ptr<lsc::LspConfig> workspaceConfig
+        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -91,8 +91,8 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
-    auto LFortranLspLanguageServer::invalidateConfigCache() -> void {
-        BaseLspLanguageServer::invalidateConfigCache();
+    auto LFortranLspLanguageServer::invalidateConfigCaches() -> void {
+        BaseLspLanguageServer::invalidateConfigCaches();
         {
             std::unique_lock<std::shared_mutex> writeLock(optionMutex);
             optionsByUri.clear();

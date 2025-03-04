@@ -255,9 +255,9 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
             self.newline()
             with self.gen_class('LspLanguageServer', sups=['ls::LanguageServer']):
                 with self.gen_public():
-                    self.generate_constructor()
                     self.write('auto isTerminated() const -> bool override;')
                 with self.gen_protected():
+                    self.generate_constructor()
                     self.write('const std::string configSection;')
                     self.write('std::thread listener;')
                     self.write('lst::ThreadPool requestPool;')
