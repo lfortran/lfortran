@@ -4490,3 +4490,7 @@ ast = true
 [[test]]
 filename = "interface_generic_procedure_same_name.f90"
 asr = true
+
+[[test]]
+filename = "function_string_return.f90"
+llvm = true
