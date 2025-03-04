@@ -1,0 +1,13 @@
+{
+    "basename": "run-continue_compilation_ff_1-45b128d",
+    "cmd": "lfortran --fixed-form --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_ff_1.f",
+    "infile_hash": "a516c3d2a0aa482137912f26a5baf756a859fbce7a0c6f3f623eb041",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-continue_compilation_ff_1-45b128d.stderr",
+    "stderr_hash": "9cd33506bd4ae480fe9adc5f003a75580c22eb17b4d0b76ae74932b3",
+    "returncode": 1
+}

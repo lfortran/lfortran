@@ -3016,7 +3016,7 @@ semantics_only_cc = true
 
 [[test]]
 filename = "errors/continue_compilation_ff_1.f"
-semantics_only_cc = true
+fixed_form_cc = true
 
 [[test]]
 filename = "errors/continue_compilation_ff_2.f"
