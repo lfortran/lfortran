@@ -9,7 +9,7 @@ endif ()
 
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
-set(NOFAST_TILL_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast")
+set(NOFAST_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 
 enable_testing()
