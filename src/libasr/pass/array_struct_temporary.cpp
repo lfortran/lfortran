@@ -890,11 +890,7 @@ bool is_elemental_expr(ASR::expr_t* value) {
         }
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(value);
-            if ( ASR::is_a<ASR::Array_t>(*struct_instance_member->m_type) ) {
-                return false;
-            } else {
-                return true;
-            }
+            return !ASR::is_a<ASR::Array_t>(*struct_instance_member->m_type);
         }
         default: {
             return false;
