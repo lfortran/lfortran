@@ -71,16 +71,30 @@
                                     toml_stat
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructConstant
                                         11 enum_stat
-                                        [(())
-                                        (())]
+                                        [((IntegerConstant 0 (Integer 4) Decimal))
+                                        ((IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        ))]
                                         (StructType
                                             11 enum_stat
                                         )
-                                        ()
                                     )
-                                    ()
+                                    (StructConstant
+                                        11 enum_stat
+                                        [((IntegerConstant 0 (Integer 4) Decimal))
+                                        ((IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        ))]
+                                        (StructType
+                                            11 enum_stat
+                                        )
+                                    )
                                     Parameter
                                     (StructType
                                         11 enum_stat

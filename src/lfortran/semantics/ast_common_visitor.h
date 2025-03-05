@@ -9667,34 +9667,25 @@ public:
                                     constructor_args.end(), name);
             if (search == constructor_args.end()) {
                 diag.semantic_error_label(
-                    "Keyword argument not found " + name,
+                    "Keyword argument not found",
                     {loc},
-                    name + " keyword argument not found.");
+                    "'" + name + "'" + " keyword argument not found");
                 throw SemanticAbort();
             }
 
             size_t idx = std::distance(constructor_args.begin(), search);
             if (args[idx].m_value != nullptr) {
                 diag.semantic_error_label(
-                    "Keyword argument is already specified.",
+                    "Keyword argument is already specified",
                     {loc},
-                    name + "keyword argument is already specified.");
+                    "'" + name + "'" + + " keyword argument is already specified");
                 throw SemanticAbort();
             }
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
         }
 
-        /*
-
-        The following loop takes the default initial value expression
-        and puts it into the constructor call. The issue with this approach
-        is that one has to replace all the symbols present in the expression
-        with external symbols so that we don't receive out of scope errors
-        in ASR verify pass (with the help of a new visitor ReplaceWithExternalSymbolsInExpression).
-        So for now its commented out and one can deal with the
-        same in the backend itself which appears cleaner to me for now.
-
+        // If value is not specified in args nor in keyword argument, set to default initializer if it exists
         for( size_t i = 0; i < args.size(); i++ ) {
             if( args[i].m_value == nullptr ) {
                 ASR::symbol_t* arg_sym = constructor_arg_syms[i];
@@ -9704,23 +9695,21 @@ public:
                 if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
                     ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
                     default_init = arg_var->m_symbolic_value;
-                    if( arg_var->m_storage == ASR::storage_typeType::Allocatable ) {
+                    if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;
                     }
                 }
                 if( default_init == nullptr && is_default_needed ) {
                     diag.semantic_error_label(
                         "Argument was not specified",
-                        {arg_sym->base.loc},
-                        std::to_string(i) +
-                        "-th argument not specified for " + ASRUtils::symbol_name(fn));
+                        {loc},
+                        "Argument '" + constructor_args[i] + "' not specified for " + ASRUtils::symbol_name(fn));
                     throw SemanticAbort();
                 }
                 args.p[i].m_value = default_init;
                 args.p[i].loc = arg_sym->base.loc;
             }
         }
-        */
 
         for (size_t i = 0; i < constructor_arg_syms.size(); i++) {
             if( args[i].m_value != nullptr ) {
