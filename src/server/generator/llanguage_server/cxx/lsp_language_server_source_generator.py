@@ -257,6 +257,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 )
         self.newline()
 
+    @gensym_context
     def generate_send_request(self, request_spec: LspSpec) -> None:
         request_method = request_spec["method"]
         send_request = send_fn(request_method)
@@ -270,23 +271,15 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 'int',
                 params=params
         ):
-            self.write('RequestMessage request;')
-            self.gen_assign('request.jsonrpc', 'JSON_RPC_VERSION')
-            self.gen_assign('request.method', f'"{request_method}"')
-            self.gen_assign('int requestId', 'nextRequestId(request.method)')
-            self.gen_assign('request.id', 'requestId')
+            method_name = self.gensym_init('method', f'"{request_method}"')
             if params_spec is not None:
-                self.write('request.params = transformer.asMessageParams(params);')
-            self.gen_assign(
-                'LSPAny any',
-                'transformer.requestMessageToAny(request)'
-            )
-            self.gen_assign(
-                'const std::string message',
-                'serializer.serialize(any)'
-            )
-            self.gen_call('ls::LanguageServer::send', 'message')
-            self.write('return requestId;')
+                params_name = self.gensym_init(
+                    'params',
+                    'transformer.asMessageParams(params)'
+                )
+                self.gen_return(f'sendRequest({method_name}, {params_name})')
+            else:
+                self.gen_return(f'sendRequest({method_name})')
         self.newline()
 
     def generate_receive_response(self, request_spec: LspSpec) -> None:
@@ -312,6 +305,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 self.write(f'<< std::endl;')
         self.newline()
 
+    @gensym_context
     def generate_send_notification(self, notification_spec: LspSpec) -> None:
         notification_method = notification_spec["method"]
         send_notification = send_fn(notification_method)
@@ -321,23 +315,15 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             params.append(f'{params_spec["name"]} &params')
         self.write(f'// notification: "{notification_method}"')
         with self.gen_fn(f'LspLanguageServer::{send_notification}', params=params):
-            self.write('NotificationMessage notification;')
-            self.write('notification.jsonrpc = JSON_RPC_VERSION;')
-            self.write(f'notification.method = "{notification_method}";')
+            method_name = self.gensym_init('method', f'"{notification_method}"')
             if params_spec is not None:
-                self.gen_assign(
-                    'notification.params',
+                params_name = self.gensym_init(
+                    'params',
                     'transformer.asMessageParams(params)'
                 )
-            self.gen_assign(
-                'LSPAny any',
-                'transformer.notificationMessageToAny(notification)'
-            )
-            self.gen_assign(
-                'const std::string message',
-                'serializer.serialize(any)'
-            )
-            self.write('ls::LanguageServer::send(message);')
+                self.gen_call('sendNotification', method_name, params_name)
+            else:
+                self.gen_call('sendNotification', method_name)
         self.newline()
 
     def generate_prepare(self) -> None:
@@ -391,6 +377,147 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     f'Unsupported messageDirection: {notification_spec["messageDirection"]}'
                 )
 
+    @gensym_context
+    def generate_send_request_message(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::send',
+            params=[
+                'const RequestMessage &request',
+            ],
+        ):
+            any_name = self.gensym_init(
+                'any',
+                'transformer.requestMessageToAny(request)'
+            )
+            message_name = self.gensym_init(
+                'message',
+                f'serializer.serialize({any_name})'
+            )
+            self.gen_call('ls::LanguageServer::send', message_name)
+        self.newline()
+
+    @gensym_context
+    def generate_build_request(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::buildRequest',
+            'RequestMessage',
+            params=[
+                'const std::string &method',
+            ],
+        ):
+            request_name = self.gensym_decl('RequestMessage', 'request')
+            self.gen_assign(f'{request_name}.jsonrpc', 'JSON_RPC_VERSION')
+            self.gen_assign(f'{request_name}.method', 'method')
+            request_id_name = self.gensym_init('requestId', 'nextRequestId()')
+            self.gen_assign(f'{request_name}.id', request_id_name)
+            self.gen_return(request_name)
+        self.newline()
+
+    @gensym_context
+    def generate_send_custom_request(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::sendRequest',
+            'int',
+            params=[
+                'const std::string &method',
+                'MessageParams &params',
+            ],
+        ):
+            request_name = self.gensym_init('request', 'buildRequest(method)')
+            self.gen_assign(f'{request_name}.params', 'std::move(params)')
+            self.gen_call('send', request_name)
+            self.gen_return(f'{request_name}.id.integer()')
+        self.newline()
+
+    @gensym_context
+    def generate_send_custom_request_no_params(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::sendRequest',
+            'int',
+            params=[
+                'const std::string &method',
+            ],
+        ):
+            request_name = self.gensym_init('request', 'buildRequest(method)')
+            self.gen_call('send', request_name)
+            self.gen_return(f'{request_name}.id.integer()')
+        self.newline()
+
+    @gensym_context
+    def generate_send_notification_message(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::send',
+            params=[
+                'const NotificationMessage &notification',
+            ],
+        ):
+            any_name = self.gensym_init(
+                'any',
+                'transformer.notificationMessageToAny(notification)'
+            )
+            message_name = self.gensym_init(
+                'message',
+                f'serializer.serialize({any_name})'
+            )
+            self.gen_call('ls::LanguageServer::send', message_name)
+        self.newline()
+
+    @gensym_context
+    def generate_build_notification(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::buildNotification',
+            'NotificationMessage',
+            params=[
+                'const std::string &method',
+            ],
+        ):
+            notification_name = self.gensym_decl(
+                'NotificationMessage',
+                'notification'
+            )
+            self.gen_assign(f'{notification_name}.jsonrpc', 'JSON_RPC_VERSION')
+            self.gen_assign(f'{notification_name}.method', 'method')
+            self.gen_return(notification_name)
+        self.newline()
+
+    @gensym_context
+    def generate_send_custom_notification(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::sendNotification',
+            params=[
+                'const std::string &method',
+                'MessageParams &params',
+            ],
+        ):
+            notification_name = self.gensym_init(
+                'notification',
+                'buildNotification(method)'
+            )
+            self.gen_assign(f'{notification_name}.params', 'std::move(params)')
+            self.gen_call('send', notification_name)
+        self.newline()
+
+    @gensym_context
+    def generate_send_custom_notification_no_params(self) -> None:
+        with self.gen_fn(
+            'LspLanguageServer::sendNotification',
+            params=[
+                'const std::string &method',
+            ],
+        ):
+            notification_name = self.gensym_init(
+                'notification',
+                'buildNotification(method)'
+            )
+            self.gen_call('send', notification_name)
+        self.newline()
+
+    @gensym_context
+    def generate_next_request_id(self) -> None:
+        with self.gen_fn('LspLanguageServer::nextRequestId', 'int'):
+            self.gen_return('serialRequestId++')
+        self.newline()
+
     def generate_code(self) -> None:
         print(f'Generating: {self.file_path}')
         self.generate_disclaimer()
@@ -407,6 +534,15 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         with self.gen_namespace(self.namespace):
             self.newline()
             self.generate_constructor()
+            self.generate_next_request_id()
+            self.generate_send_request_message()
+            self.generate_build_request()
+            self.generate_send_custom_request()
+            self.generate_send_custom_request_no_params()
+            self.generate_send_notification_message()
+            self.generate_build_notification()
+            self.generate_send_custom_notification()
+            self.generate_send_custom_notification_no_params()
             self.generate_dispatch_request()
             self.generate_dispatch_notification()
             self.generate_dispatch_response()

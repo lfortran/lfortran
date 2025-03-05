@@ -39,12 +39,13 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
 
     def generate_send_request(self, request_spec: LspSpec) -> None:
         request_method = request_spec["method"]
+        send_request = send_fn(request_method)
         params_spec = request_spec.get("params", None)
         params = []
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &params')
         self.gen_fn_decl(
-            send_fn(request_method),
+            send_request,
             'int',
             params=params,
             docs=request_spec.get("documentation", None),
@@ -188,17 +189,92 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
     def generate_fields(self) -> None:
         self.write('LspTransformer transformer;')
         self.write('LspJsonSerializer serializer;')
+        self.write('std::atomic_int serialRequestId = 0;')
         self.newline()
 
     def generate_next_request_id(self) -> None:
         self.gen_fn_decl(
             'nextRequestId',
             ret_type='int',
+        )
+        self.newline()
+
+    def generate_send_request_message(self) -> None:
+        self.gen_fn_decl(
+            'send',
+            params=[
+                'const RequestMessage &request',
+            ],
+            virtual=True,
+        )
+        self.newline()
+
+    def generate_build_request(self) -> None:
+        self.gen_fn_decl(
+            'buildRequest',
+            'RequestMessage',
             params=[
                 'const std::string &method',
             ],
-            virtual=True,
-            pure=True,
+        )
+        self.newline()
+
+    def generate_send_custom_request(self) -> None:
+        self.gen_fn_decl(
+            'sendRequest',
+            'int',
+            params=[
+                'const std::string &method',
+                'MessageParams &params',
+            ],
+        )
+        self.newline()
+
+    def generate_send_custom_request_no_params(self) -> None:
+        self.gen_fn_decl(
+            'sendRequest',
+            'int',
+            params=[
+                'const std::string &method',
+            ],
+        )
+        self.newline()
+
+    def generate_send_notification_message(self) -> None:
+        self.gen_fn_decl(
+            'send',
+            params=[
+                'const NotificationMessage &notification',
+            ],
+        )
+        self.newline()
+
+    def generate_build_notification(self) -> None:
+        self.gen_fn_decl(
+            'buildNotification',
+            'NotificationMessage',
+            params=[
+                'const std::string &method',
+            ],
+        )
+        self.newline()
+
+    def generate_send_custom_notification(self) -> None:
+        self.gen_fn_decl(
+            'sendNotification',
+            params=[
+                'const std::string &method',
+                'MessageParams &params',
+            ],
+        )
+        self.newline()
+
+    def generate_send_custom_notification_no_params(self) -> None:
+        self.gen_fn_decl(
+            'sendNotification',
+            params=[
+                'const std::string &method',
+            ],
         )
         self.newline()
 
@@ -206,6 +282,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         print(f'Generating: {self.file_path}')
         self.generate_disclaimer()
         self.pragma_once()
+        self.newline()
+        self.gen_include('atomic')
         self.newline()
         self.gen_include('server/language_server.h')
         self.gen_include('server/logger.h')
@@ -222,6 +300,14 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
                     self.generate_constructor()
                     self.generate_fields()
                     self.generate_next_request_id()
+                    self.generate_send_request_message()
+                    self.generate_build_request()
+                    self.generate_send_custom_request()
+                    self.generate_send_custom_request_no_params()
+                    self.generate_send_notification_message()
+                    self.generate_build_notification()
+                    self.generate_send_custom_notification()
+                    self.generate_send_custom_notification_no_params()
                     self.generate_dispatch_request()
                     self.generate_dispatch_notification()
                     self.generate_dispatch_response()

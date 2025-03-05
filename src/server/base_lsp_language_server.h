@@ -51,7 +51,6 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool _initialized = false;
         std::atomic_bool _shutdown = false;
         std::atomic_bool _exit = false;
-        std::atomic_int serialRequestId = 0;
         std::unordered_map<int, std::string> callbacksById;
         std::mutex callbackMutex;
         std::atomic<TraceValues> trace{TraceValues::Off};
@@ -79,7 +78,6 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool clientSupportsWorkspaceConfigChangeNotifications = false;
 
         auto nextSendId() -> std::size_t;
-        auto nextRequestId(const std::string &method) -> int override;
         auto isInitialized() const -> bool;
         auto isShutdown() const -> bool;
         auto isRunning() const -> bool;
@@ -101,6 +99,7 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &response
         ) const -> void override;
 
+        auto send(const RequestMessage &request) -> void override;
         auto send(const std::string &request, std::size_t sendId) -> void;
 
         auto handle(const std::string &incoming, std::size_t sendId) -> void;

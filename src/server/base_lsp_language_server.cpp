@@ -47,16 +47,6 @@ namespace LCompilers::LanguageServerProtocol {
         return serialSendId++;
     }
 
-    auto BaseLspLanguageServer::nextRequestId(const std::string &method) -> int
-    {
-        int requestId = serialRequestId++;
-        {
-            std::unique_lock<std::mutex> callbackLock(callbackMutex);
-            callbacksById.emplace(requestId, method);
-        }
-        return requestId;
-    }
-
     auto BaseLspLanguageServer::isInitialized() const -> bool
     {
         return _initialized;
@@ -186,6 +176,14 @@ namespace LCompilers::LanguageServerProtocol {
             std::unique_lock<std::mutex> sentLock(sentMutex);
             sent.notify_all();
         }
+    }
+
+    auto BaseLspLanguageServer::send(const RequestMessage &request) -> void {
+        {
+            std::unique_lock<std::mutex> writeLock(callbackMutex);
+            callbacksById.emplace(request.id.integer(), request.method);
+        }
+        LspLanguageServer::send(request);
     }
 
     auto BaseLspLanguageServer::send(
