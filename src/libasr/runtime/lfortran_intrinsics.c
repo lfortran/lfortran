@@ -3693,8 +3693,10 @@ char *remove_whitespace(char *str) {
 }
 
 LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
-    char* tmp = remove_whitespace(str);
-    if (strcmp(tmp, "''") == 0) {
+    char* without_whitespace_str = remove_whitespace(str);
+    if (without_whitespace_str[0] == '\'' && without_whitespace_str[1] == '\'' &&
+        without_whitespace_str[2] == '\0'
+    ) {
         *s = strdup("");
     } else {
         sscanf(str, format, *s);
