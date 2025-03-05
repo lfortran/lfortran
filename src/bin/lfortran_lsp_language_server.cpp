@@ -28,6 +28,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::size_t numWorkerThreads,
         lsl::Logger &logger,
         const std::string &configSection,
+        const std::string &extensionId,
         std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
     ) : BaseLspLanguageServer(
         incomingMessages,
@@ -36,7 +37,9 @@ namespace LCompilers::LanguageServerProtocol {
         numWorkerThreads,
         logger,
         configSection,
+        extensionId,
         std::make_shared<lsc::LFortranLspConfigTransformer>(
+            transformer,
             serializer
         ),
         std::move(workspaceConfig)

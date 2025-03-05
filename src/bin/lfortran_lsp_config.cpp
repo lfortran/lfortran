@@ -1,6 +1,7 @@
 #include <memory>
 
 #include <server/base_lsp_language_server.h>
+#include <server/lsp_config.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_specification.h>
@@ -10,8 +11,9 @@
 namespace LCompilers::LanguageServerProtocol::Config {
 
     LFortranLspConfigTransformer::LFortranLspConfigTransformer(
+        lsp::LspTransformer &transformer,
         lsp::LspJsonSerializer &serializer
-    ) : LspConfigTransformer()
+    ) : LspConfigTransformer(transformer)
       , serializer(serializer)
     {
         // empty
@@ -111,6 +113,38 @@ namespace LCompilers::LanguageServerProtocol::Config {
         return compiler;
     }
 
+    auto LFortranLspConfigTransformer::lfortranLspConfig_compilerToAny(
+        const LFortranLspConfig_compiler &compiler
+    ) const -> LSPAny {
+        LSPAny any;
+        LSPObject object;
+        object.emplace(
+            "path",
+            std::make_unique<LSPAny>(
+                transformer.stringToAny(compiler.path.string())
+            )
+        );
+        {
+            LSPArray array;
+            array.reserve(compiler.flags.size());
+            for (const std::string &flag : compiler.flags) {
+                array.push_back(
+                    std::make_unique<LSPAny>(
+                        transformer.stringToAny(flag)
+                    )
+                );
+            }
+            object.emplace(
+                "flags",
+                std::make_unique<LSPAny>(
+                    transformer.lspArrayToAny(array)
+                )
+            );
+        }
+        any = std::make_unique<LSPObject>(std::move(object));
+        return any;
+    }
+
     auto LFortranLspConfigTransformer::anyToLspConfig(
         const lsp::LSPAny &any
     ) const -> std::shared_ptr<LspConfig> {
@@ -121,16 +155,6 @@ namespace LCompilers::LanguageServerProtocol::Config {
 
         const LSPObject &object = any.object();
         LSPObject::const_iterator iter;
-
-        if ((iter = object.find("openIssueReporterOnError")) != object.end()) {
-            config->openIssueReporterOnError = iter->second->boolean();
-        } else {
-            throw LSP_EXCEPTION(
-                ErrorCodes::InvalidParams,
-                ("Missing required LFortranLspConfig attribute: "
-                 "openIssueReporterOnError")
-            );
-        }
 
         if ((iter = object.find("maxNumberOfProblems")) != object.end()) {
             config->maxNumberOfProblems = iter->second->uinteger();
@@ -152,6 +176,28 @@ namespace LCompilers::LanguageServerProtocol::Config {
         }
 
         return config;
+    }
+
+    auto LFortranLspConfigTransformer::lspConfigToAny(
+        const LspConfig &config
+    ) const -> LSPAny {
+        LSPAny any = LspConfigTransformer::lspConfigToAny(config);
+        const LFortranLspConfig &lfortran =
+            static_cast<const LFortranLspConfig &>(config);
+        LSPObject &object = const_cast<LSPObject &>(any.object());
+        object.emplace(
+            "maxNumberOfProblems",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(lfortran.maxNumberOfProblems)
+            )
+        );
+        object.emplace(
+            "compiler",
+            std::make_unique<LSPAny>(
+                lfortranLspConfig_compilerToAny(lfortran.compiler)
+            )
+        );
+        return any;
     }
 
     auto LFortranLspConfigTransformer::makeConfig() const

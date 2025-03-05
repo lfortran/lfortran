@@ -313,6 +313,12 @@ namespace LCompilers::LLanguageServer::Interface {
             "Number of spaces to indent the pretty-printed JSON."
         )->capture_default_str();
 
+        opts.extensionId = "lcompilers.lfortran-lsp";
+        server->add_option(
+            "--extension-id", opts.extensionId,
+            "Identifies the language client extension that interacts with this server."
+        )->capture_default_str();
+
         return server;
     }
 
@@ -347,6 +353,7 @@ namespace LCompilers::LLanguageServer::Interface {
                         opts.numWorkerThreads,
                         logger,
                         opts.configSection,
+                        opts.extensionId,
                         workspaceConfig
                     );
                 } else {

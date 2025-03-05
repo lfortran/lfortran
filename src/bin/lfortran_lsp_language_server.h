@@ -30,6 +30,7 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t numWorkerThreads,
             lsl::Logger &logger,
             const std::string &configSection,
+            const std::string &extensionId,
             std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
         );
     protected:

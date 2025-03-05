@@ -8,11 +8,13 @@
 
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
+#include <server/lsp_issue_reporter.h>
 #include <server/lsp_json_parser.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    namespace lsr = LCompilers::LanguageServerProtocol::Reporter;
 
     BaseLspLanguageServer::BaseLspLanguageServer(
         ls::MessageQueue &incomingMessages,
@@ -21,6 +23,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::size_t numWorkerThreads,
         lsl::Logger &logger,
         const std::string &configSection,
+        const std::string &extensionId,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
         std::shared_ptr<lsc::LspConfig> workspaceConfig
     ) : LspLanguageServer(
@@ -29,6 +32,7 @@ namespace LCompilers::LanguageServerProtocol {
         logger
       )
       , configSection(configSection)
+      , extensionId(extensionId)
       , listener([this]{ listen(); })
       , requestPool("request", numRequestThreads, logger)
       , workerPool("worker", numWorkerThreads, logger)
@@ -260,8 +264,8 @@ namespace LCompilers::LanguageServerProtocol {
                     }
                     RequestMessage request =
                         transformer.anyToRequestMessage(*document);
+                    traceId = request.method + " - (" + to_string(request.id) + ")";
                     if (trace >= TraceValues::Messages) {
-                        traceId = request.method + " - (" + to_string(request.id) + ")";
                         logReceiveTrace("request", traceId, request.params);
                     }
                     response.jsonrpc = request.jsonrpc;
@@ -275,8 +279,8 @@ namespace LCompilers::LanguageServerProtocol {
                     }
                     NotificationMessage notification =
                         transformer.anyToNotificationMessage(*document);
+                    traceId = notification.method;
                     if (trace >= TraceValues::Messages) {
-                        traceId = notification.method;
                         logReceiveTrace("notification", traceId, notification.params);
                     }
                     response.jsonrpc = notification.jsonrpc;
@@ -304,11 +308,13 @@ namespace LCompilers::LanguageServerProtocol {
                 );
             }
         } catch (const LspException &e) {
-            logger.error()
-                << "[" << e.file() << ":" << e.line() << "] "
-                << e.what()
-                << std::endl;
             ResponseError error;
+            error.message = "[";
+            error.message.append(e.file());
+            error.message.append(":");
+            error.message.append(std::to_string(e.line()));
+            error.message.append("] ");
+            error.message.append(e.what());
             switch (e.code().type) {
             case ErrorCodeType::ErrorCodes: {
                 ErrorCodes errorCode = e.code().errorCodes;
@@ -321,23 +327,90 @@ namespace LCompilers::LanguageServerProtocol {
                 break;
             }
             }
-            error.message = e.what();
             response.error = std::move(error);
+            logger.error() << error.message << std::endl;
         } catch (const std::exception &e) {
-            logger.error()
-                << "Caught unhandled exception: "
-                << e.what() << std::endl;
             ResponseError error;
             error.code = static_cast<int>(ErrorCodes::InternalError);
-            error.message =
-                ("An unexpected exception occurred. If it continues, "
-                 "please file a ticket.");
+            error.message = "Caught unhandled exception: ";
+            error.message.append(e.what());
             response.error = std::move(error);
+            logger.error() << error.message << std::endl;
         }
         LSPAny any = transformer.responseMessageToAny(response);
         logSendResponseTrace(traceId, start, any);
         const std::string outgoing = serializer.serialize(any);
         send(outgoing, sendId);
+        if (response.error.has_value()) {
+            const ResponseError &error = response.error.value();
+            if ((error.code == static_cast<int>(ErrorCodes::InternalError)) &&
+                workspaceConfig->openIssueReporterOnError) {
+                try {
+                    lsr::InternalErrorReporter reporter(
+                        serializer,
+                        transformer,
+                        extensionId,
+                        initializeParams(),
+                        *workspaceConfig,
+                        *lspConfigTransformer,
+                        incoming,
+                        traceId,
+                        error
+                    );
+                    std::string issueTitle = reporter.title();
+                    std::string issueBody = reporter.body();
+                    sendOpenIssue(issueTitle, issueBody);
+                } catch (const std::exception &e) {
+                    logger.error()
+                        << "Failed to open issue: " << e.what()
+                        << std::endl;
+                }
+            }
+        }
+    }
+
+    auto BaseLspLanguageServer::sendOpenIssue(
+        const std::string &issueTitle,
+        const std::string &issueBody
+    ) -> void {
+        LSPObject object;
+        object.emplace(
+            "issueType",
+            std::make_unique<LSPAny>(
+                transformer.integerToAny(
+                    static_cast<integer_t>(lsr::IssueType::Bug)
+                )
+            )
+        );
+        object.emplace(
+            "issueSource",
+            std::make_unique<LSPAny>(
+                transformer.integerToAny(
+                    static_cast<integer_t>(lsr::IssueSource::Extension)
+                )
+            )
+        );
+        object.emplace(
+            "extensionId",
+            std::make_unique<LSPAny>(
+                transformer.stringToAny(extensionId)
+            )
+        );
+        object.emplace(
+            "issueTitle",
+            std::make_unique<LSPAny>(
+                transformer.stringToAny(issueTitle)
+            )
+        );
+        object.emplace(
+            "issueBody",
+            std::make_unique<LSPAny>(
+                transformer.stringToAny(issueBody)
+            )
+        );
+        MessageParams params;
+        params = std::move(object);
+        sendNotification("$/openIssue", params);
     }
 
     auto BaseLspLanguageServer::dispatch(

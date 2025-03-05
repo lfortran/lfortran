@@ -35,11 +35,13 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t numWorkerThreads,
             lsl::Logger &logger,
             const std::string &configSection,
+            const std::string &extensionId,
             std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
             std::shared_ptr<lsc::LspConfig> workspaceConfig
         );
 
         const std::string configSection;
+        const std::string extensionId;
         std::thread listener;
         lst::ThreadPool requestPool;
         lst::ThreadPool workerPool;
@@ -154,6 +156,11 @@ namespace LCompilers::LanguageServerProtocol {
         auto updateWorkspaceConfig(std::shared_ptr<lsc::LspConfig> workspaceConfig) -> void;
         auto updateLogLevel(lsc::LspConfig &workspaceConfig) -> void;
         auto updatePrettyPrintIndentSize(lsc::LspConfig &workspaceConfig) -> void;
+
+        auto sendOpenIssue(
+            const std::string &issueTitle,
+            const std::string &issueBody
+        ) -> void;
 
         auto receiveInitialize(
             InitializeParams &params
