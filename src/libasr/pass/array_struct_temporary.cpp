@@ -885,9 +885,16 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
 bool is_elemental_expr(ASR::expr_t* value) {
     value = ASRUtils::get_past_array_physical_cast(value);
     switch( value->type ) {
-        case ASR::exprType::Var:
-        case ASR::exprType::StructInstanceMember: {
+        case ASR::exprType::Var: {
             return true;
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(value);
+            if ( ASR::is_a<ASR::Array_t>(*struct_instance_member->m_type) ) {
+                return false;
+            } else {
+                return true;
+            }
         }
         default: {
             return false;
