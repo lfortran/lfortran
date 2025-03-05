@@ -176,8 +176,18 @@ namespace LCompilers::LanguageServerProtocol {
                     std::vector<LCompilers::error_highlight> highlights =
                         lfortran.showErrors(path, text, *compilerOptions);
 
+                    const std::shared_ptr<lsc::LFortranLspConfig> config =
+                        getLFortranConfig(uri);
+                    unsigned int numProblems = config->maxNumberOfProblems;
+                    if (highlights.size() < numProblems) {
+                        numProblems = highlights.size();
+                    }
+
                     std::vector<Diagnostic> diagnostics;
-                    for (const LCompilers::error_highlight &highlight : highlights) {
+                    diagnostics.reserve(numProblems);
+                    for (unsigned int i = 0; i < numProblems; ++i) {
+                        const LCompilers::error_highlight &highlight = highlights[i];
+
                         Position start;
                         start.line = highlight.first_line - 1;
                         start.character = highlight.first_column - 1;
