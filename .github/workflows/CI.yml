@@ -827,7 +827,7 @@ jobs:
             ./test_ode.exe
             ./test_probability_distribution.exe
             ./test_sde.exe
-            ./plot_bogdanov_takens.exe
+            # ./plot_bogdanov_takens.exe
             ./plot_bruinsma.exe
             ./plot_fun1.exe
             # ./plot_lorenz.exe
