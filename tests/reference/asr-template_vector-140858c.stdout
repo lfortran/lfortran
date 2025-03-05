@@ -47,6 +47,26 @@
                                     (SymbolTable
                                         7
                                         {
+                                            1_intvector_elements:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_intvector_elements
+                                                    8 elements
+                                                    intvector
+                                                    []
+                                                    elements
+                                                    Public
+                                                ),
+                                            1_push_back:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_push_back
+                                                    8 push_back
+                                                    intvector
+                                                    []
+                                                    push_back
+                                                    Public
+                                                ),
                                             __asr_push_back:
                                                 (Function
                                                     (SymbolTable
@@ -539,24 +559,6 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            i:
-                                                (Variable
-                                                    7
-                                                    i
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                ),
                                             intvector:
                                                 (Struct
                                                     (SymbolTable
@@ -615,8 +617,8 @@
                                                                     sz
                                                                     []
                                                                     Local
-                                                                    ()
-                                                                    ()
+                                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                                     Save
                                                                     (Integer 4)
                                                                     ()
@@ -649,7 +651,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
                                                         7 intvector
                                                     )
                                                     ()
@@ -678,18 +680,44 @@
                                     )
                                     []
                                     []
-                                    [(Assignment
+                                    [(SubroutineCall
+                                        7 1_push_back
+                                        ()
+                                        [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (Var 7 v)
-                                        (StructConstructor
-                                            7 intvector
-                                            [(())
-                                            (())]
-                                            (StructType
-                                                7 intvector
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (ArrayItem
+                                                (StructInstanceMember
+                                                    (Var 7 v)
+                                                    7 1_intvector_elements
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                )
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
                                             )
+                                            NotEq
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                            (Logical 4)
                                             ()
                                         )
-                                        ()
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
                                     )]
                                     ()
                                     Private
