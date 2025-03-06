@@ -105,7 +105,7 @@ jobs:
 
       - name: Test with specific Fortran standard
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             cd ./integration_tests
             ./run_tests.py -b llvm --std=f23

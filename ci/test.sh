@@ -49,6 +49,6 @@ if [[ $WIN != "1" ]]; then
     ctest -L llvm
     cd ..
 
-    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma
-    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f
+    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma
+    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma -f
 fi
