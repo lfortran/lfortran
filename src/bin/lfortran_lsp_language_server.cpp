@@ -19,6 +19,7 @@
 #include <bin/lfortran_lsp_language_server.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    namespace lc = LCompilers;
     namespace lcli = LCompilers::CommandLineInterface;
 
     LFortranLspLanguageServer::LFortranLspLanguageServer(
@@ -133,7 +134,7 @@ namespace LCompilers::LanguageServerProtocol {
         lcli::LFortranCommandLineParser parser(argv);
         try {
             parser.parse();
-        } catch (const LCompilers::LCompilersException &e) {
+        } catch (const lc::LCompilersException &e) {
             logger.error()
                 << "Failed to initialize compiler options for document with uri=\""
                 << uri << "\": " << e.what() << std::endl;
@@ -178,7 +179,7 @@ namespace LCompilers::LanguageServerProtocol {
                 try {
                     std::shared_ptr<CompilerOptions> compilerOptions =
                         getCompilerOptions(*document);
-                    std::vector<LCompilers::error_highlight> highlights =
+                    std::vector<lc::error_highlight> highlights =
                         lfortran.showErrors(path, text, *compilerOptions);
 
                     const std::shared_ptr<lsc::LFortranLspConfig> config =
@@ -191,7 +192,7 @@ namespace LCompilers::LanguageServerProtocol {
                     std::vector<Diagnostic> diagnostics;
                     diagnostics.reserve(numProblems);
                     for (unsigned int i = 0; i < numProblems; ++i) {
-                        const LCompilers::error_highlight &highlight = highlights[i];
+                        const lc::error_highlight &highlight = highlights[i];
 
                         Position start;
                         start.line = highlight.first_line - 1;
@@ -291,6 +292,12 @@ namespace LCompilers::LanguageServerProtocol {
             capabilities.definitionProvider = std::move(definitionProvider);
         }
 
+        {
+            ServerCapabilities_renameProvider renameProvider;
+            renameProvider = true;
+            capabilities.renameProvider = std::move(renameProvider);
+        }
+
         return result;
     }
 
@@ -306,7 +313,7 @@ namespace LCompilers::LanguageServerProtocol {
         CompilerOptions compilerOptions = *getCompilerOptions(*document);
         compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
         compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
-        std::vector<LCompilers::document_symbols> symbols =
+        std::vector<lc::document_symbols> symbols =
             lfortran.lookupName(path, text, compilerOptions);
         TextDocument_DefinitionResult result;
         if (symbols.size() > 0) {
@@ -359,6 +366,51 @@ namespace LCompilers::LanguageServerProtocol {
                 }
                 result = std::move(locations);
             }
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    // request: "textDocument/rename"
+    auto LFortranLspLanguageServer::receiveTextDocument_rename(
+        RenameParams &params
+    ) -> TextDocument_RenameResult
+    {
+        const DocumentUri &uri = params.textDocument.uri;
+        const Position &pos = params.position;
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        const std::string &path = document->path().string();
+        const std::string &text = document->text();
+        // NOTE: Copy the compiler options since we will modify them.
+        CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
+        compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
+        std::vector<lc::document_symbols> symbols =
+            lfortran.getAllOccurrences(path, text, compilerOptions);
+        TextDocument_RenameResult result;
+        if (symbols.size() > 0) {
+            std::unique_ptr<WorkspaceEdit> workspaceEdit =
+                std::make_unique<WorkspaceEdit>();
+            std::map<DocumentUri, std::vector<TextEdit>> &changes =
+                workspaceEdit->changes.emplace();
+            std::vector<TextEdit> &edits = changes.emplace(
+                std::piecewise_construct,
+                std::make_tuple(uri),
+                std::make_tuple()
+            ).first->second;
+            edits.reserve(symbols.size());
+            for (const auto &symbol : symbols) {
+                TextEdit &edit = edits.emplace_back();
+                Position &start = edit.range.start;
+                Position &end = edit.range.end;
+                start.line = symbol.first_line - 1;  // 1-to-0 index
+                start.character = symbol.first_column - 1;  // 1-to-0 index
+                end.line = symbol.last_line - 1;  // 1-to-0 index
+                end.character = symbol.last_column - 1;  // 1-to-0 index
+                edit.newText = params.newName;
+            }
+            result = std::move(workspaceEdit);
         } else {
             result = nullptr;
         }

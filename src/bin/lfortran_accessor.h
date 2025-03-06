@@ -26,6 +26,12 @@ namespace LCompilers::LLanguageServer {
             const std::string &text,
             const CompilerOptions &compiler_options
         ) -> std::vector<LCompilers::document_symbols>;
+
+        auto getAllOccurrences(
+            const std::string &filename,
+            const std::string &text,
+            const CompilerOptions &compiler_options
+        ) -> std::vector<LCompilers::document_symbols>;
     };
 
 } // namespace LCompilers::LLanguageServer

@@ -50,6 +50,10 @@ namespace LCompilers::LanguageServerProtocol {
             DefinitionParams &params
         ) -> TextDocument_DefinitionResult override;
 
+        auto receiveTextDocument_rename(
+            RenameParams &params
+        ) -> TextDocument_RenameResult override;
+
         // ====================== //
         // Incoming Notifications //
         // ====================== //

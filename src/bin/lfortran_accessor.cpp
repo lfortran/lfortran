@@ -1,6 +1,7 @@
 #include <cstdint>
 
 #include <libasr/asr.h>
+#include <libasr/asr_lookup_name.h>
 #include <libasr/diagnostics.h>
 #include <libasr/exception.h>
 #include <libasr/location.h>
@@ -120,6 +121,45 @@ namespace LCompilers::LLanguageServer {
                     loc.filename = filename;
                     loc.symbol_type = s->type;
                     symbol_lists.push_back(loc);
+                }
+            }
+        }
+
+        return symbol_lists;
+    }
+
+    auto LFortranAccessor::getAllOccurrences(
+        const std::string &filename,
+        const std::string &text,
+        const CompilerOptions &compiler_options
+    ) -> std::vector<LCompilers::document_symbols> {
+        LCompilers::FortranEvaluator fe(compiler_options);
+        std::vector<LCompilers::document_symbols> symbol_lists;
+
+        LCompilers::LocationManager lm;
+        {
+            LCompilers::LocationManager::FileLocations fl;
+            fl.in_filename = filename;
+            lm.files.push_back(fl);
+            lm.file_ends.push_back(text.size());
+        }
+        {
+            LCompilers::diag::Diagnostics diagnostics;
+            LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+                x = fe.get_asr2(text, lm, diagnostics);
+            if (x.ok) {
+                // populate_symbol_lists(x.result, lm, symbol_lists);
+                uint16_t l = std::stoi(compiler_options.line);
+                uint16_t c = std::stoi(compiler_options.column);
+                uint64_t input_pos = lm.linecol_to_pos(l, c);
+                uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+                LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
+                LCompilers::document_symbols loc;
+                if (ASR::is_a<ASR::symbol_t>(*asr)) {
+                    ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
+                    std::string symbol_name = ASRUtils::symbol_name( s );
+                    LCompilers::LFortran::OccurenceCollector occ(symbol_name, symbol_lists, lm);
+                    occ.visit_TranslationUnit(*x.result);
                 }
             }
         }
