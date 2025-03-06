@@ -598,7 +598,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout bfac4dfc676142df13b632cc587c709a82ae5768
+            git checkout 33c078020dcea467e763b52879a480450a0494fe
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
