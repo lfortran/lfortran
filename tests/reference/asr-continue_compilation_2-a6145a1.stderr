@@ -432,7 +432,7 @@ semantic error: Invalid argument `start` supplied
 160 |     FLUSH(unit=10, start=100)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in argument at argument (1); passed `real` to `integer`.
+semantic error: Type mismatch in argument at argument (1); passed `real(4)` to `integer(4)`.
    --> tests/errors/continue_compilation_2.f90:162:16
     |
 162 |     print *, f(42.9)

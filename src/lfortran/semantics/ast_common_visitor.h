@@ -5720,9 +5720,11 @@ public:
 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
                     std::string arg_str = ASRUtils::type_to_str_fortran(arg_type);
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type); 
                     std::string orig_arg_str = ASRUtils::type_to_str_fortran(orig_arg_type);
+                    int orig_arg_kind = ASRUtils::extract_kind_from_ttype_t(orig_arg_type);
                     diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
-                                        "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
+                                        "); passed `" + arg_str + '(' + std::to_string(arg_kind) + ')' + "` to `" + orig_arg_str + '(' + std::to_string(orig_arg_kind) + ')' + "`.",
                                         Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
                     throw SemanticAbort();
                 }
