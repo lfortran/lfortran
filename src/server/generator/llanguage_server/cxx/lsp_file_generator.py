@@ -517,6 +517,7 @@ class CPlusPlusLspFileGenerator(FileGenerator, NestedContext):
             specs: Optional[Union[str, List[str]]] = None,
             docs: Optional[str] = None,
             virtual: bool = False,
+            pure: bool = False,
             override: bool = False
     ) -> None:
         self.generate_docstring(docs)
@@ -531,7 +532,10 @@ class CPlusPlusLspFileGenerator(FileGenerator, NestedContext):
             if isinstance(specs, list):
                 specs = " ".join(specs)
             line += f' {specs}'
-        line += f' -> {ret_type}{suffix};'
+        line += f' -> {ret_type}{suffix}'
+        if pure:
+            line += ' = 0'
+        line += ';'
         if len(line) < self.column_width:
             self.inline(line, end='\n')
         else:
@@ -552,7 +556,10 @@ class CPlusPlusLspFileGenerator(FileGenerator, NestedContext):
                 self.inline(') ', indent=True)
                 if specs is not None:
                     self.inline(f'{specs} ')
-            self.inline(f'-> {ret_type}{suffix};', end='\n')
+            self.inline(f'-> {ret_type}{suffix}')
+            if pure:
+                self.inline(' = 0')
+            self.inline(';', end='\n')
 
     @contextmanager
     def gen_fn(
