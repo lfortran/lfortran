@@ -17,6 +17,7 @@
 #include <bin/lfortran_lsp_config.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    namespace lc = LCompilers;
     namespace ls = LCompilers::LLanguageServer;
     namespace lsl = LCompilers::LLanguageServer::Logging;
     namespace lsc = LCompilers::LanguageServerProtocol::Config;
@@ -54,6 +55,10 @@ namespace LCompilers::LanguageServerProtocol {
             RenameParams &params
         ) -> TextDocument_RenameResult override;
 
+        auto receiveTextDocument_documentSymbol(
+            DocumentSymbolParams &params
+        ) -> TextDocument_DocumentSymbolResult override;
+
         // ====================== //
         // Incoming Notifications //
         // ====================== //
@@ -89,6 +94,8 @@ namespace LCompilers::LanguageServerProtocol {
 
         std::atomic_bool clientSupportsGotoDefinition = false;
         std::atomic_bool clientSupportsGotoDefinitionLinks = false;
+        std::atomic_bool clientSupportsDocumentSymbols = false;
+        std::atomic_bool clientSupportsHierarchicalDocumentSymbols = false;
 
         auto validate(std::shared_ptr<LspTextDocument> document) -> void;
         auto getCompilerOptions(
@@ -111,6 +118,20 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &filename,
             const CompilerOptions &compilerOptions
         ) -> fs::path;
+
+        auto init(
+            DocumentSymbol &lspSymbol,
+            const lc::document_symbols *asrSymbol
+        ) -> void;
+
+        auto walk(
+            const lc::document_symbols *root,
+            DocumentSymbol &symbol,
+            std::map<
+                const lc::document_symbols *,
+                std::vector<const lc::document_symbols *>
+            > &childrenBySymbol
+        ) -> void;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

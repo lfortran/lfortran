@@ -17,6 +17,8 @@ namespace LCompilers {
     diag::Level severity;
   };
 
+  struct document_symbols;
+
   struct document_symbols {
     std::string symbol_name;
     uint32_t first_line;
@@ -25,6 +27,7 @@ namespace LCompilers {
     uint32_t last_column;
     std::string filename;
     ASR::symbolType symbol_type;
+    int parent_index;
   };
 
 } // namespace LCompilers
