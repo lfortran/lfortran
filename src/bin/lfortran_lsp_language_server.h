@@ -31,6 +31,7 @@ namespace LCompilers::LanguageServerProtocol {
             lsl::Logger &logger,
             const std::string &configSection,
             const std::string &extensionId,
+            const std::string &compilerVersion,
             std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
         );
     protected:

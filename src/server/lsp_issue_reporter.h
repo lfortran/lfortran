@@ -53,6 +53,7 @@ namespace LCompilers::LanguageServerProtocol::Reporter {
             LspJsonSerializer &serializer,
             LspTransformer &transformer,
             const std::string &extensionId,
+            const std::string &compilerVersion,
             const InitializeParams &initializeParams,
             const lsc::LspConfig &config,
             lsc::LspConfigTransformer &configTransformer,
@@ -65,6 +66,7 @@ namespace LCompilers::LanguageServerProtocol::Reporter {
         auto body() const -> std::string override;
     private:
         const std::string &extensionId;
+        const std::string &compilerVersion;
         const InitializeParams &initializeParams;
         const lsc::LspConfig &config;
         lsc::LspConfigTransformer &configTransformer;

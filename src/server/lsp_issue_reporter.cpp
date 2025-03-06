@@ -70,6 +70,7 @@ namespace LCompilers::LanguageServerProtocol::Reporter {
         LspJsonSerializer &serializer,
         LspTransformer &transformer,
         const std::string &extensionId,
+        const std::string &compilerVersion,
         const InitializeParams &initializeParams,
         const lsc::LspConfig &config,
         lsc::LspConfigTransformer &configTransformer,
@@ -78,6 +79,7 @@ namespace LCompilers::LanguageServerProtocol::Reporter {
         const ResponseError &error
     ) : LspIssueReporter(serializer, transformer)
       , extensionId(extensionId)
+      , compilerVersion(compilerVersion)
       , initializeParams(initializeParams)
       , config(config)
       , configTransformer(configTransformer)
@@ -129,6 +131,14 @@ namespace LCompilers::LanguageServerProtocol::Reporter {
                 body.append(clientInfo.version.value());
             }
         }
+        body.append("\n\n");
+        body.append("### Extension Details:");
+        body.append("\n\n");
+        body.append("Compiler Version: ");
+        body.append(compilerVersion);
+        body.append("\n");
+        body.append("Extension Id: ");
+        body.append(extensionId);
         body.append("\n\n");
         body.append("### Initialize Parameters:");
         body.append("\n\n");

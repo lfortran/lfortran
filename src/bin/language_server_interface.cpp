@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <thread>
 
+#include <libasr/config.h>
 #include <libasr/exception.h>
 
 #include <server/logger.h>
@@ -354,6 +355,7 @@ namespace LCompilers::LLanguageServer::Interface {
                         logger,
                         opts.configSection,
                         opts.extensionId,
+                        LFORTRAN_VERSION,
                         workspaceConfig
                     );
                 } else {

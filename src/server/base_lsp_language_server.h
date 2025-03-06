@@ -36,12 +36,14 @@ namespace LCompilers::LanguageServerProtocol {
             lsl::Logger &logger,
             const std::string &configSection,
             const std::string &extensionId,
+            const std::string &compilerVersion,
             std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
             std::shared_ptr<lsc::LspConfig> workspaceConfig
         );
 
         const std::string configSection;
         const std::string extensionId;
+        const std::string compilerVersion;
         std::thread listener;
         lst::ThreadPool requestPool;
         lst::ThreadPool workerPool;

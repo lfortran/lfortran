@@ -24,6 +24,7 @@ namespace LCompilers::LanguageServerProtocol {
         lsl::Logger &logger,
         const std::string &configSection,
         const std::string &extensionId,
+        const std::string &compilerVersion,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
         std::shared_ptr<lsc::LspConfig> workspaceConfig
     ) : LspLanguageServer(
@@ -33,6 +34,7 @@ namespace LCompilers::LanguageServerProtocol {
       )
       , configSection(configSection)
       , extensionId(extensionId)
+      , compilerVersion(compilerVersion)
       , listener([this]{ listen(); })
       , requestPool("request", numRequestThreads, logger)
       , workerPool("worker", numWorkerThreads, logger)
@@ -350,6 +352,7 @@ namespace LCompilers::LanguageServerProtocol {
                         serializer,
                         transformer,
                         extensionId,
+                        compilerVersion,
                         initializeParams(),
                         *workspaceConfig,
                         *lspConfigTransformer,
@@ -417,7 +420,7 @@ namespace LCompilers::LanguageServerProtocol {
         ResponseMessage &response,
         RequestMessage &request
     ) -> void {
-        IncomingRequest method;
+        IncomingRequest method{};
         try {
             method = incomingRequestByValue(request.method);
         } catch (std::invalid_argument &/*e*/) {
@@ -445,7 +448,7 @@ namespace LCompilers::LanguageServerProtocol {
         ResponseMessage &response,
         NotificationMessage &notification
     ) -> void {
-        IncomingNotification method;
+        IncomingNotification method{};
         try {
             method = incomingNotificationByValue(notification.method);
         } catch (std::invalid_argument &/*e*/) {
