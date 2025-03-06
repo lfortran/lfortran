@@ -4781,8 +4781,10 @@ public:
                 ASR::expr_t *m_value = var->m_value;
                 if( m_value && m_value->type == ASR::exprType::StringConstant ) {
                     ASR::StringConstant_t *m_str = ASR::down_cast<ASR::StringConstant_t>(m_value);
+                    ASR::String_t* s_type = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(var->m_type));
                     std::string sliced_str;
-                    int str_length = strlen(m_str->m_s);
+                    int64_t str_length = s_type->m_len;
                     if( start <= 0 ) {
                         diag.add(Diagnostic("Substring `start` is less than one",
                             Level::Error, Stage::Semantic, {Label("", {loc})}));
