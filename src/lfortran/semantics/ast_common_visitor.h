@@ -8204,6 +8204,13 @@ public:
                     return;
                 }
             }
+        } else if (ASR::is_a<ASR::Struct_t>(*f2)) {
+            // Check for any interface overriding a constructor for the struct
+            ASR::symbol_t* interface_override_s = current_scope->resolve_symbol("~" + var_name);
+            if (interface_override_s) {
+                v = interface_override_s;
+                f2 = ASRUtils::symbol_get_past_external(interface_override_s);
+            }
         }
         if (ASR::is_a<ASR::Function_t>(*f2) ||
             ASR::is_a<ASR::GenericProcedure_t>(*f2) ||
