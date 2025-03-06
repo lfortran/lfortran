@@ -9694,7 +9694,7 @@ public:
                 bool is_default_needed = true;
                 if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
                     ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    default_init = arg_var->m_symbolic_value;
+                    default_init = arg_var->m_value;
                     if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;
                     }

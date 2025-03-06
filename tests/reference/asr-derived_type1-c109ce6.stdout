@@ -139,15 +139,9 @@
                                     Local
                                     (StructConstant
                                         2 enum_escape
-                                        [((IntrinsicElementalFunction
-                                            Achar
-                                            [(IntegerConstant 10 (Integer 4) Decimal)]
-                                            0
+                                        [((StringConstant
+                                            "\n"
                                             (String 1 1 () PointerString)
-                                            (StringConstant
-                                                "\n"
-                                                (String 1 1 () PointerString)
-                                            )
                                         ))]
                                         (StructType
                                             2 enum_escape
@@ -155,15 +149,9 @@
                                     )
                                     (StructConstant
                                         2 enum_escape
-                                        [((IntrinsicElementalFunction
-                                            Achar
-                                            [(IntegerConstant 10 (Integer 4) Decimal)]
-                                            0
+                                        [((StringConstant
+                                            "\n"
                                             (String 1 1 () PointerString)
-                                            (StringConstant
-                                                "\n"
-                                                (String 1 1 () PointerString)
-                                            )
                                         ))]
                                         (StructType
                                             2 enum_escape
