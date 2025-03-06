@@ -2047,7 +2047,7 @@ void extend_string(char** ptr, int32_t new_size /*Null-Character Counted*/, int6
     *string_capacity = new_capacity;
 }
 
-LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t desired_size /*Null-Character Counted*/
+LFORTRAN_API void _lfortran_allocate_string(char** ptr, int64_t desired_size /*Null-Character Counted*/
     , int64_t* string_size, int64_t* string_capacity) {
     if(*ptr == NULL && *string_size == 0 && *string_capacity == 0){
         // Start off with (inital_capacity >= 100).
@@ -2091,7 +2091,7 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
     x_len = y_len;
 
     if (*x == NULL) {
-        _lfortran_alloc(x, y_len+1, x_string_size, x_string_capacity); // Allocate new memory for x.
+        _lfortran_allocate_string(x, y_len+1, x_string_size, x_string_capacity); // Allocate new memory for x.
     } else {
         int8_t null_char_len = 1;
         if(*x_string_capacity < (y_len + null_char_len)){
@@ -2494,7 +2494,7 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
 
 
 // size_plus_one is the size of the string including the null character
-LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
+LFORTRAN_API void _lfortran_string_init(int64_t size_plus_one, char *s) {
     int size = size_plus_one-1;
     for (int i=0; i < size; i++) {
         s[i] = ' ';
