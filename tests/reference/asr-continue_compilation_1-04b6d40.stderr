@@ -574,3 +574,19 @@ semantic error: Character variable 'c1' only has %len and %kind members, not 'my
     |
 235 |     print *, c1%mymember
     |              ^^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument at argument (1); passed `real[:, :](4)` to `real[:, :](8)`.
+   --> tests/errors/continue_compilation_1.f90:239:22
+    |
+239 |     print *, matprod(transpose(A))
+    |                      ^^^^^^^^^^^^ 
+
+ASR verify pass error: Function trans doesn't depend on matprod but is found in its dependency list.
+   --> tests/errors/continue_compilation_1.f90:237:5 - 240:18
+    |
+237 |        subroutine trans(A)
+    |        ^^^^^^^^^^^^^^^^^^^...
+...
+    |
+240 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ failed here
