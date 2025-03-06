@@ -273,6 +273,14 @@ namespace LCompilers::LanguageServerProtocol {
                         definition.linkSupport.has_value() &&
                         definition.linkSupport.value();
                 }
+                if (textDocument.documentSymbol.has_value()) {
+                    clientSupportsDocumentSymbols = true;
+                    const DocumentSymbolClientCapabilities &documentSymbols =
+                        textDocument.documentSymbol.value();
+                    clientSupportsHierarchicalDocumentSymbols =
+                        documentSymbols.hierarchicalDocumentSymbolSupport.has_value() &&
+                        documentSymbols.hierarchicalDocumentSymbolSupport.value();
+                }
             }
             logger.debug()
                 << "clientSupportsGotoDefinition = "
@@ -282,20 +290,34 @@ namespace LCompilers::LanguageServerProtocol {
                 << "clientSupportsGotoDefinitionLinks = "
                 << clientSupportsGotoDefinitionLinks
                 << std::endl;
+            logger.debug()
+                << "clientSupportsDocumentSymbols = "
+                << clientSupportsDocumentSymbols
+                << std::endl;
+            logger.debug()
+                << "clientSupportsHierarchicalDocumentSymbols = "
+                << clientSupportsHierarchicalDocumentSymbols
+                << std::endl;
         }
 
         ServerCapabilities &capabilities = result.capabilities;
 
         if (clientSupportsGotoDefinition) {
-            ServerCapabilities_definitionProvider definitionProvider;
+            ServerCapabilities_definitionProvider &definitionProvider =
+                capabilities.definitionProvider.emplace();
             definitionProvider = true;
-            capabilities.definitionProvider = std::move(definitionProvider);
         }
 
         {
-            ServerCapabilities_renameProvider renameProvider;
+            ServerCapabilities_renameProvider &renameProvider =
+                capabilities.renameProvider.emplace();
             renameProvider = true;
-            capabilities.renameProvider = std::move(renameProvider);
+        }
+
+        if (clientSupportsDocumentSymbols) {
+            ServerCapabilities_documentSymbolProvider &documentSymbolProvider =
+                capabilities.documentSymbolProvider.emplace();
+            documentSymbolProvider = true;
         }
 
         return result;
@@ -375,8 +397,7 @@ namespace LCompilers::LanguageServerProtocol {
     // request: "textDocument/rename"
     auto LFortranLspLanguageServer::receiveTextDocument_rename(
         RenameParams &params
-    ) -> TextDocument_RenameResult
-    {
+    ) -> TextDocument_RenameResult {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
@@ -415,6 +436,136 @@ namespace LCompilers::LanguageServerProtocol {
             result = nullptr;
         }
         return result;
+    }
+
+    // request: "textDocument/documentSymbol"
+    auto LFortranLspLanguageServer::receiveTextDocument_documentSymbol(
+        DocumentSymbolParams &params
+    ) -> TextDocument_DocumentSymbolResult {
+        const DocumentUri &uri = params.textDocument.uri;
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        const std::string &path = document->path().string();
+        const std::string &text = document->text();
+        std::shared_ptr<CompilerOptions> compilerOptions =
+            getCompilerOptions(*document);
+        std::vector<lc::document_symbols> symbols =
+            lfortran.getSymbols(path, text, *compilerOptions);
+        TextDocument_DocumentSymbolResult result;
+        if (clientSupportsHierarchicalDocumentSymbols) {
+            std::map<
+                const lc::document_symbols *,
+                std::vector<const lc::document_symbols *>
+            > childrenBySymbol;
+            std::vector<const lc::document_symbols *> roots;
+            roots.reserve(symbols.size());
+            for (const auto &symbol : symbols) {
+                // Filter on the current document
+                if (document->path() == resolve(symbol.filename, *compilerOptions)) {
+                    if (symbol.parent_index >= 0) {
+                        const lc::document_symbols &parent = symbols.at(symbol.parent_index);
+                        std::vector<const lc::document_symbols *> *children = nullptr;
+                        auto iter = childrenBySymbol.find(&parent);
+                        if (iter != childrenBySymbol.end()) {
+                            children = &iter->second;
+                        } else {
+                            children = &childrenBySymbol.emplace_hint(
+                                iter,
+                                std::piecewise_construct,
+                                std::make_tuple(&parent),
+                                std::make_tuple()
+                            )->second;
+                        }
+    #ifdef DEBUG
+                        if (children == nullptr) {
+                            throw LSP_EXCEPTION(
+                                ErrorCodes::InternalError,
+                                ("Failed to collect children for symbol=\"" +
+                                parent->symbol_name + "\" in document with uri=\"" +
+                                uri + "\"")
+                            );
+                        }
+    #endif // DEBUG
+                        children->push_back(&symbol);
+                    } else {
+                        roots.push_back(&symbol);
+                    }
+                }
+            }
+            std::unique_ptr<std::vector<DocumentSymbol>> documentSymbols =
+                std::make_unique<std::vector<DocumentSymbol>>();
+            for (const lc::document_symbols *root : roots) {
+                DocumentSymbol &symbol = documentSymbols->emplace_back();
+                init(symbol, root);
+                walk(root, symbol, childrenBySymbol);
+            }
+            result = std::move(documentSymbols);
+        } else {
+            std::unique_ptr<std::vector<SymbolInformation>> infos =
+                std::make_unique<std::vector<SymbolInformation>>();
+            for (const auto &symbol : symbols) {
+                SymbolInformation &info = infos->emplace_back();
+                Location &location = info.location;
+                location.uri = "file://" + resolve(
+                    symbol.filename,
+                    *compilerOptions
+                ).string();
+                Range &range = location.range;
+                Position &start = range.start;
+                Position &end = range.end;
+                start.line = symbol.first_line - 1;  // 1-to-0 index
+                start.character = symbol.first_column - 1;  // 1-to-0 index
+                end.line = symbol.last_line - 1;  // 1-to-0 index
+                end.character = symbol.last_column;  // (0-to-1 index) + 1
+            }
+            result = std::move(infos);
+        }
+        return result;
+    }
+
+    auto LFortranLspLanguageServer::init(
+        DocumentSymbol &lspSymbol,
+        const lc::document_symbols *asrSymbol
+    ) -> void {
+        lspSymbol.name = asrSymbol->symbol_name;
+        lspSymbol.kind = asrSymbolTypeToLspSymbolKind(asrSymbol->symbol_type);
+        Position &rangeStart = lspSymbol.range.start;
+        Position &selectionRangeStart = lspSymbol.selectionRange.start;
+        rangeStart.line =
+            selectionRangeStart.line =
+            asrSymbol->first_line - 1;  // 1-to-0 index
+        rangeStart.character =
+            selectionRangeStart.character =
+            asrSymbol->first_column - 1;  // 1-to-0 index
+        Position &rangeEnd = lspSymbol.range.end;
+        Position &selectionRangeEnd = lspSymbol.selectionRange.end;
+        rangeEnd.line =
+            selectionRangeEnd.line =
+            asrSymbol->last_line - 1;  // 1-to-0 index
+        rangeEnd.character =
+            selectionRangeEnd.character =
+            asrSymbol->last_column;  // (0-to-1 index) + 1
+    }
+
+    auto LFortranLspLanguageServer::walk(
+        const lc::document_symbols *root,
+        DocumentSymbol &symbol,
+        std::map<
+            const lc::document_symbols *,
+            std::vector<const lc::document_symbols *>
+        > &childrenBySymbol
+    ) -> void {
+        auto iter = childrenBySymbol.find(root);
+        if (iter != childrenBySymbol.end()) {
+            std::vector<std::unique_ptr<DocumentSymbol>> &children =
+                symbol.children.emplace();
+            for (const lc::document_symbols *node : iter->second) {
+                std::unique_ptr<DocumentSymbol> &child = children.emplace_back(
+                    std::make_unique<DocumentSymbol>()
+                );
+                init(*child, node);
+                walk(node, *child, childrenBySymbol);
+            }
+        }
     }
 
     auto LFortranLspLanguageServer::resolve(

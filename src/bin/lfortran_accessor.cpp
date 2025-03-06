@@ -16,7 +16,7 @@ namespace LCompilers::LLanguageServer {
         const std::string &filename,
         const std::string &text,
         const CompilerOptions &compiler_options
-    ) -> std::vector<LCompilers::error_highlight> {
+    ) const -> std::vector<LCompilers::error_highlight> {
         LCompilers::FortranEvaluator fe(compiler_options);
 
         LCompilers::LocationManager lm;
@@ -70,7 +70,7 @@ namespace LCompilers::LLanguageServer {
         const std::string &filename,
         const std::string &text,
         const CompilerOptions &compiler_options
-    ) -> std::vector<LCompilers::document_symbols> {
+    ) const -> std::vector<LCompilers::document_symbols> {
         LCompilers::FortranEvaluator fe(compiler_options);
         std::vector<LCompilers::document_symbols> symbol_lists;
 
@@ -132,7 +132,7 @@ namespace LCompilers::LLanguageServer {
         const std::string &filename,
         const std::string &text,
         const CompilerOptions &compiler_options
-    ) -> std::vector<LCompilers::document_symbols> {
+    ) const -> std::vector<LCompilers::document_symbols> {
         LCompilers::FortranEvaluator fe(compiler_options);
         std::vector<LCompilers::document_symbols> symbol_lists;
 
@@ -161,6 +161,33 @@ namespace LCompilers::LLanguageServer {
                     LCompilers::LFortran::OccurenceCollector occ(symbol_name, symbol_lists, lm);
                     occ.visit_TranslationUnit(*x.result);
                 }
+            }
+        }
+
+        return symbol_lists;
+    }
+
+    auto LFortranAccessor::getSymbols(
+        const std::string &filename,
+        const std::string &text,
+        const CompilerOptions &compiler_options
+    ) const -> std::vector<LCompilers::document_symbols> {
+        LCompilers::FortranEvaluator fe(compiler_options);
+        std::vector<LCompilers::document_symbols> symbol_lists;
+
+        LCompilers::LocationManager lm;
+        {
+            LCompilers::LocationManager::FileLocations fl;
+            fl.in_filename = filename;
+            lm.files.push_back(fl);
+            lm.file_ends.push_back(text.size());
+        }
+        {
+            LCompilers::diag::Diagnostics diagnostics;
+            LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+                x = fe.get_asr2(text, lm, diagnostics);
+            if (x.ok) {
+              populateSymbolLists(x.result, lm, symbol_lists, -1);
             }
         }
 

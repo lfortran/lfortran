@@ -101,27 +101,9 @@ namespace LCompilers {
     int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
     {
         std::string input = read_file(infile);
-        LCompilers::FortranEvaluator fe(compiler_options);
-        std::vector<LCompilers::document_symbols> symbol_lists;
-
-        LCompilers::LocationManager lm;
-        {
-            LCompilers::LocationManager::FileLocations fl;
-            fl.in_filename = infile;
-            lm.files.push_back(fl);
-            lm.file_ends.push_back(input.size());
-        }
-        {
-            LCompilers::diag::Diagnostics diagnostics;
-            LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-                x = fe.get_asr2(input, lm, diagnostics);
-            if (x.ok) {
-                populate_symbol_lists(x.result, lm, symbol_lists);
-            } else {
-                std::cout << "{}";
-                return 0;
-            }
-        }
+        LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
+        std::vector<LCompilers::document_symbols> symbol_lists =
+            lfortran_accessor.getSymbols(infile, input, compiler_options);
 
         LFortranJSON test_output(LFortranJSONType::kArrayType);
         LFortranJSON range_object(LFortranJSONType::kObjectType);
@@ -224,7 +206,6 @@ namespace LCompilers {
     int get_definitions(const std::string &infile, LCompilers::CompilerOptions &compiler_options)
     {
         std::string input = read_file(infile);
-        LCompilers::FortranEvaluator fe(compiler_options);
         LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
         std::vector<LCompilers::document_symbols> symbol_lists =
             lfortran_accessor.lookupName(infile, input, compiler_options);
