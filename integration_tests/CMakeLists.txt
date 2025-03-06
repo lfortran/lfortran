@@ -9,7 +9,7 @@ endif ()
 
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
-set(NOFAST_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast")
+set(NOFAST_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast when llvm < 17")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 
 enable_testing()
@@ -184,7 +184,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NOFAST_TILL_LLVM16 NO_STD_F23)
+    set(options FAIL NOFAST_TILL_LLVM16 NO_FAST NO_STD_F23)
     set(oneValueArgs NAME INCLUDE_PATH  COPY_TO_BIN)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
@@ -214,7 +214,8 @@ macro(RUN)
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     endif()
 
-    if (FAST AND ((NOT NOFAST_LLVM16) OR (NOT RUN_NOFAST_TILL_LLVM16)))
+    if (FAST AND ((NOT NOFAST_LLVM16) OR (NOT RUN_NOFAST_TILL_LLVM16)) 
+            AND (NOT RUN_NO_FAST))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
@@ -346,7 +347,7 @@ RUN(NAME datastmt_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME max_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME max_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME min_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
-RUN(NAME min_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran NOFAST_TILL_LLVM16 fortran)
+RUN(NAME min_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran NO_FAST fortran)
 RUN(NAME minmax_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran) # arithmetic tests use goto
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
@@ -645,7 +646,7 @@ RUN(NAME product_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME reserved_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME reserved_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME reserved_03 LABELS gfortran llvm NOFAST_TILL_LLVM16)
+RUN(NAME reserved_03 LABELS gfortran llvm NO_FAST)
 
 RUN(NAME namelist_01 LABELS gfortran)
 
@@ -925,7 +926,7 @@ RUN(NAME intrinsics_234 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_235 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # lgamma algama dlgama
 RUN(NAME intrinsics_236 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bit_size, huge
 RUN(NAME intrinsics_237 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sngl
-RUN(NAME intrinsics_238 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST_TILL_LLVM16) # maskl, idl
+RUN(NAME intrinsics_238 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST) # maskl, idl
 RUN(NAME intrinsics_239 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # erfc_scaled
 RUN(NAME intrinsics_240 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshiftr
 RUN(NAME intrinsics_241 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # logical
@@ -1972,7 +1973,7 @@ RUN(NAME arrayprint_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_arr_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME binop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME binop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST_TILL_LLVM16) # NOFAST label added as we this is precision test.
+RUN(NAME binop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST) # NO_FAST label added as we this is precision test.
 RUN(NAME logical_arrays_logical_binop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME dfloat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

@@ -48,7 +48,7 @@ def run_test(backend, std):
             f"-DFAST={fast_tests} -DNOFAST_LLVM16={nofast_llvm16} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
                 cwd=cwd)
     else:
-        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} {std_string} -DNOFAST_LLVM16={nofast_llvm16}" + common,
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} {std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
@@ -96,7 +96,7 @@ def get_args():
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
-                help="Don't run unsupported tests with --fast")
+                help="Don't run unsupported tests with --fast when LLVM < 17")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
     return parser.parse_args()
