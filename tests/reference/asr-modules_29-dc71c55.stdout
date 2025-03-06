@@ -294,7 +294,7 @@
                                                 )
                                         })
                                     dependency_config_t
-                                    []
+                                    [git_target_t]
                                     [name
                                     path
                                     git]
@@ -808,7 +808,7 @@
                                                 )
                                         })
                                     executable_config_t
-                                    []
+                                    [dependency_config_t]
                                     [name
                                     source_dir
                                     main

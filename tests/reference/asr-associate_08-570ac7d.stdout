@@ -602,7 +602,7 @@
                                                 )
                                         })
                                     t_2
-                                    []
+                                    [t_1]
                                     [type_2]
                                     Source
                                     Public

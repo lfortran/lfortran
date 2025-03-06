@@ -531,7 +531,7 @@
                                                 )
                                         })
                                     package_config_t
-                                    []
+                                    [executable_config]
                                     [name
                                     executable]
                                     Source

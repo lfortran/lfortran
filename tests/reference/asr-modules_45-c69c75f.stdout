@@ -1191,7 +1191,7 @@
                                                 )
                                         })
                                     profile_config_t
-                                    []
+                                    [file_scope_flag]
                                     [profile_name
                                     compiler
                                     os_type

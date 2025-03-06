@@ -489,7 +489,7 @@
                                                 )
                                         })
                                     toml_array
-                                    []
+                                    [toml_ordered]
                                     [list]
                                     Source
                                     Public

@@ -1965,7 +1965,7 @@ public:
             }
             char* aggregate_type_name = nullptr;
             if (item.first != "~abstract_type") {
-                ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
+                ASR::ttype_t* var_type = ASRUtils::extract_type(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
@@ -1974,7 +1974,7 @@ public:
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 }
             }
-            if( aggregate_type_name ) {
+            if( aggregate_type_name && std::strcmp(aggregate_type_name, "~abstract_type") != 0) {
                 struct_dependencies.push_back(al, aggregate_type_name);
             }
         }

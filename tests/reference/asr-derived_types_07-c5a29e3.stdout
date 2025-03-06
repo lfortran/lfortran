@@ -478,7 +478,7 @@
                                                 )
                                         })
                                     toml_node
-                                    []
+                                    [toml_value]
                                     [val]
                                     Source
                                     Public
@@ -550,7 +550,7 @@
                                                 )
                                         })
                                     toml_vector
-                                    []
+                                    [toml_node]
                                     [n
                                     lst]
                                     Source
