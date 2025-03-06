@@ -59,10 +59,9 @@ contains
 
     subroutine main()
         instantiate vector_t(integer), only: IntVector => Vector
-        class(IntVector) :: v
-        integer :: i
-        v = IntVector()
-        ! call v%push_back(v, 1)
+        type(IntVector) :: v
+        call v%push_back(10)
+        if (v%elements(1) /= 10) error stop
     end subroutine
 
 end module

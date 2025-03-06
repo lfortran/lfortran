@@ -251,6 +251,19 @@
                         )
                         ()
                     )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 2 temp_struct_var__1)
+                            2 1_circle_radius
+                            (Real 4)
+                            ()
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
                     (SubroutineCall
                         2 print_radius
                         ()

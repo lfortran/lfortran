@@ -137,15 +137,26 @@
                                     toml_escape
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructConstant
                                         2 enum_escape
-                                        [(())]
+                                        [((StringConstant
+                                            "\n"
+                                            (String 1 1 () PointerString)
+                                        ))]
                                         (StructType
                                             2 enum_escape
                                         )
-                                        ()
                                     )
-                                    ()
+                                    (StructConstant
+                                        2 enum_escape
+                                        [((StringConstant
+                                            "\n"
+                                            (String 1 1 () PointerString)
+                                        ))]
+                                        (StructType
+                                            2 enum_escape
+                                        )
+                                    )
                                     Parameter
                                     (StructType
                                         2 enum_escape

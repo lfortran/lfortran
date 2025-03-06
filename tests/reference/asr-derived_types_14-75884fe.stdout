@@ -143,20 +143,30 @@
                                     toml_type
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructConstant
                                         4 enum_type
-                                        [(())
-                                        (())
-                                        (())
-                                        (())
-                                        (())
-                                        (())]
+                                        [((IntegerConstant 100 (Integer 4) Decimal))
+                                        ((IntegerConstant 101 (Integer 4) Decimal))
+                                        ((IntegerConstant 102 (Integer 4) Decimal))
+                                        ((IntegerConstant 103 (Integer 4) Decimal))
+                                        ((IntegerConstant 104 (Integer 4) Decimal))
+                                        ((IntegerConstant 105 (Integer 4) Decimal))]
                                         (StructType
                                             4 enum_type
                                         )
-                                        ()
                                     )
-                                    ()
+                                    (StructConstant
+                                        4 enum_type
+                                        [((IntegerConstant 100 (Integer 4) Decimal))
+                                        ((IntegerConstant 101 (Integer 4) Decimal))
+                                        ((IntegerConstant 102 (Integer 4) Decimal))
+                                        ((IntegerConstant 103 (Integer 4) Decimal))
+                                        ((IntegerConstant 104 (Integer 4) Decimal))
+                                        ((IntegerConstant 105 (Integer 4) Decimal))]
+                                        (StructType
+                                            4 enum_type
+                                        )
+                                    )
                                     Parameter
                                     (StructType
                                         4 enum_type
