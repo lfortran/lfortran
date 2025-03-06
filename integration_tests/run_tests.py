@@ -16,6 +16,7 @@ LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 
 fast_tests = "no"
 nofast_llvm16 = "no"
+nofast = "no"
 
 def run_cmd(cmd, cwd=None):
     print(f"+ {cmd}")
@@ -41,14 +42,14 @@ def run_test(backend, std):
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
     elif backend == "cpp":
-        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DNOFAST_LLVM16={nofast_llvm16} {std_string}" + common,
+        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DNOFAST_LLVM16={nofast_llvm16} -DNOFAST={nofast} {std_string}" + common,
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
-            f"-DFAST={fast_tests} -DNOFAST_LLVM16={nofast_llvm16} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
+            f"-DFAST={fast_tests} -DNOFAST_LLVM16={nofast_llvm16} -DNOFAST={nofast} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
                 cwd=cwd)
     else:
-        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} {std_string} -DNOFAST_LLVM16={nofast_llvm16}" + common,
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} {std_string} -DNOFAST_LLVM16={nofast_llvm16} -DNOFAST={nofast}" + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
@@ -97,6 +98,8 @@ def get_args():
                 help="Run supported tests with --fast")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
                 help="Don't run unsupported tests with --fast")
+    parser.add_argument("-nf", "--nofast", action='store_true',
+                help="Don't run unsupported tests with --fast")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
     return parser.parse_args()
@@ -109,7 +112,7 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16
+    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, nofast
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
@@ -120,6 +123,7 @@ def main():
     NO_OF_THREADS = args.no_of_threads or NO_OF_THREADS
     fast_tests = "yes" if args.fast else "no"
     nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
+    nofast="yes" if args.nofast else "no"
     for backend in args.backends:
         test_backend(backend, args.std)
 
