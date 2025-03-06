@@ -1823,9 +1823,13 @@ public:
                     ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                     ASR::symbol_t* end_sym = end_var->m_v;
                     SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                    ASR::symbol_t* past_ext = ASRUtils::symbol_get_past_external(end_sym);
+                    if (ASR::is_a<ASR::Variable_t>(*past_ext) && 
+                            ASR::down_cast<ASR::Variable_t>(past_ext)->m_symbolic_value != nullptr) {
+                        end = ASR::down_cast<ASR::Variable_t>(past_ext)->m_symbolic_value;
+                    } else if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
                         (symbol_scope->counter != current_scope->counter && is_argument &&
-                        ASRUtils::expr_value(end) == nullptr) ) {
+                        ASRUtils::expr_value(end) == nullptr) ) { 
                             end = get_transformed_function_call(end_sym);
                     }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
