@@ -275,7 +275,7 @@
                                                 )
                                         })
                                     t2
-                                    []
+                                    [t1]
                                     [val]
                                     Source
                                     Public

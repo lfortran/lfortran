@@ -594,7 +594,7 @@
                                                 )
                                         })
                                     dependency_tree_t
-                                    []
+                                    [dependency_node_t]
                                     [unit
                                     verbosity
                                     dep_dir

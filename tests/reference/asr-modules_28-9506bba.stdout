@@ -294,7 +294,7 @@
                                                 )
                                         })
                                     dependency_config_t
-                                    []
+                                    [git_target_t]
                                     [name
                                     path
                                     git]

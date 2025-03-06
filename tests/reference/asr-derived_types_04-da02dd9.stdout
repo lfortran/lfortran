@@ -1216,7 +1216,8 @@
                                                 )
                                         })
                                     toml_datetime
-                                    []
+                                    [toml_date
+                                    toml_time]
                                     [date
                                     time]
                                     Source
