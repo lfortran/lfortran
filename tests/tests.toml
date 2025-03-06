@@ -1571,6 +1571,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "read2.f90"
+run = true
+
+[[test]]
 filename = "open1.f90"
 ast = true
 ast_f90 = true

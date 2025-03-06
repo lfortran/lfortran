@@ -18,15 +18,15 @@ namespace LCompilers::LLanguageServer {
 
     class LanguageServer {
     public:
+        virtual ~LanguageServer();
+        virtual bool isTerminated() const = 0;
+        virtual void join() = 0;
+    protected:
         LanguageServer(
             MessageQueue &incomingMessages,
             MessageQueue &outgoingMessages,
             lsl::Logger &logger
         );
-        virtual ~LanguageServer();
-        virtual bool isTerminated() const = 0;
-        virtual void join() = 0;
-    protected:
         MessageQueue &incomingMessages;
         MessageQueue &outgoingMessages;
         lsl::Logger &logger;

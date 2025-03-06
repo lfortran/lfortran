@@ -511,6 +511,31 @@ jobs:
             ./build0.sh
             ./build1.sh
 
+      - name: Test Numerical Methods Fortran
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
+            cd numerical-methods-fortran
+            export PATH="$(pwd)/../src/bin:$PATH"
+            git checkout -t origin/lf6
+            git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
+            FC=lfortran make
+            ./test_fix_point.exe
+            ./test_integrate_one.exe
+            ./test_linear.exe
+            ./test_newton.exe
+            ./test_ode.exe
+            ./test_probability_distribution.exe
+            ./test_sde.exe
+            # ./plot_bogdanov_takens.exe
+            ./plot_bruinsma.exe
+            ./plot_fun1.exe
+            # ./plot_lorenz.exe
+            ./plot_lotka_volterra1.exe
+            ./plot_lotka_volterra2.exe
+            # ./plot_pendulum.exe
+            ./plot_transes_iso.exe
+
       - name: Test PRIMA
         shell: bash -e -l {0}
         run: |
@@ -810,23 +835,6 @@ jobs:
             make clean
             make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
-
-      - name: Test Numerical Methods Fortran
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
-            cd numerical-methods-fortran
-            export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf5
-            git checkout 2af27a1239263cf4dbec2b464ea1d5af94667997
-            FC=lfortran make
-            ./test_fix_point.exe
-            ./test_integrate_one.exe
-            ./test_linear.exe
-            ./test_newton.exe
-            ./test_ode.exe
-            ./test_probability_distribution.exe
-            ./test_sde.exe
 
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Override cmake version to 3.31.2

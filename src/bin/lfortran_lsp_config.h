@@ -20,7 +20,6 @@ namespace LCompilers::LanguageServerProtocol::Config {
     };
 
     struct LFortranLspConfig : public LspConfig {
-        bool openIssueReporterOnError;
         unsigned int maxNumberOfProblems;
         LFortranLspConfig_compiler compiler;
     };
@@ -28,6 +27,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
     class LFortranLspConfigTransformer : public LspConfigTransformer {
     public:
         LFortranLspConfigTransformer(
+            lsp::LspTransformer &transformer,
             lsp::LspJsonSerializer &serializer
         );
 
@@ -35,9 +35,17 @@ namespace LCompilers::LanguageServerProtocol::Config {
             const lsp::LSPAny &any
         ) const -> LFortranLspConfig_compiler;
 
+        auto lfortranLspConfig_compilerToAny(
+            const LFortranLspConfig_compiler &compiler
+        ) const -> LSPAny;
+
         auto anyToLspConfig(
             const lsp::LSPAny &any
         ) const -> std::shared_ptr<LspConfig> override;
+
+        auto lspConfigToAny(
+            const LspConfig &config
+        ) const -> LSPAny override;
     private:
         lsp::LspJsonSerializer &serializer;
 

@@ -102,6 +102,7 @@ namespace LCompilers::LLanguageServer::Interface {
         std::size_t numRequestThreads;
         std::size_t numWorkerThreads;
         std::string configSection;
+        std::string extensionId;
     };
 
     class LanguageServerInterface {
