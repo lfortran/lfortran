@@ -3675,8 +3675,32 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, char *format, double *f) 
     sscanf(str, format, f);
 }
 
+char *remove_whitespace(char *str) {
+    if (str == NULL || str[0] == '\0') {
+        return "(null)";
+    }
+    char *end;
+    // remove leading space
+    while(isspace((unsigned char)*str)) str++;
+    if(*str == 0) // All spaces?
+        return str;
+    // remove trailing space
+    end = str + strlen(str) - 1;
+    while(end > str && isspace((unsigned char)*end)) end--;
+    // Write new null terminator character
+    end[1] = '\0';
+    return str;
+}
+
 LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
-    sscanf(str, format, *s);
+    char* without_whitespace_str = remove_whitespace(str);
+    if (without_whitespace_str[0] == '\'' && without_whitespace_str[1] == '\'' &&
+        without_whitespace_str[2] == '\0'
+    ) {
+        *s = strdup("");
+    } else {
+        sscanf(str, format, *s);
+    }
 }
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i) {
@@ -4081,22 +4105,6 @@ static inline uint64_t bisection(const uint64_t vec[],
     return i1;
 }
 
-char *remove_whitespace(char *str) {
-    if (str == NULL || str[0] == '\0') {
-        return "(null)";
-    }
-    char *end;
-    // remove leading space
-    while(isspace((unsigned char)*str)) str++;
-    if(*str == 0) // All spaces?
-        return str;
-    // remove trailing space
-    end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end)) end--;
-    // Write new null terminator character
-    end[1] = '\0';
-    return str;
-}
 #endif // HAVE_RUNTIME_STACKTRACE
 
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {

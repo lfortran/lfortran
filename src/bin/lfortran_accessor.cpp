@@ -33,6 +33,7 @@ namespace LCompilers::LLanguageServer {
         }
 
         std::vector<LCompilers::error_highlight> diag_lists;
+        diag_lists.reserve(diagnostics.diagnostics.size());
         LCompilers::error_highlight h;
         for (auto &d : diagnostics.diagnostics) {
             if (compiler_options.no_warnings && d.level != LCompilers::diag::Level::Error) {

@@ -28,7 +28,9 @@ namespace LCompilers::LanguageServerProtocol {
         std::size_t numWorkerThreads,
         lsl::Logger &logger,
         const std::string &configSection,
-        std::shared_ptr<lsc::LspConfig> workspaceConfig
+        const std::string &extensionId,
+        const std::string &compilerVersion,
+        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -36,7 +38,10 @@ namespace LCompilers::LanguageServerProtocol {
         numWorkerThreads,
         logger,
         configSection,
+        extensionId,
+        compilerVersion,
         std::make_shared<lsc::LFortranLspConfigTransformer>(
+            transformer,
             serializer
         ),
         std::move(workspaceConfig)
@@ -91,8 +96,8 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
-    auto LFortranLspLanguageServer::invalidateConfigCache() -> void {
-        BaseLspLanguageServer::invalidateConfigCache();
+    auto LFortranLspLanguageServer::invalidateConfigCaches() -> void {
+        BaseLspLanguageServer::invalidateConfigCaches();
         {
             std::unique_lock<std::shared_mutex> writeLock(optionMutex);
             optionsByUri.clear();
@@ -176,8 +181,18 @@ namespace LCompilers::LanguageServerProtocol {
                     std::vector<LCompilers::error_highlight> highlights =
                         lfortran.showErrors(path, text, *compilerOptions);
 
+                    const std::shared_ptr<lsc::LFortranLspConfig> config =
+                        getLFortranConfig(uri);
+                    unsigned int numProblems = config->maxNumberOfProblems;
+                    if (highlights.size() < numProblems) {
+                        numProblems = highlights.size();
+                    }
+
                     std::vector<Diagnostic> diagnostics;
-                    for (const LCompilers::error_highlight &highlight : highlights) {
+                    diagnostics.reserve(numProblems);
+                    for (unsigned int i = 0; i < numProblems; ++i) {
+                        const LCompilers::error_highlight &highlight = highlights[i];
+
                         Position start;
                         start.line = highlight.first_line - 1;
                         start.character = highlight.first_column - 1;
@@ -217,7 +232,7 @@ namespace LCompilers::LanguageServerProtocol {
                             std::to_string(duration.count()) + "ms";
                         if (trace >= TraceValues::Verbose) {
                             LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
-                            logTraceParams.verbose = "Result: " + serializer.pprint(any);
+                            logTraceParams.verbose = "Result: " + toJsonString(any);
                         }
                         sendLogTrace(logTraceParams);
                     }

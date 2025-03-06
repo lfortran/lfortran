@@ -39,12 +39,13 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
 
     def generate_send_request(self, request_spec: LspSpec) -> None:
         request_method = request_spec["method"]
+        send_request = send_fn(request_method)
         params_spec = request_spec.get("params", None)
         params = []
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &params')
         self.gen_fn_decl(
-            send_fn(request_method),
+            send_request,
             'int',
             params=params,
             docs=request_spec.get("documentation", None),
@@ -132,37 +133,30 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
                     f'Unsupported messageDirection: {notification_spec["messageDirection"]}'
                 )
 
-    def generate_dispatch_methods(self) -> None:
+    def generate_dispatch_request(self) -> None:
         self.gen_fn_decl('dispatch', params=[
             'ResponseMessage &response',
-            'RequestMessage &request'
-        ])
-        self.newline()
-        self.gen_fn_decl('dispatch', params=[
-            'ResponseMessage &response',
-            'NotificationMessage &notification'
-        ])
-        self.newline()
-        self.gen_fn_decl('dispatch', params=[
-            'ResponseMessage &response',
-            'std::string &traceId',
-            'const LSPAny &document'
+            'RequestMessage &request',
+            'IncomingRequest method',
         ])
         self.newline()
 
-    def generate_prepare(self) -> None:
-        self.gen_fn_decl(
-            'prepare',
-            params=[
-                'std::string &buffer',
-                'const std::string &response'
-            ],
-            specs='const',
-            override=True
-        )
+    def generate_dispatch_notification(self) -> None:
+        self.gen_fn_decl('dispatch', params=[
+            'ResponseMessage &response',
+            'NotificationMessage &notification',
+            'IncomingNotification method',
+        ])
         self.newline()
 
-    def generate_require_message_params(self) -> None:
+    def generate_dispatch_response(self) -> None:
+        self.gen_fn_decl('dispatch', params=[
+            'ResponseMessage &response',
+            'const std::string &method',
+        ])
+        self.newline()
+
+    def generate_require_request_params(self) -> None:
         self.gen_fn_decl(
             'requireMessageParams',
             ret_type='MessageParams &',
@@ -172,6 +166,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
             specs='const'
         )
         self.newline()
+
+    def generate_require_notification_params(self) -> None:
         self.gen_fn_decl(
             'requireMessageParams',
             ret_type='MessageParams &',
@@ -186,48 +182,100 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.gen_constructor_decl('LspLanguageServer', params=[
             'ls::MessageQueue &incomingMessages',
             'ls::MessageQueue &outgoingMessages',
-            'std::size_t numRequestThreads',
-            'std::size_t numWorkerThreads',
             'lsl::Logger &logger',
-            'const std::string &configSection'
         ])
         self.newline()
 
-    def generate_synchronized_send(self) -> None:
-        self.gen_fn_decl('send', params=[
-            'const std::string &request',
-            'std::size_t sendId'
-        ])
+    def generate_fields(self) -> None:
+        self.write('LspTransformer transformer;')
+        self.write('LspJsonSerializer serializer;')
+        self.write('std::atomic_int serialRequestId = 0;')
         self.newline()
 
-    def generate_handle(self) -> None:
-        self.gen_fn_decl('handle', params=[
-            'const std::string &incoming',
-            'std::size_t sendId'
-        ])
+    def generate_next_request_id(self) -> None:
+        self.gen_fn_decl(
+            'nextRequestId',
+            ret_type='int',
+        )
         self.newline()
 
-    def generate_log_receive_trace(self) -> None:
-        self.gen_fn_decl('logReceiveTrace', params=[
-            'const std::string &messageType',
-            'const std::string &traceId',
-            'const std::optional<MessageParams> &optionalParams'
-        ])
+    def generate_send_request_message(self) -> None:
+        self.gen_fn_decl(
+            'send',
+            params=[
+                'const RequestMessage &request',
+            ],
+            virtual=True,
+        )
         self.newline()
 
-    def generate_log_receive_response_trace(self) -> None:
-        self.gen_fn_decl('logReceiveResponseTrace', params=[
-            'const std::string &traceId',
-            'const LSPAny &document'
-        ])
+    def generate_build_request(self) -> None:
+        self.gen_fn_decl(
+            'buildRequest',
+            'RequestMessage',
+            params=[
+                'const std::string &method',
+            ],
+        )
         self.newline()
 
-    def generate_log_send_response_trace(self) -> None:
-        self.gen_fn_decl('logSendResponseTrace', params=[
-            'const std::string &traceId',
-            'const std::chrono::time_point<std::chrono::high_resolution_clock> &start',
-            'const LSPAny &response'
-        ])
+    def generate_send_custom_request(self) -> None:
+        self.gen_fn_decl(
+            'sendRequest',
+            'int',
+            params=[
+                'const std::string &method',
+                'MessageParams &params',
+            ],
+        )
+        self.newline()
+
+    def generate_send_custom_request_no_params(self) -> None:
+        self.gen_fn_decl(
+            'sendRequest',
+            'int',
+            params=[
+                'const std::string &method',
+            ],
+        )
+        self.newline()
+
+    def generate_send_notification_message(self) -> None:
+        self.gen_fn_decl(
+            'send',
+            params=[
+                'const NotificationMessage &notification',
+            ],
+        )
+        self.newline()
+
+    def generate_build_notification(self) -> None:
+        self.gen_fn_decl(
+            'buildNotification',
+            'NotificationMessage',
+            params=[
+                'const std::string &method',
+            ],
+        )
+        self.newline()
+
+    def generate_send_custom_notification(self) -> None:
+        self.gen_fn_decl(
+            'sendNotification',
+            params=[
+                'const std::string &method',
+                'MessageParams &params',
+            ],
+        )
+        self.newline()
+
+    def generate_send_custom_notification_no_params(self) -> None:
+        self.gen_fn_decl(
+            'sendNotification',
+            params=[
+                'const std::string &method',
+            ],
+        )
         self.newline()
 
     def generate_code(self) -> None:
@@ -236,11 +284,6 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.pragma_once()
         self.newline()
         self.gen_include('atomic')
-        self.gen_include('chrono')
-        self.gen_include('condition_variable')
-        self.gen_include('mutex')
-        self.gen_include('thread')
-        self.gen_include('unordered_map')
         self.newline()
         self.gen_include('server/language_server.h')
         self.gen_include('server/logger.h')
@@ -251,52 +294,23 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         with self.gen_namespace(self.namespace):
             self.write('namespace ls = LCompilers::LLanguageServer;')
             self.write('namespace lsl = LCompilers::LLanguageServer::Logging;')
-            self.write('namespace lst = LCompilers::LLanguageServer::Threading;')
             self.newline()
             with self.gen_class('LspLanguageServer', sups=['ls::LanguageServer']):
-                with self.gen_public():
-                    self.generate_constructor()
-                    self.write('auto isTerminated() const -> bool override;')
                 with self.gen_protected():
-                    self.write('const std::string configSection;')
-                    self.write('std::thread listener;')
-                    self.write('lst::ThreadPool requestPool;')
-                    self.write('lst::ThreadPool workerPool;')
-                    self.write('std::atomic_size_t serialSendId = 0;')
-                    self.write('std::atomic_size_t pendingSendId = 0;')
-                    self.write('std::condition_variable sent;')
-                    self.write('std::mutex sentMutex;')
-                    self.write('LspJsonSerializer serializer;')
-                    self.write('LspTransformer transformer;')
-                    self.write('std::unique_ptr<InitializeParams> _initializeParams;')
-                    self.write('std::atomic_bool _initialized = false;')
-                    self.write('std::atomic_bool _shutdown = false;')
-                    self.write('std::atomic_bool _exit = false;')
-                    self.write('std::atomic_int serialRequestId = 0;')
-                    self.write('std::unordered_map<int, std::string> callbacksById;')
-                    self.write('std::mutex callbackMutex;')
-                    self.write('std::atomic<TraceValues> trace{TraceValues::Off};')
-                    self.newline()
-                    self.write('auto nextSendId() -> std::size_t;')
-                    self.write('auto nextRequestId() -> int;')
-                    self.write('auto isInitialized() const -> bool;')
-                    self.write('auto isShutdown() const -> bool;')
-                    self.write('auto isRunning() const -> bool;')
-                    self.write('auto join() -> void override;')
-                    self.write('auto listen() -> void;')
-                    self.write('auto notifySent() -> void;')
-                    self.write('auto to_string(const RequestId &requestId) -> std::string;')
-                    self.newline()
-                    self.generate_synchronized_send()
-                    self.generate_handle()
-                    self.generate_log_receive_trace()
-                    self.generate_log_receive_response_trace()
-                    self.generate_log_send_response_trace()
-                    self.write('auto initializeParams() const -> const InitializeParams &;')
-                    self.write('auto assertInitialized() -> void;')
-                    self.write('auto assertRunning() -> void;')
-                    self.newline()
-                    self.generate_dispatch_methods()
-                    self.generate_prepare()
-                    self.generate_require_message_params()
+                    self.generate_constructor()
+                    self.generate_fields()
+                    self.generate_next_request_id()
+                    self.generate_send_request_message()
+                    self.generate_build_request()
+                    self.generate_send_custom_request()
+                    self.generate_send_custom_request_no_params()
+                    self.generate_send_notification_message()
+                    self.generate_build_notification()
+                    self.generate_send_custom_notification()
+                    self.generate_send_custom_notification_no_params()
+                    self.generate_dispatch_request()
+                    self.generate_dispatch_notification()
+                    self.generate_dispatch_response()
+                    self.generate_require_request_params()
+                    self.generate_require_notification_params()
                     super().generate_code()

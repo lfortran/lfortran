@@ -30,11 +30,13 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t numWorkerThreads,
             lsl::Logger &logger,
             const std::string &configSection,
-            std::shared_ptr<lsc::LspConfig> workspaceConfig
+            const std::string &extensionId,
+            const std::string &compilerVersion,
+            std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
         );
     protected:
 
-        auto invalidateConfigCache() -> void override;
+        auto invalidateConfigCaches() -> void override;
 
         // ================= //
         // Incoming Requests //
