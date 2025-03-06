@@ -515,7 +515,7 @@ namespace LCompilers::LanguageServerProtocol {
                 start.line = symbol.first_line - 1;  // 1-to-0 index
                 start.character = symbol.first_column - 1;  // 1-to-0 index
                 end.line = symbol.last_line - 1;  // 1-to-0 index
-                end.character = symbol.last_column - 1;  // 1-to-0 index
+                end.character = symbol.last_column;  // (0-to-1 index) + 1
             }
             result = std::move(infos);
         }
@@ -543,7 +543,7 @@ namespace LCompilers::LanguageServerProtocol {
             asrSymbol->last_line - 1;  // 1-to-0 index
         rangeEnd.character =
             selectionRangeEnd.character =
-            asrSymbol->last_column - 1;  // 1-to-0 index
+            asrSymbol->last_column;  // (0-to-1 index) + 1
     }
 
     auto LFortranLspLanguageServer::walk(
