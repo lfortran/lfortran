@@ -782,7 +782,7 @@ class CCPPDSUtils {
                 func_decls += indent + "inline " + signature + ";\n";
                 signature = indent + signature;
                 tmp_gen += indent + signature + " {\n";
-                tmp_gen += indent + tab + "return strcmp(a, b) == 0;\n";
+                tmp_gen += indent + tab + "return _lfortran_str_compare(a, b) == 0;\n";
             } else {
                 std::string signature = "bool " + cmp_func + "(" + element_type + " a, " + element_type + " b)";
                 func_decls += indent + "inline " + signature + ";\n";

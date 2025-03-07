@@ -51,6 +51,10 @@ char* str_unescape_fortran(Allocator &al, LCompilers::Str &s, char ch);
 bool str_compare(const unsigned char *pos, std::string s);
 void rtrim(std::string& str);
 
+// Compares two strings (similar to `strcmp`), but respects
+// Fortran's character comparison semantics (characters are unsigned).
+int str_compare_fortran(const char* s1, const char* s2);
+
 } // namespace LCompilers
 
 #endif // LFORTRAN_STRING_UTILS_H
