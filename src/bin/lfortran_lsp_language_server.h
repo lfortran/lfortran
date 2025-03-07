@@ -59,6 +59,10 @@ namespace LCompilers::LanguageServerProtocol {
             DocumentSymbolParams &params
         ) -> TextDocument_DocumentSymbolResult override;
 
+        auto receiveTextDocument_hover(
+            HoverParams &params
+        ) -> TextDocument_HoverResult override;
+
         // ====================== //
         // Incoming Notifications //
         // ====================== //
@@ -96,6 +100,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool clientSupportsGotoDefinitionLinks = false;
         std::atomic_bool clientSupportsDocumentSymbols = false;
         std::atomic_bool clientSupportsHierarchicalDocumentSymbols = false;
+        std::atomic_bool clientSupportsHover = false;
 
         auto validate(std::shared_ptr<LspTextDocument> document) -> void;
         auto getCompilerOptions(

@@ -1,3 +1,4 @@
+#include "bin/lfortran_lsp_config.h"
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -281,6 +282,7 @@ namespace LCompilers::LanguageServerProtocol {
                         documentSymbols.hierarchicalDocumentSymbolSupport.has_value() &&
                         documentSymbols.hierarchicalDocumentSymbolSupport.value();
                 }
+                clientSupportsHover = textDocument.hover.has_value();
             }
             logger.debug()
                 << "clientSupportsGotoDefinition = "
@@ -297,6 +299,10 @@ namespace LCompilers::LanguageServerProtocol {
             logger.debug()
                 << "clientSupportsHierarchicalDocumentSymbols = "
                 << clientSupportsHierarchicalDocumentSymbols
+                << std::endl;
+            logger.debug()
+                << "clientSupportsHover = "
+                << clientSupportsHover
                 << std::endl;
         }
 
@@ -318,6 +324,12 @@ namespace LCompilers::LanguageServerProtocol {
             ServerCapabilities_documentSymbolProvider &documentSymbolProvider =
                 capabilities.documentSymbolProvider.emplace();
             documentSymbolProvider = true;
+        }
+
+        if (clientSupportsHover) {
+            ServerCapabilities_hoverProvider &hoverProvider =
+                capabilities.hoverProvider.emplace();
+            hoverProvider = true;
         }
 
         return result;
@@ -475,7 +487,7 @@ namespace LCompilers::LanguageServerProtocol {
                                 std::make_tuple()
                             )->second;
                         }
-    #ifdef DEBUG
+#ifdef DEBUG
                         if (children == nullptr) {
                             throw LSP_EXCEPTION(
                                 ErrorCodes::InternalError,
@@ -484,7 +496,7 @@ namespace LCompilers::LanguageServerProtocol {
                                 uri + "\"")
                             );
                         }
-    #endif // DEBUG
+#endif // DEBUG
                         children->push_back(&symbol);
                     } else {
                         roots.push_back(&symbol);
@@ -518,6 +530,60 @@ namespace LCompilers::LanguageServerProtocol {
                 end.character = symbol.last_column;  // (0-to-1 index) + 1
             }
             result = std::move(infos);
+        }
+        return result;
+    }
+
+    auto LFortranLspLanguageServer::receiveTextDocument_hover(
+        HoverParams &params
+    ) -> TextDocument_HoverResult {
+        const DocumentUri &uri = params.textDocument.uri;
+        const Position &pos = params.position;
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        const std::string &path = document->path().string();
+        const std::string &text = document->text();
+        // NOTE: Copy the compiler options since we will modify them.
+        CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
+        compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
+        std::vector<lc::document_symbols> symbols =
+            lfortran.lookupName(path, text, compilerOptions);
+        TextDocument_HoverResult result;
+        if (symbols.size() > 0) {
+            lc::document_symbols &symbol = symbols.front();
+            std::unique_ptr<Hover> hover = std::make_unique<Hover>();
+
+            std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(uri);
+
+            MarkupContent content;
+            content.kind = MarkupKind::Markdown;
+            content.value = "```fortran\n";
+            uint32_t length = (symbol.last_pos - symbol.first_pos) + 1;
+            std::string preview = text.substr(symbol.first_pos, length);
+            preview = lfortran.format(
+                path,
+                preview,
+                compilerOptions,
+                false,
+                config->log.indentSize,
+                true
+            );
+            content.value.append(preview);
+            content.value.append("\n```");
+
+            Hover_contents &contents = hover->contents;
+            contents = std::move(content);
+
+            Range &range = hover->range.emplace();
+            Position &start = range.start;
+            Position &end = range.end;
+            start.line = symbol.first_line - 1;  // 1-to-0 index
+            start.character = symbol.first_column - 1;  // 1-to-0 index
+            end.line = symbol.last_line - 1;  // 1-to-0 index
+            end.character = symbol.last_column;  // (1-to-0 index) + 1
+            result = std::move(hover);
+        } else {
+            result = nullptr;
         }
         return result;
     }

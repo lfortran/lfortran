@@ -76,6 +76,15 @@ namespace LCompilers::LLanguageServer {
                 }
             }
         }
+
+        auto format(
+            const std::string &filename,
+            const std::string &text,
+            const CompilerOptions &compiler_options,
+            bool color,
+            int indent,
+            bool indent_unit
+        ) const -> std::string;
     };
 
 } // namespace LCompilers::LLanguageServer
