@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <stdexcept>
 
 #include <libasr/asr.h>
 #include <libasr/asr_lookup_name.h>

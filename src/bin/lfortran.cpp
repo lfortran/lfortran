@@ -1,7 +1,6 @@
 #include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
-#include <stdexcept>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
