@@ -9751,7 +9751,7 @@ public:
                 SymbolTable* scope = current_scope;
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(
                     ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope)));
+                    to_lower(x_m_member[0].m_name), scope, nullptr, 0, x_m_member[1].m_args, x_m_member[1].n_args)));
             } else {
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;
