@@ -173,7 +173,7 @@ namespace LCompilers::LLanguageServer {
         bool color,
         int indent,
         bool indent_unit
-    ) const -> std::string {
+    ) const -> LCompilers::Result<std::string> {
         LCompilers::FortranEvaluator fe(compiler_options);
         LCompilers::LocationManager lm;
         LCompilers::diag::Diagnostics diagnostics;
@@ -188,7 +188,7 @@ namespace LCompilers::LLanguageServer {
         std::cerr << diagnostics.render(lm, compiler_options);
         if (!r.ok) {
             LCOMPILERS_ASSERT(diagnostics.has_error())
-            throw std::logic_error("fe.get_ast2(text, lm, diagnostics) failed.");
+            return LCompilers::Error();
         }
         LCompilers::LFortran::AST::TranslationUnit_t* ast = r.result;
 

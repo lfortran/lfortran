@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include <libasr/exception.h>
 #include <libasr/lsp_interface.h>
 #include <libasr/utils.h>
 
@@ -84,7 +85,7 @@ namespace LCompilers::LLanguageServer {
             bool color,
             int indent,
             bool indent_unit
-        ) const -> std::string;
+        ) const -> LCompilers::Result<std::string>;
     };
 
 } // namespace LCompilers::LLanguageServer

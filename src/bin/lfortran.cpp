@@ -534,20 +534,22 @@ int format(const std::string &infile, bool inplace, bool color, int indent,
     std::string input = read_file(infile);
     LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
 
-    try {
-        if (inplace) color = false;
-        std::string source = lfortran_accessor.format(
-            infile, input, compiler_options, color, indent, indent_unit
-        );
-        if (inplace) {
-            std::ofstream out;
-            out.open(infile);
-            out << source;
-        } else {
-            std::cout << source;
-        }
-    } catch (const std::logic_error &e) {
+    if (inplace) color = false;
+    LCompilers::Result<std::string> result = lfortran_accessor.format(
+        infile, input, compiler_options, color, indent, indent_unit
+    );
+
+    if (!result.ok) {
         return 2;
+    }
+
+    std::string &source = result.result;
+    if (inplace) {
+        std::ofstream out;
+        out.open(infile);
+        out << source;
+    } else {
+        std::cout << source;
     }
 
     return 0;

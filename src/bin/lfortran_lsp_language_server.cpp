@@ -560,7 +560,7 @@ namespace LCompilers::LanguageServerProtocol {
             content.value = "```fortran\n";
             uint32_t length = (symbol.last_pos - symbol.first_pos) + 1;
             std::string preview = text.substr(symbol.first_pos, length);
-            preview = lfortran.format(
+            lc::Result<std::string> formatted = lfortran.format(
                 path,
                 preview,
                 compilerOptions,
@@ -568,7 +568,11 @@ namespace LCompilers::LanguageServerProtocol {
                 config->log.indentSize,
                 true
             );
-            content.value.append(preview);
+            if (formatted.ok) {
+                content.value.append(formatted.result);
+            } else {
+                content.value.append(preview);
+            }
             content.value.append("\n```");
 
             Hover_contents &contents = hover->contents;
