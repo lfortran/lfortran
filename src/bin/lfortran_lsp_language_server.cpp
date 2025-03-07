@@ -1,4 +1,3 @@
-#include "bin/lfortran_lsp_config.h"
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -17,6 +16,7 @@
 #include <bin/CLI11.hpp>
 
 #include <bin/lfortran_command_line_parser.h>
+#include <bin/lfortran_lsp_config.h>
 #include <bin/lfortran_lsp_language_server.h>
 
 namespace LCompilers::LanguageServerProtocol {
