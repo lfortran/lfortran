@@ -14,12 +14,12 @@
                                     []
                                     Local
                                     (ComplexConstant
-                                        -234.230000
+                                        -234.229996
                                         3.000000
                                         (Complex 4)
                                     )
                                     (ComplexConstant
-                                        -234.230000
+                                        -234.229996
                                         3.000000
                                         (Complex 4)
                                     )
@@ -568,7 +568,7 @@
                     (Assignment
                         (Var 2 axva)
                         (ComplexConstant
-                            -234.230000
+                            -234.229996
                             3.000000
                             (Complex 4)
                         )

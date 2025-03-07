@@ -612,12 +612,12 @@
                         (ArrayBroadcast
                             (RealUnaryMinus
                                 (RealConstant
-                                    83.030000
+                                    83.029999
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    -83.030000
+                                    -83.029999
                                     (Real 4)
                                 )
                             )
@@ -745,12 +745,12 @@
                                         Sub
                                         (RealUnaryMinus
                                             (RealConstant
-                                                83.030000
+                                                83.029999
                                                 (Real 4)
                                             )
                                             (Real 4)
                                             (RealConstant
-                                                -83.030000
+                                                -83.029999
                                                 (Real 4)
                                             )
                                         )

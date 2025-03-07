@@ -31,7 +31,7 @@ define i32 @main(i32 %0, i8** %1) {
   %6 = alloca %complex_8, align 8
   %7 = getelementptr %complex_8, %complex_8* %6, i32 0, i32 0
   %8 = getelementptr %complex_8, %complex_8* %6, i32 0, i32 1
-  store double 1.050000e+00, double* %7, align 8
+  store double 0x3FF0CCCCC0000000, double* %7, align 8
   store double 1.050000e+00, double* %8, align 8
   %9 = load %complex_8, %complex_8* %6, align 8
   store %complex_8 %9, %complex_8* @complex_dp_param.v, align 8
