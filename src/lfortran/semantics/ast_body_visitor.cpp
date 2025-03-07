@@ -3031,8 +3031,18 @@ public:
                         array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
                     }
                 } else {
+                    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) && 
+                          ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value)->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Maskl) &&
+                            ASRUtils::extract_kind_from_ttype_t(target_type) == 8) {
+                        // Do return_type = kind(8) 
+                        ASR::ttype_t* int_64 = ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 8));
+                        ASR::IntrinsicElementalFunction_t* int_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+                        value = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, value->base.loc, int_func->m_intrinsic_id,
+                            int_func->m_args, int_func->n_args, int_func->m_overload_id, int_64, int_func->m_value));
+                    } else {
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type, diag);
+                    }
                 }
             }
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
