@@ -105,11 +105,11 @@ jobs:
 
       - name: Test with specific Fortran standard
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             cd ./integration_tests
             ./run_tests.py -b llvm --std=f23
-            ./run_tests.py -b llvm -f --std=f23
+            ./run_tests.py -b llvm -f --std=f23 -nf16
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
@@ -439,7 +439,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm -f -nf16
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -511,6 +511,31 @@ jobs:
             ./build0.sh
             ./build1.sh
 
+      - name: Test Numerical Methods Fortran
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
+            cd numerical-methods-fortran
+            export PATH="$(pwd)/../src/bin:$PATH"
+            git checkout -t origin/lf6
+            git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
+            FC=lfortran make
+            ./test_fix_point.exe
+            ./test_integrate_one.exe
+            ./test_linear.exe
+            ./test_newton.exe
+            ./test_ode.exe
+            ./test_probability_distribution.exe
+            ./test_sde.exe
+            # ./plot_bogdanov_takens.exe
+            ./plot_bruinsma.exe
+            ./plot_fun1.exe
+            # ./plot_lorenz.exe
+            ./plot_lotka_volterra1.exe
+            ./plot_lotka_volterra2.exe
+            # ./plot_pendulum.exe
+            ./plot_transes_iso.exe
+
       - name: Test PRIMA
         shell: bash -e -l {0}
         run: |
@@ -573,7 +598,7 @@ jobs:
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 0002f048c4501e7000af91408a2b5d02645ddc32
+            git checkout 33c078020dcea467e763b52879a480450a0494fe
             cd src
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               CC=clang
@@ -811,23 +836,6 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
-      - name: Test Numerical Methods Fortran
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
-            cd numerical-methods-fortran
-            export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf5
-            git checkout 2af27a1239263cf4dbec2b464ea1d5af94667997
-            FC=lfortran make
-            ./test_fix_point.exe
-            ./test_integrate_one.exe
-            ./test_linear.exe
-            ./test_newton.exe
-            ./test_ode.exe
-            ./test_probability_distribution.exe
-            ./test_sde.exe
-
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Override cmake version to 3.31.2
         if: contains(matrix.os, 'ubuntu')
@@ -1057,7 +1065,16 @@ jobs:
             cmake --build . -j16 --target install
 
       # LLVM 10-19 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 10-19
+      - name: Test Linux LLVM 10-16
+        if: ${{(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '13') || contains(matrix.llvm-version, '14') || contains(matrix.llvm-version, '15') || contains(matrix.llvm-version, '16'))}}
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f -nf16
+
+      - name: Test Linux LLVM 17-19
+        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19'))}}
         shell: bash -e -l {0}
         run: |
             ctest --output-on-failure
@@ -1309,7 +1326,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm -f -nf16
 
       - name: Test OpenMP
         shell: bash -e -l {0}

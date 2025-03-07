@@ -25,6 +25,20 @@ namespace LCompilers::LanguageServerProtocol {
         return buffer;
     }
 
+    auto LspJsonSerializer::serialize(const LSPObject &object) const -> std::string {
+        std::string buffer;
+        buffer.reserve(1024);
+        serializeObject(buffer, object);
+        return buffer;
+    }
+
+    auto LspJsonSerializer::serialize(const LSPArray &array) const -> std::string {
+        std::string buffer;
+        buffer.reserve(1024);
+        serializeArray(buffer, array);
+        return buffer;
+    }
+
     auto LspJsonSerializer::pprint(
         const LSPAny &any
     ) const -> std::string {
@@ -35,20 +49,20 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LspJsonSerializer::pprint(
-        const LSPArray &array
-    ) const -> std::string {
-        std::string buffer;
-        buffer.reserve(2048);
-        pprintArray(buffer, array, 0);
-        return buffer;
-    }
-
-    auto LspJsonSerializer::pprint(
         const LSPObject &object
     ) const -> std::string {
         std::string buffer;
         buffer.reserve(2048);
         pprintObject(buffer, object, 0);
+        return buffer;
+    }
+
+    auto LspJsonSerializer::pprint(
+        const LSPArray &array
+    ) const -> std::string {
+        std::string buffer;
+        buffer.reserve(2048);
+        pprintArray(buffer, array, 0);
         return buffer;
     }
 

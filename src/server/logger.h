@@ -36,6 +36,7 @@ namespace LCompilers::LLanguageServer::Logging {
     class Formatter {
     public:
         Formatter(Logger &logger, Level level, const std::string &prompt);
+        auto operator<<(bool boolean) -> Formatter &;
         auto operator<<(unsigned char c) -> Formatter &;
         auto operator<<(char c) -> Formatter &;
         auto operator<<(short unsigned int value) -> Formatter &;
@@ -83,6 +84,7 @@ namespace LCompilers::LLanguageServer::Logging {
         auto debug() -> Formatter;
         auto trace() -> Formatter;
 
+        auto operator<<(bool boolean) -> Logger &;
         auto operator<<(unsigned char c) -> Logger &;
         auto operator<<(char c) -> Logger &;
         auto operator<<(short unsigned int value) -> Logger &;

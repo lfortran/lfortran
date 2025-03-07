@@ -156,6 +156,13 @@ namespace LCompilers::LLanguageServer::Logging {
         }
     }
 
+    auto Formatter::operator<<(bool boolean) -> Formatter & {
+        if (enabled) {
+            logger << boolean;
+        }
+        return *this;
+    }
+
     auto Formatter::operator<<(unsigned char c) -> Formatter & {
         if (enabled) {
             logger << c;
@@ -248,6 +255,10 @@ namespace LCompilers::LLanguageServer::Logging {
         } else {
             throw std::runtime_error("Logger has already been closed.");
         }
+    }
+
+    auto Logger::operator<<(bool boolean) -> Logger & {
+        return this->operator<<(boolean ? "true" : "false");
     }
 
     auto Logger::operator<<(unsigned char c) -> Logger & {

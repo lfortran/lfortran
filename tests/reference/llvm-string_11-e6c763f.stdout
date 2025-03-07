@@ -295,12 +295,12 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %mystring = alloca i8*, align 8
   %2 = call i8* @_lfortran_malloc(i32 31)
-  call void @_lfortran_string_init(i32 31, i8* %2)
+  call void @_lfortran_string_init(i64 31, i8* %2)
   store i8* %2, i8** %mystring, align 8
   %3 = load i8*, i8** %mystring, align 8
   %teststring = alloca i8*, align 8
   %4 = call i8* @_lfortran_malloc(i32 11)
-  call void @_lfortran_string_init(i32 11, i8* %4)
+  call void @_lfortran_string_init(i64 11, i8* %4)
   store i8* %4, i8** %teststring, align 8
   %5 = load i8*, i8** %teststring, align 8
   call void @_lfortran_strcpy_pointer_string(i8** %mystring, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @0, i32 0, i32 0))
@@ -336,7 +336,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc(i32)
 
-declare void @_lfortran_string_init(i32, i8*)
+declare void @_lfortran_string_init(i64, i8*)
 
 declare void @_lfortran_strcpy_pointer_string(i8**, i8*)
 

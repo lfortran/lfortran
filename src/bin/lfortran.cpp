@@ -55,6 +55,7 @@
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
 
+#include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
 
@@ -530,30 +531,18 @@ int format(const std::string &infile, bool inplace, bool color, int indent,
     bool indent_unit, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
+    LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
 
-    LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::LocationManager lm;
-    LCompilers::diag::Diagnostics diagnostics;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = infile;
-        lm.files.push_back(fl);
-        lm.file_ends.push_back(input.size());
-    }
-    LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
-        r = fe.get_ast2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(lm, compiler_options);
-    if (!r.ok) {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
+    if (inplace) color = false;
+    LCompilers::Result<std::string> result = lfortran_accessor.format(
+        infile, input, compiler_options, color, indent, indent_unit
+    );
+
+    if (!result.ok) {
         return 2;
     }
-    LCompilers::LFortran::AST::TranslationUnit_t* ast = r.result;
 
-    // AST -> Source
-    if (inplace) color = false;
-    std::string source = LCompilers::LFortran::ast_to_src(*ast, color,
-        indent, indent_unit);
-
+    std::string &source = result.result;
     if (inplace) {
         std::ofstream out;
         out.open(infile);

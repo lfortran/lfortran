@@ -316,6 +316,16 @@
                                                     name
                                                     Public
                                                 ),
+                                            1_fpm_new_settings_with_bare:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_fpm_new_settings_with_bare
+                                                    6 with_bare
+                                                    fpm_new_settings
+                                                    []
+                                                    with_bare
+                                                    Public
+                                                ),
                                             1_fpm_new_settings_with_example:
                                                 (ExternalSymbol
                                                     7
@@ -334,6 +344,16 @@
                                                     fpm_new_settings
                                                     []
                                                     with_executable
+                                                    Public
+                                                ),
+                                            1_fpm_new_settings_with_full:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_fpm_new_settings_with_full
+                                                    6 with_full
+                                                    fpm_new_settings
+                                                    []
+                                                    with_full
                                                     Public
                                                 ),
                                             1_fpm_new_settings_with_lib:
@@ -523,6 +543,32 @@
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_example
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                            ()
+                                        )
+                                        (Assignment
+                                            (StructInstanceMember
+                                                (Var 7 cmd_settings)
+                                                7 1_fpm_new_settings_with_full
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                            ()
+                                        )
+                                        (Assignment
+                                            (StructInstanceMember
+                                                (Var 7 cmd_settings)
+                                                7 1_fpm_new_settings_with_bare
                                                 (Logical 4)
                                                 ()
                                             )

@@ -787,6 +787,10 @@ asr = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
+filename = "../integration_tests/struct_allocate.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
@@ -1569,6 +1573,10 @@ run = true
 filename = "read1.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "read2.f90"
+run = true
 
 [[test]]
 filename = "open1.f90"

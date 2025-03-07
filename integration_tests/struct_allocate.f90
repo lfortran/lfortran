@@ -1,4 +1,4 @@
-module p
+module mod_struct_allocate
     implicit none
     integer, parameter, private :: mxdim = 3
     type :: rp1d
@@ -6,21 +6,14 @@ module p
     end type
 
     type :: sds
-        integer, dimension(:), pointer :: dims
         type(rp1d), dimension(mxdim) :: scales
-        integer :: f
     end type
 end module
 
 program struct_allocate
-    use p
+    use mod_struct_allocate
     implicit none
     type(sds) :: s
-    ! allocate(s%dims(2))
-    ! allocate(s%scales(2)%f(2))
-    ! s%scales(2)%f=[3,4]
-    ! print *, 'Scale 0:', s%scales(2)%f(1)
-    allocate(s%scales(1)%f(2))
-    ! s%scales(1)%f=[1,2]
-    ! print *, 'Scale 0:', s%scales(1)%f(1)
+    allocate(s%scales(1)%f(4))
+    allocate(s%scales(2)%f(3))
 end program

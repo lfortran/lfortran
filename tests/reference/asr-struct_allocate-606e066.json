@@ -1,0 +1,13 @@
+{
+    "basename": "asr-struct_allocate-606e066",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/struct_allocate.f90",
+    "infile_hash": "8f826ffcc557e1f998f9fb99e619bed6aa68bc3f5e45768ad8fa12a9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-struct_allocate-606e066.stdout",
+    "stdout_hash": "1bf9839f423741072f5f10307ddd2b45f7072a5446dc97dbc44e4686",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

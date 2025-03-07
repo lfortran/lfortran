@@ -48,45 +48,6 @@ namespace LCompilers {
         void RebuildJSON();
     };
 
-    template <typename T>
-    void populate_symbol_lists(
-        T* x,
-        LCompilers::LocationManager lm,
-        std::vector<LCompilers::document_symbols> &symbol_lists
-    ) {
-        LCompilers::document_symbols loc;
-        for (auto &a : x->m_symtab->get_scope()) {
-            std::string symbol_name = a.first;
-            uint32_t first_line;
-            uint32_t last_line;
-            uint32_t first_column;
-            uint32_t last_column;
-            std::string filename;
-            lm.pos_to_linecol(a.second->base.loc.first, first_line,
-                first_column, filename);
-            lm.pos_to_linecol(a.second->base.loc.last, last_line,
-                last_column, filename);
-            loc.first_column = first_column;
-            loc.last_column = last_column;
-            loc.first_line = first_line;
-            loc.last_line = last_line;
-            loc.symbol_name = symbol_name;
-            loc.filename = filename;
-            loc.symbol_type = a.second->type;
-            symbol_lists.push_back(loc);
-            if ( LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*a.second) ) {
-                LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(a.second);
-                populate_symbol_lists(m, lm, symbol_lists);
-            } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(*a.second) ) {
-                LCompilers::ASR::Function_t *f = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(a.second);
-                populate_symbol_lists(f, lm, symbol_lists);
-            } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Program_t>(*a.second) ) {
-                LCompilers::ASR::Program_t *p = LCompilers::ASR::down_cast<LCompilers::ASR::Program_t>(a.second);
-                populate_symbol_lists(p, lm, symbol_lists);
-            }
-        }
-    }
-
     int get_symbols(const std::string &infile, CompilerOptions &compiler_options);
 
     int get_errors(const std::string &infile, CompilerOptions &compiler_options);

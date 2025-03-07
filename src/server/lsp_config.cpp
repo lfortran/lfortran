@@ -1,9 +1,17 @@
+#include <memory>
+
 #include <server/logger.h>
 #include <server/lsp_config.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_specification.h>
 
 namespace LCompilers::LanguageServerProtocol::Config {
+
+    LspConfigTransformer::LspConfigTransformer(lsp::LspTransformer &transformer)
+        : transformer(transformer)
+    {
+        // empty
+    }
 
     auto LspConfigTransformer::anyToLspConfig_trace(
         const lsp::LSPAny &any
@@ -33,6 +41,21 @@ namespace LCompilers::LanguageServerProtocol::Config {
         }
 
         return trace;
+    }
+
+    auto LspConfigTransformer::lspConfig_traceToAny(
+        const LspConfig_trace &trace
+    ) const -> LSPAny {
+        LSPAny any;
+        LSPObject object;
+        object.emplace(
+            "server",
+            std::make_unique<LSPAny>(
+                transformer.traceValuesToAny(trace.server)
+            )
+        );
+        any = std::make_unique<LSPObject>(std::move(object));
+        return any;
     }
 
     auto LspConfigTransformer::anyToLspConfig_log(
@@ -102,6 +125,41 @@ namespace LCompilers::LanguageServerProtocol::Config {
         return log;
     }
 
+    auto LspConfigTransformer::lspConfig_logToAny(
+        const LspConfig_log &log
+    ) const -> LSPAny {
+        LSPAny any;
+        LSPObject object;
+        object.emplace(
+            "path",
+            std::make_unique<LSPAny>(
+                transformer.stringToAny(log.path.string())
+            )
+        );
+        object.emplace(
+            "level",
+            std::make_unique<LSPAny>(
+                transformer.stringToAny(
+                    lsl::LevelValues.at(log.level)
+                )
+            )
+        );
+        object.emplace(
+            "prettyPrint",
+            std::make_unique<LSPAny>(
+                transformer.booleanToAny(log.prettyPrint)
+            )
+        );
+        object.emplace(
+            "indentSize",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(log.indentSize)
+            )
+        );
+        any = std::make_unique<LSPObject>(std::move(object));
+        return any;
+    }
+
     auto LspConfigTransformer::anyToLspConfig(
         const lsp::LSPAny &any
     ) const -> std::shared_ptr<LspConfig> {
@@ -119,6 +177,16 @@ namespace LCompilers::LanguageServerProtocol::Config {
 
         const LSPObject &object = any.object();
         LSPObject::const_iterator iter;
+
+        if ((iter = object.find("openIssueReporterOnError")) != object.end()) {
+            config->openIssueReporterOnError = iter->second->boolean();
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                ("Missing required LFortranLspConfig attribute: "
+                 "openIssueReporterOnError")
+            );
+        }
 
         if ((iter = object.find("trace")) != object.end()) {
             config->trace = anyToLspConfig_trace(*iter->second);
@@ -139,6 +207,33 @@ namespace LCompilers::LanguageServerProtocol::Config {
         }
 
         return config;
+    }
+
+    auto LspConfigTransformer::lspConfigToAny(
+        const LspConfig &config
+    ) const -> LSPAny {
+        LSPAny any;
+        LSPObject object;
+        object.emplace(
+            "openIssueReporterOnError",
+            std::make_unique<LSPAny>(
+                transformer.booleanToAny(config.openIssueReporterOnError)
+            )
+        );
+        object.emplace(
+            "trace",
+            std::make_unique<LSPAny>(
+                lspConfig_traceToAny(config.trace)
+            )
+        );
+        object.emplace(
+            "log",
+            std::make_unique<LSPAny>(
+                lspConfig_logToAny(config.log)
+            )
+        );
+        any = std::make_unique<LSPObject>(std::move(object));
+        return any;
     }
 
     auto LspConfigTransformer::makeConfig() const

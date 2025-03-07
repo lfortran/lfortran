@@ -17,6 +17,7 @@
 #include <bin/lfortran_lsp_config.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    namespace lc = LCompilers;
     namespace ls = LCompilers::LLanguageServer;
     namespace lsl = LCompilers::LLanguageServer::Logging;
     namespace lsc = LCompilers::LanguageServerProtocol::Config;
@@ -30,60 +31,112 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t numWorkerThreads,
             lsl::Logger &logger,
             const std::string &configSection,
-            std::shared_ptr<lsc::LspConfig> workspaceConfig
+            const std::string &extensionId,
+            const std::string &compilerVersion,
+            std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
         );
     protected:
 
-        auto invalidateConfigCache() -> void override;
+        auto invalidateConfigCaches() -> void override;
 
         // ================= //
         // Incoming Requests //
         // ================= //
 
-        InitializeResult receiveInitialize(
+        auto receiveInitialize(
             InitializeParams &params
-        ) override;
+        ) -> InitializeResult override;
+
+        auto receiveTextDocument_definition(
+            DefinitionParams &params
+        ) -> TextDocument_DefinitionResult override;
+
+        auto receiveTextDocument_rename(
+            RenameParams &params
+        ) -> TextDocument_RenameResult override;
+
+        auto receiveTextDocument_documentSymbol(
+            DocumentSymbolParams &params
+        ) -> TextDocument_DocumentSymbolResult override;
+
+        auto receiveTextDocument_hover(
+            HoverParams &params
+        ) -> TextDocument_HoverResult override;
 
         // ====================== //
         // Incoming Notifications //
         // ====================== //
 
-        void receiveWorkspace_didDeleteFiles(
+        auto receiveWorkspace_didDeleteFiles(
             DeleteFilesParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveWorkspace_didChangeConfiguration(
+        auto receiveWorkspace_didChangeConfiguration(
             DidChangeConfigurationParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveTextDocument_didOpen(
+        auto receiveTextDocument_didOpen(
             DidOpenTextDocumentParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveTextDocument_didChange(
+        auto receiveTextDocument_didChange(
             DidChangeTextDocumentParams &params
-        ) override;
+        ) -> void override;
 
-        void receiveWorkspace_didChangeWatchedFiles(
+        auto receiveWorkspace_didChangeWatchedFiles(
             DidChangeWatchedFilesParams &params
-        ) override;
+        ) -> void override;
 
     private:
         const std::string source = "lfortran";
         ls::LFortranAccessor lfortran;
-        std::unordered_map<DocumentUri, CompilerOptions> optionsByUri;
+        std::unordered_map<
+            DocumentUri,
+            std::shared_ptr<CompilerOptions>
+        > optionsByUri;
         std::shared_mutex optionMutex;
 
-        auto validate(LspTextDocument &document) -> void;
-        auto getCompilerOptions(const LspTextDocument &document) -> const CompilerOptions &;
+        std::atomic_bool clientSupportsGotoDefinition = false;
+        std::atomic_bool clientSupportsGotoDefinitionLinks = false;
+        std::atomic_bool clientSupportsDocumentSymbols = false;
+        std::atomic_bool clientSupportsHierarchicalDocumentSymbols = false;
+        std::atomic_bool clientSupportsHover = false;
 
-        auto diagnosticLevelToLspSeverity(diag::Level level) const -> DiagnosticSeverity;
+        auto validate(std::shared_ptr<LspTextDocument> document) -> void;
+        auto getCompilerOptions(
+            const LspTextDocument &document
+        ) -> const std::shared_ptr<CompilerOptions>;
 
-        auto asrSymbolTypeToLspSymbolKind(ASR::symbolType symbol_type) const -> SymbolKind;
+        auto diagnosticLevelToLspSeverity(
+            diag::Level level
+        ) const -> DiagnosticSeverity;
+
+        auto asrSymbolTypeToLspSymbolKind(
+            ASR::symbolType symbol_type
+        ) const -> SymbolKind;
 
         auto getLFortranConfig(
             const DocumentUri &uri
         ) -> const std::shared_ptr<lsc::LFortranLspConfig>;
+
+        auto resolve(
+            const std::string &filename,
+            const CompilerOptions &compilerOptions
+        ) -> fs::path;
+
+        auto init(
+            DocumentSymbol &lspSymbol,
+            const lc::document_symbols *asrSymbol
+        ) -> void;
+
+        auto walk(
+            const lc::document_symbols *root,
+            DocumentSymbol &symbol,
+            std::map<
+                const lc::document_symbols *,
+                std::vector<const lc::document_symbols *>
+            > &childrenBySymbol
+        ) -> void;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

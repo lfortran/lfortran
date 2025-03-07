@@ -116,7 +116,7 @@ loop.body:                                        ; preds = %loop.head
 loop.end:                                         ; preds = %loop.head
   %prefix_arg = alloca i8*, align 8
   %31 = call i8* @_lfortran_malloc(i32 4)
-  call void @_lfortran_string_init(i32 4, i8* %31)
+  call void @_lfortran_string_init(i64 4, i8* %31)
   store i8* %31, i8** %prefix_arg, align 8
   %32 = load i8*, i8** %prefix_arg, align 8
   %33 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 0
@@ -174,7 +174,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc(i32)
 
-declare void @_lfortran_string_init(i32, i8*)
+declare void @_lfortran_string_init(i64, i8*)
 
 declare void @_lfortran_free(i8*)
 

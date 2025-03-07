@@ -4781,8 +4781,10 @@ public:
                 ASR::expr_t *m_value = var->m_value;
                 if( m_value && m_value->type == ASR::exprType::StringConstant ) {
                     ASR::StringConstant_t *m_str = ASR::down_cast<ASR::StringConstant_t>(m_value);
+                    ASR::String_t* s_type = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(var->m_type));
                     std::string sliced_str;
-                    int str_length = strlen(m_str->m_s);
+                    int64_t str_length = s_type->m_len;
                     if( start <= 0 ) {
                         diag.add(Diagnostic("Substring `start` is less than one",
                             Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -8204,6 +8206,13 @@ public:
                     return;
                 }
             }
+        } else if (ASR::is_a<ASR::Struct_t>(*f2)) {
+            // Check for any interface overriding a constructor for the struct
+            ASR::symbol_t* interface_override_s = current_scope->resolve_symbol("~" + var_name);
+            if (interface_override_s) {
+                v = interface_override_s;
+                f2 = ASRUtils::symbol_get_past_external(interface_override_s);
+            }
         }
         if (ASR::is_a<ASR::Function_t>(*f2) ||
             ASR::is_a<ASR::GenericProcedure_t>(*f2) ||
@@ -9535,7 +9544,7 @@ public:
                 diag::Diagnostics& diag, size_t type_bound=0) {
         size_t n_args = args.size();
         std::string fn_name = fn->m_name;
-
+        if (type_bound >= fn_n_args) type_bound = 0;
         if (n_args + n > fn_n_args) {
             diag.semantic_error_label(
                 "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
@@ -9667,34 +9676,25 @@ public:
                                     constructor_args.end(), name);
             if (search == constructor_args.end()) {
                 diag.semantic_error_label(
-                    "Keyword argument not found " + name,
+                    "Keyword argument not found",
                     {loc},
-                    name + " keyword argument not found.");
+                    "'" + name + "'" + " keyword argument not found");
                 throw SemanticAbort();
             }
 
             size_t idx = std::distance(constructor_args.begin(), search);
             if (args[idx].m_value != nullptr) {
                 diag.semantic_error_label(
-                    "Keyword argument is already specified.",
+                    "Keyword argument is already specified",
                     {loc},
-                    name + "keyword argument is already specified.");
+                    "'" + name + "'" + + " keyword argument is already specified");
                 throw SemanticAbort();
             }
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
         }
 
-        /*
-
-        The following loop takes the default initial value expression
-        and puts it into the constructor call. The issue with this approach
-        is that one has to replace all the symbols present in the expression
-        with external symbols so that we don't receive out of scope errors
-        in ASR verify pass (with the help of a new visitor ReplaceWithExternalSymbolsInExpression).
-        So for now its commented out and one can deal with the
-        same in the backend itself which appears cleaner to me for now.
-
+        // If value is not specified in args nor in keyword argument, set to default initializer if it exists
         for( size_t i = 0; i < args.size(); i++ ) {
             if( args[i].m_value == nullptr ) {
                 ASR::symbol_t* arg_sym = constructor_arg_syms[i];
@@ -9703,24 +9703,22 @@ public:
                 bool is_default_needed = true;
                 if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
                     ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    default_init = arg_var->m_symbolic_value;
-                    if( arg_var->m_storage == ASR::storage_typeType::Allocatable ) {
+                    default_init = arg_var->m_value;
+                    if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;
                     }
                 }
                 if( default_init == nullptr && is_default_needed ) {
                     diag.semantic_error_label(
                         "Argument was not specified",
-                        {arg_sym->base.loc},
-                        std::to_string(i) +
-                        "-th argument not specified for " + ASRUtils::symbol_name(fn));
+                        {loc},
+                        "Argument '" + constructor_args[i] + "' not specified for " + ASRUtils::symbol_name(fn));
                     throw SemanticAbort();
                 }
                 args.p[i].m_value = default_init;
                 args.p[i].loc = arg_sym->base.loc;
             }
         }
-        */
 
         for (size_t i = 0; i < constructor_arg_syms.size(); i++) {
             if( args[i].m_value != nullptr ) {
@@ -9753,7 +9751,7 @@ public:
                 SymbolTable* scope = current_scope;
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(
                     ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope)));
+                    to_lower(x_m_member[0].m_name), scope, nullptr, 0, x_m_member[1].m_args, x_m_member[1].n_args)));
             } else {
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;

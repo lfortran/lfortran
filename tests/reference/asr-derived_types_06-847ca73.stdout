@@ -1631,9 +1631,9 @@
                                         )
                                         (StructConstructor
                                             4 toml_date
-                                            [(())
-                                            (())
-                                            (())]
+                                            [((IntegerConstant 0 (Integer 4) Decimal))
+                                            ((IntegerConstant 0 (Integer 4) Decimal))
+                                            ((IntegerConstant 0 (Integer 4) Decimal))]
                                             (StructType
                                                 4 toml_date
                                             )

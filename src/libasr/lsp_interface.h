@@ -25,6 +25,9 @@ namespace LCompilers {
     uint32_t last_column;
     std::string filename;
     ASR::symbolType symbol_type;
+    int parent_index;  //<- position instead of pointer to avoid std::vector reallocation issues
+    uint32_t first_pos;
+    uint32_t last_pos;
   };
 
 } // namespace LCompilers
