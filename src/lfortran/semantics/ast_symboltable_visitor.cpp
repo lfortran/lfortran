@@ -1102,13 +1102,9 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
-            if ( compiler_options.implicit_typing ) {
-                std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-                visit_program_unit(*x.m_contains[i]);
-                implicit_dictionary = implicit_dictionary_copy;
-            } else {
-                visit_program_unit(*x.m_contains[i]);
-            }
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+            visit_program_unit(*x.m_contains[i]);
+            implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
         }
         Vec<ASR::expr_t*> args;
