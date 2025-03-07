@@ -65,23 +65,6 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
-void string_init(llvm::LLVMContext &context, llvm::Module &module,
-        llvm::IRBuilder<> &builder, llvm::Value* arg_size, llvm::Value* arg_string) {
-    std::string func_name = "_lfortran_string_init";
-    llvm::Function *fn = module.getFunction(func_name);
-    if (!fn) {
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt8Ty(context)->getPointerTo()
-                }, false);
-        fn = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, func_name, module);
-    }
-    std::vector<llvm::Value*> args = {arg_size, arg_string};
-    builder.CreateCall(fn, args);
-}
-
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
 {
 private:
@@ -128,6 +111,25 @@ private:
         v->print(os);
         std::cout << os.str() << endline;
     }
+
+    void string_init(llvm::LLVMContext &context, llvm::Module &module,
+        llvm::IRBuilder<> &builder, llvm::Value* arg_size, llvm::Value* arg_string) {
+    std::string func_name = "_lfortran_string_init";
+    llvm::Function *fn = module.getFunction(func_name);
+    if (!fn) {
+        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {
+                    llvm::Type::getInt64Ty(context),
+                    llvm::Type::getInt8Ty(context)->getPointerTo()
+                }, false);
+        fn = llvm::Function::Create(function_type,
+                llvm::Function::ExternalLinkage, func_name, module);
+    }
+    std::vector<llvm::Value*> args = {llvm_utils->convert_kind(arg_size,
+                                            llvm::Type::getInt64Ty(context)),
+                                    arg_string};
+    builder.CreateCall(fn, args);
+}
 
 public:
     diag::Diagnostics &diag;
@@ -1009,7 +1011,7 @@ public:
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
             curr_arg_m_a_type = ASRUtils::type_get_past_array(curr_arg_m_a_type);
             if( n_dims == 0 ) {
-                llvm::Function *fn = _Allocate(realloc);
+                llvm::Function *fn = _Allocate();
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                     LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(expr_type(tmp_expr)),
                     "string isn't allocatable");
@@ -1020,8 +1022,8 @@ public:
                     LCOMPILERS_ASSERT(curr_arg.m_len_expr != nullptr);
                     visit_expr(*curr_arg.m_len_expr);
                     ptr_loads = ptr_loads_copy;
-                    llvm::Value* m_len = tmp;
-                    llvm::Value* const_one = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    llvm::Value* m_len = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
+                    llvm::Value* const_one = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
                     llvm::Value* alloc_size = builder->CreateAdd(m_len, const_one);
                     std::vector<llvm::Value*> args;
                     llvm::Value* ptr_to_init;
@@ -1199,17 +1201,14 @@ public:
         // }
     }
 
-    llvm::Function* _Allocate(bool realloc_lhs) {
-        std::string func_name = "_lfortran_alloc";
-        if( realloc_lhs ) {
-            func_name = "_lfortran_realloc";
-        }
+    llvm::Function* _Allocate() {
+        std::string func_name = "_lfortran_allocate_string";
         llvm::Function *alloc_fun = module->getFunction(func_name);
         if (!alloc_fun) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         character_type->getPointerTo(),
-                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt64Ty(context)->getPointerTo(),
                         llvm::Type::getInt64Ty(context)->getPointerTo()
                     }, false);
