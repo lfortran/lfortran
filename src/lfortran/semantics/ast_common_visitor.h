@@ -9544,7 +9544,7 @@ public:
                 diag::Diagnostics& diag, size_t type_bound=0) {
         size_t n_args = args.size();
         std::string fn_name = fn->m_name;
-
+        if (type_bound >= fn_n_args) type_bound = 0;
         if (n_args + n > fn_n_args) {
             diag.semantic_error_label(
                 "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
