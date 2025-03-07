@@ -17,6 +17,7 @@
 #include <string>
 #include <set>
 #include <map>
+#include <limits>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
@@ -9411,10 +9412,29 @@ public:
         }
     }
 
+    int countSignificantDigits(std::string str) {
+        int count = 0;
+        bool foundFirstNonZero = false;
+    
+        for (char c : str) {
+            if (isdigit(c)) {
+                if (c != '0' || foundFirstNonZero) {
+                    count++;
+                    foundFirstNonZero = true;
+                }
+            }
+        }
+        return count;
+    }
+
     void visit_Real(const AST::Real_t &x) {
-        double r = ASRUtils::extract_real(x.m_n);
+        std::string r_str = ASRUtils::extract_real(x.m_n);
+        double r = std::atof(r_str.c_str());
         char* s_kind;
         int r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
+        if ( r_kind == 4 && countSignificantDigits(r_str) <= std::numeric_limits<float>::digits10 ) {
+            r = (float)r;
+        }
         if (r_kind == 0) {
             std::string var_name = to_lower(s_kind);
             ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
