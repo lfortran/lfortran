@@ -536,6 +536,30 @@ jobs:
             # ./plot_pendulum.exe
             ./plot_transes_iso.exe
 
+      - name: Test POT3D
+        shell: bash -e -l {0}
+        run: |
+            FC="$(pwd)/src/bin/lfortran"
+            git clone https://github.com/gxyd/pot3d.git
+            cd pot3d
+            git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
+            git checkout 33c078020dcea467e763b52879a480450a0494fe
+            cd src
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              CC=clang
+            else
+              CC=gcc
+            fi
+            ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
+            ${FC} -c mpi_c_bindings.f90
+            ${FC} -c mpi.f90
+            ${FC} -c psi_io.f90 --no-style-warnings --no-warnings
+            ${FC} -c --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
+            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
+            cp pot3d ../bin/
+            cd ..
+            ./validate.sh
+
       - name: Test PRIMA
         shell: bash -e -l {0}
         run: |
@@ -590,30 +614,6 @@ jobs:
             ./build/fortran/example_lincoa_fortran_1_exe
             ./build/fortran/example_lincoa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_2_exe
-
-      - name: Test POT3D
-        shell: bash -e -l {0}
-        run: |
-            FC="$(pwd)/src/bin/lfortran"
-            git clone https://github.com/gxyd/pot3d.git
-            cd pot3d
-            git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
-            git checkout 33c078020dcea467e763b52879a480450a0494fe
-            cd src
-            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
-              CC=clang
-            else
-              CC=gcc
-            fi
-            ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
-            ${FC} -c mpi_c_bindings.f90
-            ${FC} -c mpi.f90
-            ${FC} -c psi_io.f90 --no-style-warnings --no-warnings
-            ${FC} -c --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
-            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
-            cp pot3d ../bin/
-            cd ..
-            ./validate.sh
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
