@@ -6,6 +6,7 @@
 #include <libasr/exception.h>
 #include <libasr/location.h>
 
+#include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
 
 #include <bin/lfortran_accessor.h>
@@ -101,26 +102,23 @@ namespace LCompilers::LLanguageServer {
                 if (ASR::is_a<ASR::symbol_t>(*asr)) {
                     ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
                     std::string symbol_name = ASRUtils::symbol_name( s );
-                    uint32_t first_line;
-                    uint32_t last_line;
-                    uint32_t first_column;
-                    uint32_t last_column;
-                    std::string filename;
-                    lm.pos_to_linecol(
-                        lm.output_to_input_pos(asr->loc.first, false),
-                        first_line, first_column, filename);
-                    lm.pos_to_linecol(
-                        lm.output_to_input_pos(asr->loc.last, true),
-                        last_line, last_column, filename);
-                    LCompilers::document_symbols loc;
-                    loc.first_column = first_column;
-                    loc.last_column = last_column;
-                    loc.first_line = first_line;
-                    loc.last_line = last_line;
+                    LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                     loc.symbol_name = symbol_name;
-                    loc.filename = filename;
+                    loc.first_pos = lm.output_to_input_pos(asr->loc.first, false);
+                    lm.pos_to_linecol(
+                        loc.first_pos,
+                        loc.first_line,
+                        loc.first_column,
+                        loc.filename
+                    );
+                    loc.last_pos = lm.output_to_input_pos(asr->loc.last, true);
+                    lm.pos_to_linecol(
+                        loc.last_pos,
+                        loc.last_line,
+                        loc.last_column,
+                        loc.filename
+                    );
                     loc.symbol_type = s->type;
-                    symbol_lists.push_back(loc);
                 }
             }
         }
@@ -165,6 +163,39 @@ namespace LCompilers::LLanguageServer {
         }
 
         return symbol_lists;
+    }
+
+    auto LFortranAccessor::format(
+        const std::string &filename,
+        const std::string &text,
+        const CompilerOptions &compiler_options,
+        bool color,
+        int indent,
+        bool indent_unit
+    ) const -> LCompilers::Result<std::string> {
+        LCompilers::FortranEvaluator fe(compiler_options);
+        LCompilers::LocationManager lm;
+        LCompilers::diag::Diagnostics diagnostics;
+        {
+            LCompilers::LocationManager::FileLocations fl;
+            fl.in_filename = filename;
+            lm.files.push_back(fl);
+            lm.file_ends.push_back(text.size());
+        }
+        LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
+            r = fe.get_ast2(text, lm, diagnostics);
+        std::cerr << diagnostics.render(lm, compiler_options);
+        if (!r.ok) {
+            LCOMPILERS_ASSERT(diagnostics.has_error())
+            return LCompilers::Error();
+        }
+        LCompilers::LFortran::AST::TranslationUnit_t* ast = r.result;
+
+        // AST -> Source
+        std::string source = LCompilers::LFortran::ast_to_src(*ast, color,
+            indent, indent_unit);
+
+        return source;
     }
 
     auto LFortranAccessor::getSymbols(

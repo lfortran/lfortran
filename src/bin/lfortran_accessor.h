@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include <libasr/exception.h>
 #include <libasr/lsp_interface.h>
 #include <libasr/utils.h>
 
@@ -76,6 +77,15 @@ namespace LCompilers::LLanguageServer {
                 }
             }
         }
+
+        auto format(
+            const std::string &filename,
+            const std::string &text,
+            const CompilerOptions &compiler_options,
+            bool color,
+            int indent,
+            bool indent_unit
+        ) const -> LCompilers::Result<std::string>;
     };
 
 } // namespace LCompilers::LLanguageServer
