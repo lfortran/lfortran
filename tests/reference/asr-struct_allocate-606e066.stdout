@@ -72,6 +72,31 @@
                                     (SymbolTable
                                         4
                                         {
+                                            dims:
+                                                (Variable
+                                                    4
+                                                    dims
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                ),
                                             scales:
                                                 (Variable
                                                     4
@@ -100,7 +125,8 @@
                                         })
                                     sds
                                     []
-                                    [scales]
+                                    [scales
+                                    dims]
                                     Source
                                     Public
                                     .false.
@@ -128,6 +154,16 @@
                                     rp1d
                                     []
                                     f
+                                    Public
+                                ),
+                            1_sds_dims:
+                                (ExternalSymbol
+                                    5
+                                    1_sds_dims
+                                    4 dims
+                                    sds
+                                    []
+                                    dims
                                     Public
                                 ),
                             1_sds_scales:
@@ -185,33 +221,11 @@
                     [mod_struct_allocate]
                     [(Allocate
                         [((StructInstanceMember
-                            (ArrayItem
-                                (StructInstanceMember
-                                    (Var 5 s)
-                                    5 1_sds_scales
-                                    (Array
-                                        (StructType
-                                            5 rp1d
-                                        )
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 3 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ()
-                                )
-                                [(()
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                ())]
-                                (StructType
-                                    5 rp1d
-                                )
-                                ColMajor
-                                ()
-                            )
-                            5 1_rp1d_f
+                            (Var 5 s)
+                            5 1_sds_dims
                             (Pointer
                                 (Array
-                                    (Real 8)
+                                    (Integer 4)
                                     [(()
                                     ())]
                                     DescriptorArray
@@ -220,12 +234,68 @@
                             ()
                         )
                         [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerConstant 4 (Integer 4) Decimal))]
+                        (IntegerConstant 2 (Integer 4) Decimal))]
                         ()
                         ())]
                         ()
                         ()
                         ()
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 5 s)
+                            5 1_sds_dims
+                            (Pointer
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )
+                        (ArrayConstant
+                            8
+                            [10, 11]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (StructInstanceMember
+                                    (Var 5 s)
+                                    5 1_sds_dims
+                                    (Pointer
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
                     )
                     (Allocate
                         [((StructInstanceMember
@@ -270,6 +340,250 @@
                         ()
                         ()
                         ()
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 5 s)
+                                    5 1_sds_scales
+                                    (Array
+                                        (StructType
+                                            5 rp1d
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    5 rp1d
+                                )
+                                ColMajor
+                                ()
+                            )
+                            5 1_rp1d_f
+                            (Pointer
+                                (Array
+                                    (Real 8)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )
+                        (ArrayConstant
+                            24
+                            [6.0000000000000000e+00, 7.0000000000000000e+00, 8.0000000000000000e+00]
+                            (Array
+                                (Real 8)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                DescriptorArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (StructInstanceMember
+                                            (Var 5 s)
+                                            5 1_sds_scales
+                                            (Array
+                                                (StructType
+                                                    5 rp1d
+                                                )
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())]
+                                        (StructType
+                                            5 rp1d
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    5 1_rp1d_f
+                                    (Pointer
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Real 8)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )
+                    (Allocate
+                        [((StructInstanceMember
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 5 s)
+                                    5 1_sds_scales
+                                    (Array
+                                        (StructType
+                                            5 rp1d
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    5 rp1d
+                                )
+                                ColMajor
+                                ()
+                            )
+                            5 1_rp1d_f
+                            (Pointer
+                                (Array
+                                    (Real 8)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 5 s)
+                                    5 1_sds_scales
+                                    (Array
+                                        (StructType
+                                            5 rp1d
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    5 rp1d
+                                )
+                                ColMajor
+                                ()
+                            )
+                            5 1_rp1d_f
+                            (Pointer
+                                (Array
+                                    (Real 8)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )
+                        (ArrayConstant
+                            16
+                            [1.0000000000000000e+00, 2.0000000000000000e+00]
+                            (Array
+                                (Real 8)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                DescriptorArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (StructInstanceMember
+                                            (Var 5 s)
+                                            5 1_sds_scales
+                                            (Array
+                                                (StructType
+                                                    5 rp1d
+                                                )
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
+                                        (StructType
+                                            5 rp1d
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    5 1_rp1d_f
+                                    (Pointer
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 8)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
                     )]
                 )
         })
