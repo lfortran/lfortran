@@ -35,7 +35,7 @@ namespace LCompilers::LLanguageServer {
         std::cout.rdbuf(std::cerr.rdbuf());
         fflush(stdout);
 #ifdef _WIN32
-        if ((stdout_fd = _dup(_fileno(stdout))) == -1)
+        if ((stdout_fd = _dup(_fileno(stdout))) == -1) {
 #else
         if ((stdout_fd = dup(fileno(stdout))) == -1) {
 #endif // _WIN32
