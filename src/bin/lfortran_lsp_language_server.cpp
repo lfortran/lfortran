@@ -9,6 +9,7 @@
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_specification.h>
+#include <server/lsp_text_document.h>
 
 #ifndef CLI11_HAS_FILESYSTEM
 #define CLI11_HAS_FILESYSTEM 0
@@ -144,6 +145,7 @@ namespace LCompilers::LanguageServerProtocol {
 
         CompilerOptions &compilerOptions = parser.opts.compiler_options;
         compilerOptions.continue_compilation = true;
+        compilerOptions.use_colors = false;  // disable ANSI terminal colors
 
         std::unique_lock<std::shared_mutex> writeLock(configMutex);
         optionIter = optionsByUri.find(uri);
@@ -551,6 +553,10 @@ namespace LCompilers::LanguageServerProtocol {
         TextDocument_HoverResult result;
         if (symbols.size() > 0) {
             lc::document_symbols &symbol = symbols.front();
+            fs::path symbolPath = resolve(symbol.filename, compilerOptions);
+            std::shared_ptr<LspTextDocument> symbolDocument =
+                getDocument("file://" + symbolPath.string());
+            const std::string &symbolText = symbolDocument->text();
             std::unique_ptr<Hover> hover = std::make_unique<Hover>();
 
             std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(uri);
@@ -558,15 +564,23 @@ namespace LCompilers::LanguageServerProtocol {
             MarkupContent content;
             content.kind = MarkupKind::Markdown;
             content.value = "```fortran\n";
-            uint32_t length = (symbol.last_pos - symbol.first_pos) + 1;
-            std::string preview = text.substr(symbol.first_pos, length);
+            uint32_t first_pos = symbolDocument->toPosition(
+                symbol.first_line - 1,
+                symbol.first_column - 1
+            );
+            uint32_t last_pos = symbolDocument->toPosition(
+                symbol.last_line - 1,
+                symbol.last_column
+            );
+            uint32_t length = (last_pos - first_pos) + 1;
+            std::string preview = symbolText.substr(first_pos, length);
             lc::Result<std::string> formatted = lfortran.format(
                 path,
                 preview,
                 compilerOptions,
-                false,
-                config->log.indentSize,
-                true
+                false,  //<- apply ANSI colors
+                config->indentSize,
+                true  //<- indent units like module bodies
             );
             if (formatted.ok) {
                 content.value.append(formatted.result);
@@ -578,13 +592,16 @@ namespace LCompilers::LanguageServerProtocol {
             Hover_contents &contents = hover->contents;
             contents = std::move(content);
 
-            Range &range = hover->range.emplace();
-            Position &start = range.start;
-            Position &end = range.end;
-            start.line = symbol.first_line - 1;  // 1-to-0 index
-            start.character = symbol.first_column - 1;  // 1-to-0 index
-            end.line = symbol.last_line - 1;  // 1-to-0 index
-            end.character = symbol.last_column;  // (1-to-0 index) + 1
+            if (symbolPath == document->path()) {
+                Range &range = hover->range.emplace();
+                Position &start = range.start;
+                Position &end = range.end;
+                start.line = symbol.first_line - 1;  // 1-to-0 index
+                start.character = symbol.first_column - 1;  // 1-to-0 index
+                end.line = symbol.last_line - 1;  // 1-to-0 index
+                end.character = symbol.last_column;  // (1-to-0 index) + 1
+            }
+
             result = std::move(hover);
         } else {
             result = nullptr;

@@ -29,6 +29,10 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &text,
             lsl::Logger &logger
         );
+        LspTextDocument(
+            const std::string &uri,
+            lsl::Logger &logger
+        );
         LspTextDocument(LspTextDocument &&other) noexcept;    // move constructor
 
         inline auto uri() const -> const DocumentUri & {
@@ -55,10 +59,21 @@ namespace LCompilers::LanguageServerProtocol {
             return _mutex;
         }
 
+        auto update(
+            const std::string &languageId,
+            int version,
+            const std::string &text
+        ) -> void;
+
         auto apply(
             std::vector<TextDocumentContentChangeEvent> &changes,
             int version
         ) -> void;
+
+        auto toPosition(
+            std::size_t line,
+            std::size_t column
+        ) const -> std::size_t;
     private:
         DocumentUri _uri;
         std::string _languageId;
@@ -72,6 +87,7 @@ namespace LCompilers::LanguageServerProtocol {
 
         auto validateUriAndSetPath() -> void;
         auto indexLines() -> void;
+        auto loadText() -> void;
 
         auto from(
             const TextDocumentContentChangeEvent &event
