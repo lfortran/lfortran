@@ -3495,6 +3495,7 @@ public:
             } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
                 ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
                 ASR::symbol_t* f4 = f3->m_proc;
+                bool is_nopass = f3->m_is_nopass;
                 if( !ASR::is_a<ASR::Function_t>(*f4) ) {
                     diag.add(Diagnostic(
                         std::string(f3->m_proc_name) + " is not a subroutine.",
@@ -3507,7 +3508,7 @@ public:
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                     f->m_args, f->n_args, x.base.base.loc, f,
-                    diags, x.n_member);
+                    diags, x.n_member, is_nopass);
                 if( diags.has_error() ) {
                     diag.diagnostics.insert(diag.diagnostics.end(),
                             diags.diagnostics.begin(), diags.diagnostics.end());
