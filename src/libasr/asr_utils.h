@@ -80,6 +80,36 @@ static inline std::string extract_real(const char *s) {
     return x;
 }
 
+static int countSignificantDigits(std::string str) {
+    int count = 0;
+    bool foundFirstNonZero = false;
+
+    for (char c : str) {
+        if (isdigit(c)) {
+            if (c != '0' || foundFirstNonZero) {
+                count++;
+                foundFirstNonZero = true;
+            }
+        }
+    }
+    return count;
+}
+
+static inline double extract_real_4(const char *s) {
+    std::string r_str = ASRUtils::extract_real(s);
+    double r = std::atof(r_str.c_str());
+    if ( countSignificantDigits(r_str) <= std::numeric_limits<float>::digits10 ) {
+        return (float)r;
+    } else {
+        return r;
+    }
+}
+
+static inline double extract_real_8(const char *s) {
+    std::string r_str = ASRUtils::extract_real(s);
+    return std::atof(r_str.c_str());
+}
+
 static inline ASR::expr_t* EXPR(const ASR::asr_t *f)
 {
     return ASR::down_cast<ASR::expr_t>(f);

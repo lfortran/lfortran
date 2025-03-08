@@ -9412,29 +9412,11 @@ public:
         }
     }
 
-    int countSignificantDigits(std::string str) {
-        int count = 0;
-        bool foundFirstNonZero = false;
-    
-        for (char c : str) {
-            if (isdigit(c)) {
-                if (c != '0' || foundFirstNonZero) {
-                    count++;
-                    foundFirstNonZero = true;
-                }
-            }
-        }
-        return count;
-    }
 
     void visit_Real(const AST::Real_t &x) {
-        std::string r_str = ASRUtils::extract_real(x.m_n);
-        double r = std::atof(r_str.c_str());
+        double r = -1;
         char* s_kind;
         int r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
-        if ( r_kind == 4 && countSignificantDigits(r_str) <= std::numeric_limits<float>::digits10 ) {
-            r = (float)r;
-        }
         if (r_kind == 0) {
             std::string var_name = to_lower(s_kind);
             ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
@@ -9465,6 +9447,14 @@ public:
                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
+        }
+        if ( r_kind == 4 ) {
+            r = ASRUtils::extract_real_4(x.m_n);
+        } else if ( r_kind == 8 ) {
+            r = ASRUtils::extract_real_8(x.m_n);
+        } else {
+            // TODO: handle other kinds
+            r = ASRUtils::extract_real_8(x.m_n);
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
