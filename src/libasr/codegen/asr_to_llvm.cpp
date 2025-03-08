@@ -2756,14 +2756,41 @@ public:
                 // TODO Fetch index from ASR ;Hardcoded index for now 
                 int a_size = atoi(array_size.c_str());
                 ASR::expr_t* fortran_i = array_item->m_args[0].m_right;
-                ASR::IntegerConstant_t* a_index = ASR::down_cast<ASR::IntegerConstant_t>(fortran_i);
-                int fortran_index = a_index->m_n;
-                if (fortran_index < 1 || fortran_index > a_size) {
-                    throw CodeGenError("Index " + std::to_string(fortran_index) +
-                                       " out of bounds for array of size "+ array_size,
-                                       x.base.base.loc);
+                if (ASR::is_a<ASR::IntegerConstant_t>(*fortran_i)) {
+                    // Case 1: Constant Index
+                    ASR::IntegerConstant_t* a_index = ASR::down_cast<ASR::IntegerConstant_t>(fortran_i);
+                    int fortran_index = a_index->m_n;
+
+                    // Optional: Bounds checking (adjust a_size based on array dimensions)
+                    if (fortran_index < 1 || fortran_index > a_size) {
+                        throw CodeGenError("Index " + std::to_string(fortran_index) +
+                                        " out of bounds for array of size " + std::to_string(a_size),
+                                        x.base.base.loc);
+                    }
+                    // Fortran is 1-based, LLVM is 0-based, so subtract 1
+                    index = llvm::ConstantInt::get(context, llvm::APInt(32, fortran_index - 1));
+                } else if (ASR::is_a<ASR::Var_t>(*fortran_i)) {
+                    // Case 2: Variable Index
+                    ASR::Var_t* var_index = ASR::down_cast<ASR::Var_t>(fortran_i);
+                    ASR::symbol_t* var_sym = var_index->m_v;
+                    std::string var_name = ASRUtils::symbol_name(var_sym);
+
+                    // Look up the variable in the LLVM symbol table
+                    uint32_t h = get_hash((ASR::asr_t*)var_sym);
+                    if (llvm_symtab.find(h) == llvm_symtab.end()) {
+                        throw CodeGenError("Variable " + var_name + " not found in symbol table",
+                                            x.base.base.loc);
+                    }
+                    llvm::Value* var_ptr = llvm_symtab[h];  // Pointer to the variable’s memory
+
+                    // Load the variable’s runtime value (assuming it’s an i32)
+                    index = builder->CreateLoad(llvm::Type::getInt32Ty(context), var_ptr);
+
+                    // Convert from Fortran 1-based to LLVM 0-based indexing
+                    index = builder->CreateSub(index, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                } else {
+                    throw CodeGenError("Unsupported index type in ArrayItem", x.base.base.loc);
                 }
-                index = llvm::ConstantInt::get(context, llvm::APInt(32, fortran_index - 1)); // Convert to 0-based
             } else {
                 //TODO Handle Descriptor array: Load size and index from runtime descriptor
                 index = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
@@ -2808,6 +2835,7 @@ public:
         ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(
             member_type, module.get());
 #endif
+        
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = ASR::down_cast<ASR::StructType_t>(
                 member_type)->m_derived_type;
