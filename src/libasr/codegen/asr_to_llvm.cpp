@@ -2727,24 +2727,37 @@ public:
             } else {
                 // TODO: Select type by comparing with vtab
             }
-        } else if (ASR::is_a<ASR::Array_t>(*x_m_v_type)) {
-            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(x_m_v_type);
-            ASR::ttype_t* element_type = array_type->m_type;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_v)) {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_v);
+            ASR::ttype_t* element_type = array_item->m_type;
+            ASR::Array_t* array;
+            ASR::expr_t* array_m_v = array_item->m_v;
+            bool is_fixed_size=false;
+
+            if(ASR::is_a<ASR::StructInstanceMember_t>(*array_m_v)){
+                ASR::StructInstanceMember_t* struct_member = ASR::down_cast<ASR::StructInstanceMember_t>(array_m_v);
+                ASR::ttype_t* struct_ttype = struct_member->m_type;
+                if(ASR::is_a<ASR::Array_t>(*struct_ttype)){
+                    array = ASR::down_cast<ASR::Array_t>(struct_ttype);
+                    is_fixed_size = (array->m_physical_type == ASR::array_physical_typeType::FixedSizeArray);
+                }
+            }
             
-            bool is_fixed_size = (array_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray);
             std::string array_size;
             llvm::Value* index;
     
             if (is_fixed_size) {
                 // Fixed-size array: Get size from dimensions
-                if (array_type->n_dims > 0 && array_type->m_dims) {
-                    array_size = ASRUtils::extract_dim_value(array_type->m_dims[0].m_length);
+                if (array->n_dims > 0 && array->m_dims) {
+                    array_size = ASRUtils::extract_dim_value(array->m_dims[0].m_length);
                 } else {
                     throw CodeGenError("Fixed-size array has no dimension information", x.base.base.loc);
                 }
                 // TODO Fetch index from ASR ;Hardcoded index for now 
                 int a_size = atoi(array_size.c_str());
-                int fortran_index = 1; // Fortran 1-based indexing
+                ASR::expr_t* fortran_i = array_item->m_args[0].m_right;
+                ASR::IntegerConstant_t* a_index = ASR::down_cast<ASR::IntegerConstant_t>(fortran_i);
+                int fortran_index = a_index->m_n;
                 if (fortran_index < 1 || fortran_index > a_size) {
                     throw CodeGenError("Index " + std::to_string(fortran_index) +
                                        " out of bounds for array of size "+ array_size,
@@ -2758,7 +2771,6 @@ public:
     
             // Create GEP for array element access
             std::vector<llvm::Value*> idx_vec = {
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0)), // First dimension (array of structs)
                 index
             };
             llvm::Type* element_llvm_type = llvm_utils->get_type_from_ttype_t_util(element_type, module.get());
