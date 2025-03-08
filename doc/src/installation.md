@@ -177,28 +177,19 @@ including `git`.
 * In windows search "turn windows features on or off".
 * Tick Windows subsystem for Linux.
 * Press OK and restart computer.
-* Go to Microsoft store and download Ubuntu 20.04, and launch it.
-* Run the following commands.
+* Go to Microsoft store and download Ubuntu (20.04 or 22.04 or 24.04), and launch it.
+* Now setup LFortran by running the following commands.
 
 ```bash
 wget  https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p $HOME/conda_root
-export PATH="$HOME/conda_root/bin:$PATH"
+echo "export PATH=$HOME/conda_root/bin:$PATH" >> ~/.bashrc
 ```
-* Now do the following to configure the path
+
+* After that restart the Ubuntu terminal.
+* Now clone the LFortran git repository (you should clone it inside a linux owned directory like `~` or  any of its sub-directories).
 ```bash
-sudo nano .bashrc
-```
-* Then go to the bottom of the file and paste the following
-```bash
-export PATH="$HOME/conda_root/bin:$PATH"
-```
-* Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)
-* After that restart Ubuntu.
-* You can change the directory to a Windows location using 
-`cd /mnt/[drive letter]/[windows location]`, e.g. `cd mnt/c/Users/name/source/repos/`.
-* Now clone the LFortran git repository.
-```bash
+cd ~
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 ```
@@ -207,7 +198,7 @@ cd lfortran
 conda env create -f environment_linux.yml
 conda init bash
 ```
-* Restart Ubuntu again
+* Restart Ubuntu terminal again
 ```bash
 conda activate lf
 sudo apt update
