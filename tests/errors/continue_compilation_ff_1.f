@@ -43,6 +43,9 @@
       REAL*8 A = 1.23.45
       INTEGER*4 VAR/5/
       COMMON /BLOCK/ A, B C
+      INTEGER*4 VAR/5/
+      EQUIVALENCE (X Y)
+      DO 20 I = 1 10
 
       val = THIS_IMAGE()
       CALL CO_SUM(val, RESULT_IMAGE=1)
