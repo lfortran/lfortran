@@ -25,7 +25,27 @@
       COMPLEX :: a_4
       COMPLEX :: a_5
       REAL :: y_4
+      INTEGER :: I J
       CLOSE(UNIT=200)
+      I == 10
+      J = 20..5
+      PRINT *, "Value of I is" I
+      CHARACTER*10 STR = 'Hello  '
+      WRITE(*,10 FORMAT(A))
+      A = B +  * C
+      INTEGER K L M = 5
+      READ *, N 5
+      REAL X Y Z 10.5
+      COMPLEX C = (1.0,2.0
+      WRITE(*,10) FORMAT(A, I5)
+      I === 10
+      J = .20E
+      REAL*8 A = 1.23.45
+      INTEGER*4 VAR/5/
+      COMMON /BLOCK/ A, B C
+      INTEGER*4 VAR/5/
+      EQUIVALENCE (X Y)
+      DO 20 I = 1 10
 
       val = THIS_IMAGE()
       CALL CO_SUM(val, RESULT_IMAGE=1)
