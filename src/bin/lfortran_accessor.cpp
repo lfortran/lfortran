@@ -104,16 +104,14 @@ namespace LCompilers::LLanguageServer {
                     std::string symbol_name = ASRUtils::symbol_name( s );
                     LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                     loc.symbol_name = symbol_name;
-                    loc.first_pos = lm.output_to_input_pos(asr->loc.first, false);
                     lm.pos_to_linecol(
-                        loc.first_pos,
+                        lm.output_to_input_pos(asr->loc.first, false),
                         loc.first_line,
                         loc.first_column,
                         loc.filename
                     );
-                    loc.last_pos = lm.output_to_input_pos(asr->loc.last, true);
                     lm.pos_to_linecol(
-                        loc.last_pos,
+                        lm.output_to_input_pos(asr->loc.last, true),
                         loc.last_line,
                         loc.last_column,
                         loc.filename

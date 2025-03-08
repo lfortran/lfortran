@@ -1,7 +1,14 @@
 #include <cctype>
 #include <cstdio>
 #include <iostream>
+#include <ostream>
 #include <string>
+
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif // _WIN32
 
 #include <server/communication_protocol.h>
 
@@ -13,7 +20,8 @@ namespace LCompilers::LLanguageServer {
         MessageQueue &incomingMessages,
         MessageQueue &outgoingMessages,
         lsl::Logger &logger
-    ) : languageServer(languageServer)
+    ) : cout_sbuf(std::cout.rdbuf())  // reference to stdout
+      , languageServer(languageServer)
       , messageStream(messageStream)
       , incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
@@ -22,7 +30,38 @@ namespace LCompilers::LLanguageServer {
           listen();
       })
     {
-        // empty
+        // Redirect stdout to stderr
+        std::cout << std::flush;
+        std::cout.rdbuf(std::cerr.rdbuf());
+        fflush(stdout);
+#ifdef _WIN32
+        if ((stdout_fd = _dup(_fileno(stdout))) == -1)
+#else
+        if ((stdout_fd = dup(fileno(stdout))) == -1) {
+#endif // _WIN32
+            logger.error() << "Failed to copy stdout for restoration." << std::endl;
+#ifdef _WIN32
+        } else if (_dup2(_fileno(stderr), _fileno(stdout)) == -1) {
+#else
+        } else if (dup2(fileno(stderr), fileno(stdout)) == -1) {
+#endif // _WIN32
+            logger.error() << "Failed to copy stdout for restoration." << std::endl;
+        }
+    }
+
+    CommunicationProtocol::~CommunicationProtocol() {
+        // Restore stdout
+        std::cout << std::flush;
+        std::cout.rdbuf(cout_sbuf);
+        fflush(stdout);
+#ifdef _WIN32
+        if (_dup2(stdout_fd, _fileno(stdout)) == -1) {
+#else
+        if (dup2(stdout_fd, fileno(stdout)) == -1) {
+#endif // _WIN32
+            logger.debug() << "Failed to restore stdout." << std::endl;
+        }
+        close(stdout_fd);
     }
 
     auto CommunicationProtocol::listen() -> void {
@@ -32,7 +71,14 @@ namespace LCompilers::LLanguageServer {
                 logger.trace()
                     << "Sending:" << std::endl
                     << message << std::endl;
-                std::cout << message << std::flush;
+#ifdef _WIN32
+                if (_write(stdout_fd, message.c_str(), message.length()) == -1) {
+#else
+                if (write(stdout_fd, message.c_str(), message.length()) == -1) {
+#endif // _WIN32
+                    logger.error() << "Failed to write message to stdout:" << std::endl
+                                   << message << std::endl;
+                }
             } while (running);
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {

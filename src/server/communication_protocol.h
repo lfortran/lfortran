@@ -18,8 +18,11 @@ namespace LCompilers::LLanguageServer {
             MessageQueue &incomingMessages,
             MessageQueue &outgoingMessages,
             lsl::Logger &logger);
+        ~CommunicationProtocol();
         auto serve() -> void;
     private:
+        std::streambuf* cout_sbuf;
+        int stdout_fd;
         LanguageServer &languageServer;
         MessageStream &messageStream;
         MessageQueue &incomingMessages;
