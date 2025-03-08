@@ -9415,7 +9415,7 @@ public:
 
 
     void visit_Real(const AST::Real_t &x) {
-        double r = -1;
+        // First determine the kind into r_kind (e.g., 4 or 8)
         char* s_kind;
         int r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
         if (r_kind == 0) {
@@ -9449,13 +9449,17 @@ public:
                 throw SemanticAbort();
             }
         }
+
+        // Now extract the number into this kind correctly
+        double r = -1;
         if ( r_kind == 4 ) {
             r = ASRUtils::extract_real_4(x.m_n);
         } else if ( r_kind == 8 ) {
             r = ASRUtils::extract_real_8(x.m_n);
         } else {
-            // TODO: handle other kinds
-            r = ASRUtils::extract_real_8(x.m_n);
+            diag.add(Diagnostic("Kind not supported",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
