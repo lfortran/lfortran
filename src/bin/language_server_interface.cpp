@@ -243,7 +243,7 @@ namespace LCompilers::LLanguageServer::Interface {
             "Number of threads that will handle sub-tasks of requests."
         )->capture_default_str();
 
-        opts.configSection = "LFortranLanguageServer";
+        opts.configSection = "LFortran";
         server->add_option(
             "--config-section", opts.configSection,
             ("Identifies the server's configuration section within the "
@@ -308,10 +308,10 @@ namespace LCompilers::LLanguageServer::Interface {
             "Whether to pretty-print JSON objects and arrays."
         )->capture_default_str();
 
-        workspaceConfig->log.indentSize = 4;
+        workspaceConfig->indentSize = 4;
         server->add_option(
-            "--log-indent-size", workspaceConfig->log.indentSize,
-            "Number of spaces to indent the pretty-printed JSON."
+            "--indent-size", workspaceConfig->indentSize,
+            "Number of spaces per level of indentation."
         )->capture_default_str();
 
         opts.extensionId = "lcompilers.lfortran-lsp";

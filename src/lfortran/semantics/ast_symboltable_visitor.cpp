@@ -1102,7 +1102,9 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             visit_program_unit(*x.m_contains[i]);
+            implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
         }
         Vec<ASR::expr_t*> args;
@@ -1308,7 +1310,7 @@ public:
             size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
-        if (n == 0 && compiler_options.implicit_interface && compiler_options.implicit_typing && !return_var_sym) {
+        if (n == 0 && compiler_options.implicit_typing && !return_var_sym) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;

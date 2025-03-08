@@ -787,6 +787,10 @@ asr = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
+filename = "../integration_tests/struct_allocate.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
@@ -3017,6 +3021,10 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/continue_compilation_3.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_ff_1.f"
+fixed_form_cc = true
 
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"

@@ -954,9 +954,9 @@ namespace LCompilers::LanguageServerProtocol {
         lsc::LspConfig &workspaceConfig
     ) -> void {
         if (!this->workspaceConfig ||
-            (this->workspaceConfig->log.indentSize != workspaceConfig.log.indentSize)) {
+            (this->workspaceConfig->indentSize != workspaceConfig.indentSize)) {
             std::string indent{""};
-            for (unsigned int i = 0; i < workspaceConfig.log.indentSize; ++i) {
+            for (unsigned int i = 0; i < workspaceConfig.indentSize; ++i) {
                 indent.append(" ");
             }
             serializer.setIndent(indent);
@@ -1005,10 +1005,23 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &text = textDocumentItem.text;
         {
             std::unique_lock<std::shared_mutex> writeLock(documentMutex);
-            documentsByUri.emplace(
-                uri,
-                std::make_shared<LspTextDocument>(uri, languageId, version, text, logger)
-            );
+            auto iter = documentsByUri.find(uri);
+            if (iter == documentsByUri.end()) {
+                documentsByUri.emplace_hint(
+                    iter, uri,
+                    std::make_shared<LspTextDocument>(
+                        uri,
+                        languageId,
+                        version,
+                        text,
+                        logger
+                    )
+                );
+            } else {
+                std::shared_ptr<LspTextDocument> document = iter->second;
+                writeLock.unlock();
+                document->update(languageId, version, text);
+            }
         }
     }
 
@@ -1051,10 +1064,30 @@ namespace LCompilers::LanguageServerProtocol {
         if (iter != documentsByUri.end()) {
             return iter->second;
         }
-        throw LSP_EXCEPTION(
-            ErrorCodes::InvalidParams,
-            "No document exists with uri=\"" + uri + "\""
-        );
+        readLock.unlock();
+        try {
+            std::unique_lock<std::shared_mutex> writeLock(documentMutex);
+            iter = documentsByUri.find(uri);
+            if (iter != documentsByUri.end()) {
+                return iter->second;
+            }
+
+            const auto &record = documentsByUri.emplace_hint(
+                iter,
+                std::piecewise_construct,
+                std::make_tuple(uri),
+                std::make_tuple(
+                    std::make_shared<LspTextDocument>(uri, logger)
+                )
+            );
+
+            return record->second;
+        } catch (const std::runtime_error &e) {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                ("Failed to load document with uri=\"" + uri + "\": " + e.what())
+            );
+        }
     }
 
     // notification: "textDocument/didChange"

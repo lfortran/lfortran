@@ -1824,9 +1824,10 @@ public:
                     ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                     ASR::symbol_t* end_sym = end_var->m_v;
                     SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                    if ((is_argument || ASRUtils::expr_value(end) == nullptr) && 
+                        (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
                         (symbol_scope->counter != current_scope->counter && is_argument &&
-                        ASRUtils::expr_value(end) == nullptr) ) {
+                        ASRUtils::expr_value(end) == nullptr)) ) { 
                             end = get_transformed_function_call(end_sym);
                     }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
@@ -9551,11 +9552,13 @@ public:
     template <typename T>
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
                 ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn,
-                diag::Diagnostics& diag, size_t type_bound=0) {
-        size_t n_args = args.size();
+                diag::Diagnostics& diag, size_t type_bound=0, bool is_nopass = false) {
+        int n_args = args.size();
         std::string fn_name = fn->m_name;
-        if (type_bound >= fn_n_args) type_bound = 0;
-        if (n_args + n > fn_n_args) {
+        if (is_nopass) {
+            type_bound = 0;
+        }
+        if (n_args + (int)n > (int)fn_n_args) {
             diag.semantic_error_label(
                 "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
@@ -9575,7 +9578,7 @@ public:
                 ASR::Variable_t* fn_var = ASR::down_cast<ASR::Variable_t>(fn_sym);
                 if( fn_var->m_presence == ASR::presenceType::Optional ) {
                     optional_args.push_back(itr->first);
-                    for( size_t i = 0; i < fn_n_args; i++ ) {
+                    for( int i = 0; i < (int)fn_n_args; i++ ) {
                         if( ASR::down_cast<ASR::Var_t>(fn_args[i])->m_v == fn_sym ) {
                             optional_args_idx.push_back(i);
                             break;
@@ -9588,15 +9591,15 @@ public:
         std::vector<std::string> fn_args2 = convert_fn_args_to_string(
                                                 fn_args, fn_n_args);
 
-        size_t offset = args.size();
-        for (size_t i = 0; i < fn_n_args - offset - type_bound; i++) {
+        int offset = args.size();
+        for (int i = 0; i < (int)fn_n_args - offset - (int)type_bound; i++) {
             ASR::call_arg_t call_arg;
             call_arg.loc = loc;
             call_arg.m_value = nullptr;
             args.push_back(al, call_arg);
         }
 
-        for (size_t i = 0; i < n; i++) {
+        for (int i = 0; i < (int)n; i++) {
             this->visit_expr(*kwargs[i].m_value);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
@@ -9609,7 +9612,7 @@ public:
                 return ;
             }
 
-            size_t idx = std::distance(fn_args2.begin(), search) - type_bound;
+            int idx = std::distance(fn_args2.begin(), search) - (int)type_bound;
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument is already specified as a non-keyword argument",
@@ -9628,7 +9631,7 @@ public:
             args.p[idx].m_value = expr;
         }
 
-        for (size_t i=0; i < args.size(); i++) {
+        for (int i=0; i < (int)args.size(); i++) {
             if (args[i].m_value == nullptr &&
                 std::find(optional_args_idx.begin(), optional_args_idx.end(), i)
                     == optional_args_idx.end()) {
@@ -9761,7 +9764,7 @@ public:
                 SymbolTable* scope = current_scope;
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(
                     ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope)));
+                    to_lower(x_m_member[0].m_name), scope, nullptr, 0, x_m_member[1].m_args, x_m_member[1].n_args)));
             } else {
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;

@@ -21,12 +21,12 @@ namespace LCompilers::LanguageServerProtocol::Config {
         fs::path path;
         lsl::Level level;
         bool prettyPrint;
-        unsigned int indentSize;
     };
 
     struct LspConfig {
         virtual ~LspConfig() = default;
         bool openIssueReporterOnError;
+        unsigned int indentSize;
         LspConfig_trace trace;
         LspConfig_log log;
     };

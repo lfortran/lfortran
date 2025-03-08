@@ -113,15 +113,6 @@ namespace LCompilers::LanguageServerProtocol::Config {
             );
         }
 
-        if ((iter = object.find("indentSize")) != object.end()) {
-            log.indentSize = iter->second->uinteger();
-        } else {
-            throw LSP_EXCEPTION(
-                ErrorCodes::InvalidParams,
-                "Missing required LspConfig_log attribute: indentSize"
-            );
-        }
-
         return log;
     }
 
@@ -150,12 +141,6 @@ namespace LCompilers::LanguageServerProtocol::Config {
                 transformer.booleanToAny(log.prettyPrint)
             )
         );
-        object.emplace(
-            "indentSize",
-            std::make_unique<LSPAny>(
-                transformer.uintegerToAny(log.indentSize)
-            )
-        );
         any = std::make_unique<LSPObject>(std::move(object));
         return any;
     }
@@ -166,9 +151,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
         if (any.type() != LSPAnyType::Object) {
             throw LSP_EXCEPTION(
                 ErrorCodes::InvalidParams,
-                ("LSPAnyType for a "
-                 "LspConfig"
-                 " must be of type LSPAnyType::Object"
+                ("LSPAnyType for an LspConfig must be of type LSPAnyType::Object"
                  " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))
             );
         }
@@ -185,6 +168,15 @@ namespace LCompilers::LanguageServerProtocol::Config {
                 ErrorCodes::InvalidParams,
                 ("Missing required LFortranLspConfig attribute: "
                  "openIssueReporterOnError")
+            );
+        }
+
+        if ((iter = object.find("indentSize")) != object.end()) {
+            config->indentSize = iter->second->uinteger();
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig_log attribute: indentSize"
             );
         }
 

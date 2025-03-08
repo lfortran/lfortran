@@ -3031,8 +3031,18 @@ public:
                         array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
                     }
                 } else {
+                    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) && 
+                          ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value)->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Maskl) &&
+                            ASRUtils::extract_kind_from_ttype_t(target_type) == 8) {
+                        // Do return_type = kind(8) 
+                        ASR::ttype_t* int_64 = ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 8));
+                        ASR::IntrinsicElementalFunction_t* int_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+                        value = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, value->base.loc, int_func->m_intrinsic_id,
+                            int_func->m_args, int_func->n_args, int_func->m_overload_id, int_64, int_func->m_value));
+                    } else {
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type, diag);
+                    }
                 }
             }
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
@@ -3495,6 +3505,7 @@ public:
             } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
                 ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
                 ASR::symbol_t* f4 = f3->m_proc;
+                bool is_nopass = f3->m_is_nopass;
                 if( !ASR::is_a<ASR::Function_t>(*f4) ) {
                     diag.add(Diagnostic(
                         std::string(f3->m_proc_name) + " is not a subroutine.",
@@ -3507,7 +3518,7 @@ public:
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                     f->m_args, f->n_args, x.base.base.loc, f,
-                    diags, x.n_member);
+                    diags, x.n_member, is_nopass);
                 if( diags.has_error() ) {
                     diag.diagnostics.insert(diag.diagnostics.end(),
                             diags.diagnostics.begin(), diags.diagnostics.end());

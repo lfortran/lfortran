@@ -1,5 +1,9 @@
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
+#include <string>
+#include <sstream>
 
 #include <server/lsp_exception.h>
 #include <server/lsp_text_document.h>
@@ -23,6 +27,21 @@ namespace LCompilers::LanguageServerProtocol {
         indexLines();
     }
 
+    LspTextDocument::LspTextDocument(
+        const std::string &uri,
+        lsl::Logger &logger
+    ) : _uri{uri}
+      , _languageId{""}
+      , _version{-1}
+      , _text{""}
+      , logger{logger}
+    {
+        buffer.reserve(8196);
+        validateUriAndSetPath();
+        loadText();
+        indexLines();
+    }
+
     LspTextDocument::LspTextDocument(LspTextDocument &&other) noexcept
         : _uri(std::move(other._uri))
         , _languageId(std::move(other._languageId))
@@ -39,6 +58,28 @@ namespace LCompilers::LanguageServerProtocol {
     auto LspTextDocument::validateUriAndSetPath() -> void {
         std::string path = std::regex_replace(_uri, RE_FILE_URI, "");
         _path = fs::canonical(path);
+    }
+
+    auto LspTextDocument::loadText() -> void {
+        std::ifstream fs(_path);
+        if (!fs.is_open()) {
+            throw std::runtime_error("Could not open file: " + _path.string());
+        }
+        std::stringstream ss;
+        ss << fs.rdbuf();
+        _text = ss.str();
+    }
+
+    auto LspTextDocument::update(
+        const std::string &languageId,
+        int version,
+        const std::string &text
+    ) -> void {
+        std::unique_lock<std::shared_mutex> writeLock(_mutex);
+        _languageId = languageId;
+        _version = version;
+        _text = text;
+        indexLines();
     }
 
     auto LspTextDocument::apply(
@@ -118,6 +159,13 @@ namespace LCompilers::LanguageServerProtocol {
         const Position &start = range.start;
         std::size_t index = lineIndices[start.line] + start.character;
         return index;
+    }
+
+    auto LspTextDocument::toPosition(
+        std::size_t line,
+        std::size_t column
+    ) const -> std::size_t {
+        return lineIndices[line] + column;
     }
 
     auto LspTextDocument::from(
