@@ -1,4 +1,4 @@
-semantic error: Return type not specified
+semantic error: No implicit return type available for `fun`
  --> tests/errors/implicit_typing3.f90:4:9 - 5:24
   |
 4 |            function fun()

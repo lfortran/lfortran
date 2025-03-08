@@ -1,0 +1,107 @@
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_ff_1.f:30:13
+   |
+30 |       val = THIS_IMAGE()
+   |             ^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_ff_1.f:31:7
+   |
+31 |       CALL CO_SUM(val, RESULT_IMAGE=1)
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_ff_1.f:32:11
+   |
+32 |       IF (THIS_IMAGE() == 1) THEN
+   |           ^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_ff_1.f:36:7
+   |
+36 |       CALL EVENT_QUERY(1, 1, 1)
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
+  --> tests/errors/continue_compilation_ff_1.f:43:33
+   |
+43 |       size_a_2 = SIZE(a_3, KIND=kindvar, DIM=1)
+   |                                 ^^^^^^^ 
+
+semantic error: Different `character` lengths 1 and 4 in array constructor
+  --> tests/errors/continue_compilation_ff_1.f:45:27
+   |
+45 |       PRINT *, ["a", "b", "ball", "cat"]
+   |                           ^^^^^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+  --> tests/errors/continue_compilation_ff_1.f:46:20
+   |
+46 |       PRINT *, [1, 2.]
+   |                    ^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+  --> tests/errors/continue_compilation_ff_1.f:47:20
+   |
+47 |       PRINT *, [1, [1., 2.]]
+   |                    ^^^^^^^^ 
+
+semantic error: Argument of intrinsic must be an integer
+  --> tests/errors/continue_compilation_ff_1.f:48:16
+   |
+48 |       PRINT *, DFLOAT(y_3)
+   |                ^^^^^^^^^^^ 
+
+semantic error: Invalid argument type for `dim` or `mask`
+  --> tests/errors/continue_compilation_ff_1.f:50:31
+   |
+50 |       PRINT *, SUM([1, 2, 3], 1.1)
+   |                               ^^^ 
+
+semantic error: Too many arguments to call `dint`
+  --> tests/errors/continue_compilation_ff_1.f:51:16
+   |
+51 |       PRINT *, DINT(1.0_8, 8)
+   |                ^^^^^^^^^^^^^^ 
+
+semantic error: Argument 1 of dlgama must be of double precision real type
+  --> tests/errors/continue_compilation_ff_1.f:52:16
+   |
+52 |       PRINT *, DLGAMA(2.7)
+   |                ^^^^^^^^^^^ 
+
+semantic error: Too many arguments to call `dnint`
+  --> tests/errors/continue_compilation_ff_1.f:53:16
+   |
+53 |       PRINT *, DNINT(1.0_8, 8)
+   |                ^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to dprod must be real(4)
+  --> tests/errors/continue_compilation_ff_1.f:54:16
+   |
+54 |       PRINT *, DPROD(4.23_8, 4.3_8)
+   |                ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assignment to loop variable `i_2` is not allowed
+  --> tests/errors/continue_compilation_ff_1.f:58:11
+   |
+58 |           i_2 = j_1 + 1
+   |           ^^^ 
+
+semantic error: Step expression (Increment) in DO loop cannot be zero
+  --> tests/errors/continue_compilation_ff_1.f:64:22
+   |
+64 |       DO i_2 = 1, 5, 0
+   |                      ^ 
+
+semantic error: Unexpected args, Dreal expects (complex64) as arguments
+  --> tests/errors/continue_compilation_ff_1.f:68:16
+   |
+68 |       PRINT *, DREAL(a_4)
+   |                ^^^^^^^^^^ 
+
+semantic error: Argument of intrinsic must be an integer
+  --> tests/errors/continue_compilation_ff_1.f:70:16
+   |
+70 |       PRINT *, FLOAT(y_4)
+   |                ^^^^^^^^^^ 

@@ -3524,7 +3524,7 @@ namespace Maskl {
             diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
             return nullptr;
         } else {
-            int64_t bit_size = (kind == 4) ? 32 : 64;
+            int64_t bit_size = (i <= 32 && kind == 4) ? 32 : 64;
             int64_t result;
             if (i == 0) {
                 result = 0;
@@ -3545,12 +3545,39 @@ namespace Maskl {
         * r = Maskl(x)
         * r = (x == 64) ? -1 : ((1 << x) - 1) << (64 - x)
         */
-        body.push_back(al, b.If((b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type))), {
-            b.Assignment(result, b.i_t(-1, return_type))
-        }, {
-            b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
-                b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type))
-        }));
+        // For return_type is 8 result is always 64 bit
+        /*if (x == 32 .or. x == 64) then
+        *    res = -1
+        * else
+        *    if (x <= 32) then             ! 32 bit result
+        *        res = ishft(1, x) - 1 
+        *        res = ishft(res, 32 - x)
+        *    else                            ! 64 bit result     
+        *        res = ishft(1, x) - 1 
+        *        res = ishft(res, 64 - x)
+        *    end if
+        *end if
+        */
+    //    std::cout<<ASRUtils::extract_kind_from_ttype_t(return_type)<<" "<<ASRUtils::extract_kind_from_ttype_t(arg_types[0])<<std::endl;
+       if (ASRUtils::extract_kind_from_ttype_t(return_type) == 8) {
+            body.push_back(al, b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
+                b.Assignment(result, b.i_t(-1, return_type))
+            }, {
+                b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
+                    b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type))
+            }));
+        } else {
+            body.push_back(al,b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
+                b.Assignment(result, b.i_t(-1, return_type))
+            }, {
+                b.If(b.LtE(b.i2i_t(args[0], return_type), b.i_t(32, return_type)), 
+                    { b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
+                        b.Sub(b.i_t(32, return_type), b.i2i_t(args[0], return_type)), return_type)) },
+                    { b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
+                        b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type)) } )
+            }));
+                
+        }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
