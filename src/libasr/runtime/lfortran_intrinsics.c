@@ -196,8 +196,15 @@ char* append_to_string(char* str, const char* append) {
 void handle_integer(char* format, int64_t val, char** result) {
     int width = 0, min_width = 0;
     char* dot_pos = strchr(format, '.');
-    int len = (val == 0) ? 1 : (int)log10(llabs(val)) + 1;
+    int len;
     int sign_width = (val < 0) ? 1 : 0;
+    if (val == 0) {
+        len = 1;
+    } else if (val == INT64_MIN) {
+        len = 19;
+    } else {
+        len = (int)log10(llabs(val)) + 1;
+    }
     if (dot_pos != NULL) {
         dot_pos++;
         width = atoi(format + 1);
@@ -238,7 +245,11 @@ void handle_integer(char* format, int64_t val, char** result) {
             }
         }
         char str[20];
-        sprintf(str, "%lld", llabs(val));
+        if (val == INT64_MIN) {
+            sprintf(str, "9223372036854775808");
+        } else {
+            sprintf(str, "%lld", llabs(val));
+        }
         *result = append_to_string(*result, str);
     } else {
         for (int i = 0; i < width; i++) {
