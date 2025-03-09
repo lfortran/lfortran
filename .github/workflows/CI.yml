@@ -530,10 +530,10 @@ jobs:
             ./plot_bogdanov_takens.exe
             ./plot_bruinsma.exe
             ./plot_fun1.exe
-            # ./plot_lorenz.exe
+            ./plot_lorenz.exe
             ./plot_lotka_volterra1.exe
             ./plot_lotka_volterra2.exe
-            # ./plot_pendulum.exe
+            ./plot_pendulum.exe
             ./plot_transes_iso.exe
 
       - name: Test POT3D

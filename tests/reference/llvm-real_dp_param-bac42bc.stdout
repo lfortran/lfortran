@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 
 @real_dp_param.u = internal global float 0x3FF0CCCCC0000000
-@real_dp_param.v = internal global double 1.050000e+00
+@real_dp_param.v = internal global double 0x3FF0CCCCC0000000
 @real_dp_param.zero = internal global double 0.000000e+00
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1

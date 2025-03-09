@@ -486,7 +486,7 @@
                                     (Var 2 sum)
                                     Sub
                                     (RealConstant
-                                        120.420000
+                                        120.419998
                                         (Real 4)
                                     )
                                     (Real 4)
