@@ -1,4 +1,5 @@
 program binop_02
+    use iso_fortran_env
     real(8) :: v
     integer(2), parameter :: exp_2 = 2
     integer(4), parameter :: exp_3 = 3
