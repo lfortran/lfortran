@@ -178,9 +178,6 @@ namespace LCompilers {
                 } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
                     arr_expr = tmp->m_v;
                     check_m_m =true;
-                } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp->m_v)){
-                    arr_expr = ASR::down_cast<ASR::ArrayItem_t>(tmp->m_v)->m_v;
-                    check_m_m = false;
                 } else {
                     break;
                 }
