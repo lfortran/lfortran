@@ -81,10 +81,6 @@ namespace lcli = LCompilers::CommandLineInterface;
 namespace lsi = LCompilers::LLanguageServer::Interface;
 #endif
 
-enum Backend {
-    llvm, c, cpp, x86, wasm, fortran, mlir
-};
-
 std::string get_unique_ID() {
     static std::random_device dev;
     static std::mt19937 rng(dev());
@@ -642,7 +638,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
 [[maybe_unused]] int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
-    CompilerOptions &compiler_options)
+    CompilerOptions &compiler_options, LCompilers::PassManager::backend Backend)
 {
     std::string input = read_file(infile);
 
@@ -681,7 +677,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
-    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
+    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics, Backend);
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
@@ -804,7 +800,8 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     }
 }
 
-int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options) {
+int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options, 
+    LCompilers::PassManager::backend Backend) {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
@@ -824,7 +821,7 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
         LCompilers::PassManager pass_manager;
         compiler_options.po.always_run = true;
         compiler_options.po.run_fun = "f";
-        pass_manager.dump_all_passes(al, asr.result, compiler_options.po, diagnostics, lm);
+        pass_manager.dump_all_passes(al, asr.result, compiler_options.po, diagnostics, lm, Backend);
         std::cerr << diagnostics.render(lm, compiler_options);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1649,7 +1646,7 @@ int compile_to_binary_fortran(const std::string &infile,
 int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
     bool time_report,
-    const std::string &runtime_library_dir, Backend backend,
+    const std::string &runtime_library_dir, LCompilers::PassManager::backend backend,
     bool static_executable, bool shared_executable,
     std::string linker, std::string linker_path, bool kokkos,
     bool verbose, const std::vector<std::string> &lib_dirs,
@@ -1741,7 +1738,7 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm || backend == Backend::mlir) {
+    if (backend == LCompilers::PassManager::backend::llvm || backend == LCompilers::PassManager::backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -1831,7 +1828,7 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
-                if (backend == Backend::llvm &&
+                if (backend == LCompilers::PassManager::backend::llvm &&
                         compiler_options.po.enable_gpu_offloading &&
                         LCompilers::endswith(s, ".tmp.o")) {
                     std::string mlir_tmp_o{s.substr(0, s.size() - 6) +
@@ -1899,7 +1896,7 @@ int link_executable(const std::vector<std::string> &infiles,
             }
         }
 #endif
-    } else if (backend == Backend::c) {
+    } else if (backend == LCompilers::PassManager::backend::c) {
         std::string CXX = "gcc";
         std::string cmd = CXX + " -o " + outfile + " ";
         std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1924,7 +1921,7 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
-    } else if (backend == Backend::cpp) {
+    } else if (backend == LCompilers::PassManager::backend::cpp) {
         std::string CXX = "g++";
         std::string options, post_options;
         if (static_executable) {
@@ -1957,16 +1954,16 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
-    } else if (backend == Backend::x86) {
+    } else if (backend == LCompilers::PassManager::backend::x86) {
         std::string cmd = "cp " + infiles[0] + " " + outfile;
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
-    } else if (backend == Backend::wasm) {
+    } else if (backend == LCompilers::PassManager::backend::wasm) {
         // do nothing
-    } else if (backend == Backend::fortran) {
+    } else if (backend == LCompilers::PassManager::backend::fortran) {
         std::string cmd = "gfortran -o " + outfile + " ";
         std::string base_path = "\"" + runtime_library_dir + "\"";
         std::string runtime_lib = "lfortran_runtime";
@@ -1997,7 +1994,7 @@ int link_executable(const std::vector<std::string> &infiles,
     }
 
     std::string run_cmd = "";
-    if (backend == Backend::wasm) {
+    if (backend == LCompilers::PassManager::backend::wasm) {
         // for node version less than 16, we need to also provide flag --experimental-wasm-bigint
         run_cmd = "node --experimental-wasi-unstable-preview1 " + outfile + ".js";
     } else if (t == "x86_64-pc-windows-msvc") {
@@ -2185,7 +2182,7 @@ int main_app(int argc, char *argv[]) {
     std::string runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
 
     std::string rtlib_header_dir = LCompilers::LFortran::get_runtime_library_header_dir();
-    Backend backend;
+    LCompilers::PassManager::backend backend= LCompilers::PassManager::backend::llvm;
 
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
@@ -2283,21 +2280,20 @@ int main_app(int argc, char *argv[]) {
         return python_wrapper(opts.arg_pywrap_file, opts.arg_pywrap_array_order,
             compiler_options);
     }
-
     if (opts.arg_backend == "llvm") {
-        backend = Backend::llvm;
+        backend = LCompilers::PassManager::backend::llvm;
     } else if (opts.arg_backend == "c") {
-        backend = Backend::c;
+        backend = LCompilers::PassManager::backend::c;
     } else if (opts.arg_backend == "cpp") {
-        backend = Backend::cpp;
+        backend = LCompilers::PassManager::backend::cpp;
     } else if (opts.arg_backend == "x86") {
-        backend = Backend::x86;
+        backend = LCompilers::PassManager::backend::x86;
     } else if (opts.arg_backend == "wasm") {
-        backend = Backend::wasm;
+        backend = LCompilers::PassManager::backend::wasm;
     } else if (opts.arg_backend == "fortran") {
-        backend = Backend::fortran;
+        backend = LCompilers::PassManager::backend::fortran;
     } else if (opts.arg_backend == "mlir") {
-        backend = Backend::mlir;
+        backend = LCompilers::PassManager::backend::mlir;
     } else {
         std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
         return 1;
@@ -2366,7 +2362,7 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
-        dump_all_passes(opts.arg_file, compiler_options);
+        dump_all_passes(opts.arg_file, compiler_options, backend);
     }
 
     if (opts.arg_E) {
@@ -2397,7 +2393,7 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.show_asr) {
         return emit_asr(opts.arg_file, lfortran_pass_manager,
-                compiler_options);
+                compiler_options, backend);
     }
     if (opts.show_document_symbols) {
         return get_symbols(opts.arg_file, compiler_options);
@@ -2450,14 +2446,14 @@ int main_app(int argc, char *argv[]) {
         return emit_fortran(opts.arg_file, compiler_options);
     }
     if (opts.arg_S) {
-        if (backend == Backend::llvm) {
+        if (backend == LCompilers::PassManager::backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             return compile_to_assembly_file(opts.arg_file, outfile, opts.time_report, compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
-        } else if (backend == Backend::cpp) {
+        } else if (backend == LCompilers::PassManager::backend::cpp) {
             std::cerr << "The C++ backend does not work with the -S option yet." << std::endl;
             return 1;
         } else {
@@ -2465,7 +2461,7 @@ int main_app(int argc, char *argv[]) {
         }
     }
     if (opts.arg_c) {
-        if (backend == Backend::llvm) {
+        if (backend == LCompilers::PassManager::backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             return compile_src_to_object_file(opts.arg_file, outfile, opts.time_report, false,
                 compiler_options, lfortran_pass_manager);
@@ -2473,19 +2469,19 @@ int main_app(int argc, char *argv[]) {
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
-        } else if (backend == Backend::c) {
+        } else if (backend == LCompilers::PassManager::backend::c) {
             return compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
                     rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
-        } else if (backend == Backend::cpp) {
+        } else if (backend == LCompilers::PassManager::backend::cpp) {
             return compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
                     true, rtlib_c_header_dir, compiler_options);
-        } else if (backend == Backend::x86) {
+        } else if (backend == LCompilers::PassManager::backend::x86) {
             return compile_to_binary_x86(opts.arg_file, outfile, opts.time_report, compiler_options);
-        } else if (backend == Backend::wasm) {
+        } else if (backend == LCompilers::PassManager::backend::wasm) {
             return compile_to_binary_wasm(opts.arg_file, outfile, opts.time_report, compiler_options);
-        } else if (backend == Backend::fortran) {
+        } else if (backend == LCompilers::PassManager::backend::fortran) {
             return compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
-        } else if (backend == Backend::mlir) {
+        } else if (backend == LCompilers::PassManager::backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
             return handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
 #else
@@ -2506,11 +2502,11 @@ int main_app(int argc, char *argv[]) {
         std::string tmp_o = std::filesystem::path(arg_file).replace_extension(".tmp.o").string();
         if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
-            if (backend == Backend::x86) {
+            if (backend == LCompilers::PassManager::backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
                         opts.time_report, compiler_options);
             }
-            if (backend == Backend::llvm) {
+            if (backend == LCompilers::PassManager::backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_src_to_object_file(arg_file, tmp_o, opts.time_report, false,
                     compiler_options, lfortran_pass_manager);
@@ -2518,18 +2514,18 @@ int main_app(int argc, char *argv[]) {
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
 #endif
-            } else if (backend == Backend::cpp) {
+            } else if (backend == LCompilers::PassManager::backend::cpp) {
                 err = compile_to_object_file_cpp(arg_file, tmp_o, opts.arg_v, false,
                         true, rtlib_header_dir, compiler_options);
-            } else if (backend == Backend::c) {
+            } else if (backend == LCompilers::PassManager::backend::c) {
                 err = compile_to_object_file_c(arg_file, tmp_o, opts.arg_v,
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
-            } else if (backend == Backend::fortran) {
+            } else if (backend == LCompilers::PassManager::backend::fortran) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
-            } else if (backend == Backend::wasm) {
+            } else if (backend == LCompilers::PassManager::backend::wasm) {
                 err = compile_to_binary_wasm(arg_file, outfile,
                         opts.time_report, compiler_options);
-            } else if (backend == Backend::mlir) {
+            } else if (backend == LCompilers::PassManager::backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
                 err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
 #else
