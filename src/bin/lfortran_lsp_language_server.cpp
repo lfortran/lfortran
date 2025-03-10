@@ -440,14 +440,22 @@ namespace LCompilers::LanguageServerProtocol {
                 std::make_unique<WorkspaceEdit>();
             std::map<DocumentUri, std::vector<TextEdit>> &changes =
                 workspaceEdit->changes.emplace();
-            std::vector<TextEdit> &edits = changes.emplace(
-                std::piecewise_construct,
-                std::make_tuple(uri),
-                std::make_tuple()
-            ).first->second;
-            edits.reserve(symbols.size());
             for (const auto &symbol : symbols) {
-                TextEdit &edit = edits.emplace_back();
+                const std::string symbolUri =
+                    "file://" + resolve(symbol.filename, compilerOptions).string();
+                std::vector<TextEdit> *edits = nullptr;
+                auto iter = changes.find(symbolUri);
+                if (iter != changes.end()) {
+                    edits = &iter->second;
+                } else {
+                    edits = &changes.emplace_hint(
+                        iter,
+                        std::piecewise_construct,
+                        std::make_tuple(symbolUri),
+                        std::make_tuple()
+                    )->second;
+                }
+                TextEdit &edit = edits->emplace_back();
                 Position &start = edit.range.start;
                 Position &end = edit.range.end;
                 start.line = symbol.first_line - 1;  // 1-to-0 index
@@ -707,14 +715,17 @@ namespace LCompilers::LanguageServerProtocol {
                 std::make_unique<std::vector<DocumentHighlight>>();
             highlights->reserve(symbols.size());
             for (const auto &symbol : symbols) {
-                DocumentHighlight &highlight = highlights->emplace_back();
-                Range &range = highlight.range;
-                Position &start = range.start;
-                Position &end = range.end;
-                start.line = symbol.first_line - 1;  // 1-to-0 index
-                start.character = symbol.first_column - 1;  // 1-to-0 index
-                end.line = symbol.last_line - 1;  // 1-to-0 index
-                end.character = symbol.last_column - 1;  // 1-to-0 index
+                // NOTE: Only highlight symbols from the current document
+                if (document->path() == resolve(symbol.filename, compilerOptions)) {
+                    DocumentHighlight &highlight = highlights->emplace_back();
+                    Range &range = highlight.range;
+                    Position &start = range.start;
+                    Position &end = range.end;
+                    start.line = symbol.first_line - 1;  // 1-to-0 index
+                    start.character = symbol.first_column - 1;  // 1-to-0 index
+                    end.line = symbol.last_line - 1;  // 1-to-0 index
+                    end.character = symbol.last_column - 1;  // 1-to-0 index
+                }
             }
             result = std::move(highlights);
         } else {
