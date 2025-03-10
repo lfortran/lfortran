@@ -542,6 +542,11 @@ jobs:
             FC="$(pwd)/src/bin/lfortran"
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
+            # Only workarounds used now are (also tracked at: https://github.com/lfortran/lfortran/issues/2862):
+            # 1. HDF5 support replaced with binary file read (see: https://github.com/lfortran/lfortran/issues/6561)
+            # 2. namelist reading support replaced with use of file read (see: https://github.com/lfortran/lfortran/issues/1999)
+            # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
+            # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
             git checkout -t origin/build_pot3d_custom_mpi_wrappers_and_without_hdf5
             git checkout 57f34b62990d647108d837b41112b92c270ad204
             cd src
