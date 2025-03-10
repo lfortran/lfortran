@@ -267,6 +267,7 @@ LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status);
 LFORTRAN_API int32_t _lfortran_ichar(char *c);
 LFORTRAN_API int32_t _lfortran_iachar(char *c);
+LFORTRAN_API char *_lfortran_compiler_options();
 LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]);
 LFORTRAN_API void _lpython_free_argv();
 LFORTRAN_API int32_t _lpython_get_argc();

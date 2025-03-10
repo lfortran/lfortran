@@ -64,7 +64,6 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Isnan)
         INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(CompilerVersion)
-        INTRINSIC_NAME_CASE(CompilerOptions)
         INTRINSIC_NAME_CASE(CommandArgumentCount)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
@@ -299,8 +298,6 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
             {nullptr, &CompilerVersion::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerOptions),
-            {nullptr, &CompilerOptions::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
@@ -642,8 +639,6 @@ namespace IntrinsicElementalFunctionRegistry {
             "nearest"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
             "compiler_version"},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerOptions),
-            "compiler_options"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
             "command_argument_count"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
@@ -975,7 +970,6 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
-                {"compiler_options", {&CompilerOptions::create_CompilerOptions, &CompilerOptions::eval_CompilerOptions}},
                 {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},

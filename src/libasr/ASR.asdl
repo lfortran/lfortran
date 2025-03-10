@@ -179,6 +179,7 @@ expr
     | IntegerBitLen(expr a, ttype type, expr? value)
     | Ichar(expr arg, ttype type, expr? value)
     | Iachar(expr arg, ttype type, expr? value)
+    | CompilerOptions(ttype type, expr? value)
     | SizeOfType(ttype arg, ttype type, expr? value)
     | PointerNullConstant(ttype type)
     | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)

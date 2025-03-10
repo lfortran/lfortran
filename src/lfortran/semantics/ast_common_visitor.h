@@ -1111,7 +1111,6 @@ public:
         {"selected_real_kind", IntrinsicSignature({"p", "r", "radix"}, 0, 3)},
         {"nearest", IntrinsicSignature({"x", "s"}, 2, 2)},
         {"compiler_version", IntrinsicSignature({}, 0, 0)},
-        {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
         {"ichar", IntrinsicSignature({"C", "kind"}, 1, 2)},
@@ -1277,7 +1276,7 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_associated", "c_funloc"
+        "c_loc", "c_f_pointer", "c_associated", "c_funloc", "compiler_options"
     };
 
     ASR::accessType dflt_access = ASR::Public;
@@ -6996,6 +6995,17 @@ public:
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
     }
 
+    ASR::asr_t* create_CompilerOptions(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {};
+        handle_intrinsic_node_args(x, args, kwarg_names, 0, 0, "compiler_options");
+        ASRUtils::ASRBuilder b(al, x.base.base.loc);
+        ASR::ttype_t *type = ASR::down_cast<ASR::ttype_t>(ASR::make_String_t(
+                al, x.base.base.loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString));
+        ASR::expr_t *m_value =  b.StringConstant(lcompilers_commandline_options, type);
+        return ASR::make_CompilerOptions_t(al, x.base.base.loc, type, m_value);
+    }
+
     ASR::asr_t* create_Complex(const AST::FuncCallOrArray_t& x) {
         const Location &loc = x.base.base.loc;
         Vec<ASR::expr_t*> args;
@@ -8278,6 +8288,8 @@ public:
                         tmp = create_Associated(x);
                     } else if (var_name == "c_funloc") {
                         tmp = create_PointerToCptr(x);
+                    } else if (var_name == "compiler_options") {
+                        tmp = create_CompilerOptions(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
