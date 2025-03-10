@@ -3264,6 +3264,10 @@ filename = "fixed_form/double_complex1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/auxiliary_IO_1.f"
+ast = true
+
+[[test]]
 filename = "fixed_form/include1.f"
 ast = true
 
