@@ -20,4 +20,10 @@ integer, parameter :: logical_kinds(1) = [4]
 
 integer, parameter :: iostat_end = -1
 
+interface
+    function compiler_options() result(s)
+        character(len=1024) :: s
+    end function
+end interface
+
 end module
