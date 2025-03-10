@@ -1520,6 +1520,23 @@ public:
         }
     }
 
+    void visit_CompilerOptions(const ASR::CompilerOptions_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        std::string runtime_func_name = "_lfortran_compiler_options";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getInt8Ty(context)->getPointerTo(), // Return type: char*
+                {}, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {});
+    }
+
     void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);

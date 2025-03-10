@@ -59,6 +59,7 @@ extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
 #define LCOMPILERS_MAX_STACKTRACE_LENGTH 200
 char *source_filename;
 char *binary_executable_path = "/proc/self/exe";
+char *lcompilers_commandline_options;
 
 struct Stacktrace {
     uintptr_t pc[LCOMPILERS_MAX_STACKTRACE_LENGTH];
@@ -3785,6 +3786,9 @@ LFORTRAN_API int32_t _lfortran_iachar(char *c) {
     return (int32_t) (uint8_t)(c[0]);
 }
 
+LFORTRAN_API char *_lfortran_compiler_options() {
+    return lcompilers_commandline_options;
+}
 // Command line arguments
 int32_t _argc;
 char **_argv;
