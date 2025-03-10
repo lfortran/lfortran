@@ -301,7 +301,7 @@ namespace LCompilers {
             llvm::Value* arr_first = nullptr;
 
             if( !co.stack_arrays ) {
-                llvm::DataLayout data_layout(module);
+                llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                 builder->CreateStore(builder->CreateMul(
                     llvm_utils->CreateLoad(llvm_size),
@@ -371,7 +371,7 @@ namespace LCompilers {
             }
             llvm::Value* ptr2firstptr = get_pointer_to_data(arr);
             llvm::AllocaInst *arg_size = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
-            llvm::DataLayout data_layout(module);
+            llvm::DataLayout data_layout(module->getDataLayout());
             llvm::Type* ptr_type = llvm_data_type->getPointerTo();
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
@@ -766,7 +766,7 @@ namespace LCompilers {
             builder->CreateStore(arr_first, first_ptr);
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(array);
-            llvm::DataLayout data_layout(module);
+            llvm::DataLayout data_layout(module->getDataLayout());
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
             num_elements = builder->CreateMul(num_elements, llvm_size);
@@ -838,7 +838,7 @@ namespace LCompilers {
             }
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(src);
-            llvm::DataLayout data_layout(module);
+            llvm::DataLayout data_layout(module->getDataLayout());
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
             num_elements = builder->CreateMul(num_elements, llvm_size);
@@ -885,7 +885,7 @@ namespace LCompilers {
 
         void SimpleCMODescriptor::copy_array_data_only(llvm::Value* src, llvm::Value* dest,
             llvm::Module* module, llvm::Type* llvm_data_type, llvm::Value* num_elements) {
-            llvm::DataLayout data_layout(module);
+            llvm::DataLayout data_layout(module->getDataLayout());
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
             num_elements = builder->CreateMul(num_elements, llvm_size);
