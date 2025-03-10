@@ -466,7 +466,7 @@ public:
                 }
                 llvm::Value* arr_first = nullptr;
                 if( !compiler_options.stack_arrays ) {
-                    llvm::DataLayout data_layout(module.get());
+                    llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                     prod = builder->CreateMul(prod,
                         llvm::ConstantInt::get(context, llvm::APInt(32, size)));
@@ -1348,7 +1348,7 @@ public:
         if( ASR::is_a<ASR::String_t>(*list_type->m_type) ||
             LLVM::is_llvm_struct(list_type->m_type) ||
             ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
-            llvm::DataLayout data_layout(module.get());
+            llvm::DataLayout data_layout(module->getDataLayout());
             type_size = data_layout.getTypeAllocSize(llvm_el_type);
         } else {
             type_size = ASRUtils::extract_kind_from_ttype_t(list_type->m_type);
@@ -1936,7 +1936,7 @@ public:
         if( ASR::is_a<ASR::String_t>(*el_type) ||
             LLVM::is_llvm_struct(el_type) ||
             ASR::is_a<ASR::Complex_t>(*el_type) ) {
-            llvm::DataLayout data_layout(module.get());
+            llvm::DataLayout data_layout(module->getDataLayout());
             type_size = data_layout.getTypeAllocSize(llvm_el_type);
         } else {
             type_size = ASRUtils::extract_kind_from_ttype_t(el_type);
@@ -2200,7 +2200,7 @@ public:
         if( ASR::is_a<ASR::String_t>(*list_type->m_type) ||
             LLVM::is_llvm_struct(list_type->m_type) ||
             ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
-            llvm::DataLayout data_layout(module.get());
+            llvm::DataLayout data_layout(module->getDataLayout());
             type_size = data_layout.getTypeAllocSize(llvm_el_type);
         } else {
             type_size = ASRUtils::extract_kind_from_ttype_t(list_type->m_type);
@@ -2528,7 +2528,7 @@ public:
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type))), module.get());
-                llvm::DataLayout data_layout(module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                 llvm_size = builder->CreateMul(llvm_size,
@@ -2674,7 +2674,7 @@ public:
     llvm::Value* SizeOfTypeUtil(ASR::ttype_t* m_type, llvm::Type* output_type,
         ASR::ttype_t* output_type_asr) {
         llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(m_type, module.get());
-        llvm::DataLayout data_layout(module.get());
+        llvm::DataLayout data_layout(module->getDataLayout());
         int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
         return llvm::ConstantInt::get(output_type, llvm::APInt(
             ASRUtils::extract_kind_from_ttype_t(output_type_asr) * 8, type_size));
@@ -3765,7 +3765,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASR::down_cast<ASR::ArrayConstant_t>(v->m_value)->m_type)));
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_array(ASRUtils::expr_type(v->m_value)), module.get());
-                llvm::DataLayout data_layout(module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
                 size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
                 arg_size = builder->CreateMul(llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
@@ -3897,7 +3897,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             }
             llvm::Value *ptr = nullptr;
             if( !compiler_options.stack_arrays && array_size ) {
-                llvm::DataLayout data_layout(module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(type);
                 array_size = builder->CreateMul(array_size,
                     llvm::ConstantInt::get(context, llvm::APInt(32, size)));
@@ -5332,7 +5332,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     llvm::Value* size = list_api->len(plist);
                     llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_value)), module.get());
-                    llvm::DataLayout data_layout(module.get());
+                    llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t size_ = data_layout.getTypeAllocSize(el_type);
                     size = builder->CreateMul(size, llvm::ConstantInt::get(
                         llvm::Type::getInt32Ty(context), llvm::APInt(32, size_)));
@@ -5429,7 +5429,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
-                llvm::DataLayout data_layout(module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(target_el_type);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                 llvm_size = builder->CreateMul(llvm_size,
@@ -5441,7 +5441,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
-                llvm::DataLayout data_layout(module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(target_el_type);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                 llvm_size = builder->CreateMul(llvm_size,
@@ -5454,7 +5454,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 llvm::Value* llvm_size = arr_descr->get_array_size(target, nullptr, 4);
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(target));
                 value = llvm_utils->create_gep(value, 0);
-                llvm::DataLayout data_layout(module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
                 llvm_size = builder->CreateMul(llvm_size,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
@@ -5523,7 +5523,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     ASR::dimension_t* asr_dims = nullptr;
                     size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                     int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
-                    llvm::DataLayout data_layout(module.get());
+                    llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t data_size = data_layout.getTypeAllocSize(target_el_type);
                     llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                     llvm_size = builder->CreateMul(llvm_size,
@@ -10779,7 +10779,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         CompilerOptions &co, const std::string &run_fn,
         const std::string &infile)
 {
-#if LLVM_VERSION_MAJOR >= 15
+#if LLVM_VERSION_MAJOR >= 15 && LLVM_VERSION_MAJOR <= 19
     context.setOpaquePointers(false);
 #endif
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics);
