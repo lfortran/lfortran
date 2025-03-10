@@ -2,8 +2,8 @@
 source_filename = "LFortran"
 
 %fpm_run_settings_polymorphic = type { i64, %fpm_run_settings* }
-%fpm_run_settings = type { %fpm_build_settings, [2 x i8*], i8*, i8*, i1 }
-%fpm_build_settings = type { i1 }
+%fpm_run_settings = type <{ %fpm_build_settings, [2 x i8*], i8*, i8*, i1 }>
+%fpm_build_settings = type <{ i1 }>
 %__vtab_fpm_run_settings = type { i64 }
 
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1

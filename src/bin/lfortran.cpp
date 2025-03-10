@@ -804,7 +804,8 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     }
 }
 
-int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options) {
+int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options,
+                        LCompilers::PassManager &pass_manager) {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
@@ -821,7 +822,6 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     std::cerr << diagnostics.render(lm, compiler_options);
     if (asr.ok) {
         Allocator al(64*1024*1024);
-        LCompilers::PassManager pass_manager;
         compiler_options.po.always_run = true;
         compiler_options.po.run_fun = "f";
         pass_manager.dump_all_passes(al, asr.result, compiler_options.po, diagnostics, lm);
@@ -2286,6 +2286,8 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_backend == "llvm") {
         backend = Backend::llvm;
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
     } else if (opts.arg_backend == "c") {
         backend = Backend::c;
     } else if (opts.arg_backend == "cpp") {
@@ -2365,8 +2367,9 @@ int main_app(int argc, char *argv[]) {
         outfile = basename.replace_extension(".out").string();
     }
 
+    lfortran_pass_manager.parse_pass_arg(opts.arg_pass, opts.skip_pass);
     if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
-        dump_all_passes(opts.arg_file, compiler_options);
+        dump_all_passes(opts.arg_file, compiler_options, lfortran_pass_manager);
     }
 
     if (opts.arg_E) {
@@ -2394,6 +2397,10 @@ int main_app(int argc, char *argv[]) {
     }
     if ( compiler_options.semantics_only ) {
         return run_parser_and_semantics(opts.arg_file, compiler_options);
+    }
+    if (opts.show_asr) {
+        return emit_asr(opts.arg_file, lfortran_pass_manager,
+                compiler_options);
     }
     if (opts.show_asr) {
         return emit_asr(opts.arg_file, lfortran_pass_manager,

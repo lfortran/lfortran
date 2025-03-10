@@ -3,15 +3,16 @@ source_filename = "LFortran"
 
 %0 = type { [25 x i8], i32 }
 %compiler_t_polymorphic = type { i64, %compiler_t* }
-%compiler_t = type { i32, %string_descriptor, %string_descriptor, %string_descriptor, i1, i1 }
+%compiler_t = type <{ i32, %string_descriptor, %string_descriptor, %string_descriptor, i1, i1 }>
 %string_descriptor = type { i8*, i64, i64 }
 %array = type { %string_t*, i32, %dimension_descriptor*, i1, i32 }
-%string_t = type { %string_descriptor }
+%string_t = type <{ %string_descriptor }>
 %dimension_descriptor = type { i32, i32, i32 }
 %__vtab_compiler_t = type { i64 }
 
 @lcompilers__nameless_enum = global [3 x %0] [%0 { [11 x i8] c"id_unknown\00", i32 0 }, %0 { [25 x i8] c"id_intel_classic_windows\00", i32 1 }, %0 { [22 x i8] c"id_intel_llvm_windows\00", i32 2 }]
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [2 x i8] c"S\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_fpm_compiler_enumerate_libraries(%compiler_t_polymorphic* %self, i8** %prefix, %array* %libs, %string_descriptor* %r) {
@@ -153,16 +154,18 @@ loop.end:                                         ; preds = %loop.head
   call void @__module_fpm_compiler_enumerate_libraries(%compiler_t_polymorphic* %37, i8** %prefix_arg, %array* %array_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res)
   %51 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 0
   %52 = load i8*, i8** %51, align 8
-  %53 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* %52)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %53, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %54 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 0
-  %55 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 1
-  %56 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 2
-  %57 = load i8*, i8** %54, align 8
-  call void @_lfortran_free(i8* %57)
-  store i8* null, i8** %54, align 8
-  store i64 0, i64* %55, align 4
+  %53 = alloca i8*, align 8
+  store i8* %52, i8** %53, align 8
+  %54 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @serialization_info, i32 0, i32 0), i32 0, i8** %53)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %54, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %55 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 0
+  %56 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 1
+  %57 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, i32 0, i32 2
+  %58 = load i8*, i8** %55, align 8
+  call void @_lfortran_free(i8* %58)
+  store i8* null, i8** %55, align 8
   store i64 0, i64* %56, align 4
+  store i64 0, i64* %57, align 4
   call void @_lpython_free_argv()
   br label %return
 
@@ -178,7 +181,7 @@ declare void @_lfortran_string_init(i64, i8*)
 
 declare void @_lfortran_free(i8*)
 
-declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

@@ -291,11 +291,12 @@ RUN(NAME print_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm fortr
 RUN(NAME print_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
 RUN(NAME print_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 fortran)
 RUN(NAME print_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 fortran)
+RUN(NAME print_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
 RUN(NAME print_arr_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 fortran)
 RUN(NAME print_arr_04 LABELS llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --apply-fortran-mangling)
-RUN(NAME print_arr_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --skip-pass=print_arr) #test printing array in backend (works only with stringformat)
+RUN(NAME print_arr_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_arr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran mlir)
 
 RUN(NAME include_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
