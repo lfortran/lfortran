@@ -3409,7 +3409,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                 "implied_do_loops", "print_arr", "do_loops", "select_case",
                 "nested_vars", "unused_functions", "intrinsic_function"};
     LCompilers::PassManager pass_manager;
-    pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics);
+    pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics, PassManager::backend::wasm);
 
 
 #ifdef SHOW_ASR
