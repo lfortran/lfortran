@@ -7,6 +7,7 @@ program intrinsics_152
     integer :: k5 = 9
     integer :: k6 = 2
     integer :: m90_quad
+    integer :: m90_dble
 
     integer, parameter :: sp = selected_real_kind(6,37)
     integer, parameter :: dp = selected_real_kind(15,307)
@@ -68,4 +69,7 @@ program intrinsics_152
     print*, m90_quad
     if (m90_quad /= -1) error stop
 
+    m90_dble = selected_real_kind(15, 307)
+    print *, m90_dble
+    print*, max(selected_real_kind(r = range(1.d0)+1), m90_dble)
 end program
