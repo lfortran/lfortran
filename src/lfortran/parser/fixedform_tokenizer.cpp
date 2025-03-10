@@ -1080,6 +1080,24 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "backspace")) {
+            push_token_advance(cur, "backspace");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "rewind")) {
+            push_token_advance(cur, "rewind");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "endfile")) {
+            push_token_advance(cur, "endfile");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "interface")) {
             lex_interface(cur);
             return true;
