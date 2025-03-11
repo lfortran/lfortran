@@ -285,4 +285,5 @@ program continue_compilation_1
     print *, c1%mymember
 
     exit
+    print *, compiler_options()
 end program
