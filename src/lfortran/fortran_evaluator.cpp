@@ -512,7 +512,7 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     compiler_options.po.always_run = false;
     compiler_options.po.run_fun = "f";
     pass_manager.skip_c_passes();
-    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
+    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics, PassManager::backend::c);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
 }
@@ -548,7 +548,7 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     if (ASR::is_a<ASR::unit_t>(asr)) {
         pass_manager.use_default_passes();
         pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,
-            compiler_options.po, diagnostics);
+            compiler_options.po, diagnostics, PassManager::backend::mlir);
     }
     Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al,
         (ASR::asr_t &)asr, diagnostics);
@@ -578,7 +578,7 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     if (asr.ok) {
         LCompilers::PassManager pass_manager;
         pass_manager.use_fortran_passes();
-        pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
+        pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics, PassManager::backend::fortran);
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
