@@ -547,38 +547,15 @@ jobs:
             # 2. namelist reading support replaced with use of file read (see: https://github.com/lfortran/lfortran/issues/1999)
             # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
-            git checkout -t origin/hdf5_mpi_namelist_global_deallocate_workaround
+            git checkout -t origin/hdf5_mpi_namelist_global_deallocate_workaround_2
             # this checkout doesn't have deallocate workaround
-            git checkout 68414dcf82e895af9a293b9c1338f679e416adfd
-            cd src
-            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
-              CC=clang
-            else
-              CC=gcc
-            fi
-            ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
-            ${FC} -c mpi_c_bindings.f90
-            ${FC} -c mpi.f90
-            ${FC} -c psi_io.f90 --no-style-warnings --no-warnings
-            ${FC} -c --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
-            ${FC} mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
-            cp pot3d ../bin/
-            cd ..
-            ./validate.sh
+            git checkout 8c2c88fb92718c090452bdb613862e7e81343355
+            FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
 
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               # this checkout has deallocate workaround
-              git checkout b7aa6cd25297d39c9481292d51035a431beac205
-              cd src
-              ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
-              ${FC} -c --fast mpi_c_bindings.f90
-              ${FC} -c --fast mpi.f90
-              ${FC} -c --fast psi_io.f90 --no-style-warnings --no-warnings
-              ${FC} -c --fast --skip-pass="dead_code_removal" --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
-              ${FC} --fast mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
-              cp pot3d ../bin/
-              cd ..
-              ./validate.sh
+              git checkout af554065552a8ce4113b42d29c83a58a4ec1e864
+              FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
             fi
 
 
