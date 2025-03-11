@@ -216,26 +216,28 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         left_val = value;
         this->visit_expr(*x.m_right);
         right_val = value;
-        switch (x.m_op) {
-            case ASR::binopType::Mul:
-                value = left_val * right_val;
-                break;
-            case ASR::binopType::Add:
-                value = left_val + right_val;
-                break;
-            case ASR::binopType::Sub:
-                value = left_val - right_val;
-                break;
-            case ASR::binopType::Div:
-                value = left_val / right_val;
-                break;
-            case ASR::binopType::Pow:
-                value = std::pow(left_val, right_val);
-                break;
-            default:
-                diag.add(Diagnostic("Unsupported binary operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+        if constexpr (!std::is_same_v<T,bool>) {  //Used to bypass warning
+            switch (x.m_op) {
+                case ASR::binopType::Mul:
+                    value = left_val * right_val;
+                    break;
+                case ASR::binopType::Add:
+                    value = left_val + right_val;
+                    break;
+                case ASR::binopType::Sub:
+                    value = left_val - right_val;
+                    break;
+                case ASR::binopType::Div:
+                    value = left_val / right_val;
+                    break;
+                case ASR::binopType::Pow:
+                    value = std::pow(left_val, right_val);
+                    break;
+                default:
+                    diag.add(Diagnostic("Unsupported binary operation in implied do loop",
+                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+            }
         }
     }
 
@@ -245,26 +247,28 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         left_val = value;
         this->visit_expr(*x.m_right);
         right_val = value;
-        switch (x.m_op) {
-            case ASR::binopType::Mul:
-                value = left_val * right_val;
-                break;
-            case ASR::binopType::Add:
-                value = left_val + right_val;
-                break;
-            case ASR::binopType::Sub:
-                value = left_val - right_val;
-                break;
-            case ASR::binopType::Div:
-                value = left_val / right_val;
-                break;
-            case ASR::binopType::Pow:
-                value = std::pow(left_val, right_val);
-                break;
-            default:
-                diag.add(Diagnostic("Unsupported binary operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+        if constexpr (!std::is_same_v<T,bool>) { //Used to bypass warning 
+            switch (x.m_op) {
+                case ASR::binopType::Mul:
+                    value = left_val * right_val;
+                    break;
+                case ASR::binopType::Add:
+                    value = left_val + right_val;
+                    break;
+                case ASR::binopType::Sub:
+                    value = left_val - right_val;
+                    break;
+                case ASR::binopType::Div:
+                    value = left_val / right_val;
+                    break;
+                case ASR::binopType::Pow:
+                    value = std::pow(left_val, right_val);
+                    break;
+                default:
+                    diag.add(Diagnostic("Unsupported binary operation in implied do loop",
+                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+            }
         }
     }
 
@@ -7981,6 +7985,11 @@ public:
             // TODO: handle multiple types
             if (ASRUtils::is_integer(*type)) {
                 int *array = al.allocate<int>(idl_size);
+                // populate compiletime array
+                populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                data = array;
+            } else if (ASRUtils::is_logical(*type)) {
+                bool *array = al.allocate<bool>(idl_size);
                 // populate compiletime array
                 populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
                 data = array;
