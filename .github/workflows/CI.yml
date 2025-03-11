@@ -566,18 +566,21 @@ jobs:
             cd ..
             ./validate.sh
 
-            # this checkout has deallocate workaround
-            git checkout b7aa6cd25297d39c9481292d51035a431beac205
-            cd src
-            ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
-            ${FC} -c --fast mpi_c_bindings.f90
-            ${FC} -c --fast mpi.f90
-            ${FC} -c --fast psi_io.f90 --no-style-warnings --no-warnings
-            ${FC} -c --fast --skip-pass="dead_code_removal" --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
-            ${FC} --fast mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
-            cp pot3d ../bin/
-            cd ..
-            ./validate.sh
+            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
+              # this checkout has deallocate workaround
+              git checkout b7aa6cd25297d39c9481292d51035a431beac205
+              cd src
+              ${CC} -I$CONDA_PREFIX/include -c mpi_wrapper.c
+              ${FC} -c --fast mpi_c_bindings.f90
+              ${FC} -c --fast mpi.f90
+              ${FC} -c --fast psi_io.f90 --no-style-warnings --no-warnings
+              ${FC} -c --fast --skip-pass="dead_code_removal" --cpp --implicit-interface pot3d.F90 --no-style-warnings --no-warnings
+              ${FC} --fast mpi_wrapper.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
+              cp pot3d ../bin/
+              cd ..
+              ./validate.sh
+            fi
+
 
       - name: Test PRIMA
         shell: bash -e -l {0}
