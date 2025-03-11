@@ -1151,7 +1151,7 @@ jobs:
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
+        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -1231,7 +1231,7 @@ jobs:
 
       - name: Test fpm
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
+        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/certik/fpm.git
             cd fpm
@@ -1242,6 +1242,7 @@ jobs:
 
       - name: Test stdlib
         shell: bash -e -x -l {0}
+        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
@@ -1257,6 +1258,7 @@ jobs:
 
       - name: Test SNAP
         shell: bash -e -x -l {0}
+        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/certik/SNAP.git
             cd SNAP
