@@ -80,7 +80,7 @@ void main2() {
     a->data->operator[](2 - a->dims[0].lower_bound) = (float)(2);
     a->data->operator[](3 - a->dims[0].lower_bound) = (float)(1);
     b = sum(a);
-    if (abs(b - (float)(6)) >   1.00000000000000008e-05) {
+    if (abs(b - (float)(6)) >   9.99999974737875164e-06) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }

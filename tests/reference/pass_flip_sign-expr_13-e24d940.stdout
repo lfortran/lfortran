@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             ap:
                                 (Variable
@@ -38,6 +39,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -57,6 +59,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             bp:
                                 (Variable
@@ -72,6 +75,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -97,6 +101,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             cp:
                                 (Variable
@@ -118,6 +123,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -143,6 +149,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -164,6 +171,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -189,6 +197,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             number:
                                 (Variable
@@ -206,6 +215,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -221,6 +231,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

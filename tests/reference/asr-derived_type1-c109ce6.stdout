@@ -50,6 +50,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     enum_escape
@@ -101,6 +102,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             tfc:
                                 (Variable
@@ -127,6 +129,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             toml_escape:
                                 (Variable
@@ -134,15 +137,26 @@
                                     toml_escape
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructConstant
                                         2 enum_escape
-                                        [(())]
+                                        [((StringConstant
+                                            "\n"
+                                            (String 1 1 () PointerString)
+                                        ))]
                                         (StructType
                                             2 enum_escape
                                         )
-                                        ()
                                     )
-                                    ()
+                                    (StructConstant
+                                        2 enum_escape
+                                        [((StringConstant
+                                            "\n"
+                                            (String 1 1 () PointerString)
+                                        ))]
+                                        (StructType
+                                            2 enum_escape
+                                        )
+                                    )
                                     Parameter
                                     (StructType
                                         2 enum_escape
@@ -151,6 +165,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

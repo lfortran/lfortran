@@ -1,5 +1,8 @@
 add_subdirectory(libasr)
 add_subdirectory(tests)
 add_subdirectory(lfortran)
+if (WITH_LSP)
+    add_subdirectory(server)
+endif()
 add_subdirectory(bin)
 add_subdirectory(runtime/legacy)

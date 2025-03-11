@@ -24,12 +24,12 @@ define i32 @main(i32 %0, i8** %1) {
   %dp1 = alloca i32, align 4
   store i32 8, i32* %dp1, align 4
   %x = alloca float, align 4
-  store float 1.000000e+00, float* %x, align 4
+  store float 0x3FEFFFFFE0000000, float* %x, align 4
   %2 = load float, float* %x, align 4
   %3 = fpext float %2 to double
   %4 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 6, double %3)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  store float 1.000000e+00, float* %x, align 4
+  store float 0x3FEFFFFFE0000000, float* %x, align 4
   %5 = load float, float* %x, align 4
   %6 = fpext float %5 to double
   %7 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 6, double %6)
@@ -49,7 +49,7 @@ define i32 @main(i32 %0, i8** %1) {
   %15 = fpext float %14 to double
   %16 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 6, double %15)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
-  store float 1.000000e+00, float* %x, align 4
+  store float 0x3FEFFFFFE0000000, float* %x, align 4
   %17 = load float, float* %x, align 4
   %18 = fpext float %17 to double
   %19 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 6, double %18)

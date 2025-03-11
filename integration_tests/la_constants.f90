@@ -163,7 +163,7 @@ print *, "srtmin: ", srtmin
 if (abs (srtmin - 3.14018486e-16) > 1.0e-8) error stop "srtmin test failed"
 
 print *, "srtmax: ", srtmax
-if (abs (srtmax - 3.18452583626288650e+15) > 1.0e-8) error stop "srtmax test failed"
+if (abs (srtmax - 3.18452583626288650e+15)/srtmax > 2.0e-8) error stop "srtmax test failed"
 
 print *, "stsml: ", stsml
 if (abs (stsml - 1.08420217e-19) > 1.0e-8) error stop "stsml test failed"

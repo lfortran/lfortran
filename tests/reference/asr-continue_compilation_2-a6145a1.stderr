@@ -11,49 +11,55 @@ syntax error: kind 16 is not supported yet.
     |     ^^^^^^^ 
 
 tokenizer error: Token '?' is not recognized
-   --> tests/errors/continue_compilation_2.f90:325:17
+   --> tests/errors/continue_compilation_2.f90:334:17
     |
-325 |     integer  :: ? tokenizer_error
+334 |     integer  :: ? tokenizer_error
     |                 ^ token not recognized
 
+tokenizer error: Token '@' is not recognized in `format` statement
+ --> tests/errors/continue_compilation_2.f90:1:2
+  |
+1 | module Geometry
+  |  ^ 
+
 syntax error: End module name does not match module name
-   --> tests/errors/continue_compilation_2.f90:341:1 - 343:28
+   --> tests/errors/continue_compilation_2.f90:351:1 - 353:28
     |
-341 |    module my_module
+351 |    module my_module
     |    ^^^^^^^^^^^^^^^^...
 ...
     |
-343 |    end module wrong_module_name 
+353 |    end module wrong_module_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:345:1 - 347:29
+   --> tests/errors/continue_compilation_2.f90:355:1 - 357:29
     |
-345 |    subroutine my_subroutine1()
+355 |    subroutine my_subroutine1()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-347 |    end subroutine different_name
+357 |    end subroutine different_name
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End function name does not match function name
-   --> tests/errors/continue_compilation_2.f90:349:1 - 352:28
+   --> tests/errors/continue_compilation_2.f90:359:1 - 362:28
     |
-349 |    function my_function() result(res)
+359 |    function my_function() result(res)
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-352 |    end function not_my_function
+362 |    end function not_my_function
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-   --> tests/errors/continue_compilation_2.f90:354:1 - 356:29
+   --> tests/errors/continue_compilation_2.f90:364:1 - 366:29
     |
-354 |    subroutine my_subroutine2()
+364 |    subroutine my_subroutine2()
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-356 |    end subroutine different_name 
+366 |    end subroutine different_name 
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate DIMENSION attribute specified
@@ -176,6 +182,18 @@ semantic error: Kind 16 is not supported for Real
     |
 322 |     real*16 :: unsupported_kind
     |     ^^^^^^^ 
+
+semantic error: Argument was not specified
+   --> tests/errors/continue_compilation_2.f90:328:33
+    |
+328 |     type(Circle) :: myCircle2 = Circle()
+    |                                 ^^^^^^^^ Argument 'radius' not specified for circle
+
+semantic error: Keyword argument not found
+   --> tests/errors/continue_compilation_2.f90:331:33
+    |
+331 |     type(Circle) :: myCircle3 = Circle(mykeyword=10)
+    |                                 ^^^^^^^^^^^^^^^^^^^^ 'mykeyword' keyword argument not found
 
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:23:14
@@ -666,8 +684,14 @@ semantic error: Variable 'foo' is not declared
 315 |     print *,foo
     |             ^^^ 'foo' is undeclared
 
-semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:338:5
+semantic error: Variable 'mycircle' doesn't have any member named, 'mymember'.
+   --> tests/errors/continue_compilation_2.f90:325:14
     |
-338 |     y = 99  
+325 |     print *, myCircle%mymember
+    |              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot assign to an intent(in) variable `y`
+   --> tests/errors/continue_compilation_2.f90:348:5
+    |
+348 |     y = 99  
     |     ^ 

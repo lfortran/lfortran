@@ -47,19 +47,19 @@ define i32 @main(i32 %0, i8** %1) {
   store float -4.000000e+00, float* %r_minus, align 4
   %s1 = alloca i8*, align 8
   %6 = call i8* @_lfortran_malloc(i32 2)
-  call void @_lfortran_string_init(i32 2, i8* %6)
+  call void @_lfortran_string_init(i64 2, i8* %6)
   store i8* %6, i8** %s1, align 8
   call void @_lfortran_strcpy_pointer_string(i8** %s1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   %7 = load i8*, i8** %s1, align 8
   %s2 = alloca i8*, align 8
   %8 = call i8* @_lfortran_malloc(i32 4)
-  call void @_lfortran_string_init(i32 4, i8* %8)
+  call void @_lfortran_string_init(i64 4, i8* %8)
   store i8* %8, i8** %s2, align 8
   call void @_lfortran_strcpy_pointer_string(i8** %s2, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @1, i32 0, i32 0))
   %9 = load i8*, i8** %s2, align 8
   %s = alloca i8*, align 8
   %10 = call i8* @_lfortran_malloc(i32 5)
-  call void @_lfortran_string_init(i32 5, i8* %10)
+  call void @_lfortran_string_init(i64 5, i8* %10)
   store i8* %10, i8** %s, align 8
   call void @_lfortran_strcpy_pointer_string(i8** %s, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0))
   %11 = load i8*, i8** %s, align 8
@@ -92,7 +92,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc(i32)
 
-declare void @_lfortran_string_init(i32, i8*)
+declare void @_lfortran_string_init(i64, i8*)
 
 declare void @_lfortran_strcpy_pointer_string(i8**, i8*)
 

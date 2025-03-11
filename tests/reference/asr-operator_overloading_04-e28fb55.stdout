@@ -40,6 +40,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -55,6 +56,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -129,6 +131,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     string_type
@@ -175,6 +178,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             trimmed_string:
                                                 (Variable
@@ -192,6 +196,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -307,6 +312,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             last:
                                                 (Variable
@@ -322,6 +328,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -341,6 +348,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),

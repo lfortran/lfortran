@@ -12,47 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            __1_k:
-                                                (Variable
-                                                    3
-                                                    __1_k
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            __libasr__created__var__1_x:
-                                                (Variable
-                                                    3
-                                                    __libasr__created__var__1_x
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Allocatable
-                                                        (Array
-                                                            (Real 4)
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
-                                                        )
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                ),
                                             absdiff:
                                                 (Variable
                                                     3
@@ -67,6 +26,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -89,6 +49,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -133,134 +94,76 @@
                                         )
                                         ()
                                     )
-                                    (Assignment
-                                        (Var 3 __libasr__created__var__1_x)
-                                        (FunctionCall
-                                            2 solution
-                                            ()
-                                            []
-                                            (Allocatable
-                                                (Array
-                                                    (Real 4)
-                                                    [(()
-                                                    ())]
-                                                    DescriptorArray
+                                    (If
+                                        (RealCompare
+                                            (FunctionCall
+                                                2 solution
+                                                ()
+                                                []
+                                                (Allocatable
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
                                                 )
-                                            )
-                                            ()
-                                            ()
-                                        )
-                                        ()
-                                    )
-                                    (DoLoop
-                                        ()
-                                        ((Var 3 __1_k)
-                                        (ArrayBound
-                                            (Var 3 __libasr__created__var__1_x)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            LBound
-                                            ()
-                                        )
-                                        (ArrayBound
-                                            (Var 3 __libasr__created__var__1_x)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            UBound
-                                            ()
-                                        )
-                                        (IntegerConstant 1 (Integer 4) Decimal))
-                                        [(If
-                                            (RealCompare
-                                                (ArrayItem
-                                                    (Var 3 __libasr__created__var__1_x)
-                                                    [(()
-                                                    (Var 3 __1_k)
-                                                    ())]
-                                                    (Real 4)
-                                                    RowMajor
-                                                    ()
-                                                )
-                                                NotEq
-                                                (RealConstant
-                                                    0.000000
-                                                    (Real 4)
-                                                )
-                                                (Logical 4)
+                                                ()
                                                 ()
                                             )
-                                            [(Assignment
-                                                (ArrayItem
-                                                    (Var 3 reldiff)
-                                                    [(()
-                                                    (Var 3 __1_k)
-                                                    ())]
-                                                    (Real 4)
-                                                    RowMajor
-                                                    ()
-                                                )
-                                                (RealBinOp
-                                                    (ArrayBroadcast
-                                                        (Var 3 absdiff)
-                                                        (IntrinsicArrayFunction
-                                                            Shape
-                                                            [(IntrinsicElementalFunction
-                                                                Abs
-                                                                [(FunctionCall
-                                                                    2 solution
-                                                                    ()
-                                                                    []
-                                                                    (Allocatable
-                                                                        (Array
-                                                                            (Real 4)
-                                                                            [(()
-                                                                            ())]
-                                                                            DescriptorArray
-                                                                        )
+                                            NotEq
+                                            (RealConstant
+                                                0.000000
+                                                (Real 4)
+                                            )
+                                            (Array
+                                                (Logical 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 3 reldiff)
+                                            (RealBinOp
+                                                (ArrayBroadcast
+                                                    (Var 3 absdiff)
+                                                    (IntrinsicArrayFunction
+                                                        Shape
+                                                        [(IntrinsicElementalFunction
+                                                            Abs
+                                                            [(FunctionCall
+                                                                2 solution
+                                                                ()
+                                                                []
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
                                                                     )
-                                                                    ()
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Array
-                                                                    (Real 4)
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
                                                                 )
+                                                                ()
                                                                 ()
                                                             )]
                                                             0
                                                             (Array
-                                                                (Integer 4)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (IntegerConstant 1 (Integer 4) Decimal))]
-                                                                FixedSizeArray
+                                                                (Real 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
-                                                            ()
-                                                        )
-                                                        (Array
-                                                            (Real 4)
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
-                                                        )
-                                                        ()
-                                                    )
-                                                    Div
-                                                    (IntrinsicElementalFunction
-                                                        Abs
-                                                        [(ArrayItem
-                                                            (Var 3 __libasr__created__var__1_x)
-                                                            [(()
-                                                            (Var 3 __1_k)
-                                                            ())]
-                                                            (Real 4)
-                                                            RowMajor
                                                             ()
                                                         )]
                                                         0
-                                                        (Real 4)
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                        )
                                                         ()
                                                     )
                                                     (Array
@@ -271,9 +174,42 @@
                                                     )
                                                     ()
                                                 )
+                                                Div
+                                                (IntrinsicElementalFunction
+                                                    Abs
+                                                    [(FunctionCall
+                                                        2 solution
+                                                        ()
+                                                        []
+                                                        (Allocatable
+                                                            (Array
+                                                                (Real 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        ()
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                )
+                                                (Array
+                                                    (Real 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
-                                            )]
-                                            []
+                                            )
+                                            ()
                                         )]
                                         []
                                     )
@@ -396,6 +332,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

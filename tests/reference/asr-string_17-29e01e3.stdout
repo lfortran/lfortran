@@ -45,6 +45,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -62,6 +63,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -174,6 +176,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -191,6 +194,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -306,6 +310,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

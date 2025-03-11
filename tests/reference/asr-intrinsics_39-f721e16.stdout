@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             time:
                                 (Variable
@@ -38,6 +39,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -62,6 +64,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             zone:
                                 (Variable
@@ -79,6 +82,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     test_time_and_date
@@ -88,6 +92,99 @@
                         [(Var 2 date)
                         (Var 2 time)
                         (Var 2 zone)
+                        (Var 2 values)]
+                        0
+                    )
+                    (IntrinsicImpureSubroutine
+                        DateAndTime
+                        [(RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )]
+                        0
+                    )
+                    (IntrinsicImpureSubroutine
+                        DateAndTime
+                        [(Var 2 date)
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (Var 2 zone)
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )]
+                        0
+                    )
+                    (IntrinsicImpureSubroutine
+                        DateAndTime
+                        [(RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (Var 2 time)
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )]
+                        0
+                    )
+                    (IntrinsicImpureSubroutine
+                        DateAndTime
+                        [(RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (Var 2 zone)
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )]
+                        0
+                    )
+                    (IntrinsicImpureSubroutine
+                        DateAndTime
+                        [(Var 2 date)
+                        (Var 2 time)
+                        (Var 2 zone)
+                        (Var 2 values)]
+                        0
+                    )
+                    (IntrinsicImpureSubroutine
+                        DateAndTime
+                        [(RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
                         (Var 2 values)]
                         0
                     )

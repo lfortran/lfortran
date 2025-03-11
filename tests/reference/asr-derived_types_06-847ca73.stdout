@@ -60,6 +60,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -77,6 +78,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -209,6 +211,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -228,6 +231,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             temporary:
                                                 (Variable
@@ -245,6 +249,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -498,6 +503,7 @@
                                                     Optional
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             millisec:
                                                 (Variable
@@ -513,6 +519,7 @@
                                                     Source
                                                     Private
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -532,6 +539,7 @@
                                                     Optional
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             second:
                                                 (Variable
@@ -547,6 +555,7 @@
                                                     Source
                                                     Private
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -568,6 +577,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             zone:
                                                 (Variable
@@ -583,6 +593,7 @@
                                                     Source
                                                     Private
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -805,6 +816,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -822,6 +834,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -1064,6 +1077,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             month:
                                                 (Variable
@@ -1079,6 +1093,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -1107,6 +1122,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -1156,6 +1172,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             time:
                                                 (Variable
@@ -1175,6 +1192,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -1230,6 +1248,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             millisec:
                                                 (Variable
@@ -1249,6 +1268,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             minute:
                                                 (Variable
@@ -1266,6 +1286,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             second:
                                                 (Variable
@@ -1281,6 +1302,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -1311,6 +1333,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -1474,6 +1497,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             err:
                                                 (Variable
@@ -1489,6 +1513,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -1508,6 +1533,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             raw:
                                                 (Variable
@@ -1523,6 +1549,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -1542,6 +1569,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             timestamp:
                                                 (Variable
@@ -1559,6 +1587,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -1602,9 +1631,9 @@
                                         )
                                         (StructConstructor
                                             4 toml_date
-                                            [(())
-                                            (())
-                                            (())]
+                                            [((IntegerConstant 0 (Integer 4) Decimal))
+                                            ((IntegerConstant 0 (Integer 4) Decimal))
+                                            ((IntegerConstant 0 (Integer 4) Decimal))]
                                             (StructType
                                                 4 toml_date
                                             )

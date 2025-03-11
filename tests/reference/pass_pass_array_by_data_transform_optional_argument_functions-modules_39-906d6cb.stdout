@@ -69,6 +69,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             __libasr_created_variable_1:
                                                 (Variable
@@ -86,6 +87,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             __libasr_created_variable_2:
                                                 (Variable
@@ -101,6 +103,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -249,6 +252,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             __2filedata:
                                                 (Variable
@@ -264,6 +268,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -289,6 +294,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             filename:
                                                 (Variable
@@ -304,6 +310,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -372,6 +379,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             a2:
                                                 (Variable
@@ -387,6 +395,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -406,6 +415,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             a4:
                                                 (Variable
@@ -421,6 +431,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -440,6 +451,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_a3_present_:
                                                 (Variable
@@ -455,6 +467,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -474,6 +487,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_a5_present_:
                                                 (Variable
@@ -489,6 +503,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -508,6 +523,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

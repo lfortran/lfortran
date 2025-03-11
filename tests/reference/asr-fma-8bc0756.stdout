@@ -7,6 +7,29 @@
                     (SymbolTable
                         2
                         {
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
                             pi:
                                 (Variable
                                     2
@@ -27,6 +50,25 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            r:
+                                (Variable
+                                    2
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -60,6 +102,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             s2:
                                 (Variable
@@ -91,6 +134,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -112,6 +156,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -143,6 +188,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -292,6 +338,201 @@
                                     (Real 8)
                                 )
                             )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (ArrayBroadcast
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (ArrayConstant
+                                4
+                                [10]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                40
+                                [1, 1, 1, ...., 1, 1, 1]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 r)
+                        (Cast
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntrinsicElementalFunction
+                            Nint
+                            [(IntrinsicElementalFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (RealBinOp
+                                    (Var 2 r)
+                                    Add
+                                    (RealBinOp
+                                        (Var 2 r)
+                                        Mul
+                                        (Var 2 r)
+                                        (Real 4)
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )]
+                            0
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (RealBinOp
+                                (Var 2 r)
+                                Sub
+                                (RealBinOp
+                                    (Var 2 r)
+                                    Mul
+                                    (Var 2 r)
+                                    (Real 4)
+                                    ()
+                                )
+                                (Real 4)
+                                ()
+                            )
+                            RealToInteger
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

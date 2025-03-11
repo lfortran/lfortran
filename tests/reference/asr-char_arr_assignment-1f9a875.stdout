@@ -28,6 +28,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     char_arr_assignment

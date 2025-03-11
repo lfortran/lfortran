@@ -34,6 +34,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             working_dir:
                                                 (Variable
@@ -51,6 +52,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -94,6 +96,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -111,6 +114,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -136,6 +140,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             with_example:
                                                 (Variable
@@ -157,6 +162,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -182,6 +188,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             with_full:
                                                 (Variable
@@ -203,6 +210,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -228,6 +236,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             with_test:
                                                 (Variable
@@ -249,6 +258,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -294,6 +304,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -400,8 +411,14 @@
                                                     .false.
                                                     (Logical 4)
                                                 ))
-                                                (())
-                                                (())
+                                                ((LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                ))
+                                                ((LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                ))
                                                 ((LogicalConstant
                                                     .false.
                                                     (Logical 4)
@@ -463,6 +480,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             specified:
                                                 (Variable
@@ -478,6 +496,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -542,6 +561,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),

@@ -8,6 +8,7 @@ contains
 
 subroutine integer
 integer subroutine
+subroutine = 1
 endsubroutine &
 = subroutine/subroutine
 endsubroutine &

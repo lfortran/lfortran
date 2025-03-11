@@ -39,6 +39,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -70,6 +71,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -347,6 +349,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -364,6 +367,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -379,6 +383,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -470,6 +475,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -487,6 +493,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -502,6 +509,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

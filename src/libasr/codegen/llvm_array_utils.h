@@ -288,7 +288,7 @@ namespace LCompilers {
                 virtual
                 void copy_array(llvm::Value* src, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
-                                bool create_dim_des_array, bool reserve_memory) = 0;
+                                bool reserve_memory) = 0;
 
                 virtual
                 void copy_array_data_only(llvm::Value* src, llvm::Value* dest,
@@ -458,7 +458,7 @@ namespace LCompilers {
                 virtual
                 void copy_array(llvm::Value* src, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
-                                bool create_dim_des_array, bool reserve_memory);
+                                bool reserve_memory);
 
                 virtual
                 void copy_array_data_only(llvm::Value* src, llvm::Value* dest,

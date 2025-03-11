@@ -705,7 +705,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 diag.codegen_warning_label("Declare Global: Type "
-                 + ASRUtils::type_to_str(v_m_type) + " not yet supported", {v->base.base.loc}, "");
+                 + ASRUtils::type_to_str_fortran(v_m_type) + " not yet supported", {v->base.base.loc}, "");
                 global_var_idx = m_wa.declare_global_var(i32, 0);
             }
         }
@@ -963,7 +963,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
             } else {
                 diag.codegen_warning_label("Unsupported variable type: " +
-                        ASRUtils::type_to_str(v->m_type), {v->base.base.loc},
+                        ASRUtils::type_to_str_fortran(v->m_type), {v->base.base.loc},
                         "Only integer, floats, logical and complex supported currently");
                 type_vec.push_back(i32);
             }
@@ -1296,7 +1296,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -1397,7 +1397,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -1485,7 +1485,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryLoad: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -1733,10 +1733,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                                 "RealBinop: only x**2 implemented so far for "
                                 "powers");
                         }
+                    } else if(ASR::is_a<ASR::IntegerConstant_t>(*val)) {
+                        ASR::IntegerConstant_t *c =
+                            ASR::down_cast<ASR::IntegerConstant_t>(val);
+                        if (c->m_n == 2) {
+                            // drop the last stack item in the wasm stack
+                            m_wa.emit_drop();
+                            this->visit_expr(*x.m_left);
+                            m_wa.emit_f32_mul();
+                        } else {
+                            throw CodeGenError(
+                                "RealBinop: only x**2 implemented so far for "
+                                "powers");
+                        }
                     } else {
                         throw CodeGenError(
-                            "RealBinop: only x**2 implemented so far for "
-                            "powers");
+                            "RealBinop: Only exponent of type [Integer, Real] are supported"
+                            "for ** operator.");
                     }
                     break;
                 };
@@ -1778,10 +1791,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                                 "RealBinop: only x**2 implemented so far for "
                                 "powers");
                         }
+                    } else if(ASR::is_a<ASR::IntegerConstant_t>(*val)) {
+                        ASR::IntegerConstant_t *c =
+                            ASR::down_cast<ASR::IntegerConstant_t>(val);
+                        if (c->m_n == 2) {
+                            // drop the last stack item in the wasm stack
+                            m_wa.emit_drop();
+                            this->visit_expr(*x.m_left);
+                            m_wa.emit_f64_mul();
+                        } else {
+                            throw CodeGenError(
+                                "RealBinop: only x**2 implemented so far for "
+                                "powers");
+                        }
                     } else {
                         throw CodeGenError(
-                            "RealBinop: only x**2 implemented so far for "
-                            "powers");
+                            "RealBinop: Only exponent of type [Integer, Real] are supported"
+                            "for ** operator.");
                     }
                     break;
                 };
@@ -2664,7 +2690,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("temp_value_set: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }
@@ -2713,7 +2739,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("temp_value_get: Type " +
-                                   ASRUtils::type_to_str(ttype) +
+                                   ASRUtils::type_to_str_fortran(ttype) +
                                    " not yet supported");
             }
         }

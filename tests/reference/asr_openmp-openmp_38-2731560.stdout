@@ -435,6 +435,7 @@
                                                     Required
                                                     .true.
                                                     .false.
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -451,6 +452,7 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
                                                     .false.
                                                 ),
                                             fn:
@@ -469,6 +471,7 @@
                                                     Required
                                                     .true.
                                                     .false.
+                                                    .false.
                                                 ),
                                             num_threads:
                                                 (Variable
@@ -485,6 +488,7 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -539,6 +543,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     omp_get_max_threads
@@ -584,6 +589,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -633,6 +639,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     omp_get_thread_num
@@ -678,6 +685,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -726,6 +734,7 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1090,6 +1099,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             iy:
                                 (Variable
@@ -1105,6 +1115,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -1124,6 +1135,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             nx:
                                 (Variable
@@ -1139,6 +1151,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -1158,6 +1171,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             nz:
                                 (Variable
@@ -1173,6 +1187,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),

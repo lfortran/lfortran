@@ -28,6 +28,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -43,6 +44,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -131,6 +133,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     color_point
@@ -162,6 +165,7 @@
                                     Required
                                     .false.
                                     .true.
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -181,6 +185,7 @@
                                     Required
                                     .false.
                                     .true.
+                                    .false.
                                 ),
                             p3d:
                                 (Variable
@@ -200,6 +205,7 @@
                                     Required
                                     .false.
                                     .true.
+                                    .false.
                                 ),
                             p_or_cp:
                                 (Variable
@@ -219,6 +225,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -251,6 +258,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -309,6 +317,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -396,6 +405,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

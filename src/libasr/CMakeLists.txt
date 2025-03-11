@@ -30,10 +30,10 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
-    pass/simplifier.cpp
+    pass/array_struct_temporary.cpp
     pass/where.cpp
-    pass/where_simplifier.cpp
     pass/function_call_in_declaration.cpp
+    pass/array_passed_in_function_call.cpp
     pass/openmp.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
@@ -44,9 +44,7 @@ set(SRC
     pass/init_expr.cpp
     pass/implied_do_loops.cpp
     pass/array_op.cpp
-    pass/array_op_simplifier.cpp
     pass/subroutine_from_function.cpp
-    pass/subroutine_from_function_simplifier.cpp
     pass/transform_optional_argument_functions.cpp
     pass/class_constructor.cpp
     pass/arr_slice.cpp
@@ -74,18 +72,15 @@ set(SRC
     pass/unique_symbols.cpp
     pass/insert_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
+    pass/replace_with_compile_time_values.cpp
 
     asr_verify.cpp
     asr_utils.cpp
     casting_utils.cpp
-    diagnostics.cpp
-    string_utils.cpp
     asr_scopes.cpp
     modfile.cpp
     pickle.cpp
     serialization.cpp
-    stacktrace.cpp
-    utils2.cpp
 )
 if (WITH_LLVM)
     set(SRC ${SRC}
@@ -111,9 +106,29 @@ if (WITH_LLVM)
             COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
 endif()
+
+set(LFORTRAN_UTILS
+  assert.h
+  colors.h
+  exception.h
+  location.h
+
+  diagnostics.h
+  diagnostics.cpp
+  stacktrace.h
+  stacktrace.cpp
+  string_utils.cpp
+  utils.h
+  utils2.cpp
+)
+add_library(lfortran_utils OBJECT ${LFORTRAN_UTILS})
+target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
+target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
+
 add_library(asr STATIC ${SRC})
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
+target_link_libraries(asr lfortran_utils)
 if (WITH_LIBUNWIND)
     target_link_libraries(asr p::libunwind)
 endif()
@@ -128,6 +143,7 @@ if (WITH_EXECINFO)
 endif()
 if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
+    target_link_libraries(lfortran_utils p::llvm)
 endif()
 
 # Install the dwarf_convert.py and dat_convert.py

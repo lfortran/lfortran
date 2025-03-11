@@ -118,14 +118,14 @@ module lfortran_intrinsic_ieee_arithmetic
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
-        r = x == x .and. abs(x) /= huge(x)
+        r = x == x .and. abs(x) < huge(x)
     end function
 
     elemental function dpieee_is_finite(x) result(r)
         use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
-        r = x == x .and. abs(x) /= huge(x)
+        r = x == x .and. abs(x) < huge(x)
     end function
 
     elemental function spieee_is_negative(x) result(r)

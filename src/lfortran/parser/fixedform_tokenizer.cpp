@@ -877,7 +877,7 @@ struct FixedFormRecursiveDescent {
                     cur += io_str.size();
                     unsigned char *start;
                     Location loc;
-                    lex_format(cur, loc, start);
+                    lex_format(cur, loc, start, diag, false);
                     locations.push_back(loc);
                     YYSTYPE yylval;
                     yylval.string.p = (char*) start;
@@ -1076,6 +1076,24 @@ struct FixedFormRecursiveDescent {
         // careful addition -- `IF` and `DO` terminals are `CONTINUE`, too
         if (next_is(cur, "continue")) {
             push_token_advance(cur, "continue");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "backspace")) {
+            push_token_advance(cur, "backspace");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "rewind")) {
+            push_token_advance(cur, "rewind");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "endfile")) {
+            push_token_advance(cur, "endfile");
             tokenize_line(cur);
             return true;
         }

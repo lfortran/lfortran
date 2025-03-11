@@ -1,1 +1,1 @@
-[{"kind":13,"location":{"range":{"start":{"character":12,"line":3},"end":{"character":12,"line":3}},"uri":"tests/lookup_name2.f90"},"name":"x","filename":"tests/lookup_name2.f90"}]
+[{"kind":9,"location":{"range":{"start":{"character":12,"line":3},"end":{"character":12,"line":3}},"uri":"tests/lookup_name2.f90"},"name":"x","filename":"tests/lookup_name2.f90"}]

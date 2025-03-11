@@ -46,6 +46,7 @@
                                                     Required
                                                     .false.
                                                     .true.
+                                                    .false.
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -70,6 +71,7 @@
                                                                     Required
                                                                     .false.
                                                                     .true.
+                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -96,6 +98,7 @@
                                                                     Required
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -111,6 +114,7 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -204,6 +208,7 @@
                                                                     Optional
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -228,6 +233,7 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 )
@@ -310,6 +316,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             toml_key:
                                 (Struct
@@ -332,6 +339,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

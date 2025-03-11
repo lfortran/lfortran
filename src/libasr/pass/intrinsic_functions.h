@@ -823,7 +823,7 @@ namespace Abs {
                 type = real_type;
             }
         }
-        // Simplifier: TODO: Calculate type according to input arguments
+        // array_struct_temporary: TODO: Calculate type according to input arguments
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
             static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
             ASRUtils::type_get_past_allocatable(type), diag);
@@ -889,30 +889,6 @@ namespace Radix {
     }
 
 }  // namespace Radix
-
-namespace IsContiguous {
-
-    static ASR::expr_t *eval_IsContiguous(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        if (args[0]->type == ASR::exprType::ArraySection) {
-            ASR::ArraySection_t *array_section = ASR::down_cast<ASR::ArraySection_t>(args[0]);
-            ASR::array_index_t *m_args = array_section->m_args;
-            ASR::expr_t *step = m_args->m_step;
-            int stride = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
-            if (stride == 1) {
-                return make_ConstantWithType(make_LogicalConstant_t, true, t1, loc);
-            } else {
-                return make_ConstantWithType(make_LogicalConstant_t, false, t1, loc);
-            }
-        } else if (args[0]->type == ASR::exprType::ArrayConstant || args[0]->type == ASR::exprType::Var) {
-            return make_ConstantWithType(make_LogicalConstant_t, true, t1, loc);
-        } else {
-            append_error(diag, "This Argument type is not supported for is_contiguous yet", loc);
-            return nullptr;
-        }
-    }
-
-}  // namespace IsContiguous
 
 namespace StorageSize {
 
@@ -1221,7 +1197,7 @@ namespace CompilerVersion {
 } // namespace CompilerVersion
 
 namespace CompilerOptions {
-    
+
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "compiler_options() takes no argument",
@@ -1351,9 +1327,21 @@ namespace Sign {
 namespace Shiftr {
 
     static ASR::expr_t *eval_Shiftr(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'shiftr' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'shiftr' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 >> val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1387,9 +1375,21 @@ namespace Shiftr {
 namespace Rshift {
 
     static ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'rshift' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'rshift' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 >> val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1419,9 +1419,21 @@ namespace Rshift {
 namespace Shiftl {
 
     static ASR::expr_t *eval_Shiftl(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(val2 < 0) {
+            append_error(diag, "The shift argument of 'shiftl' intrinsic must be non-negative integer", args[1]->base.loc);
+            return nullptr;
+        }
+        int k_val = kind * 8;
+        if (val2 > k_val) {
+            diag.add(diag::Diagnostic("The shift argument of 'shiftl' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
+            ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
+            return nullptr;
+        }
         int64_t val = val1 << val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1802,18 +1814,24 @@ namespace Present {
     static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t* arg = args[0];
         if (!ASR::is_a<ASR::Var_t>(*arg)) {
-            append_error(diag, 
-                "Argument to 'present' must be a variable, but got an expression", 
-                loc);
+            diag.semantic_error_label(
+                "Argument to 'present' must be a variable, but got an expression",
+                {arg->base.loc},
+                "Expected a variable here"
+            );
+
             return nullptr;
         }
 
         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
         if (var->m_presence != ASR::presenceType::Optional) {
-            append_error(diag, 
-                "Argument to 'present' must be an optional dummy argument", 
-                loc);
+            diag.semantic_error_label(
+                "Argument to 'present' must be an optional dummy argument",
+                {arg->base.loc},
+                "This variable is not 'optional'"
+            );
+
             return nullptr;
         }
 
@@ -1827,8 +1845,8 @@ namespace Present {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
 
-        return ASR::make_IntrinsicElementalFunction_t(al, loc, 
-            static_cast<int64_t>(IntrinsicElementalFunctions::Present), 
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::Present),
             m_args.p, m_args.n, 0, return_type, m_value);
     }
 
@@ -3506,7 +3524,7 @@ namespace Maskl {
             diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
             return nullptr;
         } else {
-            int64_t bit_size = (kind == 4) ? 32 : 64;
+            int64_t bit_size = (i <= 32 && kind == 4) ? 32 : 64;
             int64_t result;
             if (i == 0) {
                 result = 0;
@@ -3527,12 +3545,39 @@ namespace Maskl {
         * r = Maskl(x)
         * r = (x == 64) ? -1 : ((1 << x) - 1) << (64 - x)
         */
-        body.push_back(al, b.If((b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type))), {
-            b.Assignment(result, b.i_t(-1, return_type))
-        }, {
-            b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
-                b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type))
-        }));
+        // For return_type is 8 result is always 64 bit
+        /*if (x == 32 .or. x == 64) then
+        *    res = -1
+        * else
+        *    if (x <= 32) then             ! 32 bit result
+        *        res = ishft(1, x) - 1 
+        *        res = ishft(res, 32 - x)
+        *    else                            ! 64 bit result     
+        *        res = ishft(1, x) - 1 
+        *        res = ishft(res, 64 - x)
+        *    end if
+        *end if
+        */
+    //    std::cout<<ASRUtils::extract_kind_from_ttype_t(return_type)<<" "<<ASRUtils::extract_kind_from_ttype_t(arg_types[0])<<std::endl;
+       if (ASRUtils::extract_kind_from_ttype_t(return_type) == 8) {
+            body.push_back(al, b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
+                b.Assignment(result, b.i_t(-1, return_type))
+            }, {
+                b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
+                    b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type))
+            }));
+        } else {
+            body.push_back(al,b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
+                b.Assignment(result, b.i_t(-1, return_type))
+            }, {
+                b.If(b.LtE(b.i2i_t(args[0], return_type), b.i_t(32, return_type)), 
+                    { b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
+                        b.Sub(b.i_t(32, return_type), b.i2i_t(args[0], return_type)), return_type)) },
+                    { b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
+                        b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type)) } )
+            }));
+                
+        }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -3601,18 +3646,12 @@ namespace Merge {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        if ( use_experimental_simplifier ) {
-            tsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[0]));
-            fsource_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[1]));
-            mask_type = ASRUtils::duplicate_type(al,
-                ASRUtils::extract_type(arg_types[2]));
-        } else {
-            tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
-            fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
-            mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
-        }
+        tsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[0]));
+        fsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[1]));
+        mask_type = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(arg_types[2]));
         if( ASR::is_a<ASR::String_t>(*tsource_type) ) {
             ASR::String_t* tsource_char = ASR::down_cast<ASR::String_t>(tsource_type);
             ASR::String_t* fsource_char = ASR::down_cast<ASR::String_t>(fsource_type);
@@ -3704,7 +3743,7 @@ namespace Trailz {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
-        set_kind_to_ttype_t(t1, 4); 
+        set_kind_to_ttype_t(t1, 4);
         return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
     }
 
@@ -6019,50 +6058,6 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 }
 
 } // namespace SetRemove
-
-static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
-        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
-    int target_kind = -1;
-    for (size_t i = 0; i < args.size(); i++) {
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
-        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (kind > target_kind) {
-            target_kind = kind;
-        }
-    }
-
-    for (size_t i = 0; i < args.size(); i++) {
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
-        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (kind==target_kind) {
-            continue;
-        }
-        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr));
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
-            if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr));
-            }
-        } else {
-            diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},
-                "help: ensure all arguments are of a convertible type");
-        }
-    }
-}
 
 namespace Max {
 

@@ -130,6 +130,10 @@ filename = "../integration_tests/template_simple_03.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_simple_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_sort_01.f90"
 asr = true
 
@@ -143,6 +147,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_interface_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_commutative.f90"
 asr = true
 
 [[test]]
@@ -439,6 +447,10 @@ asr = true
 
 [[test]]
 filename = "errors/template_error_07.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_09.f90"
 asr = true
 
 [[test]]
@@ -772,7 +784,11 @@ cumulative = true
 [[test]]
 filename = "array_op_simplifier_test.f90"
 asr = true
-pass = "simplifier,array_op_simplifier"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
+filename = "../integration_tests/struct_allocate.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
@@ -1557,6 +1573,10 @@ run = true
 filename = "read1.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "read2.f90"
+run = true
 
 [[test]]
 filename = "open1.f90"
@@ -2769,6 +2789,10 @@ filename = "../integration_tests/operator_overloading_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/operator_overloading_08.f90"
+asr = true
+
+[[test]]
 filename = "team1.f90"
 ast = true
 ast_f90 = true
@@ -2999,6 +3023,10 @@ filename = "errors/continue_compilation_3.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_ff_1.f"
+fixed_form_cc = true
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
 
@@ -3017,6 +3045,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/derived_types_32.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/derived_types_41.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/modules_38.f90"
@@ -3229,6 +3261,10 @@ ast = true
 
 [[test]]
 filename = "fixed_form/double_complex1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/auxiliary_IO_1.f"
 ast = true
 
 [[test]]
@@ -3490,6 +3526,11 @@ asr = true
 [[test]]
 filename = "save3.f90"
 asr = true
+
+[[test]]
+filename = "save4.f90"
+asr_no_warnings = true
+asr_disable_style_and_warnings = true
 
 [[test]]
 filename = "../integration_tests/c_ptr_02.f90"
@@ -4445,3 +4486,7 @@ ast = true
 filename = "interactive_parse_without_program_line.f90"
 options = "--interactive-parse"
 ast = true
+
+[[test]]
+filename = "interface_generic_procedure_same_name.f90"
+asr = true

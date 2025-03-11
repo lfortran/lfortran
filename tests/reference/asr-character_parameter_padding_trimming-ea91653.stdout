@@ -48,6 +48,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             p_trim:
                                 (Variable
@@ -90,6 +91,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             x_pad:
                                 (Variable
@@ -111,6 +113,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -136,6 +139,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y_pad:
                                 (Variable
@@ -159,6 +163,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y_trim:
                                 (Variable
@@ -180,6 +185,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -219,6 +225,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             z_trim:
                                 (Variable
@@ -254,6 +261,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

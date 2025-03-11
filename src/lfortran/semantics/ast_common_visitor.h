@@ -12,10 +12,12 @@
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
+#include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
 #include <string>
 #include <set>
 #include <map>
+#include <limits>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
@@ -575,6 +577,37 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
             }) ) {
         overloaded = ASRUtils::EXPR(asr);
     }
+
+    if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+        // if overloaded is not found, then reject
+        if (overloaded == nullptr) {
+            std::string op_str = "==";
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq):
+                    break;
+                case (ASR::cmpopType::Gt):
+                    op_str = ">";
+                    break;
+                case (ASR::cmpopType::GtE):
+                    op_str = ">=";
+                    break;
+                case (ASR::cmpopType::Lt):
+                    op_str = "<";
+                    break;
+                case (ASR::cmpopType::LtE):
+                    op_str = "<=";
+                    break;
+                case (ASR::cmpopType::NotEq):
+                    op_str = "/=";
+                    break;
+                default:
+                    LCOMPILERS_ASSERT(false);
+            }
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
     ASR::ttype_t *source_type = nullptr;
     ASR::ttype_t *dest_type = nullptr;
 
@@ -949,7 +982,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         else {
             diag.add(diag::Diagnostic(
                 "Operand of .not. operator is "+
-                std::string(ASRUtils::type_to_str(operand_type)),
+                std::string(ASRUtils::type_to_str_fortran(operand_type)),
                 Level::Error, Stage::Semantic, {
                 diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -976,6 +1009,7 @@ public:
         {AST::operatorType::Mul, "~mul"},
         {AST::operatorType::Add, "~add"},
         {AST::operatorType::Sub, "~sub"},
+        {AST::operatorType::Div, "~div"},
     };
 
     std::map<AST::cmpopType, std::string> cmpop2str = {
@@ -990,6 +1024,7 @@ public:
     std::map<AST::intrinsicopType, std::string> intrinsic2str = {
         {AST::intrinsicopType::STAR, "~mul"},
         {AST::intrinsicopType::PLUS, "~add"},
+        {AST::intrinsicopType::DIV, "~div"},
         {AST::intrinsicopType::EQ, "~eq"},
         {AST::intrinsicopType::NOTEQ, "~noteq"},
         {AST::intrinsicopType::LT, "~lt"},
@@ -1105,6 +1140,47 @@ public:
         {"same_type_as", IntrinsicSignature({"a", "b"}, 2, 2)},
         {"len_trim", IntrinsicSignature({"String", "Kind"}, 1, 2)},
         {"int", IntrinsicSignature({"i", "kind"}, 1, 2)},
+        {"random_number", IntrinsicSignature({"harvest"}, 1, 1)},
+        {"abs", IntrinsicSignature({"a"}, 1, 1)},
+        {"acos", IntrinsicSignature({"x"}, 1, 1)},
+        {"acosd", IntrinsicSignature({"x"}, 1, 1)},
+        {"acosh", IntrinsicSignature({"x"}, 1, 1)},
+        {"adjustl", IntrinsicSignature({"string"}, 1, 1)},
+        {"adjustr", IntrinsicSignature({"string"}, 1, 1)},
+        {"aimag", IntrinsicSignature({"z"}, 1, 1)},
+        {"asin", IntrinsicSignature({"x"}, 1, 1)},
+        {"asind", IntrinsicSignature({"x"}, 1, 1)},
+        {"asinh", IntrinsicSignature({"x"}, 1, 1)},
+        {"atan", IntrinsicSignature({"x"}, 1, 1)},
+        {"atanh", IntrinsicSignature({"x"}, 1, 1)},
+        {"bit_size", IntrinsicSignature({"i"}, 1, 1)},
+        {"conjg", IntrinsicSignature({"z"}, 1, 1)},
+        {"cos", IntrinsicSignature({"x"}, 1, 1)},
+        {"cosd", IntrinsicSignature({"x"}, 1, 1)},
+        {"cosh", IntrinsicSignature({"x"}, 1, 1)},
+        {"erf", IntrinsicSignature({"x"}, 1, 1)},
+        {"erfc", IntrinsicSignature({"x"}, 1, 1)},
+        {"exp", IntrinsicSignature({"x"}, 1, 1)},
+        {"gamma", IntrinsicSignature({"x"}, 1, 1)},
+        {"log", IntrinsicSignature({"x"}, 1, 1)},
+        {"log10", IntrinsicSignature({"x"}, 1, 1)},
+        {"log_gamma", IntrinsicSignature({"x"}, 1, 1)},
+        {"sin", IntrinsicSignature({"x"}, 1, 1)},
+        {"sinh", IntrinsicSignature({"x"}, 1, 1)},
+        {"sqrt", IntrinsicSignature({"x"}, 1, 1)},
+        {"tan", IntrinsicSignature({"x"}, 1, 1)},
+        {"tanh", IntrinsicSignature({"x"}, 1, 1)},
+        {"tand", IntrinsicSignature({"x"}, 1, 1)},
+        {"not", IntrinsicSignature({"i"}, 1, 1)},
+        {"precision", IntrinsicSignature({"x"}, 1, 1)},
+        {"range", IntrinsicSignature({"x"}, 1, 1)},
+        {"tiny", IntrinsicSignature({"x"}, 1, 1)},
+        {"huge", IntrinsicSignature({"x"}, 1, 1)},
+        {"epsilon", IntrinsicSignature({"x"}, 1, 1)},
+        {"digits", IntrinsicSignature({"x"}, 1, 1)},
+        {"present", IntrinsicSignature({"a"}, 1, 1)},
+        {"leadz", IntrinsicSignature({"i"}, 1, 1)},
+        {"trailz", IntrinsicSignature({"i"}, 1, 1)}
     };
 
 
@@ -1748,9 +1824,10 @@ public:
                     ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                     ASR::symbol_t* end_sym = end_var->m_v;
                     SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                    if ((is_argument || ASRUtils::expr_value(end) == nullptr) && 
+                        (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
                         (symbol_scope->counter != current_scope->counter && is_argument &&
-                        ASRUtils::expr_value(end) == nullptr) ) {
+                        ASRUtils::expr_value(end) == nullptr)) ) { 
                             end = get_transformed_function_call(end_sym);
                     }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
@@ -1942,7 +2019,13 @@ public:
         } else {
             Vec<ASR::expr_t*> body;
             body.reserve(al, a->n_value);
-            size_t size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+            size_t size_of_array;
+            if (ASR::is_a<ASR::ArraySection_t>(*object)) {
+                size_of_array = ASRUtils::get_fixed_size_of_ArraySection(ASR::down_cast<ASR::ArraySection_t>(object));
+                object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
+            } else {
+                size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+            }
             curr_value += size_of_array;
             for (size_t j=0; j < size_of_array; j++) {
                 this->visit_expr(*a->m_value[j]);
@@ -3088,6 +3171,34 @@ public:
                             );
                         }
                     }
+                } else if (AST::is_a<AST::AttrIntent_t>(*x.m_attributes[i])) {
+                    AST::AttrIntent_t* ai = AST::down_cast<AST::AttrIntent_t>(x.m_attributes[i]);
+                    ASR::intentType s_intent;
+                    switch (ai->m_intent) {
+                        case (AST::attr_intentType::In) : {
+                            s_intent = ASRUtils::intent_in;
+                            break;
+                        }
+                        case (AST::attr_intentType::Out) : {
+                            s_intent = ASRUtils::intent_out;
+                            break;
+                        }
+                        case (AST::attr_intentType::InOut) : {
+                            s_intent = ASRUtils::intent_inout;
+                            break;
+                        }
+                        default : {
+                            s_intent = ASRUtils::intent_unspecified;
+                            break;
+                        }
+                    }
+                    AST::var_sym_t* s = x.m_syms;
+                    std::string sym = to_lower(s->m_name);
+                    ASR::symbol_t* orig_decl = current_scope->get_symbol(sym);
+                    if ( orig_decl && ASR::is_a<ASR::Variable_t>(*orig_decl) ) {
+                        ASR::Variable_t* orig_decl_variable = ASR::down_cast<ASR::Variable_t>(orig_decl);
+                        orig_decl_variable->m_intent = s_intent;
+                    }
                 } else {
                     diag.add(Diagnostic(
                         "Attribute declaration not supported",
@@ -3114,6 +3225,7 @@ public:
                 ASR::presenceType s_presence = dflt_presence;
                 ASR::storage_typeType storage_type = dflt_storage;
                 bool target_attr = false;
+                bool contig_attr = false;
                 bool value_attr = false;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
@@ -3234,7 +3346,9 @@ public:
                                     throw SemanticAbort();
                                 }
                                 // Do nothing for now
-                            } else if (sa->m_attr == AST::simple_attributeType
+                            } else if (sa->m_attr == AST::AttrContiguous){
+                                contig_attr = true;
+                            }else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrAllocatable) {
                                 // TODO
                             } else if (sa->m_attr == AST::simple_attributeType
@@ -3391,6 +3505,13 @@ public:
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(func_call->m_func);
+                        bool is_struct_const = false;
+                        if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                            if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
+                                is_struct_const = true;
+                            }
+                        }
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
@@ -3401,7 +3522,7 @@ public:
                                                 func_call->base.base.loc,
                                                 func_call->m_args, func_call->n_args,
                                                 func_call->m_keywords, func_call->n_keywords,
-                                                sym_found));
+                                                sym_found, is_struct_const));
                             } else {
                                 LCOMPILERS_ASSERT(false);
                             }
@@ -3580,7 +3701,14 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-
+                    if (ASRUtils::is_real(*type) && ASRUtils::is_logical(*init_type)) {
+                        diag.add(Diagnostic(
+                            "Cannot convert LOGICAL to REAL",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {init_expr->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                     size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
                     size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
 
@@ -3834,49 +3962,61 @@ public:
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter) {
-                        // TODO: move this into `expr_value` itself:
-                        if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
-                            // For constant arrays we iterate over each element
-                            // and copy over the value
-                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
-                            for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                // if( a_m_args == nullptr ) {
-                                //     a_m_args = a->m_args[i];
-                                // }
-                                body.push_back(al, a_m_args);
-                            }
-                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
-                                a->base.base.loc, body.p, body.size(),
-                                a->m_type, a->m_storage_format));
-                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
-                                type = a->m_type;
+                        if( ASRUtils::is_array(type) ) {
+                            ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
+                            ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
+                                ASRUtils::expr_type(init_expr));
+                            if( var_ptype != init_expr_ptype &&
+                                var_ptype == ASR::array_physical_typeType::DescriptorArray ) {
+                                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(init_expr));
                             }
                         }
-                        if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
-                            // For constant arrays we iterate over each element
-                            // and copy over the value
-                            ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, a->n_args);
-                            for (size_t i=0; i < a->n_args; i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
-                                if( a_m_args == nullptr ) {
-                                    a_m_args = a->m_args[i];
+                        if( value ) {
+                            // TODO: move this into `expr_value` itself:
+                            if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                // For constant arrays we iterate over each element
+                                // and copy over the value
+                                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                                Vec<ASR::expr_t*> body;
+                                body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                    ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+                                    // if( a_m_args == nullptr ) {
+                                    //     a_m_args = a->m_args[i];
+                                    // }
+                                    body.push_back(al, a_m_args);
                                 }
-                                body.push_back(al, a_m_args);
+                                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                                    a->base.base.loc, body.p, body.size(),
+                                    a->m_type, a->m_storage_format));
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = a->m_type;
+                                }
                             }
-                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
-                                a->base.base.loc, body.p, body.size(),
-                                a->m_type, a->m_storage_format));
-                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
-                                type = a->m_type;
+                            if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                                // For constant arrays we iterate over each element
+                                // and copy over the value
+                                ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                                Vec<ASR::expr_t*> body;
+                                body.reserve(al, a->n_args);
+                                for (size_t i=0; i < a->n_args; i++) {
+                                    ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
+                                    if( a_m_args == nullptr ) {
+                                        a_m_args = a->m_args[i];
+                                    }
+                                    body.push_back(al, a_m_args);
+                                }
+                                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                                    a->base.base.loc, body.p, body.size(),
+                                    a->m_type, a->m_storage_format));
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = a->m_type;
+                                }
                             }
-                        } if (ASR::is_a<ASR::StringLen_t>(*value)) {
-                            ASR::StringLen_t *a = ASR::down_cast<ASR::StringLen_t>(value);
-                            value = a->m_value;
+                            if (ASR::is_a<ASR::StringLen_t>(*value)) {
+                                ASR::StringLen_t *a = ASR::down_cast<ASR::StringLen_t>(value);
+                                value = a->m_value;
+                            }
                         }
                     } else {
                         implicit_save = true;
@@ -3902,7 +4042,7 @@ public:
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
-                                value_attr, target_attr);
+                                value_attr, target_attr, contig_attr);
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
@@ -4275,7 +4415,7 @@ public:
 
     ASR::asr_t* create_DerivedTypeConstructor(const Location &loc,
             AST::fnarg_t* m_args, size_t n_args, AST::keyword_t* kwargs,
-            size_t n_kwargs, ASR::symbol_t *v) {
+            size_t n_kwargs, ASR::symbol_t *v, bool is_const = false) {
         Vec<ASR::call_arg_t> vals;
         visit_expr_list(m_args, n_args, vals);
         if(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(v))){
@@ -4312,6 +4452,20 @@ public:
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
         ASR::ttype_t* der = ASRUtils::TYPE(
                             ASR::make_StructType_t(al, loc, v));
+
+        // Ensure all values are present and are constant before creating StructConstant
+        for (const auto& val : vals) {
+            if (!val.m_value || 
+                    !(ASRUtils::is_value_constant(val.m_value) ||
+                      ASRUtils::is_value_constant(ASRUtils::expr_value(val.m_value)))) {
+                    is_const = false;
+                    break;
+            }
+        }
+        if (is_const) {
+           return ASR::make_StructConstant_t(al, loc,
+                    v, vals.p, vals.size(), der);
+        }
         return ASR::make_StructConstructor_t(al, loc,
                 v, vals.p, vals.size(), der, nullptr);
     }
@@ -4629,8 +4783,10 @@ public:
                 ASR::expr_t *m_value = var->m_value;
                 if( m_value && m_value->type == ASR::exprType::StringConstant ) {
                     ASR::StringConstant_t *m_str = ASR::down_cast<ASR::StringConstant_t>(m_value);
+                    ASR::String_t* s_type = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(var->m_type));
                     std::string sliced_str;
-                    int str_length = strlen(m_str->m_s);
+                    int64_t str_length = s_type->m_len;
                     if( start <= 0 ) {
                         diag.add(Diagnostic("Substring `start` is less than one",
                             Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -5045,8 +5201,9 @@ public:
                         ASR::is_a<ASR::ArraySize_t>(*new_dims[k].m_length) ) {
                         ASR::ArraySize_t* array_size_t =
                             ASR::down_cast<ASR::ArraySize_t>(new_dims[k].m_length);
-                        if( ASR::is_a<ASR::FunctionCall_t>(*array_size_t->m_v) &&
-                            ASRUtils::is_allocatable(array_size_t->m_v) ) {
+                        if( (ASR::is_a<ASR::FunctionCall_t>(*array_size_t->m_v) &&
+                            ASRUtils::is_allocatable(array_size_t->m_v)) ||
+                            ASR::is_a<ASR::IntrinsicArrayFunction_t>(*array_size_t->m_v) ) {
                             for_type = false;
                             break;
                         }
@@ -5566,8 +5723,8 @@ public:
                 }
 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
-                    std::string arg_str = ASRUtils::type_to_str(arg_type);
-                    std::string orig_arg_str = ASRUtils::type_to_str(orig_arg_type);
+                    std::string arg_str = ASRUtils::type_to_str_fortran(arg_type);
+                    std::string orig_arg_str = ASRUtils::type_to_str_fortran(orig_arg_type);
                     diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
                                         "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
                                         Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
@@ -5601,8 +5758,8 @@ public:
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                         ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
-                        ASR::array_index_t last_arg = array_item->m_args[array_item->n_args - 1];
-                        ASR::expr_t* idx = last_arg.m_right;
+                        ASR::array_index_t first_arg = array_item->m_args[0];
+                        ASR::expr_t* idx = first_arg.m_right;
 
                         Vec<ASR::dimension_t> dims;
                         dims.reserve(al, 1);
@@ -5622,14 +5779,13 @@ public:
                         Vec<ASR::array_index_t> array_indices;
                         array_indices.reserve(al, array_item->n_args);
 
-                        for (size_t i = 0; i < array_item->n_args - 1; i++) {
+                        for (size_t i = 0; i < array_item->n_args; i++) {
                             array_indices.push_back(al, array_item->m_args[i]);
                         }
 
-                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::extract_type(ASRUtils::expr_type(idx))));
 
-                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, array_item->n_args, "ubound", al, diag);
+                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, 1, "ubound", al, diag);
 
                         ASR::array_index_t array_idx;
                         array_idx.loc = array_item->base.base.loc;
@@ -5637,7 +5793,7 @@ public:
                         array_idx.m_right = array_bound;
                         array_idx.m_step = one;
 
-                        array_indices.push_back(al, array_idx);
+                        array_indices.p[0] = array_idx;
 
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
@@ -5916,14 +6072,25 @@ public:
                 make_ArrayItem_from_struct_m_args(
                     member_struct_m_args, member_struct_n_args, ASRUtils::EXPR(expr_), expr_, loc);
                 return expr_;
-            } else {
-                diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
-                    Level::Error, Stage::Semantic, {Label("", {loc})}));
-                throw SemanticAbort();
             }
-        } else if (ASR::is_a<ASR::Complex_t>(*v_variable_m_type)) {
+            diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+
+        // Handle type parameter inquiry kind first because others depend on their type
+        if (var_name == "kind") {
+            ASRUtils::create_intrinsic_function create_func = ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+            args.push_back(al, ASRUtils::EXPR(v_var));
+            return create_func(al, loc, args, diag);
+        }
+
+        if (ASR::is_a<ASR::Complex_t>(*v_variable_m_type)) {
             if (var_name != "re" && var_name != "im") {
-                diag.add(Diagnostic("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'",
+                diag.add(Diagnostic("Complex variable '" + dt_name + "' only has %re, %im, and %kind members, not '" + var_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -5962,6 +6129,16 @@ public:
                         ASR::make_Var_t(al, loc, v)), real_type, nullptr);
                 }
             }
+        } else if (ASR::is_a<ASR::String_t>(*v_variable_m_type)) {
+            if (var_name != "len") {
+                diag.add(Diagnostic("Character variable '" + dt_name + "' only has %len and %kind members, not '" + var_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+            make_ArrayItem_from_struct_m_args(
+                dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
+            return create_StringLen_from_expr(ASRUtils::EXPR(v_var), int32, loc);
         } else {
             diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -6259,72 +6436,77 @@ public:
         return ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, v_Var, dim, type, size_compiletime, false);
     }
 
-    ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"string", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
-        ASR::expr_t *v_Var = args[0], *kind = args[1];
-        int64_t kind_const = handle_kind(kind);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
-        if( ASRUtils::is_array(ASRUtils::expr_type(v_Var)) ) {
+    ASR::asr_t* create_StringLen_from_expr(ASR::expr_t* v, ASR::ttype_t* type, const Location& loc) {
+        if( ASRUtils::is_array(ASRUtils::expr_type(v)) ) {
             // TODO: If possible try to use m_len_expr of `character(len=m_len_expr)`
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v));
             Vec<ASR::array_index_t> lbs; lbs.reserve(al, n_dims);
             for( int i = 0; i < n_dims; i++ ) {
                 ASR::array_index_t index;
-                index.loc = x.base.base.loc;
+                index.loc = loc;
                 index.m_left = nullptr;
-                index.m_right = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
+                index.m_right = ASRUtils::get_bound<SemanticAbort>(v, i + 1, "lbound", al, diag);
                 index.m_step = nullptr;
                 lbs.push_back(al, index);
             }
-            v_Var = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, x.base.base.loc, v_Var, lbs.p, lbs.size(),
+            v = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, v, lbs.p, lbs.size(),
                 ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)))),
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v)))),
                         ASR::arraystorageType::ColMajor, nullptr));
         }
         ASR::expr_t* len_compiletime = nullptr;
         std::string input_string;
-        if( ASRUtils::extract_string_value(ASRUtils::expr_value(v_Var), input_string) ) {
+        if( ASRUtils::extract_string_value(ASRUtils::expr_value(v), input_string) ) {
             len_compiletime = make_ConstantWithType(
-                make_IntegerConstant_t, input_string.size(), type, x.base.base.loc);
+                make_IntegerConstant_t, input_string.size(), type, loc);
         }
-        return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
+        return ASR::make_StringLen_t(al, loc, v, type, len_compiletime);
+    }
+
+    ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"string", "kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
+        ASR::expr_t *v_var = args[0], *kind = args[1];
+        int64_t kind_const = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
+        return create_StringLen_from_expr(v_var, type, x.base.base.loc);
     }
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
-        if( x.n_args + x.n_keywords != 2) {
-            diag.add(Diagnostic("reshape accepts only 2 arguments, got " +
-                                std::to_string(x.n_args) + " arguments instead.",
+        if( x.n_args + x.n_keywords < 2 || x.n_args + x.n_keywords > 4 ) {
+            diag.add(Diagnostic("reshape expects number at least 2 and at most 4 arguments, got " +
+                                std::to_string(x.n_args + x.n_keywords) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
         AST::expr_t* source = nullptr;
         AST::expr_t* shape = nullptr;
+        AST::expr_t* order = nullptr;
+        AST::expr_t* pad = nullptr;
         if ( x.n_args > 0 ) {
             source = x.m_args[0].m_end;
         }
         if ( x.n_args > 1 ) {
             shape = x.m_args[1].m_end;
         }
-        if ( x.n_keywords > 0 ) {
-            if ( to_lower(x.m_keywords[0].m_arg) == "source" ) {
-                source = x.m_keywords[0].m_value;
-            } else if ( to_lower(x.m_keywords[0].m_arg) == "shape" ) {
-                shape = x.m_keywords[0].m_value;
-            } else {
-                diag.add(Diagnostic("Unrecognized keyword argument " +
-                                    std::string(x.m_keywords[0].m_arg) + " passed to reshape.",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
+        if (x.n_args > 2){
+            pad = x.m_args[2].m_end;
         }
-        if ( x.n_keywords > 1 ) {
-            if ( to_lower(x.m_keywords[1].m_arg) == "source" ) {
-                source = x.m_keywords[1].m_value;
-            } else if ( to_lower(x.m_keywords[1].m_arg) == "shape" ) {
-                shape = x.m_keywords[1].m_value;
+        if (x.n_args > 3){
+            pad = x.m_args[2].m_end;
+            order = x.m_args[3].m_end;
+        }
+        for( size_t i=0;i<x.n_keywords;i++ ) {
+            if( to_lower(x.m_keywords[i].m_arg) == "source" ) {
+                source = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "shape" ) {
+                shape = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "pad" ) {
+                pad = x.m_keywords[i].m_value;
+            } else if( to_lower(x.m_keywords[i].m_arg) == "order" ) {
+                order = x.m_keywords[i].m_value;
             } else {
                 diag.add(Diagnostic("Unrecognized keyword argument " +
                                     std::string(x.m_keywords[1].m_arg) + " passed to reshape.",
@@ -6336,21 +6518,60 @@ public:
         ASR::expr_t* array = ASRUtils::EXPR(tmp);
         this->visit_expr(*shape);
         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
+        ASR::expr_t* order_expr = nullptr;
+        ASR::expr_t* pad_expr = nullptr;
+        if (order!=nullptr){
+            this->visit_expr(*order);
+            order_expr = ASRUtils::EXPR(tmp);
+        }
+        if (pad != nullptr){
+            this->visit_expr(*pad);
+            pad_expr = ASRUtils::EXPR(tmp);
+        }
         if( !ASRUtils::is_array(ASRUtils::expr_type(array)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `source` argument, found " +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(array)) +
-                " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[0].loc})}));
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) +
+                " instead.", Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `shape` argument, found " +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
-                " instead.", Level::Error, Stage::Semantic, {Label("", {x.m_args[1].loc})}));
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(newshape)) +
+                " instead.", Level::Error, Stage::Semantic, {Label("", {shape->base.loc})}));
             throw SemanticAbort();
+        }
+        if (order_expr) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(order_expr))){
+                diag.add(Diagnostic("reshape accepts arrays for `order` argument, found " +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(order_expr)) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+        if (pad_expr) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(pad_expr))){
+                diag.add(Diagnostic("reshape accepts arrays for `pad` argument, found " +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
+                throw SemanticAbort();
+            } else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)))||
+            (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
+                diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
+                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
+                     + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
+                    " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
+                throw SemanticAbort();
+            }
         }
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                             ASRUtils::expr_type(array));
-
+        ASR::ttype_t* shape_type = ASRUtils::expr_type(newshape);
+        ASR::array_physical_typeType shape_physical_type = ASRUtils::extract_physical_type(shape_type);
+        if (shape_physical_type != ASR::array_physical_typeType::FixedSizeArray){
+            diag.add(Diagnostic("`shape` array in reshape intrinsic should be of constant size",
+                            Level::Error, Stage::Semantic, {Label("not a constant size array", {newshape->base.loc})}));
+            throw SemanticAbort();
+        }
         // the size (i.e. number of elements) of 'newshape' array determines
         // the dimension size of 'ArrayReshape'
         ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
@@ -6377,12 +6598,129 @@ public:
         if (ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
             ASR::ArrayConstant_t* const_newshape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            int new_shape_size = 1;
             for (size_t i=0; i < n_dims_array_reshape; i++) {
                 ASR::dimension_t dim;
                 dim.loc = loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
                 dim.m_length = ASRUtils::fetch_ArrayConstant_value(al, const_newshape, i);
                 dims.push_back(al, dim);
+                new_shape_size *= ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
+            }
+            int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+            if (array_size != -1 &&  new_shape_size > array_size) {
+                if (!pad){
+                    diag.add(Diagnostic("reshape accepts `source` array with size greater than or equal to size specified by `shape` array",
+                                        Level::Error, Stage::Semantic, {Label("`shape` specifies size of " +
+                                        std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
+                                        std::to_string(array_size), {x.base.base.loc})}));
+                    throw SemanticAbort();
+                } else if ( ASR::is_a<ASR::ArrayConstant_t>(*pad_expr) ) {
+                    if ( ASR::is_a<ASR::ArrayConstant_t>(*array) ) {
+                        ASR::ttype_t* a_type = ASRUtils::expr_type(array);
+                        a_type = ASRUtils::type_get_past_pointer(a_type);
+                        ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+                        Vec<ASR::expr_t*> elements;
+                        elements.reserve(al, array_size);
+                        ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                        ASR::ArrayConstant_t* const_pad = ASR::down_cast<ASR::ArrayConstant_t>(pad_expr);
+                        for (int i = 0; i < array_size; i++) {
+                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
+                        }
+                        int64_t diff = new_shape_size - array_size;
+                        int pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_expr));
+                        for (int i = 0; i < diff; i++) {
+                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
+                        }
+                        size_t curr_idx = elements.size();
+                        ASR::ttype_t* new_type = ASRUtils::TYPE(
+                            ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
+                                            a_type_->m_physical_type)
+                        );
+                        void *data = ASRUtils::set_ArrayConstant_data(elements.p, curr_idx, a_type_->m_type);
+                        int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
+                        if (ASRUtils::is_character(*a_type_->m_type)) {
+                            n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
+                        }
+                        array = ASRUtils::EXPR(
+                            ASR::make_ArrayConstant_t(al, loc, n_data, data, new_type,
+                                                    ASR::arraystorageType::ColMajor)
+                        );
+                    }
+                }
+            }
+            if (order_expr && ASR::is_a<ASR::ArrayConstant_t>(*order_expr)){
+                ASR::ArrayConstant_t* const_order = ASR::down_cast<ASR::ArrayConstant_t>(order_expr);
+                std::vector<int> elements;
+                int64_t n = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(order_expr));
+                for (int64_t i=0; i <  n; i++) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::fetch_ArrayConstant_value(al, const_order, i))){
+                        elements.push_back(ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, i))->m_n);
+                    } else {
+                        diag.add(Diagnostic("reshape accepts `order` array with integer elements",
+                                            Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+                std::set<int> unique_elements(elements.begin(), elements.end());
+                for (int i=1; i<=n; i++){
+                    if (unique_elements.find(i) == unique_elements.end()){
+                        diag.add(Diagnostic("reshape accepts `order` array as a permutation of elements from 1 to " + std::to_string(n),
+                                            Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+                if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*newshape)){
+                    ASR::ttype_t* a_type = ASRUtils::expr_type(array);
+                    a_type = ASRUtils::type_get_past_pointer(a_type);
+                    ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+                    Vec<ASR::expr_t*> elements_;
+                    elements_.reserve(al, array_size);
+                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                    ASR::ArrayConstant_t* const_shape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
+                    int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
+                    std::map<int, int> index_map;
+                    for (int i=0; i<array_size; i++){
+                        int temp = i;
+                        std::vector<int> d(n, 0);
+                        for (int j=0; j<n; j++){
+                            int dim = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, j))->m_n - 1;
+                            int shape_dim = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_shape, dim))->m_n;
+                            d[j] = temp % shape_dim;
+                            temp = temp / shape_dim;
+                        }
+                        std::vector<int> I(n, 0);
+                        for(int j=0; j<n; j++){
+                            int order_ = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_order, j))->m_n - 1;
+                            I[order_] = d[j];
+                        }
+
+                        int R = 0, stride = 1;
+                        for (int j=0; j<n; j++){
+                            R += I[j] * stride;
+                            stride *= ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_shape, j))->m_n;
+                        }
+                        index_map[R] = i;
+                    }
+                    for (int i=0; i<array_size; i++){
+                        elements_.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, index_map[i]));
+                    }
+
+                    size_t curr_idx = elements_.size();
+                    ASR::ttype_t* new_type = ASRUtils::TYPE(
+                        ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
+                                        a_type_->m_physical_type)
+                    );
+                    void *data = ASRUtils::set_ArrayConstant_data(elements_.p, curr_idx, a_type_->m_type);
+                    int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
+                    if (ASRUtils::is_character(*a_type_->m_type)) {
+                        n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
+                    }
+                    array = ASRUtils::EXPR(
+                        ASR::make_ArrayConstant_t(al, loc, n_data, data, new_type,
+                                                ASR::arraystorageType::ColMajor)
+                    );
+                }
             }
         } else {
             // otherwise empty dimensions
@@ -6402,6 +6740,29 @@ public:
         // 'array' and 'newshape' are ArrayConstant's we can set 'value'
         // as well
         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
+    }
+
+    ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 1 || x.n_keywords > 0) {
+            diag.add(Diagnostic("is_contiguous expects exactly one array argument, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* array = ASRUtils::EXPR(tmp);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(array))) {
+            diag.add(Diagnostic("is_contiguous expects an array argument, found " +
+                                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array)) + " instead.",
+                                Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
+            throw SemanticAbort();
+        }
+
+        ASR::ttype_t* a_type = ASRUtils::TYPE(ASR::make_Logical_t(
+                                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
@@ -6745,14 +7106,14 @@ public:
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (arg_type != required_type || kind != required_kind) {
                         diag.add(Diagnostic("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
-                                            " must be of " + ASRUtils::type_to_str(required_type) + " type with kind " + std::to_string(required_kind),
+                                            " must be of " + ASRUtils::type_to_str_fortran(required_type) + " type with kind " + std::to_string(required_kind),
                                             Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }
                 } else {
                     if (arg_type != required_type) {
                         diag.add(Diagnostic("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
-                                            " must be of " + ASRUtils::type_to_str(required_type) + " type",
+                                            " must be of " + ASRUtils::type_to_str_fortran(required_type) + " type",
                                             Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }
@@ -7094,6 +7455,8 @@ public:
                 tmp = create_Associated(x);
             } else if( var_name == "complex" ) {
                 tmp = create_Complex(x);
+            } else if( var_name == "is_contiguous" ) {
+                tmp = create_ArrayIsContiguous(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
@@ -7223,7 +7586,7 @@ public:
                     al, loc, arg, ASR::cast_kindType::ComplexToReal,
                     to_type, value));
         } else {
-            std::string stype = ASRUtils::type_to_str(type);
+            std::string stype = ASRUtils::type_to_str_fortran(type);
             diag.add(Diagnostic("Conversion of '" + stype + "' to float is not Implemented",
                                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
@@ -7845,6 +8208,13 @@ public:
                     return;
                 }
             }
+        } else if (ASR::is_a<ASR::Struct_t>(*f2)) {
+            // Check for any interface overriding a constructor for the struct
+            ASR::symbol_t* interface_override_s = current_scope->resolve_symbol("~" + var_name);
+            if (interface_override_s) {
+                v = interface_override_s;
+                f2 = ASRUtils::symbol_get_past_external(interface_override_s);
+            }
         }
         if (ASR::is_a<ASR::Function_t>(*f2) ||
             ASR::is_a<ASR::GenericProcedure_t>(*f2) ||
@@ -7972,8 +8342,8 @@ public:
                         ASR::ttype_t *source_type = ASRUtils::expr_type(source);
 
                         if (!ASRUtils::check_equal_type(dest_type, source_type)) {
-                            std::string dtype = ASRUtils::type_to_str(dest_type);
-                            std::string stype = ASRUtils::type_to_str(source_type);
+                            std::string dtype = ASRUtils::type_to_str_fortran(dest_type);
+                            std::string stype = ASRUtils::type_to_str_fortran(source_type);
                             diag.add(Diagnostic(
                                 "Type mismatch in function call, the function expects '" + dtype + "' but '" + stype + "' was provided",
                                 Level::Error, Stage::Semantic, {
@@ -8142,16 +8512,34 @@ public:
         }
         return result;
     }
-
+    // Creates a compile-time expression value for the Binop expression, if possible.
     ASR::expr_t* visit_BinOp_helper(ASR::expr_t* left, ASR::expr_t* right, ASR::binopType op, const Location& loc, ASR::ttype_t* dest_type) {
+        LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
         if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
             double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
             double right_value = ASR::down_cast<ASR::RealConstant_t>(right)->m_r;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
             perform_binop(left_value, right_value, op), dest_type));
+        } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
+            LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
+            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                    std::pow(left_value, right_value), dest_type));
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
             int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+
+            if (op == ASR::Div && right_value == 0) {
+                diag.add(Diagnostic(
+                    "Division by zero",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    })
+                );
+                throw SemanticAbort();
+            }
+
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
                     perform_binop(left_value, right_value, op), dest_type));
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
@@ -8166,11 +8554,8 @@ public:
             std::complex<double> result = perform_binop(left_value_, right_value_, op);
             return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
                     std::real(result), std::imag(result), dest_type));
-        } else {
-            diag.add(Diagnostic("Binary operation for type is not supported yet",
-                                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
         }
+        return nullptr;
     }
 
     ASR::expr_t* extract_value(ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::binopType op, ASR::ttype_t* dest_type, const Location& loc) {
@@ -8248,9 +8633,14 @@ public:
                                                       right_type, conversion_cand,
                                                       &source_type, &dest_type);
           }
-
-            ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                                source_type, dest_type, diag);
+            if((op == ASR::binopType::Pow) &&
+                ASRUtils::is_real(*dest_type) &&
+                ASRUtils::is_integer(*right_type)){ // Don't cast exponent to preserve precision.
+                // Do nothing.
+            } else {
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
+                                                    source_type, dest_type, diag);
+            }
         }
 
         if( (ASRUtils::is_array(right_type) || ASRUtils::is_array(left_type)) &&
@@ -8268,11 +8658,14 @@ public:
                 dest_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, dest_type->base.loc, dest_type));
             }
         }
-
-        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
-                                    ASRUtils::expr_type(right))) {
-            std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(left));
-            std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(right));
+        if((op == ASR::binopType::Pow) &&
+            ASRUtils::is_real(*dest_type) &&
+            ASRUtils::is_integer(*right_type)) {
+            // Don't Check.
+        } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
+                                    ASRUtils::expr_type(right)) && overloaded == nullptr) {
+            std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
+            std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(right));
             diag.add(Diagnostic(
                 "Type mismatch in binary operator, the types must be compatible",
                 Level::Error, Stage::Semantic, {
@@ -8286,9 +8679,7 @@ public:
 
         if (ASRUtils::is_integer(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr ) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8298,9 +8689,7 @@ public:
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8310,9 +8699,7 @@ public:
 
         } else if (ASRUtils::is_complex(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
-                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(left)) &&
-                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(right))) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
@@ -8349,11 +8736,10 @@ public:
                     default:
                         LCOMPILERS_ASSERT(false);
                 }
-                diag.add(Diagnostic("Operator undefined for " + ASRUtils::type_to_str(left_type)
-                                    + " " +  op_str + " " + ASRUtils::type_to_str(right_type), Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
-            return;
         } else if( overloaded == nullptr ) {
             LCOMPILERS_ASSERT(false);
         }
@@ -8406,7 +8792,7 @@ public:
                     args[i], false, false, dims, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
-                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str(arg_type) +
+                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str_fortran(arg_type) +
                         " cannot be applied to non-type parameter " + param, Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
@@ -8650,6 +9036,23 @@ public:
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
+
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*ASRUtils::EXPR(tmp))) {
+            ASR::IntegerBinOp_t *bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(ASRUtils::EXPR(tmp));
+            ASR::expr_t *right_value = ASRUtils::expr_value(bin_op->m_right);
+            if (bin_op->m_op == ASR::Div && right_value != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
+                ASR::IntegerConstant_t *right_const = ASR::down_cast<ASR::IntegerConstant_t>(right_value);
+                if (right_const->m_n == 0) {
+                    diag.add(Diagnostic(
+                        "Division by zero",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        })
+                    );
+                    throw SemanticAbort();
+                }
+            }
+        }
     }
 
     void visit_DefBinOp(const AST::DefBinOp_t &x) {
@@ -9010,8 +9413,9 @@ public:
         }
     }
 
+
     void visit_Real(const AST::Real_t &x) {
-        double r = ASRUtils::extract_real(x.m_n);
+        // First determine the kind into r_kind (e.g., 4 or 8)
         char* s_kind;
         int r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
         if (r_kind == 0) {
@@ -9044,6 +9448,18 @@ public:
                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
+        }
+
+        // Now extract the number into this kind correctly
+        double r = -1;
+        if ( r_kind == 4 ) {
+            r = ASRUtils::extract_real_4(x.m_n);
+        } else if ( r_kind == 8 ) {
+            r = ASRUtils::extract_real_8(x.m_n);
+        } else {
+            diag.add(Diagnostic("Kind not supported",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
@@ -9140,11 +9556,13 @@ public:
     template <typename T>
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
                 ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn,
-                diag::Diagnostics& diag, size_t type_bound=0) {
-        size_t n_args = args.size();
+                diag::Diagnostics& diag, size_t type_bound=0, bool is_nopass = false) {
+        int n_args = args.size();
         std::string fn_name = fn->m_name;
-
-        if (n_args + n > fn_n_args) {
+        if (is_nopass) {
+            type_bound = 0;
+        }
+        if (n_args + (int)n > (int)fn_n_args) {
             diag.semantic_error_label(
                 "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
@@ -9164,7 +9582,7 @@ public:
                 ASR::Variable_t* fn_var = ASR::down_cast<ASR::Variable_t>(fn_sym);
                 if( fn_var->m_presence == ASR::presenceType::Optional ) {
                     optional_args.push_back(itr->first);
-                    for( size_t i = 0; i < fn_n_args; i++ ) {
+                    for( int i = 0; i < (int)fn_n_args; i++ ) {
                         if( ASR::down_cast<ASR::Var_t>(fn_args[i])->m_v == fn_sym ) {
                             optional_args_idx.push_back(i);
                             break;
@@ -9177,15 +9595,15 @@ public:
         std::vector<std::string> fn_args2 = convert_fn_args_to_string(
                                                 fn_args, fn_n_args);
 
-        size_t offset = args.size();
-        for (size_t i = 0; i < fn_n_args - offset - type_bound; i++) {
+        int offset = args.size();
+        for (int i = 0; i < (int)fn_n_args - offset - (int)type_bound; i++) {
             ASR::call_arg_t call_arg;
             call_arg.loc = loc;
             call_arg.m_value = nullptr;
             args.push_back(al, call_arg);
         }
 
-        for (size_t i = 0; i < n; i++) {
+        for (int i = 0; i < (int)n; i++) {
             this->visit_expr(*kwargs[i].m_value);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
@@ -9198,7 +9616,7 @@ public:
                 return ;
             }
 
-            size_t idx = std::distance(fn_args2.begin(), search) - type_bound;
+            int idx = std::distance(fn_args2.begin(), search) - (int)type_bound;
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument is already specified as a non-keyword argument",
@@ -9217,7 +9635,7 @@ public:
             args.p[idx].m_value = expr;
         }
 
-        for (size_t i=0; i < args.size(); i++) {
+        for (int i=0; i < (int)args.size(); i++) {
             if (args[i].m_value == nullptr &&
                 std::find(optional_args_idx.begin(), optional_args_idx.end(), i)
                     == optional_args_idx.end()) {
@@ -9275,34 +9693,25 @@ public:
                                     constructor_args.end(), name);
             if (search == constructor_args.end()) {
                 diag.semantic_error_label(
-                    "Keyword argument not found " + name,
+                    "Keyword argument not found",
                     {loc},
-                    name + " keyword argument not found.");
+                    "'" + name + "'" + " keyword argument not found");
                 throw SemanticAbort();
             }
 
             size_t idx = std::distance(constructor_args.begin(), search);
             if (args[idx].m_value != nullptr) {
                 diag.semantic_error_label(
-                    "Keyword argument is already specified.",
+                    "Keyword argument is already specified",
                     {loc},
-                    name + "keyword argument is already specified.");
+                    "'" + name + "'" + + " keyword argument is already specified");
                 throw SemanticAbort();
             }
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
         }
 
-        /*
-
-        The following loop takes the default initial value expression
-        and puts it into the constructor call. The issue with this approach
-        is that one has to replace all the symbols present in the expression
-        with external symbols so that we don't receive out of scope errors
-        in ASR verify pass (with the help of a new visitor ReplaceWithExternalSymbolsInExpression).
-        So for now its commented out and one can deal with the
-        same in the backend itself which appears cleaner to me for now.
-
+        // If value is not specified in args nor in keyword argument, set to default initializer if it exists
         for( size_t i = 0; i < args.size(); i++ ) {
             if( args[i].m_value == nullptr ) {
                 ASR::symbol_t* arg_sym = constructor_arg_syms[i];
@@ -9311,24 +9720,22 @@ public:
                 bool is_default_needed = true;
                 if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
                     ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    default_init = arg_var->m_symbolic_value;
-                    if( arg_var->m_storage == ASR::storage_typeType::Allocatable ) {
+                    default_init = arg_var->m_value;
+                    if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;
                     }
                 }
                 if( default_init == nullptr && is_default_needed ) {
                     diag.semantic_error_label(
                         "Argument was not specified",
-                        {arg_sym->base.loc},
-                        std::to_string(i) +
-                        "-th argument not specified for " + ASRUtils::symbol_name(fn));
+                        {loc},
+                        "Argument '" + constructor_args[i] + "' not specified for " + ASRUtils::symbol_name(fn));
                     throw SemanticAbort();
                 }
                 args.p[i].m_value = default_init;
                 args.p[i].loc = arg_sym->base.loc;
             }
         }
-        */
 
         for (size_t i = 0; i < constructor_arg_syms.size(); i++) {
             if( args[i].m_value != nullptr ) {
@@ -9361,7 +9768,7 @@ public:
                 SymbolTable* scope = current_scope;
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(
                     ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope)));
+                    to_lower(x_m_member[0].m_name), scope, nullptr, 0, x_m_member[1].m_args, x_m_member[1].n_args)));
             } else {
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;
@@ -9473,6 +9880,21 @@ public:
                     array_found = true;
                     array_type = ASRUtils::duplicate_type(al,var_type);
                 }
+            } else if ( tmp2->m_v->type == ASR::exprType::ArraySection ) {
+                ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(tmp2->m_v);
+
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                dim.m_length = ASRUtils::compute_length_from_start_end(al, array_section->m_args->m_left, array_section->m_args->m_right);
+                dims.push_back(al, dim);
+
+                array_found = true;
+                array_type = ASRUtils::TYPE(ASR::make_Array_t(
+                    al, array_section->base.base.loc, tmp2->m_type, dims.p, dims.size(), ASR::array_physical_typeType::FixedSizeArray));
             }
             tmp_copy = (ASR::asr_t*)(tmp2->m_v);
         }

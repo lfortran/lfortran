@@ -32,6 +32,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -53,6 +54,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -84,6 +86,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -189,7 +192,7 @@
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        -0.000000
+                                        0.000000
                                         (Real 4)
                                     )
                                 )]

@@ -23,15 +23,26 @@
                                     type_y
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructConstant
                                         2 y
-                                        [(())]
+                                        [((StringConstant
+                                            "\\"
+                                            (String 1 1 () PointerString)
+                                        ))]
                                         (StructType
                                             2 y
                                         )
-                                        ()
                                     )
-                                    ()
+                                    (StructConstant
+                                        2 y
+                                        [((StringConstant
+                                            "\\"
+                                            (String 1 1 () PointerString)
+                                        ))]
+                                        (StructType
+                                            2 y
+                                        )
+                                    )
                                     Parameter
                                     (StructType
                                         2 y
@@ -40,6 +51,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -81,6 +93,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Struct
@@ -107,6 +120,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

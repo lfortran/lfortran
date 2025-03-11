@@ -1,0 +1,409 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __libasr_index_0_:
+                                (Variable
+                                    2
+                                    __libasr_index_0_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            __libasr_index_0_1:
+                                (Variable
+                                    2
+                                    __libasr_index_0_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            __libasr_index_0_2:
+                                (Variable
+                                    2
+                                    __libasr_index_0_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            __libasr_index_1_:
+                                (Variable
+                                    2
+                                    __libasr_index_1_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            __libasr_index_1_1:
+                                (Variable
+                                    2
+                                    __libasr_index_1_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            __libasr_index_1_2:
+                                (Variable
+                                    2
+                                    __libasr_index_1_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            d:
+                                (Variable
+                                    2
+                                    d
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    main
+                    []
+                    [(Allocate
+                        [((Var 2 d)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 __libasr_index_0_1)
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 __libasr_index_0_2)
+                        (ArrayBound
+                            (Var 2 b)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 __libasr_index_0_)
+                        (ArrayBound
+                            (Var 2 d)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 d)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            UBound
+                            ()
+                        )
+                        ())
+                        [(Assignment
+                            (Var 2 __libasr_index_1_1)
+                            (ArrayBound
+                                (Var 2 a)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            ()
+                        )
+                        (Assignment
+                            (Var 2 __libasr_index_1_2)
+                            (ArrayBound
+                                (Var 2 b)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            ()
+                        )
+                        (DoLoop
+                            ()
+                            ((Var 2 __libasr_index_1_)
+                            (ArrayBound
+                                (Var 2 d)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            (ArrayBound
+                                (Var 2 d)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                UBound
+                                ()
+                            )
+                            ())
+                            [(Assignment
+                                (ArrayItem
+                                    (Var 2 d)
+                                    [(()
+                                    (Var 2 __libasr_index_0_)
+                                    ())
+                                    (()
+                                    (Var 2 __libasr_index_1_)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                )
+                                (RealBinOp
+                                    (RealBinOp
+                                        (ArrayItem
+                                            (Var 2 a)
+                                            [(()
+                                            (Var 2 __libasr_index_0_1)
+                                            ())
+                                            (()
+                                            (Var 2 __libasr_index_1_1)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        Add
+                                        (ArrayItem
+                                            (Var 2 b)
+                                            [(()
+                                            (Var 2 __libasr_index_0_2)
+                                            ())
+                                            (()
+                                            (Var 2 __libasr_index_1_2)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Add
+                                    (Var 2 c)
+                                    (Real 4)
+                                    ()
+                                )
+                                ()
+                            )
+                            (Assignment
+                                (Var 2 __libasr_index_1_1)
+                                (IntegerBinOp
+                                    (Var 2 __libasr_index_1_1)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                            )
+                            (Assignment
+                                (Var 2 __libasr_index_1_2)
+                                (IntegerBinOp
+                                    (Var 2 __libasr_index_1_2)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                            )]
+                            []
+                        )
+                        (Assignment
+                            (Var 2 __libasr_index_0_1)
+                            (IntegerBinOp
+                                (Var 2 __libasr_index_0_1)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                        )
+                        (Assignment
+                            (Var 2 __libasr_index_0_2)
+                            (IntegerBinOp
+                                (Var 2 __libasr_index_0_2)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

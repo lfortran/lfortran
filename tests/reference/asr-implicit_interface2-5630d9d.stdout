@@ -28,6 +28,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             f_return_var_name:
                                                 (Variable
@@ -43,6 +44,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -92,6 +94,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             g_arg_1:
                                                 (Variable
@@ -109,6 +112,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             g_return_var_name:
                                                 (Variable
@@ -124,6 +128,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

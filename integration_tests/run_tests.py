@@ -15,6 +15,7 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 
 fast_tests = "no"
+nofast_llvm16 = "no"
 
 def run_cmd(cmd, cwd=None):
     print(f"+ {cmd}")
@@ -25,7 +26,7 @@ def run_cmd(cmd, cwd=None):
 
 def run_test(backend, std):
     run_cmd(f"mkdir {BASE_DIR}/test-{backend}")
-    if std == "f23": 
+    if std == "f23":
         std_string = "-DSTD_F23=yes"
     elif std == "legacy":
         std_string = "-DSTD_LEGACY=yes"
@@ -40,14 +41,14 @@ def run_test(backend, std):
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
     elif backend == "cpp":
-        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DEXPERIMENTAL_SIMPLIFIER={experimental_simplifier} {std_string}" + common,
+        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DNOFAST_LLVM16={nofast_llvm16} {std_string}" + common,
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
-            f"-DFAST={fast_tests} -DCMAKE_Fortran_FLAGS=\"-fPIC\" -DEXPERIMENTAL_SIMPLIFIER={experimental_simplifier} {std_string}" + common,
+            f"-DFAST={fast_tests} -DNOFAST_LLVM16={nofast_llvm16} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
                 cwd=cwd)
     else:
-        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DEXPERIMENTAL_SIMPLIFIER={experimental_simplifier} {std_string}" + common,
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} {std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
@@ -94,10 +95,10 @@ def get_args():
                 help="Run tests with the requested Fortran standard: ".join(SUPPORTED_STANDARDS))
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
+    parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
+                help="Don't run unsupported tests with --fast when LLVM < 17")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
-    parser.add_argument("--no-experimental-simplifier",
-                        action='store_true', help="Use simplifier ASR pass")
     return parser.parse_args()
 
 def main():
@@ -108,15 +109,17 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, experimental_simplifier, std_f23_tests
+    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
+    # Set environment variable for testing
+    os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
     # delete previously created directories (if any)
     for backend in SUPPORTED_BACKENDS:
         run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
 
     NO_OF_THREADS = args.no_of_threads or NO_OF_THREADS
     fast_tests = "yes" if args.fast else "no"
-    experimental_simplifier = "no" if args.no_experimental_simplifier else "yes"
+    nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
     for backend in args.backends:
         test_backend(backend, args.std)
 

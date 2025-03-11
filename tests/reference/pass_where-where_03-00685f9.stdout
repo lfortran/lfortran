@@ -23,40 +23,6 @@
                     (SymbolTable
                         2
                         {
-                            __1_k:
-                                (Variable
-                                    2
-                                    __1_k
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
-                            __1_k1:
-                                (Variable
-                                    2
-                                    __1_k1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                ),
                             a:
                                 (Variable
                                     2
@@ -76,6 +42,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -98,6 +65,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -149,245 +117,207 @@
                         )
                         ()
                     )
-                    (DoLoop
-                        ()
-                        ((Var 2 __1_k)
-                        (ArrayBound
+                    (If
+                        (RealCompare
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
-                            ()
-                        )
-                        (ArrayBound
-                            (Var 2 a)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            UBound
-                            ()
-                        )
-                        (IntegerConstant 1 (Integer 4) Decimal))
-                        [(If
-                            (RealCompare
-                                (ArrayItem
-                                    (Var 2 a)
-                                    [(()
-                                    (Var 2 __1_k)
-                                    ())]
-                                    (Real 4)
-                                    RowMajor
-                                    ()
-                                )
-                                Gt
-                                (ArrayItem
-                                    (Var 2 b)
-                                    [(()
-                                    (Var 2 __1_k)
-                                    ())]
-                                    (Real 4)
-                                    RowMajor
-                                    ()
-                                )
+                            Gt
+                            (Var 2 b)
+                            (Array
                                 (Logical 4)
-                                ()
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
                             )
-                            [(Assignment
-                                (ArrayItem
-                                    (Var 2 a)
-                                    [(()
-                                    (Var 2 __1_k)
-                                    ())]
-                                    (Real 4)
-                                    RowMajor
-                                    ()
-                                )
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 a)
+                            (ArrayBroadcast
                                 (RealConstant
                                     1.000000
                                     (Real 4)
                                 )
-                                ()
-                            )]
-                            []
+                                (ArrayConstant
+                                    4
+                                    [4]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    16
+                                    [1.00000000e+00, 1.00000000e+00, 1.00000000e+00, 1.00000000e+00]
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            ()
                         )]
                         []
                     )
-                    (DoLoop
-                        ()
-                        ((Var 2 __1_k1)
-                        (ArrayBound
+                    (If
+                        (RealCompare
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
-                            ()
-                        )
-                        (ArrayBound
-                            (Var 2 a)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            UBound
-                            ()
-                        )
-                        (IntegerConstant 1 (Integer 4) Decimal))
-                        [(If
-                            (RealCompare
-                                (ArrayItem
-                                    (Var 2 a)
-                                    [(()
-                                    (Var 2 __1_k1)
-                                    ())]
-                                    (Real 4)
-                                    RowMajor
-                                    ()
-                                )
-                                Eq
-                                (RealConstant
-                                    1.000000
-                                    (Real 4)
-                                )
-                                (Logical 4)
-                                ()
+                            Eq
+                            (RealConstant
+                                1.000000
+                                (Real 4)
                             )
-                            [(Assignment
-                                (ArrayItem
-                                    (Var 2 a)
-                                    [(()
-                                    (Var 2 __1_k1)
-                                    ())]
-                                    (Real 4)
-                                    RowMajor
-                                    ()
-                                )
+                            (Array
+                                (Logical 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 a)
+                            (ArrayBroadcast
                                 (RealConstant
                                     2.000000
                                     (Real 4)
                                 )
-                                ()
-                            )]
-                            [(If
-                                (RealCompare
-                                    (ArrayItem
-                                        (Var 2 a)
-                                        [(()
-                                        (Var 2 __1_k1)
-                                        ())]
-                                        (Real 4)
-                                        RowMajor
-                                        ()
+                                (ArrayConstant
+                                    4
+                                    [4]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
                                     )
-                                    Eq
-                                    (RealConstant
-                                        2.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
+                                    ColMajor
                                 )
-                                [(Assignment
-                                    (ArrayItem
-                                        (Var 2 b)
-                                        [(()
-                                        (Var 2 __1_k1)
-                                        ())]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    16
+                                    [2.00000000e+00, 2.00000000e+00, 2.00000000e+00, 2.00000000e+00]
+                                    (Array
                                         (Real 4)
-                                        RowMajor
-                                        ()
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
                                     )
+                                    ColMajor
+                                )
+                            )
+                            ()
+                        )]
+                        [(If
+                            (RealCompare
+                                (Var 2 a)
+                                Eq
+                                (RealConstant
+                                    2.000000
+                                    (Real 4)
+                                )
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(Assignment
+                                (Var 2 b)
+                                (ArrayBroadcast
                                     (RealConstant
                                         3.000000
                                         (Real 4)
                                     )
-                                    ()
-                                )]
-                                [(Assignment
-                                    (ArrayItem
-                                        (Var 2 a)
-                                        [(()
-                                        (Var 2 __1_k1)
-                                        ())]
-                                        (Real 4)
-                                        RowMajor
-                                        ()
+                                    (ArrayConstant
+                                        4
+                                        [4]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
                                     )
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    (ArrayConstant
+                                        16
+                                        [3.00000000e+00, 3.00000000e+00, 3.00000000e+00, 3.00000000e+00]
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                )
+                                ()
+                            )]
+                            [(Assignment
+                                (Var 2 a)
+                                (RealBinOp
                                     (RealBinOp
                                         (RealBinOp
-                                            (RealBinOp
-                                                (ArrayItem
-                                                    (Var 2 b)
-                                                    [(()
-                                                    (Var 2 __1_k1)
-                                                    ())]
+                                            (Var 2 b)
+                                            Mul
+                                            (ArrayBroadcast
+                                                (RealConstant
+                                                    2.000000
                                                     (Real 4)
-                                                    RowMajor
-                                                    ()
                                                 )
-                                                Mul
-                                                (ArrayBroadcast
-                                                    (RealConstant
-                                                        2.000000
-                                                        (Real 4)
+                                                (ArrayConstant
+                                                    4
+                                                    [4]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
                                                     )
-                                                    (ArrayConstant
-                                                        4
-                                                        [4]
-                                                        (Array
-                                                            (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 1 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                        )
-                                                        ColMajor
-                                                    )
+                                                    ColMajor
+                                                )
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                )
+                                                (ArrayConstant
+                                                    16
+                                                    [2.00000000e+00, 2.00000000e+00, 2.00000000e+00, 2.00000000e+00]
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
-                                                    (ArrayConstant
-                                                        16
-                                                        [2.00000000e+00, 2.00000000e+00, 2.00000000e+00, 2.00000000e+00]
-                                                        (Array
-                                                            (Real 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 4 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                        )
-                                                        ColMajor
-                                                    )
+                                                    ColMajor
                                                 )
-                                                (Real 4)
-                                                ()
-                                            )
-                                            Div
-                                            (ArrayItem
-                                                (Var 2 a)
-                                                [(()
-                                                (Var 2 __1_k1)
-                                                ())]
-                                                (Real 4)
-                                                RowMajor
-                                                ()
-                                            )
-                                            (Real 4)
-                                            ()
-                                        )
-                                        Mul
-                                        (ArrayBroadcast
-                                            (RealConstant
-                                                3.000000
-                                                (Real 4)
-                                            )
-                                            (ArrayConstant
-                                                4
-                                                [4]
-                                                (Array
-                                                    (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 1 (Integer 4) Decimal))]
-                                                    FixedSizeArray
-                                                )
-                                                ColMajor
                                             )
                                             (Array
                                                 (Real 4)
@@ -395,26 +325,64 @@
                                                 (IntegerConstant 4 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
-                                            (ArrayConstant
-                                                16
-                                                [3.00000000e+00, 3.00000000e+00, 3.00000000e+00, 3.00000000e+00]
-                                                (Array
-                                                    (Real 4)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 4 (Integer 4) Decimal))]
-                                                    FixedSizeArray
-                                                )
-                                                ColMajor
-                                            )
+                                            ()
                                         )
-                                        (Real 4)
+                                        Div
+                                        (Var 2 a)
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
                                         ()
                                     )
+                                    Mul
+                                    (ArrayBroadcast
+                                        (RealConstant
+                                            3.000000
+                                            (Real 4)
+                                        )
+                                        (ArrayConstant
+                                            4
+                                            [4]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        (ArrayConstant
+                                            16
+                                            [3.00000000e+00, 3.00000000e+00, 3.00000000e+00, 3.00000000e+00]
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                    )
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
                                     ()
-                                )]
+                                )
+                                ()
                             )]
                         )]
-                        []
                     )
                     (If
                         (RealCompare

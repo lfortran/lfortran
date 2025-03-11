@@ -18,8 +18,6 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
-        bool use_experimental_simplifier = false;
-
 // depth-first graph traversal
 void visit(
     std::string const& a,
@@ -197,7 +195,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
         }
 
         void handle_Var(ASR::expr_t* arg_expr, ASR::expr_t** expr_to_replace) {
-            if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
+            if (arg_expr && ASR::is_a<ASR::Var_t>(*arg_expr)) {
                 ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg_expr);
                 ASR::symbol_t* arg_sym = arg_var->m_v;
                 ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
@@ -930,12 +928,12 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 }
                 if( (arg0_name == pass_arg_str && target != expr_dt) ) {
                     err(std::string(subrout->m_name) + " is not a procedure of " +
-                        ASRUtils::type_to_str(target_type),
+                        ASRUtils::type_to_str_fortran(target_type),
                         loc);
                 }
                 if( (arg1_name == pass_arg_str && value != expr_dt) ) {
                     err(std::string(subrout->m_name) + " is not a procedure of " +
-                        ASRUtils::type_to_str(value_type),
+                        ASRUtils::type_to_str_fortran(value_type),
                         loc);
                 }
             }
@@ -1038,7 +1036,7 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
             std::string pass_arg_str = std::string(pass_arg);
             if( (arg0_name == pass_arg_str && args[0] != expr_dt) ) {
                 err(std::string(subrout->m_name) + " is not a procedure of " +
-                    ASRUtils::type_to_str(arg_type),
+                    ASRUtils::type_to_str_fortran(arg_type),
                     loc);
             }
         }
@@ -2008,18 +2006,34 @@ ASR::asr_t* make_ArraySize_t_util(
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* d = array_section_t->m_args[i].m_step;
-                if( start == nullptr || end == nullptr || d == nullptr ){
+                if( (start == nullptr || end == nullptr || d == nullptr) && 
+                    !ASRUtils::is_array(ASRUtils::expr_type(end))){
                     continue;
                 }
-                start = CastingUtil::perform_casting(start, a_type, al, a_loc);
-                end = CastingUtil::perform_casting(end, a_type, al, a_loc);
-                d = CastingUtil::perform_casting(d, a_type, al, a_loc);
-                ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                    al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
-                ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                    al, a_loc, endminusstart, ASR::binopType::Div, d, a_type, nullptr));
-                ASR::expr_t* plus1 = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                    al, a_loc, byd, ASR::binopType::Add, ASRUtils::EXPR(const1), a_type, nullptr));
+                ASR::expr_t* plus1 = nullptr;
+                // Case: A(:, iact) where iact is an array
+                if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
+                    ASR::ttype_t* arr_type = ASRUtils::expr_type(end);
+                    bool is_func_with_unknown_return = (ASR::is_a<ASR::FunctionCall_t>(*end) &&
+                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);  
+                    if( ASRUtils::is_fixed_size_array(arr_type) ) {
+                        int64_t arr_size = ASRUtils::get_fixed_size_of_array(arr_type);
+                        plus1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc, arr_size, a_type));
+                    } else {
+                        plus1 = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, end->base.loc, end, 
+                            nullptr, a_type, ASRUtils::expr_value(end), !is_func_with_unknown_return));
+                    }
+                } else {
+                    start = CastingUtil::perform_casting(start, a_type, al, a_loc);
+                    end = CastingUtil::perform_casting(end, a_type, al, a_loc);
+                    d = CastingUtil::perform_casting(d, a_type, al, a_loc);
+                    ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
+                    ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, a_loc, endminusstart, ASR::binopType::Div, d, a_type, nullptr));
+                    plus1 = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, a_loc, byd, ASR::binopType::Add, ASRUtils::EXPR(const1), a_type, nullptr));
+                }
                 size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
                     ASR::binopType::Mul, plus1, a_type, nullptr);
             }
@@ -2029,6 +2043,21 @@ ASR::asr_t* make_ArraySize_t_util(
             ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
             ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
             ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
+
+            // Case: A(:, iact) where iact is an array and dim = 2
+            if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
+                bool is_func_with_unknown_return = (ASR::is_a<ASR::FunctionCall_t>(*end) &&
+                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);  
+                ASR::ttype_t* arr_type = ASRUtils::expr_type(end);
+                if( ASRUtils::is_fixed_size_array(arr_type) ) {
+                    int64_t arr_size = ASRUtils::get_fixed_size_of_array(arr_type);
+                    return ASR::make_IntegerConstant_t(al, a_loc, arr_size, a_type);
+                } else {
+                    return ASRUtils::make_ArraySize_t_util(al, end->base.loc, end,
+                        nullptr, a_type, ASRUtils::expr_value(end), !is_func_with_unknown_return);
+                }
+            }
+
             if( start == nullptr && d == nullptr ) {
                 return const1;
             }

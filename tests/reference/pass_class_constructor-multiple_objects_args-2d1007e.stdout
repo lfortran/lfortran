@@ -44,6 +44,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -90,6 +91,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -107,6 +109,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -186,6 +189,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             temp_struct_var__1:
                                 (Variable
@@ -203,6 +207,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -228,6 +233,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 )
                         })
                     main
@@ -241,6 +247,19 @@
                         )
                         (RealConstant
                             1.500000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 2 temp_struct_var__1)
+                            2 1_circle_radius
+                            (Real 4)
+                            ()
+                        )
+                        (RealConstant
+                            1.000000
                             (Real 4)
                         )
                         ()

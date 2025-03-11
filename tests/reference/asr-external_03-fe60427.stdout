@@ -28,6 +28,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             f_return_var_name:
                                                 (Variable
@@ -43,6 +44,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -85,6 +87,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )
@@ -175,6 +178,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             f_return_var_name:
                                                 (Variable
@@ -190,6 +194,7 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

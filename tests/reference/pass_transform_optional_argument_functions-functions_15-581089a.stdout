@@ -23,6 +23,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             __libasr_created_variable_1:
                                 (Variable
@@ -38,6 +39,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -57,6 +59,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             __libasr_created_variable_3:
                                 (Variable
@@ -72,6 +75,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -91,6 +95,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -108,6 +113,7 @@
                                     Required
                                     .false.
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -123,6 +129,7 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 ),
@@ -147,6 +154,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_x_present_:
                                                 (Variable
@@ -164,6 +172,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -179,6 +188,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -448,6 +458,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -463,6 +474,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -482,6 +494,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -497,6 +510,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -516,6 +530,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -531,6 +546,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -550,6 +566,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_e_present_:
                                                 (Variable
@@ -565,6 +582,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -609,15 +627,7 @@
                                                     (RealBinOp
                                                         (Var 3 b)
                                                         Pow
-                                                        (Cast
-                                                            (IntegerConstant 2 (Integer 4) Decimal)
-                                                            IntegerToReal
-                                                            (Real 4)
-                                                            (RealConstant
-                                                                2.000000
-                                                                (Real 4)
-                                                            )
-                                                        )
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         (Real 4)
                                                         ()
                                                     )
@@ -674,15 +684,7 @@
                                                 (RealBinOp
                                                     (Var 3 b)
                                                     Pow
-                                                    (Cast
-                                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                                        IntegerToReal
-                                                        (Real 4)
-                                                        (RealConstant
-                                                            2.000000
-                                                            (Real 4)
-                                                        )
-                                                    )
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Real 4)
                                                     ()
                                                 )

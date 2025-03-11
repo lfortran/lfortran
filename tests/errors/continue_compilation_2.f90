@@ -321,8 +321,18 @@ program continue_compilation_2
     !unsupported kind
     real*16 :: unsupported_kind
 
+    ! member not found
+    print *, myCircle%mymember
+
+    ! argument not specified
+    type(Circle) :: myCircle2 = Circle()
+
+    ! invalid keyword argument specified
+    type(Circle) :: myCircle3 = Circle(mykeyword=10)
+
     !tokenizer error
     integer  :: ? tokenizer_error
+    100 FORMAT(A10, @)
 
     contains
     logical function f(x)

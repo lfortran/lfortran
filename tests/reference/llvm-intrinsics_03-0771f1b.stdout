@@ -145,10 +145,10 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %then
   %6 = call double @_lcompilers_cos_f64(double* %a)
-  %7 = fadd double %6, 0x3FDF606EEB1A3FC7
+  %7 = fadd double %6, 0x3FDF606EE0000000
   store double %7, double* %call_arg_value1, align 8
   %8 = call double @_lcompilers_abs_f64(double* %call_arg_value1)
-  %9 = fcmp ogt double %8, 0x3E7AD7F29ABCAF48
+  %9 = fcmp ogt double %8, 0x3E7AD7F2A0000000
   br i1 %9, label %then2, label %else3
 
 then2:                                            ; preds = %ifcont
@@ -168,10 +168,10 @@ ifcont4:                                          ; preds = %else3, %then2
   %14 = fadd double 0x3FB21BD54FC5F9A7, %13
   store double %14, double* %call_arg_value6, align 8
   %15 = call double @_lcompilers_cos_f64(double* %call_arg_value6)
-  %16 = fsub double %15, 0x3FE6ECC71DE13C70
+  %16 = fsub double %15, 0x3FE6ECC720000000
   store double %16, double* %call_arg_value7, align 8
   %17 = call double @_lcompilers_abs_f64(double* %call_arg_value7)
-  %18 = fcmp ogt double %17, 0x3E7AD7F29ABCAF48
+  %18 = fcmp ogt double %17, 0x3E7AD7F2A0000000
   br i1 %18, label %then8, label %else9
 
 then8:                                            ; preds = %ifcont4

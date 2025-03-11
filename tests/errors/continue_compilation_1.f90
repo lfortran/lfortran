@@ -3,7 +3,7 @@ program continue_compilation_1
 
     integer :: a(3), b(3), b1(3, 3), a3(3, 3, 3), b4(3, 3, 3, 3), a5, c5, i, arr1(3), arr2(2, 3), arr3(2, 1, 3)
     character :: a1(3, 3)
-    logical :: a2(3, 3), mask1(3), mask2(2, 3), mask3(2, 1, 3), mask4(3, 2), mask5(2, 3, 1)
+    logical :: a2(3, 3), mask1(3), mask2(2, 3), mask3(2, 1, 3), mask4(3, 2), mask5(2, 3, 1), y
     integer(kind=8) :: b5
     real(8) :: y1
     real :: z1
@@ -11,6 +11,44 @@ program continue_compilation_1
     character(len=5) :: string = "hello"
 	character(len=1) :: set(2) = ["l", "h"]
 
+    integer :: q1
+    real :: r1
+    character :: c1
+
+    complex :: c = (1.0, 2.0)
+
+    real a_real(0)
+
+    integer, allocatable ::  shape_(:)
+    integer, dimension(2, 3) :: matrix
+    integer, dimension(4) :: source = [1, 2, 3, 4]
+    allocate(shape_(2))
+
+    real :: v
+    character(10) :: str
+
+    character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+
+    integer, parameter :: zero = 0
+    integer :: x = 1
+     
+    real :: adwf = .true.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     a5 = 8
     b5 = 12_8
     c5 = 2
@@ -83,7 +121,6 @@ program continue_compilation_1
 
     print*, verify(string, set, kind= [4, 4] )
     print *, and([1, 2, 3], [1, 2, 3])
-    character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
 
     print *, dshiftl(1, 2, 34)
     print *, dshiftl(1, 2, -2)
@@ -117,10 +154,6 @@ program continue_compilation_1
     print *, iparity(arr3, mask = mask3, dim = 4)
     print *, iparity(arr3, mask = mask3, dim = -1)
 
-    integer :: q1
-    real :: r1
-    character :: c1
-
     if (q1) q1 = 1
     if (r1) r1 = 1.0
     if (c1) c1 = 'a'
@@ -148,4 +181,59 @@ program continue_compilation_1
    print *, "hello"
    exit
    print *, "world"
+
+    print *, reshape([1, 2, 3, 4], [2, 3])
+
+    ! Division by zero
+    print *, 1/0
+    print *, x/zero
+    print *, v**str
+    print *, str**v
+
+    print *, shiftl(2, 34)
+    print *, shiftl(2, -3)
+    print *, shiftr(2, 34)
+    print *, shiftr(2, -3)
+    print *, rshift(2, 34)
+    print *, rshift(2, -3)
+
+    print *, sum([c1])
+    print *, product([c1])
+    print *, minval([c])
+    print *, maxval([c])
+
+    print *, sum(q1)
+    print *, product(r1)
+    print *, minval(q1)
+    print *, maxval(r1)
+    
+    print *, sum([1, 2, 3], mask = [1, 2, 3])
+    z1 = y 
+
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], 0)
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
+
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [1.0, 2.0])
+    print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
+
+    print *, count(1)
+    print *, count([2])
+
+    a_real = [logical::]
+    print *,size(a_real)
+
+    print *, iparity(["a", "b"])
+    print *, parity(["a", "b"])
+    
+    shape_ = [2, 3]
+    matrix = reshape(source, shape_, pad=[0])
+
+    deallocate(shape_)
+
+    ! c is Complex
+    print *, c%mymember
+    ! c1 is Character
+    print *, c1%mymember
 end program

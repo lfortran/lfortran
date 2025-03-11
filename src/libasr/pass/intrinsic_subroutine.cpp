@@ -44,7 +44,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
 
         void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t &x) {
             Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x.n_args);
-            // Replace any IntrinsicImpureSubroutinesin the argument first:
+            // Replace any IntrinsicImpureSubroutines in the argument first:
             for( size_t i = 0; i < x.n_args; i++ ) {
                 ASR::call_arg_t arg0;
                 arg0.loc = x.m_args[i]->base.loc;

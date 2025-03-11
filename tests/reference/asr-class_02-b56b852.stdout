@@ -75,6 +75,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -119,6 +120,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -136,6 +138,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -172,15 +175,7 @@
                                                     ()
                                                 )
                                                 Pow
-                                                (Cast
-                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                    IntegerToReal
-                                                    (Real 4)
-                                                    (RealConstant
-                                                        2.000000
-                                                        (Real 4)
-                                                    )
-                                                )
+                                                (IntegerConstant 2 (Integer 4) Decimal)
                                                 (Real 4)
                                                 ()
                                             )
@@ -236,6 +231,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -253,6 +249,7 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -360,6 +357,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     main
@@ -447,6 +445,7 @@
                                     Source
                                     Private
                                     Required
+                                    .false.
                                     .false.
                                     .false.
                                 )

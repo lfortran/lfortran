@@ -432,7 +432,7 @@ public:
         std::cout << "Implicit Dictionary: " << std::endl;
         for (auto it: implicit_dictionary) {
             if (it.second) {
-                std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
+                std::cout << it.first << " " << ASRUtils::type_to_str_fortran(it.second) << std::endl;
             } else {
                 std::cout << it.first << " " << "NULL" << std::endl;
             }
@@ -1102,7 +1102,9 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             visit_program_unit(*x.m_contains[i]);
+            implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
         }
         Vec<ASR::expr_t*> args;
@@ -1305,10 +1307,10 @@ public:
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
-            size_t n, const Location &loc, std::string &return_var_name) {
+            size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
-        if (n == 0 && compiler_options.implicit_interface && compiler_options.implicit_typing) {
+        if (n == 0 && compiler_options.implicit_typing && !return_var_sym) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
@@ -1545,8 +1547,9 @@ public:
         // or in local variables as
         //     integer :: f
         ASR::asr_t *return_var;
+        ASR::symbol_t* return_var_sym = current_scope->get_symbol(return_var_name);
         AST::AttrType_t *return_type = find_return_type(x.m_attributes,
-            x.n_attributes, x.base.base.loc, return_var_name);
+            x.n_attributes, x.base.base.loc, return_var_name, return_var_sym);
         if (current_scope->get_symbol(return_var_name) == nullptr) {
             // The variable is not defined among local variables, extract the
             // type from "integer function f()" and add the variable.
@@ -1674,7 +1677,8 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
-        if( generic_procedures.find(sym_name) != generic_procedures.end() ) {
+        if (generic_procedures.find(sym_name) != generic_procedures.end()
+            || interface_name == to_lower(sym_name)) {
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -3228,7 +3232,7 @@ public:
                 ASR::ttype_t *ttype = determine_type(attr->base.loc, req_param,
                     attr, false, false, dims, type_declaration, current_procedure_abi_type);
 
-                req_arg = ASRUtils::type_to_str(ttype);
+                req_arg = ASRUtils::type_to_str_fortran(ttype);
                 type_subs[req_param] = ttype;
             } else {
                 diag.add(diag::Diagnostic(
@@ -3394,7 +3398,7 @@ public:
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     diag.add(diag::Diagnostic(
-                        "The type " + ASRUtils::type_to_str(arg_type) +
+                        "The type " + ASRUtils::type_to_str_fortran(arg_type) +
                         " cannot be applied to non-type parameter " + param,
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_args[i]->base.loc})}));
@@ -3564,7 +3568,7 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
                     }
 
-                    //std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
+                    //std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str_fortran(ltype);
                     std::string func_name = parent_scope->get_unique_name(op_name + "_intrinsic");
 
                     ASR::ttype_t *return_type = nullptr;

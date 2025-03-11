@@ -207,8 +207,8 @@ LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size);
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int32_t size);
 LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size);
 LFORTRAN_API void _lfortran_free(char* ptr);
-LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t len, int64_t* size, int64_t* capacity);
-LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s);
+LFORTRAN_API void _lfortran_allocate_string(char** ptr, int64_t len, int64_t* size, int64_t* capacity);
+LFORTRAN_API void _lfortran_string_init(int64_t size_plus_one, char *s);
 LFORTRAN_API char* _lfortran_str_item(char* s, int64_t idx);
 LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2); // idx1 and idx2 both start from 1
 LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
@@ -232,7 +232,7 @@ LFORTRAN_API void _lfortran_i64r64sys_clock(
 LFORTRAN_API char* _lfortran_date();
 LFORTRAN_API char* _lfortran_time();
 LFORTRAN_API char* _lfortran_zone();
-LFORTRAN_API int32_t _lfortran_values();
+LFORTRAN_API int32_t _lfortran_values(int32_t n);
 LFORTRAN_API float _lfortran_sp_rand_num();
 LFORTRAN_API double _lfortran_dp_rand_num();
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags);
@@ -252,10 +252,16 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num);
 LFORTRAN_API void _lfortran_string_write(char **str, int64_t* size, int64_t* capacity, int32_t* iostat, const char *format, ...);
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char *format, ...);
 LFORTRAN_API void _lfortran_string_read_i32(char *str, char *format, int32_t *i);
+LFORTRAN_API void _lfortran_string_read_i32_array(char *str, char *format, int32_t *arr);
 LFORTRAN_API void _lfortran_string_read_i64(char *str, char *format, int64_t *i);
+LFORTRAN_API void _lfortran_string_read_i64_array(char *str, char *format, int64_t *arr);
 LFORTRAN_API void _lfortran_string_read_f32(char *str, char *format, float *f);
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, char *format, float *arr);
 LFORTRAN_API void _lfortran_string_read_f64(char *str, char *format, double *f);
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, char *format, double *arr);
 LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s);
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, char *format, char **arr);
+LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i);
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status);

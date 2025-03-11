@@ -28,6 +28,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             line:
                                                 (Variable
@@ -45,6 +46,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             pattern:
                                                 (Variable
@@ -60,6 +62,7 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -95,6 +98,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )
@@ -198,6 +202,7 @@
                                                     Optional
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -213,6 +218,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -239,6 +245,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             present_in:
                                                 (Variable
@@ -261,6 +268,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -287,6 +295,7 @@
                                                     Required
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             stop:
                                                 (Variable
@@ -302,6 +311,7 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -326,6 +336,7 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

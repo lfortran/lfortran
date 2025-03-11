@@ -52,7 +52,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
+    asr_no_warnings = is_included("asr_no_warnings")
+    asr_disable_style_and_warnings = is_included("asr_disable_style_and_warnings")
     continue_compilation = is_included("continue_compilation")
+    fixed_form_cc = is_included("fixed_form_cc")
     semantics_only_cc = is_included("semantics_only_cc")
     show_errors = is_included("show_errors")
     document_symbols = is_included("document_symbols")
@@ -99,7 +102,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "where",
                         "nested_vars", "insert_deallocate", "openmp",
-                        "simplifier", "array_op_simplifier"] and
+                        "array_struct_temporary"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -233,6 +236,27 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
+
+    if asr_no_warnings:
+        run_test(
+            filename,
+            "asr_no_warnings",
+            "lfortran --show-asr --no-warnings --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if asr_disable_style_and_warnings:
+        run_test(
+            filename,
+            "asr_disable_style_and_warnings",
+            "lfortran --show-asr --no-style-warnings --no-warnings --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
     if asr:
         # run fixed form
         if filename.endswith(".f"):
@@ -374,14 +398,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-    
+
     if syntax_only_cc:
         run_test(filename, "asr", "lfortran --continue-compilation --show-ast --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
             extra_args)
-        
+
     if show_asr_with_cc:
         run_test(filename, "asr", "lfortran --continue-compilation --show-asr --no-color {infile}",
             filename,
@@ -398,7 +422,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
-
+            
+    if fixed_form_cc:
+        run_test(
+                filename,
+                "asr",
+                "lfortran --fixed-form --semantics-only --continue-compilation --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if asr_implicit_typing:
         run_test(
