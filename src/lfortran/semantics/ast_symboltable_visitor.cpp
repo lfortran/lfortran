@@ -2456,14 +2456,14 @@ public:
                     }
                 }
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
-                if (!is_deferred &&
-                    ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
-                    diag.add(diag::Diagnostic(
-                        "PROCEDURE(interface) should be declared DEFERRED",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {loc})}));
-                    throw SemanticAbort();
-                }
+                // if (!is_deferred &&
+                //     ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
+                //     diag.add(diag::Diagnostic(
+                //         "PROCEDURE(interface) should be declared DEFERRED",
+                //         diag::Level::Error, diag::Stage::Semantic, {
+                //             diag::Label("", {loc})}));
+                //     throw SemanticAbort();
+                // }
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
