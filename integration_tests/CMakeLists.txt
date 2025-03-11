@@ -1793,6 +1793,7 @@ RUN(NAME procedure_14 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME procedure_15 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME procedure_16 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME procedure_17 LABELS gfortran llvm NO_STD_F23)
+RUN(NAME procedure_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
