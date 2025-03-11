@@ -1746,7 +1746,10 @@ public:
 	    Vec<ASR::dimension_t> dims;
 	    dims.reserve(al, 0);
 	    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
-	    bool is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
+	    bool is_char_type = false; 
+        if ( v->m_type ) {
+            is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
+        }
 	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
 
 	    bool is_star_dimension = false;
@@ -1755,7 +1758,7 @@ public:
 		is_star_dimension = (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
 	    }
 
-	    if (ASRUtils::is_array(v->m_type)) {
+	    if (v->m_type && ASRUtils::is_array(v->m_type)) {
 		/* You can't specify an attribute such as DIMENSION more than once in a scoping
 		   unit (so sayth F2023, 8.5.1 C815). There are really four ways to dimension a variable:
 		     1a. In a _type-decl_ DIMENSION attribute;
@@ -1773,21 +1776,26 @@ public:
                 throw SemanticAbort();
 	    }
 
-	    if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al,
+	    if ( v->m_type ) {
+            if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al,
 						ASR::abiType::Source, false, is_star_dimension)) {
-		diag.add(Diagnostic(
-			     "Cannot set dimension for variable of non-numerical type",
-			     Level::Error, Stage::Semantic, {
-				 Label("",{loc})
-			     }));
-		throw SemanticAbort();
-	    }
-	    SetChar variable_dependencies_vec;
-	    variable_dependencies_vec.reserve(al, 1);
-	    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type,
-						    v->m_symbolic_value, v->m_value);
-	    v->m_dependencies = variable_dependencies_vec.p;
-	    v->n_dependencies = variable_dependencies_vec.size();
+            diag.add(Diagnostic(
+                    "Cannot set dimension for variable of non-numerical type",
+                    Level::Error, Stage::Semantic, {
+                    Label("",{loc})
+                    }));
+            throw SemanticAbort();
+            }
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type,
+                                v->m_symbolic_value, v->m_value);
+            v->m_dependencies = variable_dependencies_vec.p;
+            v->n_dependencies = variable_dependencies_vec.size();
+        } else {
+            v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr, dims.p, dims.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, is_star_dimension);
+            current_scope->add_symbol(to_lower(s.m_name), get_sym);
+        }
 	} else {
 	    diag.add(Diagnostic(
 			 "Cannot attribute non-variable type with dimension",
