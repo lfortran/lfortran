@@ -1722,13 +1722,23 @@ public:
 		}
 		get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
 	    } else {
-		diag.add(Diagnostic(
-			     "Cannot set dimension for undeclared variable",
-			     Level::Error, Stage::Semantic, {
-				 Label("",{loc})
-			     }));
-		throw SemanticAbort();
-	    }
+            ASR::intentType intent;
+            ASR::abiType abi;
+            if (std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), sym) !=
+                    current_procedure_args.end()) {
+                intent = ASRUtils::intent_unspecified;
+                abi = current_procedure_abi_type;
+            } else {
+                intent = ASRUtils::intent_local;
+                abi = ASR::abiType::Source;
+            }
+            get_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, 
+                                                    s.m_name, nullptr, 0, intent, nullptr,
+                                                    nullptr, ASR::storage_typeType::Default, nullptr, nullptr,
+                                                    abi, ASR::accessType::Public, ASR::presenceType::Required,
+                                                    false, false, false));
+        }
 	}
 
 	if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
