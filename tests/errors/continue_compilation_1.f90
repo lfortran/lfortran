@@ -178,9 +178,6 @@ program continue_compilation_1
     print *, reshape(.true., [2, 3])
     print *, reshape([1, 2, 3, 4], "hello")
     print *, reshape([1, 2, 3, 4], .false.)
-   print *, "hello"
-   exit
-   print *, "world"
 
     print *, reshape([1, 2, 3, 4], [2, 3])
 
@@ -236,4 +233,6 @@ program continue_compilation_1
     print *, c%mymember
     ! c1 is Character
     print *, c1%mymember
+
+    exit
 end program
