@@ -5375,35 +5375,27 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 if (lhs_is_string_arrayref && value->getType()->isPointerTy()) {
                     value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
                 }
-                if ( (ASR::is_a<ASR::FunctionCall_t>(*x.m_value) ||
-                     ASR::is_a<ASR::StringConcat_t>(*x.m_value) ||
-                     (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)
-                         && ASRUtils::is_character(*target_type))) &&
-                    !ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
-                    if( ASRUtils::is_allocatable(x.m_target) ) {
-                        tmp = lfortran_str_copy(target, value, true);
-                    } else {
-                        builder->CreateStore(value, target);
-                        strings_to_be_deallocated.erase(strings_to_be_deallocated.back());
-                    }
-                    return;
-                } else if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-                    ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
-                    uint32_t h = get_hash((ASR::asr_t*)asr_target);
+                if(ASR::is_a<ASR::Var_t>(*x.m_target) || 
+                    (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target))) {
+                    // Handle cases where target is a fixed string that isn't yet allocated.
+                    uint32_t h = get_hash((ASR::asr_t*)x.m_target);
                     bool already_allocated = global_string_allocated.find(h) != global_string_allocated.end();
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ASR::down_cast<ASR::Var_t>(x.m_target)->m_v) && 
-                        asr_target->m_symbolic_value != nullptr && !already_allocated) {
-                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_target->m_type); 
+                    if (!already_allocated &&
+                        !ASRUtils::is_descriptorString(expr_type(x.m_target)) &&
+                        ((ASR::is_a<ASR::Var_t>(*x.m_target) && 
+                            ASR::is_a<ASR::ExternalSymbol_t>(
+                                *ASR::down_cast<ASR::Var_t>(x.m_target)->m_v)) || 
+                            (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)))) {
+                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(expr_type(x.m_target)); 
                         llvm::Value *arg_size = llvm::ConstantInt::get(
                             context, llvm::APInt(32, str_type->m_len+1));
                         llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
                         string_init(context, *module, *builder, arg_size, init_value);
                         builder->CreateStore(init_value, target);
-                        strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(asr_target->m_type, target));
                         global_string_allocated.insert(h);
                     }
-                    tmp = lfortran_str_copy(target, value,
-                        ASRUtils::is_descriptorString(asr_target->m_type));
+                    lfortran_str_copy(target, value, ASRUtils::is_descriptorString(expr_type(x.m_target)));
+                    tmp = nullptr;
                     return;
                 }
             }

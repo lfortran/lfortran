@@ -86,7 +86,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lfortran_strcat(i8** %36, i8** %37, i8** %38)
   %39 = load i8*, i8** %38, align 8
   %40 = load i8*, i8** %38, align 8
-  store i8* %40, i8** %combined, align 8
+  call void @_lfortran_strcpy_pointer_string(i8** %combined, i8* %40)
   %41 = load i8*, i8** %combined, align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
   call void @_lpython_free_argv()

@@ -4428,9 +4428,9 @@ namespace ToLowerCase {
     static inline ASR::expr_t* instantiate_ToLowerCase(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
-        fill_func_arg("s", arg_types[0]);
-        ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+        declare_basic_variables("ToLowerCase");
+        fill_func_arg("str", arg_types[0]);
+        ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, -3, b.StringLen(args[0]), ASR::string_physical_typeType::PointerString));
         auto result = declare(fn_name, char_type, ReturnVar);
         auto itr = declare("i", int32, Local);
 
@@ -4456,11 +4456,11 @@ namespace ToLowerCase {
         body.push_back(al, b.While(b.LtE(itr, b.StringLen(args[0])), {
             b.If(b.And(b.GtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("A", arg_types[0], int32)),
                 b.LtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("Z", arg_types[0], int32))), {
-                b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc,
+                b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, result, itr, char_type, nullptr)), ASRUtils::EXPR(ASR::make_StringChr_t(al, loc,
             b.Sub(b.Add(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
-            b.Ichar("A", arg_types[0], int32)), return_type, nullptr)), char_type))
+            b.Ichar("A", arg_types[0], int32)), return_type, nullptr)))
             }, {
-                b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), char_type))
+                b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, result, itr, char_type, nullptr)),  ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)))
             }),
             b.Assignment(itr, b.Add(itr, b.i32(1))),
         }));
