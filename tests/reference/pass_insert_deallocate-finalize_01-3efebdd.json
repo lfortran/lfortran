@@ -5,9 +5,9 @@
     "infile_hash": "81b1d43091ce29fff8f14e778b9a33030de61262f7c499b22c152b7e",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "pass_insert_deallocate-finalize_01-3efebdd.stderr",
-    "stderr_hash": "f23ef82dbd584dbcd88ef17d79647e68e4c054076df088f6df3009b7",
-    "returncode": 2
+    "stdout": "pass_insert_deallocate-finalize_01-3efebdd.stdout",
+    "stdout_hash": "49673dd026efa4a62e70830a9a496e0db94cbece1847e1b3b2cee631",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

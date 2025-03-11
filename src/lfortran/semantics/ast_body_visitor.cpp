@@ -65,6 +65,7 @@ public:
     }
 
     void visit_Block(const AST::Block_t &x) {
+        all_loop++;
         from_block = true;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -101,6 +102,7 @@ public:
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
         from_block = false;
+        all_loop--;
     }
 
     // Transforms statements to a list of ASR statements
