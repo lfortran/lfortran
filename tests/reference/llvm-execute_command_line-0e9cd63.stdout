@@ -8,7 +8,7 @@ define void @_lcompilers_execute_command_line_(i8** %command) {
 .entry:
   %0 = load i8*, i8** %command, align 8
   %1 = call i8* @_lfortran_exec_command(i8* %0)
-  store i8* %1, i8** %command, align 8
+  call void @_lfortran_strcpy_pointer_string(i8** %command, i8* %1)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -16,6 +16,8 @@ return:                                           ; preds = %.entry
 }
 
 declare i8* @_lfortran_exec_command(i8*)
+
+declare void @_lfortran_strcpy_pointer_string(i8**, i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
