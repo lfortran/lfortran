@@ -4076,12 +4076,28 @@ public:
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
-                        ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, s.loc, current_scope,
+                        if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
+                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
+                            ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                            if ( symbol_variable->m_type ) {
+                                if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
+                                    array_type->m_type = type;
+                                } else {
+                                    symbol_variable->m_type = type;
+                                }
+                            } else {
+                                symbol_variable->m_type = type;
+                            }
+                            current_scope->add_symbol(sym, symbol);
+                        } else {
+                            ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr, target_attr, contig_attr);
-                        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                        }
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                         }
