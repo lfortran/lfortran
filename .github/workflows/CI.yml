@@ -552,7 +552,6 @@ jobs:
             FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
 
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
-              # this checkout has deallocate workaround
               FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
             fi
 
