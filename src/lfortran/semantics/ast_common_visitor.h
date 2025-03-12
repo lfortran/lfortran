@@ -1322,6 +1322,10 @@ public:
     std::map<std::string, ASR::symbol_t*> changed_external_function_symbol;
     std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
+
+    // Attributes defined before declaration
+    std::map<std::string, ASR::symbol_t*> symbols_having_only_attributes_without_type;
+
     // procedures explicitly declared with 'intrinsic' attribute
     // e.g. a declaration like: 'intrinsic abs' for an intrinsic
     // elemental function 'abs'
@@ -1722,22 +1726,26 @@ public:
 		}
 		get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
 	    } else {
-            ASR::intentType intent;
-            ASR::abiType abi;
-            if (std::find(current_procedure_args.begin(),
-                    current_procedure_args.end(), sym) !=
-                    current_procedure_args.end()) {
-                intent = ASRUtils::intent_unspecified;
-                abi = current_procedure_abi_type;
+            if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
+                ASR::intentType intent;
+                ASR::abiType abi;
+                if (std::find(current_procedure_args.begin(),
+                        current_procedure_args.end(), sym) !=
+                        current_procedure_args.end()) {
+                    intent = ASRUtils::intent_unspecified;
+                    abi = current_procedure_abi_type;
+                } else {
+                    intent = ASRUtils::intent_local;
+                    abi = ASR::abiType::Source;
+                }
+                get_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, 
+                                                        s.m_name, nullptr, 0, intent, nullptr,
+                                                        nullptr, ASR::storage_typeType::Default, nullptr, nullptr,
+                                                        abi, ASR::accessType::Public, ASR::presenceType::Required,
+                                                        false, false, false));
             } else {
-                intent = ASRUtils::intent_local;
-                abi = ASR::abiType::Source;
+                get_sym = symbols_having_only_attributes_without_type[sym];
             }
-            get_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, 
-                                                    s.m_name, nullptr, 0, intent, nullptr,
-                                                    nullptr, ASR::storage_typeType::Default, nullptr, nullptr,
-                                                    abi, ASR::accessType::Public, ASR::presenceType::Required,
-                                                    false, false, false));
         }
 	}
 
@@ -1794,7 +1802,7 @@ public:
             v->n_dependencies = variable_dependencies_vec.size();
         } else {
             v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr, dims.p, dims.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, is_star_dimension);
-            current_scope->add_symbol(to_lower(s.m_name), get_sym);
+            symbols_having_only_attributes_without_type[sym] = get_sym;
         }
 	} else {
 	    diag.add(Diagnostic(
