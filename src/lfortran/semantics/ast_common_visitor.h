@@ -7813,9 +7813,9 @@ public:
     }
 
     bool is_compiletime_implied_do_loop(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::symbol_t*>& loop_vars) {
-        if (!ASRUtils::is_value_constant(idl->m_start) ||
-            !ASRUtils::is_value_constant(idl->m_end) ||
-            (idl->m_increment != nullptr && !ASRUtils::is_value_constant(idl->m_increment))) {
+        if ((!ASRUtils::is_value_constant(idl->m_start) && !contains_loop_vars(idl->m_start, loop_vars)) ||
+            (!ASRUtils::is_value_constant(idl->m_end) && !contains_loop_vars(idl->m_end, loop_vars)) ||
+            (idl->m_increment != nullptr && !ASRUtils::is_value_constant(idl->m_increment) && !contains_loop_vars(idl->m_increment, loop_vars))) {
             return false;
         }
 
@@ -7848,21 +7848,6 @@ public:
         return;
     }
 
-    int get_implied_do_loop_size(ASR::ImpliedDoLoop_t* idl) {
-        int current_size = 0;
-        for (size_t i = 0; i < idl->n_values; i++) {
-            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
-                current_size += get_implied_do_loop_size(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]));
-            } else {
-                current_size += 1;
-            }
-        }
-        int end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
-        int start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_start))->m_n;
-        int increment = idl->m_increment ? ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_increment))->m_n : 1;
-        return current_size * (end - start + 1) / increment;
-    }
-
     template<typename T>
     T get_constant_value(ASR::expr_t* expr, ImpliedDoLoopValuesVisitor<T>& visitor) {
         visitor.value = 0.0;
@@ -7871,7 +7856,7 @@ public:
     }
 
     template<typename T>
-    void populate_compiletime_array_for_idl(ASR::ImpliedDoLoop_t* idl, T *array, std::vector<ASR::symbol_t*> &loop_vars, std::vector<int> &loop_indices, int &curr_nesting_level, int &itr) {
+    void populate_compiletime_array_for_idl(ASR::ImpliedDoLoop_t* idl, Vec<T> &array, std::vector<ASR::symbol_t*> &loop_vars, std::vector<int> &loop_indices, int &curr_nesting_level, int &itr) {
         /*
         (j, (i * j, i=1, 3), j=1, 2)
         gets translated via cpp code
@@ -7888,9 +7873,29 @@ public:
         }
         */
         ImpliedDoLoopValuesVisitor<T> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
-        int end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
-        int start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_start))->m_n;
-        int increment = idl->m_increment ? ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_increment))->m_n : 1;
+        ImpliedDoLoopValuesVisitor<int> index_bound_visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
+        int end;
+        if (ASRUtils::expr_value(idl->m_end)) {
+            end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
+        } else {
+            end = get_constant_value<int>(idl->m_end, index_bound_visitor);
+        }
+        int start;
+        if (ASRUtils::expr_value(idl->m_start)) {
+            start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_start))->m_n;
+        } else {
+            start = get_constant_value<int>(idl->m_start, index_bound_visitor);
+        }
+        int increment;
+        if (idl->m_increment) {
+            if (ASRUtils::expr_value(idl->m_increment)) {
+                increment = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_increment))->m_n;
+            } else {
+                increment = get_constant_value<int>(idl->m_increment, index_bound_visitor);
+            }
+        } else {
+            increment = 1;
+        }
 
         for ( int j = start; j <= end; j += increment ) {
             loop_indices[curr_nesting_level] = j;
@@ -7899,7 +7904,8 @@ public:
                     curr_nesting_level++;
                     populate_compiletime_array_for_idl(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), array, loop_vars, loop_indices, curr_nesting_level, itr);
                 } else {
-                    array[itr++] = get_constant_value<T>(idl->m_values[i], visitor);
+                    array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
+                    itr++;
                 }
             }
         }
@@ -7965,16 +7971,6 @@ public:
         bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
 
         if (is_compiletime && idl_nesting_level == 1) {
-            int idl_size = get_implied_do_loop_size(idl);
-
-            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-            ASR::dimension_t dim; dim.loc = x.base.base.loc;
-            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
-            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, idl_size, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
-            dims.push_back(al, dim);
-
-            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, type, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
-
             std::vector<int> loop_indices; // fill it with all zero
             for (size_t i = 0; i < loop_vars.size(); i++) {
                 loop_indices.push_back(0);
@@ -7983,27 +7979,26 @@ public:
             void *data = nullptr;
             int itr = 0, curr_nesting_level = 0;
             // TODO: handle multiple types
+            // populate compiletime array
             if (ASRUtils::is_integer(*type)) {
-                int *array = al.allocate<int>(idl_size);
-                // populate compiletime array
+                Vec<int> array; array.reserve(al, 1);
                 populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-                data = array;
+                data = &array.p[0];
             } else if (ASRUtils::is_logical(*type)) {
-                bool *array = al.allocate<bool>(idl_size);
-                // populate compiletime array
+                Vec<bool> array; array.reserve(al, 1);
                 populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-                data = array;
+                data = &array.p[0];
             } else if (ASRUtils::is_real(*type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(type);
 
                 if (kind == 4) {
-                    float *array = al.allocate<float>(idl_size);
+                    Vec<float> array; array.reserve(al, 1);
                     populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-                    data = array;
+                    data = &array.p[0];
                 } else if (kind == 8) {
-                    double *array = al.allocate<double>(idl_size);
+                    Vec<double> array; array.reserve(al, 1);
                     populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-                    data = array;
+                    data = &array.p[0];
                 } else {
                     diag.add(Diagnostic("Unsupported kind for real type in compiletime evaluation of implied do loop",
                                         Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
@@ -8011,7 +8006,15 @@ public:
                 }
             }
             if (data != nullptr) {
-                ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
+                Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+                ASR::dimension_t dim; dim.loc = x.base.base.loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
+                dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, itr, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
+                dims.push_back(al, dim);
+
+                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, type, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
+
+                ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, itr * ASRUtils::extract_kind_from_ttype_t(type), data,
                         array_type, ASR::arraystorageType::ColMajor));
                 idl->m_value = value;
                 tmp = (ASR::asr_t*) idl;
