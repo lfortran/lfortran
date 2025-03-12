@@ -6,7 +6,7 @@
 #include <libasr/pass/pass_utils.h>
 
 std::string lcompilers_unique_ID;
-std::string lcompilers_commandline_options;
+extern char* lcompilers_commandline_options;
 
 namespace LCompilers  {
 

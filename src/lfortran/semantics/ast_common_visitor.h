@@ -7002,7 +7002,7 @@ public:
         ASRUtils::ASRBuilder b(al, x.base.base.loc);
         ASR::ttype_t *type = ASR::down_cast<ASR::ttype_t>(ASR::make_String_t(
                 al, x.base.base.loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString));
-        ASR::expr_t *m_value =  b.StringConstant(lcompilers_commandline_options, type);
+        ASR::expr_t *m_value =  b.StringConstant(std::string(lcompilers_commandline_options), type);
         return ASR::make_CompilerOptions_t(al, x.base.base.loc, type, m_value);
     }
 

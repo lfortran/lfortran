@@ -5,7 +5,7 @@
 
 #include <libasr/alloc.h>
 #include <libasr/containers.h>
-extern std::string lcompilers_commandline_options;
+extern char* lcompilers_commandline_options;
 
 namespace LCompilers  {
 
