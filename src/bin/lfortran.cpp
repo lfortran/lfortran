@@ -68,9 +68,6 @@
 #endif
 
 extern std::string lcompilers_unique_ID;
-#ifdef _WIN32
-    #define strdup _strdup  // Windows uses _strdup instead of strdup
-#endif
 extern char* lcompilers_commandline_options;
 
 namespace {
@@ -2216,13 +2213,20 @@ int main_app(int argc, char *argv[]) {
     lcli::LFortranCommandLineOpts &opts = parser.opts;
     CompilerOptions &compiler_options = opts.compiler_options;
 
-    lcompilers_commandline_options = strdup("");
+    lcompilers_commandline_options = (char*)malloc(1);
+    if (!lcompilers_commandline_options) return 1;
+    lcompilers_commandline_options[0] = '\0';
     for (int i=0; i<argc; i++) {
         std::string option = argv[i];
         if (option != "lfortran" && (option.size() < 4 || option.substr(option.size() - 4) != ".f90")) {
             std::string new_value = std::string(lcompilers_commandline_options) + option + " ";
-            free(lcompilers_commandline_options);  // Free old memory
-            lcompilers_commandline_options = strdup(new_value.c_str());
+            char* temp = (char*)realloc(lcompilers_commandline_options, new_value.size() + 1);
+            if (!temp) {
+                free(lcompilers_commandline_options);
+                return 1;
+            }
+            lcompilers_commandline_options = temp;
+            strcpy(lcompilers_commandline_options, new_value.c_str());
         }
     }
 
