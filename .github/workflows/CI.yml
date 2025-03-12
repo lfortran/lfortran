@@ -547,17 +547,14 @@ jobs:
             # 2. namelist reading support replaced with use of file read (see: https://github.com/lfortran/lfortran/issues/1999)
             # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
-            git checkout -t origin/hdf5_mpi_namelist_global_deallocate_workaround_2
-            # this checkout doesn't have deallocate workaround
-            git checkout 8c2c88fb92718c090452bdb613862e7e81343355
+            git checkout -t origin/hdf5_mpi_namelist_global_deallocate_workaround_3
+            git checkout 219453c81aae490510c2297f0575acb9c50d8868
             FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
 
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               # this checkout has deallocate workaround
-              git checkout af554065552a8ce4113b42d29c83a58a4ec1e864
               FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
             fi
-
 
       - name: Test PRIMA
         shell: bash -e -l {0}
