@@ -178,7 +178,38 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                 logical_value = left_val < right_val;
                 break;
             case ASR::cmpopType::GtE:
-                value = left_val >= right_val;
+                logical_value = left_val >= right_val;
+                break;
+            default:
+                diag.add(Diagnostic("Unsupported comparison operation in implied do loop",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+        }
+    }
+
+    void visit_RealCompare( const ASR::RealCompare_t &x ) {
+        this->visit_expr(*x.m_left);
+        T left_val = value;
+        this->visit_expr(*x.m_right);
+        T right_val = value;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq:
+                logical_value = left_val == right_val;
+                break;
+            case ASR::cmpopType::NotEq:
+                logical_value = left_val != right_val;
+                break;
+            case ASR::cmpopType::Gt:
+                logical_value = left_val > right_val;
+                break;
+            case ASR::cmpopType::LtE:
+                logical_value = left_val <= right_val;
+                break;
+            case ASR::cmpopType::Lt:
+                logical_value = left_val < right_val;
+                break;
+            case ASR::cmpopType::GtE:
+                logical_value = left_val >= right_val;
                 break;
             default:
                 diag.add(Diagnostic("Unsupported comparison operation in implied do loop",
