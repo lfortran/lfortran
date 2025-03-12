@@ -108,6 +108,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     std::vector<ASR::symbol_t*>& loop_vars;
     std::vector<int>& loop_indices;
     T value;
+    bool logical_value;
     ASR::ttype_t* type;
     diag::Diagnostics& diag;
     const std::map<ASRUtils::IntrinsicElementalFunctions, size_t> name2signature_varargs = {
@@ -162,19 +163,19 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         T right_val = value;
         switch (x.m_op) {
             case ASR::cmpopType::Eq:
-                value = left_val == right_val;
+                logical_value = left_val == right_val;
                 break;
             case ASR::cmpopType::NotEq:
-                value = left_val != right_val;
+                logical_value = left_val != right_val;
                 break;
             case ASR::cmpopType::Gt:
-                value = left_val > right_val;
+                logical_value = left_val > right_val;
                 break;
             case ASR::cmpopType::LtE:
-                value = left_val <= right_val;
+                logical_value = left_val <= right_val;
                 break;
             case ASR::cmpopType::Lt:
-                value = left_val < right_val;
+                logical_value = left_val < right_val;
                 break;
             case ASR::cmpopType::GtE:
                 value = left_val >= right_val;
@@ -195,7 +196,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
-        value = x.m_value;
+        logical_value = x.m_value;
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
@@ -290,7 +291,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             } else if (ASRUtils::is_integer(*arg_type)) {
                 args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, value, arg_type)));
             } else if (ASRUtils::is_logical(*arg_type)) {
-                args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, value, arg_type)));
+                args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, logical_value, arg_type)));
             } else {
                 diag.add(Diagnostic("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
@@ -7856,6 +7857,13 @@ public:
     }
 
     template<typename T>
+    T get_constant_bool_value(ASR::expr_t* expr, ImpliedDoLoopValuesVisitor<T>& visitor) {
+        visitor.logical_value = false;
+        visitor.visit_expr(*expr);
+        return visitor.logical_value;
+    }
+
+    template<typename T>
     void populate_compiletime_array_for_idl(ASR::ImpliedDoLoop_t* idl, Vec<T> &array, std::vector<ASR::symbol_t*> &loop_vars, std::vector<int> &loop_indices, int &curr_nesting_level, int &itr) {
         /*
         (j, (i * j, i=1, 3), j=1, 2)
@@ -7872,7 +7880,6 @@ public:
             }
         }
         */
-        ImpliedDoLoopValuesVisitor<T> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
         ImpliedDoLoopValuesVisitor<int> index_bound_visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
         int end;
         if (ASRUtils::expr_value(idl->m_end)) {
@@ -7904,7 +7911,14 @@ public:
                     curr_nesting_level++;
                     populate_compiletime_array_for_idl(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), array, loop_vars, loop_indices, curr_nesting_level, itr);
                 } else {
-                    array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
+                    if constexpr (!std::is_same_v<T,bool>) {
+                        ImpliedDoLoopValuesVisitor<T> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
+                        array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
+                    } else {
+                        ImpliedDoLoopValuesVisitor<double> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
+                        array.push_back(al, get_constant_bool_value<double>(idl->m_values[i], visitor));
+
+                    }
                     itr++;
                 }
             }
