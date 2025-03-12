@@ -3371,6 +3371,8 @@ public:
                                 is_external = true;
                             } else if(sa->m_attr == AST::simple_attributeType
                                 ::AttrNoPass) {
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
+                                // TODO: Implement volatile attribute
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
