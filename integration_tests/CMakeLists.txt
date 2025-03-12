@@ -416,6 +416,7 @@ RUN(NAME subroutines_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME subroutines_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME subroutines_18 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME subroutines_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME subroutines_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME functions_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm mlir fortran)
 RUN(NAME functions_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
