@@ -2725,6 +2725,10 @@ filename = "fixedform_subroutine.f"
 ast = true
 
 [[test]]
+filename = "fixedform_subroutine2.f"
+ast = true
+
+[[test]]
 filename = "fixedform_return2.f"
 ast = true
 
