@@ -305,6 +305,8 @@ RUN(NAME include_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran
 RUN(NAME use_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
 RUN(NAME use_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
 
+RUN(NAME volatile_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
+
 RUN(NAME cond_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME cond_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 
