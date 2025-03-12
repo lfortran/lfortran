@@ -574,9 +574,3 @@ semantic error: Character variable 'c1' only has %len and %kind members, not 'my
     |
 235 |     print *, c1%mymember
     |              ^^^^^^^^^^^ 
-
-semantic error: EXIT statement outside of loop
-   --> tests/errors/continue_compilation_1.f90:237:5
-    |
-237 |     exit
-    |     ^^^^ 

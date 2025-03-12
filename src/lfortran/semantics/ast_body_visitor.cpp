@@ -4376,11 +4376,10 @@ public:
 
     void visit_Exit(const AST::Exit_t &x) {
         if (all_loops_blocks_nesting == 0) {
-            diag.add(Diagnostic(
-                "EXIT statement outside of loop",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
+            diag.add(Diagnostic("`exit` statements cannot be outside of loops or blocks",
+                                Level::Error,
+                                Stage::Semantic,
+                                { Label("", { x.base.base.loc }) }));
             throw SemanticAbort();
         }
         tmp = ASR::make_Exit_t(al, x.base.base.loc, x.m_stmt_name);
