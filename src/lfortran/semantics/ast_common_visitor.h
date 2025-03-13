@@ -6862,6 +6862,14 @@ public:
                 std::memcpy(&new_value, result_bits.data(), std::min(sizeof(new_value), result_bits.size()));
                 transfer_value = ASRUtils::EXPR(
                     ASR::make_RealConstant_t(al, x.base.base.loc, new_value, ASRUtils::expr_type(mold)));
+            } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(mold))) {
+                std::string new_value = ""; 
+                for (size_t i = 0; i < result_bits.size(); i++) {
+                    new_value.push_back(result_bits[i]);
+                } 
+                Str s; s.from_str_view(new_value);               
+                transfer_value = ASRUtils::EXPR(
+                    ASR::make_StringConstant_t(al, mold->base.loc, s.c_str(al), ASRUtils::expr_type(mold)));
             } else {
                 return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
             }
