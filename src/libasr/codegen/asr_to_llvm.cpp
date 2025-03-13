@@ -6766,9 +6766,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 break;
             }
             case ASR::binopType::BitRShift: {
-                tmp = builder->CreateAShr(left_val, right_val);
+                llvm::Value* right_val_64 = builder->CreateZExtOrBitCast(right_val, llvm::Type::getInt64Ty(context));
+                tmp = builder->CreateAShr(left_val, right_val_64);
                 break;
             }
+            
         }
     }
 
