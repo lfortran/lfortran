@@ -1,9 +1,9 @@
-module test_mod
+module intrinsics_368_test_mod
     implicit none
     logical, parameter :: param=ichar(transfer(1,'a')) == 0
-end module test_mod
+end module intrinsics_368_test_mod
 program intrinsics_368
-    use test_mod
+    use intrinsics_368_test_mod
     implicit none
     integer(kind=transfer(4_1, 0)) :: x1
     integer(kind=kind(0)) :: x2
