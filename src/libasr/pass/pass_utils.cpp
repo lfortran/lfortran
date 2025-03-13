@@ -1424,9 +1424,7 @@ namespace LCompilers {
             int in_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, inp_dims);
             Vec<int> strides;
             strides.resize(al, n_dims);
-            if (n_dims != in_dims) {
-                throw LCompilersException("Dimensions are not matching");
-            }
+            LCOMPILERS_ASSERT(n_dims == in_dims);
             // compute stride vars for each dimension in column major order
             strides.p[0] = 1;
             for( int i = 1; i < n_dims; i++ ) {
