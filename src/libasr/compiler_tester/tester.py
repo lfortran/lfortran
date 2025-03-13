@@ -428,7 +428,7 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
 
     # Remove all old test references while updating
     if update_reference:
-        log.debug("REMOVE: Old tests References")
+        log.debug("REMOVE: old test references")
         cmd = "rm -rf ./tests/reference/*"
         log.debug(f"+ {cmd}")
         process = subprocess.run(cmd, shell=True)
