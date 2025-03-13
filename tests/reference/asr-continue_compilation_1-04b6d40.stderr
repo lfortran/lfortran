@@ -586,8 +586,9 @@ semantic error: `exit` statements cannot be outside of loops or blocks
     |
 287 |     exit
     |     ^^^^ 
+
 semantic error: Function 'compiler_options' not found (not user defined nor intrinsic)
-   --> tests/errors/continue_compilation_1.f90:237:14
+   --> tests/errors/continue_compilation_1.f90:238:14
     |
-237 |     print *, compiler_options()
+238 |     print *, compiler_options()
     |              ^^^^^^^^^^^^^^^^^^ 

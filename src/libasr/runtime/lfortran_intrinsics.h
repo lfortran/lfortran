@@ -64,7 +64,7 @@ typedef double _Complex double_complex_t;
         }                                                                      \
     }
 #endif
-char *lcompilers_commandline_options;
+LFORTRAN_API char *lcompilers_commandline_options;
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
