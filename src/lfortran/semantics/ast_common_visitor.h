@@ -3374,9 +3374,9 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
                                 // TODO: Implement volatile attribute
                                 diag.add(Diagnostic(
-                                    "Volatile attribute is not supported yet",
+                                    "The volatile attribute is not implemented yet (https://github.com/lfortran/lfortran/issues/6555), ignoring for now",
                                     Level::Warning, Stage::Semantic, {
-                                        Label("",{x.base.base.loc})
+                                        Label("",{sa->base.base.loc})
                                 }));
                             } else {
                                 diag.add(Diagnostic(

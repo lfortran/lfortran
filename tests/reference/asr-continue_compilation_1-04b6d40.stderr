@@ -26,11 +26,11 @@ semantic error: Cannot convert LOGICAL to REAL
 35 |     real :: adwf = .true.
    |                    ^^^^^^ 
 
-warning: Volatile attribute is not supported yet
-  --> tests/errors/continue_compilation_1.f90:37:5
+warning: The volatile attribute is not implemented yet (https://github.com/lfortran/lfortran/issues/6555), ignoring for now
+  --> tests/errors/continue_compilation_1.f90:37:14
    |
 37 |     integer, volatile :: volatile_var
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+   |              ^^^^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
   --> tests/errors/continue_compilation_1.f90:58:8
