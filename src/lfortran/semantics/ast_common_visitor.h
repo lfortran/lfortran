@@ -3372,6 +3372,7 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                 ::AttrNoPass) {
                             } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
+                                // TODO: Implement volatile attribute
                                 diag.add(Diagnostic(
                                     "Volatile attribute is not supported yet",
                                     Level::Warning, Stage::Semantic, {

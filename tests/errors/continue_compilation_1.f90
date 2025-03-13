@@ -34,7 +34,7 @@ program continue_compilation_1
      
     real :: adwf = .true.
 
-
+    integer, volatile :: volatile_var
 
 
 
@@ -102,6 +102,10 @@ program continue_compilation_1
     print *, modulo(1, 0)
     !more_kwargs_than_acceptable_to_subroutine
     call my_func(y=1, x=2, z=1)
+
+    ! Volatile attribute test
+    volatile_var = 10
+    print *, volatile_var
 
     contains
 
