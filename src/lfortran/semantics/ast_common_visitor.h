@@ -108,7 +108,6 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     std::vector<ASR::symbol_t*>& loop_vars;
     std::vector<int>& loop_indices;
     T value;
-    bool logical_value;
     ASR::ttype_t* type;
     diag::Diagnostics& diag;
     const std::map<ASRUtils::IntrinsicElementalFunctions, size_t> name2signature_varargs = {
@@ -163,22 +162,22 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         T right_val = value;
         switch (x.m_op) {
             case ASR::cmpopType::Eq:
-                logical_value = left_val == right_val;
+                value = left_val == right_val;
                 break;
             case ASR::cmpopType::NotEq:
-                logical_value = left_val != right_val;
+                value = left_val != right_val;
                 break;
             case ASR::cmpopType::Gt:
-                logical_value = left_val > right_val;
+                value = left_val > right_val;
                 break;
             case ASR::cmpopType::LtE:
-                logical_value = left_val <= right_val;
+                value = left_val <= right_val;
                 break;
             case ASR::cmpopType::Lt:
-                logical_value = left_val < right_val;
+                value = left_val < right_val;
                 break;
             case ASR::cmpopType::GtE:
-                logical_value = left_val >= right_val;
+                value = left_val >= right_val;
                 break;
             default:
                 diag.add(Diagnostic("Unsupported comparison operation in implied do loop",
@@ -194,22 +193,22 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         T right_val = value;
         switch (x.m_op) {
             case ASR::cmpopType::Eq:
-                logical_value = left_val == right_val;
+                value = left_val == right_val;
                 break;
             case ASR::cmpopType::NotEq:
-                logical_value = left_val != right_val;
+                value = left_val != right_val;
                 break;
             case ASR::cmpopType::Gt:
-                logical_value = left_val > right_val;
+                value = left_val > right_val;
                 break;
             case ASR::cmpopType::LtE:
-                logical_value = left_val <= right_val;
+                value = left_val <= right_val;
                 break;
             case ASR::cmpopType::Lt:
-                logical_value = left_val < right_val;
+                value = left_val < right_val;
                 break;
             case ASR::cmpopType::GtE:
-                logical_value = left_val >= right_val;
+                value = left_val >= right_val;
                 break;
             default:
                 diag.add(Diagnostic("Unsupported comparison operation in implied do loop",
@@ -227,7 +226,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
-        logical_value = x.m_value;
+        value = x.m_value;
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
@@ -322,7 +321,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             } else if (ASRUtils::is_integer(*arg_type)) {
                 args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, value, arg_type)));
             } else if (ASRUtils::is_logical(*arg_type)) {
-                args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, logical_value, arg_type)));
+                args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, value, arg_type)));
             } else {
                 diag.add(Diagnostic("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
@@ -7888,13 +7887,6 @@ public:
     }
 
     template<typename T>
-    T get_constant_bool_value(ASR::expr_t* expr, ImpliedDoLoopValuesVisitor<T>& visitor) {
-        visitor.logical_value = false;
-        visitor.visit_expr(*expr);
-        return visitor.logical_value;
-    }
-
-    template<typename T>
     void populate_compiletime_array_for_idl(ASR::ImpliedDoLoop_t* idl, Vec<T> &array, std::vector<ASR::symbol_t*> &loop_vars, std::vector<int> &loop_indices, int &curr_nesting_level, int &itr) {
         /*
         (j, (i * j, i=1, 3), j=1, 2)
@@ -7947,7 +7939,7 @@ public:
                         array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
                     } else {
                         ImpliedDoLoopValuesVisitor<double> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
-                        array.push_back(al, get_constant_bool_value<double>(idl->m_values[i], visitor));
+                        array.push_back(al, (bool)get_constant_value<double>(idl->m_values[i], visitor));
 
                     }
                     itr++;
