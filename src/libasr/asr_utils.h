@@ -3102,6 +3102,20 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
             }
             break;
         }
+        case ASR::exprType::BitCast: {
+            ASR::BitCast_t* kind_bc = ASR::down_cast<ASR::BitCast_t>(kind_expr);
+            if (kind_bc->m_value) {
+                return ASR::down_cast<ASR::IntegerConstant_t>(kind_bc->m_value)->m_n;
+            } else {
+                diag.add(diag::Diagnostic(
+                    "Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            break;
+        }
         // allow integer binary operator kinds (e.g. '1 + 7')
         case ASR::exprType::IntegerBinOp:
         // allow integer kinds (e.g. 4, 8 etc.)

@@ -3954,7 +3954,8 @@ public:
                             } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
                                         ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
                                 value = init_expr;
-                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
+                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr) ||
+                                ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
                                 value = init_expr;
                             } else {
                                 diag.add(Diagnostic(
@@ -6814,8 +6815,59 @@ public:
             }
         }
         ASR::ttype_t* type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims);
+        ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source), 
+            *mold_value = ASRUtils::expr_value(mold), *size_value = nullptr;
+        if(size) size_value = ASRUtils::expr_value(size);
+
+        if (source_value && mold_value) {
+            std::vector<uint8_t> source_bits;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*source_value)) {
+                int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(source_value)->m_n;
+                source_bits.assign(reinterpret_cast<uint8_t*>(&val),
+                                reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+            } else if (ASR::is_a<ASR::RealConstant_t>(*source_value)) {
+                double val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
+                source_bits.assign(reinterpret_cast<uint8_t*>(&val),
+                                reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+            } else {
+                return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+            }
+
+            std::size_t target_size = 0;
+            if (size_value) {
+                target_size = ASR::down_cast<ASR::IntegerConstant_t>(size_value)->m_n;
+            } else {
+                if (ASR::is_a<ASR::Integer_t>(*type)) {
+                    target_size = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+                } else if (ASR::is_a<ASR::Real_t>(*type)) {
+                    target_size = ASR::down_cast<ASR::Real_t>(type)->m_kind;
+                } else if (ASR::is_a<ASR::Complex_t>(*type)) {
+                    target_size = 2 * ASR::down_cast<ASR::Complex_t>(type)->m_kind;
+                } else if (ASR::is_a<ASR::Logical_t>(*type)) {
+                    target_size = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+                } else if (ASR::is_a<ASR::String_t>(*type)) {
+                    target_size = ASR::down_cast<ASR::String_t>(type)->m_len;
+                }
+            }
+            std::vector<uint8_t> result_bits(source_bits.begin(),
+                                            source_bits.begin() + std::min(source_bits.size(), target_size));
+
+            if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(mold))) {
+                int64_t new_value = 0;
+                std::memcpy(&new_value, result_bits.data(), std::min(sizeof(new_value), result_bits.size()));
+                transfer_value = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, x.base.base.loc, new_value, ASRUtils::expr_type(mold)));
+            } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(mold))) {
+                double new_value = 0.0;
+                std::memcpy(&new_value, result_bits.data(), std::min(sizeof(new_value), result_bits.size()));
+                transfer_value = ASRUtils::EXPR(
+                    ASR::make_RealConstant_t(al, x.base.base.loc, new_value, ASRUtils::expr_type(mold)));
+            } else {
+                return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+            }
+        }
         return ASR::make_BitCast_t(al, x.base.base.loc, source, mold,
-                                     size, type, nullptr);
+                                     size, type, transfer_value);
     }
 
     ASR::asr_t* create_Cmplx(const AST::FuncCallOrArray_t& x) {
