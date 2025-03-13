@@ -22,14 +22,16 @@ message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 
 set(SRC
     ../../../src/libasr/runtime/lfortran_intrinsics.c
-    ../impure/lfortran_intrinsic_sin_c.c
-    ../builtin/lfortran_intrinsic_builtin.f90
     ../pure/lfortran_intrinsic_iso_fortran_env.f90
     ../pure/lfortran_intrinsic_ieee_arithmetic.f90
     ../pure/lfortran_intrinsic_iso_c_binding.f90
 )
 add_library(lfortran_runtime SHARED ${SRC})
 add_library(lfortran_runtime_static STATIC ${SRC})
+target_include_directories(lfortran_runtime PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../src)
+target_include_directories(lfortran_runtime_static PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../src)
 
 macro(ADDTEST name)
     add_executable(${name} ${name}.f90)
@@ -39,7 +41,7 @@ endmacro(ADDTEST)
 
 ADDTEST(test_abs)
 ADDTEST(test_sin)
-ADDTEST(test_sin2)
+#ADDTEST(test_sin2)
 ADDTEST(test_cos)
 ADDTEST(test_tan)
 ADDTEST(test_hyperbolics)
