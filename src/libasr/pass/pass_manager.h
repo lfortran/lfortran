@@ -347,7 +347,7 @@ namespace LCompilers {
                         outfile << generate_visualize_html(json) << "\n";
                         outfile.close();
                     }
-                    std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
+                    std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + "_" + LFORTRAN_VERSION + ".clj");
                     outfile << ";; ASR after applying the pass: " << passes[i]
                         << "\n" << pickle(*asr, false, true, pass_options.with_intrinsic_mods) << "\n";
                     outfile.close();
@@ -361,7 +361,7 @@ namespace LCompilers {
                     }
                     std::string str_i = std::to_string(i+1);
                     if ( i < 9 )  str_i = "0" + str_i;
-                    std::ofstream outfile ("pass_fortran_" + str_i + "_" + passes[i] + ".f90");
+                    std::ofstream outfile ("pass_fortran_" + str_i + "_" + passes[i] + "_" + LFORTRAN_VERSION + ".f90");
                     outfile << "! Fortran code after applying the pass: " << passes[i]
                         << "\n" << fortran_code.result << "\n";
                     outfile.close();
