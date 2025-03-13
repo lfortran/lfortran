@@ -233,4 +233,6 @@ program continue_compilation_1
     print *, c%mymember
     ! c1 is Character
     print *, c1%mymember
+
+    exit
 end program
