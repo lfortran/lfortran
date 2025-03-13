@@ -27,6 +27,7 @@ public:
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     int loop_nesting = 0;
+    int all_loops_blocks_nesting = 0;
     int pragma_nesting_level = 0;
     bool openmp_collapse = false;
     int collapse_value=0;
@@ -64,6 +65,7 @@ public:
     }
 
     void visit_Block(const AST::Block_t &x) {
+        all_loops_blocks_nesting++;
         from_block = true;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -100,6 +102,7 @@ public:
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
         from_block = false;
+        all_loops_blocks_nesting--;
     }
 
     // Transforms statements to a list of ASR statements
@@ -4048,6 +4051,7 @@ public:
     }
 
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
+        all_loops_blocks_nesting += 1;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
@@ -4055,6 +4059,7 @@ public:
         transform_stmts(body, x.n_body, x.m_body);
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);
+        all_loops_blocks_nesting -= 1;
     }
 
     #define cast_as_loop_var(conv_candidate) \
@@ -4064,6 +4069,7 @@ public:
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
         loop_nesting += 1;
+        all_loops_blocks_nesting += 1;
         ASR::expr_t *var, *start, *end;
         ASR::ttype_t* type = nullptr;
         var = start = end = nullptr;
@@ -4189,9 +4195,11 @@ public:
             tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size(), nullptr, 0);
         }
         loop_nesting -= 1;
+        all_loops_blocks_nesting -= 1;
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
+        all_loops_blocks_nesting += 1;
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         for(size_t i=0;i<x.n_control;i++) {
@@ -4299,9 +4307,11 @@ public:
         }
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
+        all_loops_blocks_nesting -= 1;
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
+        all_loops_blocks_nesting += 1;
         if (x.n_control != 1) {
             diag.add(Diagnostic(
                 "Forall statement: exactly one control statement is required for now",
@@ -4361,9 +4371,17 @@ public:
         head.m_increment = increment;
         head.loc = head.m_v->base.loc;
         tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, assign_stmt);
+        all_loops_blocks_nesting -= 1;
     }
 
     void visit_Exit(const AST::Exit_t &x) {
+        if (all_loops_blocks_nesting == 0) {
+            diag.add(Diagnostic("`exit` statements cannot be outside of loops or blocks",
+                                Level::Error,
+                                Stage::Semantic,
+                                { Label("", { x.base.base.loc }) }));
+            throw SemanticAbort();
+        }
         tmp = ASR::make_Exit_t(al, x.base.base.loc, x.m_stmt_name);
     }
 
