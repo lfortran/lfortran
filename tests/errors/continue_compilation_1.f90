@@ -68,7 +68,7 @@ program continue_compilation_1
     integer, parameter :: zero = 0
     integer :: x = 1
     real :: adwf = .true.
-
+    integer, volatile :: volatile_var
 
 
 
