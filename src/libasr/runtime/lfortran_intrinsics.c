@@ -59,7 +59,7 @@ extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
 #define LCOMPILERS_MAX_STACKTRACE_LENGTH 200
 char *source_filename;
 char *binary_executable_path = "/proc/self/exe";
-char *lcompilers_commandline_options;
+char *lcompilers_commandline_options = NULL;
 
 struct Stacktrace {
     uintptr_t pc[LCOMPILERS_MAX_STACKTRACE_LENGTH];
