@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "llvm-legacy_array_sections_01-2515c0f.stderr",
-    "stderr_hash": "f19c3431555a5c60366d9ac2c1c12b43af7a37e4b4d317bb61c830b0",
+    "stderr_hash": "114ca504160d91e61127d84188eb67a579b792df005b565159aa62d4",
     "returncode": 1
 }
