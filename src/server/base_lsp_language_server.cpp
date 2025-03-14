@@ -483,7 +483,7 @@ namespace LCompilers::LanguageServerProtocol {
                         milliseconds_t lastSleepTimeMs =
                             std::get<2>(record.first);
                         milliseconds_t nextSleepTimeMs =
-                            std::min(
+                            std::min<milliseconds_t>(
                                 milliseconds_t(workspaceConfig->retry.maxSleepTimeMs),
                                 randomBetween(
                                     milliseconds_t(workspaceConfig->retry.minSleepTimeMs),
@@ -522,8 +522,8 @@ namespace LCompilers::LanguageServerProtocol {
                         logger.trace()
                             << "Request with id=" << requestId
                             << " timed-out. Retrying after "
-                            << nextSleepTimeMs.count() << " ms."
-                            << std::endl;
+                            << static_cast<long>(nextSleepTimeMs.count())
+                            << " ms." << std::endl;
                     } else {
                         logger.error()
                             << "Request with id=" << requestId
