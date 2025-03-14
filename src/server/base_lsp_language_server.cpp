@@ -524,6 +524,11 @@ namespace LCompilers::LanguageServerProtocol {
                             << " timed-out. Retrying after "
                             << nextSleepTimeMs.count() << " ms."
                             << std::endl;
+                    } else {
+                        logger.error()
+                            << "Request with id=" << requestId
+                            << " failed after " << attempt << " attempts."
+                            << std::endl;
                     }
                 }
                 changed = true;
