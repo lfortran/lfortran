@@ -115,13 +115,19 @@ namespace LCompilers::LanguageServerProtocol {
         std::default_random_engine randomEngine;
 
         std::unordered_map<DocumentUri, std::shared_ptr<LSPAny>> configsByUri;
-        std::unordered_map<
+        std::map<
             DocumentUri,
             std::pair<int, std::shared_future<std::shared_ptr<LSPAny>>>
         > pendingConfigsByUri;
-        std::queue<
-            std::tuple<DocumentUri, int, std::promise<std::shared_ptr<LSPAny>>>
-        > pendingConfigs;
+        std::map<
+            int,
+            std::vector<
+                std::pair<
+                    DocumentUri,
+                    std::promise<std::shared_ptr<LSPAny>>
+                >
+            >
+        > pendingConfigsById;
         std::shared_mutex configMutex;
 
         std::map<std::string, std::shared_ptr<std::atomic_bool>> activeRequests;
@@ -276,6 +282,7 @@ namespace LCompilers::LanguageServerProtocol {
         auto receiveShutdown() -> ShutdownResult override;
 
         auto receiveClient_registerCapability(
+            const RequestId &requestId,
             Client_RegisterCapabilityResult params
         ) -> void override;
 
@@ -294,6 +301,7 @@ namespace LCompilers::LanguageServerProtocol {
         ) -> void override;
 
         auto receiveWorkspace_configuration(
+            const RequestId &requestId,
             Workspace_ConfigurationResult &params
         ) -> void override;
 

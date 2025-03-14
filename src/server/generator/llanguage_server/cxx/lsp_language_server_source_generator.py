@@ -135,6 +135,20 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                     'const std::string &method'
                 ]
         ):
+            self.write('RequestId requestId;')
+            with self.gen_switch('response.id.type()'):
+                with self.gen_case('ResponseIdType', 'integer'):
+                    self.gen_assign('requestId', 'response.id.integer()')
+                    self.gen_break()
+                with self.gen_case('ResponseIdType', 'string'):
+                    self.gen_assign('requestId', 'response.id.string()')
+                    self.gen_break()
+                with self.gen_default():
+                    self.gen_throw_invalid_params(
+                        '("Invalid ResponseId type: " +'
+                        ' ResponseIdTypeNames.at(response.id.type()))'
+                    )
+            self.newline()
             self.write('OutgoingRequest request;')
             with self.gen_try():
                 self.write('request = outgoingRequestByValue(method);')
@@ -166,9 +180,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                     f'{result_name} params',
                                     f'transformer.anyTo{upper_first(result_name)}(result)'
                                 )
-                                self.write(f'{receive_fn(request_method)}(params);')
+                                self.write(f'{receive_fn(request_method)}(requestId, params);')
                             else:
-                                self.write(f'{receive_fn(request_method)}()')
+                                self.write(f'{receive_fn(request_method)}(requestId)')
                             self.gen_break()
                 with self.gen_default():
                     self.write('invalidMethod:')
@@ -286,7 +300,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         request_method = request_spec["method"]
         receive_request = receive_fn(request_method)
         request_name = method_to_camel_case(request_method)
-        params = []
+        params = [
+            'const RequestId &/*requestId*/',
+        ]
         result_spec = request_spec.get("result", None)
         if result_spec is not None:
             result_name = f'{request_name}Result'
