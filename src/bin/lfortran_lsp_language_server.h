@@ -33,6 +33,8 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &configSection,
             const std::string &extensionId,
             const std::string &compilerVersion,
+            int parentProcessId,
+            unsigned int seed,
             std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
         );
     protected:
@@ -99,6 +101,11 @@ namespace LCompilers::LanguageServerProtocol {
             std::shared_ptr<CompilerOptions>
         > optionsByUri;
         std::shared_mutex optionMutex;
+        std::map <
+            DocumentUri,
+            std::shared_ptr<std::atomic_bool>
+        > validationsByUri;
+        std::shared_mutex validationMutex;
 
         std::atomic_bool clientSupportsGotoDefinition = false;
         std::atomic_bool clientSupportsGotoDefinitionLinks = false;

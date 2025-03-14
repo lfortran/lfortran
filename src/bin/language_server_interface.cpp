@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <random>
 #include <regex>
 #include <stdexcept>
 #include <thread>
@@ -314,10 +315,40 @@ namespace LCompilers::LLanguageServer::Interface {
             "Number of spaces per level of indentation."
         )->capture_default_str();
 
+        workspaceConfig->timeoutMs = 100;
+        server->add_option(
+            "--timeout-ms", workspaceConfig->timeoutMs,
+            "Number of milliseconds to await requests from server-to-client."
+        )->capture_default_str();
+
+        workspaceConfig->retry.maxAttempts = 5;
+        server->add_option(
+            "--max-retry-attempts", workspaceConfig->retry.maxAttempts,
+            "Maximum number of times to attempt a request before giving up."
+        )->capture_default_str();
+
+        workspaceConfig->retry.minSleepTimeMs = 10;
+        server->add_option(
+            "--min-retry-sleep-time-ms", workspaceConfig->retry.minSleepTimeMs,
+            "Minimum number of milliseconds to wait between request attempts."
+        )->capture_default_str();
+
+        workspaceConfig->retry.maxSleepTimeMs = 10;
+        server->add_option(
+            "--max-retry-sleep-time-ms", workspaceConfig->retry.maxSleepTimeMs,
+            "Maximum number of milliseconds to wait between request attempts."
+        )->capture_default_str();
+
         opts.extensionId = "lcompilers.lfortran-lsp";
         server->add_option(
             "--extension-id", opts.extensionId,
             "Identifies the language client extension that interacts with this server."
+        )->capture_default_str();
+
+        opts.parentProcessId = -1;
+        server->add_option(
+            "--parent-process-id", opts.parentProcessId,
+            "Process ID (PID) of the process that has spawned this language server."
         )->capture_default_str();
 
         return server;
@@ -347,6 +378,7 @@ namespace LCompilers::LLanguageServer::Interface {
         if (opts.language == Language::FORTRAN) {
             if (opts.dataFormat == DataFormat::JSON_RPC) {
                 if (opts.serverProtocol == ServerProtocol::LSP) {
+                    std::random_device randomSeed;
                     return std::make_unique<lsp::LFortranLspLanguageServer>(
                         incomingMessages,
                         outgoingMessages,
@@ -356,6 +388,8 @@ namespace LCompilers::LLanguageServer::Interface {
                         opts.configSection,
                         opts.extensionId,
                         LFORTRAN_VERSION,
+                        opts.parentProcessId,
+                        randomSeed(),
                         workspaceConfig
                     );
                 } else {

@@ -51,7 +51,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         ):
             with self.gen_switch('method'):
                 for request_spec in self.schema["requests"]:
-                    if request_spec["messageDirection"] == "clientToServer":
+                    if request_spec["messageDirection"] in ["clientToServer", "both"]:
                         request_method = request_spec["method"]
                         request_name = method_to_camel_case(request_method)
                         result_name = f'{request_name}Result'
@@ -93,7 +93,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         ):
             with self.gen_switch('method'):
                 for notification_spec in self.schema["notifications"]:
-                    if notification_spec["messageDirection"] == "clientToServer":
+                    if notification_spec["messageDirection"] in ["clientToServer", "both"]:
                         notification_method = notification_spec["method"]
                         notification_name = method_to_camel_case(notification_method)
                         notification_enum = method_to_camel_case(notification_method)
@@ -143,7 +143,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             self.newline()
             with self.gen_switch('request'):
                 for request_spec in self.schema["requests"]:
-                    if request_spec["messageDirection"] == "serverToClient":
+                    if request_spec["messageDirection"] in ["serverToClient", "both"]:
                         request_method = request_spec["method"]
                         request_name = method_to_camel_case(request_method)
                         result_name = f'{request_name}Result'

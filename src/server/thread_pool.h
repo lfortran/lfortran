@@ -3,8 +3,10 @@
 #include <atomic>
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <server/logger.h>
@@ -16,13 +18,14 @@ namespace LCompilers::LLanguageServer::Threading {
     const std::size_t TASK_QUEUE_CAPACITY = 256;
 
     typedef std::function<void(
-        const std::string &name,
-        const std::size_t threadId
+        std::shared_ptr<std::atomic_bool> running
     )> Task;
 
-    template class Queue<Task, TASK_QUEUE_CAPACITY>;
+    typedef std::pair<Task, std::shared_ptr<std::atomic_bool>> QueueElem;
 
-    typedef Queue<Task, TASK_QUEUE_CAPACITY> TaskQueue;
+    template class Queue<QueueElem, TASK_QUEUE_CAPACITY>;
+
+    typedef Queue<QueueElem, TASK_QUEUE_CAPACITY> TaskQueue;
 
     class ThreadPool {
     public:
@@ -44,7 +47,7 @@ namespace LCompilers::LLanguageServer::Threading {
             return running;
         }
 
-        auto execute(Task task) -> bool;
+        auto execute(Task task) -> std::shared_ptr<std::atomic_bool>;
         auto stop() -> void;
         auto stopNow() -> void;
         auto join() -> void;

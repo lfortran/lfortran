@@ -1,20 +1,41 @@
-#include "server/lsp_language_server.h"
+#include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <TlHelp32.h>
+#else
+#include <signal.h>
+#include <errno.h>
+#endif
 
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_issue_reporter.h>
 #include <server/lsp_json_parser.h>
+#include <server/lsp_language_server.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    using namespace std::chrono_literals;
+    auto now = std::chrono::system_clock::now;
+
     namespace lsr = LCompilers::LanguageServerProtocol::Reporter;
+
+    auto CronComparator::operator()(
+        const CronElem &lhs,
+        const CronElem &rhs
+    ) -> bool {
+        return std::get<2>(lhs) > std::get<2>(rhs);
+    }
 
     BaseLspLanguageServer::BaseLspLanguageServer(
         ls::MessageQueue &incomingMessages,
@@ -25,6 +46,8 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &configSection,
         const std::string &extensionId,
         const std::string &compilerVersion,
+        int parentProcessId,
+        unsigned int seed,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
         std::shared_ptr<lsc::LspConfig> workspaceConfig
     ) : LspLanguageServer(
@@ -35,17 +58,46 @@ namespace LCompilers::LanguageServerProtocol {
       , configSection(configSection)
       , extensionId(extensionId)
       , compilerVersion(compilerVersion)
-      , listener([this]{ listen(); })
+      , parentProcessId(parentProcessId)
+      , listener([this, &logger]{
+          logger.threadName("BaseLspLanguageServer_listener");
+          listen();
+      })
+      , cron([this, &logger]{
+          logger.threadName("BaseLspLanguageServer_cron");
+          chronicle();
+      })
       , requestPool("request", numRequestThreads, logger)
       , workerPool("worker", numWorkerThreads, logger)
       , lspConfigTransformer(std::move(lspConfigTransformer))
+      , randomEngine(seed)
     {
-        callbacksById.reserve(256);
         documentsByUri.reserve(256);
         configsByUri.reserve(256);
         pendingConfigsByUri.reserve(256);
         lspConfigsByUri.reserve(256);
         updateWorkspaceConfig(std::move(workspaceConfig));
+        // -----------------------
+        // Schedule the cron jobs:
+        // -----------------------
+        schedule(
+            [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
+                checkParentProcessId(std::move(taskIsRunning));
+            },
+            [this]{ return ttl(1000ms); }
+        );
+        schedule(
+            [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
+                expireCaches(std::move(taskIsRunning));
+            },
+            [this]{ return ttl(1000ms); }
+        );
+        schedule(
+            [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
+                retryRequests(std::move(taskIsRunning));
+            },
+            [this]{ return ttl(100ms); }
+        );
     }
 
     auto BaseLspLanguageServer::nextSendId() -> std::size_t
@@ -140,56 +192,203 @@ namespace LCompilers::LanguageServerProtocol {
                 const std::string message = incomingMessages.dequeue();
                 if (!_exit) {
                     std::size_t sendId = nextSendId();
-                    requestPool.execute([this, message, sendId](
-                        const std::string &threadName,
-                        const std::size_t threadId
-                    ) {
-                        try {
-                            handle(message, sendId);
-                        } catch (std::exception &e) {
-                            std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-                            logger.error()
-                                << "[" << threadName << "_" << threadId << "] "
-                                "Failed to handle message: " << message
-                                << std::endl;
-                            logger.error()
-                                << "[" << threadName << "_" << threadId << "] "
-                                "Caught unhandled exception: " << e.what()
-                                << std::endl;
-                        }
-                    });
+                    std::shared_ptr<std::atomic_bool> taskIsRunning =
+                        requestPool.execute([this, message, sendId](
+                            std::shared_ptr<std::atomic_bool> taskIsRunning
+                        ) {
+                            try {
+                                if (*taskIsRunning) {
+                                    handle(message, sendId, std::move(taskIsRunning));
+                                } else {
+                                    logger.debug()
+                                        << "Canceled before message could be handled."
+                                        << std::endl;
+                                }
+                            } catch (std::exception &e) {
+                                std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+                                logger.error()
+                                    << "Failed to handle message: " << message
+                                    << std::endl;
+                                logger.error()
+                                    << "Caught unhandled exception: " << e.what()
+                                    << std::endl;
+                            }
+                            ++pendingSendId;
+                            {
+                                std::unique_lock<std::mutex> sentLock(sentMutex);
+                                sent.notify_all();
+                            }
+                        });
                 }
             }
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
                     << "[LspLanguageServer] "
-                    "Unhandled exception caught: " << e.what()
+                       "Unhandled exception caught: " << e.what()
                     << std::endl;
             } else {
                 logger.trace()
                     << "[LspLanguageServer] "
-                    "Interrupted while dequeuing messages: " << e.what()
+                       "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
         }
     }
 
-    auto BaseLspLanguageServer::notifySent() -> void
-    {
-        ++pendingSendId;
+    auto BaseLspLanguageServer::isProcessRunning(int pid) -> bool {
+#ifdef _WIN32
+        HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+        if (hProcess == NULL) {
+            return false;
+        }
+        DWORD exitCode;
+        if (GetExitCodeProcess(hProcess, &exitCode)) {
+            CloseHandle(hProcess);
+            return exitCode == STILL_ACTIVE;
+        }
+        CloseHandle(hProcess);
+        return false;
+#else
+        if (kill(pid, 0) == 0) {
+            return true;
+        } else {
+            return errno != ESRCH;
+        }
+#endif
+    }
+
+    auto BaseLspLanguageServer::checkParentProcessId(
+        std::shared_ptr<std::atomic_bool> taskIsRunning
+    ) -> void {
+        if (*taskIsRunning &&
+            (parentProcessId >= 0) &&
+            !isProcessRunning(parentProcessId)) {
+            logger.error()
+                << "Parent process terminated before terminating server."
+                << std::endl;
+            receiveShutdown();
+            receiveExit();
+        }
+    }
+
+    auto BaseLspLanguageServer::nextCronId() -> std::size_t {
+        return ++serialCronId;
+    }
+
+    auto BaseLspLanguageServer::schedule(
+        lst::Task cronJob,
+        CronSchedule schedule
+    ) -> std::size_t {
+        std::size_t cronId = nextCronId();
         {
-            std::unique_lock<std::mutex> sentLock(sentMutex);
-            sent.notify_all();
+            std::unique_lock<std::shared_mutex> writeLock(scheduleMutex);
+            cronSchedules.emplace(cronId, schedule);
+        }
+        time_point_t nextTimePoint = schedule();
+        {
+            std::unique_lock<std::mutex> cronLock(cronMutex);
+            cronJobs.push(std::make_tuple(cronId, cronJob, nextTimePoint));
+        }
+        return cronId;
+    }
+
+    auto BaseLspLanguageServer::unschedule(std::size_t cronId) -> bool {
+        std::shared_lock<std::shared_mutex> readLock(scheduleMutex);
+        auto iter = cronSchedules.find(cronId);
+        if (iter != cronSchedules.end()) {
+            readLock.unlock();
+            std::unique_lock<std::shared_mutex> writeLock(scheduleMutex);
+            iter = cronSchedules.find(cronId);
+            if (iter != cronSchedules.end()) {
+                cronSchedules.erase(iter);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    auto BaseLspLanguageServer::chronicle() -> void {
+        try {
+            while (!_exit) {
+                bool changed;
+                do {
+                    changed = false;
+                    std::unique_lock<std::mutex> cronLock(cronMutex);
+                    if (cronJobs.size() > 0) {
+                        const CronElem &elem = cronJobs.top();
+                        if (std::get<2>(elem) < now()) {
+                            std::size_t cronId = std::get<0>(elem);
+                            lst::Task cronJob = std::get<1>(elem);
+                            cronJobs.pop();
+                            cronLock.unlock();
+                            workerPool.execute([this, cronId, cronJob](
+                                std::shared_ptr<std::atomic_bool> taskIsRunning
+                            ) {
+                                if (!_exit) {
+                                    if (*taskIsRunning) {
+                                        try {
+                                            cronJob(std::move(taskIsRunning));
+                                        } catch (const std::exception &e) {
+                                            logger.error()
+                                                << "Caught unhandled exception while executing cron job with id="
+                                                << cronId << ": " << e.what() << std::endl;
+                                        }
+                                    } else {
+                                        logger.debug()
+                                            << "Cron job with id=" << cronId << " canceled before execution."
+                                            << std::endl;
+                                    }
+
+                                    std::shared_lock<std::shared_mutex> readLock(scheduleMutex);
+                                    auto iter = cronSchedules.find(cronId);
+                                    if (iter != cronSchedules.end()) {
+                                        CronSchedule schedule = iter->second;
+                                        readLock.unlock();
+                                        time_point_t nextTimePoint = schedule();
+                                        std::unique_lock<std::mutex> cronLock(cronMutex);
+                                        cronJobs.push(std::make_tuple(cronId, cronJob, nextTimePoint));
+                                    }
+                                }
+                            });
+                            changed = true;
+                        }
+                    }
+                } while (!_exit && changed);
+
+                // NOTE: Wait a short period of time before running the cron jobs again:
+                std::this_thread::sleep_for(100ms);
+            }
+        } catch (std::exception &e) {
+            logger.error()
+                << "[LspLanguageServer] "
+                   "Unhandled exception caught: " << e.what()
+                << std::endl;
         }
     }
 
     auto BaseLspLanguageServer::send(const RequestMessage &request) -> void {
+        int requestId = request.id.integer();
         {
-            std::unique_lock<std::mutex> writeLock(callbackMutex);
-            callbacksById.emplace(request.id.integer(), request.method);
+            std::unique_lock<std::mutex> writeLock(requestMutex);
+            requestsById.emplace(requestId, request);
         }
         LspLanguageServer::send(request);
+        {
+            std::unique_lock<std::shared_mutex> retryLock(retryMutex);
+            retryAttempts.push(
+                std::make_pair(
+                    std::make_tuple(
+                        requestId,
+                        0,  // attempt
+                        milliseconds_t(
+                            workspaceConfig->retry.minSleepTimeMs
+                        )
+                    ),
+                    ttl(milliseconds_t(workspaceConfig->timeoutMs))
+                )
+            );
+        }
     }
 
     auto BaseLspLanguageServer::send(
@@ -212,13 +411,141 @@ namespace LCompilers::LanguageServerProtocol {
         }
         if ((pendingSendId == sendId) && !_exit) {
             ls::LanguageServer::send(message);
-            notifySent();
         }
+    }
+
+    auto BaseLspLanguageServer::ttl(
+        const milliseconds_t &timeout
+    ) const -> time_point_t {
+        return now() + timeout;
+    }
+
+    auto BaseLspLanguageServer::expireCaches(
+        std::shared_ptr<std::atomic_bool> taskIsRunning
+    ) -> void {
+        bool changed = true;
+        while (!_exit && *taskIsRunning && changed) {
+            changed = false;
+            std::shared_lock<std::shared_mutex> readLock(recentMutex);
+            if ((recentRequests.size() > 0) && (recentRequests.top().second < now())) {
+                readLock.unlock();
+                std::unique_lock<std::shared_mutex> writeLock(recentMutex);
+                if (recentRequests.size() > 0) {
+                    const TTLRecord<std::string> &record = recentRequests.top();
+                    if (record.second < now()) {
+                        std::string requestId = record.first;
+                        recentRequests.pop();
+                        writeLock.unlock();
+                        {
+                            std::unique_lock<std::mutex> requestLock(activeMutex);
+                            auto iter = activeRequests.find(requestId);
+                            if (iter != activeRequests.end()) {
+                                activeRequests.erase(iter);  // timeout
+                            }
+                        }
+                        changed = true;
+                    }
+                }
+            }
+        }
+    }
+
+    auto BaseLspLanguageServer::randomBetween(
+        const milliseconds_t &lower,
+        const milliseconds_t &upper
+    ) -> milliseconds_t {
+        std::uniform_int_distribution<long long> distribution(
+            lower.count(),
+            upper.count()
+        );
+        return milliseconds_t(distribution(randomEngine));
+    }
+
+    auto BaseLspLanguageServer::retryRequests(
+        std::shared_ptr<std::atomic_bool> taskIsRunning
+    ) -> void {
+        bool changed = true;
+        while (!_exit && *taskIsRunning && changed) {
+            changed = false;
+            std::shared_lock<std::shared_mutex> readLock(retryMutex);
+            if ((retryAttempts.size() > 0) && retryAttempts.top().second < now()) {
+                readLock.unlock();
+                std::unique_lock<std::shared_mutex> writeLock(retryMutex);
+                const TTLRecord<RetryRecord> &record = retryAttempts.top();
+                if (record.second < now()) {
+                    int requestId = std::get<0>(record.first);
+                    unsigned int attempt = std::get<1>(record.first);
+                    retryAttempts.pop();
+                    writeLock.unlock();
+                    if (attempt < workspaceConfig->retry.maxAttempts) {
+                        // NOTE: See the section on "Decorrelated Jitter" in the following article:
+                        // https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+                        milliseconds_t lastSleepTimeMs =
+                            std::get<2>(record.first);
+                        milliseconds_t nextSleepTimeMs =
+                            std::min<milliseconds_t>(
+                                milliseconds_t(workspaceConfig->retry.maxSleepTimeMs),
+                                randomBetween(
+                                    milliseconds_t(workspaceConfig->retry.minSleepTimeMs),
+                                    lastSleepTimeMs * 3
+                                )
+                            );
+                        // NOTE: Release the worker thread to execute more tasks
+                        // while we wait to retry the request. Do not sleep from
+                        // the current thread or we may run out of available
+                        // workers!
+                        schedule([this, requestId, attempt, &nextSleepTimeMs](
+                            std::shared_ptr<std::atomic_bool> taskIsRunning
+                        ) {
+                            if (*taskIsRunning) {
+                                std::unique_lock<std::mutex> requestLock(requestMutex);
+                                auto iter = requestsById.find(requestId);
+                                if (iter != requestsById.end()) {
+                                    const RequestMessage &request = iter->second;
+                                    cancelRequest(requestId);
+                                    LspLanguageServer::send(request);
+                                    requestLock.unlock();
+                                    std::unique_lock<std::shared_mutex> writeLock(retryMutex);
+                                    retryAttempts.push(
+                                        std::make_pair(
+                                            std::make_tuple(
+                                                requestId,
+                                                attempt + 1,
+                                                nextSleepTimeMs
+                                            ),
+                                            ttl(milliseconds_t(workspaceConfig->timeoutMs))
+                                        )
+                                    );
+                                }
+                            }
+                        }, nextSleepTimeMs);
+                        logger.trace()
+                            << "Request with id=" << requestId
+                            << " timed-out. Retrying after "
+                            << static_cast<long>(nextSleepTimeMs.count())
+                            << " ms." << std::endl;
+                    } else {
+                        logger.error()
+                            << "Request with id=" << requestId
+                            << " failed after " << attempt << " attempts."
+                            << std::endl;
+                    }
+                }
+                changed = true;
+            }
+        }
+    }
+
+    auto BaseLspLanguageServer::cancelRequest(int requestId) -> void {
+        CancelParams params;
+        params.id = requestId;
+        sendCancelRequest(params);
     }
 
     auto BaseLspLanguageServer::handle(
         const std::string &incoming,
-        std::size_t sendId
+        std::size_t sendId,
+        std::shared_ptr<std::atomic_bool> taskIsRunning
     ) -> void
     {
         const auto start = std::chrono::high_resolution_clock::now();
@@ -266,12 +593,61 @@ namespace LCompilers::LanguageServerProtocol {
                     }
                     RequestMessage request =
                         transformer.anyToRequestMessage(*document);
-                    traceId = request.method + " - (" + to_string(request.id) + ")";
+                    std::string requestId;
+                    switch (request.id.type()) {
+                    case RequestIdType::Integer: {
+                        requestId = std::to_string(request.id.integer());
+                        break;
+                    }
+                    case RequestIdType::String: {
+                        requestId = request.id.string();
+                        break;
+                    }
+                    case RequestIdType::Uninitialized: {
+                        throw LSP_EXCEPTION(
+                            ErrorCodes::InvalidRequest,
+                            "Missing required attribute for RequestMessage: id"
+                        );
+                    }
+                    }
+                    {
+                        std::unique_lock<std::mutex> lock(activeMutex);
+                        auto iter = activeRequests.find(requestId);
+                        if (iter == activeRequests.end()) {
+                            activeRequests.emplace_hint(iter, requestId, taskIsRunning);
+                        } else {
+                            if (!*iter->second) {
+                                logger.debug()
+                                    << "Request with method=" << request.method << ", id=" << requestId << " canceled before dispatch."
+                                    << std::endl;
+                                return;
+                            }
+                            iter->second = taskIsRunning;
+                        }
+                    }
+                    {
+                        std::unique_lock<std::shared_mutex> writeLock(recentMutex);
+                        recentRequests.push(std::make_pair(requestId, ttl(RECENT_REQUEST_TIMEOUT)));
+                    }
+                    traceId = request.method + " - (" + requestId + ")";
                     if (trace >= TraceValues::Messages) {
                         logReceiveTrace("request", traceId, request.params);
                     }
                     response.jsonrpc = request.jsonrpc;
+                    if (!*taskIsRunning) {
+                        logger.debug()
+                            << "Request with method=" << request.method << ", id=" << requestId << " canceled before dispatch."
+                            << std::endl;
+                        return;
+                    }
                     dispatch(response, request);
+                    {
+                        std::unique_lock<std::mutex> lock(activeMutex);
+                        auto iter = activeRequests.find(requestId);
+                        if (iter != activeRequests.end()) {
+                            activeRequests.erase(iter);
+                        }
+                    }
                 } else if (isIncomingNotification(method)) {
                     if (response.id.type() != ResponseIdType::Null) {
                         throw LSP_EXCEPTION(
@@ -286,6 +662,12 @@ namespace LCompilers::LanguageServerProtocol {
                         logReceiveTrace("notification", traceId, notification.params);
                     }
                     response.jsonrpc = notification.jsonrpc;
+                    if (!*taskIsRunning) {
+                        logger.debug()
+                            << "Notification with method=" << notification.method << " canceled before dispatch."
+                            << std::endl;
+                        return;
+                    }
                     dispatch(response, notification);
                 } else {
                     throw LSP_EXCEPTION(
@@ -294,14 +676,24 @@ namespace LCompilers::LanguageServerProtocol {
                     );
                 }
             } else if ((iter = object.find("result")) != object.end()) {
-                notifySent();
-                response.result = transformer.copy(*iter->second);
-                dispatch(response, traceId, *document);
+                if (*taskIsRunning) {
+                    response.result = transformer.copy(*iter->second);
+                    dispatch(response, traceId, *document);
+                } else {
+                    logger.debug()
+                        << "Response with result canceled before dispatch."
+                        << std::endl;
+                }
                 return;
             } else if ((iter = object.find("error")) != object.end()) {
-                notifySent();
-                response.error = transformer.anyToResponseError(*iter->second);
-                dispatch(response, traceId, *document);
+                if (*taskIsRunning) {
+                    response.error = transformer.anyToResponseError(*iter->second);
+                    dispatch(response, traceId, *document);
+                } else {
+                    logger.debug()
+                        << "Response with error canceled before dispatch."
+                        << std::endl;
+                }
                 return;
             } else {
                 throw LSP_EXCEPTION(
@@ -339,10 +731,16 @@ namespace LCompilers::LanguageServerProtocol {
             response.error = std::move(error);
             logger.error() << error.message << std::endl;
         }
-        LSPAny any = transformer.responseMessageToAny(response);
-        logSendResponseTrace(traceId, start, any);
-        const std::string outgoing = serializer.serialize(any);
-        send(outgoing, sendId);
+        if (*taskIsRunning) {
+            LSPAny any = transformer.responseMessageToAny(response);
+            logSendResponseTrace(traceId, start, any);
+            const std::string outgoing = serializer.serialize(any);
+            send(outgoing, sendId);
+        } else {
+            logger.debug()
+                << "Message canceled before sending response."
+                << std::endl;
+        }
         if (response.error.has_value()) {
             const ResponseError &error = response.error.value();
             if ((error.code == static_cast<int>(ErrorCodes::InternalError)) &&
@@ -456,6 +854,7 @@ namespace LCompilers::LanguageServerProtocol {
                 // NOTE: If a server or client receives notifications starting with "$/"
                 // it is free to ignore the notification:
                 logger.debug()
+
                     << "No handler exists for method: \"" << notification.method << "\""
                     << std::endl;
             } else {
@@ -485,15 +884,18 @@ namespace LCompilers::LanguageServerProtocol {
         switch (response.id.type()) {
         case ResponseIdType::Integer: {
             int responseId = response.id.integer();
-            std::unique_lock<std::mutex> callbackLock(callbackMutex);
-            auto iter = callbacksById.find(responseId);
-            if (iter == callbacksById.end()) {
-                logger.error() << "Cannot locate request with id: " << responseId << std::endl;
-                return;
+            std::string method;
+            {
+                std::unique_lock<std::mutex> requestLock(requestMutex);
+                auto iter = requestsById.find(responseId);
+                if (iter == requestsById.end()) {
+                    logger.error() << "Cannot locate request with id: " << responseId << std::endl;
+                    return;
+                }
+                const RequestMessage &request = iter->second;
+                method = std::move(request.method);
+                requestsById.erase(iter);
             }
-            const std::string method = iter->second;  // copy before delete
-            callbacksById.erase(iter);
-            callbackLock.unlock();
             traceId = method + " - (" + std::to_string(responseId) + ")";
             logReceiveResponseTrace(traceId, document);
             LspLanguageServer::dispatch(response, method);
@@ -635,7 +1037,7 @@ namespace LCompilers::LanguageServerProtocol {
         if ((trace >= TraceValues::Messages) && (traceId.length() > 0)) {
             auto end_0 = std::chrono::high_resolution_clock::now();
             auto duration_0 =
-                std::chrono::duration_cast<std::chrono::milliseconds>(end_0 - start);
+                std::chrono::duration_cast<milliseconds_t>(end_0 - start);
             LogTraceParams params;
             params.message =
                 "Sending response '" + traceId + "'. Processing request took " +
@@ -776,6 +1178,23 @@ namespace LCompilers::LanguageServerProtocol {
         InitializeResult result;
 
         { // Initialize internal parameters
+            if (params.processId.type() == _InitializeParams_processIdType::Integer) {
+                parentProcessId = params.processId.integer();
+            } else {
+                logger.warn()
+                    << "No parent Process Id (PID) specified."
+                    << std::endl;
+            }
+
+            if (parentProcessId < 0) {
+                receiveShutdown();
+                receiveExit();
+                throw LSP_EXCEPTION(
+                    ErrorCodes::InvalidParams,
+                    "No parent Process Id (PID) specified."
+                );
+            }
+
             const ClientCapabilities &capabilities = params.capabilities;
             if (capabilities.workspace.has_value()) {
                 const WorkspaceClientCapabilities &workspace =
@@ -1125,6 +1544,40 @@ namespace LCompilers::LanguageServerProtocol {
         DidSaveTextDocumentParams &/*params*/
     ) -> void {
         // empty
+    }
+
+    // notification: $/cancelRequest
+    auto BaseLspLanguageServer::receiveCancelRequest(
+        CancelParams &params
+    ) -> void {
+        std::string requestId;
+        switch (params.id.type()) {
+        case CancelParams_idType::Integer: {
+            requestId = std::to_string(params.id.integer());
+            break;
+        }
+        case CancelParams_idType::String: {
+            requestId = params.id.string();
+            break;
+        }
+        case CancelParams_idType::Uninitialized: {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidRequest,
+                "Missing required attribute for CancelParams: id"
+            );
+        }
+        }
+        std::unique_lock<std::mutex> lock(activeMutex);
+        auto iter = activeRequests.find(requestId);
+        if (iter != activeRequests.end()) {
+            *iter->second = false;
+        } else {
+            activeRequests.emplace_hint(
+                iter,
+                requestId,
+                std::make_shared<std::atomic_bool>(false)
+            );
+        }
     }
 
 } // namespace LCompilers::LanguageServerProtocol
