@@ -5002,7 +5002,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     switch( ASRUtils::extract_physical_type(target_type_) ) {
                         case ASR::array_physical_typeType::DescriptorArray: {
                             if(ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray){
-                                llvm::Type* const array_desc_type = llvm_utils->get_type_from_ttype_t_util(target_type, module.get())->getContainedType(0);
+                                llvm::Type* const array_desc_type = llvm_utils->get_type_from_ttype_t_util(target_type, module.get())->getPointerElementType();
                                 LCOMPILERS_ASSERT(array_desc_type->isStructTy());
                                 llvm::Type* const dim_desc_type = array_desc_type->getStructElementType(2)->getContainedType(0);
                                 LCOMPILERS_ASSERT(dim_desc_type->isStructTy());
