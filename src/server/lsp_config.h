@@ -23,12 +23,20 @@ namespace LCompilers::LanguageServerProtocol::Config {
         bool prettyPrint;
     };
 
+    struct LspConfig_retry {
+        unsigned int maxAttempts;
+        unsigned int minSleepTimeMs;
+        unsigned int maxSleepTimeMs;
+    };
+
     struct LspConfig {
         virtual ~LspConfig() = default;
         bool openIssueReporterOnError;
         unsigned int indentSize;
+        unsigned int timeoutMs;
         LspConfig_trace trace;
         LspConfig_log log;
+        LspConfig_retry retry;
     };
 
     class LspConfigTransformer {
@@ -50,6 +58,14 @@ namespace LCompilers::LanguageServerProtocol::Config {
 
         auto lspConfig_logToAny(
             const LspConfig_log &log
+        ) const -> LSPAny;
+
+        auto anyToLspConfig_retry(
+            const lsp::LSPAny &any
+        ) const -> LspConfig_retry;
+
+        auto lspConfig_retryToAny(
+            const LspConfig_retry &retry
         ) const -> LSPAny;
 
         virtual auto anyToLspConfig(

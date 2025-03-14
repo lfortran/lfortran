@@ -3,10 +3,12 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <functional>
 #include <future>
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <random>
 #include <shared_mutex>
 #include <string>
 #include <thread>
@@ -24,6 +26,51 @@ namespace LCompilers::LanguageServerProtocol {
     namespace lsc = LCompilers::LanguageServerProtocol::Config;
     namespace lst = LCompilers::LLanguageServer::Threading;
 
+    using namespace std::chrono_literals;
+    typedef std::chrono::system_clock::time_point time_point_t;
+    typedef std::chrono::milliseconds milliseconds_t;
+
+    /**
+     * Returns the next time_point_t, relative to now, at which to execute the
+     * associated cron job.
+     */
+    typedef std::function<time_point_t()> CronSchedule;
+
+    typedef std::tuple<std::size_t, lst::Task, time_point_t> CronElem;
+
+    struct CronComparator {
+        auto operator()(const CronElem &lhs, const CronElem &rhs) -> bool;
+    };
+
+    typedef std::priority_queue<
+        CronElem,
+        std::vector<CronElem>,
+        CronComparator
+    > CronQueue;
+
+    template <typename T>
+    using TTLRecord = std::pair<T, time_point_t>;
+
+    template <typename T>
+    struct TTLComparator {
+        auto operator()(const TTLRecord<T> &lhs, const TTLRecord<T> &rhs) {
+            return lhs.second > rhs.second;
+        }
+    };
+
+    template <typename T>
+    using TTLCache = std::priority_queue<
+        TTLRecord<T>,
+        std::vector<TTLRecord<T>>,
+        TTLComparator<T>
+    >;
+
+    typedef std::tuple<
+        int,  // requestId
+        unsigned int,  // attempt
+        milliseconds_t  // last sleep time between attempts
+    > RetryRecord;
+
     class BaseLspLanguageServer : public LspLanguageServer {
     public:
         auto isTerminated() const -> bool override;
@@ -37,6 +84,8 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &configSection,
             const std::string &extensionId,
             const std::string &compilerVersion,
+            int parentProcessId,
+            unsigned int seed,
             std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
             std::shared_ptr<lsc::LspConfig> workspaceConfig
         );
@@ -44,7 +93,9 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string configSection;
         const std::string extensionId;
         const std::string compilerVersion;
+        int parentProcessId;
         std::thread listener;
+        std::thread cron;
         lst::ThreadPool requestPool;
         lst::ThreadPool workerPool;
         std::atomic_size_t serialSendId = 0;
@@ -55,12 +106,13 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool _initialized = false;
         std::atomic_bool _shutdown = false;
         std::atomic_bool _exit = false;
-        std::unordered_map<int, std::string> callbacksById;
-        std::mutex callbackMutex;
+        std::map<int, RequestMessage> requestsById;
+        std::mutex requestMutex;
         std::atomic<TraceValues> trace{TraceValues::Off};
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer;
         std::unordered_map<DocumentUri, std::shared_ptr<LspTextDocument>> documentsByUri;
         std::shared_mutex documentMutex;
+        std::default_random_engine randomEngine;
 
         std::unordered_map<DocumentUri, std::shared_ptr<LSPAny>> configsByUri;
         std::unordered_map<
@@ -71,6 +123,54 @@ namespace LCompilers::LanguageServerProtocol {
             std::tuple<DocumentUri, int, std::promise<std::shared_ptr<LSPAny>>>
         > pendingConfigs;
         std::shared_mutex configMutex;
+
+        std::map<std::string, std::shared_ptr<std::atomic_bool>> activeRequests;
+        std::mutex activeMutex;
+
+        const milliseconds_t RECENT_REQUEST_TIMEOUT = 1000ms;
+        TTLCache<std::string> recentRequests;
+        std::shared_mutex recentMutex;
+        auto expireCaches(std::shared_ptr<std::atomic_bool> taskIsRunning) -> void;
+
+        auto ttl(const milliseconds_t &timeout) const -> time_point_t;
+        auto randomBetween(
+            const milliseconds_t &lower,
+            const milliseconds_t &upper
+        ) -> milliseconds_t;
+
+        TTLCache<RetryRecord> retryAttempts;
+        std::shared_mutex retryMutex;
+        auto retryRequests(std::shared_ptr<std::atomic_bool> taskIsRunning) -> void;
+        auto cancelRequest(int requestId) -> void;
+
+        std::atomic_size_t serialCronId = 0;
+        std::map<std::size_t, CronSchedule> cronSchedules;
+        std::shared_mutex scheduleMutex;
+        CronQueue cronJobs;
+        std::mutex cronMutex;
+        auto nextCronId() -> std::size_t;
+        auto schedule(lst::Task cronJob, CronSchedule schedule) -> std::size_t;
+        auto unschedule(std::size_t cronId) -> bool;
+        auto chronicle() -> void;
+
+        auto isProcessRunning(int pid) -> bool;
+        auto checkParentProcessId(
+            std::shared_ptr<std::atomic_bool> taskIsRunning
+        ) -> void;
+
+        template <class Rep, class Period = std::ratio<1>>
+        auto schedule(
+            lst::Task cronJob,
+            std::chrono::duration<Rep, Period> timeout
+        ) -> void {
+            std::size_t cronId = nextCronId();
+            auto now = std::chrono::system_clock::now();
+            time_point_t nextTimePoint = now + timeout;
+            {
+                std::unique_lock<std::mutex> cronLock(cronMutex);
+                cronJobs.push(std::make_tuple(cronId, cronJob, nextTimePoint));
+            }
+        }
 
         std::shared_ptr<lsc::LspConfig> workspaceConfig;
         std::shared_mutex workspaceMutex;
@@ -87,7 +187,6 @@ namespace LCompilers::LanguageServerProtocol {
         auto isRunning() const -> bool;
         auto join() -> void override;
         auto listen() -> void;
-        auto notifySent() -> void;
         auto to_string(const RequestId &requestId) -> std::string;
 
         auto toJsonString(const LSPAny &any) -> std::string;
@@ -106,7 +205,11 @@ namespace LCompilers::LanguageServerProtocol {
         auto send(const RequestMessage &request) -> void override;
         auto send(const std::string &request, std::size_t sendId) -> void;
 
-        auto handle(const std::string &incoming, std::size_t sendId) -> void;
+        auto handle(
+            const std::string &incoming,
+            std::size_t sendId,
+            std::shared_ptr<std::atomic_bool> taskIsRunning
+        ) -> void;
 
         auto dispatch(
             ResponseMessage &response,
@@ -209,6 +312,8 @@ namespace LCompilers::LanguageServerProtocol {
         auto receiveTextDocument_didSave(
             DidSaveTextDocumentParams &params
         ) -> void override;
+
+        auto receiveCancelRequest(CancelParams &params) -> void override;
 
     }; // class LspLanguageServer
 
