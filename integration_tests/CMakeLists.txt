@@ -1370,6 +1370,7 @@ RUN(NAME derived_types_40 LABELS gfortran llvm)
 RUN(NAME derived_types_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
