@@ -26,6 +26,15 @@ warning: The volatile attribute is not implemented yet (https://github.com/lfort
 71 |     integer, volatile :: volatile_var
    |              ^^^^^^^^ 
 
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/continue_compilation_1.f90:74:31
+   |
+74 |     integer , dimension(3) :: array
+   |                               ^^^^^ redeclaration
+   |
+72 |     dimension array(3)
+   |     ~~~~~~~~~~~~~~~~~~ original declaration
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
     |
