@@ -4058,6 +4058,79 @@ public:
         _declaring_variable = false;
     }
 
+    void visit_BlockData(const AST::BlockData_t& x) {
+        std::string base_module_name = "file_common_block_";
+        std::string base_struct_instance_name = "struct_instance_";
+
+        for (size_t i = 0; i < x.n_decl; i++) {
+            this->visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        SymbolTable* old_scope = current_scope;
+        Vec<ASR::stmt_t*> block_data_body;
+        block_data_body.reserve(al, x.n_body);
+        current_body = &block_data_body;
+        // Visit DataStmt and set the constant values in the Struct_t symbol
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        current_scope = old_scope;
+
+        SymbolTable* global_scope = current_scope->get_global_scope();
+        // Copy the constant values from Struct_t symbol to the instance, use StructConstant as the value of the instance variable
+        // Loop through all declarations again, find all the common blocks's names and update the instance variable
+        for (size_t i = 0; i < x.n_decl; i++) {
+            if (AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                for (size_t j = 0; j < decl->n_attributes; j++) {
+                    if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
+                        AST::AttrCommon_t* attr_common = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
+                        for (size_t k = 0; k < attr_common->n_blks; k++) {
+                            std::string common_block_name{attr_common->m_blks[k].m_name};
+                            std::string module_name = base_module_name + common_block_name;
+
+                            ASR::Module_t* mod_s = ASR::down_cast<ASR::Module_t>(global_scope->get_symbol(module_name));
+
+                            std::string struct_var_name = base_struct_instance_name + common_block_name;
+                            ASR::Variable_t* var_s = ASR::down_cast<ASR::Variable_t>(mod_s->m_symtab->get_symbol(struct_var_name));
+
+                            ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
+                            ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
+                            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_StructType_t(al, struct_as_sym->base.loc, struct_as_sym));
+
+                            Vec<ASR::call_arg_t> vals;
+                            auto member2sym = struct_s->m_symtab->get_scope();
+                            vals.reserve(al, struct_s->n_members);
+                            for (size_t i = 0; i < struct_s->n_members; i++) {
+                                ASR::symbol_t* s = member2sym[struct_s->m_members[i]];
+                                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>( * s));
+                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(s);
+                                if (var->m_value) {
+                                    ASR::expr_t* expr = var->m_value;
+                                    ASR::call_arg_t call_arg { .loc = expr->base.loc, .m_value = expr };
+                                    vals.push_back(al, call_arg);
+                                } else {
+                                    // If no compile time value in DataStmt initialize to zero when visiting StructConstant in backend
+                                    ASR::call_arg_t call_arg{};
+                                    vals.push_back(al, call_arg);
+                                }
+                            }
+                            ASR::expr_t* structc = ASRUtils::EXPR(
+                                ASR::make_StructConstant_t(al, var_s->base.base.loc, struct_as_sym, vals.p, vals.size(), type));
+                            var_s->m_symbolic_value = structc;
+                            var_s->m_value = structc;
+
+                            // Mark the common block as declared
+                            common_block_dictionary[common_block_name].first = false;
+                        }
+                        // We processed the common attribute, no need to check any more attributes
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     void visit_Interface(const AST::Interface_t &/*x*/) {
 
     }
