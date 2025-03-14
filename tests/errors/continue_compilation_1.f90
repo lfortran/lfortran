@@ -1,6 +1,49 @@
+! If you need a function, put it into the module below and remove the same
+! number of lines below the module to keep the rest of the lines in this file
+! intact.
+module continue_compilation_1_mod
+
+contains
+
+    subroutine my_func(x, y)
+        integer, intent(in) :: x, y
+        print *, "hi"
+    end subroutine
+
+end module
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! Only put declarations and statements here, no subroutines (those go above).
 program continue_compilation_1
+    use continue_compilation_1_mod
     implicit integer(a-f), real(e-z)
 
+    ! Put declarations below without empty lines
     integer :: a(3), b(3), b1(3, 3), a3(3, 3, 3), b4(3, 3, 3, 3), a5, c5, i, arr1(3), arr2(2, 3), arr3(2, 1, 3)
     character :: a1(3, 3)
     logical :: a2(3, 3), mask1(3), mask2(2, 3), mask3(2, 1, 3), mask4(3, 2), mask5(2, 3, 1), y
@@ -9,29 +52,21 @@ program continue_compilation_1
     real :: z1
     integer, parameter :: i1 = 2
     character(len=5) :: string = "hello"
-	character(len=1) :: set(2) = ["l", "h"]
-
+    character(len=1) :: set(2) = ["l", "h"]
     integer :: q1
     real :: r1
     character :: c1
-
     complex :: c = (1.0, 2.0)
-
     real a_real(0)
-
     integer, allocatable ::  shape_(:)
     integer, dimension(2, 3) :: matrix
     integer, dimension(4) :: source = [1, 2, 3, 4]
     allocate(shape_(2))
-
     real :: v
     character(10) :: str
-
     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
-
     integer, parameter :: zero = 0
     integer :: x = 1
-     
     real :: adwf = .true.
 
 
@@ -48,7 +83,28 @@ program continue_compilation_1
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     
+
+
+    ! Use the space above to insert new declarations, and remove the line, so
+    ! that the lines below do not shift, to keep the diff minimal.
+    !
+    ! Only put statements below. If you need to call a function, put it into a
+    ! module above.
+
     a5 = 8
     b5 = 12_8
     c5 = 2
@@ -103,12 +159,6 @@ program continue_compilation_1
     !more_kwargs_than_acceptable_to_subroutine
     call my_func(y=1, x=2, z=1)
 
-    contains
-
-    subroutine my_func(x, y)
-        integer, intent(in) :: x, y
-        print *, "hi"
-    end subroutine
     !nint_overflow
     print*, nint(1e12_8)
     print*, nint(1000000000000.0000000000000000d0)
