@@ -3,6 +3,8 @@ program transfer_01
     integer :: i, integer_result, y(3, 2)
     real :: r, result, x(5, 4)
     character(len=*), parameter :: chr = 'A'
+    character(len=*), parameter :: chr2 = transfer(65, 'A')
+    character(len=2), parameter :: chr3 = transfer(16961, 'AB')
     r = 2.987654
     i = 123456
     x = 3.19
@@ -28,4 +30,6 @@ program transfer_01
     if (transfer(65, chr) /= 'A') error stop
     print *, transfer(90, 'A')
     if (transfer(90, 'A') /= 'Z') error stop
+    if (chr2 /= 'A') error stop
+    if (chr3 /= 'AB') error stop
 end program transfer_01
