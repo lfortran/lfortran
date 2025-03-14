@@ -1303,6 +1303,7 @@ public:
         alloc_args_vec.reserve(al, x.n_args);
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
+        bool empty_dims = false;
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t new_arg;
             new_arg.m_len_expr = nullptr;
@@ -1402,67 +1403,83 @@ public:
                 alloc_args_vec.push_back(al, new_arg);
             } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ||
                        ASR::is_a<ASR::StructInstanceMember_t>(*tmp_stmt) ) {
+                ASR::ttype_t* v_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp_stmt));
+                if ( ASR::is_a<ASR::Array_t>(*v_type)) {
+                    empty_dims = true;
+                }
                 new_arg.m_a = tmp_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
                 alloc_args_vec.push_back(al, new_arg);
-            }
+            } 
         }
 
         bool cond = x.n_keywords == 0;
         bool stat_cond = false, errmsg_cond = false, source_cond = false;
         ASR::expr_t *stat = nullptr, *errmsg = nullptr, *source = nullptr;
-        if( x.n_keywords >= 1 ) {
-            stat_cond = !stat_cond && (to_lower(x.m_keywords[0].m_arg) == "stat");
-            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[0].m_arg) == "errmsg");
-            source_cond = !source_cond && (to_lower(x.m_keywords[0].m_arg) == "source");
+        for ( size_t i=0; i<x.n_keywords; i++ ) {
+            stat_cond = !stat_cond && (to_lower(x.m_keywords[i].m_arg) == "stat");
+            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[i].m_arg) == "errmsg");
+            source_cond = !source_cond && (to_lower(x.m_keywords[i].m_arg) == "source");
             cond = cond || (stat_cond || errmsg_cond || source_cond);
-            if( stat_cond ) {
-                this->visit_expr(*(x.m_keywords[0].m_value));
+            if ( stat_cond ) {
+                this->visit_expr(*(x.m_keywords[i].m_value));
                 stat = ASRUtils::EXPR(tmp);
-            } else if( errmsg_cond ) {
-                this->visit_expr(*(x.m_keywords[0].m_value));
+                if ( !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(stat)) ) {
+                    diag.add(Diagnostic(
+                        "The `stat` argument must be of type integer.",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else if ( errmsg_cond ) {
+                this->visit_expr(*(x.m_keywords[i].m_value));
                 errmsg = ASRUtils::EXPR(tmp);
-            } else if( source_cond ) {
-                this->visit_expr(*(x.m_keywords[0].m_value));
+                if ( !ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(errmsg)) ) {
+                    diag.add(Diagnostic(
+                        "The `errmsg` argument must be of type string.",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else if ( source_cond ) {
+                this->visit_expr(*(x.m_keywords[i].m_value));
                 source = ASRUtils::EXPR(tmp);
-            }
+            } 
+        }
+        if (source){
+            if (ASR::is_a<ASR::Var_t>(*source)) {
+                ASR::Var_t* source_var = ASR::down_cast<ASR::Var_t>(source);
+                ASR::symbol_t* sym = source_var->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* source_var = ASR::down_cast<ASR::Variable_t>(sym);
+                    ASR::ttype_t* source_type = source_var->m_type;
+                    if (ASR::is_a<ASR::Array_t>(*source_type)) {
+                        ASR::Array_t* source_array = ASR::down_cast<ASR::Array_t>(source_type);
+                        // Make source as the FixedSizeArray instead of Var_t
+                    } else if (ASR::is_a<ASR::Allocatable_t>(*source_type)) {
+                        ASR::Allocatable_t* source_alloc = ASR::down_cast<ASR::Allocatable_t>(source_type);
+                        ASR::ttype_t* source_alloc_type = source_alloc->m_type;
+                        // Make source as the DescriptorArray instead of Var_t
+                        if (ASR::is_a<ASR::Array_t>(*source_alloc_type)) {
+                            ASR::Array_t* source_array = ASR::down_cast<ASR::Array_t>(source_alloc_type);
+                        }
+                    }
+                }
+            } diag.semantic_warning_label(std::to_string(size), {x.base.base.loc}, "");
+
         }
 
-        if( x.n_keywords >= 2 ) {
-            stat_cond = !stat_cond && (to_lower(x.m_keywords[1].m_arg) == "stat");
-            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[1].m_arg) == "errmsg");
-            source_cond = !source_cond && (to_lower(x.m_keywords[1].m_arg) == "source");
-            cond = cond && (stat_cond || errmsg_cond || source_cond);
-            if( stat_cond ) {
-                this->visit_expr(*(x.m_keywords[1].m_value));
-                stat = ASRUtils::EXPR(tmp);
-            } else if( errmsg_cond ) {
-                this->visit_expr(*(x.m_keywords[1].m_value));
-                errmsg = ASRUtils::EXPR(tmp);
-            } else if( source_cond ) {
-                this->visit_expr(*(x.m_keywords[1].m_value));
-                source = ASRUtils::EXPR(tmp);
-            }
+        if (empty_dims && !source_cond) {
+            diag.add(Diagnostic(
+                "Cannot allocate an array with empty dimensions.",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
         }
-
-        if( x.n_keywords >= 3 ) {
-            stat_cond = !stat_cond && (to_lower(x.m_keywords[2].m_arg) == "stat");
-            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[2].m_arg) == "errmsg");
-            source_cond = !source_cond && (to_lower(x.m_keywords[2].m_arg) == "source");
-            cond = cond && (stat_cond || errmsg_cond || source_cond);
-            if( stat_cond ) {
-                this->visit_expr(*(x.m_keywords[2].m_value));
-                stat = ASRUtils::EXPR(tmp);
-            } else if( errmsg_cond ) {
-                this->visit_expr(*(x.m_keywords[2].m_value));
-                errmsg = ASRUtils::EXPR(tmp);
-            } else if( source_cond ) {
-                this->visit_expr(*(x.m_keywords[2].m_value));
-                source = ASRUtils::EXPR(tmp);
-            }
-        }
-
 
         if( !cond ) {
             diag.add(Diagnostic(
