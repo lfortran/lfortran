@@ -3373,6 +3373,11 @@ public:
                                 ::AttrNoPass) {
                             } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
                                 // TODO: Implement volatile attribute
+                                diag.add(Diagnostic(
+                                    "The volatile attribute is not implemented yet (https://github.com/lfortran/lfortran/issues/6555), ignoring for now",
+                                    Level::Warning, Stage::Semantic, {
+                                        Label("",{sa->base.base.loc})
+                                }));
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
