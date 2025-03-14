@@ -1,23 +1,23 @@
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
-  --> tests/errors/continue_compilation_1.f90:44:5 - 45:1
+  --> tests/errors/continue_compilation_1.f90:44:5 - 46:49
    |
 44 |        implicit integer(a-f), real(e-z)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-45 |    
-   | ...^ 
+46 |        ! Put declarations below without empty lines
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: arguments of `repeat` intrinsic must be scalar
-  --> tests/errors/continue_compilation_1.f90:72:38
+  --> tests/errors/continue_compilation_1.f90:67:38
    |
-72 |     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+67 |     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Cannot convert LOGICAL to REAL
-  --> tests/errors/continue_compilation_1.f90:77:20
+  --> tests/errors/continue_compilation_1.f90:70:20
    |
-77 |     real :: adwf = .true.
+70 |     real :: adwf = .true.
    |                    ^^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
@@ -140,7 +140,7 @@ semantic error: Cannot assign to a constant variable
 168 |     i1 = 3
     |     ^^^^^^ assignment here
     |
- 52 |     integer, parameter :: i1 = 2
+ 53 |     integer, parameter :: i1 = 2
     |                           ~~~~~~ declared as constant
 
 semantic error: Expected 0 or 1 arguments, got 2 arguments instead.
