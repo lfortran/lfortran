@@ -3818,7 +3818,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             }
         } else if(ASRUtils::is_array(v->m_type) &&
                 (ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) || 
-                ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value))){
+                ASR::is_a<ASR::PointerNullConstant_t>(*v->m_value))){
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*v->m_type));
                 LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(v->m_type) ==
                                      ASR::array_physical_typeType::DescriptorArray);
