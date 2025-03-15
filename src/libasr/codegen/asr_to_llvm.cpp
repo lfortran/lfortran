@@ -2655,7 +2655,7 @@ public:
                 min_value = std::min(value_int64, min_value);
             }
             tmp = builder->CreateSub(tmp, llvm::ConstantInt::get(tmp->getType(),
-                        llvm::APInt(32, min_value)));
+                        llvm::APInt(32, min_value, true)));
             tmp = llvm_utils->create_gep(array, tmp);
             tmp = llvm_utils->create_gep(tmp, 0);
         }
@@ -2803,7 +2803,7 @@ public:
             if (ASR::is_a<ASR::IntegerConstant_t>(*elem)) {
                 ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(elem);
                 arr_elements.push_back(llvm::ConstantInt::get(
-                    context, llvm::APInt(8 * a_kind, int_const->m_n)));
+                    context, llvm::APInt(8 * a_kind, int_const->m_n, true)));
             } else if (ASR::is_a<ASR::RealConstant_t>(*elem)) {
                 ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
                 if (a_kind == 4) {
@@ -8115,7 +8115,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         if (x.m_unit == nullptr) {
             // Read from stdin
             unit_val = llvm::ConstantInt::get(
-                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1));
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
         } else {
             is_string = ASRUtils::is_character(*expr_type(x.m_unit));
             this->visit_expr_wrapper(x.m_unit, true);
@@ -8359,7 +8359,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             unit = tmp;
         } else {
             unit = llvm::ConstantInt::get(
-                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1));
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
         }
         if (x.m_opened) {
             int ptr_loads_copy = ptr_loads;
