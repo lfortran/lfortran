@@ -539,7 +539,6 @@ jobs:
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
-            FC="$(pwd)/src/bin/lfortran"
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             # Only workarounds used now are (also tracked at: https://github.com/lfortran/lfortran/issues/2862):
@@ -547,13 +546,10 @@ jobs:
             # 2. namelist reading support replaced with use of file read (see: https://github.com/lfortran/lfortran/issues/1999)
             # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
-            git checkout -t origin/hdf5_mpi_namelist_global_deallocate_workaround_3
-            git checkout 40a5b0f2b6ae57cca9436a4a1da59d2fb9d85c56
+            git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
+            git checkout 337546b13502ed1c07a0a38cba3afe1a9f35fb27
             FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
-
-            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
-              FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
-            fi
+            FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
 
       - name: Test PRIMA
         shell: bash -e -l {0}
