@@ -69,9 +69,9 @@ program continue_compilation_1
     integer :: x = 1
     real :: adwf = .true.
     integer, volatile :: volatile_var
-
-
-
+    dimension array(3)
+    double precision array
+    integer , dimension(3) :: array
 
 
 
