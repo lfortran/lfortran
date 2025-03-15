@@ -84,7 +84,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit");
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
         app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
-        app.add_flag("--time-report", opts.time_report, "Show compilation time report");
+        app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report");
         app.add_flag("--static", opts.static_link, "Create a static executable");
         app.add_flag("--shared", opts.shared_link, "Create a shared executable");
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting");

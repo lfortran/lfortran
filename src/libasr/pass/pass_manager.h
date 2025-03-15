@@ -184,7 +184,9 @@ namespace LCompilers {
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
+                auto t1 = std::chrono::high_resolution_clock::now();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                auto t2 = std::chrono::high_resolution_clock::now();
 #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
@@ -192,6 +194,12 @@ namespace LCompilers {
                         + passes[i]);
                 };
 #endif
+                if (pass_options.time_report) {
+                    int time_take_by_current_pass_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+                    int time_take_by_current_pass_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+                    std::string message = passes[i] + ": " + std::to_string(time_take_by_current_pass_in_milliseconds) + "." + std::to_string(time_take_by_current_pass_in_microseconds) + " ms";
+                    pass_options.vector_of_time_report.push_back(message);
+                }
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
