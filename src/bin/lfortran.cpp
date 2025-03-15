@@ -1125,18 +1125,33 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     if (time_report) {
-        std::cout << "Allocator usage of last chunk (MB): "
-            << fe.get_al().size_current() / (1024. * 1024) << std::endl;
-        std::cout << "Allocator chunks: " << fe.get_al().num_chunks() << std::endl;
-        std::cout << std::endl;
-        std::cout << "Time report:" << std::endl;
-        std::cout << "File reading:" << std::setw(5) << time_file_read << " ms" << std::endl;
-        std::cout << "Src -> ASR:  " << std::setw(5) << time_src_to_asr << " ms" << std::endl;
-        std::cout << "ASR -> mod:  " << std::setw(5) << time_save_mod << " ms" << std::endl;
-        std::cout << "LLVM opt:    " << std::setw(5) << time_opt << " ms" << std::endl;
-        std::cout << "LLVM -> BIN: " << std::setw(5) << time_llvm_to_bin << " ms" << std::endl;
+        std::string message = "Time report:";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Allocator usage of last chunk (MB): " +
+            std::to_string(fe.get_al().size_current() / (1024. * 1024));
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Allocator chunks: " + std::to_string(fe.get_al().num_chunks());
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "File reading: " + std::to_string(time_file_read) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Src -> ASR:  " + std::to_string(time_src_to_asr) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Time taken by pass: ";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        for (auto it: fe.compiler_options.po.vector_of_time_report) {
+            compiler_options.po.vector_of_time_report.push_back(it);
+        }
+        message = "ASR -> mod:  " + std::to_string(time_save_mod) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM opt:    " + std::to_string(time_opt) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM -> BIN: " + std::to_string(time_llvm_to_bin) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
         int total = time_file_read + time_src_to_asr + time_save_mod + time_asr_to_llvm + time_opt + time_llvm_to_bin;
-        std::cout << "Total:       " << std::setw(5) << total << " ms" << std::endl;
+        message = "Total:       " + std::to_string(total) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+
+
     }
 
     return has_error_w_cc;
@@ -2023,7 +2038,8 @@ int link_executable(const std::vector<std::string> &infiles,
     auto t2 = std::chrono::high_resolution_clock::now();
     int time_total = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     if (time_report) {
-        std::cout << "Linking time:  " << std::setw(5) << time_total << " ms" << std::endl;
+        std::string message = "Linking time:  " + std::to_string(time_total) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
     }
     return 0;
 }
@@ -2177,6 +2193,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 int main_app(int argc, char *argv[]) {
     int dirname_length;
+    auto start_time = std::chrono::high_resolution_clock::now();
     LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
     LCompilers::LFortran::set_exec_path_and_mode(LCompilers::binary_executable_path, dirname_length);
 
@@ -2561,9 +2578,22 @@ int main_app(int argc, char *argv[]) {
     if (object_files.size() == 0) {
         return err_;
     } else {
-        return err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
+        int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        if (compiler_options.time_report) {
+            int total_time_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+            int total_time_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() % 1000;
+            std::string message = "Total time: " + std::to_string(total_time_in_milliseconds) + "." + std::to_string(total_time_in_microseconds) + " ms";
+            compiler_options.po.vector_of_time_report.push_back(message);
+
+            for (auto &time_report : compiler_options.po.vector_of_time_report) {
+                std::cout << time_report << std::endl;
+            }
+        }
+
+        return status_code;
     }
 }
 

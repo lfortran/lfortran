@@ -195,11 +195,10 @@ namespace LCompilers {
                 };
 #endif
                 if (pass_options.time_report) {
-                    int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-                    int microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-                    // get milliseconds.microseconds
-                    microseconds = microseconds % 1000;
-                    std::cout << passes[i] << ": " << milliseconds << "." << microseconds << " ms\n";
+                    int time_take_by_current_pass_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+                    int time_take_by_current_pass_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+                    std::string message = passes[i] + ": " + std::to_string(time_take_by_current_pass_in_milliseconds) + "." + std::to_string(time_take_by_current_pass_in_microseconds) + " ms";
+                    pass_options.vector_of_time_report.push_back(message);
                 }
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
@@ -302,9 +301,6 @@ namespace LCompilers {
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                           PassOptions& pass_options,
                           diag::Diagnostics &diagnostics) {
-            if ( pass_options.time_report ) {
-                std::cout<<"Time taken by ASR passes"<<std::endl;
-            }
             if( !_user_defined_passes.empty() ) {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);

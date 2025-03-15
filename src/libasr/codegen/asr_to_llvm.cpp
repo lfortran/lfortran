@@ -10805,9 +10805,10 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     auto t2 = std::chrono::high_resolution_clock::now();
 
     if (co.time_report) {
-        int millisecond = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        int microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
-        std::cout << "ASR -> ASR passes: " << std::setw(5) << millisecond << "." << microseconds << " ms" << std::endl;
+        int asr_to_asr_passes_time_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        int asr_to_asr_passes_time_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+        std::string time_report_asr_to_asr_passes = "ASR -> ASR passes: " + std::to_string(asr_to_asr_passes_time_in_milliseconds) + "." + std::to_string(asr_to_asr_passes_time_in_microseconds) + " ms";
+        co.po.vector_of_time_report.push_back(time_report_asr_to_asr_passes);
     }
 
     // Uncomment for debugging the ASR after the transformation
@@ -10844,9 +10845,10 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     t2 = std::chrono::high_resolution_clock::now();
 
     if (co.time_report) {
-        int millisecond = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        int microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
-        std::cout << "LLVM IR creation: " << std::setw(5) << millisecond << "." << microseconds << " ms" << std::endl;
+        int time_take_for_llvm_ir_creation_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        int time_take_for_llvm_ir_creation_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+        std::string message = "LLVM IR creation: " + std::to_string(time_take_for_llvm_ir_creation_in_milliseconds) + "." + std::to_string(time_take_for_llvm_ir_creation_in_microseconds) + " ms";
+        co.po.vector_of_time_report.push_back(message);
     }
 
     return res;
