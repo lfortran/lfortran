@@ -548,7 +548,7 @@ jobs:
             # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
             git checkout -t origin/hdf5_mpi_namelist_global_deallocate_workaround_3
-            git checkout 219453c81aae490510c2297f0575acb9c50d8868
+            git checkout 40a5b0f2b6ae57cca9436a4a1da59d2fb9d85c56
             FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
 
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
