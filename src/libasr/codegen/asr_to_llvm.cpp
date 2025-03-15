@@ -1076,10 +1076,10 @@ public:
 #if LLVM_VERSION_MAJOR > 16
                             ptr_type[ptr_] = type;
 #endif
-                            arr_descr->fill_dimension_descriptor(ptr_, n_dims, module.get(), ASRUtils::expr_type(tmp_expr));
+                            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
                         } else {
                             ptr_ = llvm_utils->CreateAlloca(*builder, type);
-                            arr_descr->fill_dimension_descriptor(ptr_, n_dims,nullptr,nullptr);
+                            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
                         }
                         LLVM::CreateStore(*builder, ptr_, x_arr);
                     },
@@ -3512,7 +3512,7 @@ public:
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = llvm_utils->CreateAlloca(*builder, type_, nullptr, "arr_desc");
-            arr_descr->fill_dimension_descriptor(ptr_, n_dims, nullptr, nullptr);
+            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {

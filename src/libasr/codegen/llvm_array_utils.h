@@ -154,8 +154,7 @@ namespace LCompilers {
                     llvm::Module* module, bool realloc=false) = 0;
 
                 virtual
-                void fill_dimension_descriptor(
-                    llvm::Value* arr, int n_dims, llvm::Module* module,ASR::ttype_t* type) = 0;
+                void fill_dimension_descriptor(llvm::Value* arr, int n_dims) = 0;
 
                 virtual
                 void reset_array_details(
@@ -383,8 +382,7 @@ namespace LCompilers {
                     llvm::Module* module, bool realloc=false);
 
                 virtual
-                void fill_dimension_descriptor(
-                    llvm::Value* arr, int n_dims, llvm::Module* module, ASR::ttype_t* type);
+                void fill_dimension_descriptor(llvm::Value* arr, int n_dims);
 
                 virtual
                 void reset_array_details(
