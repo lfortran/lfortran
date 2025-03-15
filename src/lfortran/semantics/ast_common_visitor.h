@@ -4107,7 +4107,9 @@ public:
                                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(s);
                                 if (var->m_value) {
                                     ASR::expr_t* expr = var->m_value;
-                                    ASR::call_arg_t call_arg { .loc = expr->base.loc, .m_value = expr };
+                                    ASR::call_arg_t call_arg;
+                                    call_arg.loc = expr->base.loc;
+                                    call_arg.m_value = expr;
                                     vals.push_back(al, call_arg);
                                 } else {
                                     // If no compile time value in DataStmt initialize to zero when visiting StructConstant in backend
