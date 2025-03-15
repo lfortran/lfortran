@@ -1162,9 +1162,20 @@ public:
                 // functions are pointers in LLVM, so we do not need to get the pointer to it
                 dest_type = tp;
             }
-            llvm::Value* np = builder->CreateIntToPtr(
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
-            builder->CreateStore(np, target);
+
+
+            if(ASRUtils::is_array(ASRUtils::expr_type(x.m_vars[i]))){
+                llvm::Value* target_ = llvm_utils->CreateLoad2(ASRUtils::expr_type(x.m_vars[i]), target);
+                llvm::Value* data_ptr = arr_descr->get_pointer_to_data(ASRUtils::expr_type(x.m_vars[i]), target_ , module.get());
+                builder->CreateStore(
+                    llvm::ConstantPointerNull::get(llvm_utils->get_el_type(
+                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_vars[i])), module.get())->getPointerTo())
+                    , data_ptr);
+            } else {
+                llvm::Value* np = builder->CreateIntToPtr(
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
+                builder->CreateStore(np, target);
+            }
         }
     }
 

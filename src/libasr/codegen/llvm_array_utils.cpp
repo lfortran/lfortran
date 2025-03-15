@@ -568,6 +568,13 @@ namespace LCompilers {
             return llvm_utils->create_gep(arr, 0);
         }
 
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
+            llvm::Type* const array_desc_type = llvm_utils->arr_api->
+                get_array_type(ASRUtils::type_get_past_allocatable_pointer(arr_type), 
+                    llvm_utils->get_el_type(ASRUtils::extract_type(arr_type), module), false);
+            return llvm_utils->create_gep2(array_desc_type, arr, 0);
+        }
+
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Value* arr, bool load) {
             llvm::Value* offset = llvm_utils->create_gep(arr, 1);
             if( !load ) {
