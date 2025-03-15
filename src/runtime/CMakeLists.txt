@@ -39,6 +39,8 @@ lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
 lfortran_compile_runtime(omp_lib openmp)
 add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
 
+lfortran_compile_runtime(mpi openmpi)
+add_dependencies(mpi lfortran_intrinsic_iso_c_binding)
 # Ideally this should be a target based install, not file based:
 # install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION ${CMAKE_INSTALL_LIBDIR})
 # but for historical reasons get_runtime_library_dir() looks under "/../../runtime"
@@ -51,6 +53,7 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/mpi.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
