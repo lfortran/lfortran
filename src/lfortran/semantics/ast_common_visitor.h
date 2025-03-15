@@ -8210,8 +8210,18 @@ public:
         */
         ASR::expr_t *n = args[0].m_value;
         ASR::expr_t *w = args[1].m_value;
+    
+        ASR::ttype_t* n_type = ASRUtils::expr_type(n);
+        ASR::ttype_t* w_type = ASRUtils::expr_type(w);
+    
+        if (!ASRUtils::check_equal_type(n_type, w_type)) {
+            if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
+                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr));
+            }
+        }
+    
         return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift,
-                            n, w, ASRUtils::expr_type(n));
+                            n, w, n_type);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
