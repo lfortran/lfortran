@@ -120,6 +120,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         return res3.error;
     }
 
+    if (compiler_options.po.fast) {
+        e->opt(*m->m_m);
+    }
+
     if (verbose) {
         result.llvm_ir = m->str();
     }
@@ -334,10 +338,10 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     }
     Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
         diagnostics, lm.files.back().in_filename);
+    std::unique_ptr<LLVMModule> m;
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
-        std::unique_ptr<LLVMModule> m = std::move(res.result);
-        return m;
+        m = std::move(res.result);
 #else
         throw LCompilersException("LLVM is not enabled");
 #endif
@@ -345,6 +349,12 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
+
+    if (compiler_options.po.fast) {
+        std::cout << "Applying optimizations for first time\n";
+        e->opt(*m->m_m);
+    }
+    return m;
 }
 
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
@@ -382,16 +392,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
             compiler_options, run_fn, infile);
     if (res.ok) {
         m = std::move(res.result);
+        return m;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
-
-    if (compiler_options.po.fast) {
-        e->opt(*m->m_m);
-    }
-
-    return m;
 #else
     throw LCompilersException("LLVM is not enabled");
 #endif
