@@ -996,7 +996,7 @@ public:
     }
 
     template <typename T>
-    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc) {
+    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, ASR::expr_t* m_source, bool realloc) {
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t curr_arg = x.m_args[i];
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
@@ -1107,7 +1107,7 @@ public:
     }
 
     void visit_Allocate(const ASR::Allocate_t& x) {
-        visit_AllocateUtil(x, x.m_stat, false);
+        visit_AllocateUtil(x, x.m_stat, x.m_source, false);
     }
 
     void visit_ReAlloc(const ASR::ReAlloc_t& x) {
@@ -1131,7 +1131,7 @@ public:
             builder->CreateNot(is_allocated), builder->CreateAnd(
                 is_allocated, builder->CreateICmpNE(size, arg_array_size)));
         llvm_utils->create_if_else(realloc_condition, [=]() {
-            visit_AllocateUtil(x, nullptr, true);
+            visit_AllocateUtil(x, nullptr, nullptr, true);
         }, [](){});
     }
 
