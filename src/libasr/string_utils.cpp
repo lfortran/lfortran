@@ -283,4 +283,29 @@ void rtrim(std::string& str) {
     str.erase(std::find_if_not(str.rbegin(), str.rend(), ::isspace).base(), str.end());
 }
 
+// Should be kept in sync with the `_lfortran_str_compare` intrinsic.
+int str_compare_fortran(const char* s1, const char* s2) {
+    size_t s1_len = strlen(s1);
+    while (s1_len > 0 && s1[s1_len - 1] == ' ') s1_len--;
+    size_t s2_len = strlen(s2);
+    while (s2_len > 0 && s2[s2_len - 1] == ' ') s2_len--;
+
+    size_t limit = std::min(s1_len, s2_len);
+    int res = 0;
+    size_t i ;
+
+    // Fortran string comparisons should be unsigned.
+    const uint8_t *u1 = reinterpret_cast<const uint8_t*>(s1);
+    const uint8_t *u2 = reinterpret_cast<const uint8_t*>(s2);
+    for (i = 0; i < limit; i++) {
+        if (u1[i] != u2[i]) {
+            res = u1[i] - u2[i];
+            break;
+        }
+    }
+
+    res = (i == limit) ? s1_len - s2_len : res;
+    return res;
+}
+
 } // namespace LCompilers
