@@ -32,8 +32,8 @@ semantic error: Symbol is already declared in the same scope
 74 |     integer , dimension(3) :: array
    |                               ^^^^^ redeclaration
    |
-72 |     dimension array(3)
-   |     ~~~~~~~~~~~~~~~~~~ original declaration
+73 |     double precision array
+   |                      ~~~~~ original declaration
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8

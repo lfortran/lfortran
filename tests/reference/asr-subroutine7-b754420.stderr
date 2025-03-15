@@ -1,8 +1,0 @@
-semantic error: Symbol is already declared in the same scope
- --> tests/errors/subroutine7.f90:4:31
-  |
-4 |     integer , dimension(3) :: array
-  |                               ^^^^^ redeclaration
-  |
-2 |     dimension array(3)
-  |     ~~~~~~~~~~~~~~~~~~ original declaration

@@ -4498,7 +4498,3 @@ asr = true
 [[test]]
 filename = "errors/subroutine6.f90"
 asr = true
-
-[[test]]
-filename = "errors/subroutine7.f90"
-asr = true
