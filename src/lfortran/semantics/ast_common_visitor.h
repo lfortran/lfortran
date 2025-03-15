@@ -1754,7 +1754,7 @@ public:
 	    Vec<ASR::dimension_t> dims;
 	    dims.reserve(al, 0);
 	    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
-	    bool is_char_type = false; 
+	    bool is_char_type = false;
             if ( v->m_type ) {
                 is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
             }
