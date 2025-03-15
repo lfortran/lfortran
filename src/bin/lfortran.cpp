@@ -1133,7 +1133,6 @@ int compile_src_to_object_file(const std::string &infile,
         std::cout << "File reading:" << std::setw(5) << time_file_read << " ms" << std::endl;
         std::cout << "Src -> ASR:  " << std::setw(5) << time_src_to_asr << " ms" << std::endl;
         std::cout << "ASR -> mod:  " << std::setw(5) << time_save_mod << " ms" << std::endl;
-        std::cout << "ASR -> LLVM: " << std::setw(5) << time_asr_to_llvm << " ms" << std::endl;
         std::cout << "LLVM opt:    " << std::setw(5) << time_opt << " ms" << std::endl;
         std::cout << "LLVM -> BIN: " << std::setw(5) << time_llvm_to_bin << " ms" << std::endl;
         int total = time_file_read + time_src_to_asr + time_save_mod + time_asr_to_llvm + time_opt + time_llvm_to_bin;
@@ -2233,6 +2232,7 @@ int main_app(int argc, char *argv[]) {
 #endif
         return 0;
     }
+    compiler_options.po.time_report = compiler_options.time_report;
 
     if (opts.print_targets) {
 #ifdef HAVE_LFORTRAN_LLVM
@@ -2452,7 +2452,7 @@ int main_app(int argc, char *argv[]) {
     if (opts.arg_S) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_assembly_file(opts.arg_file, outfile, opts.time_report, compiler_options, lfortran_pass_manager);
+            return compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
@@ -2467,7 +2467,7 @@ int main_app(int argc, char *argv[]) {
     if (opts.arg_c) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_src_to_object_file(opts.arg_file, outfile, opts.time_report, false,
+            return compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
                 compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2480,9 +2480,9 @@ int main_app(int argc, char *argv[]) {
             return compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
                     true, rtlib_c_header_dir, compiler_options);
         } else if (backend == Backend::x86) {
-            return compile_to_binary_x86(opts.arg_file, outfile, opts.time_report, compiler_options);
+            return compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
-            return compile_to_binary_wasm(opts.arg_file, outfile, opts.time_report, compiler_options);
+            return compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::fortran) {
             return compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
         } else if (backend == Backend::mlir) {
@@ -2508,11 +2508,11 @@ int main_app(int argc, char *argv[]) {
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
-                        opts.time_report, compiler_options);
+                        compiler_options.time_report, compiler_options);
             }
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-                err = compile_src_to_object_file(arg_file, tmp_o, opts.time_report, false,
+                err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
                     compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2528,7 +2528,7 @@ int main_app(int argc, char *argv[]) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
             } else if (backend == Backend::wasm) {
                 err = compile_to_binary_wasm(arg_file, outfile,
-                        opts.time_report, compiler_options);
+                        compiler_options.time_report, compiler_options);
             } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
                 err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
@@ -2561,7 +2561,7 @@ int main_app(int argc, char *argv[]) {
     if (object_files.size() == 0) {
         return err_;
     } else {
-        return err_ + link_executable(object_files, outfile, opts.time_report, runtime_library_dir,
+        return err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
     }
