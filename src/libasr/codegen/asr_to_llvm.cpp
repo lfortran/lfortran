@@ -10800,11 +10800,20 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.always_run = false;
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
+    auto t1 = std::chrono::high_resolution_clock::now();
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    if (co.time_report) {
+        int millisecond = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        int microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+        std::cout << "ASR -> ASR passes: " << std::setw(5) << millisecond << "." << microseconds << " ms" << std::endl;
+    }
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
 
+    t1 = std::chrono::high_resolution_clock::now();
     try {
         v.visit_asr((ASR::asr_t&)asr);
     } catch (const CodeGenError &e) {
@@ -10830,7 +10839,17 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     };
-    return std::make_unique<LLVMModule>(std::move(v.module));
+
+    std::unique_ptr<LLVMModule> res = std::make_unique<LLVMModule>(std::move(v.module));
+    t2 = std::chrono::high_resolution_clock::now();
+
+    if (co.time_report) {
+        int millisecond = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        int microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+        std::cout << "LLVM IR creation: " << std::setw(5) << millisecond << "." << microseconds << " ms" << std::endl;
+    }
+
+    return res;
 }
 
 } // namespace LCompilers
