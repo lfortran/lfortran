@@ -20,6 +20,6 @@ block
         result = shifta(x, y)
         print *, "shifta(", x, ", ", y, ") = ", result
         if (result /= 8) error stop "Test case failed: shifta type mismatch"
-    end block
+end block
 
 end program
