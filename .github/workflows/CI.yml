@@ -672,7 +672,7 @@ jobs:
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu')
         env:
-          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+          HUGGINGFACE_TOKEN: ${{ env.HUGGINGFACE_TOKEN }}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -748,7 +748,7 @@ jobs:
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'macos')
         env:
-          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+          HUGGINGFACE_TOKEN: ${{ env.HUGGINGFACE_TOKEN }}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -1128,7 +1128,7 @@ jobs:
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
         env:
-          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+          HUGGINGFACE_TOKEN: ${{ env.HUGGINGFACE_TOKEN }}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
