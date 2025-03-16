@@ -60,6 +60,8 @@ struct PassOptions {
     bool c_mangling = false;
     bool openmp = false;
     bool enable_gpu_offloading = false;
+    bool time_report = false;
+    std::vector<std::string> vector_of_time_report;
 };
 
 struct CompilerOptions {
@@ -116,6 +118,7 @@ struct CompilerOptions {
     bool ignore_pragma = false;
     bool stack_arrays = false;
     bool wasm_html = false;
+    bool time_report = false;
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;

@@ -2486,10 +2486,17 @@ public:
         }
     }
 
-    std::string import_all(const ASR::Module_t* m, bool to_submodule=false) {
+    std::string import_all(const ASR::Module_t* m, bool to_submodule=false,
+                           std::vector<std::string> symbols_already_imported_with_renaming = {}) {
         // Import all symbols from the module, e.g.:
         //     use a
         for (auto &item : m->m_symtab->get_scope()) {
+            if ( symbols_already_imported_with_renaming.size() > 0 &&
+                 std::find(symbols_already_imported_with_renaming.begin(),
+                           symbols_already_imported_with_renaming.end(),
+                           item.first) != symbols_already_imported_with_renaming.end() ) {
+                continue;
+            }
             if( current_scope->get_symbol(item.first) != nullptr &&
                 !in_submodule ) {
                 continue;
@@ -2961,6 +2968,97 @@ public:
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         if (x.n_symbols == 0) {
             std::string unsupported_sym_name = import_all(m);
+            if( !unsupported_sym_name.empty() ) {
+                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
+            }
+        } else if ( !x.m_only_present ) {
+            // Import all symbols, but there exists some
+            // symbols which need to be imported with renaming e.g.:
+            // use a, x => y
+            std::vector<std::string> symbols_already_imported_with_renaming;
+            std::queue<std::pair<std::string, std::string>> to_be_imported_with_renaming;
+            for (size_t i = 0; i < x.n_symbols; i++) {
+                std::string remote_sym;
+                switch (x.m_symbols[i]->type)
+                {
+                    case AST::use_symbolType::UseSymbol: {
+                        remote_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_remote_sym);
+                        break;
+                    }
+                    case AST::use_symbolType::UseAssignment: {
+                        remote_sym = "~assign";
+                        break;
+                    }
+                    case AST::use_symbolType::IntrinsicOperator: {
+                        AST::intrinsicopType op_type = AST::down_cast<AST::IntrinsicOperator_t>(x.m_symbols[i])->m_op;
+                        remote_sym = intrinsic2str[op_type];
+                        break;
+                    }
+                    case AST::use_symbolType::DefinedOperator: {
+                        remote_sym = AST::down_cast<AST::DefinedOperator_t>(
+                            x.m_symbols[i])->m_opName;
+                        break;
+                    }
+                    case AST::use_symbolType::UseWrite: {
+                        remote_sym = AST::down_cast<AST::UseWrite_t>(
+                            x.m_symbols[i])->m_id;
+                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
+                            diag.add(diag::Diagnostic(
+                                "Can only be `formatted` or `unformatted`",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
+                            throw SemanticAbort();
+                        }
+                        remote_sym = "~write_" + remote_sym;
+                        break;
+                    }
+                    case AST::use_symbolType::UseRead: {
+                        remote_sym = AST::down_cast<AST::UseRead_t>(
+                            x.m_symbols[i])->m_id;
+                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
+                            diag.add(diag::Diagnostic(
+                                "Can only be `formatted` or `unformatted`",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
+                            throw SemanticAbort();
+                        }
+                        remote_sym = "~read_" + remote_sym;
+                        break;
+                    }
+                    default:
+                        diag.add(diag::Diagnostic(
+                            "Symbol with use not supported yet " + std::to_string(x.m_symbols[i]->type),
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
+                }
+                std::string local_sym;
+                if (AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i]) &&
+                    AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename) {
+                    local_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename);
+                } else {
+                    local_sym = remote_sym;
+                }
+                import_symbols_util(m, msym, remote_sym, local_sym,
+                                    to_be_imported_with_renaming, x.m_symbols[i]->base.loc);
+                symbols_already_imported_with_renaming.push_back(remote_sym);
+            }
+            // Importing procedures defined for overloaded operators like assignment
+            // after all the user imports are complete. This avoids
+            // importing the same function twice i.e., if the user has already imported
+            // the required procedures manually then importing later avoids polluting the
+            // symbol table.
+            while( !to_be_imported_with_renaming.empty() ) {
+                std::string remote_sym = to_be_imported_with_renaming.front().first;
+                std::string local_sym = to_be_imported_with_renaming.front().second;
+                to_be_imported_with_renaming.pop();
+                if( current_scope->resolve_symbol(local_sym) == nullptr ) {
+                    import_symbols_util(m, msym, remote_sym, local_sym,
+                                        to_be_imported_with_renaming, x.base.base.loc);
+                    symbols_already_imported_with_renaming.push_back(remote_sym);
+                }
+            }
+            std::string unsupported_sym_name = import_all(m, false, symbols_already_imported_with_renaming);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }

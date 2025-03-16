@@ -42,6 +42,7 @@ namespace LCompilers::LLanguageServer::Logging {
         auto operator<<(short unsigned int value) -> Formatter &;
         auto operator<<(int value) -> Formatter &;
         auto operator<<(unsigned int value) -> Formatter &;
+        auto operator<<(long value) -> Formatter &;
         auto operator<<(std::size_t value) -> Formatter &;
         auto operator<<(const char *str) -> Formatter &;
         auto operator<<(const std::string &str) -> Formatter &;
@@ -84,12 +85,16 @@ namespace LCompilers::LLanguageServer::Logging {
         auto debug() -> Formatter;
         auto trace() -> Formatter;
 
+        auto threadName(const std::string &threadName) -> void;
+        auto threadName() const -> const std::string &;
+
         auto operator<<(bool boolean) -> Logger &;
         auto operator<<(unsigned char c) -> Logger &;
         auto operator<<(char c) -> Logger &;
         auto operator<<(short unsigned int value) -> Logger &;
         auto operator<<(int value) -> Logger &;
         auto operator<<(unsigned int value) -> Logger &;
+        auto operator<<(long value) -> Logger &;
         auto operator<<(std::size_t value) -> Logger &;
         auto operator<<(const char *str) -> Logger &;
         auto operator<<(const std::string &str) -> Logger &;

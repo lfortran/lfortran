@@ -390,26 +390,13 @@ namespace LCompilers {
             builder->CreateStore(first_ptr, ptr2firstptr);
         }
 
-        void SimpleCMODescriptor::fill_dimension_descriptor(
-            llvm::Value* arr, int n_dims,llvm::Module* module ,ASR::ttype_t* type ) {
+        void SimpleCMODescriptor::fill_dimension_descriptor(llvm::Value* arr, int n_dims) {
             llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
             llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
             llvm::Value* dim_des_first;
-            if(type && ASR::is_a<ASR::Pointer_t>(*type)){
-                std::vector<llvm::Value*> idx_vec = {
-                    llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-                    llvm::Value* null_dim_des_ptr = llvm::ConstantPointerNull::get(dim_des->getPointerTo());
-                    llvm::Value* size_of_dim_des_struct = llvm_utils->CreateGEP2(dim_des, null_dim_des_ptr, idx_vec);
-                    llvm::Value* size_of_dim_des_struct_casted = builder->CreatePtrToInt(size_of_dim_des_struct, llvm::Type::getInt32Ty(context)); //cast to int32
-                    llvm::Value* size_mul_ndim = builder->CreateMul(size_of_dim_des_struct_casted, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
-                    llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
-                        context, *module, *builder, size_mul_ndim);
-                    dim_des_first = builder->CreateBitCast(struct_ptr, dim_des->getPointerTo());
-            } else {
-                dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
-                                        llvm_utils->CreateLoad(llvm_ndims));
-            }
+            dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
+                                    llvm_utils->CreateLoad(llvm_ndims));
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
         }
@@ -566,6 +553,13 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Value* arr) {
             return llvm_utils->create_gep(arr, 0);
+        }
+
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
+            llvm::Type* const array_desc_type = llvm_utils->arr_api->
+                get_array_type(ASRUtils::type_get_past_allocatable_pointer(arr_type), 
+                    llvm_utils->get_el_type(ASRUtils::extract_type(arr_type), module), false);
+            return llvm_utils->create_gep2(array_desc_type, arr, 0);
         }
 
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Value* arr, bool load) {

@@ -3,6 +3,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
+#include <cstdint>
 #include <mutex>
 
 #include <server/logger.h>
@@ -30,7 +31,7 @@ namespace LCompilers::LLanguageServer::Threading {
             return !isRunning();
         }
 
-        auto enqueue(T value) -> bool;
+        auto enqueue(T value) -> T *;
         auto dequeue() -> T;
         auto stop() -> void;
         auto stopNow() -> void;
@@ -55,21 +56,22 @@ namespace LCompilers::LLanguageServer::Threading {
     }
 
     template <typename T, std::size_t N>
-    auto Queue<T,N>::enqueue(T value) -> bool {
+    auto Queue<T,N>::enqueue(T value) -> T * {
         if (receiving) {
             std::unique_lock<std::mutex> lock(mutex);
             dequeued.wait(lock, [this]{
                 return (_size < N) || !receiving;
             });
             if ((_size < N) && receiving) {
-                buffer[tail] = value;
+                T *elem = &buffer[tail];
+                (*elem) = value;
                 tail = (tail + 1) % N;
                 ++_size;
                 enqueued.notify_one();
-                return true;
+                return elem;
             }
         }
-        return false;
+        return nullptr;
     }
 
     template <typename T, std::size_t N>

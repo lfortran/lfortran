@@ -149,7 +149,11 @@ namespace LCompilers::LLanguageServer::Logging {
             lock.lock();
             if (logger.level() >= level) {
                 enabled = true;
-                logger << '[' << prompt << "] ";
+                logger << '[' << prompt << ']';
+                if (logger.threadName().length() > 0) {
+                    logger << '[' << logger.threadName() << ']';
+                }
+                logger << ' ';
             } else {
                 lock.unlock();
             }
@@ -198,6 +202,13 @@ namespace LCompilers::LLanguageServer::Logging {
         return *this;
     }
 
+    auto Formatter::operator<<(long value) -> Formatter & {
+        if (enabled) {
+            logger << value;
+        }
+        return *this;
+    }
+
     auto Formatter::operator<<(std::size_t value) -> Formatter & {
         if (enabled) {
             logger << value;
@@ -233,7 +244,9 @@ namespace LCompilers::LLanguageServer::Logging {
         return *this;
     }
 
-    auto Formatter::operator<<(std::ostream& (*manip)(std::ostream&)) -> Formatter & {
+    auto Formatter::operator<<(
+        std::ostream& (*manip)(std::ostream&)
+    ) -> Formatter & {
         if (enabled) {
             logger << manip;
         }
@@ -255,6 +268,16 @@ namespace LCompilers::LLanguageServer::Logging {
         } else {
             throw std::runtime_error("Logger has already been closed.");
         }
+    }
+
+    static thread_local std::string m_threadName;
+
+    auto Logger::threadName(const std::string &threadName) -> void {
+        m_threadName = threadName;
+    }
+
+    auto Logger::threadName() const -> const std::string & {
+        return m_threadName;
     }
 
     auto Logger::operator<<(bool boolean) -> Logger & {
@@ -286,6 +309,12 @@ namespace LCompilers::LLanguageServer::Logging {
     }
 
     auto Logger::operator<<(unsigned int value) -> Logger & {
+        logFile << value;
+        std::cerr << value;
+        return *this;
+    }
+
+    auto Logger::operator<<(long value) -> Logger & {
         logFile << value;
         std::cerr << value;
         return *this;

@@ -1,7 +1,7 @@
-#include "server/queue.hpp"
 #include <iostream>
 #include <exception>
 
+#include <memory>
 #include <server/thread_pool.h>
 
 namespace LCompilers::LLanguageServer::Threading {
@@ -26,18 +26,22 @@ namespace LCompilers::LLanguageServer::Threading {
         }
     }
 
-    auto ThreadPool::execute(Task task) -> bool {
+    auto ThreadPool::execute(Task task) -> std::shared_ptr<std::atomic_bool> {
         if (!stopRunning) {
-            tasks.enqueue(task);
-            return true;
+            QueueElem *elem = tasks.enqueue(
+                std::make_pair(task, std::make_shared<std::atomic_bool>(true))
+            );
+            if (elem) {
+                return elem->second;
+            }
         }
-        return false;
+        return nullptr;
     }
 
     auto ThreadPool::stop() -> void {
         logger.debug()
             << "Thread pool [" << _name << "] will no longer accept new tasks and "
-            "will shut down once those pending have returned."
+               "will shut down once those pending have returned."
             << std::endl;
         stopRunning = true;
         tasks.stop();
@@ -57,9 +61,7 @@ namespace LCompilers::LLanguageServer::Threading {
             std::thread &worker = workers[threadId];
             if (worker.joinable()) {
                 worker.join();
-                logger.debug()
-                    << "Thread " << _name << "_" << threadId << " terminated."
-                    << std::endl;
+                logger.debug() << "Terminated thread." << std::endl;
             }
         }
         running = false;
@@ -67,33 +69,28 @@ namespace LCompilers::LLanguageServer::Threading {
 
     auto ThreadPool::run(const std::size_t threadId) -> void {
         try {
+            logger.threadName(_name + "_" + std::to_string(threadId));
             while (!stopRunningNow && (!stopRunning || (tasks.size() > 0))) {
-                Task task = tasks.dequeue();
-                if (!stopRunningNow) {
+                QueueElem elem = tasks.dequeue();
+                Task &task = elem.first;
+                std::shared_ptr<std::atomic_bool> taskIsRunning = elem.second;
+                if (!stopRunningNow && *taskIsRunning) {
                     try {
-                        task(_name, threadId);
+                        task(std::move(taskIsRunning));
                     } catch (std::exception &e) {
-                        logger.error()
-                            << "[" << _name << "_" << threadId << "] "
-                            "Failed to execute task: " << e.what()
-                            << std::endl;
+                        logger.error() << "Failed to execute task: " << e.what() << std::endl;
                     }
                 }
             }
-            logger.trace()
-                << "[" << _name << "_" << threadId << "] "
-                "Terminated successfully."
-                << std::endl;
+            logger.trace() << "Terminated successfully." << std::endl;
         } catch (std::exception &e) {
             if (e.what() != DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "[" << _name << "_" << threadId << "] "
-                    "Unhandled exception caught: " << e.what()
+                    << "Unhandled exception caught: " << e.what()
                     << std::endl;
             } else {
                 logger.trace()
-                    << "[" << _name << "_" << threadId << "] "
-                    "Interrupted while dequeuing messages: " << e.what()
+                    << "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
         }

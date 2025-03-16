@@ -145,6 +145,81 @@ namespace LCompilers::LanguageServerProtocol::Config {
         return any;
     }
 
+    auto LspConfigTransformer::anyToLspConfig_retry(
+        const lsp::LSPAny &any
+    ) const -> LspConfig_retry {
+        if (any.type() != LSPAnyType::Object) {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                ("LSPAnyType for a "
+                 "LspConfig_retry"
+                 " must be of type LSPAnyType::Object"
+                 " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))
+            );
+        }
+
+        LspConfig_retry retry{};
+
+        const LSPObject &object = any.object();
+        LSPObject::const_iterator iter;
+
+        if ((iter = object.find("maxAttempts")) != object.end()) {
+            retry.maxAttempts = transformer.anyToUInteger(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig_retry attribute: maxAttempts"
+            );
+        }
+
+        if ((iter = object.find("minSleepTimeMs")) != object.end()) {
+            retry.minSleepTimeMs = transformer.anyToUInteger(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig_retry attribute: minSleepTimeMs"
+            );
+        }
+
+        if ((iter = object.find("maxSleepTimeMs")) != object.end()) {
+            retry.maxSleepTimeMs = transformer.anyToUInteger(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig_retry attribute: maxSleepTimeMs"
+            );
+        }
+
+        return retry;
+    }
+
+    auto LspConfigTransformer::lspConfig_retryToAny(
+        const LspConfig_retry &retry
+    ) const -> LSPAny {
+        LSPAny any;
+        LSPObject object;
+        object.emplace(
+            "maxAttempts",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(retry.maxAttempts)
+            )
+        );
+        object.emplace(
+            "minSleepTimeMs",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(retry.minSleepTimeMs)
+            )
+        );
+        object.emplace(
+            "maxSleepTimeMs",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(retry.maxSleepTimeMs)
+            )
+        );
+        any = std::make_unique<LSPObject>(std::move(object));
+        return any;
+    }
+
     auto LspConfigTransformer::anyToLspConfig(
         const lsp::LSPAny &any
     ) const -> std::shared_ptr<LspConfig> {
@@ -172,11 +247,20 @@ namespace LCompilers::LanguageServerProtocol::Config {
         }
 
         if ((iter = object.find("indentSize")) != object.end()) {
-            config->indentSize = iter->second->uinteger();
+            config->indentSize = transformer.anyToUInteger(*iter->second);
         } else {
             throw LSP_EXCEPTION(
                 ErrorCodes::InvalidParams,
                 "Missing required LspConfig_log attribute: indentSize"
+            );
+        }
+
+        if ((iter = object.find("timeoutMs")) != object.end()) {
+            config->timeoutMs = transformer.anyToUInteger(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig_log attribute: timeoutMs"
             );
         }
 
@@ -198,6 +282,15 @@ namespace LCompilers::LanguageServerProtocol::Config {
             );
         }
 
+        if ((iter = object.find("retry")) != object.end()) {
+            config->retry = anyToLspConfig_retry(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig attribute: retry"
+            );
+        }
+
         return config;
     }
 
@@ -213,6 +306,18 @@ namespace LCompilers::LanguageServerProtocol::Config {
             )
         );
         object.emplace(
+            "indentSize",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(config.indentSize)
+            )
+        );
+        object.emplace(
+            "timeoutMs",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(config.timeoutMs)
+            )
+        );
+        object.emplace(
             "trace",
             std::make_unique<LSPAny>(
                 lspConfig_traceToAny(config.trace)
@@ -222,6 +327,12 @@ namespace LCompilers::LanguageServerProtocol::Config {
             "log",
             std::make_unique<LSPAny>(
                 lspConfig_logToAny(config.log)
+            )
+        );
+        object.emplace(
+            "retry",
+            std::make_unique<LSPAny>(
+                lspConfig_retryToAny(config.retry)
             )
         );
         any = std::make_unique<LSPObject>(std::move(object));

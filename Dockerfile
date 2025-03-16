@@ -11,7 +11,7 @@ RUN bash Miniforge3-$(uname)-$(uname -m).sh -b
 
 RUN /root/miniforge3/bin/mamba init bash
 
-WORKDIR /lfortran
+WORKDIR /lfortran_build
 
 COPY . .
 
@@ -29,4 +29,4 @@ FROM ubuntu:22.04 AS app
 RUN apt update
 RUN apt install binutils clang --no-install-recommends -y
 
-COPY --from=build /lfortran/inst /app
+COPY --from=build /lfortran_build/inst /app

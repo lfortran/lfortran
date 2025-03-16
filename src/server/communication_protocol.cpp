@@ -26,7 +26,8 @@ namespace LCompilers::LLanguageServer {
       , incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
       , logger(logger)
-      , listener([this]() {
+      , listener([this, &logger]() {
+          logger.threadName("CommunicationProtocol_listener");
           listen();
       })
     {

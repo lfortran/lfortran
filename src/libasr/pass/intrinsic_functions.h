@@ -4333,6 +4333,13 @@ namespace Ishftc {
         } else {
             result = cutoff_extra_bits(val << shift, bits_size, max_bits_size) | ((val >> (bits_size - shift)));
         }
+        if (kind == 1) {
+            result = static_cast<int8_t>(result);
+        } else if (kind == 2) {
+            result = static_cast<int16_t>(result);
+        } else if (kind == 4) {
+            result = static_cast<int32_t>(result);
+        } 
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
