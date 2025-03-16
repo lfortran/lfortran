@@ -51,6 +51,8 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
+#include <string>
+#include <sstream>
 
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
@@ -66,6 +68,15 @@
 #ifdef HAVE_BUILD_TO_WASM
     #include <emscripten/emscripten.h>
 #endif
+
+// ANSI color codes
+#define RESET   "\033[0m"
+#define BLUE    "\033[34m"   // Blue for non-[PASS] entries
+#define GREEN   "\033[32m"   // Green for 'Total time'
+#define YELLOW  "\033[33m"   // Yellow for 'Allocator usage of last chunk (MB)'
+#define CYAN    "\033[36m"   // Cyan for 'Allocator chunks'
+#define MAGENTA "\033[35m"   // Magenta for 'File reading' and 'Src -> ASR'
+#define RED        "\033[31m"   // Red for 'Time taken by pass' and 'ASR -> ASR passes'
 
 extern std::string lcompilers_unique_ID;
 extern std::string lcompilers_commandline_options;
@@ -97,6 +108,69 @@ std::string get_unique_ID() {
     }
     return res;
 }
+
+// Note: this function is case sensitive to the input string
+void print_time_report(std::vector<std::string>& vector_of_time_report) {
+    // Header
+    std::cout << std::left << std::setw(50) << "Component name"
+              << std::right << std::setw(10) << "Time (ms)" << '\n';
+    std::cout << std::string(60, '-') << '\n';
+
+    for (const auto& entry : vector_of_time_report) {
+        // Split the string into component name and time value
+        std::istringstream ss(entry);
+        std::string component_name;
+        std::string time_value;
+
+        // Extract component name and time
+        std::getline(ss, component_name, ':');
+        ss >> time_value;
+
+        // Trim whitespace
+        component_name.erase(component_name.find_last_not_of(" \t\n\r") + 1);
+        component_name.erase(0, component_name.find_first_not_of(" \t\n\r"));
+
+        int setw_val = 10;
+
+        // Identify `[PASS]` entries and indent them
+        bool is_pass = false;
+        if (component_name.find("[PASS]") == 0) {
+            component_name = "\t" + component_name.substr(6); // Remove '[PASS]' and indent
+            setw_val = 6;
+            is_pass = true;
+        }
+
+        // Apply special colors for key entries
+        if (component_name == "Total time") {
+            std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
+            std::cout << GREEN;
+        } else if (component_name == "Allocator usage of last chunk (MB)") {
+            std::cout << YELLOW;
+        } else if (component_name == "Allocator chunks") {
+            std::cout << CYAN;
+        } else if (component_name == "File reading" || component_name == "Src -> ASR") {
+            std::cout << MAGENTA;
+        } else if (component_name == "Time taken by pass" || component_name == "ASR -> ASR passes") {
+            std::cout << RED;
+        } else if (!is_pass) {
+            std::cout << BLUE;  // Default blue for non-[PASS] entries
+        }
+
+        // Print in formatted table
+        if (time_value.empty()) {
+            std::cout << component_name << RESET << '\n';
+        } else {
+            std::cout << std::left << std::setw(50) << component_name << RESET
+                      << std::right << std::setw(setw_val) << time_value
+                      << '\n';
+        }
+    }
+
+    std::cout << std::string(60, '-') << '\n';
+}
+
+
+
 
 std::string read_file(const std::string &filename)
 {
@@ -997,7 +1071,6 @@ int compile_src_to_object_file(const std::string &infile,
     int time_src_to_asr=0;
     int time_save_mod=0;
     int time_opt=0;
-    int time_asr_to_llvm=0;
     int time_llvm_to_bin=0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -1068,11 +1141,8 @@ int compile_src_to_object_file(const std::string &infile,
         return 1;
 #endif
     }
-    t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
-    t2 = std::chrono::high_resolution_clock::now();
-    time_asr_to_llvm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -1125,8 +1195,7 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     if (time_report) {
-        std::string message = "Time report:";
-        compiler_options.po.vector_of_time_report.push_back(message);
+        std::string message = "";
         message = "Allocator usage of last chunk (MB): " +
             std::to_string(fe.get_al().size_current() / (1024. * 1024));
         compiler_options.po.vector_of_time_report.push_back(message);
@@ -1147,11 +1216,6 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.vector_of_time_report.push_back(message);
         message = "LLVM -> BIN: " + std::to_string(time_llvm_to_bin) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-        int total = time_file_read + time_src_to_asr + time_save_mod + time_asr_to_llvm + time_opt + time_llvm_to_bin;
-        message = "Total:       " + std::to_string(total) + " ms";
-        compiler_options.po.vector_of_time_report.push_back(message);
-
-
     }
 
     return has_error_w_cc;
@@ -2588,9 +2652,10 @@ int main_app(int argc, char *argv[]) {
             std::string message = "Total time: " + std::to_string(total_time_in_milliseconds) + "." + std::to_string(total_time_in_microseconds) + " ms";
             compiler_options.po.vector_of_time_report.push_back(message);
 
-            for (auto &time_report : compiler_options.po.vector_of_time_report) {
-                std::cout << time_report << std::endl;
-            }
+            // for (auto &time_report : compiler_options.po.vector_of_time_report) {
+            //     std::cout << time_report << std::endl;
+            // }
+            print_time_report(compiler_options.po.vector_of_time_report);
         }
 
         return status_code;
