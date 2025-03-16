@@ -150,7 +150,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                                         ASRUtils::symbol_get_past_external(x.m_v));
             this->visit_expr(*var->m_value);
         } else {
-            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, value->base.loc, loop_indices[loop_var_index], ASRUtils::symbol_type(x.m_v)));
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, loop_indices[loop_var_index], ASRUtils::symbol_type(x.m_v)));
         }
     }
 
@@ -185,15 +185,23 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
         }
-        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, value->base.loc, res, x.m_type)); 
+        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type)); 
     }
 
     void visit_RealCompare( const ASR::RealCompare_t &x ) {
         double left_val, right_val;
         this->visit_expr(*x.m_left);
-        left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        } else {
+            left_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
         this->visit_expr(*x.m_right);
-        right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        } else {
+            right_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
         bool res;
         switch (x.m_op) {
             case ASR::cmpopType::Eq:
@@ -219,19 +227,19 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
         }
-        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, value->base.loc, res, x.m_type)); 
+        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type)); 
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
-        value = ASR::down_cast<ASR::expr_t>(x);
+        value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_n, x.m_type)); 
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        value = ASR::down_cast<ASR::expr_t>(x);
+        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, x.m_r, x.m_type)); 
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
-        value = ASR::down_cast<ASR::expr_t>(x);
+        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, x.m_value, x.m_type)); 
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
@@ -274,15 +282,23 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
         }
-        value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, value->base.loc, res, x.m_type)); 
+        value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, res, x.m_type)); 
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
         double left_val, right_val;
         this->visit_expr(*x.m_left);
-        left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        } else {
+            left_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
         this->visit_expr(*x.m_right);
-        right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        } else {
+            right_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        }
         double res;
         switch (x.m_op) {
             case ASR::binopType::Mul:
@@ -305,7 +321,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
         }
-        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, value->base.loc, res, x.m_type)); 
+        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, res, x.m_type)); 
     }
 
      inline size_t get_max_args(ASRUtils::IntrinsicElementalFunctions id) {
@@ -8023,10 +8039,18 @@ public:
     }
 
     template<typename T>
-    T get_constant_value(ASR::expr_t* expr, ImpliedDoLoopValuesVisitor<T>& visitor) {
-        visitor.value = 0.0;
+    T get_constant_value(ASR::expr_t* expr, ImpliedDoLoopValuesVisitor& visitor) {
+        visitor.value = nullptr;
         visitor.visit_expr(*expr);
-        return visitor.value;
+        T res;
+        if constexpr (std::is_same_v<T,bool>) {
+            res = ASR::down_cast<ASR::LogicalConstant_t>(visitor.value)->m_value;
+        } else if constexpr (std::is_same_v<T,int>) {
+            res = ASR::down_cast<ASR::IntegerConstant_t>(visitor.value)->m_n;
+        } else if constexpr (std::is_same_v<T,float> || std::is_same_v<T,double>) {
+            res = ASR::down_cast<ASR::RealConstant_t>(visitor.value)->m_r;
+        }
+        return res;
     }
 
     template<typename T>
@@ -8046,7 +8070,7 @@ public:
             }
         }
         */
-        ImpliedDoLoopValuesVisitor<int> index_bound_visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
+        ImpliedDoLoopValuesVisitor index_bound_visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
         int end;
         if (ASRUtils::expr_value(idl->m_end)) {
             end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
@@ -8077,14 +8101,8 @@ public:
                     curr_nesting_level++;
                     populate_compiletime_array_for_idl(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), array, loop_vars, loop_indices, curr_nesting_level, itr);
                 } else {
-                    if constexpr (!std::is_same_v<T,bool>) {
-                        ImpliedDoLoopValuesVisitor<T> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
-                        array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
-                    } else {
-                        ImpliedDoLoopValuesVisitor<double> visitor(al, loop_vars, loop_indices, 0.0, idl->m_type, diag);
-                        array.push_back(al, (bool)get_constant_value<double>(idl->m_values[i], visitor));
-
-                    }
+                    ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
+                    array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
                     itr++;
                 }
             }
