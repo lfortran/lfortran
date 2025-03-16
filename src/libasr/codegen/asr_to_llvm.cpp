@@ -10889,11 +10889,21 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.always_run = false;
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
+    auto t1 = std::chrono::high_resolution_clock::now();
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    if (co.time_report) {
+        int asr_to_asr_passes_time_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        int asr_to_asr_passes_time_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+        std::string time_report_asr_to_asr_passes = "ASR -> ASR passes: " + std::to_string(asr_to_asr_passes_time_in_milliseconds) + "." + std::to_string(asr_to_asr_passes_time_in_microseconds) + " ms";
+        co.po.vector_of_time_report.push_back(time_report_asr_to_asr_passes);
+    }
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
 
+    t1 = std::chrono::high_resolution_clock::now();
     try {
         v.visit_asr((ASR::asr_t&)asr);
     } catch (const CodeGenError &e) {
@@ -10919,7 +10929,18 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     };
-    return std::make_unique<LLVMModule>(std::move(v.module));
+
+    std::unique_ptr<LLVMModule> res = std::make_unique<LLVMModule>(std::move(v.module));
+    t2 = std::chrono::high_resolution_clock::now();
+
+    if (co.time_report) {
+        int time_take_for_llvm_ir_creation_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        int time_take_for_llvm_ir_creation_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
+        std::string message = "LLVM IR creation: " + std::to_string(time_take_for_llvm_ir_creation_in_milliseconds) + "." + std::to_string(time_take_for_llvm_ir_creation_in_microseconds) + " ms";
+        co.po.vector_of_time_report.push_back(message);
+    }
+
+    return res;
 }
 
 } // namespace LCompilers
