@@ -57,7 +57,9 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         request_method = request_spec["method"]
         request_name = method_to_camel_case(request_method)
         result_spec = request_spec.get("result", None)
-        params = []
+        params = [
+            'const RequestId &requestId',
+        ]
         if result_spec is not None:
             result_name = f'{request_name}Result'
             if result_spec["kind"] == "base":

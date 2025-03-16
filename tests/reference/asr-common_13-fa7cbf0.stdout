@@ -1,0 +1,458 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            1_arrblock_myarr:
+                (ExternalSymbol
+                    1
+                    1_arrblock_myarr
+                    3 myarr
+                    arrblock
+                    []
+                    myarr
+                    Public
+                ),
+            1_myblock_myint:
+                (ExternalSymbol
+                    1
+                    1_myblock_myint
+                    5 myint
+                    myblock
+                    []
+                    myint
+                    Public
+                ),
+            arrblock:
+                (ExternalSymbol
+                    1
+                    arrblock
+                    2 arrblock
+                    file_common_block_arrblock
+                    []
+                    arrblock
+                    Public
+                ),
+            common_13:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            1_myblock_myzero:
+                                (ExternalSymbol
+                                    6
+                                    1_myblock_myzero
+                                    5 myzero
+                                    myblock
+                                    []
+                                    myzero
+                                    Public
+                                )
+                        })
+                    common_13
+                    []
+                    [(If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 1 struct_instance_myblock)
+                                1 1_myblock_myint
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 44 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 1 struct_instance_myblock)
+                                6 1_myblock_myzero
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (StructInstanceMember
+                                        (Var 1 struct_instance_arrblock)
+                                        1 1_arrblock_myarr
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
+                                    NotEq
+                                    (ArrayConstant
+                                        40
+                                        [1, 2, 3, ...., 8, 9, 10]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                ),
+            file_common_block_arrblock:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            arrblock:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            myarr:
+                                                (Variable
+                                                    3
+                                                    myarr
+                                                    []
+                                                    Local
+                                                    (ArrayConstant
+                                                        40
+                                                        [1, 2, 3, ...., 8, 9, 10]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
+                                                    (ArrayConstant
+                                                        40
+                                                        [1, 2, 3, ...., 8, 9, 10]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    arrblock
+                                    []
+                                    [myarr]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            struct_instance_arrblock:
+                                (Variable
+                                    2
+                                    struct_instance_arrblock
+                                    []
+                                    Local
+                                    (StructConstant
+                                        2 arrblock
+                                        [((ArrayConstant
+                                            40
+                                            [1, 2, 3, ...., 8, 9, 10]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        ))]
+                                        (StructType
+                                            2 arrblock
+                                        )
+                                    )
+                                    (StructConstant
+                                        2 arrblock
+                                        [((ArrayConstant
+                                            40
+                                            [1, 2, 3, ...., 8, 9, 10]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        ))]
+                                        (StructType
+                                            2 arrblock
+                                        )
+                                    )
+                                    Default
+                                    (StructType
+                                        2 arrblock
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    file_common_block_arrblock
+                    []
+                    .false.
+                    .false.
+                ),
+            file_common_block_myblock:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            myblock:
+                                (Struct
+                                    (SymbolTable
+                                        5
+                                        {
+                                            myint:
+                                                (Variable
+                                                    5
+                                                    myint
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 44 (Integer 4) Decimal)
+                                                    (IntegerConstant 44 (Integer 4) Decimal)
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            myzero:
+                                                (Variable
+                                                    5
+                                                    myzero
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    myblock
+                                    []
+                                    [myint
+                                    myzero]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            struct_instance_myblock:
+                                (Variable
+                                    4
+                                    struct_instance_myblock
+                                    []
+                                    Local
+                                    (StructConstant
+                                        4 myblock
+                                        [((IntegerConstant 44 (Integer 4) Decimal))
+                                        (())]
+                                        (StructType
+                                            4 myblock
+                                        )
+                                    )
+                                    (StructConstant
+                                        4 myblock
+                                        [((IntegerConstant 44 (Integer 4) Decimal))
+                                        (())]
+                                        (StructType
+                                            4 myblock
+                                        )
+                                    )
+                                    Default
+                                    (StructType
+                                        4 myblock
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    file_common_block_myblock
+                    []
+                    .false.
+                    .false.
+                ),
+            myarr:
+                (Variable
+                    1
+                    myarr
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Array
+                        (Integer 4)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 10 (Integer 4) Decimal))]
+                        FixedSizeArray
+                    )
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                ),
+            myblock:
+                (ExternalSymbol
+                    1
+                    myblock
+                    4 myblock
+                    file_common_block_myblock
+                    []
+                    myblock
+                    Public
+                ),
+            myint:
+                (Variable
+                    1
+                    myint
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Integer 4)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                ),
+            myzero:
+                (Variable
+                    1
+                    myzero
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Integer 4)
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                ),
+            struct_instance_arrblock:
+                (ExternalSymbol
+                    1
+                    struct_instance_arrblock
+                    2 struct_instance_arrblock
+                    file_common_block_arrblock
+                    []
+                    struct_instance_arrblock
+                    Public
+                ),
+            struct_instance_myblock:
+                (ExternalSymbol
+                    1
+                    struct_instance_myblock
+                    4 struct_instance_myblock
+                    file_common_block_myblock
+                    []
+                    struct_instance_myblock
+                    Public
+                )
+        })
+    []
+)

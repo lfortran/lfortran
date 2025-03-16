@@ -74,7 +74,6 @@ namespace LCompilers::LanguageServerProtocol {
     {
         documentsByUri.reserve(256);
         configsByUri.reserve(256);
-        pendingConfigsByUri.reserve(256);
         lspConfigsByUri.reserve(256);
         updateWorkspaceConfig(std::move(workspaceConfig));
         // -----------------------
@@ -1128,7 +1127,16 @@ namespace LCompilers::LanguageServerProtocol {
             int requestId = sendWorkspace_configuration(params);
             std::promise<std::shared_ptr<LSPAny>> promise;
             future = promise.get_future().share();
-            pendingConfigs.emplace(uri, requestId, std::move(promise));
+            {
+                auto &pairs = pendingConfigsById.emplace(
+                    std::piecewise_construct,
+                    std::make_tuple(requestId),
+                    std::make_tuple()
+                ).first->second;
+                auto &pair = pairs.emplace_back();
+                pair.first = uri;
+                pair.second = std::move(promise);
+            }
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
                 std::make_tuple(uri),
@@ -1319,6 +1327,7 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto BaseLspLanguageServer::receiveClient_registerCapability(
+        const RequestId &/*requestId*/,
         Client_RegisterCapabilityResult /*params*/
     ) -> void {
         // empty
@@ -1446,32 +1455,45 @@ namespace LCompilers::LanguageServerProtocol {
 
     // request: "workspace/configuration"
     auto BaseLspLanguageServer::receiveWorkspace_configuration(
+        const RequestId &requestId,
         Workspace_ConfigurationResult &params
     ) -> void {
-        for (LSPAny &config : params) {
-            std::unique_lock<std::shared_mutex> writeLock(configMutex);
-            if (pendingConfigs.empty()) {
+        std::unique_lock<std::shared_mutex> writeLock(configMutex);
+        auto iter = pendingConfigsById.find(requestId.integer());
+        if (iter != pendingConfigsById.end()) {
+            auto &pairs = iter->second;
+            if (params.size() != pairs.size()) {
                 throw LSP_EXCEPTION(
-                    ErrorCodes::InternalError,
-                    "No record exists of this config being requested. Please file a ticket."
+                    ErrorCodes::InvalidParams,
+                    ("Number of config params differs: " +
+                     std::to_string(params.size()) +
+                     " != " +
+                     std::to_string(pairs.size()))
                 );
             }
-            auto &triple = pendingConfigs.front();
-            const DocumentUri &uri = std::get<0>(triple);
-            // const int requestId = std::get<1>(triple);
-            auto &promise = std::get<2>(triple);
-            auto record = configsByUri.emplace(
-                uri,
-                std::make_shared<LSPAny>(
-                    std::move(config)
-                )
-            );
-            promise.set_value(record.first->second);
-            auto pendingIter = pendingConfigsByUri.find(uri);
-            if (pendingIter != pendingConfigsByUri.end()) {
-                pendingConfigsByUri.erase(pendingIter);
+            for (std::size_t i = 0; i < params.size(); ++i) {
+                LSPAny &config = params[i];
+                auto &pair = pairs[i];
+                const DocumentUri &uri = pair.first;
+                auto &promise = pair.second;
+                auto record = configsByUri.emplace(
+                    uri,
+                    std::make_shared<LSPAny>(
+                        std::move(config)
+                    )
+                );
+                promise.set_value(record.first->second);
+                auto pendingIter = pendingConfigsByUri.find(uri);
+                if (pendingIter != pendingConfigsByUri.end()) {
+                    pendingConfigsByUri.erase(pendingIter);
+                }
+                pendingConfigsById.erase(iter);
             }
-            pendingConfigs.pop();
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InternalError,
+                "No record exists of this config being requested. Please file a ticket."
+            );
         }
     }
 

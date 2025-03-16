@@ -3693,6 +3693,10 @@ filename = "../integration_tests/common_06.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/common_13.f90"
+asr = true
+
+[[test]]
 filename = "errors/common1.f90"
 asr = true
 

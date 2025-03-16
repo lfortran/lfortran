@@ -539,7 +539,6 @@ jobs:
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
-            FC="$(pwd)/src/bin/lfortran"
             git clone https://github.com/gxyd/pot3d.git
             cd pot3d
             # Only workarounds used now are (also tracked at: https://github.com/lfortran/lfortran/issues/2862):
@@ -547,13 +546,10 @@ jobs:
             # 2. namelist reading support replaced with use of file read (see: https://github.com/lfortran/lfortran/issues/1999)
             # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
-            git checkout -t origin/hdf5_mpi_namelist_global_deallocate_workaround_3
-            git checkout 219453c81aae490510c2297f0575acb9c50d8868
+            git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
+            git checkout 337546b13502ed1c07a0a38cba3afe1a9f35fb27
             FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
-
-            if [[ "${{matrix.os}}" == "macos-latest" ]]; then
-              FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
-            fi
+            FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
 
       - name: Test PRIMA
         shell: bash -e -l {0}
@@ -694,15 +690,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-
-            # downloading the repo containing model file using git-lfs
-            sudo apt update && sudo apt install -y git-lfs
-            git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
-            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
-            # we only need the model file
-            rm -rf fastGPT
-            # finished downloading the model file
+            curl -f -L --retry 5 --retry-delay 5 -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
             cd lf
@@ -763,15 +752,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-
-            # downloading the repo containing model file using git-lfs
-            brew install git-lfs
-            git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
-            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
-            # we only need the model file
-            rm -rf fastGPT
-            # finished downloading the model file
+            curl -f -L --retry 5 --retry-delay 5 -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
             cd lf
@@ -1068,8 +1050,8 @@ jobs:
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f -nf16
 
-      - name: Test Linux LLVM 17-19
-        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19'))}}
+      - name: Test Linux LLVM 17-20
+        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20'))}}
         shell: bash -e -l {0}
         run: |
             ctest --output-on-failure
@@ -1141,7 +1123,6 @@ jobs:
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
-        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -1161,15 +1142,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-
-            # downloading the repo containing model file using git-lfs
-            sudo apt update && sudo apt install -y git-lfs
-            git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
-            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
-            # we only need the model file
-            rm -rf fastGPT
-            # finished downloading the model file
+            curl -f -L --retry 5 --retry-delay 5 -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
             cd lf
@@ -1221,7 +1195,6 @@ jobs:
 
       - name: Test fpm
         shell: bash -e -x -l {0}
-        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/certik/fpm.git
             cd fpm
@@ -1232,7 +1205,6 @@ jobs:
 
       - name: Test stdlib
         shell: bash -e -x -l {0}
-        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
@@ -1248,7 +1220,6 @@ jobs:
 
       - name: Test SNAP
         shell: bash -e -x -l {0}
-        if: ${{! (contains(matrix.llvm-version, '20'))}}
         run: |
             git clone https://github.com/certik/SNAP.git
             cd SNAP
