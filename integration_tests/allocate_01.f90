@@ -1,8 +1,9 @@
 program allocate_01
 implicit none
-integer, allocatable :: a(:)
+integer, allocatable :: a(:), e(:)
 real, allocatable :: b(:, :)
 complex, allocatable :: c(:, :, :)
+integer :: d(5) = [1, 2, 3, 4, 5]
 complex :: r
 integer :: n, ierr
 integer :: i, j, k
@@ -45,6 +46,8 @@ end do
 r = reduce_sum(c)
 if (r /= (114345.0, 0.0)) error stop
 
+allocate(e, mold=d)
+if (size(e) /= size(d)) error stop
 contains
 
 subroutine sum(a, b, c)
