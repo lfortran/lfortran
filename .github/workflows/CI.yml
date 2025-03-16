@@ -671,6 +671,8 @@ jobs:
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu')
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -690,15 +692,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-
-            # downloading the repo containing model file using git-lfs
-            sudo apt update && sudo apt install -y git-lfs
-            git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
-            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
-            # we only need the model file
-            rm -rf fastGPT
-            # finished downloading the model file
+            curl -f -L -H "Authorization: Bearer ${HUGGINGFACE_TOKEN}" -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
             cd lf
@@ -752,6 +747,8 @@ jobs:
       - name: Test fastGPT ( macos-latest )
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'macos')
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -759,15 +756,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-
-            # downloading the repo containing model file using git-lfs
-            brew install git-lfs
-            git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
-            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
-            # we only need the model file
-            rm -rf fastGPT
-            # finished downloading the model file
+            curl -f -L -H "Authorization: Bearer ${HUGGINGFACE_TOKEN}" -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
             cd lf
@@ -1137,6 +1127,8 @@ jobs:
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -1156,15 +1148,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-
-            # downloading the repo containing model file using git-lfs
-            sudo apt update && sudo apt install -y git-lfs
-            git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
-            cp fastGPT/model_fastgpt_124M_v1.dat model.dat
-            # we only need the model file
-            rm -rf fastGPT
-            # finished downloading the model file
+            curl -f -L -H "Authorization: Bearer ${HUGGINGFACE_TOKEN}" -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
             cd lf
