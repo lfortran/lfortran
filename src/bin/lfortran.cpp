@@ -136,7 +136,7 @@ void print_time_report(std::vector<std::string>& vector_of_time_report) {
         bool is_pass = false;
         if (component_name.find("[PASS]") == 0) {
             component_name = "\t" + component_name.substr(6); // Remove '[PASS]' and indent
-            setw_val = 6;
+            setw_val = 4;
             is_pass = true;
         }
 
