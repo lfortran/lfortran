@@ -694,7 +694,7 @@ jobs:
             # downloading the repo containing model file using git-lfs
             sudo apt update && sudo apt install -y git-lfs
             git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
+            git clone git@hf.co:datasets/certik/fastGPT
             cp fastGPT/model_fastgpt_124M_v1.dat model.dat
             # we only need the model file
             rm -rf fastGPT
@@ -763,7 +763,7 @@ jobs:
             # downloading the repo containing model file using git-lfs
             brew install git-lfs
             git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
+            git clone git@hf.co:datasets/certik/fastGPT
             cp fastGPT/model_fastgpt_124M_v1.dat model.dat
             # we only need the model file
             rm -rf fastGPT
@@ -1160,7 +1160,7 @@ jobs:
             # downloading the repo containing model file using git-lfs
             sudo apt update && sudo apt install -y git-lfs
             git lfs install
-            git clone https://huggingface.co/datasets/certik/fastGPT
+            git clone git@hf.co:datasets/certik/fastGPT
             cp fastGPT/model_fastgpt_124M_v1.dat model.dat
             # we only need the model file
             rm -rf fastGPT
