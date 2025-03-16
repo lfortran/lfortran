@@ -4498,3 +4498,7 @@ ast = true
 [[test]]
 filename = "interface_generic_procedure_same_name.f90"
 asr = true
+
+[[test]]
+filename = "errors/subroutine6.f90"
+asr = true
