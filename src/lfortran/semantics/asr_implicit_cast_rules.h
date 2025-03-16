@@ -151,7 +151,7 @@ public:
         if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
@@ -200,7 +200,7 @@ public:
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*dest_type2))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(
-                  *ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                  *ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -256,7 +256,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*dest_type2));
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
@@ -295,7 +295,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::RealConstant_t>(*value) ) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
@@ -343,7 +343,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
                   ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
@@ -357,7 +357,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
                   ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
@@ -372,7 +372,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASRUtils::is_integer(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASRUtils::is_integer(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -448,7 +448,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -504,7 +504,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::ComplexConstant_t>(*value) ) {
                     ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(value);
