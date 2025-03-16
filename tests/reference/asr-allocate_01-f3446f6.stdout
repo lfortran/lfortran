@@ -88,6 +88,74 @@
                                     .false.
                                     .false.
                                 ),
+                            d:
+                                (Variable
+                                    2
+                                    d
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        20
+                                        [1, 2, 3, 4, 5]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 5 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        20
+                                        [1, 2, 3, 4, 5]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 5 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            e:
+                                (Variable
+                                    2
+                                    e
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
                             i:
                                 (Variable
                                     2
@@ -1664,6 +1732,39 @@
                                     0.000000
                                     (Complex 4)
                                 )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Allocate
+                        [((Var 2 e)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArraySize
+                                (Var 2 e)
+                                ()
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (ArraySize
+                                (Var 2 d)
+                                ()
+                                (Integer 4)
+                                (IntegerConstant 5 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()
