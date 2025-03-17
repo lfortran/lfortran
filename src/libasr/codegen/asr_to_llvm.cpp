@@ -8697,16 +8697,90 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         }
         tmp = builder->CreateCall(fn, printf_args);
     }
+    
+    std::string serialize_structType_symbols(ASR::StructType_t* x){
+        std::string res {};
+        ASR::Struct_t* StructSymbol = ASR::down_cast<ASR::Struct_t>(
+                                        symbol_get_past_external(x->m_derived_type)); 
+        for(size_t i=0; i < StructSymbol->n_members; i++){
+            ASR::symbol_t* StructMember = StructSymbol->m_symtab->
+                                            get_symbol(StructSymbol->m_members[i]);
+            res += SerializeType(ASRUtils::symbol_type(StructMember), true);
+            if(i < StructSymbol->n_members-1){
+                res += ",";
+            }
+        }
+        return res;
+    }
 
-    // Enumeration for the types to be used by the runtime stringformat intrinsic.
-    // (1)i64, (2)i32, (3)i16, (4)i8, (5)f64, (6)f32, (7)character, (8)logical,
-    // (9)array[i64], (10)array[i32], (11)array[i16], (12)array[i8],
-    // (13)array[f64], (14)array[f32]
-    // (15)array[character], (16)array[logical], (17)array[cptr], (18)array[enumType],
-    // (19)cptr + pointer , (20)enumType
+    /* 
+        [ ] --> Array
+        ( ) --> Struct
+        I   --> Integer
+        R   --> Real
+        STR --> Character
+        L   --> Logical
+        { } --> Struct for COMPLEX
+        The serialization corresponds to how these arguments are represented in LLVM backend; 
+        So, Complex type results in `{R, R}` as it's a struct of floating types in the backend. 
+    */
 
+    // Serialize `type` using symbols above.
+    std::string SerializeType(ASR::ttype_t* type, bool in_struct){ 
+        std::string res {};
+        type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(type));
+        if (ASR::is_a<ASR::Integer_t>(*type)) {
+            res += "I";
+            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
+        } else if (ASR::is_a<ASR::Real_t>(*type)) {
+            res += "R";
+            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
+        } else if (ASR::is_a<ASR::String_t>(*type)) {
+            res += "S";
+        } else if (ASR::is_a<ASR::Complex_t>(*type)){
+            res += "{R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
+                    ",R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
+                    "}";
+        } else if (ASR::is_a<ASR::Array_t>(*type)) {
+            // push array size only if it's not a struct member.
+            if(in_struct && ASRUtils::is_fixed_size_array(type)){ 
+                res += std::to_string(ASRUtils::get_fixed_size_of_array(type));
+            } else if (in_struct && !ASRUtils::is_fixed_size_array(type)){
+                // TODO : Throw a semantic error instead.
+                throw CodeGenError("Can't print type variable with dynamic array member");
+            }
+            res += "[";
+            res += SerializeType(ASR::down_cast<ASR::Array_t>(type)->m_type, in_struct);
+            res += "]";
+        } else if (ASR::is_a<ASR::StructType_t>(*type)) {
+            res += "(";
+            res += serialize_structType_symbols(ASR::down_cast<ASR::StructType_t>(type));
+            res += ")";
+        } else if (ASR::is_a<ASR::Logical_t>(*type)) {
+            res += "L";
+        } else if(ASR::is_a<ASR::CPtr_t>(*type)){
+            res += "CPtr";
+        } else {
+            throw CodeGenError("Printing support is not available for `" +
+                ASRUtils::type_to_str_fortran(type) + "` type.");
+        }
+        return res;
+    }
+    // Serializes the types of a list of expressions.
+    llvm::Value* SerializeExprTypes(ASR::expr_t** args, size_t n_args){
+        std::string serialization_res = "";
+        for (size_t i=0; i<n_args; i++) {
+            serialization_res += SerializeType(ASRUtils::expr_type(args[i]), false);
+            if(i != n_args-1){
+                serialization_res += ",";
+            }
+        }
+        return builder->CreateGlobalStringPtr(serialization_res, "serialization_info");
+    }
+    
     void compute_fmt_specifier_and_arg(std::vector<std::string> &fmt,
-        std::vector<llvm::Value *> &args, ASR::expr_t *v, const Location &loc, bool add_type_as_int = false) {
+        std::vector<llvm::Value *> &args, ASR::expr_t *v, const Location &loc) {
         int64_t ptr_loads_copy = ptr_loads;
         int reduce_loads = 0;
         ptr_loads = 2;
@@ -8725,7 +8799,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         ptr_loads = ptr_loads_copy;
 
         ASR::ttype_t *t = ASRUtils::expr_type(v);
-        llvm::Value* type_as_int = nullptr;
         if ((t->type == ASR::ttypeType::CPtr && !ASRUtils::is_array(t)) ||
             (t->type == ASR::ttypeType::Pointer &&
                 (ASR::is_a<ASR::Var_t>(*v) || ASR::is_a<ASR::GetPointer_t>(*v))
@@ -8733,40 +8806,30 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             ) {
             fmt.push_back("%lld");
             llvm::Value* d = builder->CreatePtrToInt(tmp, llvm_utils->getIntType(8, false));
-            if(add_type_as_int){
-                type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, 19));
-                args.push_back(type_as_int);
-            }
             args.push_back(d);
             return ;
         }
 
         load_non_array_non_character_pointers(v, ASRUtils::expr_type(v), tmp);
-        bool is_array = ASRUtils::is_array(t) && add_type_as_int; // add (type_as_int + array_size)
         t = ASRUtils::extract_type(t);
         int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 
-        int32_t number_of_type = -1;
         if (ASRUtils::is_integer(*t)) {
             switch( a_kind ) {
                 case 1 : {
                     fmt.push_back("%hhi");
-                    number_of_type = is_array? 12 : 4;
                     break;
                 }
                 case 2 : {
                     fmt.push_back("%hi");
-                    number_of_type = is_array? 11 : 3;
                     break;
                 }
                 case 4 : {
                     fmt.push_back("%d");
-                    number_of_type = is_array? 10 : 2;
                     break;
                 }
                 case 8 : {
                     fmt.push_back("%lld");
-                    number_of_type = is_array? 9 : 1;
                     break;
                 }
                 default: {
@@ -8775,19 +8838,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                                         loc);
                 }
             }
-            llvm::Value* d = tmp;
-            if(!is_array && add_type_as_int){ //cast all integers to int64.
-                d =builder->CreateSExt(tmp, llvm_utils->getIntType(8, false));
-            }
-            if (add_type_as_int) {
-                if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type));
-                    args.push_back(type_as_int);
-                    args.push_back(d);
-                }
-            } else {
-                args.push_back(d);
-            }
+            args.push_back(tmp);
         } else if (ASRUtils::is_unsigned_integer(*t)) {
             switch( a_kind ) {
                 case 1 : {
@@ -8814,31 +8865,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             }
             args.push_back(tmp);
         } else if (ASRUtils::is_real(*t)) {
-            llvm::Value *d = tmp;
             switch( a_kind ) {
                 case 4 : {
-                    // Cast float to double as a workaround for the fact that
-                    // vprintf() seems to cast to double even for %f, which
-                    // causes it to print 0.000000.
-                    if(is_array){
-                        number_of_type = 14; //arr[f32]
-                    } else {
-                        number_of_type = 6; //f32
                         fmt.push_back("%13.8e");
-                        d = builder->CreateFPExt(tmp,
-                        llvm::Type::getDoubleTy(context));
-                    }
                     break;
                 }
                 case 8 : {
-                    if(is_array){
-                        number_of_type = 13;  //arr[f64]
-                    } else {
-                        number_of_type = 5; //f64
                         fmt.push_back("%23.17e");
-                        d = builder->CreateFPExt(tmp,
-                        llvm::Type::getDoubleTy(context));
-                    }
                     break;
                 }
                 default: {
@@ -8847,64 +8880,21 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                                         loc);
                 }
             }
-            if(add_type_as_int){
-                if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type));
-                    args.push_back(type_as_int);
-                    args.push_back(d);
-                }
-            } else {
-                args.push_back(d);
-            }
+            args.push_back(tmp);
         } else if (t->type == ASR::ttypeType::String) {
             fmt.push_back("%s");
-            number_of_type = 15;
-            if(add_type_as_int){
-                if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, 7));
-                    args.push_back(type_as_int);
-                    args.push_back(tmp);
-                }
-            } else {
-                args.push_back(tmp);
-            }
+            args.push_back(tmp);
         } else if (ASRUtils::is_logical(*t)) {
-            llvm::Value *str;
-            number_of_type = 16; //arr[logical]
-            if(!is_array){
-                llvm::Value *cmp = builder->CreateICmpEQ(tmp, builder->getInt1(0));
-                llvm::Value *zero_str = builder->CreateGlobalStringPtr("False");
-                llvm::Value *one_str = builder->CreateGlobalStringPtr("True");
-                str = builder->CreateSelect(cmp, zero_str, one_str);
-            }
             fmt.push_back("%s");
-            if(add_type_as_int){
-                if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, 8));
-                    args.push_back(type_as_int);
-                    args.push_back(str);
-                }
-            } else {
-                args.push_back(str);
-            }
+            args.push_back(tmp);
         } else if (ASRUtils::is_complex(*t)) {
-            llvm::Type *type, *complex_type;
             switch( a_kind ) {
                 case 4 : {
-                    // Cast float to double as a workaround for the fact that
-                    // vprintf() seems to cast to double even for %f, which
-                    // causes it to print 0.000000.
                     fmt.push_back("(%f,%f)");
-                    type = llvm::Type::getDoubleTy(context);
-                    complex_type = complex_type_4;
-                    number_of_type = is_array? 14 : 6;
                     break;
                 }
                 case 8 : {
                     fmt.push_back("(%lf,%lf)");
-                    type = llvm::Type::getDoubleTy(context);
-                    complex_type = complex_type_8;
-                    number_of_type =is_array? 13 : 5;
                     break;
                 }
                 default: {
@@ -8913,89 +8903,17 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                                         loc);
                 }
             }
-            llvm::Value *d = tmp;
-            if(add_type_as_int){
-                if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type));
-                    d = builder->CreateFPExt(complex_re(tmp, complex_type), type);
-                    args.push_back(type_as_int);
-                    args.push_back(d);
-                    d = builder->CreateFPExt(complex_im(tmp, complex_type), type);
-                    args.push_back(type_as_int);
-                    args.push_back(d);
-                }
-            } else {
-                d = builder->CreateFPExt(complex_re(tmp, complex_type), type);
-                args.push_back(d);
-                d = builder->CreateFPExt(complex_im(tmp, complex_type), type);
-                args.push_back(d);
-            }
+            args.push_back(tmp);
         } else if (t->type == ASR::ttypeType::CPtr) {
-            number_of_type = 19; //arr[cptr]
             fmt.push_back("%lld");
-            llvm::Value* d = builder->CreatePtrToInt(tmp, llvm_utils->getIntType(8, false));
-            if(add_type_as_int){
-                if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, 17));
-                    args.push_back(type_as_int);
-                    args.push_back(d);
-                }
-            } else {
-                args.push_back(d);
-            }
+            args.push_back(tmp);
         } else if (t->type == ASR::ttypeType::EnumType) {
             // TODO: Use recursion to generalise for any underlying type in enum
-            number_of_type = 20; //arr[EnumType]
             fmt.push_back("%d");
-            if(add_type_as_int){
-                if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, 18));
-                    args.push_back(type_as_int);
-                    args.push_back(tmp);
-                }
-            } else {
-                args.push_back(tmp);
-            }
+            args.push_back(tmp);
         } else {
             throw CodeGenError("Printing support is not available for `" +
                 ASRUtils::type_to_str_fortran(t) + "` type.", loc);
-        }
-
-        if(is_array){
-            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v))));
-
-            //Create ArrayPhysicalCast to get the array pointer.
-            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, v->base.loc,arr->m_type, arr->m_dims,
-                arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
-            ASR::expr_t* array_casted_to_pointer;
-            if(arr->m_physical_type == ASR::array_physical_typeType::PointerToDataArray){
-                array_casted_to_pointer = v; //Don't cast, It's already casted.
-            } else {
-            array_casted_to_pointer = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, v->base.loc, v,arr->m_physical_type,
-                ASR::array_physical_typeType::PointerToDataArray, array_type, nullptr));
-            }
-
-            // Create size argument.
-            int array_size;
-            ASR::expr_t* compile_time_size = nullptr;
-            array_size =ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(v));
-            if(array_size != -1){
-                compile_time_size = ASRUtils::EXPR(
-                        ASR::make_IntegerConstant_t(al,v->base.loc,array_size,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 8))));
-            }
-            ASR::expr_t* array_size_expr = ASRUtils::EXPR(
-                    ASR::make_ArraySize_t(al, v->base.loc, v,
-                    nullptr, ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 8)),
-                    compile_time_size));
-
-            //Push type_as_int, size, arr_ptr
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type)));
-            visit_expr(*array_size_expr);
-            args.push_back(tmp);
-            visit_expr(*array_casted_to_pointer);
-            args.push_back(tmp);
         }
     }
 
@@ -10823,6 +10741,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
             std::vector<llvm::Value *> args;
+            // Push fmt string.
             if(x.m_fmt == nullptr){ // default formatting
                 llvm::Type* int8Type = builder->getInt8Ty();
                 llvm::PointerType* charPtrType = int8Type->getPointerTo();
@@ -10832,15 +10751,67 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 visit_expr(*x.m_fmt);
                 args.push_back(tmp);
             }
+            // Push Serialization;
+            llvm::Value* serialization_info = SerializeExprTypes(x.m_args, x.n_args);
+            args.push_back(serialization_info);
 
+            //Push serialization of sizes and n_size
+            size_t ArraySizesCnt = 0;
             for (size_t i=0; i<x.n_args; i++) {
-                std::vector<std::string> fmt;
-                //  Use the function to compute the args, but ignore the format
-                compute_fmt_specifier_and_arg(fmt, args, x.m_args[i], x.base.base.loc,true);
+                if(ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i]))){
+                    ASR::expr_t* ArraySizeExpr = ASRUtils::EXPR
+                        (ASR::make_ArraySize_t(al, x.m_args[i]->base.loc, x.m_args[i],
+                        nullptr, ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_args[i]->base.loc, 8)),
+                        ASRUtils::get_compile_time_array_size(al,
+                            ASRUtils::expr_type(x.m_args[i])))) ;
+                    visit_expr(*ArraySizeExpr);
+                    args.push_back(tmp);
+                    ArraySizesCnt++;
+                }
             }
-            llvm::Value *args_cnt = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                args.size() - 1);
-            args.insert(args.begin(), args_cnt);
+
+            args.insert(args.end()-ArraySizesCnt,
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                    ArraySizesCnt));
+            // Push the args.        
+            for (size_t i=0; i<x.n_args; i++) {
+                // Push the args as raw pointers 
+                int64_t ptr_load_copy = ptr_loads;
+                ptr_loads = (ASR::is_a<ASR::Var_t>(*x.m_args[i]) && !ASRUtils::is_character(*expr_type(x.m_args[i]))) ? 0 : 1;
+                // Special Hanlding to pass appropriate pointer to the backend.
+                if(ASRUtils::is_array(expr_type(x.m_args[i]))){ // Arrays need a cast to pointerToDataArray physicalType.
+                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(x.m_args[i])));
+                    if(arr->m_physical_type != ASR::array_physical_typeType::PointerToDataArray){
+                        ASR::ttype_t* array_type = ASRUtils::TYPE(
+                                                    ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
+                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
+                        ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(
+                                                                ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
+                                                                x.m_args[i],arr->m_physical_type,
+                                                                ASR::array_physical_typeType::PointerToDataArray,
+                                                                array_type, nullptr));
+                        this->visit_expr(*array_casted_to_pointer);
+                    } else {
+                        this->visit_expr_wrapper(x.m_args[i], true);
+                    }
+                } else {
+                    ptr_loads = ptr_loads + LLVM::is_llvm_pointer(*expr_type(x.m_args[i]));
+                    this->visit_expr_wrapper(x.m_args[i], true);
+                }
+                if(!tmp->getType()->isPointerTy() || 
+                    ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i]) ||
+                    (ASRUtils::is_character(*expr_type(x.m_args[i])) &&
+                        !ASRUtils::is_array(expr_type(x.m_args[i]))) ){
+                    llvm::Value* tmp_ptr = builder->CreateAlloca
+                        (llvm_utils->get_type_from_ttype_t_util(expr_type(x.m_args[i]), llvm_utils->module));
+                    builder->CreateStore(tmp, tmp_ptr);
+                    tmp = tmp_ptr;
+                }
+                args.push_back(tmp);
+                ptr_loads = ptr_load_copy;
+            }
             tmp = string_format_fortran(context, *module, *builder, args);
         } else {
             throw CodeGenError("Only FormatFortran string formatting implemented so far.");
