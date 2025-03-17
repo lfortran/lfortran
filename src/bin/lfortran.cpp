@@ -109,60 +109,79 @@ std::string get_unique_ID() {
     return res;
 }
 
+void print_one_component( std::string component ) {
+    // Split the string into component name and time value
+    std::istringstream ss(component);
+    std::string component_name;
+    std::string time_value;
+
+    // Extract component name and time
+    std::getline(ss, component_name, ':');
+    ss >> time_value;
+
+    // Trim whitespace
+    component_name.erase(component_name.find_last_not_of(" \t\n\r") + 1);
+    component_name.erase(0, component_name.find_first_not_of(" \t\n\r"));
+
+    int setw_val = 10;
+
+    // Identify `[PASS]` entries and indent them
+    bool is_pass = false;
+    if (component_name.find("[PASS]") == 0) {
+        component_name = "\t" + component_name.substr(6); // Remove '[PASS]' and indent
+        setw_val = 4;
+        is_pass = true;
+    }
+
+    // Apply special colors for key entries
+    if (component_name == "Total time") {
+        std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
+        std::cout << GREEN;
+    } else if (component_name == "Allocator usage of last chunk (MB)") {
+        std::cout << YELLOW;
+    } else if (component_name == "Allocator chunks") {
+        std::cout << CYAN;
+    } else if (component_name == "File reading" || component_name == "Src -> ASR") {
+        std::cout << MAGENTA;
+    } else if (component_name == "Time taken by pass" || component_name == "ASR -> ASR passes") {
+        std::cout << RED;
+    } else if (!is_pass) {
+        std::cout << BLUE;  // Default blue for non-[PASS] entries
+    }
+
+    // Print in formatted table
+    if (time_value.empty()) {
+        std::cout << component_name << RESET << '\n';
+    } else {
+        float time_float = std::stof(time_value);
+        std::cout << std::left << std::setw(50) << component_name << RESET
+                  << std::right << std::setw(setw_val)
+                  << std::fixed << std::setprecision(3) << time_float
+                  << '\n';
+    }
+}
+
+
 // Note: this function is case sensitive to the input string
-void print_time_report(std::vector<std::string>& vector_of_time_report) {
+void print_time_report(const std::vector<std::string>& vector_of_time_report) {
+    for (const auto& entry : vector_of_time_report) {
+        // check if `Allocator usage of last chunk (MB)` or `Allocator chunks` is present
+        if (entry.find("Allocator usage of last chunk (MB)") != std::string::npos ||
+            entry.find("Allocator chunks") != std::string::npos) {
+            print_one_component(entry);
+        }
+    }
+
     // Header
+    std::cout << std::string(60, '-') << '\n';
     std::cout << std::left << std::setw(50) << "Component name"
               << std::right << std::setw(10) << "Time (ms)" << '\n';
     std::cout << std::string(60, '-') << '\n';
 
     for (const auto& entry : vector_of_time_report) {
-        // Split the string into component name and time value
-        std::istringstream ss(entry);
-        std::string component_name;
-        std::string time_value;
-
-        // Extract component name and time
-        std::getline(ss, component_name, ':');
-        ss >> time_value;
-
-        // Trim whitespace
-        component_name.erase(component_name.find_last_not_of(" \t\n\r") + 1);
-        component_name.erase(0, component_name.find_first_not_of(" \t\n\r"));
-
-        int setw_val = 10;
-
-        // Identify `[PASS]` entries and indent them
-        bool is_pass = false;
-        if (component_name.find("[PASS]") == 0) {
-            component_name = "\t" + component_name.substr(6); // Remove '[PASS]' and indent
-            setw_val = 4;
-            is_pass = true;
-        }
-
-        // Apply special colors for key entries
-        if (component_name == "Total time") {
-            std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
-            std::cout << GREEN;
-        } else if (component_name == "Allocator usage of last chunk (MB)") {
-            std::cout << YELLOW;
-        } else if (component_name == "Allocator chunks") {
-            std::cout << CYAN;
-        } else if (component_name == "File reading" || component_name == "Src -> ASR") {
-            std::cout << MAGENTA;
-        } else if (component_name == "Time taken by pass" || component_name == "ASR -> ASR passes") {
-            std::cout << RED;
-        } else if (!is_pass) {
-            std::cout << BLUE;  // Default blue for non-[PASS] entries
-        }
-
-        // Print in formatted table
-        if (time_value.empty()) {
-            std::cout << component_name << RESET << '\n';
-        } else {
-            std::cout << std::left << std::setw(50) << component_name << RESET
-                      << std::right << std::setw(setw_val) << time_value
-                      << '\n';
+        if (entry.find("Allocator usage of last chunk (MB)") == std::string::npos &&
+            entry.find("Allocator chunks") == std::string::npos) {
+            print_one_component(entry);
         }
     }
 
