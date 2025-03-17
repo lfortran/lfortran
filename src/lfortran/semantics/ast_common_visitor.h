@@ -6368,11 +6368,9 @@ public:
         Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name,
         bool raise_error=true) {
+        // raise_error is used only when the error is not related to number of arguments
         size_t total_args = x.n_args + x.n_keywords;
         if( !(total_args <= max_args && total_args >= min_args) ) {
-            if( !raise_error ) {
-                return false;
-            }
             if (min_args == max_args) {
                 diag.add(diag::Diagnostic(
                     "Incorrect number of arguments "

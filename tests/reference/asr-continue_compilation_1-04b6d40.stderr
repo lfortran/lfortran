@@ -590,8 +590,32 @@ semantic error: Character variable 'c1' only has %len and %kind members, not 'my
 285 |     print *, c1%mymember
     |              ^^^^^^^^^^^ 
 
-semantic error: `exit` statements cannot be outside of loops or blocks
-   --> tests/errors/continue_compilation_1.f90:287:5
+semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
+   --> tests/errors/continue_compilation_1.f90:287:14
     |
-287 |     exit
+287 |     print *, present(x,x)
+    |              ^^^^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
+   --> tests/errors/continue_compilation_1.f90:288:14
+    |
+288 |     print *, present()
+    |              ^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It accepts exactly 2 arguments.
+   --> tests/errors/continue_compilation_1.f90:289:14
+    |
+289 |     print *, ieor(x)
+    |              ^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It accepts exactly 2 arguments.
+   --> tests/errors/continue_compilation_1.f90:290:14
+    |
+290 |     print *, ieor()
+    |              ^^^^^^ 
+
+semantic error: `exit` statements cannot be outside of loops or blocks
+   --> tests/errors/continue_compilation_1.f90:292:5
+    |
+292 |     exit
     |     ^^^^ 
