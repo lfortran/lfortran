@@ -2144,6 +2144,18 @@ ASR::asr_t* make_ArraySize_t_util(
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
 }
 
+ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*
+        ASRUtils::type_get_past_allocatable_pointer(array_type)));
+    int64_t array_size = ASRUtils::get_fixed_size_of_array(array_type);
+    if(array_size != -1){
+            return ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, array_type->base.loc, array_size,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, array_type->base.loc, 8))));
+    }
+    return nullptr;
+}
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 
