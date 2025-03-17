@@ -4153,6 +4153,15 @@ public:
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                         }
+                    } else if ( is_implicitly_declared ) {
+                        ASR::symbol_t* symbol = current_scope->get_symbol(sym);
+                        ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                        if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
+                            array_type->m_type = type;
+                        } else {
+                            symbol_variable->m_type = type;
+                        }
                     }
                 }
             } // for m_syms
