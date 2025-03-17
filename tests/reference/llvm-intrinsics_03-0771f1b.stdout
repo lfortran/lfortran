@@ -15,6 +15,7 @@ source_filename = "LFortran"
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @14 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @15 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -204,8 +205,9 @@ else13:                                           ; preds = %ifcont10
 
 ifcont14:                                         ; preds = %else13, %then12
   %25 = call i32 @_lcompilers_abs_i32(i32* @intrinsics_03.i)
-  %26 = sext i32 %25 to i64
-  %27 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %26)
+  %26 = alloca i32, align 4
+  store i32 %25, i32* %26, align 4
+  %27 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32* %26)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
   %28 = call i32 @_lcompilers_abs_i32(i32* @intrinsics_03.i)
   %29 = icmp ne i32 %28, 12
@@ -233,7 +235,7 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 
-declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 
