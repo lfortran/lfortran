@@ -3325,7 +3325,7 @@ public:
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr && !is_external) {
-                        if ( compiler_options.implicit_typing && implicit_dictionary[sym]!=nullptr ) {
+                        if ( compiler_options.implicit_typing && implicit_dictionary[std::string(1, sym[0])]!=nullptr ) {
                             // sym is implicitly declared
                             is_implicitly_declared = true;
                         } else if (pre_declared_array_dims.find(sym) != pre_declared_array_dims.end()) {
