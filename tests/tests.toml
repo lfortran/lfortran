@@ -2663,6 +2663,10 @@ asr = true
 run = true
 
 [[test]]
+filename = "print4.f90"
+run = true
+
+[[test]]
 filename = "print_intrinsics.f90"
 asr = true
 run = true
