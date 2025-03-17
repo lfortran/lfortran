@@ -2097,15 +2097,18 @@ public:
         } else {
             Vec<ASR::expr_t*> body;
             body.reserve(al, a->n_value);
-            size_t size_of_array;
+            int size_of_array = 0;
             if (ASR::is_a<ASR::ArraySection_t>(*object)) {
                 size_of_array = ASRUtils::get_fixed_size_of_ArraySection(ASR::down_cast<ASR::ArraySection_t>(object));
                 object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
             } else {
                 size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
             }
+            if (size_of_array == -1) {
+                throw LCompilersException("ICE: Array size could not be computed");
+            }
             curr_value += size_of_array;
-            for (size_t j=0; j < size_of_array; j++) {
+            for (int j=0; j < size_of_array; j++) {
                 this->visit_expr(*a->m_value[j]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
                 if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
