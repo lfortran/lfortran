@@ -284,5 +284,10 @@ program continue_compilation_1
     ! c1 is Character
     print *, c1%mymember
 
+    print *, present(x,x)
+    print *, present()
+    print *, ieor(x)
+    print *, ieor()
+
     exit
 end program
