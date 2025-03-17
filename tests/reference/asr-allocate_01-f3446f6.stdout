@@ -1112,6 +1112,50 @@
                         ()
                     )
                     (Allocate
+                        [((Var 2 e)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(IntegerCompare
+                                (Var 2 e)
+                                NotEq
+                                (ArrayConstant
+                                    20
+                                    [0, 0, 0, 0, 0]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Logical 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Allocate
                         [((Var 2 a)
                         [((IntegerConstant 5 (Integer 4) Decimal)
                         (IntegerBinOp
@@ -1732,39 +1776,6 @@
                                     0.000000
                                     (Complex 4)
                                 )
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (Allocate
-                        [((Var 2 e)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerConstant 5 (Integer 4) Decimal))]
-                        ()
-                        ())]
-                        ()
-                        ()
-                        ()
-                    )
-                    (If
-                        (IntegerCompare
-                            (ArraySize
-                                (Var 2 e)
-                                ()
-                                (Integer 4)
-                                ()
-                            )
-                            NotEq
-                            (ArraySize
-                                (Var 2 d)
-                                ()
-                                (Integer 4)
-                                (IntegerConstant 5 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()

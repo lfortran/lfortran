@@ -8,6 +8,10 @@ complex :: r
 integer :: n, ierr
 integer :: i, j, k
 n = 10
+
+allocate(e, mold=d)
+if ( any(e /= [0, 0, 0, 0, 0]) ) error stop
+
 allocate(a(5:n + 5))
 allocate(b(n:2*n, n:3*n), stat=ierr)
 if( size(a) /= n + 1 ) error stop
@@ -46,8 +50,6 @@ end do
 r = reduce_sum(c)
 if (r /= (114345.0, 0.0)) error stop
 
-allocate(e, mold=d)
-if (size(e) /= size(d)) error stop
 contains
 
 subroutine sum(a, b, c)
