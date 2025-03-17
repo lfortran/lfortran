@@ -2332,7 +2332,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         std::string op_str = ASRUtils::cmpop_to_str(x.m_op);
         if( T::class_type == ASR::exprType::StringCompare && is_c ) {
-            src = "strcmp(" + left + ", " + right + ") " + op_str + " 0";
+            src = "_lfortran_str_compare(" + left + ", " + right + ") " + op_str + " 0";
         } else {
             src += op_str;
             if (right_precedence <= last_expr_precedence) {

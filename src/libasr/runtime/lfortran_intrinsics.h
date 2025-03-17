@@ -176,6 +176,7 @@ LFORTRAN_API float _lfortran_sfix(float x);
 LFORTRAN_API double _lfortran_dfix(double x);
 LFORTRAN_API float _lfortran_cphase(float_complex_t x);
 LFORTRAN_API double _lfortran_zphase(double_complex_t x);
+LFORTRAN_API int _lfortran_str_compare(char* s1, char* s2);
 LFORTRAN_API bool _lpython_str_compare_eq(char** s1, char** s2);
 LFORTRAN_API bool _lpython_str_compare_noteq(char** s1, char** s2);
 LFORTRAN_API bool _lpython_str_compare_gt(char** s1, char** s2);
