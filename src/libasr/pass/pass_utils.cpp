@@ -1422,6 +1422,7 @@ namespace LCompilers {
             ASR::dimension_t* m_dims, *inp_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_var), m_dims);
             int in_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, inp_dims);
+            
             LCOMPILERS_ASSERT(n_dims == in_dims);
             Vec<int> strides;
             strides.resize(al, n_dims);
