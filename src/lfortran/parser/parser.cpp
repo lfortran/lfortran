@@ -276,7 +276,7 @@ bool Parser::parse(const std::string &input)
         }
     } else {
         f_tokenizer.set_string(inp);
-        if (!f_tokenizer.tokenize_input(diag, m_a)) return false;
+        if (!f_tokenizer.tokenize_input(diag, m_a, this->continue_compilation)) return false;
         if (yyparse(*this) == 0) {
             if (diag.has_error())
                 return false;
@@ -304,7 +304,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
     if (fixed_form) {
         FixedFormTokenizer t;
         t.set_string(input);
-        if (t.tokenize_input(diagnostics, al)) {
+        if (t.tokenize_input(diagnostics, al, false)) {
             LCOMPILERS_ASSERT(t.tokens.size() == t.stypes.size())
             if (stypes) {
                 for(const auto & el : t.stypes) {

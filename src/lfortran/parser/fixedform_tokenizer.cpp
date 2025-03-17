@@ -1013,7 +1013,7 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    bool lex_body_statement(unsigned char *&cur) {
+    bool lex_body_statement(unsigned char *&cur, bool continue_compilation = false) {
         int64_t l = eat_label(cur);
         // handle derived type tokenization
         // this needs to be done before 'lex_declaration'
@@ -1203,6 +1203,13 @@ struct FixedFormRecursiveDescent {
         if (l != -1) {
             // Undo the label, as it will be handled later
             undo_label(cur);
+        }
+        if (next_is(cur, "endprogram")) {
+            return false;
+        }
+        if (continue_compilation) {
+            tokenize_line(cur);
+            return true;
         }
 
         return false;
@@ -1565,12 +1572,12 @@ struct FixedFormRecursiveDescent {
                    end
             ```
     */
-    void lex_program(unsigned char *&cur, bool explicit_program) {
+    void lex_program(unsigned char *&cur, bool explicit_program, bool continue_compilation) {
         if (explicit_program) {
             push_token_advance(cur, "program");
             tokenize_line(cur);
         }
-        while(lex_body_statement(cur));
+        while(lex_body_statement(cur, continue_compilation));
         eat_label(cur);
         if (next_is(cur, "contains")) {
             push_token_advance(cur, "contains");
@@ -1770,7 +1777,7 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_global_scope_item(unsigned char *&cur) {
+    void lex_global_scope_item(unsigned char *&cur, bool continue_compilation) {
         // we can define a global assignment
         unsigned char *nline = cur; next_line(nline);
         // eat_label(cur);
@@ -1779,7 +1786,7 @@ struct FixedFormRecursiveDescent {
             tokenize_line(cur);
         }
         if (is_program(cur)) {
-            lex_program(cur, true);
+            lex_program(cur, true, continue_compilation);
         } else if (next_is(cur, "interface")) {
             lex_interface(cur);
         } else if (is_module(cur)) {
@@ -1793,18 +1800,18 @@ struct FixedFormRecursiveDescent {
             push_token_no_advance(cur, "program");
             push_token_no_advance_token(cur, "implicit_program_lfortran", TK_NAME);
             push_token_no_advance(cur, "\n");
-            lex_program(cur, false);
+            lex_program(cur, false, continue_compilation);
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
         }
     }
 
-    void lex_global_scope(unsigned char *&cur) {
+    void lex_global_scope(unsigned char *&cur, bool continue_compilation) {
         auto next = cur;
         while (*cur != '\0') {
             // eat_label(cur);
             next_line(next);
-            lex_global_scope_item(cur);
+            lex_global_scope_item(cur, continue_compilation);
             next = cur;
         }
         push_token_no_advance(cur, "EOF");
@@ -1812,7 +1819,7 @@ struct FixedFormRecursiveDescent {
 
 };
 
-bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocator &al) {
+bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocator &al, bool continue_compilation) {
     // We use a recursive descent parser.  We are starting at the global scope
     try {
         FixedFormRecursiveDescent f(diagnostics, al);
@@ -1822,7 +1829,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
         f.t.string_start = string_start;
         f.t.cur_line = string_start;
         f.t.line_num = 1;
-        f.lex_global_scope(cur);
+        f.lex_global_scope(cur, continue_compilation);
         tokens = std::move(f.tokens);
         stypes = std::move(f.stypes);
         locations = std::move(f.locations);
