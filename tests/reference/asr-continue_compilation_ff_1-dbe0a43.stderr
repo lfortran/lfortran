@@ -70,6 +70,30 @@ syntax error: Token '/' is unexpected here
 46 |       INTEGER*4 VAR/5/
    |                    ^ 
 
+syntax error: Token 'thenprint' (of type 'identifier') is unexpected here
+  --> tests/errors/continue_compilation_ff_1.f:91:20
+   |
+91 |       IF I .EQ. 10 THEN PRINT *, "Ten"
+   |                    ^^^^^^^^^^ 
+
+syntax error: Newline is unexpected here
+  --> tests/errors/continue_compilation_ff_1.f:93:23
+   |
+93 |       CALL FUNC( 5, 6,
+   |                       ^ 
+
+syntax error: Token 'functionf' (of type 'identifier') is unexpected here
+  --> tests/errors/continue_compilation_ff_1.f:97:15
+   |
+97 |       LOGICAL FUNCTION f(x)
+   |               ^^^^^^^^^^ 
+
+syntax error: Newline is unexpected here
+   --> tests/errors/continue_compilation_ff_1.f:100:21
+    |
+100 |       END FUNCTION f
+    |                     ^ 
+
 semantic error: Variable 'bc' is not declared
   --> tests/errors/continue_compilation_ff_1.f:45:25
    |
@@ -81,6 +105,15 @@ warning: This equivalence statement is not implemented yet, for now we will igno
    |
 47 |       EQUIVALENCE (X Y)
    |       ^^^^^^^^^^^^^^^^^ ignored for now
+
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/continue_compilation_ff_1.f:98:40
+   |
+98 |       INTEGER, INTENT(IN), OPTIONAL :: x
+   |                                        ^ redeclaration
+   |
+ 7 |       INTEGER, PARAMETER :: x = 2
+   |                             ~~~~~ original declaration
 
 semantic error: Variable 'integerklm' is not declared
   --> tests/errors/continue_compilation_ff_1.f:36:7
@@ -213,3 +246,9 @@ semantic error: Argument of intrinsic must be an integer
    |
 90 |       PRINT *, FLOAT(y_4)
    |                ^^^^^^^^^^ 
+
+semantic error: Variable 'f' is not declared
+  --> tests/errors/continue_compilation_ff_1.f:99:7
+   |
+99 |       f = PRESENT(x)
+   |       ^ 'f' is undeclared
