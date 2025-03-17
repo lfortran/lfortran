@@ -193,11 +193,12 @@ char* append_to_string(char* str, const char* append) {
     return str;
 }
 
-void handle_integer(char* format, int64_t val, char** result) {
+void handle_integer(char* format, int64_t val, char** result, bool is_signed_plus) {
     int width = 0, min_width = 0;
     char* dot_pos = strchr(format, '.');
     int len;
     int sign_width = (val < 0) ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && val >= 0);
     if (val == 0) {
         len = 1;
     } else if (val == INT64_MIN) {
@@ -215,33 +216,32 @@ void handle_integer(char* format, int64_t val, char** result) {
     } else {
         width = atoi(format + 1);
         if (width == 0) {
-            width = len + sign_width;
+            width = len + sign_width + sign_plus_exist;
         }
     }
-    if (width >= len + sign_width || width == 0) {
+    if (width >= len + sign_width + sign_plus_exist || width == 0) {
         if (min_width > len) {
-            for (int i = 0; i < (width - min_width - sign_width); i++) {
+            for (int i = 0; i < (width - min_width - sign_width - sign_plus_exist); i++) {
                 *result = append_to_string(*result, " ");
             }
+            
             if (val < 0) {
                 *result = append_to_string(*result, "-");
+            } else if(sign_plus_exist){
+                *result = append_to_string(*result, "+");
             }
+
             for (int i = 0; i < (min_width - len); i++) {
                 *result = append_to_string(*result, "0");
             }
-        } else if (width == 0) {
-            if (val < 0) {
-                *result = append_to_string(*result, "-");
-            }
-            for (int i = 0; i < (min_width - len - sign_width); i++) {
-                *result = append_to_string(*result, "0");
-            }
         } else {
-            for (int i = 0; i < (width - len - sign_width); i++) {
+            for (int i = 0; i < (width - len - sign_width - sign_plus_exist); i++) {
                 *result = append_to_string(*result, " ");
             }
             if (val < 0) {
                 *result = append_to_string(*result, "-");
+            } else if (sign_plus_exist){
+                *result = append_to_string(*result, "+");
             }
         }
         char str[20];
@@ -270,7 +270,7 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
-void handle_float(char* format, double val, char** result) {
+void handle_float(char* format, double val, char** result, bool use_sing_plus) {
     if (strcmp(format,"f-64") == 0){ //use c formatting.
         char* float_str = (char*)malloc(50 * sizeof(char));
         sprintf(float_str,"%23.17e",val);
@@ -288,7 +288,8 @@ void handle_float(char* format, double val, char** result) {
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
 
-    int sign_width = (val < 0) ? 1 : 0;
+    int sign_width = (val < 0) ? 1 : 0; // Negative sign
+    bool sign_plus_exist = (use_sing_plus && val>=0); // Positive sign
     int integer_length = (integer_part == 0) ? 1 : (int)log10(integer_part) + 1;
 
     // parsing the format
@@ -317,15 +318,24 @@ void handle_float(char* format, double val, char** result) {
     memmove(dec_str, dec_str + 2, strlen(dec_str));
 
     // Determine total length needed
-    int total_length = sign_width + integer_length + 1 + decimal_digits;
+    int total_length =  sign_width      + 
+                        integer_length  +
+                        1 /*dot `.`*/   +
+                        decimal_digits  +
+                        sign_plus_exist ;
+    
     if (width == 0) {
         width = total_length;
     }
 
     char formatted_value[128] = "";
+
     int spaces = width - total_length;
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
+    }
+    if(sign_plus_exist){
+        strcat(formatted_value, "+");
     }
     if (val < 0) {
         strcat(formatted_value, "-");
@@ -355,13 +365,13 @@ NOTE: The function allocates memory for the formatted result, which is returned 
 the `result` parameter. It is the responsibility of the caller to free this memory
 using `free(*result)` after it is no longer needed.
 */
-void handle_en(char* format, double val, int scale, char** result, char* c) {
+void handle_en(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
     int width, decimal_digits;
     char *num_pos = format, *dot_pos = strchr(format, '.');
     decimal_digits = atoi(++dot_pos);
     while (!isdigit(*num_pos)) num_pos++;
     width = atoi(num_pos);
-
+    bool sign_plus_exist = (is_signed_plus && val >= 0); // `SP` specifier
     // Calculate exponent
     int exponent = 0;
     if (val != 0.0) {
@@ -396,17 +406,19 @@ void handle_en(char* format, double val, int scale, char** result, char* c) {
 
     // Handle width and padding
     char* final_result = malloc(width + 1);
-    int padding = width - strlen(formatted_value);
+    int padding = width - strlen(formatted_value) - sign_plus_exist;
     if (padding > 0) {
         memset(final_result, ' ', padding);
-        strcpy(final_result + padding, formatted_value);
+        if(sign_plus_exist){final_result[padding] = '+';}
+        strcpy(final_result + padding + sign_plus_exist, formatted_value);
     } else {
-        strncpy(final_result, formatted_value, width);
+        if(sign_plus_exist){final_result[0] = '+';}
+        strncpy(final_result + is_signed_plus /*Move on char*/, formatted_value, width);
         final_result[width] = '\0';
     }
 
     // Assign the result to the output parameter
-    *result = final_result;
+    *result = append_to_string(*result, final_result);
 }
 
 void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
@@ -431,7 +443,7 @@ void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, i
 }
 
 
-void handle_decimal(char* format, double val, int scale, char** result, char* c) {
+void handle_decimal(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
 
@@ -440,6 +452,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
 
     int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
@@ -519,7 +532,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     char formatted_value[64] = "";
-    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length);
+    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length + sign_plus_exist);
     // spaces = 2
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
@@ -532,6 +545,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     if (sign_width == 1) {
         // adds `-` (negative) sign
         strcat(formatted_value, "-");
+    } else if(sign_plus_exist){ // `SP specifier`
+        strcat(formatted_value, "+");
     }
 
     if (scale <= 0) {
@@ -601,7 +616,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         // result = "  1.12E+10"
     }
 }
-
+void handle_SP_specifier(char** result, bool is_positive_value){
+    char positive_sign_string[] = "+";
+    if(is_positive_value) append_to_string(*result, positive_sign_string);
+}
 /*
 Ignore blank space characters within format specification, except
 within character string edit descriptor
@@ -742,6 +760,19 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                 }
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
+                break;
+            case 's': 
+                start = index++;
+                if( format[index] == ','          || // 'S'  (default sign)
+                    tolower(format[index]) == 'p' || // 'SP' (sign plus)
+                    tolower(format[index]) == 's'    // 'SS' (sign suppress)
+                    ){
+                    if(format[index] == ',') --index; // Don't consume
+                    format_values_2[format_values_count++] = substring(format, start, index+1);
+                } else {
+                    fprintf(stderr, "Error: Invalid format specifier. After 's' specifier\n");
+                    exit(1);
+                }
                 break;
             case '(' :
                 start = index++;
@@ -1259,7 +1290,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
         modified_input_string[len-2] = '\0';
     }
     format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
-
+    /*
+    is_SP_specifier = false  --> 'S' OR 'SS'
+    is_SP_specifier = true  --> 'SP'
+    */
+    bool is_SP_specifier = false;
     int item_start = 0;
     bool array = false;
     bool BreakWhileLoop= false;
@@ -1314,6 +1349,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                 free(value);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
+            } else if (tolower(value[0]) == 's') {
+                is_SP_specifier = ( strlen(value) == 2 /*case 'S' speicifer*/ &&
+                                    tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
                     // handle "TL" format specifier
@@ -1436,21 +1474,21 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     }
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
-                    handle_integer(value, integer_val, &result);
+                    handle_integer(value, integer_val, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     double val = *(double*)s_info.current_arg_info.current_arg;
-                    handle_decimal(value, double_val, scale, &result, "D");
+                    handle_decimal(value, double_val, scale, &result, "D", is_SP_specifier);
                 } else if (tolower(value[0]) == 'e') {
                     // Check if the next character is 'N' for EN format
                     char format_type = tolower(value[1]);
                     if (format_type == 'n') {
-                        handle_en(value, double_val, scale, &result, "E");
+                        handle_en(value, double_val, scale, &result, "E", is_SP_specifier);
                     } else {
-                        handle_decimal(value, double_val, scale, &result, "E");
+                        handle_decimal(value, double_val, scale, &result, "E", is_SP_specifier);
                     }
                 } else if (tolower(value[0]) == 'f') {
-                    handle_float(value, double_val, &result);
+                    handle_float(value, double_val, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'l') {
                     bool val = *(bool*)s_info.current_arg_info.current_arg;
                     handle_logical(value, val, &result);
