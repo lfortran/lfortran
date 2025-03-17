@@ -109,8 +109,7 @@ std::string get_unique_ID() {
     return res;
 }
 
-void print_one_component( std::string component ) {
-    // Split the string into component name and time value
+void print_one_component(std::string component) {
     std::istringstream ss(component);
     std::string component_name;
     std::string time_value;
@@ -123,17 +122,15 @@ void print_one_component( std::string component ) {
     component_name.erase(component_name.find_last_not_of(" \t\n\r") + 1);
     component_name.erase(0, component_name.find_first_not_of(" \t\n\r"));
 
-    int setw_val = 10;
-
-    // Identify `[PASS]` entries and indent them
     bool is_pass = false;
+
+    // Detect `[PASS]` and remove it
     if (component_name.find("[PASS]") == 0) {
-        component_name = "\t" + component_name.substr(6); // Remove '[PASS]' and indent
-        setw_val = 4;
+        component_name = component_name.substr(6); // Remove '[PASS]'
         is_pass = true;
     }
 
-    // Apply special colors for key entries
+    // Apply colors for key entries
     if (component_name == "Total time") {
         std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
         std::cout << GREEN;
@@ -150,12 +147,19 @@ void print_one_component( std::string component ) {
     }
 
     // Print in formatted table
+    int indent_width = is_pass ? 4 : 0;  // Indent `[PASS]` components
+    int name_width = 50 - indent_width;  // Adjust name column width
+
     if (time_value.empty()) {
-        std::cout << component_name << RESET << '\n';
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << component_name << RESET << '\n';
     } else {
         float time_float = std::stof(time_value);
-        std::cout << std::left << std::setw(50) << component_name << RESET
-                  << std::right << std::setw(setw_val)
+        int time_width = 10; 
+
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << std::setw(name_width) << component_name << RESET
+                  << std::right << std::setw(time_width)
                   << std::fixed << std::setprecision(3) << time_float
                   << '\n';
     }
