@@ -188,9 +188,6 @@ void print_time_report(const std::vector<std::string>& vector_of_time_report) {
     std::cout << std::string(60, '-') << '\n';
 }
 
-
-
-
 std::string read_file(const std::string &filename)
 {
     std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary
@@ -2671,9 +2668,6 @@ int main_app(int argc, char *argv[]) {
             std::string message = "Total time: " + std::to_string(total_time_in_milliseconds) + "." + std::to_string(total_time_in_microseconds) + " ms";
             compiler_options.po.vector_of_time_report.push_back(message);
 
-            // for (auto &time_report : compiler_options.po.vector_of_time_report) {
-            //     std::cout << time_report << std::endl;
-            // }
             print_time_report(compiler_options.po.vector_of_time_report);
         }
 
