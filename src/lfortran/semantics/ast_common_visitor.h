@@ -3325,7 +3325,7 @@ public:
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr && !is_external) {
-                        if ( compiler_options.implicit_typing && implicit_dictionary[sym]!=nullptr ) {
+                        if ( compiler_options.implicit_typing && implicit_dictionary[std::string(1, sym[0])]!=nullptr ) {
                             // sym is implicitly declared
                             is_implicitly_declared = true;
                         } else if (pre_declared_array_dims.find(sym) != pre_declared_array_dims.end()) {
@@ -4152,6 +4152,15 @@ public:
                         }
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                        }
+                    } else if ( is_implicitly_declared ) {
+                        ASR::symbol_t* symbol = current_scope->get_symbol(sym);
+                        ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                        if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
+                            array_type->m_type = type;
+                        } else {
+                            symbol_variable->m_type = type;
                         }
                     }
                 }
