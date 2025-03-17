@@ -364,3 +364,9 @@ end function not_my_function
 subroutine my_subroutine2()
     print *, "Inside subroutine"
 end subroutine different_name 
+
+subroutine myname
+end subroutine myname
+
+block data myname
+end block data myname

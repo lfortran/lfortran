@@ -195,6 +195,23 @@ semantic error: Keyword argument not found
 331 |     type(Circle) :: myCircle3 = Circle(mykeyword=10)
     |                                 ^^^^^^^^^^^^^^^^^^^^ 'mykeyword' keyword argument not found
 
+semantic error: Global name is already being used
+   --> tests/errors/continue_compilation_2.f90:368:1 - 369:21
+    |
+368 |    subroutine myname
+    |    ^^^^^^^^^^^^^^^^^...
+...
+    |
+369 |    end subroutine myname
+    | ...^^^^^^^^^^^^^^^^^^^^^ 'myname' defined here
+    |
+371 |    block data myname
+    |    ^^^^^^^^^^^^^^^^^...
+...
+    |
+372 |    end block data myname
+    | ...^^^^^^^^^^^^^^^^^^^^^^ 'myname' defined here again
+
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:23:14
    |

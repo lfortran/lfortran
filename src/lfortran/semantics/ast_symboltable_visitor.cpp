@@ -137,7 +137,11 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
             if (t != AST::astType::expr && t != AST::astType::stmt) {
-                visit_ast(*x.m_items[i]);
+                try {
+                    visit_ast(*x.m_items[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
             }
         }
         global_scope = nullptr;
