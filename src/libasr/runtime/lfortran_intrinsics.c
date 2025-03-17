@@ -1127,7 +1127,8 @@ void print_into_string(Serialization_Info* s_info,  char* result){
             if(s_info->current_arg_info.is_complex){
                 double real = *(double*)arg;
                 move_to_next_element(s_info, false);
-                sprintf(result, "(%23.17e, %23.17e)", real, *(double*)arg);
+                double imag = *(double*)s_info->current_arg_info.current_arg;
+                sprintf(result, "(%23.17e, %23.17e)", real, imag);
             } else {
                 sprintf(result, "%23.17e", *(double*)arg);
             }
@@ -1136,7 +1137,8 @@ void print_into_string(Serialization_Info* s_info,  char* result){
             if(s_info->current_arg_info.is_complex){
                 float real = *(float*)arg;
                 move_to_next_element(s_info, false);
-                sprintf(result, "(%13.8e, %13.8e)", real, *(float*)arg);
+                double imag = *(float*)s_info->current_arg_info.current_arg;
+                sprintf(result, "(%13.8e, %13.8e)", real, imag);
             } else {
                 sprintf(result, "%13.8e", *(float*)arg);
             }

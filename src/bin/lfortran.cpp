@@ -2202,9 +2202,6 @@ int main_app(int argc, char *argv[]) {
 
     std::string rtlib_header_dir = LCompilers::LFortran::get_runtime_library_header_dir();
     Backend backend;
-    LCompilers::PassManager::backend BackendPassManagerEnum=
-                        LCompilers::PassManager::backend::llvm; // Both backend variables are the same, different enum.
-
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
     LCompilers::PassManager lfortran_pass_manager;
@@ -2388,7 +2385,6 @@ int main_app(int argc, char *argv[]) {
 
     lfortran_pass_manager.parse_pass_arg(opts.arg_pass, opts.skip_pass);
     if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
-        dump_all_passes(opts.arg_file, compiler_options);
         dump_all_passes(opts.arg_file, compiler_options, lfortran_pass_manager);
     }
 

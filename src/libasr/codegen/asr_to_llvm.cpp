@@ -10762,7 +10762,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     ASR::expr_t* ArraySizeExpr = ASRUtils::EXPR
                         (ASR::make_ArraySize_t(al, x.m_args[i]->base.loc, x.m_args[i],
                         nullptr, ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_args[i]->base.loc, 8)),
-                        ASRUtils::GetCompileTimeArraySize(al,
+                        ASRUtils::get_compile_time_array_size(al,
                             ASRUtils::expr_type(x.m_args[i])))) ;
                     visit_expr(*ArraySizeExpr);
                     args.push_back(tmp);

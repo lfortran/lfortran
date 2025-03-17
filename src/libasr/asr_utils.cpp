@@ -2144,7 +2144,7 @@ ASR::asr_t* make_ArraySize_t_util(
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
 }
 
-ASR::expr_t* GetCompileTimeArraySize(Allocator& al, ASR::ttype_t* array_type){
+ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){
     LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*
         ASRUtils::type_get_past_allocatable_pointer(array_type)));
     int64_t array_size = ASRUtils::get_fixed_size_of_array(array_type);
