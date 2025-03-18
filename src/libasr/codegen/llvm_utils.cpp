@@ -1856,6 +1856,36 @@ namespace LCompilers {
         return builder->CreateCall(fn, args);
     }
 
+    void LLVMUtils::string_init(llvm::Value* arg_size, llvm::Value* arg_string) {
+        std::string func_name = "_lfortran_string_init";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt8Ty(context)->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, module);
+        }
+        std::vector<llvm::Value*> args = {convert_kind(arg_size,
+                                                llvm::Type::getInt64Ty(context)),
+                                        arg_string};
+        builder->CreateCall(fn, args);
+    }
+
+    void LLVMUtils::initialize_string_heap(llvm::Value* str, llvm::Value* len){
+        llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, len);
+        string_init(len, s_malloc);
+        builder->CreateStore(s_malloc, str);
+    }
+
+    void LLVMUtils::initialize_string_heap(llvm::Value* str, int64_t len){
+        llvm::Value* len_llvm = llvm::ConstantInt::get(context,
+            llvm::APInt(32,len+1));
+        initialize_string_heap(str, len_llvm);
+    }
+
     llvm::Value* LLVMUtils::is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                               llvm::Module& module, ASR::ttype_t* asr_type) {
         switch( asr_type->type ) {
