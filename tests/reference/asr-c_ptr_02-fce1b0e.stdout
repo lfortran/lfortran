@@ -9,6 +9,16 @@
                     (SymbolTable
                         2
                         {
+                            1_test_obj_ptr:
+                                (ExternalSymbol
+                                    2
+                                    1_test_obj_ptr
+                                    11 ptr
+                                    test_obj
+                                    []
+                                    ptr
+                                    Public
+                                ),
                             c_arr:
                                 (Variable
                                     2
@@ -282,6 +292,26 @@
                                     c_size_t
                                     Public
                                 ),
+                            instance:
+                                (Variable
+                                    2
+                                    instance
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        2 test_obj
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
                             r_ptr:
                                 (Variable
                                     2
@@ -306,11 +336,78 @@
                                     .false.
                                     .false.
                                     .false.
+                                ),
+                            temp_ptr:
+                                (Variable
+                                    2
+                                    temp_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (CPtr)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            test_obj:
+                                (Struct
+                                    (SymbolTable
+                                        11
+                                        {
+                                            ptr:
+                                                (Variable
+                                                    11
+                                                    ptr
+                                                    []
+                                                    Local
+                                                    (PointerNullConstant
+                                                        (CPtr)
+                                                    )
+                                                    (PointerNullConstant
+                                                        (CPtr)
+                                                    )
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    test_obj
+                                    []
+                                    [ptr]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
                                 )
                         })
                     test_c_ptr_02
                     [iso_c_binding]
                     [(Assignment
+                        (Var 2 temp_ptr)
+                        (StructInstanceMember
+                            (Var 2 instance)
+                            2 1_test_obj_ptr
+                            (CPtr)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
                         (Var 2 c_arr)
                         (ArrayBroadcast
                             (ComplexConstructor
@@ -392,6 +489,27 @@
                             (String -1 0 () PointerString)
                             ()
                         )
+                    )
+                    (If
+                        (LogicalBinOp
+                            (PointerAssociated
+                                (Var 2 temp_ptr)
+                                ()
+                                (Logical 4)
+                                ()
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 )
         })
