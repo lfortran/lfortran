@@ -6936,9 +6936,15 @@ public:
                 source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                 reinterpret_cast<uint8_t*>(&val) + sizeof(val));
             } else if (ASR::is_a<ASR::RealConstant_t>(*source_value)) {
-                double val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
-                source_bits.assign(reinterpret_cast<uint8_t*>(&val),
-                                reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(mold)) == 4) {
+                    float val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
+                    source_bits.assign(reinterpret_cast<uint8_t*>(&val),
+                                    reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                } else {
+                    double val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
+                    source_bits.assign(reinterpret_cast<uint8_t*>(&val),
+                                    reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                }
             } else {
                 return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
             }
@@ -6968,10 +6974,17 @@ public:
                 transfer_value = ASRUtils::EXPR(
                     ASR::make_IntegerConstant_t(al, x.base.base.loc, new_value, ASRUtils::expr_type(mold)));
             } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(mold))) {
-                double new_value = 0.0;
-                std::memcpy(&new_value, result_bits.data(), std::min(sizeof(new_value), result_bits.size()));
-                transfer_value = ASRUtils::EXPR(
-                    ASR::make_RealConstant_t(al, x.base.base.loc, new_value, ASRUtils::expr_type(mold)));
+                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(mold)) == 8) {
+                    double new_value = 0.0;
+                    std::memcpy(&new_value, result_bits.data(), std::min(sizeof(new_value), result_bits.size()));
+                    transfer_value = ASRUtils::EXPR(
+                        ASR::make_RealConstant_t(al, x.base.base.loc, new_value, ASRUtils::expr_type(mold)));
+                } else {
+                    float new_value = 0.0;
+                    std::memcpy(&new_value, result_bits.data(), std::min(sizeof(new_value), result_bits.size()));
+                    transfer_value = ASRUtils::EXPR(
+                        ASR::make_RealConstant_t(al, x.base.base.loc, new_value, ASRUtils::expr_type(mold)));
+                }
             } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(mold))) {
                 std::string new_value = ""; 
                 for (size_t i = 0; i < result_bits.size(); i++) {
