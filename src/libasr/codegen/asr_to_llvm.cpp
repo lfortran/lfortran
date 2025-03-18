@@ -112,25 +112,6 @@ private:
         std::cout << os.str() << endline;
     }
 
-    void string_init(llvm::LLVMContext &context, llvm::Module &module,
-        llvm::IRBuilder<> &builder, llvm::Value* arg_size, llvm::Value* arg_string) {
-    std::string func_name = "_lfortran_string_init";
-    llvm::Function *fn = module.getFunction(func_name);
-    if (!fn) {
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt8Ty(context)->getPointerTo()
-                }, false);
-        fn = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, func_name, module);
-    }
-    std::vector<llvm::Value*> args = {llvm_utils->convert_kind(arg_size,
-                                            llvm::Type::getInt64Ty(context)),
-                                    arg_string};
-    builder.CreateCall(fn, args);
-}
-
 public:
     diag::Diagnostics &diag;
     llvm::LLVMContext &context;
@@ -1033,7 +1014,7 @@ public:
                     args = {char_ptr_ptr, alloc_size, size_ptr, capacity_ptr};
                     builder->CreateCall(fn, args);
                     ptr_to_init = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), char_ptr_ptr);
-                    string_init(context, *module, *builder, alloc_size, ptr_to_init);
+                    llvm_utils->string_init(alloc_size, ptr_to_init);
                 } else if(ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::ClassType_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type)) {
@@ -3433,10 +3414,7 @@ public:
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
         }
         for(auto &value: strings_to_be_allocated) {
-            llvm::Value *init_value = LLVM::lfortran_malloc(context, *module,
-                *builder, value.second);
-            string_init(context, *module, *builder, value.second, init_value);
-            builder->CreateStore(init_value, value.first);
+            llvm_utils->initialize_string_heap(value.first, value.second);
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
         for (size_t i=0; i<x.n_body; i++) {
@@ -3615,6 +3593,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 }
             } else if( ASR::is_a<ASR::StructType_t>(*symbol_type) ) {
                 allocate_array_members_of_struct(ptr_member, symbol_type);
+            } else if( ASR::is_a<ASR::String_t>(*symbol_type) &&
+                ASR::down_cast<ASR::String_t>(symbol_type)->m_physical_type ==
+                    ASR::string_physical_typeType::PointerString) { // FixedSize Strings
+                llvm_utils->initialize_string_heap(ptr_member, 
+                    ASR::down_cast<ASR::String_t>(symbol_type)->m_len);
             }
             if( ASR::is_a<ASR::Variable_t>(*sym) ) {
                 v = ASR::down_cast<ASR::Variable_t>(sym);
@@ -3630,6 +3613,14 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             get_array_type(ASRUtils::type_get_past_allocatable_pointer(v->m_type), 
                                 llvm_utils->get_el_type(ASRUtils::extract_type(v->m_type), module.get()), false);
                         builder->CreateStore(tmp, llvm_utils->create_gep2(array_desc_type, pointer_array, 0));
+                    } else if(ASR::is_a<ASR::String_t>(*expr_type(v->m_symbolic_value))) {
+                        lfortran_str_copy(ptr_member, tmp, ASRUtils::is_descriptorString(v->m_type));
+                    } else if ((ASRUtils::is_array(v->m_type) ||
+                        (ASRUtils::is_pointer(v->m_type) && 
+                            !ASR::is_a<ASR::PointerNullConstant_t>(
+                                *v->m_symbolic_value))        ||
+                        ASRUtils::is_allocatable(v->m_type))) { // Any non primitve 
+                        throw LCompilersException("Not implemented");
                     } else {
                         LLVM::CreateStore(*builder, tmp, ptr_member);
                     }
@@ -3806,11 +3797,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             builder->CreateStore(llvm_utils->CreateLoad(init_value), target_var);
         } else if (is_a<ASR::String_t>(*v->m_type)) {
             ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
-            llvm::Value *arg_size = llvm::ConstantInt::get(context,
-                        llvm::APInt(32, t->m_len+1));
-            llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
-            string_init(context, *module, *builder, arg_size, s_malloc);
-            builder->CreateStore(s_malloc, target_var);
+            llvm_utils->initialize_string_heap(target_var,t->m_len);
             // target decides if the str_copy is performed on string descriptor or pointer.
             tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_descriptorString(v->m_type));
             if (v->m_intent == intent_local) {
@@ -4080,9 +4067,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             arg_size = llvm::ConstantInt::get(context,
                                 llvm::APInt(32, strlen+1));
                         }
-                        llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
-                        string_init(context, *module, *builder, arg_size, init_value);
-                        builder->CreateStore(init_value, target_var);
+                        llvm_utils->initialize_string_heap(target_var, arg_size);
                         if (v->m_intent == intent_local) {
                             strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
                         }
@@ -5464,10 +5449,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 if (lhs_is_string_arrayref && value->getType()->isPointerTy()) {
                     value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
                 }
-                if ( (ASR::is_a<ASR::FunctionCall_t>(*x.m_value) ||
-                     ASR::is_a<ASR::StringConcat_t>(*x.m_value) ||
-                     (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)
-                         && ASRUtils::is_character(*target_type))) &&
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) /*Workaround : All LHS strings should use str_copy(#6572)*/){
+                    tmp = lfortran_str_copy(target, value,
+                        ASRUtils::is_descriptorString(target_type));
+                    return;
+                
+                } else if ( (ASR::is_a<ASR::FunctionCall_t>(*x.m_value) ||
+                    ASR::is_a<ASR::StringConcat_t>(*x.m_value)) &&
                     !ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
                     if( ASRUtils::is_allocatable(x.m_target) ) {
                         tmp = lfortran_str_copy(target, value, true);
@@ -5483,11 +5471,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     if (ASR::is_a<ASR::ExternalSymbol_t>(*ASR::down_cast<ASR::Var_t>(x.m_target)->m_v) && 
                         asr_target->m_symbolic_value != nullptr && !already_allocated) {
                         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_target->m_type); 
-                        llvm::Value *arg_size = llvm::ConstantInt::get(
-                            context, llvm::APInt(32, str_type->m_len+1));
-                        llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
-                        string_init(context, *module, *builder, arg_size, init_value);
-                        builder->CreateStore(init_value, target);
+                        llvm_utils->initialize_string_heap(target, str_type->m_len);
                         strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(asr_target->m_type, target));
                         global_string_allocated.insert(h);
                     }
@@ -8285,11 +8269,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         asr_target->m_symbolic_value != nullptr && 
                         !already_allocated) {
                         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_target->m_type); 
-                        llvm::Value *arg_size = llvm::ConstantInt::get(
-                            context, llvm::APInt(32, str_type->m_len+1));
-                        llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
-                        string_init(context, *module, *builder, arg_size, init_value);
-                        builder->CreateStore(init_value, target);
+                        llvm_utils->initialize_string_heap(target, str_type->m_len);
                         strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(asr_target->m_type, target));
                         global_string_allocated.insert(h);
                     }

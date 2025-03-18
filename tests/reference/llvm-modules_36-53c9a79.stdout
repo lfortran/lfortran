@@ -196,16 +196,22 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %settings = alloca %fpm_run_settings, align 8
   %2 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 2
-  %3 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 4
-  %4 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 1
-  %5 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 3
-  %6 = alloca %fpm_run_settings_polymorphic, align 8
-  %7 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %6, i32 0, i32 0
-  store i64 0, i64* %7, align 4
-  %8 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %6, i32 0, i32 1
-  store %fpm_run_settings* %settings, %fpm_run_settings** %8, align 8
+  %3 = call i8* @_lfortran_malloc(i32 5)
+  call void @_lfortran_string_init(i64 5, i8* %3)
+  store i8* %3, i8** %2, align 8
+  %4 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 4
+  %5 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 1
+  %6 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 3
+  %7 = call i8* @_lfortran_malloc(i32 7)
+  call void @_lfortran_string_init(i64 7, i8* %7)
+  store i8* %7, i8** %6, align 8
+  %8 = alloca %fpm_run_settings_polymorphic, align 8
+  %9 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %8, i32 0, i32 0
+  store i64 0, i64* %9, align 4
+  %10 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %8, i32 0, i32 1
+  store %fpm_run_settings* %settings, %fpm_run_settings** %10, align 8
   store i1 true, i1* %call_arg_value, align 1
-  call void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %6, i1* %call_arg_value)
+  call void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %8, i1* %call_arg_value)
   call void @_lpython_free_argv()
   br label %return
 
@@ -214,5 +220,9 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_malloc(i32)
+
+declare void @_lfortran_string_init(i64, i8*)
 
 declare void @_lpython_free_argv()
