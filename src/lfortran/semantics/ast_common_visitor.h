@@ -1480,13 +1480,18 @@ public:
 
     ASR::symbol_t* declare_implicit_variable2(const Location &loc,
             const std::string &var_name, ASR::intentType intent,
-            ASR::ttype_t *type) {
+            ASR::ttype_t *type, ASR::expr_t* value = nullptr) {
+        if ( value != nullptr ) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *value_type = ASRUtils::expr_type(value);
+            value = b.t2t(value, value_type, type);
+        }
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
-            variable_dependencies_vec.size(), intent, nullptr, nullptr,
+            variable_dependencies_vec.size(), intent, value, value != nullptr ? ASRUtils::expr_value(value) : value,
             ASR::storage_typeType::Default, type, nullptr,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
@@ -3055,8 +3060,13 @@ public:
                                 ASR::symbol_t* sym_ = current_scope->resolve_symbol(sym);
                                 if (!sym_ && compiler_options.implicit_typing && sa->m_attr != AST::simple_attributeType
                                                         ::AttrExternal) {
+                                    ASR::expr_t* value = nullptr;
+                                    if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
+                                        this->visit_expr(*s.m_initializer);
+                                        value = ASRUtils::EXPR(tmp);
+                                    }
                                     if ( implicit_dictionary[std::string(1, sym[0])] != nullptr ) {
-                                        sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, implicit_dictionary[std::string(1, sym[0])]);
+                                        sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, implicit_dictionary[std::string(1, sym[0])], value);
                                     }
                                 }
                             }
