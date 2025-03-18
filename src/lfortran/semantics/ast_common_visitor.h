@@ -3617,6 +3617,7 @@ public:
                         }
                     } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
                         std::string sym_name = AST::down_cast<AST::Name_t>(s.m_initializer)->m_id;
+                        sym_name = to_lower(sym_name);
                         if (sym_name == "c_null_ptr") {
                             ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
                             if (sym_found == nullptr) {
