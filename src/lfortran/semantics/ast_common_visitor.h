@@ -3055,12 +3055,9 @@ public:
                                 ASR::symbol_t* sym_ = current_scope->resolve_symbol(sym);
                                 if (!sym_ && compiler_options.implicit_typing && sa->m_attr != AST::simple_attributeType
                                                         ::AttrExternal) {
-                                    ASR::expr_t* value = nullptr;
-                                    if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
-                                        this->visit_expr(*s.m_initializer);
-                                        value = ASRUtils::EXPR(tmp);
+                                    if ( implicit_dictionary[std::string(1, sym[0])] != nullptr ) {
+                                        sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, implicit_dictionary[std::string(1, sym[0])]);
                                     }
-                                    sym_ = declare_implicit_variable(x.m_syms[i].loc, sym, ASR::intentType::Local, value);
                                 }
                             }
                         }
