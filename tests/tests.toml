@@ -4510,3 +4510,7 @@ asr = true
 [[test]]
 filename = "errors/subroutine6.f90"
 asr = true
+
+[[test]]
+filename = "declaration1.f90"
+asr = true
