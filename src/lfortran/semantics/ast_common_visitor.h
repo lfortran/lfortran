@@ -3436,9 +3436,6 @@ public:
                                 // Do nothing for now
                             } else if (sa->m_attr == AST::AttrContiguous){
                                 contig_attr = true;
-                            }else if (sa->m_attr == AST::simple_attributeType
-                                    ::AttrAllocatable) {
-                                // TODO
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrValue) {
                                 value_attr = true;
