@@ -3024,23 +3024,6 @@ public:
                 }));
             throw SemanticAbort();
         }
-        else if (compiler_options.po.realloc_lhs &&
-                 ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(target)) &&
-                 ASR::is_a<ASR::StructConstructor_t>(*value)) {
-            // Implicitly allocate the Struct by pushing an Allocate_t to the body
-            Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
-            ASR::alloc_arg_t alloc_arg;
-            alloc_arg.loc = x.base.base.loc;
-            alloc_arg.m_a = target;
-            alloc_arg.m_dims = nullptr;
-            alloc_arg.n_dims = 0;
-            alloc_arg.m_type = nullptr;
-            alloc_arg.m_len_expr = nullptr;
-            alloc_args.push_back(al, alloc_arg);
-            current_body->push_back( al,
-                ASRUtils::STMT(
-                    ASR::make_Allocate_t(al, x.base.base.loc, alloc_args.p, 1, nullptr, nullptr, nullptr)));
-        }
 
         check_ArrayAssignmentCompatibility(target, value, x);
 
