@@ -1479,8 +1479,31 @@ public:
         }
 
         tmp = ASR::make_Allocate_t(al, x.base.base.loc,
-                                    alloc_args_vec.p, alloc_args_vec.size(),
-                                    stat, errmsg, source);
+                        alloc_args_vec.p, alloc_args_vec.size(),
+                        stat, errmsg, source);
+
+        if (source) {
+            current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
+                                        alloc_args_vec.p, alloc_args_vec.size(),
+                                        stat, errmsg, source)));
+            // Pushing assignment statements to source
+            for (size_t i = 0; i < alloc_args_vec.n ; i++) {
+                ASR::ttype_t* source_type = ASRUtils::expr_type(source);
+                ASR::ttype_t* var_type = ASRUtils::expr_type(alloc_args_vec.p[i].m_a);
+                if (!ASRUtils::check_equal_type(source_type, var_type)) {
+                    // TODO: throw a nice error Here
+                }
+                // TODO: throw error if shape of source and variable are different 
+                if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
+                    ASRUtils::make_ArrayBroadcast_t_util(
+                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source); 
+                }
+                ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                    al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr));
+                current_body->push_back(al, assign);
+            }
+            tmp = nullptr;   // Doing it nullptr as we have already pushed allocate
+        }
     }
 
     inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
