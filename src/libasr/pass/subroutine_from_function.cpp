@@ -51,33 +51,33 @@ public :
         }
     }
 
-    void replace_FunctionCall(ASR::FunctionCall_t* x){
-        traverse_functionCall_args(x->m_args, x->n_args);
-        if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the array_struct_temporary. No need to check for them here.
-            // Create variable in current_scope to be holding the return + Deallocate.
-            ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
-                "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
-            if(ASRUtils::is_allocatable(result_var)){
-                Vec<ASR::expr_t*> to_be_deallocated;
-                to_be_deallocated.reserve(al, 1);
-                to_be_deallocated.push_back(al, result_var);
-                pass_result.push_back(al, ASRUtils::STMT(
-                ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
-                    to_be_deallocated.p, to_be_deallocated.size())));
-            }
-            // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
-            Vec<ASR::call_arg_t> new_call_args;
-            new_call_args.reserve(al,1);
-            new_call_args.from_pointer_n_copy(al, x->m_args, x->n_args);
-            new_call_args.push_back(al, {result_var->base.loc, result_var});
-            ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
-                                                x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
-                                                nullptr, false, false));
-            // replace functionCall with `result_var` + push subroutineCall into the body.
-            *current_expr = result_var;
-            pass_result.push_back(al, subrout_call);
-        }
-    }
+    // void replace_FunctionCall(ASR::FunctionCall_t* x){
+    //     traverse_functionCall_args(x->m_args, x->n_args);
+        // if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the array_struct_temporary. No need to check for them here.
+        //     // Create variable in current_scope to be holding the return + Deallocate.
+        //     ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
+        //         "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
+        //     if(ASRUtils::is_allocatable(result_var)){
+        //         Vec<ASR::expr_t*> to_be_deallocated;
+        //         to_be_deallocated.reserve(al, 1);
+        //         to_be_deallocated.push_back(al, result_var);
+        //         pass_result.push_back(al, ASRUtils::STMT(
+        //         ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
+        //             to_be_deallocated.p, to_be_deallocated.size())));
+        //     }
+        //     // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
+        //     Vec<ASR::call_arg_t> new_call_args;
+        //     new_call_args.reserve(al,1);
+        //     new_call_args.from_pointer_n_copy(al, x->m_args, x->n_args);
+        //     new_call_args.push_back(al, {result_var->base.loc, result_var});
+        //     ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
+        //                                         x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
+        //                                         nullptr, false, false));
+        //     // replace functionCall with `result_var` + push subroutineCall into the body.
+        //     *current_expr = result_var;
+        //     pass_result.push_back(al, subrout_call);
+        // }
+    // }
 };
 class ReplaceFunctionCallWithSubroutineCallVisitor:
     public ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallWithSubroutineCallVisitor> {
@@ -139,18 +139,20 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             bool is_function_call = ASR::is_a<ASR::FunctionCall_t>(*m_value);
             bool is_aggregate_type = (ASRUtils::is_aggregate_type(
                 ASRUtils::expr_type(m_value)) ||
-                PassUtils::is_aggregate_or_array_type(m_value));
+                PassUtils::is_aggregate_or_array_or_nonPrimitive_type(m_value));
             return is_function_call && is_aggregate_type;
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
             ASR::CallReplacerOnExpressionsVisitor \
             <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
-            if( !is_function_call_returning_aggregate_type(x.m_value)) {
+            ASR::expr_t* rhs = ASR::is_a<ASR::StringPhysicalCast_t>(*x.m_value)?
+                                ASR::down_cast<ASR::StringPhysicalCast_t>(x.m_value)->m_arg : x.m_value;
+            if( !is_function_call_returning_aggregate_type(rhs)) {
                 return ;
             }
 
-            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(x.m_value);
+            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(rhs);
             if( PassUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
                 return ;
             }

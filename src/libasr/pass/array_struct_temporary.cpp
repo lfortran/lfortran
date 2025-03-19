@@ -119,6 +119,27 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
     return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
 }
 
+ASR::expr_t* create_allocatable_temporary_variable_for_character(Allocator& al,
+    ASR::expr_t* value, SymbolTable* scope, std::string name_hint) {
+    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+    ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_pointer(value_type));
+    LCOMPILERS_ASSERT(ASRUtils::is_character(*ASRUtils::expr_type(value)));
+    if(!ASRUtils::is_descriptorString(ASRUtils::expr_type(value))){// Force creating allocatable string.
+        ASR::String_t* StrType =ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(var_type));
+        StrType->m_len = -2;
+        StrType->m_physical_type = ASR::string_physical_typeType::DescriptorString;
+        var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, value->base.loc, var_type));
+    }
+    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+        nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
+        ASR::accessType::Public, ASR::presenceType::Required, false));
+    scope->add_symbol(var_name, temporary_variable);
+
+    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
+}
+
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
     bool is_pointer_required=false) {
@@ -786,6 +807,35 @@ void insert_allocate_stmt_for_struct(Allocator& al, ASR::expr_t* temporary_var,
         nullptr, nullptr, nullptr)));
 }
 
+void insert_allocate_stmt_for_character(Allocator& al, ASR::expr_t* temporary_var,
+    ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body) {
+    LCOMPILERS_ASSERT(
+            ASRUtils::is_character(*ASRUtils::expr_type(value)) &&
+            !ASRUtils::is_descriptorString(ASRUtils::expr_type(value)) &&
+            ASRUtils::is_descriptorString(ASRUtils::expr_type(temporary_var)))
+    ASR::String_t* StrType = ASR::down_cast<ASR::String_t>(
+                                ASRUtils::extract_type(ASRUtils::expr_type(value)));
+    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+    ASR::alloc_arg_t alloc_arg;
+    alloc_arg.loc = value->base.loc;
+    alloc_arg.m_a = temporary_var;
+    alloc_arg.m_dims = nullptr;
+    alloc_arg.n_dims = 0;
+    alloc_arg.m_len_expr = StrType->m_len_expr? StrType->m_len_expr : 
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                                value->base.loc, StrType->m_len,
+                                ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 4))));
+    alloc_arg.m_type = nullptr;
+    alloc_args.push_back(al, alloc_arg);
+
+    Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
+    dealloc_args.push_back(al, temporary_var);
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+        temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
+        temporary_var->base.loc, alloc_args.p, alloc_args.size(),
+        nullptr, nullptr, nullptr)));
+}
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     Vec<ASR::stmt_t*>*& current_body, bool inside_where,
     std::function<void(const ASR::stmt_t&)> visit_stmt) {
@@ -812,11 +862,41 @@ ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target) {
     const Location& loc = scalar_expr->base.loc;
-    ASR::expr_t* scalar_var_temporary = create_temporary_variable_for_scalar(
-        al, scalar_expr, current_scope, name_hint);
-    current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-        al, loc, scalar_var_temporary, scalar_expr, nullptr, exprs_with_target)));
-    return scalar_var_temporary;
+    if(ASRUtils::is_character(*ASRUtils::expr_type(scalar_expr))){
+        ASR::expr_t* temporary_alloctable_string = create_allocatable_temporary_variable_for_character(
+            al, scalar_expr, current_scope, name_hint);
+        if(!ASRUtils::is_descriptorString(ASRUtils::expr_type(scalar_expr)) /*if PointerString*/){
+            LCOMPILERS_ASSERT(ASRUtils::is_allocatable(temporary_alloctable_string));
+            insert_allocate_stmt_for_character(al, temporary_alloctable_string,
+                                                scalar_expr, current_body);
+            ASR::expr_t* temporary_alloctable_string_casted_to_pointer;
+            ASR::expr_t* scalar_expr_casted = ASRUtils::EXPR(ASR::make_StringPhysicalCast_t(al, 
+                                            scalar_expr->base.loc, scalar_expr,
+                                            ASR::string_physical_typeType::PointerString,
+                                            ASR::string_physical_typeType::DescriptorString, 
+                                            ASRUtils::TYPE(ASR::make_String_t(al, scalar_expr->base.loc, 
+                                            1,-2, nullptr, ASR::string_physical_typeType::DescriptorString))
+                                            , nullptr));
+        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+            al, loc, temporary_alloctable_string, scalar_expr_casted, nullptr, exprs_with_target)));
+            temporary_alloctable_string_casted_to_pointer = ASRUtils::EXPR(ASR::make_StringPhysicalCast_t(al, 
+                                            scalar_expr->base.loc, temporary_alloctable_string,
+                                            ASR::string_physical_typeType::DescriptorString,
+                                            ASR::string_physical_typeType::PointerString, 
+                                            ASRUtils::expr_type(scalar_expr), nullptr));
+            return temporary_alloctable_string_casted_to_pointer;
+        } else {
+            current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                al, loc, temporary_alloctable_string, scalar_expr, nullptr, exprs_with_target)));
+            return temporary_alloctable_string;
+        }
+    } else {
+        ASR::expr_t* scalar_var_temporary = create_temporary_variable_for_scalar(
+            al, scalar_expr, current_scope, name_hint);
+        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+            al, loc, scalar_var_temporary, scalar_expr, nullptr, exprs_with_target)));
+        return scalar_var_temporary;
+    }
 }
 
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
@@ -1635,6 +1715,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             force_replace_current_expr_for_array(current_expr, name_hint, al, current_body, current_scope, exprs_with_target, is_assignment_target_array_section_item);
         } else if( ASRUtils::is_struct(*x->m_type) ) {
             force_replace_current_expr_for_struct(current_expr, name_hint, al, current_body, current_scope, exprs_with_target);
+        } else if (ASRUtils::is_character(*x->m_type)){
+            force_replace_current_expr_for_scalar(current_expr, name_hint, al, current_body, current_scope, exprs_with_target);
         }
     }
 
@@ -1643,7 +1725,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        if( PassUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
+        if( PassUtils::is_elemental(x->m_name) && 
+            !ASR::is_a<ASR::StructType_t>(*x->m_type) &&
+            !ASRUtils::is_character(*x->m_type)) { // Most likely (Array + elemental)
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";
             return ;
