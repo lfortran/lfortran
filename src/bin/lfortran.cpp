@@ -109,8 +109,7 @@ std::string get_unique_ID() {
     return res;
 }
 
-void print_one_component( std::string component ) {
-    // Split the string into component name and time value
+void print_one_component(std::string component) {
     std::istringstream ss(component);
     std::string component_name;
     std::string time_value;
@@ -123,17 +122,15 @@ void print_one_component( std::string component ) {
     component_name.erase(component_name.find_last_not_of(" \t\n\r") + 1);
     component_name.erase(0, component_name.find_first_not_of(" \t\n\r"));
 
-    int setw_val = 10;
-
-    // Identify `[PASS]` entries and indent them
     bool is_pass = false;
+
+    // Detect `[PASS]` and remove it
     if (component_name.find("[PASS]") == 0) {
-        component_name = "\t" + component_name.substr(6); // Remove '[PASS]' and indent
-        setw_val = 4;
+        component_name = component_name.substr(6); // Remove '[PASS]'
         is_pass = true;
     }
 
-    // Apply special colors for key entries
+    // Apply colors for key entries
     if (component_name == "Total time") {
         std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
         std::cout << GREEN;
@@ -150,12 +147,19 @@ void print_one_component( std::string component ) {
     }
 
     // Print in formatted table
+    int indent_width = is_pass ? 4 : 0;  // Indent `[PASS]` components
+    int name_width = 50 - indent_width;  // Adjust name column width
+
     if (time_value.empty()) {
-        std::cout << component_name << RESET << '\n';
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << component_name << RESET << '\n';
     } else {
         float time_float = std::stof(time_value);
-        std::cout << std::left << std::setw(50) << component_name << RESET
-                  << std::right << std::setw(setw_val)
+        int time_width = 10; 
+
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << std::setw(name_width) << component_name << RESET
+                  << std::right << std::setw(time_width)
                   << std::fixed << std::setprecision(3) << time_float
                   << '\n';
     }
@@ -1092,7 +1096,7 @@ int compile_src_to_object_file(const std::string &infile,
     auto t1 = std::chrono::high_resolution_clock::now();
     std::string input = read_file(infile);
     auto t2 = std::chrono::high_resolution_clock::now();
-    time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -1112,7 +1116,7 @@ int compile_src_to_object_file(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     t2 = std::chrono::high_resolution_clock::now();
-    time_src_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
@@ -1127,7 +1131,7 @@ int compile_src_to_object_file(const std::string &infile,
         t1 = std::chrono::high_resolution_clock::now();
         int err = save_mod_files(*asr, compiler_options, lm);
         t2 = std::chrono::high_resolution_clock::now();
-        time_save_mod = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_save_mod = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         if (err) return err;
     }
 
@@ -1171,7 +1175,7 @@ int compile_src_to_object_file(const std::string &infile,
         t1 = std::chrono::high_resolution_clock::now();
         e.opt(*m->m_m);
         t2 = std::chrono::high_resolution_clock::now();
-        time_opt = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     // LLVM -> Machine code (saves to an object file)
@@ -1181,7 +1185,7 @@ int compile_src_to_object_file(const std::string &infile,
         t1 = std::chrono::high_resolution_clock::now();
         e.save_object_file(*(m->m_m), outfile);
         t2 = std::chrono::high_resolution_clock::now();
-        time_llvm_to_bin = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_llvm_to_bin = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     if(compiler_options.po.enable_gpu_offloading) {
@@ -1217,20 +1221,20 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.vector_of_time_report.push_back(message);
         message = "Allocator chunks: " + std::to_string(fe.get_al().num_chunks());
         compiler_options.po.vector_of_time_report.push_back(message);
-        message = "File reading: " + std::to_string(time_file_read) + " ms";
+        message = "File reading: " + std::to_string(time_file_read / 1000) + "." + std::to_string(time_file_read % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-        message = "Src -> ASR:  " + std::to_string(time_src_to_asr) + " ms";
+        message = "Src -> ASR:  " + std::to_string(time_src_to_asr / 1000) + "." + std::to_string(time_src_to_asr % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
         message = "Time taken by pass: ";
         compiler_options.po.vector_of_time_report.push_back(message);
         for (auto it: fe.compiler_options.po.vector_of_time_report) {
             compiler_options.po.vector_of_time_report.push_back(it);
         }
-        message = "ASR -> mod:  " + std::to_string(time_save_mod) + " ms";
+        message = "ASR -> mod:  " + std::to_string(time_save_mod / 1000) + "." + std::to_string(time_save_mod % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-        message = "LLVM opt:    " + std::to_string(time_opt) + " ms";
+        message = "LLVM opt:    " + std::to_string(time_opt / 1000) + "." + std::to_string(time_opt % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-        message = "LLVM -> BIN: " + std::to_string(time_llvm_to_bin) + " ms";
+        message = "LLVM -> BIN: " + std::to_string(time_llvm_to_bin / 1000) + "." + std::to_string(time_llvm_to_bin % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
     }
 
@@ -1404,7 +1408,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         auto t1 = std::chrono::high_resolution_clock::now();
         input = read_file(infile);
         auto t2 = std::chrono::high_resolution_clock::now();
-        time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     // Src -> AST
@@ -2116,9 +2120,9 @@ int link_executable(const std::vector<std::string> &infiles,
     }
 
     auto t2 = std::chrono::high_resolution_clock::now();
-    int time_total = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    int time_total = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     if (time_report) {
-        std::string message = "Linking time:  " + std::to_string(time_total) + " ms";
+        std::string message = "Linking time:  " + std::to_string(time_total / 1000) + "." + std::to_string(time_total % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
     }
     return 0;
@@ -2665,9 +2669,8 @@ int main_app(int argc, char *argv[]) {
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
         auto end_time = std::chrono::high_resolution_clock::now();
         if (compiler_options.time_report) {
-            int total_time_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-            int total_time_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() % 1000;
-            std::string message = "Total time: " + std::to_string(total_time_in_milliseconds) + "." + std::to_string(total_time_in_microseconds) + " ms";
+            int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
             compiler_options.po.vector_of_time_report.push_back(message);
 
             print_time_report(compiler_options.po.vector_of_time_report);

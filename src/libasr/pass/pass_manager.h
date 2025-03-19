@@ -197,9 +197,8 @@ namespace LCompilers {
                 };
 #endif
                 if (pass_options.time_report) {
-                    int time_take_by_current_pass_in_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-                    int time_take_by_current_pass_in_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() % 1000;
-                    std::string message = "[PASS]" + passes[i] + ": " + std::to_string(time_take_by_current_pass_in_milliseconds) + "." + std::to_string(time_take_by_current_pass_in_microseconds) + " ms";
+                    int time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                    std::string message = "[PASS]" + passes[i] + ": " + std::to_string(time_taken_by_current_pass / 1000) + "." + std::to_string(time_taken_by_current_pass % 1000) + " ms";
                     pass_options.vector_of_time_report.push_back(message);
                 }
                 if (pass_options.verbose) {
