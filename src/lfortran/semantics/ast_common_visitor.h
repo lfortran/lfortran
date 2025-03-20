@@ -8319,7 +8319,9 @@ public:
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
             bool is_function = true;
-            v = intrinsic_as_node(x, is_function);
+            if ( !is_external_procedure ) {
+                v = intrinsic_as_node(x, is_function);
+            }
             if( !is_function ) {
                 return;
             }
@@ -8359,7 +8361,9 @@ public:
             if (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name)) {
                 if (compiler_options.implicit_interface) {
                     bool is_function = true;
-                    v = intrinsic_as_node(x, is_function);
+                    if ( !is_external_procedure ) {
+                        v = intrinsic_as_node(x, is_function);
+                    }
                     if( !is_function ) {
                         return;
                     }
