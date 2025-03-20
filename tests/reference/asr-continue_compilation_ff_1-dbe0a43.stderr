@@ -70,6 +70,18 @@ syntax error: Token '/' is unexpected here
 46 |       INTEGER*4 VAR/5/
    |                    ^ 
 
+syntax error: Token 'thenprint' (of type 'identifier') is unexpected here
+  --> tests/errors/continue_compilation_ff_1.f:91:20
+   |
+91 |       IF I .EQ. 10 THEN PRINT *, "Ten"
+   |                    ^^^^^^^^^^ 
+
+syntax error: Newline is unexpected here
+  --> tests/errors/continue_compilation_ff_1.f:92:23
+   |
+92 |       CALL FUNC( 5, 6,
+   |                       ^ 
+
 semantic error: Variable 'bc' is not declared
   --> tests/errors/continue_compilation_ff_1.f:45:25
    |

@@ -88,6 +88,8 @@
       PRINT *, DREAL(a_4)
       a_5 = CMPLX(1)
       PRINT *, FLOAT(y_4)
+      IF I .EQ. 10 THEN PRINT *, "Ten"
+      CALL FUNC( 5, 6,
 
       CONTAINS
 
