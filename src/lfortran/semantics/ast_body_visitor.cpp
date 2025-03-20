@@ -37,6 +37,7 @@ public:
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
+    std::set<ASR::symbol_t*> allocated_symbols;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
         CompilerOptions &compiler_options,
@@ -1479,8 +1480,11 @@ public:
         }
 
         tmp = ASR::make_Allocate_t(al, x.base.base.loc,
-                        alloc_args_vec.p, alloc_args_vec.size(),
-                        stat, errmsg, source);
+                                    alloc_args_vec.p, alloc_args_vec.size(),
+                                    stat, errmsg, source);
+        for (ASR::alloc_arg_t alloc_arg : alloc_args_vec) {
+            allocated_symbols.insert(get_allocate_expr_sym(alloc_arg.m_a));
+        }
 
         if (source) {
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
@@ -1504,6 +1508,27 @@ public:
             }
             tmp = nullptr;   // Doing it nullptr as we have already pushed allocate
         }
+    }
+
+    ASR::symbol_t* get_allocate_expr_sym(ASR::expr_t* v) {
+        if (ASR::is_a<ASR::Var_t>(*v)) {
+            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(v);
+            return var->m_v;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+            ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(v);
+            return get_allocate_expr_sym(sim->m_v);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
+            ASR::ArrayItem_t *arri = ASR::down_cast<ASR::ArrayItem_t>(v);
+            return get_allocate_expr_sym(arri->m_v);
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*v)) {
+            ASR::ArraySection_t *arrs = ASR::down_cast<ASR::ArraySection_t>(v);
+            return get_allocate_expr_sym(arrs->m_v);
+        }
+        LCOMPILERS_ASSERT(false);
+        return nullptr;
     }
 
     inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
@@ -3023,10 +3048,10 @@ public:
                     Label("",{x.base.base.loc})
                 }));
             throw SemanticAbort();
-        }
-        else if (compiler_options.po.realloc_lhs &&
+        } else if (compiler_options.po.realloc_lhs &&
                  ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(target)) &&
-                 ASR::is_a<ASR::StructConstructor_t>(*value)) {
+                 ASR::is_a<ASR::StructConstructor_t>(*value) &&
+                 (allocated_symbols.find(get_allocate_expr_sym(target)) == allocated_symbols.end())) {
             // Implicitly allocate the Struct by pushing an Allocate_t to the body
             Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
             ASR::alloc_arg_t alloc_arg;
