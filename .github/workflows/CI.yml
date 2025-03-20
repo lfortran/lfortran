@@ -690,7 +690,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-            curl -f -L --retry-all-errors --retry 10 --retry-delay 20 -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            curl -f -L -o model.dat \
+                  https://github.com/gxyd/gpt/releases/download/v2.0/model_fastgpt_124M_v1.dat
             echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
@@ -752,7 +753,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -f -L --retry-all-errors --retry 10 --retry-delay 20 -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            curl -f -L -o model.dat \
+                  https://github.com/gxyd/gpt/releases/download/v2.0/model_fastgpt_124M_v1.dat
             echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
@@ -1142,7 +1144,8 @@ jobs:
             git clean -dfx
             git checkout -t origin/lf36run
             git checkout c915a244354df2e23b0dc613e302893b496549e2
-            curl -f -L --retry-all-errors --retry 10 --retry-delay 20 -o model.dat https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            curl -f -L -o model.dat \
+                  https://github.com/gxyd/gpt/releases/download/v2.0/model_fastgpt_124M_v1.dat
             echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
             mkdir lf
