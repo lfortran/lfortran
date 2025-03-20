@@ -5089,22 +5089,25 @@ class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectId
 
         Allocator& al;
         SetChar& identifiers;
+        std::string current_name;
 
     public:
 
-        CollectIdentifiersFromASRExpression(Allocator& al_, SetChar& identifiers_) :
-        al(al_), identifiers(identifiers_)
+        CollectIdentifiersFromASRExpression(Allocator& al_, SetChar& identifiers_, std::string current_name_ = "") :
+        al(al_), identifiers(identifiers_), current_name(current_name_)
         {}
 
         void visit_Var(const ASR::Var_t& x) {
-            identifiers.push_back(al, ASRUtils::symbol_name(x.m_v));
+            if (ASRUtils::symbol_name(x.m_v) != this->current_name) {
+                identifiers.push_back(al, ASRUtils::symbol_name(x.m_v));
+            }
         }
 };
 
 static inline void collect_variable_dependencies(Allocator& al, SetChar& deps_vec,
     ASR::ttype_t* type=nullptr, ASR::expr_t* init_expr=nullptr,
-    ASR::expr_t* value=nullptr) {
-    ASRUtils::CollectIdentifiersFromASRExpression collector(al, deps_vec);
+    ASR::expr_t* value=nullptr, std::string current_name="") {
+    ASRUtils::CollectIdentifiersFromASRExpression collector(al, deps_vec, current_name);
     if( init_expr ) {
         collector.visit_expr(*init_expr);
     }

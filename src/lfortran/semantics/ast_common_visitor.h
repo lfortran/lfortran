@@ -3593,6 +3593,51 @@ public:
                     int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
                     lhs_type->m_len = lhs_len;
                 }
+                ASR::Variable_t* variable_added_to_symtab = nullptr;
+                if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
+                    if ( !is_implicitly_declared && !is_external) {
+                        SetChar variable_dependencies_vec;
+                        variable_dependencies_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
+                        if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
+                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
+                            ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                            symbol_variable->base.base.loc = s.loc;
+                            if ( symbol_variable->m_type ) {
+                                if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
+                                    array_type->m_type = type;
+                                } else {
+                                    symbol_variable->m_type = type;
+                                }
+                            } else {
+                                symbol_variable->m_type = type;
+                            }
+                            current_scope->add_symbol(sym, symbol);
+                            variable_added_to_symtab = symbol_variable;
+                        } else {
+                            ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, s.loc, current_scope,
+                                s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
+                                variable_dependencies_vec.size(), s_intent, init_expr, value,
+                                storage_type, type, type_declaration, s_abi, s_access, s_presence,
+                                value_attr, target_attr, contig_attr);
+                            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                            variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
+                        }
+                        if( is_derived_type ) {
+                            data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                        }
+                    } else if ( is_implicitly_declared ) {
+                        ASR::symbol_t* symbol = current_scope->get_symbol(sym);
+                        ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                        if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
+                            array_type->m_type = type;
+                        } else {
+                            symbol_variable->m_type = type;
+                        }
+                    }
+                }
 
                 if (s.m_initializer != nullptr &&
                     sym_type->m_type == AST::decl_typeType::TypeType) {
@@ -4130,15 +4175,14 @@ public:
                         );
                     }
                 }
-                if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
+                if ( variable_added_to_symtab != nullptr ) {
+                    variable_added_to_symtab->m_value = value;
+                    variable_added_to_symtab->m_symbolic_value = init_expr;
+                    variable_added_to_symtab->m_storage = storage_type;
                     if ( !is_implicitly_declared && !is_external) {
-                        SetChar variable_dependencies_vec;
-                        variable_dependencies_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
                         if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
                             ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
-                            symbol_variable->base.base.loc = s.loc;
                             if ( symbol_variable->m_type ) {
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
@@ -4149,28 +4193,18 @@ public:
                             } else {
                                 symbol_variable->m_type = type;
                             }
-                            current_scope->add_symbol(sym, symbol);
+                            variable_added_to_symtab->m_type = symbol_variable->m_type;
                         } else {
-                            ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, s.loc, current_scope,
-                                s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
-                                variable_dependencies_vec.size(), s_intent, init_expr, value,
-                                storage_type, type, type_declaration, s_abi, s_access, s_presence,
-                                value_attr, target_attr, contig_attr);
-                            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                            variable_added_to_symtab->m_type = type;
                         }
-                        if( is_derived_type ) {
-                            data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
-                        }
-                    } else if ( is_implicitly_declared ) {
-                        ASR::symbol_t* symbol = current_scope->get_symbol(sym);
-                        ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
-                        if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
-                            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
-                            array_type->m_type = type;
-                        } else {
-                            symbol_variable->m_type = type;
-                        }
+                    } else {
+                        variable_added_to_symtab->m_type = type;
                     }
+                    SetChar variable_dependencies_vec;
+                    variable_dependencies_vec.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value, sym);
+                    variable_added_to_symtab->m_dependencies = variable_dependencies_vec.p;
+                    variable_added_to_symtab->n_dependencies = variable_dependencies_vec.n;
                 }
             } // for m_syms
         }
