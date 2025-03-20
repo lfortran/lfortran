@@ -6366,6 +6366,14 @@ public:
                 }
             }
         }
+        if ((intrinsic_name == "minloc" || intrinsic_name == "maxloc") && x.n_args == 2) {
+            this->visit_expr(*x.m_args[1].m_end);
+            ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+            if (ASRUtils::is_logical(*ASRUtils::expr_type(arg))) {
+                args.p[2] = arg;
+                args.p[1] = nullptr;
+            }
+        }
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             if( std::find(kwarg_names.begin(), kwarg_names.end(),
