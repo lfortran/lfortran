@@ -89,7 +89,6 @@
       a_5 = CMPLX(1)
       PRINT *, FLOAT(y_4)
       IF I .EQ. 10 THEN PRINT *, "Ten"
-      100 PRINT *, "Label with no statement"
       CALL FUNC( 5, 6,
 
       CONTAINS

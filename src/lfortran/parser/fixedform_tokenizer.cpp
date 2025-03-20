@@ -1204,7 +1204,7 @@ struct FixedFormRecursiveDescent {
             // Undo the label, as it will be handled later
             undo_label(cur);
         }
-        if (next_is(cur, "endprogram")) {
+        if (next_is(cur, "endprogram") || next_is(cur, "end") || next_is(cur, "contains")) {
             return false;
         }
         if (continue_compilation) {
