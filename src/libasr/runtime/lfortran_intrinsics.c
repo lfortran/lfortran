@@ -688,6 +688,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case ',' :
                 break;
             case '/' :
+            case ':' :
                 format_values_2[format_values_count++] = substring(format, index, index+1);
                 break;
             case '*' :
@@ -1331,7 +1332,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                 continue;
             }
 
-            if (value[0] == '/') {
+            if (value[0] == ':') {
+                if (!move_to_next_element(&s_info, true)) break;
+                continue;
+            } else if (value[0] == '/') {
                 result = append_to_string(result, "\n");
             } else if (value[0] == '*') {
                 array = true;
