@@ -159,6 +159,7 @@ public:
     int64_t ptr_loads;
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
+    int64_t global_array_count;
 
     CompilerOptions &compiler_options;
 
@@ -214,6 +215,7 @@ public:
     ptr_loads(2),
     lookup_enum_value_for_nonints(false),
     is_assignment_target(false),
+    global_array_count(0),
     compiler_options(compiler_options_),
     current_select_type_block_type(nullptr),
     current_scope(nullptr),
@@ -7211,22 +7213,69 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         } else {
             throw CodeGenError("ConstArray type not supported yet");
         }
-        // Create <n x float> type, where `n` is the length of the `x` constant array
-        llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(el_type, ASRUtils::get_fixed_size_of_array(x.m_type));
-        // Create a pointer <n x float>* to a stack allocated <n x float>
-        llvm::AllocaInst *p_fxn = llvm_utils->CreateAlloca(*builder, type_fxn);
-        // Assign the array elements to `p_fxn`.
-        for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-            llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
-            ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 2;
-            this->visit_expr_wrapper(el, true);
-            ptr_loads = ptr_loads_copy;
-            builder->CreateStore(tmp, llvm_el);
+
+        if (ASRUtils::is_character(*x_m_type)) {  // TODO: Remove this implementation of string array instead make it global like done for others
+            llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(el_type, ASRUtils::get_fixed_size_of_array(x.m_type));
+            // Create a pointer <n x float>* to a stack allocated <n x float>
+            llvm::AllocaInst *p_fxn = llvm_utils->CreateAlloca(*builder, type_fxn);
+            // Assign the array elements to `p_fxn`.
+            for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
+                llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
+                this->visit_expr_wrapper(el, true);
+                ptr_loads = ptr_loads_copy;
+                builder->CreateStore(tmp, llvm_el);
+            }
+            // Return the vector as float* type:
+            tmp = llvm_utils->create_gep(p_fxn, 0);
+            return;
         }
-        // Return the vector as float* type:
-        tmp = llvm_utils->create_gep(p_fxn, 0);
+        
+        // Declaring array constant as global constant and directly using it
+        // instead of storing each element using CreateStore
+        int64_t arr_size = ASRUtils::get_fixed_size_of_array(x.m_type);
+        llvm::Type *Int32Ty = llvm::Type::getInt32Ty(context);
+        llvm::ArrayType * arr_type = llvm::ArrayType::get(el_type, arr_size);
+        std::vector<llvm::Constant *> values;
+
+        if (ASRUtils::is_integer(*x_m_type)) {
+            for (size_t i=0; i < (size_t) arr_size; i++) {
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                values.push_back(llvm::ConstantInt::get(el_type, down_cast<ASR::IntegerConstant_t>(el)->m_n));
+            }
+        } else if (ASRUtils::is_real(*x_m_type)) {
+            for (size_t i=0; i < (size_t) arr_size; i++) {
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                values.push_back(llvm::ConstantFP::get(el_type, down_cast<ASR::RealConstant_t>(el)->m_r));
+            }
+        } else if (ASRUtils::is_logical(*x_m_type)) {
+            for (size_t i=0; i < (size_t) arr_size; i++) {
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                values.push_back(llvm::ConstantInt::get(el_type, down_cast<ASR::LogicalConstant_t>(el)->m_value));
+            }
+        } else if (ASRUtils::is_complex(*x_m_type)) {
+            for (size_t i=0; i < (size_t) arr_size; i++) {
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                ASR::ComplexConstant_t *comp_const = down_cast<ASR::ComplexConstant_t>(el);
+                if (ASRUtils::extract_kind_from_ttype_t(comp_const->m_type) == 4) {
+                    values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_4, 
+                        {llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_re),
+                        llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_im)})); 
+                } else {
+                    values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_8, 
+                        {llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_re),
+                        llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_im)})); 
+                }
+            }
+        }
+
+        llvm::Constant *ConstArray = llvm::ConstantArray::get(arr_type, values);
+        llvm::GlobalVariable *global_var = new llvm::GlobalVariable(*module, arr_type, true, 
+            llvm::GlobalValue::PrivateLinkage, ConstArray, "global_array_" + std::to_string(global_array_count++));
+        tmp = builder->CreateGEP(
+            arr_type, global_var, {llvm::ConstantInt::get(Int32Ty, 0), llvm::ConstantInt::get(Int32Ty, 0)});     
     }
 
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
