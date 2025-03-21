@@ -3837,7 +3837,41 @@ public:
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {args_loc})}));
                     throw SemanticAbort();
+            }  
+
+            // Validate required arguments are provided
+            for (size_t i = 0; i + offset < f->n_args; i++) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(f->m_args[i + offset]);
+
+                if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
+                    ASR::Variable_t* v = ASRUtils::EXPR2VAR(f->m_args[i + offset]);
+
+                    if (v->m_presence != ASR::presenceType::Optional) {
+                        if (i >= args.size()) {
+                            if (args.empty()) {
+                                diag.add(diag::Diagnostic(
+                                    "Required argument `" + std::string(v->m_name) +
+                                    "` is missing in function call",
+                                    diag::Level::Error, diag::Stage::Semantic, {
+                                        diag::Label("", {x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+
+                            const Location args_loc { ASRUtils::get_vec_loc(args) };
+                            diag.add(diag::Diagnostic(
+                                "Required argument `" + std::string(v->m_name) +
+                                "` at position " + std::to_string(i + 1) +
+                                " is missing in function call",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {args_loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
+                }
             }
+
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
         ASR::stmt_t* cast_stmt = nullptr;
