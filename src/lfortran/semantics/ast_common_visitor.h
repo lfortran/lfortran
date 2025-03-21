@@ -1532,10 +1532,30 @@ public:
                 if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
                     ASR::ttype_t *t = implicit_dictionary[first_letter];
                     if (t == nullptr) {
-                        diag.semantic_error_label("Variable '" + var_name
-                            + "' is not declared", {loc},
-                            "'" + var_name + "' is undeclared");
-                        throw SemanticAbort();
+                        if (_processing_dimensions) {
+                            /*
+                            - refer the else of `if (compiler_options.implicit_typing)`
+                            This is for the cases where a variable being passed as an argument
+                            is used to specify dimension of aray, for ex:
+
+                            subroutine sub(n, a)
+                                implicit none
+                                integer :: a(n)
+                                integer :: n
+                            end subroutine
+
+                            In this case, while processing dimensions for `a` we tend to find
+                            declaration of `n` which is not yet declared, so we declare it as
+                            an integer type variable of default kind.
+                            */
+                            t = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+                            pre_declared_array_dims[var_name] = 1;
+                        } else {
+                            diag.semantic_error_label("Variable '" + var_name
+                                + "' is not declared", {loc},
+                                "'" + var_name + "' is undeclared");
+                            throw SemanticAbort();
+                        }
                     }
                     ASR::intentType intent;
                     if (std::find(current_procedure_args.begin(),
