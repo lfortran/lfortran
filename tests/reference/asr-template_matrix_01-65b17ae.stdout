@@ -675,8 +675,62 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (IntegerConstant 1 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        (IntegerBinOp
+                                                            (IntegerBinOp
+                                                                (IntegerBinOp
+                                                                    (ArrayBound
+                                                                        (StructInstanceMember
+                                                                            (Var 16 a)
+                                                                            16 1_int_matrix_elements
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))
+                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))]
+                                                                                FixedSizeArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        UBound
+                                                                        ()
+                                                                    )
+                                                                    Sub
+                                                                    (ArrayBound
+                                                                        (StructInstanceMember
+                                                                            (Var 16 a)
+                                                                            16 1_int_matrix_elements
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))
+                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))]
+                                                                                FixedSizeArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        LBound
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    )
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Div
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     ()
@@ -2076,7 +2130,65 @@
                                                                             t
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                                        (IntegerBinOp
+                                                                            (IntegerBinOp
+                                                                                (IntegerBinOp
+                                                                                    (ArrayBound
+                                                                                        (StructInstanceMember
+                                                                                            (Var 10 a)
+                                                                                            10 1_matrix_elements
+                                                                                            (Array
+                                                                                                (TypeParameter
+                                                                                                    t
+                                                                                                )
+                                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))
+                                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))]
+                                                                                                PointerToDataArray
+                                                                                            )
+                                                                                            ()
+                                                                                        )
+                                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                                        (Integer 4)
+                                                                                        UBound
+                                                                                        ()
+                                                                                    )
+                                                                                    Sub
+                                                                                    (ArrayBound
+                                                                                        (StructInstanceMember
+                                                                                            (Var 10 a)
+                                                                                            10 1_matrix_elements
+                                                                                            (Array
+                                                                                                (TypeParameter
+                                                                                                    t
+                                                                                                )
+                                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))
+                                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))]
+                                                                                                PointerToDataArray
+                                                                                            )
+                                                                                            ()
+                                                                                        )
+                                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                                        (Integer 4)
+                                                                                        LBound
+                                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                                    )
+                                                                                    (Integer 4)
+                                                                                    ()
+                                                                                )
+                                                                                Div
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Integer 4)
+                                                                                ()
+                                                                            )
+                                                                            Add
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))]
                                                                         DescriptorArray
                                                                     )
                                                                     ()
