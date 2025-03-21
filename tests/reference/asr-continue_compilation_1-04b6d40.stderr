@@ -637,6 +637,3 @@ semantic error: Required argument `extra_arg` is missing in function call
     |
 300 |     call obj%display()
     |     ^^^^^^^^^^^^^^^^^^
-
-
-
