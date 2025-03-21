@@ -4752,6 +4752,7 @@ static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::exp
         int64_t start_int = -1, end_int = -1;
         ASRUtils::extract_value(start_value, start_int);
         ASRUtils::extract_value(end_value, end_int);
+        end_int = end_int < 0 ? 0 : end_int;
         return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, start->base.loc,
                               end_int - start_int + 1,
                               ASRUtils::expr_type(start)));
