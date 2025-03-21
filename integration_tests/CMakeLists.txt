@@ -1964,6 +1964,7 @@ RUN(NAME equivalence_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME equivalence_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 

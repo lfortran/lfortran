@@ -3139,26 +3139,23 @@ public:
                                 dim_.loc = asr_eq1->base.loc;
                                 dim.push_back(al, dim_);
 
-                                Vec<ASR::dimension_t> dim2;
-                                dim2.reserve(al, 1);
-                                ASR::dimension_t dim2_; dim2_.m_start = nullptr; dim2_.m_length = nullptr;
-                                dim2_.loc = asr_eq1->base.loc;
-                                dim2.push_back(al, dim2_);
-
                                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
                                 ASR::expr_t* array = array_item->m_v;
                                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array);
                                 ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                 std::string name = var__->m_name;
                                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var__->m_type);
-                                ASR::dimension_t* m_dim = arr->m_dims;
-                                ASR::dimension_t dim_1 = m_dim[0];
-                                ASR::expr_t* len = dim_1.m_length;
-                                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(len);
-                                ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, ic->m_n, int_type));
                                 ASR::ttype_t* type = nullptr;
                                 ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
                                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
+
+                                Vec<ASR::dimension_t> dim2; dim2.reserve(al, arr->n_dims);
+                                for (size_t i = 0; i < arr->n_dims; i++) {
+                                    ASR::dimension_t dim2_; dim2_.m_start = nullptr; dim2_.m_length = nullptr;
+                                    dim2_.loc = asr_eq2->base.loc;
+                                    dim2.push_back(al, dim2_);
+                                }
+
                                 if (ASR::is_a<ASR::Integer_t>(*arg_type2)) {
                                     type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
                                 } else if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
@@ -3175,8 +3172,12 @@ public:
                                 var__->m_type = ptr;
 
                                 Vec<ASR::expr_t*> args;
-                                args.reserve(al, 1);
-                                args.push_back(al, size);
+                                args.reserve(al, arr->n_dims);
+                                for (size_t i = 0; i < arr->n_dims; i++) {
+                                    ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(arr->m_dims[i].m_length);
+                                    ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, ic->m_n, int_type));
+                                    args.push_back(al, size);
+                                }
 
                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
