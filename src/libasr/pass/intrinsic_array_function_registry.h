@@ -3646,7 +3646,8 @@ namespace FindLoc {
                     b.Assignment(found_value, b.bool_t(0, logical)),
                     b.DoLoop(j, b.i_t(1, ret_type), UBound(array, 2), {
                         b.If(b.Eq(ArrayItem_02(array, idx_vars_ij), value), {
-                            b.Assignment(b.ArrayItem_01(result, {i}), j),
+                            b.Assignment(b.ArrayItem_01(result, {b.i32(1)}), i),
+                            b.Assignment(b.ArrayItem_01(result, {b.i32(2)}), j),
                             b.Assignment(found_value, b.bool_t(1, logical)),
                         }, {}),
                         b.If(b.And(found_value, b.Not(back)), {
