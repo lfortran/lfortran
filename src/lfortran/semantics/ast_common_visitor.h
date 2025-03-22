@@ -1783,6 +1783,12 @@ public:
 		return false;
 	}
 
+	bool int_unary_minus_dimension_error_check(ASR::expr_t* dim_expr) {
+		ASR::IntegerUnaryMinus_t* dim_expr_int = ASR::down_cast<ASR::IntegerUnaryMinus_t>(dim_expr);
+
+		return eval_expr(dim_expr_int->m_arg);
+	}
+
 	bool eval_expr(ASR::expr_t* dim_expr) {
 		switch (dim_expr->type) {
 			case ASR::exprType::Var: return var_dimension_error_check(dim_expr);
@@ -1790,6 +1796,7 @@ public:
 			case ASR::exprType::IntrinsicElementalFunction: return intrinsic_ele_dimension_error_check(dim_expr);
 			case ASR::exprType::ArrayConstructor: return array_constructor_dimension_error_check(dim_expr);
 			case ASR::exprType::ArrayPhysicalCast: return array_physical_dimension_error_check(dim_expr);
+			case ASR::exprType::IntegerUnaryMinus: return int_unary_minus_dimension_error_check(dim_expr);
 			case ASR::exprType::ArrayConstant: return false;
 			case ASR::exprType::IntegerConstant: return false;
 			default: return true;
