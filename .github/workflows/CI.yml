@@ -847,6 +847,20 @@ jobs:
             cmake --build . -v
             ./project3
 
+      - name: Test Lapack
+        shell: bash -e -l {0}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            git clone https://github.com/Shaikh-Ubaid/lapack.git
+            cd lapack
+            git fetch origin lf_05
+            git checkout lf_05
+            git checkout eb551db50eb1bdce9fb8a8f51c7d1fd19a1697bf
+            cd build
+            micromamba create -f environment_unix.yml
+            micromamba activate lapack
+            ./build_lf.sh
+
 
 # Commented out to save CI runners:
 #  test-pixi:
