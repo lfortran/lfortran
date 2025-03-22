@@ -196,6 +196,14 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     }
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+    if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+        ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+            value, value, ASR::storage_typeType::Parameter, var_type, nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::presenceType::Required, false));
+        scope->add_symbol(var_name, temporary_variable);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
+    }
     ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
         nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
@@ -830,6 +838,9 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     }
     ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
         al, allocate_size_reference, current_scope, name_hint, is_pointer_required);
+    if (ASR::is_a<ASR::ArrayConstant_t>(*allocate_size_reference)) {
+        return array_var_temporary;
+    }
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
         exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTargetPointerForArraySection);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
