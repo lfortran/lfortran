@@ -1766,13 +1766,33 @@ public:
 		return false;
 	}
 
+	bool array_physical_dimension_error_check(ASR::expr_t* dim_expr) {
+		ASR::ArrayPhysicalCast_t* dim_expr_arr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(dim_expr);
+
+		return eval_expr(dim_expr_arr->m_arg);
+	}
+	
+	bool array_constructor_dimension_error_check(ASR::expr_t* dim_expr) {
+		ASR::ArrayConstructor_t* dim_expr_arr = ASR::down_cast<ASR::ArrayConstructor_t>(dim_expr);
+
+		for (size_t i = 0; i < dim_expr_arr->n_args; i++) {
+			if (eval_expr(dim_expr_arr->m_args[i]))
+				return true;
+		}
+
+		return false;
+	}
+
 	bool eval_expr(ASR::expr_t* dim_expr) {
 		switch (dim_expr->type) {
 			case ASR::exprType::Var: return var_dimension_error_check(dim_expr);
 			case ASR::exprType::IntrinsicArrayFunction: return intrinsic_arr_dimension_error_check(dim_expr);
 			case ASR::exprType::IntrinsicElementalFunction: return intrinsic_ele_dimension_error_check(dim_expr);
+			case ASR::exprType::ArrayConstructor: return array_constructor_dimension_error_check(dim_expr);
+			case ASR::exprType::ArrayPhysicalCast: return array_physical_dimension_error_check(dim_expr);
+			case ASR::exprType::ArrayConstant: return false;
 			case ASR::exprType::IntegerConstant: return false;
-			default: return false;
+			default: return true;
 		}
 	}
 
