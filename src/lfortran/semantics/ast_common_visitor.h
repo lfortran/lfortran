@@ -1744,9 +1744,34 @@ public:
 		return false;
 	}
 
+	bool intrinsic_arr_dimension_error_check(ASR::expr_t* dim_expr) {
+		ASR::IntrinsicArrayFunction_t* dim_expr_intrinsic = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(dim_expr);
+		
+		for (size_t i = 0; i < dim_expr_intrinsic->n_args; i++) {
+			if (eval_expr(dim_expr_intrinsic->m_args[i]))
+				return true;
+		}
+
+		return false;
+	}
+	
+	bool intrinsic_ele_dimension_error_check(ASR::expr_t* dim_expr) {
+		ASR::IntrinsicElementalFunction_t* dim_expr_intrinsic = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(dim_expr);
+		
+		for (size_t i = 0; i < dim_expr_intrinsic->n_args; i++) {
+			if (eval_expr(dim_expr_intrinsic->m_args[i]))
+				return true;
+		}
+
+		return false;
+	}
+
 	bool eval_expr(ASR::expr_t* dim_expr) {
 		switch (dim_expr->type) {
 			case ASR::exprType::Var: return var_dimension_error_check(dim_expr);
+			case ASR::exprType::IntrinsicArrayFunction: return intrinsic_arr_dimension_error_check(dim_expr);
+			case ASR::exprType::IntrinsicElementalFunction: return intrinsic_ele_dimension_error_check(dim_expr);
+			case ASR::exprType::IntegerConstant: return false;
 			default: return false;
 		}
 	}
