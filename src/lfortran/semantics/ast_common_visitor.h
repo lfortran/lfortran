@@ -1753,6 +1753,10 @@ public:
 		return false;
 	}
 
+	bool binary_operation_dimension_error_check(ASR::IntegerBinOp_t* dim_expr_node) {
+		return eval_expr(dim_expr_node->m_left) || eval_expr(dim_expr_node->m_right);
+	}
+
 	bool eval_expr(ASR::expr_t* dim_expr) {
 		switch (dim_expr->type) {
 			case ASR::exprType::Var:
@@ -1767,6 +1771,8 @@ public:
 				return eval_expr(ASR::down_cast<ASR::ArrayPhysicalCast_t>(dim_expr)->m_arg);
 			case ASR::exprType::IntegerUnaryMinus:
 				return eval_expr(ASR::down_cast<ASR::IntegerUnaryMinus_t>(dim_expr)->m_arg);
+			case ASR::exprType::IntegerBinOp:
+				return binary_operation_dimension_error_check(ASR::down_cast<ASR::IntegerBinOp_t>(dim_expr));
 			case ASR::exprType::ArrayConstant:
 			case ASR::exprType::IntegerConstant:
 				return false;
