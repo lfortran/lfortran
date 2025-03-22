@@ -2667,7 +2667,7 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         //create a new function, and add it to the symbol table
-        std::string var_name = to_lower(AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func);
+        std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
         auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
 
         Vec<ASR::expr_t*> args;
