@@ -1719,6 +1719,14 @@ size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x) {
     return ASRUtils::get_fixed_size_of_array(x->m_type);
 }
 
+void get_sliced_indices(ASR::ArraySection_t* arr_sec, std::vector<size_t> &indices) {
+    for (size_t i = 0; i < arr_sec->n_args; i++) {
+        if (arr_sec->m_args[i].m_step != nullptr) {
+            indices.push_back(i + 1);
+        }
+    }
+}
+
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
     return make_ConstantWithType(make_IntegerConstant_t,
