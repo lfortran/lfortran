@@ -1728,8 +1728,7 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
-	bool var_dimension_error_check(ASR::expr_t* dim_expr) {
-		ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
+	bool var_dimension_error_check(ASR::Var_t* dim_expr_var) {
         ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
         SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
 
@@ -1744,62 +1743,35 @@ public:
 		return false;
 	}
 
-	bool intrinsic_arr_dimension_error_check(ASR::expr_t* dim_expr) {
-		ASR::IntrinsicArrayFunction_t* dim_expr_intrinsic = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(dim_expr);
-		
-		for (size_t i = 0; i < dim_expr_intrinsic->n_args; i++) {
-			if (eval_expr(dim_expr_intrinsic->m_args[i]))
+	template<typename T>
+	bool iterable_dimension_error_check(T* dim_expr_node) {
+		for (size_t i = 0; i < dim_expr_node->n_args; i++) {
+			if (eval_expr(dim_expr_node->m_args[i]))
 				return true;
 		}
 
 		return false;
-	}
-	
-	bool intrinsic_ele_dimension_error_check(ASR::expr_t* dim_expr) {
-		ASR::IntrinsicElementalFunction_t* dim_expr_intrinsic = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(dim_expr);
-		
-		for (size_t i = 0; i < dim_expr_intrinsic->n_args; i++) {
-			if (eval_expr(dim_expr_intrinsic->m_args[i]))
-				return true;
-		}
-
-		return false;
-	}
-
-	bool array_physical_dimension_error_check(ASR::expr_t* dim_expr) {
-		ASR::ArrayPhysicalCast_t* dim_expr_arr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(dim_expr);
-
-		return eval_expr(dim_expr_arr->m_arg);
-	}
-	
-	bool array_constructor_dimension_error_check(ASR::expr_t* dim_expr) {
-		ASR::ArrayConstructor_t* dim_expr_arr = ASR::down_cast<ASR::ArrayConstructor_t>(dim_expr);
-
-		for (size_t i = 0; i < dim_expr_arr->n_args; i++) {
-			if (eval_expr(dim_expr_arr->m_args[i]))
-				return true;
-		}
-
-		return false;
-	}
-
-	bool int_unary_minus_dimension_error_check(ASR::expr_t* dim_expr) {
-		ASR::IntegerUnaryMinus_t* dim_expr_int = ASR::down_cast<ASR::IntegerUnaryMinus_t>(dim_expr);
-
-		return eval_expr(dim_expr_int->m_arg);
 	}
 
 	bool eval_expr(ASR::expr_t* dim_expr) {
 		switch (dim_expr->type) {
-			case ASR::exprType::Var: return var_dimension_error_check(dim_expr);
-			case ASR::exprType::IntrinsicArrayFunction: return intrinsic_arr_dimension_error_check(dim_expr);
-			case ASR::exprType::IntrinsicElementalFunction: return intrinsic_ele_dimension_error_check(dim_expr);
-			case ASR::exprType::ArrayConstructor: return array_constructor_dimension_error_check(dim_expr);
-			case ASR::exprType::ArrayPhysicalCast: return array_physical_dimension_error_check(dim_expr);
-			case ASR::exprType::IntegerUnaryMinus: return int_unary_minus_dimension_error_check(dim_expr);
-			case ASR::exprType::ArrayConstant: return false;
-			case ASR::exprType::IntegerConstant: return false;
-			default: return true;
+			case ASR::exprType::Var:
+				return var_dimension_error_check(ASR::down_cast<ASR::Var_t>(dim_expr));
+			case ASR::exprType::IntrinsicArrayFunction:
+				return iterable_dimension_error_check(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(dim_expr));
+			case ASR::exprType::IntrinsicElementalFunction:
+				return iterable_dimension_error_check(ASR::down_cast<ASR::IntrinsicElementalFunction_t>(dim_expr));
+			case ASR::exprType::ArrayConstructor:
+				return iterable_dimension_error_check(ASR::down_cast<ASR::ArrayConstructor_t>(dim_expr));
+			case ASR::exprType::ArrayPhysicalCast:
+				return eval_expr(ASR::down_cast<ASR::ArrayPhysicalCast_t>(dim_expr)->m_arg);
+			case ASR::exprType::IntegerUnaryMinus:
+				return eval_expr(ASR::down_cast<ASR::IntegerUnaryMinus_t>(dim_expr)->m_arg);
+			case ASR::exprType::ArrayConstant:
+			case ASR::exprType::IntegerConstant:
+				return false;
+			default:
+				return false;
 		}
 	}
 
