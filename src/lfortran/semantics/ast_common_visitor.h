@@ -1728,31 +1728,37 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
-    bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
-        if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
-            ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
-            ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
-            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
-            if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
-                ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
+	bool var_dimension_error_check(ASR::Var_t* dim_expr_var) {
+        ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
+        SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
 
-                if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
+        if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
+            ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
+
+            if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
+                return true;
+            } else {
+                if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
                     return true;
-                } else {
-
-                    if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
-                        return true;
-                    }
                 }
             }
-        } else {
+		}
 
-            ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
+		return false;
+	}
 
-            if (dim_expr_type->type != ASR::ttypeType::Integer) {
-                return true;
-            }
+    bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
+        ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
+
+		// If any expression doesn't evaluate to integer, return true
+        if (dim_expr_type->type != ASR::ttypeType::Integer) {
+            return true;
         }
+
+		if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
+			ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
+			return var_dimension_error_check(dim_expr_var);
+		}
 
         return false;
     }
