@@ -1728,23 +1728,27 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
-	bool var_dimension_error_check(ASR::Var_t* dim_expr_var) {
+	bool var_dimension_error_check(ASR::expr_t* dim_expr) {
+		ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
         ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
         SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
 
         if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
             ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
 
-            if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
+            if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
                 return true;
-            } else {
-                if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
-                    return true;
-                }
             }
 		}
 
 		return false;
+	}
+
+	bool eval_expr(ASR::expr_t* dim_expr) {
+		switch (dim_expr->type) {
+			case ASR::exprType::Var: return var_dimension_error_check(dim_expr);
+			default: return false;
+		}
 	}
 
     bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
@@ -1755,12 +1759,7 @@ public:
             return true;
         }
 
-		if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
-			ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
-			return var_dimension_error_check(dim_expr_var);
-		}
-
-        return false;
+		return eval_expr(dim_expr);
     }
 
 
