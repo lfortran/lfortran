@@ -624,16 +624,16 @@ semantic error: Required argument `y` at position 2 is missing in function call
    --> tests/errors/continue_compilation_1.f90:295:18
     |
 295 |     call my_func(10)
-    |                  ^^
+    |                  ^^ 
 
 semantic error: Required argument `x` is missing in function call
    --> tests/errors/continue_compilation_1.f90:296:5
     |
 296 |     call my_func()
-    |     ^^^^^^^^^^^^^^
+    |     ^^^^^^^^^^^^^^ 
 
 semantic error: Required argument `extra_arg` is missing in function call
    --> tests/errors/continue_compilation_1.f90:300:5
     |
 300 |     call obj%display()
-    |     ^^^^^^^^^^^^^^^^^^
+    |     ^^^^^^^^^^^^^^^^^^ 
