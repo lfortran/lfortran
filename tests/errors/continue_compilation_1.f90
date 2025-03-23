@@ -2,6 +2,11 @@
 ! number of lines below the module to keep the rest of the lines in this file
 ! intact.
 module continue_compilation_1_mod
+    type :: MyClass
+        integer :: value
+    contains
+        procedure :: display
+    end type MyClass
 
 contains
 
@@ -10,18 +15,13 @@ contains
         print *, "hi"
     end subroutine
 
+    subroutine display(self, extra_arg)
+        class(MyClass), intent(in) :: self
+        integer, intent(in) :: extra_arg
+        print *, "Value in object:", self%value
+    end subroutine display
+
 end module
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -290,4 +290,13 @@ program continue_compilation_1
     print *, ieor()
 
     exit
+
+    ! calling function with less arguments
+    call my_func(10)
+    call my_func()
+    ! checking for self argument too 
+    type(MyClass) :: obj
+    obj%value = 42
+    call obj%display()
+
 end program
