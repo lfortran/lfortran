@@ -179,8 +179,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     bool is_allocatable = ASRUtils::is_allocatable(value_type);
     bool is_compile_time = ASRUtils::is_value_constant(ASRUtils::expr_value(value));
     ASR::ttype_t* var_type = nullptr;
-    if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || 
-            is_allocatable || is_compile_time) &&
+    if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable) &&
         !is_pointer_required ) {
         var_type = value_type;
     } else {
@@ -201,7 +200,8 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     if (is_compile_time) {
         ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-            ASRUtils::expr_value(value), ASRUtils::expr_value(value), ASR::storage_typeType::Parameter, var_type, nullptr, ASR::abiType::Source,
+            ASRUtils::expr_value(value), ASRUtils::expr_value(value), ASR::storage_typeType::Parameter, 
+            ASRUtils::expr_type(ASRUtils::expr_value(value)), nullptr, ASR::abiType::Source,
             ASR::accessType::Public, ASR::presenceType::Required, false));
         scope->add_symbol(var_name, temporary_variable);
         return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
