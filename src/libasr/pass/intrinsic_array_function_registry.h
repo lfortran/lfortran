@@ -4885,6 +4885,7 @@ namespace Pack {
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(m_args)) {
             value = eval_Pack(al, loc, ret_type, arg_values, diag);
+            ret_type = ASRUtils::expr_type(value);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::Pack),
