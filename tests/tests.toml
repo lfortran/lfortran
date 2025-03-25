@@ -4518,3 +4518,11 @@ asr = true
 [[test]]
 filename = "declaration1.f90"
 asr = true
+
+[[test]]
+filename = "errors/integerStringInput.f90"
+asr = false
+
+[[test]]
+filename = "errors/floatStringInput.f90"
+asr = false

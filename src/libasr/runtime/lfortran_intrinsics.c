@@ -3381,29 +3381,28 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 // - Prevents auto-casting of invalid inputs to integers
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
-    char buffer[100]; // Buffer to hold input
-
     if (unit_num == -1) {
-        // Read input as a string
+        char buffer[100];
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
         }
 
-        // Validate input
-        char *endptr;
-        long value = strtol(buffer, &endptr, 10);
-
-        // Check if the entire input was a valid number
-        while (*endptr != '\0' && *endptr != '\n') {
-            if (!isspace((unsigned char)*endptr)) {
-                fprintf(stderr, "Error: Invalid input for int32_t.\n");
-                exit(1);
-            }
-            endptr++;
+        // Use strtok() to extract only the first token before any whitespace
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+            exit(1);
         }
 
-        *p = (int32_t)value;
+        char *endptr;
+        *p = strtol(token, &endptr, 10);
+
+        // If any junk remains in the token, reject the input
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+            exit(1);
+        }
         return;
     }
 
@@ -3420,48 +3419,35 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
             exit(1);
         }
     } else {
-        if (!fgets(buffer, sizeof(buffer), filep)) {
-            fprintf(stderr, "Error: Failed to read input from file.\n");
+        if (fscanf(filep, "%d", p) != 1) {
+            fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
             exit(1);
         }
-
-        char *endptr;
-        long value = strtol(buffer, &endptr, 10);
-
-        while (*endptr != '\0' && *endptr != '\n') {
-            if (!isspace((unsigned char)*endptr)) {
-                fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
-                exit(1);
-            }
-            endptr++;
-        }
-
-        *p = (int32_t)value;
     }
 }
 
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 {
-    char buffer[100];
-
     if (unit_num == -1) {
+        char buffer[100];
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
         }
 
-        char *endptr;
-        int64_t value = strtoll(buffer, &endptr, 10);
-
-        while (*endptr != '\0' && *endptr != '\n') {
-            if (!isspace((unsigned char)*endptr)) {
-                fprintf(stderr, "Error: Invalid input for int64_t.\n");
-                exit(1);
-            }
-            endptr++;
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
         }
 
-        *p = value;
+        char *endptr;
+        *p = strtoll(token, &endptr, 10);
+
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
+        }
         return;
     }
 
@@ -3478,23 +3464,10 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
             exit(1);
         }
     } else {
-        if (!fgets(buffer, sizeof(buffer), filep)) {
-            fprintf(stderr, "Error: Failed to read input from file.\n");
+        if (fscanf(filep, "%" PRId64, p) != 1) {
+            fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
             exit(1);
         }
-
-        char *endptr;
-        int64_t value = strtoll(buffer, &endptr, 10);
-
-        while (*endptr != '\0' && *endptr != '\n') {
-            if (!isspace((unsigned char)*endptr)) {
-                fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
-                exit(1);
-            }
-            endptr++;
-        }
-
-        *p = value;
     }
 }
 
@@ -3635,22 +3608,23 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 // - Prevents auto-casting of invalid inputs to float/real
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
-    char buffer[1000];  // Buffer to store input
-
     if (unit_num == -1) {
-        // Read from stdin
+        char buffer[100];
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
         }
 
-        // Try converting to float
-        char *endptr;
-        errno = 0;  // Reset errno before conversion
-        *p = strtof(buffer, &endptr);
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for float.\n");
+            exit(1);
+        }
 
-        // Check if the whole string was consumed, no extra characters left
-        if (errno != 0 || endptr == buffer || *endptr != '\n') {
+        char *endptr;
+        *p = strtof(token, &endptr);
+
+        if (*endptr != '\0') {
             fprintf(stderr, "Error: Invalid input for float.\n");
             exit(1);
         }
@@ -3660,7 +3634,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
-        fprintf(stderr, "No file found with given unit\n");
+        printf("No file found with given unit\n");
         exit(1);
     }
 
@@ -3670,18 +3644,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
             exit(1);
         }
     } else {
-        if (!fgets(buffer, sizeof(buffer), filep)) {
-            fprintf(stderr, "Error: Failed to read input from file.\n");
-            exit(1);
-        }
-
-        // Try converting to float
-        char *endptr;
-        errno = 0;
-        *p = strtof(buffer, &endptr);
-
-        // Check if the whole string was consumed
-        if (errno != 0 || endptr == buffer || *endptr != '\n') {
+        if (fscanf(filep, "%f", p) != 1) {
             fprintf(stderr, "Error: Invalid input for float from file.\n");
             exit(1);
         }
