@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -211,6 +212,12 @@ namespace LCompilers::LanguageServerProtocol {
                                 logger.error()
                                     << "Caught unhandled exception: " << e.what()
                                     << std::endl;
+                            }
+                            {
+                                std::unique_lock<std::mutex> sentLock(sentMutex);
+                                sent.wait(sentLock, [this, sendId]{
+                                    return (pendingSendId == sendId) || _exit;
+                                });
                             }
                             ++pendingSendId;
                             {
@@ -473,6 +480,7 @@ namespace LCompilers::LanguageServerProtocol {
                 const TTLRecord<RetryRecord> &record = retryAttempts.top();
                 if (record.second < now()) {
                     int requestId = std::get<0>(record.first);
+                    cancelRequest(requestId);
                     unsigned int attempt = std::get<1>(record.first);
                     retryAttempts.pop();
                     writeLock.unlock();
@@ -501,7 +509,6 @@ namespace LCompilers::LanguageServerProtocol {
                                 auto iter = requestsById.find(requestId);
                                 if (iter != requestsById.end()) {
                                     const RequestMessage &request = iter->second;
-                                    cancelRequest(requestId);
                                     LspLanguageServer::send(request);
                                     requestLock.unlock();
                                     std::unique_lock<std::shared_mutex> writeLock(retryMutex);

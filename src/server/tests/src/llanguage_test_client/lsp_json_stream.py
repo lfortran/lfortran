@@ -1,13 +1,12 @@
 import io
 import json
-from select import select
 from typing import IO, Union
 
-from llanguage.json_rpc import JsonArray, JsonObject
+from llanguage_test_client.json_rpc import JsonArray, JsonObject
 
 
 class LspJsonStream:
-    istream: IO[str]
+    istream: IO[bytes]
     timeout: float
 
     buf: io.StringIO
@@ -15,7 +14,7 @@ class LspJsonStream:
     has_content_length: bool
     position: int
 
-    def __init__(self, istream: IO[str], timeout: float) -> None:
+    def __init__(self, istream: IO[bytes], timeout: float) -> None:
         self.istream = istream
         self.timeout = timeout
         self.buf = io.StringIO()
@@ -24,23 +23,17 @@ class LspJsonStream:
         return self.buf.getvalue()
 
     def next_char(self) -> str:
-        c: str = self.istream.read(1)
+        c: str = self.istream.read(1).decode()
         self.buf.write(c)
         self.position += 1
         return c
 
     def next(self) -> Union[JsonObject, JsonArray]:
-        ready, _, _ = select([self.istream], [], [], self.timeout)
-        if ready:
-            self.num_bytes = 0
-            self.position = 0
-            self.buf.seek(0)
-            self.buf.truncate(0)
-            return self.parse_header_name()
-        else:
-            raise RuntimeError(
-                f"Timed-out after {self.timeout:.2f} seconds while awaiting a message."
-            )
+        self.num_bytes = 0
+        self.position = 0
+        self.buf.seek(0)
+        self.buf.truncate(0)
+        return self.parse_header_name()
 
     def escape(self, c: str) -> str:
         match c:
@@ -66,16 +59,16 @@ class LspJsonStream:
                     c = self.next_char()
                     if c != '\n':
                         raise RuntimeError(
-                            f"Expected \\r to be followed by \\n, not '{self.escape(c)}'"
+                            f"Expected \\r to be followed by \\n, not '{self.escape(c)}': {self.buf.getvalue()}"
                         )
                     if length == 0 and self.has_content_length:
                         return self.parse_body()
                     raise RuntimeError(
-                        "Reached out-of-sequence newline while parsing header name."
+                        f"Reached out-of-sequence newline while parsing header name: {self.buf.getvalue()}"
                     )
                 case '\n':
                     raise RuntimeError(
-                        "Reached out-of-sequence newline while parsing header name."
+                        f"Reached out-of-sequence newline while parsing header name: {self.buf.getvalue()}"
                     )
                 case ':':
                     length: int = self.position - start - 1
@@ -99,7 +92,7 @@ class LspJsonStream:
                     c = self.next_char()
                     if c != '\n':
                         raise RuntimeError(
-                            f"Expected \\r to be followed by \\n, not '{self.escape(c)}'"
+                            f"Expected \\r to be followed by \\n, not '{self.escape(c)}': {self.buf.getvalue()}"
                         )
                     if self.has_content_length:
                         self.buf.seek(start)
@@ -109,16 +102,12 @@ class LspJsonStream:
                     return self.parse_header_name()
                 case '\n':
                     raise RuntimeError(
-                        "Reached out-of-sequence newline while parsing header name."
+                        f"Reached out-of-sequence newline while parsing header name: {self.buf.getvalue()}"
                     )
                 case _:
-                    pass
+                    c = self.next_char()
 
     def parse_body(self) -> Union[JsonObject, JsonArray]:
-        start: int = self.position
-        for _ in range(self.num_bytes):
-            self.next_char()
-        self.buf.seek(start)
-        body = self.buf.read(self.num_bytes)
-        self.buf.seek(0, io.SEEK_END)
+        body = self.istream.read(self.num_bytes).decode()
+        self.buf.write(body)
         return json.loads(body)
