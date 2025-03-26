@@ -3,6 +3,7 @@ import json
 import os
 import signal
 import subprocess
+import sys
 import threading
 import time
 from collections import defaultdict
@@ -11,8 +12,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple,
                     Union)
+
 if os.name == 'nt':  #<- Windows
     import msvcrt
+    from ctypes import windll, byref, wintypes, GetLastError, WinError
+    from ctypes.wintypes import HANDLE, DWORD, POINTER, BOOL
 
 from cattrs import Converter
 from lsprotocol import converters
@@ -312,9 +316,15 @@ class LspTestClient(LspClient):
             os.set_blocking(fd, False)
         else:
             # Windows
+            LPDWORD = POINTER(DWORD)
+            PIPE_NOWAIT = wintypes.DWORD(0x00000001)
+            SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
+            SetNamedPipeHandleState.argtypes = [HANDLE, LPDWORD, LPDWORD, LPDWORD]
+            SetNamedPipeHandleState.restype = BOOL
             handle = msvcrt.get_osfhandle(fd)
-            flags = msvcrt.get_osfhandle_flags(handle)
-            msvcrt.set_osfhandle_flags(handle, flags | os.O_NONBLOCK)
+            result = windll.kernel32.SetNamedPipeHandleState(handle, byref(PIPE_NOWAIT), None, None)
+            if result == 0:
+                raise RuntimeError(WinError())
 
         self.message_stream = LspJsonStream(self.server.stdout, self.timeout_s)
         self.ostream = self.server.stdin
