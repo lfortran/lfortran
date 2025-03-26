@@ -1,5 +1,4 @@
 import os
-import time
 from tempfile import NamedTemporaryFile
 
 from lsprotocol.types import (TextDocumentContentChangeEvent_Type1,
@@ -7,9 +6,7 @@ from lsprotocol.types import (TextDocumentContentChangeEvent_Type1,
                               TextDocumentDidOpenNotification,
                               WorkspaceDidRenameFilesNotification)
 
-from llanguage_test_client.lsp_test_client import (IncomingEvent,
-                                                   LspTestClient,
-                                                   OutgoingEvent)
+from llanguage_test_client.lsp_test_client import LspTestClient, OutgoingEvent
 
 
 def test_document_manipulation(client: LspTestClient):

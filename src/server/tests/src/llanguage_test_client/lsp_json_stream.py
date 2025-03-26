@@ -26,13 +26,17 @@ class LspJsonStream:
     def next_char(self) -> str:
         start_time = time.perf_counter()
         while (time.perf_counter() - start_time) < self.timeout_s:
-            bs: Optional[bytes] = self.istream.read(1)
-            if bs is not None:
-                c: str = bs.decode()
-                self.buf.write(c)
-                self.position += 1
-                return c
-            time.sleep(0.05)
+            try:
+                bs: Optional[bytes] = self.istream.read(1)
+                if bs is not None:
+                    c: str = bs.decode()
+                    self.buf.write(c)
+                    self.position += 1
+                    return c
+            except BlockingIOError:
+                # Try again ...
+                pass
+            time.sleep(0.01)
         raise RuntimeError(
             f'Timed-out after {self.timeout_s} seconds while reading from the stream'
         )

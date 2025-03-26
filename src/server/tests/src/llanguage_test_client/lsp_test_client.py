@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple,
                     Union)
+if os.name == 'nt':  #<- Windows
+    import msvcrt
 
 from cattrs import Converter
 from lsprotocol import converters
@@ -305,7 +307,14 @@ class LspTestClient(LspClient):
 
         # Make process stdout non-blocking
         fd = self.server.stdout.fileno()
-        os.set_blocking(fd, False)
+        if os.name != 'nt':
+            # Linux or MacOS
+            os.set_blocking(fd, False)
+        else:
+            # Windows
+            handle = msvcrt.get_osfhandle(fd)
+            flags = msvcrt.get_osfhandle_flags(handle)
+            msvcrt.set_osfhandle_flags(handle, flags | os.O_NONBLOCK)
 
         self.message_stream = LspJsonStream(self.server.stdout, self.timeout_s)
         self.ostream = self.server.stdin
