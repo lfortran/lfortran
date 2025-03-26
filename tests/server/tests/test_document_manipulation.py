@@ -1,35 +1,10 @@
 import os
 from tempfile import NamedTemporaryFile
 
-from lsprotocol.types import (
-    ClientCapabilities, ClientRegisterCapabilityRequest,
-    ClientRegisterCapabilityResponse, CompletionClientCapabilities,
-    CompletionClientCapabilitiesCompletionItemType,
-    CompletionClientCapabilitiesCompletionItemTypeInsertTextModeSupportType,
-    CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
-    CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
-    CompletionItemTag, DeleteFilesParams,
-    DidChangeConfigurationClientCapabilities, DidChangeConfigurationParams,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, ExitNotification,
-    FileRename, HoverClientCapabilities, InitializedNotification,
-    InitializedParams, InitializeParams, InitializeRequest, InitializeResponse,
-    InitializeResultServerInfoType, InsertTextMode, MarkupKind, Position,
-    Range, Registration, RenameFilesParams, SaveOptions, ServerCapabilities,
-    ShutdownRequest, TextDocumentClientCapabilities,
-    TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
-    TextDocumentDidChangeNotification, TextDocumentDidCloseNotification,
-    TextDocumentDidOpenNotification, TextDocumentDidSaveNotification,
-    TextDocumentIdentifier, TextDocumentItem, TextDocumentSaveReason,
-    TextDocumentSyncClientCapabilities, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentWillSaveNotification,
-    TextDocumentWillSaveWaitUntilRequest,
-    TextDocumentWillSaveWaitUntilResponse, VersionedTextDocumentIdentifier,
-    WillSaveTextDocumentParams, WorkspaceClientCapabilities,
-    WorkspaceConfigurationRequest, WorkspaceConfigurationResponse,
-    WorkspaceDidChangeConfigurationNotification,
-    WorkspaceDidRenameFilesNotification, WorkspaceWillDeleteFilesRequest,
-    WorkspaceWillRenameFilesRequest, FileDelete, WorkspaceDidDeleteFilesNotification)
+from lsprotocol.types import (TextDocumentContentChangeEvent_Type1,
+                              TextDocumentDidChangeNotification,
+                              TextDocumentDidOpenNotification,
+                              WorkspaceDidRenameFilesNotification)
 
 from llanguage_test_client.lsp_test_client import LspTestClient, OutgoingEvent
 
@@ -37,8 +12,6 @@ from llanguage_test_client.lsp_test_client import LspTestClient, OutgoingEvent
 def test_document_manipulation(client: LspTestClient):
     with NamedTemporaryFile(prefix="test_document_manipulation-", suffix=".f90", delete=True) as tmp_file_1:
         with NamedTemporaryFile(prefix="test_document_manipulation-", suffix=".f90", delete=True) as tmp_file_2:
-            print(f":: tmp_file_1 => [{tmp_file_1.name}]")
-            print(f":: tmp_file_2 => [{tmp_file_2.name}]")
             doc = client.new_document("fortran")
             doc.write("module module_function_call1\n")
             doc.write("end module module_function_call1\n")

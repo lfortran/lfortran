@@ -55,5 +55,6 @@ if [[ $WIN != "1" ]]; then
 fi
 
 pip install -e src/server/tests -e tests/server
-pushd tests/server
+cd tests/server
 pytest
+cd ../..
