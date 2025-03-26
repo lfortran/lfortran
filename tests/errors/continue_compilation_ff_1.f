@@ -118,11 +118,4 @@ c     module above.
       IF I .EQ. 10 THEN PRINT *, "Ten"
       CALL FUNC( 5, 6,
 
-      CONTAINS
-
-      LOGICAL FUNCTION f(x)
-      INTEGER, INTENT(IN), OPTIONAL :: x
-      f = PRESENT(x)
-      END FUNCTION f
-
       END PROGRAM continue_compilation_ff
