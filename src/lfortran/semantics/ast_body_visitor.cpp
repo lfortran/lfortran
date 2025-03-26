@@ -1508,14 +1508,24 @@ public:
                 {
                     ASR::dimension_t* source_m_dims = nullptr;
                     ASR::dimension_t* var_m_dims = alloc_args_vec.p[i].m_dims;
+                    ASR::dimension_t* var_m_dims_decl = nullptr;
                     size_t source_n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, source_m_dims);
                     size_t var_n_dims = alloc_args_vec.p[i].n_dims;
+                    size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
 
-                    if (source_n_dims != 0 && source_n_dims != var_n_dims) {
+                    if (source_n_dims != 0 && ((var_n_dims != 0 && var_n_dims != source_n_dims) || (var_n_dims == 0 && source_n_dims != var_n_dims_decl))) {
                         diag.add(Diagnostic(
                             "Dimension mismatch in `allocate` statement.\n",
                             Level::Error, Stage::Semantic, {
                                 Label("Mismatch in dimensions between allocated variable and `source`", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    } else if (source_n_dims == 0 && (var_n_dims == 0 && var_n_dims_decl != 0)) {
+                        diag.add(Diagnostic(
+                            "Cannot allocate an array from a scalar source.\n",
+                            Level::Error, Stage::Semantic, {
+                                Label("allocated variable is an array, but `source` is a scalar", 
+                                    {alloc_args_vec.p[i].m_a->base.loc})
                             }));
                         throw SemanticAbort();
                     }
