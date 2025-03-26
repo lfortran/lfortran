@@ -1243,6 +1243,7 @@ RUN(NAME interface_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME interface_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_STD_F23)
 RUN(NAME interface_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_STD_F23)
 RUN(NAME interface_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_STD_F23)
+RUN(NAME interface_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
