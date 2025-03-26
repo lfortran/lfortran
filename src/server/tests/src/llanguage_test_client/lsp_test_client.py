@@ -34,7 +34,8 @@ from lsprotocol.types import (
     TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
     TextDocumentDidChangeNotification, TextDocumentDidCloseNotification,
     TextDocumentDidOpenNotification, TextDocumentDidSaveNotification,
-    TextDocumentIdentifier, TextDocumentItem, TextDocumentSaveReason,
+    TextDocumentIdentifier, TextDocumentItem,
+    TextDocumentPublishDiagnosticsNotification, TextDocumentSaveReason,
     TextDocumentSyncClientCapabilities, TextDocumentSyncKind,
     TextDocumentSyncOptions, TextDocumentWillSaveNotification,
     TextDocumentWillSaveWaitUntilRequest,
@@ -147,11 +148,14 @@ class LspTestClient(LspClient):
                 return True
         return False
 
-    def has_incoming_event(self, pred: IncomingEventPredFn) -> bool:
+    def find_incoming_event(self, pred: IncomingEventPredFn) -> Optional[IncomingEvent]:
         for event in self.events:
             if isinstance(event, IncomingEvent) and pred(event):
-                return True
-        return False
+                return event
+        return None
+
+    def has_incoming_event(self, pred: IncomingEventPredFn) -> bool:
+        return self.find_incoming_event(pred) is not None
 
     def has_outgoing_event(self, pred: OutgoingEventPredFn) -> bool:
         for event in self.events:
@@ -187,6 +191,22 @@ class LspTestClient(LspClient):
         document = LspTextDocument(self, document_id, language_id, path)
         self.documents_by_id[document_id] = document
         return document
+
+    def await_validation(self, uri: str, version: int) -> Any:
+        def is_validation(message: Any) -> bool:
+            if message.get("method", None) == "textDocument/publishDiagnostics":
+                params = message["params"]
+                return params["uri"] == uri \
+                    and params.get("version", None) == version
+            return False
+        event = self.find_incoming_event(lambda event: is_validation(event.data))
+        if event is not None:
+            return event.data
+        while not self.stop.is_set():
+            message = self.receive_message()
+            if is_validation(message):
+                return message
+        return None
 
     def await_response(self, request_id: Optional[int] = None) -> Any:
         while not self.stop.is_set():
@@ -282,6 +302,11 @@ class LspTestClient(LspClient):
             raise RuntimeError("Cannot write to server stdin")
         # if self.server.stderr is None:
         #     raise RuntimeError("Cannot read from server stderr")
+
+        # Make process stdout non-blocking
+        fd = self.server.stdout.fileno()
+        os.set_blocking(fd, False)
+
         self.message_stream = LspJsonStream(self.server.stdout, self.timeout_s)
         self.ostream = self.server.stdin
 
@@ -378,6 +403,16 @@ class LspTestClient(LspClient):
                 )
                 response = self.receive_workspace_configuration(request)
                 self.send_message(response)
+            case "textDocument/publishDiagnostics":
+                notification = self.converter.structure(
+                    message,
+                    TextDocumentPublishDiagnosticsNotification
+                )
+                self.receive_text_document_publish_diagnostics(notification)
+                self.respond_to_notification()
+
+    def respond_to_notification(self) -> None:
+        self.send_message({"id": None, "result": None, "jsonrpc": "2.0"})
 
     def dispatch_response(self, response: JsonObject) -> None:
         response_id = response.get("id", None)
@@ -878,3 +913,9 @@ class LspTestClient(LspClient):
             )
             self.send_workspace_did_delete_files(params)
             self.await_response()
+
+    def receive_text_document_publish_diagnostics(
+            self,
+            notification: TextDocumentPublishDiagnosticsNotification
+    ) -> None:
+        pass

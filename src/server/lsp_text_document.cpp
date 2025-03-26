@@ -57,17 +57,16 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto LspTextDocument::validateUriAndSetPath() -> void {
         std::string path = std::regex_replace(_uri, RE_FILE_URI, "");
-        _path = fs::canonical(path);
+        _path = fs::absolute(path).lexically_normal();
     }
 
     auto LspTextDocument::loadText() -> void {
         std::ifstream fs(_path);
-        if (!fs.is_open()) {
-            throw std::runtime_error("Could not open file: " + _path.string());
+        if (fs.is_open()) {
+            std::stringstream ss;
+            ss << fs.rdbuf();
+            _text = ss.str();
         }
-        std::stringstream ss;
-        ss << fs.rdbuf();
-        _text = ss.str();
     }
 
     auto LspTextDocument::update(

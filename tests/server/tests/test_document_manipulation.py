@@ -1,4 +1,5 @@
 import os
+import time
 from tempfile import NamedTemporaryFile
 
 from lsprotocol.types import (TextDocumentContentChangeEvent_Type1,
@@ -6,12 +7,22 @@ from lsprotocol.types import (TextDocumentContentChangeEvent_Type1,
                               TextDocumentDidOpenNotification,
                               WorkspaceDidRenameFilesNotification)
 
-from llanguage_test_client.lsp_test_client import LspTestClient, OutgoingEvent
+from llanguage_test_client.lsp_test_client import (IncomingEvent,
+                                                   LspTestClient,
+                                                   OutgoingEvent)
 
 
 def test_document_manipulation(client: LspTestClient):
-    with NamedTemporaryFile(prefix="test_document_manipulation-", suffix=".f90", delete=True) as tmp_file_1:
-        with NamedTemporaryFile(prefix="test_document_manipulation-", suffix=".f90", delete=True) as tmp_file_2:
+    with NamedTemporaryFile(
+            prefix="test_document_manipulation-",
+            suffix=".f90",
+            delete=True
+    ) as tmp_file_1:
+        with NamedTemporaryFile(
+                prefix="test_document_manipulation-",
+                suffix=".f90",
+                delete=True
+        ) as tmp_file_2:
             doc = client.new_document("fortran")
             doc.write("module module_function_call1\n")
             doc.write("end module module_function_call1\n")
@@ -32,6 +43,8 @@ def test_document_manipulation(client: LspTestClient):
                     "end module module_function_call1",
                 ]) + "\n"
 
+            client.await_validation(doc.uri, doc.version)
+
             doc.cursor = 0,5
             doc.write("foo")
             doc.save()
@@ -44,7 +57,8 @@ def test_document_manipulation(client: LspTestClient):
                         content_changes = params.content_changes
                         if len(content_changes) == 1:
                             content_change = content_changes[0]
-                            if isinstance(content_change, TextDocumentContentChangeEvent_Type1):
+                            if isinstance(content_change,
+                                          TextDocumentContentChangeEvent_Type1):
                                 range = content_change.range
                                 start = range.start
                                 end = range.end
@@ -62,11 +76,15 @@ def test_document_manipulation(client: LspTestClient):
                     "end module module_function_call1",
                 ]) + "\n"
 
+            client.await_validation(doc.uri, doc.version)
+
             doc.cursor = 0,5
             doc.replace("bar")
             doc.save()
 
-            def sent_text_document_did_replace_foo_with_bar(event: OutgoingEvent) -> bool:
+            def sent_text_document_did_replace_foo_with_bar(
+                    event: OutgoingEvent
+            ) -> bool:
                 if isinstance(event.data, TextDocumentDidChangeNotification):
                     notification = event.data
                     params = notification.params
@@ -84,13 +102,17 @@ def test_document_manipulation(client: LspTestClient):
                                     and end.character == 9 \
                                     and content_change.text == "bar"
                 return False
-            assert client.has_outgoing_event(sent_text_document_did_replace_foo_with_bar)
+            assert client.has_outgoing_event(
+                sent_text_document_did_replace_foo_with_bar
+            )
 
             with open(tmp_file_1.name) as f:
                 assert doc.text == f.read() == "\n".join([
                     "modulbare module_function_call1",
                     "end module module_function_call1",
                 ]) + "\n"
+
+            client.await_validation(doc.uri, doc.version)
 
             doc.cursor = 0,5
             doc.delete(3)
@@ -104,7 +126,8 @@ def test_document_manipulation(client: LspTestClient):
                         content_changes = params.content_changes
                         if len(content_changes) == 1:
                             content_change = content_changes[0]
-                            if isinstance(content_change, TextDocumentContentChangeEvent_Type1):
+                            if isinstance(content_change,
+                                          TextDocumentContentChangeEvent_Type1):
                                 range = content_change.range
                                 start = range.start
                                 end = range.end
@@ -122,6 +145,8 @@ def test_document_manipulation(client: LspTestClient):
                     "end module module_function_call1",
                 ]) + "\n"
 
+            client.await_validation(doc.uri, doc.version)
+
             doc.rename(tmp_file_2.name)
 
             def sent_workspace_did_rename_file(event: OutgoingEvent) -> bool:
@@ -135,6 +160,7 @@ def test_document_manipulation(client: LspTestClient):
             assert client.has_outgoing_event(sent_workspace_did_rename_file)
 
             assert not os.path.exists(tmp_file_1.name)
+            open(tmp_file_1.name, "w").close() # ensure it exists during clean-up
             assert os.path.exists(tmp_file_2.name)
 
             with open(tmp_file_2.name) as f:
@@ -145,3 +171,4 @@ def test_document_manipulation(client: LspTestClient):
 
             doc.remove()
             assert not os.path.exists(tmp_file_2.name)
+            open(tmp_file_2.name, "w").close() # ensure it exists during clean-up

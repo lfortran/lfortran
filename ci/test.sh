@@ -55,7 +55,7 @@ if [[ $WIN != "1" ]]; then
     cd ..
 fi
 
-pip install -e src/server/tests -e tests/server
+pip install src/server/tests tests/server
 cd tests/server
 pytest
 cd ../..

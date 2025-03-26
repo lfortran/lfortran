@@ -1,32 +1,41 @@
 import io
 import json
-from typing import IO, Union
+import time
+from typing import IO, Optional, Union
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 
 
 class LspJsonStream:
     istream: IO[bytes]
-    timeout: float
+    timeout_s: float
 
     buf: io.StringIO
     num_bytes: int
     has_content_length: bool
     position: int
 
-    def __init__(self, istream: IO[bytes], timeout: float) -> None:
+    def __init__(self, istream: IO[bytes], timeout_s: float) -> None:
         self.istream = istream
-        self.timeout = timeout
+        self.timeout_s = timeout_s
         self.buf = io.StringIO()
 
     def message(self) -> str:
         return self.buf.getvalue()
 
     def next_char(self) -> str:
-        c: str = self.istream.read(1).decode()
-        self.buf.write(c)
-        self.position += 1
-        return c
+        start_time = time.perf_counter()
+        while (time.perf_counter() - start_time) < self.timeout_s:
+            bs: Optional[bytes] = self.istream.read(1)
+            if bs is not None:
+                c: str = bs.decode()
+                self.buf.write(c)
+                self.position += 1
+                return c
+            time.sleep(0.05)
+        raise RuntimeError(
+            f'Timed-out after {self.timeout_s} seconds while reading from the stream'
+        )
 
     def next(self) -> Union[JsonObject, JsonArray]:
         self.num_bytes = 0
