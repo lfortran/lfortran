@@ -1,13 +1,14 @@
-import io
 import json
 import os
 import signal
 import subprocess
+import sys
 import threading
 import time
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
+from io import StringIO
 from pathlib import Path
 from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple,
                     Union)
@@ -89,7 +90,7 @@ class LspTestClient(LspClient):
     server: ServerProcess
     message_stream: LspJsonStream
     ostream: IO[bytes]
-    buf: io.StringIO
+    buf: StringIO
     converter: Converter
     serial_request_id: int
     config: Dict[str, Any]
@@ -104,7 +105,7 @@ class LspTestClient(LspClient):
     responses_by_id: Dict[JsonValue, Any]
     callbacks_by_id: Dict[JsonValue, Tuple[Any, Callback]]
     stop: threading.Event
-    # stderr_printer: threading.Thread
+    stderr_printer: threading.Thread
 
     def __init__(
             self,
@@ -118,7 +119,7 @@ class LspTestClient(LspClient):
         self.server_params = server_params
         self.workspace_path = workspace_path
         self.timeout_s = timeout_ms * SECONDS_PER_MILLISECOND
-        self.buf = io.StringIO()
+        self.buf = StringIO()
         self.converter = converters.get_converter()
         self.serial_request_id = 0
         self.config = config
@@ -131,16 +132,28 @@ class LspTestClient(LspClient):
         self.responses_by_id = dict()
         self.callbacks_by_id = dict()
         self.stop = threading.Event()
-        # self.stderr_printer = threading.Thread(
-        #     target=self.print_stderr,
-        #     args=tuple()
-        # )
+        self.stderr_printer = threading.Thread(
+            target=self.print_stderr,
+            args=tuple()
+        )
 
-    # def print_stderr(self) -> None:
-    #     if self.server.stderr is not None:
-    #         while self.check_server() and not self.stop.is_set():
-    #             line = self.server.stderr.readline().decode()
-    #             print(line, end='', file=sys.stderr)
+    def print_stderr(self) -> None:
+        if self.server.stderr is not None:
+            buf = StringIO()
+            while self.check_server() and not self.stop.is_set():
+                try:
+                    bs = self.server.stderr.read(1)
+                    if bs is not None:
+                        buf.seek(0)
+                        buf.truncate(0)
+                        while (bs is not None) and not self.stop.is_set():
+                            buf.write(bs.decode())
+                            bs = self.server.stderr.read(1)
+                        print(buf.getvalue(), file=sys.stderr)
+                        continue
+                except BlockingIOError:
+                    pass
+                time.sleep(0.01)
 
     def has_event(self, pred: EventPredFn) -> bool:
         for event in self.events:
@@ -292,25 +305,27 @@ class LspTestClient(LspClient):
             [self.server_path] + self.server_params,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            # stderr=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            # stderr=subprocess.DEVNULL,
             bufsize=0
         )
         if self.server.stdout is None:
             raise RuntimeError("Cannot read from server stdout")
         if self.server.stdin is None:
             raise RuntimeError("Cannot write to server stdin")
-        # if self.server.stderr is None:
-        #     raise RuntimeError("Cannot read from server stderr")
+        if self.server.stderr is None:
+            raise RuntimeError("Cannot read from server stderr")
 
         # Make process stdout non-blocking
-        fd = self.server.stdout.fileno()
-        os.set_blocking(fd, False)
+        stdout_fd = self.server.stdout.fileno()
+        os.set_blocking(stdout_fd, False)
+        stderr_fd = self.server.stderr.fileno()
+        os.set_blocking(stderr_fd, False)
 
         self.message_stream = LspJsonStream(self.server.stdout, self.timeout_s)
         self.ostream = self.server.stdin
 
-        # self.stderr_printer.start()
+        self.stderr_printer.start()
         time.sleep(0.5)
 
         initialize_id = self.send_initialize(self.initialize_params())
@@ -327,7 +342,7 @@ class LspTestClient(LspClient):
         # self.await_response()
 
         self.stop.set()
-        # self.stderr_printer.join()
+        self.stderr_printer.join()
 
         timeout_s = 0.200
         try:

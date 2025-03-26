@@ -56,4 +56,4 @@ if [[ $WIN != "1" ]]; then
 fi
 
 pip install src/server/tests tests/server
-pytest tests/server
+pytest --full-trace --capture=no tests/server
