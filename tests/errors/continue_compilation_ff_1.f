@@ -1,3 +1,33 @@
+c     If you need a function, put it into the module below and remove the same
+c     number of lines below the module to keep the rest of the lines in this file
+c     intact.     
+      module continue_compilation_1_mod
+      CONTAINS
+
+      LOGICAL FUNCTION f(x)
+      INTEGER, INTENT(IN), OPTIONAL :: x
+      f = PRESENT(x)
+      END FUNCTION f
+      end module
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+c     Only put declarations and statements here, no subroutines (those go above).
       PROGRAM continue_compilation_ff
       INTEGER :: init_x = 1
 
@@ -26,6 +56,39 @@
       COMPLEX :: a_5
       REAL :: y_4
       INTEGER :: I J
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+c     Use the space above to insert new declarations, and remove the line, so
+c     that the lines below do not shift, to keep the diff minimal.
+c     Only put statements below. If you need to call a function, put it into a
+c     module above.      
+
       CLOSE(UNIT=200)
       I == 10
       J = 20..5
@@ -37,57 +100,21 @@
       READ *, N 5
       REAL X Y Z 10.5
       COMPLEX C = (1.0,2.0
-      WRITE(*,10) FORMAT(A, I5)
       I === 10
       J = .20E
       REAL*8 A = 1.23.45
       INTEGER*4 VAR/5/
-      COMMON /BLOCK/ A, B C
       INTEGER*4 VAR/5/
       EQUIVALENCE (X Y)
-      DO 20 I = 1 10
 
-      val = THIS_IMAGE()
-      CALL CO_SUM(val, RESULT_IMAGE=1)
-      IF (THIS_IMAGE() == 1) THEN
-        WRITE(*,*) "The sum is ", val
-      END IF
-
-      CALL EVENT_QUERY(1, 1, 1)
       x_2 = 'u'
       i = 10
       IF (i > ICHAR(x_2)) THEN
       END IF
 
       size_a = SIZE(a_2, DIM=1)
-      size_a_2 = SIZE(a_3, KIND=kindvar, DIM=1)
 
-      PRINT *, ["a", "b", "ball", "cat"]
-      PRINT *, [1, 2.]
-      PRINT *, [1, [1., 2.]]
-      PRINT *, DFLOAT(y_3)
-
-      PRINT *, SUM([1, 2, 3], 1.1)
-      PRINT *, DINT(1.0_8, 8)
-      PRINT *, DLGAMA(2.7)
-      PRINT *, DNINT(1.0_8, 8)
-      PRINT *, DPROD(4.23_8, 4.3_8)
-
-      DO i_2 = 1, 10
-        DO j_1 = 1, 2
-          i_2 = j_1 + 1
-        END DO
-        j_1 = i_2 + 1
-        PRINT *, i_2, j_1
-      END DO
-
-      DO i_2 = 1, 5, 0
-        WRITE(*,*) i_3
-      END DO
-
-      PRINT *, DREAL(a_4)
       a_5 = CMPLX(1)
-      PRINT *, FLOAT(y_4)
       IF I .EQ. 10 THEN PRINT *, "Ten"
       CALL FUNC( 5, 6,
 
