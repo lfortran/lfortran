@@ -58,7 +58,7 @@ program continue_compilation_1
     character :: c1
     complex :: c = (1.0, 2.0)
     real a_real(0)
-    integer, allocatable ::  shape_(:)
+    integer, allocatable ::  shape_(:), arr4(:)
     integer, dimension(2, 3) :: matrix
     integer, dimension(4) :: source = [1, 2, 3, 4]
     allocate(shape_(2))
@@ -72,8 +72,8 @@ program continue_compilation_1
     dimension array(3)
     double precision array
     integer , dimension(3) :: array
-
-
+    allocate(arr4(5), source=[1, 2, 3])
+    allocate(arr4(5), source=v)
 
 
 

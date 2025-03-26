@@ -1495,9 +1495,48 @@ public:
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source);
                 ASR::ttype_t* var_type = ASRUtils::expr_type(alloc_args_vec.p[i].m_a);
                 if (!ASRUtils::check_equal_type(source_type, var_type)) {
-                    // TODO: throw a nice error Here
+                    std::string source_type_str = ASRUtils::type_to_str_fortran(source_type);
+                    std::string var_type_str = ASRUtils::type_to_str_fortran(var_type);
+                    diag.add(Diagnostic(
+                        "Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.\n"
+                        "Expected type: " + var_type_str + ", but got: " + source_type_str + ".",
+                        Level::Error, Stage::Semantic, {
+                            Label("Incompatible types in `allocate` statement", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                        }));
+                    throw SemanticAbort();
                 }
-                // TODO: throw error if shape of source and variable are different 
+                {
+                    ASR::dimension_t* source_m_dims = nullptr;
+                    ASR::dimension_t* var_m_dims = alloc_args_vec.p[i].m_dims;
+                    size_t source_n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, source_m_dims);
+                    size_t var_n_dims = alloc_args_vec.p[i].n_dims;
+
+                    if (source_n_dims != 0 && source_n_dims != var_n_dims) {
+                        diag.add(Diagnostic(
+                            "Dimension mismatch in `allocate` statement.\n",
+                            Level::Error, Stage::Semantic, {
+                                Label("Mismatch in dimensions between allocated variable and `source`", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+
+                    if (source_m_dims && var_m_dims) {
+                        for (size_t j = 0; j < var_n_dims; j++) {
+                            int source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
+                            int var_dim_shape = ASRUtils::extract_dim_value_int(var_m_dims[j].m_length);
+
+                            if (source_dim_shape != var_dim_shape) {
+                                diag.add(Diagnostic(
+                                            "Shape mismatch in `allocate` statement.\n",
+                                            Level::Error, Stage::Semantic, {
+                                                Label("Shape mismatch in dimension " + std::to_string(j+1),
+                                                    {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                                            }));
+                                        throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
                 if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
                     ASRUtils::make_ArrayBroadcast_t_util(
                         al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source); 
