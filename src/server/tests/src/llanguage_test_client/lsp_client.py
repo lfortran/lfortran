@@ -6,7 +6,7 @@ from lsprotocol.types import TextDocumentSaveReason
 Uri = str
 OldUri = Uri
 NewUri = Uri
-FileRename = Tuple[OldUri, NewUri]
+FileRenameMapping = Tuple[OldUri, NewUri]
 
 
 class LspClient(ABC):
@@ -69,5 +69,25 @@ class LspClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def workspace_did_rename_files(self, files: List[FileRename]) -> None:
+    def workspace_will_create_files(self, files: List[Uri]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def workspace_did_create_files(self, files: List[Uri]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def workspace_will_rename_files(self, files: List[FileRenameMapping]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def workspace_did_rename_files(self, files: List[FileRenameMapping]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def workspace_will_delete_files(self, files: List[Uri]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def workspace_did_delete_files(self, files: List[Uri]) -> None:
         raise NotImplementedError

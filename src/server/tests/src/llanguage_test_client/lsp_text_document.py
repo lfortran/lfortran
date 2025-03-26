@@ -188,15 +188,18 @@ class LspTextDocument:
 
     def save(self, path: Optional[Union[Path, str]] = None) -> None:
         self.path = path
-        if self.path is None:
+        if self._path is None:
             raise RuntimeError('`path` must be set before calling `save()`')
         if not self.is_new:
             reason = TextDocumentSaveReason.Manual
             self.client.text_document_will_save_wait_until(self.uri, reason)
             self.client.text_document_will_save(self.uri, reason)
+        else:
+            self.client.workspace_will_create_files([self.uri])
         with open(self.path, "w+", encoding="utf-8") as f:
             f.write(self.text)
         if self.is_new:
+            self.client.workspace_did_create_files([self.uri])
             self.client.text_document_did_open(
                 self.document_id,
                 self.uri,
@@ -215,12 +218,23 @@ class LspTextDocument:
             new_path = self.path
             if old_path != new_path:
                 new_uri = self.uri
-                old_path.replace(new_path)
-                self.client.workspace_did_rename_files([
+                files = [
                     (old_uri, new_uri),
-                ])
+                ]
+                self.client.workspace_will_rename_files(files)
+                old_path.replace(new_path)
+                self.client.workspace_did_rename_files(files)
         else:
             raise RuntimeError('Must call `save()` before `rename()`')
+
+    def remove(self) -> None:
+        if self._path is None:
+            raise RuntimeError('`path` must be set before calling `remove()`')
+        uri = self.uri
+        self.client.workspace_will_delete_files([uri])
+        self._path.unlink()
+        self._path = None
+        self.client.workspace_did_delete_files([uri])
 
     def bump_version(self) -> int:
         self.version += 1
@@ -305,8 +319,8 @@ class LspTextDocument:
         if self._path is not None:
             self.client.text_document_did_change(
                 self.uri, self.bump_version(),
-                start_line, start_column,
-                end_line, end_column,
+                start_line, start_column + 1,
+                end_line, end_column + 1,
                 self.text, ""
             )
         self.recompute_indices()
@@ -325,7 +339,7 @@ class LspTextDocument:
         Inserts text at the current location (does not overwrite existing text).
         """
         start = self.position
-        end = min(start + len(text), len(self.text))
+        end = start
         start_line, start_column = self.pos_to_linecol(start)
         end_line, end_column = self.pos_to_linecol(end)
         suffix = self.buf.read()
@@ -335,8 +349,8 @@ class LspTextDocument:
         if self._path is not None:
             self.client.text_document_did_change(
                 self.uri, self.bump_version(),
-                start_line, start_column,
-                end_line, end_column,
+                start_line, start_column + 1,
+                end_line, end_column + 1,
                 self.text, text
             )
         self.recompute_indices()
@@ -359,8 +373,8 @@ class LspTextDocument:
         if self._path is not None:
             self.client.text_document_did_change(
                 self.uri, self.bump_version(),
-                start_line, start_column,
-                end_line, end_column,
+                start_line, start_column + 1,
+                end_line, end_column + 1,
                 self.text, text
             )
         self.recompute_indices()

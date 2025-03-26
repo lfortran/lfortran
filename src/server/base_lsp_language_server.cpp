@@ -1260,6 +1260,16 @@ namespace LCompilers::LanguageServerProtocol {
             capabilities.textDocumentSync = std::move(textDocumentSync);
         }
 
+        {
+            ServerCapabilities_workspace &workspace = capabilities.workspace.emplace();
+            FileOperationOptions &fileOperations = workspace.fileOperations.emplace();
+            FileOperationRegistrationOptions &didRename = fileOperations.didRename.emplace();
+
+            FileOperationFilter &fortranFilter = didRename.filters.emplace_back();
+            fortranFilter.scheme = "file";
+            fortranFilter.pattern.glob = "**/*.{f,for,f90,f95,f03}";
+        }
+
         _initializeParams =
             std::make_unique<InitializeParams>(std::move(params));
 

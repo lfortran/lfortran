@@ -3,7 +3,6 @@ import json
 import os
 import signal
 import subprocess
-import sys
 import threading
 import time
 from collections import defaultdict
@@ -22,14 +21,16 @@ from lsprotocol.types import (
     CompletionClientCapabilitiesCompletionItemTypeInsertTextModeSupportType,
     CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
     CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
-    CompletionItemTag, DidChangeConfigurationClientCapabilities,
-    DidChangeConfigurationParams, DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, ExitNotification, HoverClientCapabilities,
-    InitializedNotification, InitializedParams, InitializeParams,
-    InitializeRequest, InitializeResponse, InitializeResultServerInfoType,
-    InsertTextMode, MarkupKind, Position, Range, Registration, SaveOptions,
-    ServerCapabilities, ShutdownRequest, TextDocumentClientCapabilities,
+    CompletionItemTag, CreateFilesParams, DeleteFilesParams,
+    DidChangeConfigurationClientCapabilities, DidChangeConfigurationParams,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, ExitNotification,
+    FileCreate, FileDelete, FileOperationClientCapabilities, FileRename,
+    HoverClientCapabilities, InitializedNotification, InitializedParams,
+    InitializeParams, InitializeRequest, InitializeResponse,
+    InitializeResultServerInfoType, InsertTextMode, MarkupKind, Position,
+    Range, Registration, RenameFilesParams, SaveOptions, ServerCapabilities,
+    ShutdownRequest, TextDocumentClientCapabilities,
     TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
     TextDocumentDidChangeNotification, TextDocumentDidCloseNotification,
     TextDocumentDidOpenNotification, TextDocumentDidSaveNotification,
@@ -40,10 +41,13 @@ from lsprotocol.types import (
     TextDocumentWillSaveWaitUntilResponse, VersionedTextDocumentIdentifier,
     WillSaveTextDocumentParams, WorkspaceClientCapabilities,
     WorkspaceConfigurationRequest, WorkspaceConfigurationResponse,
-    WorkspaceDidChangeConfigurationNotification)
+    WorkspaceDidChangeConfigurationNotification,
+    WorkspaceDidCreateFilesNotification, WorkspaceDidDeleteFilesNotification,
+    WorkspaceDidRenameFilesNotification, WorkspaceWillCreateFilesRequest,
+    WorkspaceWillDeleteFilesRequest, WorkspaceWillRenameFilesRequest)
 
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
-from llanguage_test_client.lsp_client import FileRename, LspClient
+from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
 from llanguage_test_client.lsp_json_stream import LspJsonStream
 from llanguage_test_client.lsp_text_document import LspTextDocument
 
@@ -61,6 +65,11 @@ class IncomingEvent(Event):
 @dataclass
 class OutgoingEvent(Event):
     pass
+
+
+EventPredFn = Callable[[Event], bool]
+IncomingEventPredFn = Callable[[IncomingEvent], bool]
+OutgoingEventPredFn = Callable[[OutgoingEvent], bool]
 
 
 Callback = Callable[[Any, JsonObject], None]
@@ -132,6 +141,24 @@ class LspTestClient(LspClient):
     #             line = self.server.stderr.readline().decode()
     #             print(line, end='', file=sys.stderr)
 
+    def has_event(self, pred: EventPredFn) -> bool:
+        for event in self.events:
+            if pred(event):
+                return True
+        return False
+
+    def has_incoming_event(self, pred: IncomingEventPredFn) -> bool:
+        for event in self.events:
+            if isinstance(event, IncomingEvent) and pred(event):
+                return True
+        return False
+
+    def has_outgoing_event(self, pred: OutgoingEventPredFn) -> bool:
+        for event in self.events:
+            if isinstance(event, OutgoingEvent) and pred(event):
+                return True
+        return False
+
     def next_request_id(self) -> int:
         request_id = self.serial_request_id
         self.serial_request_id += 1
@@ -161,23 +188,31 @@ class LspTestClient(LspClient):
         self.documents_by_id[document_id] = document
         return document
 
-    def await_response(self, request_id: Optional[int] = None) -> None:
+    def await_response(self, request_id: Optional[int] = None) -> Any:
         while not self.stop.is_set():
             message = self.receive_message()
             response_id = message.get("id", None)
             if response_id is not None and response_id in self.responses_by_id:
-                break
+                return message
             if request_id == response_id:
-                break
+                return message
 
     def initialize_params(self) -> InitializeParams:
         params = InitializeParams(
             capabilities=ClientCapabilities(
                 workspace=WorkspaceClientCapabilities(
                     did_change_configuration=DidChangeConfigurationClientCapabilities(
-                        dynamic_registration=True
+                        dynamic_registration=True,
                     ),
-                    configuration=True
+                    configuration=True,
+                    file_operations=FileOperationClientCapabilities(
+                        did_create=True,
+                        will_create=True,
+                        did_rename=True,
+                        will_rename=True,
+                        did_delete=True,
+                        will_delete=True,
+                    ),
                 ),
                 text_document=TextDocumentClientCapabilities(
                     synchronization=TextDocumentSyncClientCapabilities(
@@ -193,38 +228,38 @@ class LspTestClient(LspClient):
                             commit_characters_support=False,
                             documentation_format=[
                                 MarkupKind.PlainText,
-                                MarkupKind.Markdown
+                                MarkupKind.Markdown,
                             ],
                             deprecated_support=True,
                             preselect_support=False,
                             tag_support=CompletionClientCapabilitiesCompletionItemTypeTagSupportType(
                                 value_set=[
-                                    CompletionItemTag.Deprecated
-                                ]
+                                    CompletionItemTag.Deprecated,
+                                ],
                             ),
                             insert_replace_support=False,
                             resolve_support=CompletionClientCapabilitiesCompletionItemTypeResolveSupportType(
-                                properties=[]
+                                properties=[],
                             ),
                             insert_text_mode_support=CompletionClientCapabilitiesCompletionItemTypeInsertTextModeSupportType(
                                 value_set=[
                                     InsertTextMode.AsIs,
-                                    InsertTextMode.AdjustIndentation
-                                ]
+                                    InsertTextMode.AdjustIndentation,
+                                ],
                             ),
-                            label_details_support=True
+                            label_details_support=True,
                         ),
-                        context_support=True
+                        context_support=True,
                     ),
                     hover=HoverClientCapabilities(
                         dynamic_registration=True,
                         content_format=[
                             MarkupKind.PlainText,
-                            MarkupKind.Markdown
-                        ]
-                    )
-                )
-            )
+                            MarkupKind.Markdown,
+                        ],
+                    ),
+                ),
+            ),
         )
         return params
 
@@ -257,17 +292,19 @@ class LspTestClient(LspClient):
         self.await_response(initialize_id)
 
         self.send_initialized(self.initialized_params())
+        self.await_response()
 
     def terminate(self) -> None:
         shutdown_id = self.send_shutdown()
         self.await_response(shutdown_id)
 
         self.send_exit()
+        # self.await_response()
 
         self.stop.set()
         # self.stderr_printer.join()
 
-        timeout_s = 2.00
+        timeout_s = 0.200
         try:
             self.server.wait(timeout=timeout_s)
         except subprocess.TimeoutExpired as e:
@@ -382,7 +419,6 @@ class LspTestClient(LspClient):
     def send_initialized(self, params: InitializedParams) -> None:
         notification = InitializedNotification(params)
         self.send_message(notification)
-        self.await_response()
 
     def send_shutdown(self) -> int:
         request_id = self.next_request_id()
@@ -400,7 +436,6 @@ class LspTestClient(LspClient):
     def send_exit(self) -> None:
         notification = ExitNotification()
         self.send_message(notification)
-        # self.await_response()
 
     def receive_client_register_capability(
             self,
@@ -414,6 +449,7 @@ class LspTestClient(LspClient):
                     self.send_workspace_did_change_configuration(
                         DidChangeConfigurationParams(self.config)
                     )
+                    self.await_response()
         response = ClientRegisterCapabilityResponse(request.id)
         return response
 
@@ -423,7 +459,6 @@ class LspTestClient(LspClient):
     ) -> None:
         notification = WorkspaceDidChangeConfigurationNotification(params)
         self.send_message(notification)
-        self.await_response()
 
     def receive_workspace_configuration(
             self,
@@ -453,7 +488,6 @@ class LspTestClient(LspClient):
     ) -> None:
         notification = TextDocumentDidOpenNotification(params)
         self.send_message(notification)
-        self.await_response()
 
     def text_document_did_open(
             self,
@@ -475,6 +509,7 @@ class LspTestClient(LspClient):
                 )
             )
             self.send_text_document_did_open(params)
+            self.await_response()
 
     def send_text_document_did_close(
             self,
@@ -482,7 +517,6 @@ class LspTestClient(LspClient):
     ) -> None:
         notification = TextDocumentDidCloseNotification(params)
         self.send_message(notification)
-        self.await_response()
 
     def text_document_did_close(
             self,
@@ -499,6 +533,7 @@ class LspTestClient(LspClient):
                     )
                 )
                 self.send_text_document_did_close(params)
+                self.await_response()
 
     def send_text_document_will_save(
             self,
@@ -506,7 +541,6 @@ class LspTestClient(LspClient):
     ) -> None:
         notification = TextDocumentWillSaveNotification(params)
         self.send_message(notification)
-        self.await_response()
 
     def server_supports_text_document_will_save(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
@@ -527,6 +561,7 @@ class LspTestClient(LspClient):
                 reason=reason
             )
             self.send_text_document_will_save(params)
+            self.await_response()
 
     def send_text_document_will_save_wait_until(
             self,
@@ -578,7 +613,6 @@ class LspTestClient(LspClient):
     ) -> None:
         notification = TextDocumentDidSaveNotification(params)
         self.send_message(notification)
-        self.await_response()
 
     def server_supports_full_text_on_save(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
@@ -603,6 +637,7 @@ class LspTestClient(LspClient):
                 text=text if self.server_supports_full_text_on_save() else None
             )
             self.send_text_document_did_save(params)
+            self.await_response()
 
     def send_text_document_did_change(
             self,
@@ -610,7 +645,6 @@ class LspTestClient(LspClient):
     ) -> None:
         notification = TextDocumentDidChangeNotification(params)
         self.send_message(notification)
-        self.await_response()
 
     def server_supports_text_document_sync_kind(
             self,
@@ -677,9 +711,170 @@ class LspTestClient(LspClient):
                 ]
             )
             self.send_text_document_did_change(params)
+            self.await_response()
 
-    def workspace_did_rename_files(self, files: List[FileRename]) -> None:
+    def server_supports_workspace_will_create_files(self) -> bool:
+        workspace = self.server_capabilities.workspace
+        if workspace is not None:
+            file_operations = workspace.file_operations
+            if file_operations is not None:
+                # TODO: Implement a parser for additional pattern matching
+                return file_operations.will_create is not None
+        return False
+
+    def send_workspace_will_create_files(self, params: CreateFilesParams) -> int:
+        request_id = self.next_request_id()
+        request = WorkspaceWillCreateFilesRequest(request_id, params)
+        self.send_request(request, self.receive_workspace_will_create_files)
+        return request_id
+
+    def receive_workspace_will_create_files(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # TODO: Update the workspace as requested by the response
+        pass
+
+    def workspace_will_create_files(self, files: List[Uri]) -> None:
+        if self.server_supports_workspace_will_create_files():
+            params = CreateFilesParams(
+                files=[FileCreate(uri) for uri in files]
+            )
+            request_id = self.send_workspace_will_create_files(params)
+            self.await_response(request_id)
+
+    def server_supports_workspace_did_create_files(self) -> bool:
+        workspace = self.server_capabilities.workspace
+        if workspace is not None:
+            file_operations = workspace.file_operations
+            if file_operations is not None:
+                # TODO: Implement a parser for additional pattern matching
+                return file_operations.did_create is not None
+        return False
+
+    def send_workspace_did_create_files(self, params: CreateFilesParams) -> None:
+        notification = WorkspaceDidCreateFilesNotification(params)
+        self.send_message(notification)
+
+    def workspace_did_create_files(self, files: List[Uri]) -> None:
+        for uri in files:
+            if uri in self.documents_by_uri:
+                del self.documents_by_uri[uri]
+        if self.server_supports_workspace_did_create_files():
+            params = CreateFilesParams(
+                files=[FileCreate(uri) for uri in files]
+            )
+            self.send_workspace_did_create_files(params)
+            self.await_response()
+
+    def server_supports_workspace_will_rename_files(self) -> bool:
+        workspace = self.server_capabilities.workspace
+        if workspace is not None:
+            file_operations = workspace.file_operations
+            if file_operations is not None:
+                # TODO: Implement a parser for additional pattern matching
+                return file_operations.will_rename is not None
+        return False
+
+    def send_workspace_will_rename_files(self, params: RenameFilesParams) -> int:
+        request_id = self.next_request_id()
+        request = WorkspaceWillRenameFilesRequest(request_id, params)
+        self.send_request(request, self.receive_workspace_will_rename_files)
+        return request_id
+
+    def receive_workspace_will_rename_files(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # TODO: Update the workspace as requested by the response
+        pass
+
+    def workspace_will_rename_files(self, files: List[FileRenameMapping]) -> None:
+        if self.server_supports_workspace_will_rename_files():
+            params = RenameFilesParams(
+                files=[FileRename(old_uri, new_uri) for old_uri, new_uri in files]
+            )
+            request_id = self.send_workspace_will_rename_files(params)
+            self.await_response(request_id)
+
+    def server_supports_workspace_did_rename_files(self) -> bool:
+        workspace = self.server_capabilities.workspace
+        if workspace is not None:
+            file_operations = workspace.file_operations
+            if file_operations is not None:
+                # TODO: Implement a parser for additional pattern matching
+                return file_operations.did_rename is not None
+        return False
+
+    def send_workspace_did_rename_files(self, params: RenameFilesParams) -> None:
+        notification = WorkspaceDidRenameFilesNotification(params)
+        self.send_message(notification)
+
+    def workspace_did_rename_files(self, files: List[FileRenameMapping]) -> None:
         for old_uri, new_uri in files:
             document = self.documents_by_uri[old_uri]
             del self.documents_by_uri[old_uri]
             self.documents_by_uri[new_uri] = document
+        if self.server_supports_workspace_did_rename_files():
+            params = RenameFilesParams(
+                files=[FileRename(old_uri, new_uri) for old_uri, new_uri in files]
+            )
+            self.send_workspace_did_rename_files(params)
+            self.await_response()
+
+    def server_supports_workspace_will_delete_files(self) -> bool:
+        workspace = self.server_capabilities.workspace
+        if workspace is not None:
+            file_operations = workspace.file_operations
+            if file_operations is not None:
+                # TODO: Implement a parser for additional pattern matching
+                return file_operations.will_delete is not None
+        return False
+
+    def send_workspace_will_delete_files(self, params: DeleteFilesParams) -> int:
+        request_id = self.next_request_id()
+        request = WorkspaceWillDeleteFilesRequest(request_id, params)
+        self.send_request(request, self.receive_workspace_will_delete_files)
+        return request_id
+
+    def receive_workspace_will_delete_files(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # TODO: Update the workspace as requested by the response
+        pass
+
+    def workspace_will_delete_files(self, files: List[Uri]) -> None:
+        if self.server_supports_workspace_will_delete_files():
+            params = DeleteFilesParams(
+                files=[FileDelete(uri) for uri in files]
+            )
+            request_id = self.send_workspace_will_delete_files(params)
+            self.await_response(request_id)
+
+    def server_supports_workspace_did_delete_files(self) -> bool:
+        workspace = self.server_capabilities.workspace
+        if workspace is not None:
+            file_operations = workspace.file_operations
+            if file_operations is not None:
+                # TODO: Implement a parser for additional pattern matching
+                return file_operations.did_delete is not None
+        return False
+
+    def send_workspace_did_delete_files(self, params: DeleteFilesParams) -> None:
+        notification = WorkspaceDidDeleteFilesNotification(params)
+        self.send_message(notification)
+
+    def workspace_did_delete_files(self, files: List[Uri]) -> None:
+        for uri in files:
+            if uri in self.documents_by_uri:
+                del self.documents_by_uri[uri]
+        if self.server_supports_workspace_did_delete_files():
+            params = DeleteFilesParams(
+                files=[FileDelete(uri) for uri in files]
+            )
+            self.send_workspace_did_delete_files(params)
+            self.await_response()
