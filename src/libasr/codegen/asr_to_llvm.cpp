@@ -5635,6 +5635,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             llvm_utils->dict_api->write_item(pdict, key, value, module.get(),
                                 dict_type->m_key_type,
                                 dict_type->m_value_type, name2memidx);
+        } else if (ASR::is_a<ASR::Allocatable_t>(*target_type) && ASR::is_a<ASR::StructType_t>(*value_type)) {
+            target = llvm_utils->CreateLoad(target);
+            builder->CreateStore(value, target);
         } else {
             builder->CreateStore(value, target);
         }
@@ -9681,7 +9684,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
                                                 ASRUtils::expr_type(s->m_args[0]));
                 // derived type declared type
-                ASR::ttype_t* dt_type = ASRUtils::type_get_past_pointer(caller->m_type);
+                ASR::ttype_t* dt_type = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(caller->m_type));
                 dt = convert_to_polymorphic_arg(dt, s_m_args0_type, dt_type);
                 args.push_back(dt);
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
