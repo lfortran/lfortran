@@ -637,3 +637,27 @@ semantic error: Required argument `extra_arg` is missing in function call
     |
 300 |     call obj%display()
     |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Shape mismatch in `allocate` statement.
+   --> tests/errors/continue_compilation_1.f90:302:14
+    |
+302 |     allocate(arr4(5), source=[1, 2, 3])
+    |              ^^^^^^^         ^^^^^^^^^ shape mismatch in dimension 1
+
+semantic error: Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.Expected type: integer[:] allocatable, but got: real.
+   --> tests/errors/continue_compilation_1.f90:303:14
+    |
+303 |     allocate(arr4(5), source=v)
+    |              ^^^^^^^         ^ incompatible types in `allocate` statement
+
+semantic error: Dimension mismatch in `allocate` statement.
+   --> tests/errors/continue_compilation_1.f90:304:14
+    |
+304 |     allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
+    |              ^^^^^^^         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mismatch in dimensions between allocated variable and `source`
+
+semantic error: Cannot allocate an array from a scalar source.
+   --> tests/errors/continue_compilation_1.f90:305:14
+    |
+305 |     allocate(arr4, source=7)
+    |              ^^^^ allocated variable is an array, but `source` is a scalar
