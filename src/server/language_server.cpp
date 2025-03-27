@@ -1,3 +1,4 @@
+#include <ostream>
 #include <server/language_server.h>
 
 namespace LCompilers::LLanguageServer {
@@ -20,7 +21,10 @@ namespace LCompilers::LLanguageServer {
     auto LanguageServer::send(const std::string &message) -> void {
         buffer.clear();
         prepare(buffer, message);
-        outgoingMessages.enqueue(buffer);
+        if (outgoingMessages.enqueue(buffer) == nullptr) {
+            logger.error() << "Failed to enqueue message:" << std::endl
+                           << buffer << std::endl;
+        }
     }
 
 } // namespace LCompilers::LLanguageServer

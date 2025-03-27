@@ -1,4 +1,5 @@
 #include <cctype>
+#include <chrono>
 #include <cstdio>
 #include <iostream>
 #include <ostream>
@@ -13,6 +14,7 @@
 #include <server/communication_protocol.h>
 
 namespace LCompilers::LLanguageServer {
+    using namespace std::chrono_literals;
 
     CommunicationProtocol::CommunicationProtocol(
         LanguageServer &languageServer,
@@ -31,6 +33,9 @@ namespace LCompilers::LLanguageServer {
           listen();
       })
     {
+        // Decouple stdin from stdout
+        std::ios::sync_with_stdio(false);
+        std::cin.tie(nullptr);
         // Redirect stdout to stderr
         std::cout << std::flush;
         std::cout.rdbuf(std::cerr.rdbuf());
@@ -47,10 +52,16 @@ namespace LCompilers::LLanguageServer {
         } else if (dup2(fileno(stderr), fileno(stdout)) == -1) {
 #endif // _WIN32
             logger.error() << "Failed to copy stdout for restoration." << std::endl;
+        // } else if ((stdout_fp = fdopen(stdout_fd, "w")) == nullptr) {
+        //     close(stdout_fd);
+        //     logger.error() << "Failed to open FILE to stdout." << std::endl;
         }
     }
 
     CommunicationProtocol::~CommunicationProtocol() {
+        // Re-couple stdin with stdout
+        std::ios::sync_with_stdio(true);
+        std::cin.tie(&std::cout);
         // Restore stdout
         std::cout << std::flush;
         std::cout.rdbuf(cout_sbuf);
@@ -63,6 +74,7 @@ namespace LCompilers::LLanguageServer {
             logger.debug() << "Failed to restore stdout." << std::endl;
         }
         close(stdout_fd);
+        // fclose(stdout_fp);
     }
 
     auto CommunicationProtocol::listen() -> void {
@@ -80,6 +92,8 @@ namespace LCompilers::LLanguageServer {
                     logger.error() << "Failed to write message to stdout:" << std::endl
                                    << message << std::endl;
                 }
+                // fflush(stdout_fp);
+                // fsync(stdout_fd);
             } while (running);
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {

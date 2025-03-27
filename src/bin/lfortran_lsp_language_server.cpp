@@ -341,6 +341,10 @@ namespace LCompilers::LanguageServerProtocol {
                 << std::endl;
         }
 
+        InitializeResult_serverInfo &serverInfo = result.serverInfo.emplace();
+        serverInfo.name = source;
+        serverInfo.version = compilerVersion;
+
         ServerCapabilities &capabilities = result.capabilities;
 
         if (clientSupportsGotoDefinition) {
