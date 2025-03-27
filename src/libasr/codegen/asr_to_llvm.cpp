@@ -6808,26 +6808,21 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             };
             case ASR::binopType::Pow: {
                 const int expr_return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                llvm::Type* const exponent_type = llvm::Type::getInt32Ty(context);
                 llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
-                llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
-                #if LLVM_VERSION_MAJOR <= 12
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32";
-                #else
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32";
-                #endif
-                llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
-                llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
+                const std::string func_name = "_lfortran_pow";
+                llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
+                llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
+                llvm::Value* _left = llvm_utils->convert_kind(left_val, i64_ty);
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            base_type, {base_type, exponent_type}, false);
+                            i64_ty, {i64_ty, i64_ty}, false);
                     fn_pow = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, func_name,
                             module.get());
                 }
-                tmp = builder->CreateCall(fn_pow, {fleft, fright});
-                tmp = builder->CreateFPToSI(tmp, return_type);
+                tmp = builder->CreateCall(fn_pow, {_left, _right});
+                tmp = llvm_utils->convert_kind(tmp, return_type);
                 break;
             };
             case ASR::binopType::BitOr: {
