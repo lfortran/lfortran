@@ -49,6 +49,20 @@ Expected type: integer[:] allocatable, but got: real.
 76 |     allocate(arr4(5), source=v)
    |              ^^^^^^^         ^ Incompatible types in `allocate` statement
 
+semantic error: Dimension mismatch in `allocate` statement.
+
+  --> tests/errors/continue_compilation_1.f90:77:14
+   |
+77 |     allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
+   |              ^^^^^^^         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Mismatch in dimensions between allocated variable and `source`
+
+semantic error: Cannot allocate an array from a scalar source.
+
+  --> tests/errors/continue_compilation_1.f90:78:14
+   |
+78 |     allocate(arr4, source=7)
+   |              ^^^^ allocated variable is an array, but `source` is a scalar
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
     |
