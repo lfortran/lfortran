@@ -1,4 +1,4 @@
-module mpi
+module bindc_05_mod
     use iso_c_binding, only: c_int, c_ptr, c_f_pointer, c_null_ptr, c_associated
     implicit none
 
@@ -38,10 +38,10 @@ contains
             if (present(ierror)) ierror = 0
         end if
     end subroutine MPI_Barrier
-end module mpi
+end module bindc_05_mod
 
 program bindc_05
-    use mpi
+    use bindc_05_mod
     implicit none
     integer, parameter :: MPI_COMM_WORLD = 42  ! Non-zero value
     integer :: ierr
@@ -51,5 +51,6 @@ program bindc_05
         print *, "Test passed successfully"
     else
         print *, "Test failed"
+        error stop
     end if
 end program bindc_05
