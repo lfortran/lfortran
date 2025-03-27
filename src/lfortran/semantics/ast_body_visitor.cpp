@@ -1498,10 +1498,10 @@ public:
                     std::string source_type_str = ASRUtils::type_to_str_fortran(source_type);
                     std::string var_type_str = ASRUtils::type_to_str_fortran(var_type);
                     diag.add(Diagnostic(
-                        "Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.\n"
+                        "Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable."
                         "Expected type: " + var_type_str + ", but got: " + source_type_str + ".",
                         Level::Error, Stage::Semantic, {
-                            Label("Incompatible types in `allocate` statement", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                            Label("incompatible types in `allocate` statement", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
                         }));
                     throw SemanticAbort();
                 }
@@ -1515,14 +1515,14 @@ public:
 
                     if (source_n_dims != 0 && ((var_n_dims != 0 && var_n_dims != source_n_dims) || (var_n_dims == 0 && source_n_dims != var_n_dims_decl))) {
                         diag.add(Diagnostic(
-                            "Dimension mismatch in `allocate` statement.\n",
+                            "Dimension mismatch in `allocate` statement.",
                             Level::Error, Stage::Semantic, {
-                                Label("Mismatch in dimensions between allocated variable and `source`", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                                Label("mismatch in dimensions between allocated variable and `source`", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
                             }));
                         throw SemanticAbort();
                     } else if (source_n_dims == 0 && (var_n_dims == 0 && var_n_dims_decl != 0)) {
                         diag.add(Diagnostic(
-                            "Cannot allocate an array from a scalar source.\n",
+                            "Cannot allocate an array from a scalar source.",
                             Level::Error, Stage::Semantic, {
                                 Label("allocated variable is an array, but `source` is a scalar", 
                                     {alloc_args_vec.p[i].m_a->base.loc})
@@ -1537,9 +1537,9 @@ public:
 
                             if (source_dim_shape != var_dim_shape) {
                                 diag.add(Diagnostic(
-                                            "Shape mismatch in `allocate` statement.\n",
+                                            "Shape mismatch in `allocate` statement.",
                                             Level::Error, Stage::Semantic, {
-                                                Label("Shape mismatch in dimension " + std::to_string(j+1),
+                                                Label("shape mismatch in dimension " + std::to_string(j+1),
                                                     {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
                                             }));
                                         throw SemanticAbort();

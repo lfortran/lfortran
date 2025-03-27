@@ -72,10 +72,10 @@ program continue_compilation_1
     dimension array(3)
     double precision array
     integer , dimension(3) :: array
-    allocate(arr4(5), source=[1, 2, 3])
-    allocate(arr4(5), source=v)
-    allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
-    allocate(arr4, source=7)
+
+
+
+
 
 
 
@@ -298,5 +298,10 @@ program continue_compilation_1
     type(MyClass) :: obj
     obj%value = 42
     call obj%display()
+    ! checking source in allocate
+    allocate(arr4(5), source=[1, 2, 3])
+    allocate(arr4(5), source=v)
+    allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
+    allocate(arr4, source=7)
 
 end program
