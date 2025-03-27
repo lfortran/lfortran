@@ -53,7 +53,7 @@ if [[ $WIN != "1" ]]; then
     ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f
     ./run_tests.py -b llvm -f -nf16
     cd ..
-fi
 
-pip install src/server/tests tests/server
-pytest --full-trace --capture=no tests/server
+    pip install src/server/tests tests/server
+    pytest --full-trace --capture=no tests/server
+fi

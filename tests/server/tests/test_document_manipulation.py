@@ -40,7 +40,7 @@ def test_document_manipulation(client: LspTestClient):
                     "end module module_function_call1",
                 ]) + "\n"
 
-            client.await_validation(doc.uri, doc.version)
+            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.cursor = 0,5
             doc.write("foo")
@@ -73,7 +73,7 @@ def test_document_manipulation(client: LspTestClient):
                     "end module module_function_call1",
                 ]) + "\n"
 
-            client.await_validation(doc.uri, doc.version)
+            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.cursor = 0,5
             doc.replace("bar")
@@ -109,7 +109,7 @@ def test_document_manipulation(client: LspTestClient):
                     "end module module_function_call1",
                 ]) + "\n"
 
-            client.await_validation(doc.uri, doc.version)
+            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.cursor = 0,5
             doc.delete(3)
@@ -142,7 +142,7 @@ def test_document_manipulation(client: LspTestClient):
                     "end module module_function_call1",
                 ]) + "\n"
 
-            client.await_validation(doc.uri, doc.version)
+            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.rename(tmp_file_2.name)
 
