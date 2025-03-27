@@ -32,7 +32,7 @@ src/server/lsp_specification.cpp
 src/server/lsp_specification.h
 src/server/lsp_transformer.cpp
 src/server/lsp_transformer.h
-**/lfortran-language-server.log
+**/*.log
 
 .#*
 *.sw?
