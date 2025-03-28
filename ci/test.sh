@@ -55,5 +55,5 @@ if [[ $WIN != "1" ]]; then
     cd ..
 
     pip install src/server/tests tests/server
-    pytest --full-trace --capture=no tests/server
+    pytest -vv --showlocals --full-trace --capture=no --timeout=5 tests/server
 fi
