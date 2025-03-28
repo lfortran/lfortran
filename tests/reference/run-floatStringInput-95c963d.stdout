@@ -1,0 +1,2 @@
+Runtime error: File `invalidInput_float.txt` does not exists!
+Cannot open a file with the `status=old`
