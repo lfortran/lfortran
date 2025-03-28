@@ -547,7 +547,7 @@ jobs:
             # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
             git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
-            git checkout e2f2a2b6668e81f5d9f1441c20d64b8c7446aa6b
+            git checkout eb05c69d30b7c88454d97d66ab6be46db10e7552
             FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
             FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
 
