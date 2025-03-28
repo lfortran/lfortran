@@ -3862,7 +3862,9 @@ public:
                 break;
             }
             case (ASR::symbolType::Variable) : {
-                if (compiler_options.implicit_interface && !ASR::is_a<ASR::FunctionType_t>(*ASR::down_cast<ASR::Variable_t>(original_sym)->m_type)) {
+                if (compiler_options.implicit_interface &&
+                    !ASRUtils::is_symbol_procedure_variable(original_sym)
+                ) {
                     // In case of implicit_interface, we redefine the symbol
                     // from a Variable to Function. Example:
                     //

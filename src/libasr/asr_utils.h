@@ -143,6 +143,17 @@ static inline ASR::symbol_t* symbol_get_past_ClassProcedure(ASR::symbol_t* f){
     return f;
 }
 
+/*
+Returns true, when the symbol 'f' is a procedure variable
+*/
+static inline bool is_symbol_procedure_variable(ASR::symbol_t* f) {
+    if (ASR::is_a<ASR::Variable_t>(*f)) {
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f);
+        return ASR::is_a<ASR::FunctionType_t>(*v->m_type);
+    }
+    return false;
+}
+
 template <typename T>
 Location get_vec_loc(const Vec<T>& args) {
     LCOMPILERS_ASSERT(args.size() > 0);
