@@ -589,7 +589,7 @@ class LspTestClient(LspClient):
         del self.documents_by_id[document_id]
         if self.active_document is not None \
            and self.active_document.document_id == document_id:
-            for prev_document_id in range(document_id - 1, 0):
+            for prev_document_id in range(document_id - 1, -1, -1):
                 prev_document = self.documents_by_id.get(prev_document_id, None)
                 if prev_document is not None:
                     self.active_document = prev_document
