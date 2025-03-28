@@ -1,9 +1,15 @@
 program integerStringInput
     implicit none
-    integer::x
+    integer :: x
+    open(unit=10, file="invalidInput_integer.txt", status="old", action="read")
 
+    do
+        read(10, *, end=100) x
+        print *, "Read integer:", x
+    end do
 
-    print *, "Enter Integer: "
-    read(*,*) x
-    print *, "You Entered: ", x
+100 continue
+    close(10)
+    stop
+
 end program integerStringInput

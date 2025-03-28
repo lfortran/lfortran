@@ -1,9 +1,15 @@
-program floatStringInput
+program realStringInput
     implicit none
-    real::x
+    real :: x
+    open(unit=10, file="invalidInput_float.txt", status="old", action="read")
 
+    do
+        read(10, *, end=100) x
+        print *, "Read real number:", x
+    end do
 
-    print *, "Enter Float: "
-    read(*,*) x
-    print *, "You Entered: ", x
-end program floatStringInput
+100 continue
+    close(10)
+    stop
+
+end program realStringInput
