@@ -4521,8 +4521,8 @@ asr = true
 
 [[test]]
 filename = "errors/integerStringInput.f90"
-asr = false
+asr = true
 
 [[test]]
 filename = "errors/floatStringInput.f90"
-asr = false
+asr = true
