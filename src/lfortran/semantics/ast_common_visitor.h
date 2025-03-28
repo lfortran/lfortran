@@ -10166,7 +10166,7 @@ public:
                 }
                 if(ASR::is_a<ASR::Allocatable_t>(*array_type)){
                     ASR::down_cast<ASR::Array_t>((ASR::down_cast<ASR::Allocatable_t>(array_type))->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(tmp2->m_type));
-                    if (ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::ExternalSymbol_t>(tmp2->m_m)->m_external)->m_type->type == ASR::ttypeType::Allocatable) {
+                    if (ASRUtils::is_allocatable(ASRUtils::EXPR(tmp))) {
                         tmp2->m_type = array_type;
                     } else {
                         tmp2->m_type = ASRUtils::type_get_past_allocatable(array_type);
