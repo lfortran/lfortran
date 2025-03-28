@@ -1000,4 +1000,4 @@ class LspTestClient(LspClient):
                 ),
             )
             request_id = self.send_text_document_definition(params)
-            return self.await_response(request_id)
+            self.await_response(request_id)
