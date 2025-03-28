@@ -233,28 +233,18 @@ class LspTestClient(LspClient):
 
     def await_response(
             self,
-            request_id: Optional[int] = None,
-            event_index: Optional[int] = None
+            request_id: int
     ) -> Any:
         if request_id is not None:
             message = self.responses_by_id.get(request_id, None)
             if message is not None:
                 return message
-        elif event_index is not None:
-            for index in range(event_index, len(self.events)):
-                event = self.events[index]
-                if isinstance(event, IncomingEvent):
-                    response = event.data
-                    if response.get("id", None) is None:
-                        return response
         while not self.stop.is_set():
             message = self.receive_message()
             if "result" in message:
                 response_id = message.get("id", None)
                 if request_id == response_id:
                     return message
-            elif request_id is None and message.get("id", None) is None:
-                return message
 
     def initialize_params(self) -> InitializeParams:
         params = InitializeParams(
@@ -358,16 +348,13 @@ class LspTestClient(LspClient):
         initialize_id = self.send_initialize(self.initialize_params())
         self.await_response(initialize_id)
 
-        event_index = len(self.events)
         self.send_initialized(self.initialized_params())
-        self.await_response(event_index=event_index)
 
     def terminate(self) -> None:
         shutdown_id = self.send_shutdown()
         self.await_response(shutdown_id)
 
         self.send_exit()
-        # self.await_response()
 
         self.stop.set()
         self.stderr_printer.join()
@@ -586,7 +573,6 @@ class LspTestClient(LspClient):
                 )
             )
             self.send_text_document_did_open(params)
-            self.await_response()
 
     def send_text_document_did_close(
             self,
@@ -616,7 +602,6 @@ class LspTestClient(LspClient):
                     )
                 )
                 self.send_text_document_did_close(params)
-                self.await_response()
 
     def send_text_document_will_save(
             self,
@@ -644,7 +629,6 @@ class LspTestClient(LspClient):
                 reason=reason
             )
             self.send_text_document_will_save(params)
-            self.await_response()
 
     def send_text_document_will_save_wait_until(
             self,
@@ -720,7 +704,6 @@ class LspTestClient(LspClient):
                 text=text if self.server_supports_full_text_on_save() else None
             )
             self.send_text_document_did_save(params)
-            self.await_response()
 
     def send_text_document_did_change(
             self,
@@ -794,7 +777,6 @@ class LspTestClient(LspClient):
                 ]
             )
             self.send_text_document_did_change(params)
-            self.await_response()
 
     def server_supports_workspace_will_create_files(self) -> bool:
         workspace = self.server_capabilities.workspace
@@ -849,7 +831,6 @@ class LspTestClient(LspClient):
                 files=[FileCreate(uri) for uri in files]
             )
             self.send_workspace_did_create_files(params)
-            self.await_response()
 
     def server_supports_workspace_will_rename_files(self) -> bool:
         workspace = self.server_capabilities.workspace
@@ -905,7 +886,6 @@ class LspTestClient(LspClient):
                 files=[FileRename(old_uri, new_uri) for old_uri, new_uri in files]
             )
             self.send_workspace_did_rename_files(params)
-            self.await_response()
 
     def server_supports_workspace_will_delete_files(self) -> bool:
         workspace = self.server_capabilities.workspace
@@ -960,7 +940,6 @@ class LspTestClient(LspClient):
                 files=[FileDelete(uri) for uri in files]
             )
             self.send_workspace_did_delete_files(params)
-            self.await_response()
 
     def receive_text_document_publish_diagnostics(
             self,
