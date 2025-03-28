@@ -1,0 +1,25 @@
+WRONG TESTCASES
+=
+xasxacscsd123s15x6
+1235sxaxasx@
+1@!232sasxafw@%^&
+1234fsds 3221
+212t2hisWorksRight
+2c3jgnk214
+112453231212hasInitialSpaceButSHouldWork
+123abc456  
+!!@@##$$%%^^  
+1e2e3e4e5 
+HelloWorld123  
+42.3.4.5.6  
+-123-456-789  
+3.14159pi  
+0x123GHIJK  
+1_234_567a  
+   987spaceAtStart  
+trailingSpace123   
+tabs	between	numbers  
+newline123  
+double..dot..float  
+integer#with#symbols  
+missingDigit12

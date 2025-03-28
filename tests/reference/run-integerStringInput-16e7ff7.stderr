@@ -1,0 +1,5 @@
+warning: Argument `action` isn't supported yet
+ --> tests/errors/integerStringInput.f90:4:5
+  |
+4 |     open(unit=10, file="invalidInput_integer.txt", status="old", action="read")
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ignored for now

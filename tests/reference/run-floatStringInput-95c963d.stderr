@@ -1,0 +1,5 @@
+warning: Argument `action` isn't supported yet
+ --> tests/errors/floatStringInput.f90:4:5
+  |
+4 |     open(unit=10, file="invalidInput_float.txt", status="old", action="read")
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ignored for now
