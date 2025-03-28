@@ -2,12 +2,12 @@
     "basename": "run-floatStringInput-95c963d",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/errors/floatStringInput.f90",
-    "infile_hash": "b9ed5f4fbd4e28d48deb48b01b4aea705c9759488c0a6c7c68886d88",
+    "infile_hash": "f9667bbf530e590cc36867452394e8660a3a6d5984cde2c67c63b8fe",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-floatStringInput-95c963d.stdout",
     "stdout_hash": "e30ae761554c4a5a9d0ee2af5cac1e16b8abbc0c6611e3fdefd8588b",
-    "stderr": "run-floatStringInput-95c963d.stderr",
-    "stderr_hash": "6159cdae419f2b4f5e4f98f6d62d37d848a06b93078bffa2d2bbed2e",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 1
 }
