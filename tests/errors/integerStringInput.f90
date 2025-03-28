@@ -1,7 +1,7 @@
 program integerStringInput
     implicit none
     integer :: x
-    open(unit=10, file="invalidInput_integer.txt", status="old", action="read")
+    open(unit=10, file="invalidInput_integer.txt", status="old")
 
     do
         read(10, *, end=100) x

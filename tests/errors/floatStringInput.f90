@@ -1,7 +1,7 @@
 program realStringInput
     implicit none
     real :: x
-    open(unit=10, file="invalidInput_float.txt", status="old", action="read")
+    open(unit=10, file="invalidInput_float.txt", status="old")
 
     do
         read(10, *, end=100) x
