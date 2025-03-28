@@ -6809,7 +6809,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             case ASR::binopType::Pow: {
                 const int expr_return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
-                const std::string func_name = "_lfortran_pow";
+                const std::string func_name = "_lfortran_integer_pow_64";
                 llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
                 llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
                 llvm::Value* _left = llvm_utils->convert_kind(left_val, i64_ty);

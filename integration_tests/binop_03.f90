@@ -1,4 +1,4 @@
-program test
+program binop_03
     integer(8) :: x
     x = 665663010
     x = x**2

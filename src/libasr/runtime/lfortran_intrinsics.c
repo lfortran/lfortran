@@ -1644,7 +1644,7 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
 
 }
 
-int64_t _lfortran_pow(int64_t base, int64_t exponent){ // Binary Exponentiation
+int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
     int64_t res = 1;
     int64_t temp = base;
     if( exponent < 0 ) return 0;
