@@ -97,6 +97,11 @@ LLVMModule::LLVMModule(std::unique_ptr<llvm::Module> m)
 
 LLVMModule::~LLVMModule() = default;
 
+llvm::GlobalVariable *LLVMModule::get_global(const std::string &global_name) {
+    llvm::Module *m = m_m.get();
+    return m->getNamedGlobal(global_name);
+}
+
 std::string LLVMModule::str()
 {
     return LLVMEvaluator::module_to_string(*m_m);
