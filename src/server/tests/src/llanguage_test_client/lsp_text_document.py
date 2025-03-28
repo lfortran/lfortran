@@ -74,14 +74,9 @@ class LspTextDocument:
             self._path = None
         self.version = 0
         self.buf = StringIO()
-        self.pos_by_line = list()
-        self.len_by_line = list()
-        if path is not None:
-            self.is_new = False
-            self.load()
-        else:
-            self.is_new = True
-        self.recompute_indices()
+        self.pos_by_line = [0]
+        self.len_by_line = [1]
+        self.is_new = (path is None)
 
     @property
     def path(self) -> Path:
@@ -172,6 +167,7 @@ class LspTextDocument:
         if self.path is not None:
             with open(self.path, "r", encoding="utf-8") as f:
                 self.buf.write(f.read())
+            self.recompute_indices()
             self.client.text_document_did_open(
                 self.document_id,
                 self.uri,
@@ -268,10 +264,10 @@ class LspTextDocument:
                 position = self.pos_by_line[line] + column
                 return position
             raise ValueError(
-                f'Column out-of-bounds for line {line} with {num_columns} columns: {column}'
+                f'Column out-of-bounds for line {line} with {num_columns} column(s): {column}'
             )
         raise ValueError(
-            f'Line out-of-bounds for {num_lines} lines: {line}'
+            f'Line out-of-bounds for {num_lines} line(s): {line}'
         )
 
     def seek(self, line: int, column: int) -> None:
@@ -394,3 +390,8 @@ class LspTextDocument:
         origin = min(origin, len(self.text) - 1)
         self.buf.seek(origin)
         self.recompute_indices()
+
+    def goto_definition(self) -> None:
+        if self._path is not None:
+            line, column = self.pos_to_linecol(self.position)
+            self.client.goto_definition(self.uri, line, column)

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from lsprotocol.types import TextDocumentSaveReason
 
@@ -90,4 +90,8 @@ class LspClient(ABC):
 
     @abstractmethod
     def workspace_did_delete_files(self, files: List[Uri]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def goto_definition(self, uri: str, line: int, column: int) -> None:
         raise NotImplementedError
