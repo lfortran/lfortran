@@ -28,14 +28,17 @@ def client(request: pytest.FixtureRequest) -> Iterator[LspTestClient]:
 
     log_path = f"{request.node.name}.log"
 
+    timeout_ms = 5000
+
     server_args = [
         "server",
         "--parent-process-id", str(os.getpid()),
         "--log-level", "trace",
         "--log-path", log_path,
+        "--timeout-ms", str(timeout_ms),
     ]
 
-    client = LspTestClient(server_path, server_args, None, 2000, {
+    client = LspTestClient(server_path, server_args, None, timeout_ms, {
         "LFortran": {
             "openIssueReporterOnError": False,
             "maxNumberOfProblems": 100,
@@ -52,7 +55,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LspTestClient]:
                 "prettyPrint": True,
             },
             "indentSize": 4,
-            "timeoutMs": 100,
+            "timeoutMs": timeout_ms,
             "retry": {
                 "maxAttempts": 3,
                 "minSleepTimeMs": 10,

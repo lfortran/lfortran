@@ -10,8 +10,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
-from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple,
-                    Union)
+from typing import (IO, Any, Callable, Dict, Iterator, List, Optional,
+                    Sequence, Tuple, Union)
 
 from cattrs import Converter
 from lsprotocol import converters
@@ -22,17 +22,19 @@ from lsprotocol.types import (
     CompletionClientCapabilitiesCompletionItemTypeInsertTextModeSupportType,
     CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
     CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
-    CompletionItemTag, CreateFilesParams, DeleteFilesParams,
+    CompletionItemTag, CreateFilesParams, DefinitionClientCapabilities,
+    DefinitionParams, DeleteFilesParams,
     DidChangeConfigurationClientCapabilities, DidChangeConfigurationParams,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, DidSaveTextDocumentParams, ExitNotification,
     FileCreate, FileDelete, FileOperationClientCapabilities, FileRename,
     HoverClientCapabilities, InitializedNotification, InitializedParams,
     InitializeParams, InitializeRequest, InitializeResponse,
-    InitializeResultServerInfoType, InsertTextMode, MarkupKind, Position,
-    Range, Registration, RenameFilesParams, SaveOptions, ServerCapabilities,
-    ShutdownRequest, TextDocumentClientCapabilities,
+    InitializeResultServerInfoType, InsertTextMode, Location, LocationLink,
+    MarkupKind, Position, Range, Registration, RenameFilesParams, SaveOptions,
+    ServerCapabilities, ShutdownRequest, TextDocumentClientCapabilities,
     TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
+    TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
     TextDocumentDidChangeNotification, TextDocumentDidCloseNotification,
     TextDocumentDidOpenNotification, TextDocumentDidSaveNotification,
     TextDocumentIdentifier, TextDocumentItem,
@@ -101,6 +103,7 @@ class LspTestClient(LspClient):
     serial_document_id: int
     documents_by_id: Dict[int, LspTextDocument]
     documents_by_uri: Dict[str, LspTextDocument]
+    active_document: Optional[LspTextDocument]
     requests_by_id: Dict[JsonValue, Any]
     responses_by_id: Dict[JsonValue, Any]
     callbacks_by_id: Dict[JsonValue, Tuple[Any, Callback]]
@@ -128,6 +131,7 @@ class LspTestClient(LspClient):
         self.serial_document_id = 0
         self.documents_by_id = dict()
         self.documents_by_uri = dict()
+        self.active_document = None
         self.requests_by_id = dict()
         self.responses_by_id = dict()
         self.callbacks_by_id = dict()
@@ -198,11 +202,17 @@ class LspTestClient(LspClient):
     def open_document(
             self,
             language_id: str,
-            path: Optional[Union[Path, str]]
+            path: Optional[Union[Path, str]],
+            make_active: bool = True
     ) -> LspTextDocument:
         document_id = self.next_document_id()
         document = LspTextDocument(self, document_id, language_id, path)
         self.documents_by_id[document_id] = document
+        if path is not None:
+            self.documents_by_uri[document.uri] = document
+            document.load()
+        if make_active:
+            self.active_document = document
         return document
 
     def await_validation(self, uri: str, version: int) -> Any:
@@ -221,13 +231,29 @@ class LspTestClient(LspClient):
                 return message
         return None
 
-    def await_response(self, request_id: Optional[int] = None) -> Any:
+    def await_response(
+            self,
+            request_id: Optional[int] = None,
+            event_index: Optional[int] = None
+    ) -> Any:
+        if request_id is not None:
+            message = self.responses_by_id.get(request_id, None)
+            if message is not None:
+                return message
+        elif event_index is not None:
+            for index in range(event_index, len(self.events)):
+                event = self.events[index]
+                if isinstance(event, IncomingEvent):
+                    response = event.data
+                    if response.get("id", None) is None:
+                        return response
         while not self.stop.is_set():
             message = self.receive_message()
-            response_id = message.get("id", None)
-            if response_id is not None and response_id in self.responses_by_id:
-                return message
-            if request_id == response_id:
+            if "result" in message:
+                response_id = message.get("id", None)
+                if request_id == response_id:
+                    return message
+            elif request_id is None and message.get("id", None) is None:
                 return message
 
     def initialize_params(self) -> InitializeParams:
@@ -291,6 +317,7 @@ class LspTestClient(LspClient):
                             MarkupKind.Markdown,
                         ],
                     ),
+                    definition=DefinitionClientCapabilities(),
                 ),
             ),
         )
@@ -331,8 +358,9 @@ class LspTestClient(LspClient):
         initialize_id = self.send_initialize(self.initialize_params())
         self.await_response(initialize_id)
 
+        event_index = len(self.events)
         self.send_initialized(self.initialized_params())
-        self.await_response()
+        self.await_response(event_index=event_index)
 
     def terminate(self) -> None:
         shutdown_id = self.send_shutdown()
@@ -499,7 +527,6 @@ class LspTestClient(LspClient):
                     self.send_workspace_did_change_configuration(
                         DidChangeConfigurationParams(self.config)
                     )
-                    self.await_response()
         response = ClientRegisterCapabilityResponse(request.id)
         return response
 
@@ -574,6 +601,12 @@ class LspTestClient(LspClient):
             uri: Optional[str]
     ) -> None:
         del self.documents_by_id[document_id]
+        if self.active_document is not None \
+           and self.active_document.document_id == document_id:
+            for prev_document_id in range(document_id - 1, 0):
+                prev_document = self.documents_by_id.get(prev_document_id, None)
+                if prev_document is not None:
+                    self.active_document = prev_document
         if uri is not None:
             del self.documents_by_uri[uri]
             if self.server_supports_text_document_did_open_or_close():
@@ -934,3 +967,58 @@ class LspTestClient(LspClient):
             notification: TextDocumentPublishDiagnosticsNotification
     ) -> None:
         pass
+
+    def server_supports_text_document_definition(self) -> bool:
+        # NOTE: This returns True if `definition_provider` is True or an instance
+        # of `DefinitionOptions`
+        return bool(self.server_capabilities.definition_provider)
+
+    def send_text_document_definition(self, params: DefinitionParams) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentDefinitionRequest(request_id, params)
+        self.send_request(request, self.receive_text_document_definition)
+        return request_id
+
+    def receive_text_document_definition(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentDefinitionResponse
+        )
+        loc: Optional[Union[Location, LocationLink]] = None
+        match response.result:
+            case Location():
+                loc = response.result
+            case _ if isinstance(response.result, Sequence) \
+                 and not isinstance(response.result, str) \
+                 and len(response.result) > 0:
+                loc = response.result[0]
+        doc: Optional[LspTextDocument] = None
+        pos: Optional[Position] = None
+        match loc:
+            case Location():
+                doc = self.documents_by_uri.get(loc.uri, None)
+                pos = loc.range.start
+            case LocationLink():
+                doc = self.documents_by_uri.get(loc.target_uri, None)
+                pos = loc.target_range.start
+        if doc is not None and pos is not None:
+            self.active_document = doc
+            doc.cursor = (pos.line, pos.character)
+
+    def goto_definition(self, uri: str, line: int, column: int) -> None:
+        if self.server_supports_text_document_definition():
+            params = DefinitionParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                position=Position(
+                    line=line,
+                    character=column
+                ),
+            )
+            request_id = self.send_text_document_definition(params)
+            return self.await_response(request_id)
