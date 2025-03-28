@@ -118,8 +118,9 @@ namespace LCompilers::LLanguageServer {
             << "[CommunicationProtocol] Serving requests."
             << std::endl;
         try {
-            while (!languageServer.isTerminated()) {
-                std::string message = messageStream.next();
+            bool exit = false;
+            while (!languageServer.isTerminated() && !exit) {
+                std::string message = messageStream.next(exit);
                 if (message.length() > 0) {
                     outgoingMessages.enqueue(message);
                 } else {

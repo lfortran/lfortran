@@ -94,8 +94,6 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string extensionId;
         const std::string compilerVersion;
         int parentProcessId;
-        std::thread listener;
-        std::thread cron;
         lst::ThreadPool requestPool;
         lst::ThreadPool workerPool;
         std::atomic_size_t serialSendId = 0;
@@ -186,6 +184,12 @@ namespace LCompilers::LanguageServerProtocol {
 
         std::atomic_bool clientSupportsWorkspaceConfigRequests = false;
         std::atomic_bool clientSupportsWorkspaceConfigChangeNotifications = false;
+
+        // NOTE: By convention and to encourage proper initialization order,
+        // move all std::thread declarations to the bottom of the members!
+        // See: https://github.com/lfortran/lfortran/issues/6756
+        std::thread listener;
+        std::thread cron;
 
         auto nextSendId() -> std::size_t;
         auto isInitialized() const -> bool;
