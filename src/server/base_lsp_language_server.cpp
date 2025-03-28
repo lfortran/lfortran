@@ -60,6 +60,10 @@ namespace LCompilers::LanguageServerProtocol {
       , extensionId(extensionId)
       , compilerVersion(compilerVersion)
       , parentProcessId(parentProcessId)
+      , requestPool("request", numRequestThreads, logger)
+      , workerPool("worker", numWorkerThreads, logger)
+      , lspConfigTransformer(std::move(lspConfigTransformer))
+      , randomEngine(seed)
       , listener([this, &logger]{
           logger.threadName("BaseLspLanguageServer_listener");
           listen();
@@ -68,10 +72,6 @@ namespace LCompilers::LanguageServerProtocol {
           logger.threadName("BaseLspLanguageServer_cron");
           chronicle();
       })
-      , requestPool("request", numRequestThreads, logger)
-      , workerPool("worker", numWorkerThreads, logger)
-      , lspConfigTransformer(std::move(lspConfigTransformer))
-      , randomEngine(seed)
     {
         documentsByUri.reserve(256);
         configsByUri.reserve(256);
@@ -1336,10 +1336,6 @@ namespace LCompilers::LanguageServerProtocol {
             incomingMessages.stopNow();
             requestPool.stopNow();
             workerPool.stopNow();
-            // NOTE: Notify the message stream that the server is terminating.
-            // NOTE: This works because the null character is not included in
-            // the JSON spec.
-            std::cin.putback('\0');
         }
     }
 

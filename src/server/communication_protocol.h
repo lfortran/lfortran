@@ -29,8 +29,12 @@ namespace LCompilers::LLanguageServer {
         MessageQueue &incomingMessages;
         MessageQueue &outgoingMessages;
         lsl::Logger &logger;
-        std::thread listener;
         std::atomic_bool running = true;
+
+        // NOTE: By convention and to encourage proper initialization order,
+        // move all std::thread declarations to the bottom of the members!
+        // See: https://github.com/lfortran/lfortran/issues/6756
+        std::thread listener;
 
         auto listen() -> void;
     };

@@ -1,5 +1,6 @@
 #include <cctype>
 #include <cstddef>
+#include <regex>
 #include <stdexcept>
 #include <string_view>
 
@@ -9,31 +10,24 @@
 namespace LCompilers::LanguageServerProtocol {
 
     LspMessageStream::LspMessageStream(std::istream &istream, lsl::Logger &logger)
-        : istream(istream)
+        : RE_IS_CONTENT_LENGTH("^Content-Length$", std::regex_constants::icase)
+        , RE_IS_EXIT(
+            "^\\{\\s*(?:"
+                "\"method\"\\s*:\\s*\"exit\"\\s*,\\s*\"jsonrpc\"\\s*:\\s*\"2\\.0\""
+                "|"
+                "\"jsonrpc\"\\s*:\\s*\"2\\.0\"\\s*,\\s*\"method\"\\s*:\\s*\"exit\""
+            ")\\s*\\}$"
+        )
+        , istream(istream)
         , logger(logger)
     {
         message.reserve(16384);
         position = 0;
     }
 
-    auto LspMessageStream::nextUpper() -> char {
-        char c;
-        istream.get(c);
-        if (c == '\0') {
-            throw std::runtime_error("Terminated while reading from stdin.");
-        }
-        c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-        message.push_back(c);
-        ++position;
-        return c;
-    }
-
     auto LspMessageStream::nextChar() -> char {
         char c;
         istream.get(c);
-        if (c == '\0') {
-            throw std::runtime_error("Terminated while reading from stdin.");
-        }
         message.push_back(c);
         ++position;
         return c;
@@ -67,7 +61,7 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
-    auto LspMessageStream::next() -> std::string {
+    auto LspMessageStream::next(bool &exit) -> std::string {
         std::size_t numBytes = 0;
         bool hasContentLength = false;
         std::size_t start = 0;
@@ -77,11 +71,11 @@ namespace LCompilers::LanguageServerProtocol {
     parse_header_name:
         start = position;
         do {
-            switch (nextUpper()) {
+            switch (nextChar()) {
             case '\r': {
                 length = (position - start) - 1;
                 view = std::string_view(message.data() + start, length);
-                c = nextUpper();
+                c = nextChar();
                 if (c != '\n') {
                     std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
                     logger.warn() << "Expected \\r to be followed by \\n, not '";
@@ -108,7 +102,11 @@ namespace LCompilers::LanguageServerProtocol {
             case ':': {
                 length = (position - start) - 1;
                 view = std::string_view(message.data() + start, length);
-                hasContentLength = (view == "CONTENT-LENGTH");
+                hasContentLength = std::regex_match(
+                    view.begin(),
+                    view.end(),
+                    RE_IS_CONTENT_LENGTH
+                );
                 goto parse_header_value;
             }
             default: {
@@ -171,6 +169,7 @@ namespace LCompilers::LanguageServerProtocol {
             << message << std::endl;
         message.clear();
         position = 0;
+        exit = std::regex_match(body, RE_IS_EXIT);
         return body;
     }
 

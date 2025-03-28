@@ -108,7 +108,7 @@ class LspTestClient(LspClient):
     responses_by_id: Dict[JsonValue, Any]
     callbacks_by_id: Dict[JsonValue, Tuple[Any, Callback]]
     stop: threading.Event
-    stderr_printer: threading.Thread
+    # stderr_printer: threading.Thread
 
     def __init__(
             self,
@@ -136,10 +136,10 @@ class LspTestClient(LspClient):
         self.responses_by_id = dict()
         self.callbacks_by_id = dict()
         self.stop = threading.Event()
-        self.stderr_printer = threading.Thread(
-            target=self.print_stderr,
-            args=tuple()
-        )
+        # self.stderr_printer = threading.Thread(
+        #     target=self.print_stderr,
+        #     args=tuple()
+        # )
 
     def print_stderr(self) -> None:
         if self.server.stderr is not None:
@@ -322,28 +322,27 @@ class LspTestClient(LspClient):
             [self.server_path] + self.server_params,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            # stderr=subprocess.DEVNULL,
+            # stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             bufsize=0
         )
         if self.server.stdout is None:
             raise RuntimeError("Cannot read from server stdout")
         if self.server.stdin is None:
             raise RuntimeError("Cannot write to server stdin")
-        if self.server.stderr is None:
-            raise RuntimeError("Cannot read from server stderr")
+        # if self.server.stderr is None:
+        #     raise RuntimeError("Cannot read from server stderr")
 
         # Make process stdout non-blocking
         stdout_fd = self.server.stdout.fileno()
         os.set_blocking(stdout_fd, False)
-        stderr_fd = self.server.stderr.fileno()
-        os.set_blocking(stderr_fd, False)
+        # stderr_fd = self.server.stderr.fileno()
+        # os.set_blocking(stderr_fd, False)
 
         self.message_stream = LspJsonStream(self.server.stdout, self.timeout_s)
         self.ostream = self.server.stdin
 
-        self.stderr_printer.start()
-        time.sleep(0.5)
+        # self.stderr_printer.start()
 
         initialize_id = self.send_initialize(self.initialize_params())
         self.await_response(initialize_id)
@@ -357,9 +356,9 @@ class LspTestClient(LspClient):
         self.send_exit()
 
         self.stop.set()
-        self.stderr_printer.join()
+        # self.stderr_printer.join()
 
-        timeout_s = 0.200
+        timeout_s = 0.5
         try:
             self.server.wait(timeout=timeout_s)
         except subprocess.TimeoutExpired as e:

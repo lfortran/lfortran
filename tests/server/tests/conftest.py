@@ -64,13 +64,11 @@ def client(request: pytest.FixtureRequest) -> Iterator[LspTestClient]:
         }
     })
 
-    with pytest.raises(RuntimeError) as error:
-        with client.serve():
-            # Steps abstracted by context manager:
-            # 1. Send request: initialize
-            # 2. Send notification: initialized
-            # 3. <yield client>
-            # 4. Send request: shutdown
-            # 5. Send notification: exit
-            yield client
-    assert RE_EXIT_TIMEOUT.fullmatch(str(error.value)), str(error.value)
+    with client.serve():
+        # Steps abstracted by context manager:
+        # 1. Send request: initialize
+        # 2. Send notification: initialized
+        # 3. <yield client>
+        # 4. Send request: shutdown
+        # 5. Send notification: exit
+        yield client
