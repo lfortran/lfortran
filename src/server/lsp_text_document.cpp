@@ -16,28 +16,26 @@ namespace LCompilers::LanguageServerProtocol {
         int version,
         const std::string &text,
         lsl::Logger &logger
-    ) : _uri(uri)
-      , _languageId(languageId)
+    ) : _languageId(languageId)
       , _version(version)
       , _text(text)
       , logger(logger)
     {
         buffer.reserve(8196);
-        validateUriAndSetPath();
+        setUri(uri);
         indexLines();
     }
 
     LspTextDocument::LspTextDocument(
         const std::string &uri,
         lsl::Logger &logger
-    ) : _uri{uri}
-      , _languageId{""}
+    ) : _languageId{""}
       , _version{-1}
       , _text{""}
       , logger{logger}
     {
         buffer.reserve(8196);
-        validateUriAndSetPath();
+        setUri(uri);
         loadText();
         indexLines();
     }
@@ -55,11 +53,6 @@ namespace LCompilers::LanguageServerProtocol {
         // empty
     }
 
-    auto LspTextDocument::validateUriAndSetPath() -> void {
-        std::string path = std::regex_replace(_uri, RE_FILE_URI, "");
-        _path = fs::absolute(path).lexically_normal();
-    }
-
     auto LspTextDocument::loadText() -> void {
         std::ifstream fs(_path);
         if (fs.is_open()) {
@@ -67,6 +60,12 @@ namespace LCompilers::LanguageServerProtocol {
             ss << fs.rdbuf();
             _text = ss.str();
         }
+    }
+
+    auto LspTextDocument::setUri(const DocumentUri &uri) -> void {
+        _uri = uri;
+        std::string path = std::regex_replace(uri, RE_FILE_URI, "");
+        _path = fs::absolute(path).lexically_normal();
     }
 
     auto LspTextDocument::update(

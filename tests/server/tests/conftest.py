@@ -1,20 +1,15 @@
 import os
-import re
 import shutil
 from pathlib import Path
 from typing import Iterator
 
 import pytest
 
-from llanguage_test_client.lsp_test_client import LspTestClient
-
-RE_EXIT_TIMEOUT = re.compile(
-    r'^Timed-out after (?:[0-9]*\.)[0-9]+ seconds while awaiting the server to terminate\.$'
-)
+from lfortran_language_server.lfortran_lsp_test_client import LFortranLspTestClient
 
 
 @pytest.fixture
-def client(request: pytest.FixtureRequest) -> Iterator[LspTestClient]:
+def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
     server_path = None
     if 'LFORTRAN_PATH' in os.environ:
         server_path = os.environ['LFORTRAN_PATH']
@@ -38,7 +33,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LspTestClient]:
         "--timeout-ms", str(timeout_ms),
     ]
 
-    client = LspTestClient(server_path, server_args, None, timeout_ms, {
+    client = LFortranLspTestClient(server_path, server_args, None, timeout_ms, {
         "LFortran": {
             "openIssueReporterOnError": False,
             "maxNumberOfProblems": 100,

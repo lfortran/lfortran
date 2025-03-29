@@ -327,6 +327,10 @@ namespace LCompilers::LanguageServerProtocol {
 
         auto receiveCancelRequest(CancelParams &params) -> void override;
 
+        auto receiveGetDocument(
+            GetDocumentParams &params
+        ) -> GetDocumentResult override;
+
     }; // class LspLanguageServer
 
 } // namespace LCompilers::LanguageServerProtocol
