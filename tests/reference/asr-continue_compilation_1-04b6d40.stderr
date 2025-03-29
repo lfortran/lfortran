@@ -661,3 +661,15 @@ semantic error: Cannot allocate an array from a scalar source.
     |
 305 |     allocate(arr4, source=7)
     |              ^^^^ allocated variable is an array, but `source` is a scalar
+
+semantic error: Argument was not specified
+   --> tests/errors/continue_compilation_1.f90:307:5
+    |
+307 |     call logger % add_log_file(filename=filename)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 1-th argument not specified for add_log_file
+
+semantic error: Required argument `unit` is missing in function call
+   --> tests/errors/continue_compilation_1.f90:308:5
+    |
+308 |     call logger % add_log_file()
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
