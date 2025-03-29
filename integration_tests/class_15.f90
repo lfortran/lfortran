@@ -10,8 +10,8 @@ module class_15_mod
             class(logger_type), intent(inout) :: self
             character(*), optional :: filename
             integer, optional :: unit
-            filename = "lfortran"
-            unit = 10
+            if (present(filename)) filename = "lfortran"
+            if (present(unit)) unit = 10    
         end subroutine add_log_file
 end module
     
