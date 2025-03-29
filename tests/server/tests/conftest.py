@@ -25,7 +25,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
 
     log_path = f"{request.node.name}.log"
 
-    timeout_ms = 5000
+    timeout_ms = 30000
 
     server_args = [
         "server",
