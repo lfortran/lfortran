@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -10,50 +11,69 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
-from typing import (IO, Any, Callable, Dict, Iterator, List, Optional,
-                    Sequence, Tuple, Union)
+from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple,
+                    Union)
 
 from cattrs import Converter
+
 from lsprotocol import converters
-from lsprotocol.types import (
-    ClientCapabilities, ClientRegisterCapabilityRequest,
-    ClientRegisterCapabilityResponse, CompletionClientCapabilities,
-    CompletionClientCapabilitiesCompletionItemType,
-    CompletionClientCapabilitiesCompletionItemTypeInsertTextModeSupportType,
-    CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
-    CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
-    CompletionItemTag, CreateFilesParams, DefinitionClientCapabilities,
-    DefinitionParams, DeleteFilesParams,
-    DidChangeConfigurationClientCapabilities, DidChangeConfigurationParams,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, ExitNotification,
-    FileCreate, FileDelete, FileOperationClientCapabilities, FileRename,
-    HoverClientCapabilities, InitializedNotification, InitializedParams,
-    InitializeParams, InitializeRequest, InitializeResponse,
-    InitializeResultServerInfoType, InsertTextMode, Location, LocationLink,
-    MarkupKind, Position, Range, Registration, RenameFilesParams, SaveOptions,
-    ServerCapabilities, ShutdownRequest, TextDocumentClientCapabilities,
-    TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
-    TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
-    TextDocumentDidChangeNotification, TextDocumentDidCloseNotification,
-    TextDocumentDidOpenNotification, TextDocumentDidSaveNotification,
-    TextDocumentIdentifier, TextDocumentItem,
-    TextDocumentPublishDiagnosticsNotification, TextDocumentSaveReason,
-    TextDocumentSyncClientCapabilities, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentWillSaveNotification,
-    TextDocumentWillSaveWaitUntilRequest,
-    TextDocumentWillSaveWaitUntilResponse, VersionedTextDocumentIdentifier,
-    WillSaveTextDocumentParams, WorkspaceClientCapabilities,
-    WorkspaceConfigurationRequest, WorkspaceConfigurationResponse,
-    WorkspaceDidChangeConfigurationNotification,
-    WorkspaceDidCreateFilesNotification, WorkspaceDidDeleteFilesNotification,
-    WorkspaceDidRenameFilesNotification, WorkspaceWillCreateFilesRequest,
-    WorkspaceWillDeleteFilesRequest, WorkspaceWillRenameFilesRequest)
+from lsprotocol.types import (ClientCapabilities,
+                              ClientRegisterCapabilityRequest,
+                              ClientRegisterCapabilityResponse,
+                              CreateFilesParams, DeleteFilesParams,
+                              DidChangeConfigurationClientCapabilities,
+                              DidChangeConfigurationParams,
+                              DidChangeTextDocumentParams,
+                              DidCloseTextDocumentParams,
+                              DidOpenTextDocumentParams,
+                              DidSaveTextDocumentParams, ExitNotification,
+                              FileCreate, FileDelete,
+                              FileOperationClientCapabilities, FileRename,
+                              InitializedNotification, InitializedParams,
+                              InitializeParams, InitializeRequest,
+                              InitializeResponse,
+                              InitializeResultServerInfoType, Position, Range,
+                              Registration, RenameFilesParams, SaveOptions,
+                              ServerCapabilities, ShutdownRequest,
+                              TextDocumentClientCapabilities,
+                              TextDocumentContentChangeEvent_Type1,
+                              TextDocumentContentChangeEvent_Type2,
+                              TextDocumentDidChangeNotification,
+                              TextDocumentDidCloseNotification,
+                              TextDocumentDidOpenNotification,
+                              TextDocumentDidSaveNotification,
+                              TextDocumentIdentifier, TextDocumentItem,
+                              TextDocumentSaveReason,
+                              TextDocumentSyncClientCapabilities,
+                              TextDocumentSyncKind, TextDocumentSyncOptions,
+                              TextDocumentWillSaveNotification,
+                              TextDocumentWillSaveWaitUntilRequest,
+                              TextDocumentWillSaveWaitUntilResponse,
+                              VersionedTextDocumentIdentifier,
+                              WillSaveTextDocumentParams,
+                              WorkspaceClientCapabilities,
+                              WorkspaceConfigurationRequest,
+                              WorkspaceConfigurationResponse,
+                              WorkspaceDidChangeConfigurationNotification,
+                              WorkspaceDidCreateFilesNotification,
+                              WorkspaceDidDeleteFilesNotification,
+                              WorkspaceDidRenameFilesNotification,
+                              WorkspaceWillCreateFilesRequest,
+                              WorkspaceWillDeleteFilesRequest,
+                              WorkspaceWillRenameFilesRequest)
 
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
 from llanguage_test_client.lsp_json_stream import LspJsonStream
 from llanguage_test_client.lsp_text_document import LspTextDocument
+
+
+# NOTE: File URIs follow one of the following schemes:
+# 1. `file:/path` (no hostname)
+# 2. `file:///path` (empty hostname)
+# 3. `file://hostname/path`
+# NOTE: All we are interested in is the `/path` portion
+RE_FILE_URI = re.compile(r"^file:(?://[^/]*)?", re.IGNORECASE)
 
 
 @dataclass
@@ -165,14 +185,17 @@ class LspTestClient(LspClient):
                 return True
         return False
 
-    def find_incoming_event(self, pred: IncomingEventPredFn) -> Optional[IncomingEvent]:
-        for event in self.events:
+    def find_incoming_event(self, pred: IncomingEventPredFn, lower_index: int = 0) \
+            -> Tuple[Optional[IncomingEvent], int]:
+        upper_bound = len(self.events)
+        for index in range(lower_index, upper_bound):
+            event = self.events[index]
             if isinstance(event, IncomingEvent) and pred(event):
-                return event
-        return None
+                return event, index
+        return None, max(upper_bound - 1, 0)
 
     def has_incoming_event(self, pred: IncomingEventPredFn) -> bool:
-        return self.find_incoming_event(pred) is not None
+        return self.find_incoming_event(pred)[0] is not None
 
     def has_outgoing_event(self, pred: OutgoingEventPredFn) -> bool:
         for event in self.events:
@@ -215,6 +238,13 @@ class LspTestClient(LspClient):
             self.active_document = document
         return document
 
+    def get_document(self, language_id: str, uri: str) -> LspTextDocument:
+        document = self.documents_by_uri.get(uri, None)
+        if document is not None:
+            return document
+        path = RE_FILE_URI.sub(uri, "")
+        return self.open_document(language_id, path)
+
     def await_validation(self, uri: str, version: int) -> Any:
         def is_validation(message: Any) -> bool:
             if message.get("method", None) == "textDocument/publishDiagnostics":
@@ -222,7 +252,7 @@ class LspTestClient(LspClient):
                 return params["uri"] == uri \
                     and params.get("version", None) == version
             return False
-        event = self.find_incoming_event(lambda event: is_validation(event.data))
+        event, _ = self.find_incoming_event(lambda event: is_validation(event.data))
         if event is not None:
             return event.data
         while not self.stop.is_set():
@@ -270,44 +300,6 @@ class LspTestClient(LspClient):
                         will_save_wait_until=False,
                         did_save=True,
                     ),
-                    completion=CompletionClientCapabilities(
-                        dynamic_registration=True,
-                        completion_item=CompletionClientCapabilitiesCompletionItemType(
-                            snippet_support=False,
-                            commit_characters_support=False,
-                            documentation_format=[
-                                MarkupKind.PlainText,
-                                MarkupKind.Markdown,
-                            ],
-                            deprecated_support=True,
-                            preselect_support=False,
-                            tag_support=CompletionClientCapabilitiesCompletionItemTypeTagSupportType(
-                                value_set=[
-                                    CompletionItemTag.Deprecated,
-                                ],
-                            ),
-                            insert_replace_support=False,
-                            resolve_support=CompletionClientCapabilitiesCompletionItemTypeResolveSupportType(
-                                properties=[],
-                            ),
-                            insert_text_mode_support=CompletionClientCapabilitiesCompletionItemTypeInsertTextModeSupportType(
-                                value_set=[
-                                    InsertTextMode.AsIs,
-                                    InsertTextMode.AdjustIndentation,
-                                ],
-                            ),
-                            label_details_support=True,
-                        ),
-                        context_support=True,
-                    ),
-                    hover=HoverClientCapabilities(
-                        dynamic_registration=True,
-                        content_format=[
-                            MarkupKind.PlainText,
-                            MarkupKind.Markdown,
-                        ],
-                    ),
-                    definition=DefinitionClientCapabilities(),
                 ),
             ),
         )
@@ -386,8 +378,12 @@ class LspTestClient(LspClient):
         self.ostream.write(self.buf.getvalue().encode())
         self.ostream.flush()
 
-    def send_request(self, request: Any, callback: Callback) -> None:
-        request_id = request.id
+    def send_request(
+            self,
+            request_id: int,
+            request: Any,
+            callback: Callback
+    ) -> None:
         self.requests_by_id[request_id] = request
         self.callbacks_by_id[request_id] = (request, callback)
         self.send_message(request)
@@ -432,13 +428,6 @@ class LspTestClient(LspClient):
                 )
                 response = self.receive_workspace_configuration(request)
                 self.send_message(response)
-            case "textDocument/publishDiagnostics":
-                notification = self.converter.structure(
-                    message,
-                    TextDocumentPublishDiagnosticsNotification
-                )
-                self.receive_text_document_publish_diagnostics(notification)
-                self.respond_to_notification()
 
     def respond_to_notification(self) -> None:
         self.send_message({"id": None, "result": None, "jsonrpc": "2.0"})
@@ -450,7 +439,6 @@ class LspTestClient(LspClient):
             record = self.callbacks_by_id.get(response_id, None)
             if record is not None:
                 request, callback = record
-                del self.callbacks_by_id[response_id]
                 callback(request, response)
             else:
                 raise ValueError(
@@ -468,7 +456,7 @@ class LspTestClient(LspClient):
     def send_initialize(self, params: InitializeParams) -> int:
         request_id = self.next_request_id()
         request = InitializeRequest(request_id, params)
-        self.send_request(request, self.receive_initialize)
+        self.send_request(request_id, request, self.receive_initialize)
         return request_id
 
     def receive_initialize(self, request: Any, message: JsonObject) -> None:
@@ -487,7 +475,7 @@ class LspTestClient(LspClient):
     def send_shutdown(self) -> int:
         request_id = self.next_request_id()
         request = ShutdownRequest(request_id)
-        self.send_request(request, self.receive_shutdown)
+        self.send_request(request_id, request, self.receive_shutdown)
         return request_id
 
     def receive_shutdown(self, request: Any, message: JsonObject) -> None:
@@ -635,7 +623,8 @@ class LspTestClient(LspClient):
     ) -> int:
         request_id = self.next_request_id()
         request = TextDocumentWillSaveWaitUntilRequest(request_id, params)
-        self.send_request(request, self.receive_text_document_will_save_wait_until)
+        self.send_request(request_id, request,
+                          self.receive_text_document_will_save_wait_until)
         return request_id
 
     def receive_text_document_will_save_wait_until(
@@ -789,7 +778,8 @@ class LspTestClient(LspClient):
     def send_workspace_will_create_files(self, params: CreateFilesParams) -> int:
         request_id = self.next_request_id()
         request = WorkspaceWillCreateFilesRequest(request_id, params)
-        self.send_request(request, self.receive_workspace_will_create_files)
+        self.send_request(request_id, request,
+                          self.receive_workspace_will_create_files)
         return request_id
 
     def receive_workspace_will_create_files(
@@ -843,7 +833,8 @@ class LspTestClient(LspClient):
     def send_workspace_will_rename_files(self, params: RenameFilesParams) -> int:
         request_id = self.next_request_id()
         request = WorkspaceWillRenameFilesRequest(request_id, params)
-        self.send_request(request, self.receive_workspace_will_rename_files)
+        self.send_request(request_id, request,
+                          self.receive_workspace_will_rename_files)
         return request_id
 
     def receive_workspace_will_rename_files(
@@ -898,7 +889,8 @@ class LspTestClient(LspClient):
     def send_workspace_will_delete_files(self, params: DeleteFilesParams) -> int:
         request_id = self.next_request_id()
         request = WorkspaceWillDeleteFilesRequest(request_id, params)
-        self.send_request(request, self.receive_workspace_will_delete_files)
+        self.send_request(request_id, request,
+                          self.receive_workspace_will_delete_files)
         return request_id
 
     def receive_workspace_will_delete_files(
@@ -939,64 +931,3 @@ class LspTestClient(LspClient):
                 files=[FileDelete(uri) for uri in files]
             )
             self.send_workspace_did_delete_files(params)
-
-    def receive_text_document_publish_diagnostics(
-            self,
-            notification: TextDocumentPublishDiagnosticsNotification
-    ) -> None:
-        pass
-
-    def server_supports_text_document_definition(self) -> bool:
-        # NOTE: This returns True if `definition_provider` is True or an instance
-        # of `DefinitionOptions`
-        return bool(self.server_capabilities.definition_provider)
-
-    def send_text_document_definition(self, params: DefinitionParams) -> int:
-        request_id = self.next_request_id()
-        request = TextDocumentDefinitionRequest(request_id, params)
-        self.send_request(request, self.receive_text_document_definition)
-        return request_id
-
-    def receive_text_document_definition(
-            self,
-            request: Any,
-            message: JsonObject
-    ) -> None:
-        response = self.converter.structure(
-            message,
-            TextDocumentDefinitionResponse
-        )
-        loc: Optional[Union[Location, LocationLink]] = None
-        match response.result:
-            case Location():
-                loc = response.result
-            case _ if isinstance(response.result, Sequence) \
-                 and not isinstance(response.result, str) \
-                 and len(response.result) > 0:
-                loc = response.result[0]
-        doc: Optional[LspTextDocument] = None
-        pos: Optional[Position] = None
-        match loc:
-            case Location():
-                doc = self.documents_by_uri.get(loc.uri, None)
-                pos = loc.range.start
-            case LocationLink():
-                doc = self.documents_by_uri.get(loc.target_uri, None)
-                pos = loc.target_range.start
-        if doc is not None and pos is not None:
-            self.active_document = doc
-            doc.cursor = (pos.line, pos.character)
-
-    def goto_definition(self, uri: str, line: int, column: int) -> None:
-        if self.server_supports_text_document_definition():
-            params = DefinitionParams(
-                text_document=TextDocumentIdentifier(
-                    uri=uri,
-                ),
-                position=Position(
-                    line=line,
-                    character=column
-                ),
-            )
-            request_id = self.send_text_document_definition(params)
-            self.await_response(request_id)

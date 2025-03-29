@@ -1360,6 +1360,10 @@ namespace LCompilers::LanguageServerProtocol {
                     readLock.unlock();
                     std::unique_lock<std::shared_mutex> writeLock(documentMutex);
                     std::shared_ptr<LspTextDocument> &textDocument = iter->second;
+                    {
+                        std::unique_lock<std::shared_mutex> writeLock(textDocument->mutex());
+                        textDocument->setUri(newUri);
+                    }
                     documentsByUri.emplace(newUri, std::move(textDocument));
                     documentsByUri.erase(iter);
                 }
@@ -1542,6 +1546,21 @@ namespace LCompilers::LanguageServerProtocol {
                 ("Failed to load document with uri=\"" + uri + "\": " + e.what())
             );
         }
+    }
+
+    // request: "$/getDocument"
+    auto BaseLspLanguageServer::receiveGetDocument(
+        GetDocumentParams &params
+    ) -> GetDocumentResult {
+        GetDocumentResult result;
+        std::shared_ptr<LspTextDocument> document = getDocument(params.uri);
+        {
+            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            result.uri = document->uri();
+            result.version = document->version();
+            result.text = document->text();
+        }
+        return result;
     }
 
     // notification: "textDocument/didChange"

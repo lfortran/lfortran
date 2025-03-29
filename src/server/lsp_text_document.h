@@ -15,8 +15,13 @@ namespace LCompilers::LanguageServerProtocol {
 
     namespace lsl = LCompilers::LLanguageServer::Logging;
 
+    // NOTE: File URIs follow one of the following schemes:
+    // 1. `file:/path` (no hostname)
+    // 2. `file:///path` (empty hostname)
+    // 3. `file://hostname/path`
+    // NOTE: All we are interested in is the `/path` portion
     const std::regex RE_FILE_URI(
-        "^file:(?://)?",
+        "^file:(?://[^/]*)?",
         std::regex_constants::ECMAScript | std::regex_constants::icase
     );
 
@@ -38,6 +43,8 @@ namespace LCompilers::LanguageServerProtocol {
         inline auto uri() const -> const DocumentUri & {
             return _uri;
         }
+
+        auto setUri(const DocumentUri &uri) -> void;
 
         inline auto path() const -> const fs::path & {
             return _path;
@@ -85,7 +92,6 @@ namespace LCompilers::LanguageServerProtocol {
         std::vector<std::size_t> lineIndices;
         std::shared_mutex _mutex;
 
-        auto validateUriAndSetPath() -> void;
         auto indexLines() -> void;
         auto loadText() -> void;
 

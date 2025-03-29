@@ -153,6 +153,44 @@ AUXILIARY_SCHEMA: Dict[str, Any] = {
             ],
             "documentation": "A Response Message sent as a result of a request. If a request doesn’t\nprovide a result value the receiver of a request still needs to return a\nresponse message to conform to the JSON-RPC specification. The result\nproperty of the ResponseMessage should be set to null in this case to signal\na successful request.",
         },
+        {
+            "name": "GetDocumentParams",
+            "properties": [
+                {
+                    "name": "uri",
+                    "type": {
+                        "kind": "base",
+                        "name": "string",
+                    },
+                },
+            ],
+        },
+        {
+            "name": "GetDocumentResult",
+            "properties": [
+                {
+                    "name": "uri",
+                    "type": {
+                        "kind": "base",
+                        "name": "string",
+                    },
+                },
+                {
+                    "name": "version",
+                    "type": {
+                        "kind": "base",
+                        "name": "integer",
+                    },
+                },
+                {
+                    "name": "text",
+                    "type": {
+                        "kind": "base",
+                        "name": "string",
+                    },
+                },
+            ],
+        },
     ],
     "typeAliases": [
         {
@@ -210,6 +248,18 @@ AUXILIARY_SCHEMA: Dict[str, Any] = {
         },
     ],
     "requests": [
+		{
+			"method": "$/getDocument",
+			"messageDirection": "clientToServer",
+			"params": {
+				"kind": "reference",
+				"name": "GetDocumentParams",
+			},
+            "result": {
+                "kind": "reference",
+                "name": "GetDocumentResult",
+            },
+		},
     ],
     "notifications": [
     ],
