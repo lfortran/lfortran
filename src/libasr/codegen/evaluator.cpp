@@ -470,6 +470,10 @@ llvm::LLVMContext &LLVMEvaluator::get_context()
     return *context;
 }
 
+const llvm::DataLayout &LLVMEvaluator::get_jit_data_layout() {
+    return jit->getDataLayout();
+}
+
 void LLVMEvaluator::print_targets()
 {
     llvm::InitializeNativeTarget();
