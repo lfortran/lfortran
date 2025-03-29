@@ -9820,15 +9820,16 @@ public:
         if (is_nopass) {
             type_bound = 0;
         }
+        bool is_method = (type_bound > 0);
         if (n_args + (int)n > (int)fn_n_args) {
             diag.semantic_error_label(
                 "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
                 + " were provided",
                 {loc},
-                "incorrect number of arguments to '" + std::string(fn_name) + "'"
+                "incorrect number of arguments to '" + fn_name + "'"
             );
-            return ;
+            return;
         }
 
         std::vector<std::string> optional_args;
@@ -9842,7 +9843,7 @@ public:
                     optional_args.push_back(itr->first);
                     for( int i = 0; i < (int)fn_n_args; i++ ) {
                         if( ASR::down_cast<ASR::Var_t>(fn_args[i])->m_v == fn_sym ) {
-                            optional_args_idx.push_back(i);
+                            optional_args_idx.push_back(i - is_method);
                             break;
                         }
                     }
@@ -9850,8 +9851,7 @@ public:
             }
         }
 
-        std::vector<std::string> fn_args2 = convert_fn_args_to_string(
-                                                fn_args, fn_n_args);
+        std::vector<std::string> fn_args2 = convert_fn_args_to_string(fn_args, fn_n_args);
 
         int offset = args.size();
         for (int i = 0; i < (int)fn_n_args - offset - (int)type_bound; i++) {
@@ -9870,21 +9870,21 @@ public:
                 diag.semantic_error_label(
                     "Keyword argument not found " + name,
                     {loc},
-                    name + " keyword argument not found.");
+                    name + " is not a valid keyword argument.");
                 return ;
             }
 
             int idx = std::distance(fn_args2.begin(), search) - (int)type_bound;
             if (idx < n_args) {
                 diag.semantic_error_label(
-                    "Keyword argument is already specified as a non-keyword argument",
+                    "Keyword argument '" + name + "' is already specified as a positional argument",
                     {loc},
-                    name + "keyword argument is already specified.");
+                    "keyword argument '" + name + "' is already specified");
                 return ;
             }
             if (args[idx].m_value != nullptr) {
                 diag.semantic_error_label(
-                    "Keyword argument " + name + " is already specified as another keyword argument",
+                    "Keyword argument " + name + " is already specified",
                     {loc},
                     name + " keyword argument is already specified.");
                 return ;
@@ -9893,10 +9893,13 @@ public:
             args.p[idx].m_value = expr;
         }
 
-        for (int i=0; i < (int)args.size(); i++) {
-            if (args[i].m_value == nullptr &&
-                std::find(optional_args_idx.begin(), optional_args_idx.end(), i)
-                    == optional_args_idx.end()) {
+        // Ensure required arguments are provided, but skip optional ones
+        for (int i = 0; i < (int)args.size(); i++) {
+            if (args[i].m_value == nullptr) {
+                // Skip checking if the argument is optional
+                if (std::find(optional_args_idx.begin(), optional_args_idx.end(), i) != optional_args_idx.end()) {
+                    continue;
+                }
                 diag.semantic_error_label(
                     "Argument was not specified",
                     {loc},
