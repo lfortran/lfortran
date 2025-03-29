@@ -35,6 +35,8 @@ def test_document_manipulation(client: LFortranLspTestClient):
                 return False
             assert client.has_outgoing_event(sent_text_document_did_open)
 
+            assert client.await_validation(doc.uri, doc.version) is not None
+
             rdoc = client.get_remote_document(doc.uri)
             assert doc.uri == rdoc["uri"]
             assert doc.version == rdoc["version"]
@@ -44,8 +46,6 @@ def test_document_manipulation(client: LFortranLspTestClient):
                     "module module_function_call1",
                     "end module module_function_call1",
                 ]) + "\n"
-
-            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.cursor = 1,6
             doc.write("foo")
@@ -72,6 +72,8 @@ def test_document_manipulation(client: LFortranLspTestClient):
                 return False
             assert client.has_outgoing_event(sent_text_document_did_write_foo)
 
+            assert client.await_validation(doc.uri, doc.version) is not None
+
             rdoc = client.get_remote_document(doc.uri)
             assert doc.uri == rdoc["uri"]
             assert doc.version == rdoc["version"]
@@ -81,8 +83,6 @@ def test_document_manipulation(client: LFortranLspTestClient):
                     "modulfooe module_function_call1",
                     "end module module_function_call1",
                 ]) + "\n"
-
-            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.cursor = 1,6
             doc.replace("bar")
@@ -112,6 +112,8 @@ def test_document_manipulation(client: LFortranLspTestClient):
                 sent_text_document_did_replace_foo_with_bar
             )
 
+            assert client.await_validation(doc.uri, doc.version) is not None
+
             rdoc = client.get_remote_document(doc.uri)
             assert doc.uri == rdoc["uri"]
             assert doc.version == rdoc["version"]
@@ -121,8 +123,6 @@ def test_document_manipulation(client: LFortranLspTestClient):
                     "modulbare module_function_call1",
                     "end module module_function_call1",
                 ]) + "\n"
-
-            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.backspace()
             doc.save()
@@ -148,6 +148,8 @@ def test_document_manipulation(client: LFortranLspTestClient):
                 return False
             assert client.has_outgoing_event(sent_text_document_did_backspace_r)
 
+            assert client.await_validation(doc.uri, doc.version) is not None
+
             rdoc = client.get_remote_document(doc.uri)
             assert doc.uri == rdoc["uri"]
             assert doc.version == rdoc["version"]
@@ -157,8 +159,6 @@ def test_document_manipulation(client: LFortranLspTestClient):
                     "modulbae module_function_call1",
                     "end module module_function_call1",
                 ]) + "\n"
-
-            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.cursor = 1,6
             doc.delete(2)
@@ -185,6 +185,8 @@ def test_document_manipulation(client: LFortranLspTestClient):
                 return False
             assert client.has_outgoing_event(sent_text_document_did_delete_ba)
 
+            assert client.await_validation(doc.uri, doc.version) is not None
+
             rdoc = client.get_remote_document(doc.uri)
             assert doc.uri == rdoc["uri"]
             assert doc.version == rdoc["version"]
@@ -194,8 +196,6 @@ def test_document_manipulation(client: LFortranLspTestClient):
                     "module module_function_call1",
                     "end module module_function_call1",
                 ]) + "\n"
-
-            assert client.await_validation(doc.uri, doc.version) is not None
 
             doc.move(tmp_file_2.name)
 
