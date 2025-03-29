@@ -3826,7 +3826,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
-        filep = stdout;
+        // if the standard or old codes require a different behavior, we can implement an
+        // optional compiler option to turn on some other behavior, but by default we should
+        // always give a runtime error
+        printf("Can't write to non-open file descriptor\n");
+        exit(1);
     }
     va_list args;
     va_start(args, format);
