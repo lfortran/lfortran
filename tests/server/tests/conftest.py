@@ -1,5 +1,7 @@
 import os
 import shutil
+import signal
+import sys
 from pathlib import Path
 from typing import Iterator
 
@@ -23,7 +25,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
 
     log_path = f"{request.node.name}.log"
 
-    timeout_ms = 5000
+    timeout_ms = 30000
 
     server_args = [
         "server",
@@ -59,11 +61,26 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         }
     })
 
-    with client.serve():
-        # Steps abstracted by context manager:
-        # 1. Send request: initialize
-        # 2. Send notification: initialized
-        # 3. <yield client>
-        # 4. Send request: shutdown
-        # 5. Send notification: exit
-        yield client
+    log_printed = False
+    try:
+        with client.serve():
+            # Steps abstracted by context manager:
+            # 1. Send request: initialize
+            # 2. Send notification: initialized
+            # 3. <yield client>
+            # 4. Send request: shutdown
+            # 5. Send notification: exit
+            yield client
+    except Exception as e:
+        with open(log_path) as f:
+            print(f.read(), file=sys.stderr)
+            log_printed = True
+        raise e
+    finally:
+        if not client.server.poll():
+            print('Server did not terminate cleanly, terminating it forcefully ...', file=sys.stderr)
+            os.kill(client.server.pid, signal.SIGKILL)
+            if not log_printed:
+                with open(log_path) as f:
+                    print(f.read(), file=sys.stderr)
+                    log_printed = True

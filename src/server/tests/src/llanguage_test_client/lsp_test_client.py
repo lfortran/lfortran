@@ -343,23 +343,20 @@ class LspTestClient(LspClient):
 
     def terminate(self) -> None:
         shutdown_id = self.send_shutdown()
+        self.await_response(shutdown_id)
 
-        # TODO: this currently hangs: https://github.com/lfortran/lfortran/issues/6774
-        #self.await_response(shutdown_id)
+        self.send_exit()
 
-        #self.send_exit()
-
-        #self.stop.set()
+        self.stop.set()
         # self.stderr_printer.join()
 
-        #timeout_s = 0.5
-        #try:
-        #    self.server.wait(timeout=timeout_s)
-        #except subprocess.TimeoutExpired as e:
-        #    os.kill(self.server.pid, signal.SIGKILL)
-        #    raise RuntimeError(
-        #        f"Timed-out after {timeout_s} seconds while awaiting the server to terminate."
-        #    ) from e
+        try:
+            self.server.wait(timeout=self.timeout_s)
+        except subprocess.TimeoutExpired as e:
+            os.kill(self.server.pid, signal.SIGKILL)
+            raise RuntimeError(
+                f"Timed-out after {self.timeout_s} seconds while awaiting the server to terminate."
+            ) from e
 
     def check_server(self) -> bool:
         if self.server.poll():
