@@ -3651,6 +3651,8 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     }
 }
 
+// TODO: Add the functionality to show the error in line when wrong input is entered for int or float
+
 LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
