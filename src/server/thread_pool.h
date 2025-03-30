@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <utility>
@@ -35,31 +36,29 @@ namespace LCompilers::LLanguageServer::Threading {
             lsl::Logger &logger
         );
 
-        inline auto name() const -> const std::string & {
-            return _name;
-        }
+        auto name() const -> const std::string &;
+        auto numThreads() -> std::size_t;
+        auto numActive() const -> std::size_t;
+        auto isRunning() const -> bool;
+        auto hasCapacity() -> bool;
 
-        inline auto numThreads() const -> std::size_t {
-            return _numThreads;
-        }
-
-        inline auto isRunning() const -> bool {
-            return running;
-        }
-
+        auto ensureCapacity() -> void;
+        auto grow(std::size_t size) -> std::size_t;
         auto execute(Task task) -> std::shared_ptr<std::atomic_bool>;
         auto stop() -> void;
         auto stopNow() -> void;
         auto join() -> void;
     protected:
         const std::string _name;
-        std::size_t _numThreads;
-        lsl::Logger &logger;
+        lsl::Logger logger;
         TaskQueue tasks;
         std::vector<std::thread> workers;
+        std::recursive_mutex workerMutex;
         std::atomic_bool running = true;
         std::atomic_bool stopRunning = false;
         std::atomic_bool stopRunningNow = false;
+        std::atomic_size_t activeCount = 0;
+        std::atomic_size_t nextGrowSize = 1;
 
         auto run(const std::size_t threadId) -> void;
     };

@@ -86,7 +86,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::string _languageId;
         int _version;
         std::string _text;
-        lsl::Logger &logger;
+        lsl::Logger logger;
         fs::path _path;
         std::string buffer;
         std::vector<std::size_t> lineIndices;

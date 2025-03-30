@@ -12,7 +12,7 @@ from lsprotocol.types import (
     LocationLink, MarkupKind, Position, RenameClientCapabilities, RenameParams,
     TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
     TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
-    TextDocumentRenameRequest, TextDocumentRenameResponse, WorkspaceEdit, TextEdit)
+    TextDocumentRenameRequest, TextDocumentRenameResponse, WorkspaceEdit)
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 from llanguage_test_client.lsp_test_client import LspTestClient
@@ -27,14 +27,16 @@ class LFortranLspTestClient(LspTestClient):
             server_params: List[str],
             workspace_path: Optional[Path],
             timeout_ms: float,
-            config: Dict[str, Any]
+            config: Dict[str, Any],
+            client_log_path: str
     ) -> None:
         super().__init__(
             server_path,
             server_params,
             workspace_path,
             timeout_ms,
-            config
+            config,
+            client_log_path
         )
 
     def await_validation(self, uri: str, version: int) -> Any:

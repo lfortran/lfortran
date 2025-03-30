@@ -23,45 +23,79 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
     if not (server_path.exists() and os.access(server_path, os.X_OK)):
         raise RuntimeError(f'Invalid or non-executable path to lfortran: {server_path}')
 
-    log_path = f"{request.node.name}.log"
+    server_log_path = f"{request.node.name}-server.log"
+    client_log_path = f"{request.node.name}-client.log"
 
-    timeout_ms = 30000
-
-    server_args = [
-        "server",
-        "--parent-process-id", str(os.getpid()),
-        "--log-level", "trace",
-        "--log-path", log_path,
-        "--timeout-ms", str(timeout_ms),
-    ]
-
-    client = LFortranLspTestClient(server_path, server_args, None, timeout_ms, {
+    config = {
         "LFortran": {
             "openIssueReporterOnError": False,
             "maxNumberOfProblems": 100,
             "trace": {
-                "server": "off",
+                "server": "verbose",
             },
             "compiler": {
                 "path": "lfortran",
                 "flags": [],
             },
             "log": {
-                "path": log_path,
-                "level": "trace",
-                "prettyPrint": True,
+                "path": server_log_path,
+                "level": "all",
+                "prettyPrint": False,
             },
             "indentSize": 4,
-            "timeoutMs": timeout_ms,
+            # NOTE: Regarding timing-out and retrying requests, a timeout of 0
+            # means do not time-out (or retry):
+            "timeoutMs": 0,
             "retry": {
                 "maxAttempts": 3,
                 "minSleepTimeMs": 10,
                 "maxSleepTimeMs": 300,
             },
         }
-    })
+    }
 
-    log_printed = False
+    server_args = [
+        "server",
+        "--parent-process-id", str(os.getpid()),
+        "--log-level", config["LFortran"]["log"]["level"],
+        "--log-path", server_log_path,
+        "--timeout-ms", str(config["LFortran"]["timeoutMs"]),
+        "--num-request-threads", "1",
+        "--num-worker-threads", "1",
+        "--config-section", "LFortran",
+        "--open-issue-reporter-on-error", str(config["LFortran"]["openIssueReporterOnError"]).lower(),
+        "--max-number-of-problems", str(config["LFortran"]["maxNumberOfProblems"]),
+        "--trace-server", config["LFortran"]["trace"]["server"],
+        "--compiler-path", str(server_path),
+        "--log-pretty-print", str(config["LFortran"]["log"]["prettyPrint"]).lower(),
+        "--indent-size", str(config["LFortran"]["indentSize"]),
+        "--max-retry-attempts", str(config["LFortran"]["retry"]["maxAttempts"]),
+        "--min-retry-sleep-time-ms", str(config["LFortran"]["retry"]["minSleepTimeMs"]),
+        "--max-retry-sleep-time-ms", str(config["LFortran"]["retry"]["maxSleepTimeMs"]),
+        "--extension-id", "lcompilers.lfortran",
+    ]
+
+    client = LFortranLspTestClient(server_path, server_args, None, 1000, config, client_log_path)
+
+    def print_logs() -> None:
+        if os.path.exists(client_log_path):
+            print()
+            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
+            print("~~ Client Logs ~~", file=sys.stderr)
+            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
+            print()
+            with open(client_log_path) as f:
+                print(f.read(), file=sys.stderr)
+        if os.path.exists(server_log_path):
+            print()
+            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
+            print("~~ Server Logs ~~", file=sys.stderr)
+            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
+            print()
+            with open(server_log_path) as f:
+                print(f.read(), file=sys.stderr)
+
+    logs_printed = False
     try:
         with client.serve():
             # Steps abstracted by context manager:
@@ -72,15 +106,12 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
             # 5. Send notification: exit
             yield client
     except Exception as e:
-        with open(log_path) as f:
-            print(f.read(), file=sys.stderr)
-            log_printed = True
+        print_logs()
+        logs_printed = True
         raise e
     finally:
-        if not client.server.poll():
+        if hasattr(client, 'server') and not client.server.poll():
             print('Server did not terminate cleanly, terminating it forcefully ...', file=sys.stderr)
             os.kill(client.server.pid, signal.SIGKILL)
-            if not log_printed:
-                with open(log_path) as f:
-                    print(f.read(), file=sys.stderr)
-                    log_printed = True
+            if not logs_printed:
+                print_logs()

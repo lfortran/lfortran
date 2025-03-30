@@ -9,7 +9,7 @@ namespace LCompilers::LLanguageServer {
         lsl::Logger &logger
     ) : incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
-      , logger(logger)
+      , logger(logger.having("LanguageServer"))
     {
         // empty
     }

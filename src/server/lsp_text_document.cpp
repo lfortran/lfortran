@@ -19,7 +19,7 @@ namespace LCompilers::LanguageServerProtocol {
     ) : _languageId(languageId)
       , _version(version)
       , _text(text)
-      , logger(logger)
+      , logger(logger.having("LspTextDocument"))
     {
         buffer.reserve(8196);
         setUri(uri);
@@ -29,10 +29,10 @@ namespace LCompilers::LanguageServerProtocol {
     LspTextDocument::LspTextDocument(
         const std::string &uri,
         lsl::Logger &logger
-    ) : _languageId{""}
-      , _version{-1}
-      , _text{""}
-      , logger{logger}
+    ) : _languageId("")
+      , _version(-1)
+      , _text("")
+      , logger(logger.having("LspTextDocument"))
     {
         buffer.reserve(8196);
         setUri(uri);
@@ -45,7 +45,7 @@ namespace LCompilers::LanguageServerProtocol {
         , _languageId(std::move(other._languageId))
         , _version(other._version)
         , _text(std::move(other._text))
-        , logger(other.logger)
+        , logger(std::move(other.logger))
         , _path(std::move(other._path))
         , buffer(std::move(other.buffer))
         , lineIndices(std::move(other.lineIndices))
