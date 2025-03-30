@@ -5,6 +5,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
+// The `CreateFile` macro conflicts with an LSP type name
+#ifdef CreateFile
+  #undef CreateFile
+#endif
 #endif // _WIN32
 
 #include <server/language_server.h>
