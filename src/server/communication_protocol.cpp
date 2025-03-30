@@ -1,6 +1,8 @@
 #include <cctype>
+#include <cerrno>
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <ostream>
 #include <string>
@@ -39,7 +41,11 @@ namespace LCompilers::LLanguageServer {
         // Redirect stdout to stderr
         std::cout << std::flush;
         std::cout.rdbuf(std::cerr.rdbuf());
-        fflush(stdout);
+        if (fflush(stdout) == EOF) {
+            logger.error()
+                << "Failed to flush stdout: fflush returned "
+                << errno << ":" << strerror(errno) << std::endl;
+        }
 #ifdef _WIN32
         if ((stdout_fd = _dup(_fileno(stdout))) == -1) {
 #else
@@ -53,9 +59,13 @@ namespace LCompilers::LLanguageServer {
 #endif // _WIN32
             logger.error() << "Failed to copy stdout for restoration." << std::endl;
         } else if ((stdout_fp = fdopen(stdout_fd, "w")) == nullptr) {
-            close(stdout_fd);
             logger.error() << "Failed to open FILE to stdout." << std::endl;
         }
+#ifdef _WIN32
+        if ((stdout_fh = reinterpret_cast<HANDLE>(_get_osfhandle(stdout_fd))) == INVALID_HANDLE_VALUE) {
+            logger.error() << "Failed to open HANDLE to stdout." << std::endl;
+        }
+#endif // _WIN32
     }
 
     CommunicationProtocol::~CommunicationProtocol() {
@@ -65,7 +75,11 @@ namespace LCompilers::LLanguageServer {
         // Restore stdout
         std::cout << std::flush;
         std::cout.rdbuf(cout_sbuf);
-        fflush(stdout);
+        if (fflush(stdout) == EOF) {
+            logger.error()
+                << "Failed to flush stdout: fflush returned "
+                << errno << ":" << strerror(errno) << std::endl;
+        }
 #ifdef _WIN32
         if (_dup2(stdout_fd, _fileno(stdout)) == -1) {
 #else
@@ -73,8 +87,6 @@ namespace LCompilers::LLanguageServer {
 #endif // _WIN32
             logger.debug() << "Failed to restore stdout." << std::endl;
         }
-        close(stdout_fd);
-        fclose(stdout_fp);
     }
 
     auto CommunicationProtocol::listen() -> void {
@@ -92,8 +104,24 @@ namespace LCompilers::LLanguageServer {
                     logger.error() << "Failed to write message to stdout:" << std::endl
                                    << message << std::endl;
                 }
-                fflush(stdout_fp);
-                fsync(stdout_fd);
+                if (fflush(stdout_fp) == EOF) {
+                    logger.error()
+                        << "Failed to flush stdout_fp: fflush returned "
+                        << errno << ":" << strerror(errno) << std::endl;
+                }
+#ifdef _WIN32
+                if (!FlushFileBuffers(stdout_fh)) {
+                    logger.error()
+                        << "Failed to flush stdout_fh: " << GetLastError()
+                        << std::endl;
+                }
+#else
+                if (fsync(stdout_fd) == -1) {
+                    logger.error()
+                        << "Failed to flush stdout_fd: fsync returned "
+                        << errno << ": " << strerror(errno) << std::endl;
+                }
+#endif // _WIN32
             } while (running);
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
