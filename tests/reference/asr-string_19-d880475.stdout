@@ -194,6 +194,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -208,6 +211,9 @@
                                     char_string
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (String 1 -3 (FunctionCall
@@ -216,6 +222,9 @@
                                             [((FunctionParam
                                                 0
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 string_type
                                                 )
                                                 ()
@@ -284,6 +293,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -298,6 +310,9 @@
                                     len_string
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (Integer 4)
@@ -350,6 +365,7 @@
                                     string_type
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -620,6 +636,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -634,6 +653,9 @@
                                     compute_lps_use1
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )]
                                         (Integer 4)
@@ -1007,6 +1029,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1027,6 +1052,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1041,10 +1069,16 @@
                                     padl_string_default
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         (Integer 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         Source
@@ -1151,6 +1185,9 @@
                                                 ()
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 6 string_type
                                             )
                                             ()
@@ -1234,6 +1271,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1254,6 +1294,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1268,11 +1311,17 @@
                                     padl_string_pad_with
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         (Integer 4)
                                         (String 1 1 () PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         Source
@@ -1377,6 +1426,9 @@
                                                 ()
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 6 string_type
                                             )
                                             ()

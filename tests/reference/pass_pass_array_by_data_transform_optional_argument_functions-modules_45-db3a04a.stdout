@@ -135,6 +135,9 @@
                                     (Allocatable
                                         (Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 profile_config_t
                                             )
                                             [(()
@@ -224,6 +227,7 @@
                                             
                                         })
                                     file_scope_flag
+                                    []
                                     []
                                     []
                                     Source
@@ -389,6 +393,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 file_scope_flag
                                                             )
                                                             [(()
@@ -586,6 +593,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 profile_config_t
                                                             )
                                                             [(()
@@ -650,6 +660,9 @@
                                         (Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 profile_config_t
                                                 )
                                                 [(()
@@ -685,6 +698,9 @@
                                             (Var 6 profindex)
                                             ())]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 profile_config_t
                                             )
                                             ColMajor
@@ -867,6 +883,9 @@
                                                 (Logical 4)
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 profile_config_t
                                             )
                                             ()
@@ -961,6 +980,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 file_scope_flag
                                                         )
                                                         [(()
@@ -1165,6 +1187,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 profile_config_t
                                                     )
                                                     ()
@@ -1209,6 +1234,9 @@
                                         (Logical 4)
                                         (Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 file_scope_flag
                                             )
                                             [(()
@@ -1219,6 +1247,9 @@
                                         (Logical 4)
                                         (Logical 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 profile_config_t
                                         )
                                         Source
@@ -1332,6 +1363,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 file_scope_flag
                                                             )
                                                             [(()
@@ -1455,6 +1489,7 @@
                                     link_time_flags
                                     file_scope_flags
                                     is_built_in]
+                                    []
                                     Source
                                     Public
                                     .false.

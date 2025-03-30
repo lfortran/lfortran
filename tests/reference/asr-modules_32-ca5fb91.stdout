@@ -21,6 +21,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 build_target_t
                                                             )
                                                         )
@@ -28,6 +31,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 build_target_t
                                                             )
                                                         )
@@ -35,6 +41,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 build_target_t
                                                         )
                                                     )
@@ -50,6 +59,7 @@
                                     build_target_ptr
                                     [build_target_t]
                                     [ptr]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -108,6 +118,7 @@
                                     []
                                     [output_file
                                     version]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -132,6 +143,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 build_target_t
                                                         )
                                                     )
@@ -149,6 +163,9 @@
                                         []
                                         (Pointer
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 build_target_t
                                             )
                                         )
@@ -170,6 +187,9 @@
                                         (PointerNullConstant
                                             (Pointer
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 build_target_t
                                                 )
                                             )
