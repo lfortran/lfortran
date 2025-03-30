@@ -61,11 +61,11 @@ namespace LCompilers::LLanguageServer {
         } else if ((stdout_fp = fdopen(stdout_fd, "w")) == nullptr) {
             logger.error() << "Failed to open FILE to stdout." << std::endl;
         }
-#ifdef _WIN32
-        if ((stdout_fh = reinterpret_cast<HANDLE>(_get_osfhandle(stdout_fd))) == INVALID_HANDLE_VALUE) {
-            logger.error() << "Failed to open HANDLE to stdout." << std::endl;
-        }
-#endif // _WIN32
+// #ifdef _WIN32
+//         if ((stdout_fh = reinterpret_cast<HANDLE>(_get_osfhandle(stdout_fd))) == INVALID_HANDLE_VALUE) {
+//             logger.error() << "Failed to open HANDLE to stdout." << std::endl;
+//         }
+// #endif // _WIN32
     }
 
     CommunicationProtocol::~CommunicationProtocol() {
@@ -109,19 +109,19 @@ namespace LCompilers::LLanguageServer {
                         << "Failed to flush stdout_fp: fflush returned "
                         << errno << ":" << strerror(errno) << std::endl;
                 }
-#ifdef _WIN32
-                if (!FlushFileBuffers(stdout_fh)) {
-                    logger.error()
-                        << "Failed to flush stdout_fh: " << GetLastError()
-                        << std::endl;
-                }
-#else
-                if (fsync(stdout_fd) == -1) {
-                    logger.error()
-                        << "Failed to flush stdout_fd: fsync returned "
-                        << errno << ": " << strerror(errno) << std::endl;
-                }
-#endif // _WIN32
+// #ifdef _WIN32
+//                 if (!FlushFileBuffers(stdout_fh)) {
+//                     logger.error()
+//                         << "Failed to flush stdout_fh: " << GetLastError()
+//                         << std::endl;
+//                 }
+// #else
+//                 if (fsync(stdout_fd) == -1) {
+//                     logger.error()
+//                         << "Failed to flush stdout_fd: fsync returned "
+//                         << errno << ": " << strerror(errno) << std::endl;
+//                 }
+// #endif // _WIN32
             } while (running);
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
