@@ -7102,9 +7102,9 @@ public:
         }
         // Cast x_ or y_ as necessary
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &x_,
-                                            ASRUtils::expr_type(x_), real_type, diag);
+                                            ASRUtils::extract_type(ASRUtils::expr_type(x_)), real_type, diag);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y_,
-                                            ASRUtils::expr_type(y_), real_type, diag);
+                                            ASRUtils::extract_type(ASRUtils::expr_type(y_)), real_type, diag);
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
