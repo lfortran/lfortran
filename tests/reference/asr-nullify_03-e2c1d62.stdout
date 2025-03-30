@@ -59,6 +59,7 @@
                                     rp1d
                                     []
                                     [f]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -171,6 +172,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 rp1d
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -193,6 +197,7 @@
                                     hdf32
                                     scales
                                     f]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -252,6 +257,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 sds
                                     )
                                     ()
@@ -283,6 +291,9 @@
                                     5 1_sds_scales
                                     (Array
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             5 rp1d
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -295,6 +306,9 @@
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     5 rp1d
                                 )
                                 ColMajor

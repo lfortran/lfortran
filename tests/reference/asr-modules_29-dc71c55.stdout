@@ -60,6 +60,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         15 git_target_t
                                                     )
                                                     ()
@@ -94,6 +97,9 @@
                                         [(String 1 -1 () PointerString)
                                         (String 1 -1 () PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             15 git_target_t
                                         )
                                         Source
@@ -206,6 +212,7 @@
                                     []
                                     [url
                                     object]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -241,6 +248,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 git_target_t
                                                         )
                                                     )
@@ -298,6 +308,7 @@
                                     [name
                                     path
                                     git]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -335,6 +346,7 @@
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -380,6 +392,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 8 dependency_config_t
                                                             )
                                                             [(()
@@ -406,6 +421,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 error_t
                                                         )
                                                     )
@@ -445,6 +463,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 toml_table
                                                     )
                                                     ()
@@ -461,6 +482,9 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     8 dependency_config_t
                                                 )
                                                 [(()
@@ -469,11 +493,17 @@
                                             )
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 toml_table
                                         )
                                         (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 8 error_t
                                             )
                                         )]
@@ -546,6 +576,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 dependency_config_t
                                                     )
                                                     ()
@@ -580,6 +613,9 @@
                                     new_dependency
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             8 dependency_config_t
                                         )]
                                         ()
@@ -602,6 +638,9 @@
                                             13 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     8 git_target_t
                                                 )
                                             )
@@ -629,6 +668,9 @@
                                                 ()
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 8 git_target_t
                                             )
                                             ()
@@ -675,6 +717,7 @@
                                     toml_table
                                     []
                                     [inline]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -731,6 +774,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 4 dependency_config_t
                                                             )
                                                             [(()
@@ -813,6 +859,7 @@
                                     source_dir
                                     main
                                     dependency]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -857,6 +904,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 toml_table
                                                         )
                                                     )
@@ -879,6 +929,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -900,6 +953,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 executable_config_t
                                                     )
                                                     ()
@@ -920,6 +976,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 toml_table
                                                     )
                                                     ()
@@ -934,13 +993,22 @@
                                     new_executable
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 executable_config_t
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 toml_table
                                         )
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 error_t
                                             )
                                         )]
@@ -972,6 +1040,9 @@
                                             (Allocatable
                                                 (Array
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 dependency_config_t
                                                     )
                                                     [(()

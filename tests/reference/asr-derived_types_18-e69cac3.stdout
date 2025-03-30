@@ -67,6 +67,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 t_1
                                     )
                                     ()
@@ -87,6 +90,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 t_2
                                     )
                                     ()
@@ -115,6 +121,9 @@
                             (Var 5 type_2)
                             5 1_t_1
                             (StructType
+                                []
+                                []
+                                .true.
                                 5 1_t_1
                             )
                             ()
@@ -207,6 +216,7 @@
                                     t_1
                                     []
                                     [i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -242,6 +252,7 @@
                                     t_2
                                     []
                                     [r]
+                                    []
                                     Source
                                     Public
                                     .false.

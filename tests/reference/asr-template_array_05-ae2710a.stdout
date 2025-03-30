@@ -37,6 +37,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_vector
                                     )
                                     ()
@@ -57,6 +60,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_matrix
                                     )
                                     ()
@@ -77,6 +83,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_vector
                                     )
                                     ()
@@ -97,6 +106,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_matrix
                                     )
                                     ()
@@ -117,6 +129,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_vector
                                     )
                                     ()
@@ -137,6 +152,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_matrix
                                     )
                                     ()
@@ -190,6 +208,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_matrix
                                                     )
                                                     ()
@@ -210,6 +231,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_matrix
                                                     )
                                                     ()
@@ -230,6 +254,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_matrix
                                                     )
                                                     ()
@@ -244,12 +271,21 @@
                                     int_add_matrix
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_matrix
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_matrix
                                         )]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_matrix
                                         )
                                         Source
@@ -353,6 +389,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_vector
                                                     )
                                                     ()
@@ -373,6 +412,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_vector
                                                     )
                                                     ()
@@ -393,6 +435,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_vector
                                                     )
                                                     ()
@@ -407,12 +452,21 @@
                                     int_add_vector
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_vector
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_vector
                                         )]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_vector
                                         )
                                         Source
@@ -517,6 +571,7 @@
                                     int_matrix
                                     []
                                     [elements]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -557,6 +612,7 @@
                                     int_vector
                                     []
                                     [elements]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -799,6 +855,9 @@
                             [((Var 13 a))
                             ((Var 13 b))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 13 int_vector
                             )
                             ()
@@ -935,6 +994,9 @@
                             [((Var 13 am))
                             ((Var 13 bm))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 13 int_matrix
                             )
                             ()
@@ -999,6 +1061,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 matrix
                                                                     )
                                                                     ()
@@ -1019,6 +1084,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 matrix
                                                                     )
                                                                     ()
@@ -1039,6 +1107,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 matrix
                                                                     )
                                                                     ()
@@ -1053,12 +1124,21 @@
                                                     add_matrix
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 matrix
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 matrix
                                                         )]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 matrix
                                                         )
                                                         Source
@@ -1181,6 +1261,7 @@
                                                     matrix
                                                     []
                                                     [elements]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -1495,6 +1576,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 vector
                                                                     )
                                                                     ()
@@ -1515,6 +1599,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 vector
                                                                     )
                                                                     ()
@@ -1535,6 +1622,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 vector
                                                                     )
                                                                     ()
@@ -1549,12 +1639,21 @@
                                                     add_vector
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 vector
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 vector
                                                         )]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 vector
                                                         )
                                                         Source
@@ -1803,6 +1902,7 @@
                                                     vector
                                                     []
                                                     [elements]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.

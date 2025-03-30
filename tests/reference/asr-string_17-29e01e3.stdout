@@ -57,6 +57,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -71,6 +74,9 @@
                                     len_string
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (Integer 4)
@@ -188,6 +194,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -202,6 +211,9 @@
                                     maybe
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (String 1 -3 (FunctionCall
@@ -210,6 +222,9 @@
                                             [((FunctionParam
                                                 0
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 string_type
                                                 )
                                                 ()
@@ -318,6 +333,7 @@
                                     string_type
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Private
                                     .false.

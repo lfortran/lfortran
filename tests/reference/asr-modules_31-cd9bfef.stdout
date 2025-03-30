@@ -72,6 +72,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 dependency_tree_t
                                                     )
                                                     ()
@@ -93,6 +96,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -142,6 +148,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 fpm_update_settings
                                                     )
                                                     ()
@@ -156,6 +165,9 @@
                                     cmd_update
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 fpm_update_settings
                                         )]
                                         ()
@@ -184,6 +196,9 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     7 fpm_dependency_modules_31_dependency_node_t
                                                                 )
                                                                 [(()
@@ -197,6 +212,9 @@
                                                     (Var 7 ii)
                                                     ())]
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 fpm_dependency_modules_31_dependency_node_t
                                                     )
                                                     ColMajor
@@ -298,6 +316,7 @@
                                     []
                                     [working_dir
                                     verbose]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -378,6 +397,7 @@
                                     [name
                                     fetch_only
                                     clean]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -447,6 +467,7 @@
                                     []
                                     [name
                                     path]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -555,6 +576,7 @@
                                     revision
                                     done
                                     update]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -600,6 +622,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 dependency_node_t
                                                             )
                                                             [(()
@@ -716,6 +741,7 @@
                                     ndep
                                     dep
                                     cache]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -753,6 +779,7 @@
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -777,6 +804,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 error_t
                                                         )
                                                     )
@@ -835,6 +865,9 @@
                                         (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 9 error_t
                                             )
                                         )]

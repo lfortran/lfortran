@@ -246,6 +246,7 @@
                                     [int
                                     float
                                     bool]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -317,6 +318,9 @@
                                                 (Logical 4)
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 fpm_run_settings
                                             )
                                             ()

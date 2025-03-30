@@ -37,6 +37,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 circle
                                     )
                                     ()
@@ -69,6 +72,9 @@
                                 (Real 4)
                             ))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 6 circle
                             )
                             ()
@@ -155,6 +161,7 @@
                                     circle
                                     []
                                     [radius]
+                                    []
                                     Source
                                     Private
                                     .false.

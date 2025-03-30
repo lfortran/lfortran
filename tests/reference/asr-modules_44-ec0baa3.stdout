@@ -47,6 +47,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         9 fpm_new_settings
                                     )
                                     ()
@@ -132,6 +135,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 fpm_new_settings
                                                     )
                                                     ()
@@ -146,6 +152,9 @@
                                     cmd_new
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 fpm_new_settings
                                         )]
                                         ()
@@ -234,6 +243,7 @@
                                     fpm_cmd_settings
                                     []
                                     [working_dir]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -271,6 +281,7 @@
                                     fpm_new_settings
                                     []
                                     [name]
+                                    []
                                     Source
                                     Public
                                     .false.

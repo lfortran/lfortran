@@ -103,6 +103,9 @@
                                                                     (Allocatable
                                                                         (Array
                                                                             (StructType
+                                                                                []
+                                                                                []
+                                                                                .true.
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -146,6 +149,9 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -262,6 +268,9 @@
                                                                     (Allocatable
                                                                         (Array
                                                                             (StructType
+                                                                                []
+                                                                                []
+                                                                                .true.
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -283,6 +292,9 @@
                                                         [(Allocatable
                                                             (Array
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -389,6 +401,7 @@
                                     toml_key
                                     []
                                     [key]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -415,6 +428,7 @@
                                                 )
                                         })
                                     toml_tokenizer
+                                    []
                                     []
                                     []
                                     Source
