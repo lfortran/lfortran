@@ -189,6 +189,7 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.newline()
 
     def generate_fields(self) -> None:
+        self.write('lsl::Logger logger;')
         self.write('LspTransformer transformer;')
         self.write('LspJsonSerializer serializer;')
         self.write('std::atomic_int serialRequestId = 0;')

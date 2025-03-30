@@ -27,9 +27,9 @@ namespace LCompilers::LLanguageServer {
       , messageStream(messageStream)
       , incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
-      , logger(logger)
+      , logger(logger.having("CommunicationProtocol"))
       , listener([this, &logger]() {
-          logger.threadName("CommunicationProtocol_listener");
+          logger.threadName("listener");
           listen();
       })
     {
@@ -52,9 +52,9 @@ namespace LCompilers::LLanguageServer {
         } else if (dup2(fileno(stderr), fileno(stdout)) == -1) {
 #endif // _WIN32
             logger.error() << "Failed to copy stdout for restoration." << std::endl;
-        // } else if ((stdout_fp = fdopen(stdout_fd, "w")) == nullptr) {
-        //     close(stdout_fd);
-        //     logger.error() << "Failed to open FILE to stdout." << std::endl;
+        } else if ((stdout_fp = fdopen(stdout_fd, "w")) == nullptr) {
+            close(stdout_fd);
+            logger.error() << "Failed to open FILE to stdout." << std::endl;
         }
     }
 
@@ -74,7 +74,7 @@ namespace LCompilers::LLanguageServer {
             logger.debug() << "Failed to restore stdout." << std::endl;
         }
         close(stdout_fd);
-        // fclose(stdout_fp);
+        fclose(stdout_fp);
     }
 
     auto CommunicationProtocol::listen() -> void {
@@ -92,31 +92,25 @@ namespace LCompilers::LLanguageServer {
                     logger.error() << "Failed to write message to stdout:" << std::endl
                                    << message << std::endl;
                 }
-                // fflush(stdout_fp);
-                // fsync(stdout_fd);
+                fflush(stdout_fp);
+                fsync(stdout_fd);
             } while (running);
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "[CommunicationProtocol] "
-                    "Unhandled exception caught: " << e.what()
+                    << "Unhandled exception caught: " << e.what()
                     << std::endl;
             } else {
                 logger.trace()
-                    << "[CommunicationProtocol] "
-                    "Interrupted while dequeuing messages: " << e.what()
+                    << "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
         }
-        logger.debug()
-            << "[CommunicationProtocol] Incoming-message listener terminated."
-            << std::endl;
+        logger.debug() << "Incoming-message listener terminated." << std::endl;
     }
 
     void CommunicationProtocol::serve() {
-        logger.info()
-            << "[CommunicationProtocol] Serving requests."
-            << std::endl;
+        logger.info() << "Serving requests." << std::endl;
         try {
             bool exit = false;
             while (!languageServer.isTerminated() && !exit) {
@@ -125,29 +119,24 @@ namespace LCompilers::LLanguageServer {
                     outgoingMessages.enqueue(message);
                 } else {
                     logger.warn()
-                        << "[CommunicationProtocol] "
-                        "Cannot parse an empty request body."
+                        << "Cannot parse an empty request body."
                         << std::endl;
                 }
             }
         } catch (std::exception &e) {
             logger.error()
-                << "[CommunicationProtocol] "
-                "Caught unhandled exception while serving requests: "
+                << "Caught unhandled exception while serving requests: "
                 << e.what()
                 << std::endl;
         }
         running = false;
         incomingMessages.stopNow();
         languageServer.join();
-        logger.debug()
-            << "[CommunicationProtocol] Language server terminated."
-            << std::endl;
+        logger.debug() << "Language server terminated." << std::endl;
         if (listener.joinable()) {
             listener.join();
             logger.debug()
-                << "[CommunicationProtocol] "
-                "Incoming-message listener terminated."
+                << "Incoming-message listener terminated."
                 << std::endl;
         }
     }

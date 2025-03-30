@@ -132,10 +132,6 @@ namespace LCompilers::LLanguageServer::Interface {
             ls::MessageQueue &outgoingMessages,
             lsl::Logger &logger
         ) -> std::unique_ptr<ls::CommunicationProtocol>;
-
-        auto buildMessageQueue(
-            lsl::Logger &logger
-        ) -> std::unique_ptr<ls::MessageQueue>;
     };
 
 } // namespace LCompilers::LLanguageServer::Interface

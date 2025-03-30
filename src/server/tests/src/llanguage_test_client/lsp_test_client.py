@@ -9,6 +9,7 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from io import StringIO
 from pathlib import Path
 from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple,
@@ -129,6 +130,7 @@ class LspTestClient(LspClient):
     callbacks_by_id: Dict[JsonValue, Tuple[Any, Callback]]
     stop: threading.Event
     # stderr_printer: threading.Thread
+    client_log_path: str
 
     def __init__(
             self,
@@ -136,7 +138,8 @@ class LspTestClient(LspClient):
             server_params: List[str],
             workspace_path: Optional[Path],
             timeout_ms: float,
-            config: Dict[str, Any]
+            config: Dict[str, Any],
+            client_log_path: str
     ) -> None:
         self.server_path = server_path
         self.server_params = server_params
@@ -160,6 +163,7 @@ class LspTestClient(LspClient):
         #     target=self.print_stderr,
         #     args=tuple()
         # )
+        self.client_log_path = client_log_path
 
     def print_stderr(self) -> None:
         if self.server.stderr is not None:
@@ -215,9 +219,11 @@ class LspTestClient(LspClient):
 
     @contextmanager
     def serve(self) -> Iterator["LspTestClient"]:
-        self.initialize()
-        yield self
-        self.terminate()
+        with open(self.client_log_path, "w") as log_file:
+            self.log_file = log_file
+            self.initialize()
+            yield self
+            self.terminate()
 
     def new_document(self, language_id: str) -> LspTextDocument:
         return self.open_document(language_id, None)
@@ -365,15 +371,27 @@ class LspTestClient(LspClient):
             )
         return True
 
+    def timestamp(self) -> str:
+        now_utc = datetime.now(timezone.utc)
+        return now_utc.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + ' UTC'
+
     def send_message(self, message: Any) -> None:
         self.events.append(OutgoingEvent(message))
-        body = json.dumps(message, default=self.converter.unstructure)
+        body = json.dumps(
+            message,
+            separators=(",",":"),
+            default=self.converter.unstructure,
+        )
         self.buf.seek(0)
         self.buf.truncate(0)
         self.buf.write(f"Content-Length: {len(body)}\r\n")
         self.buf.write("\r\n")
         self.buf.write(body)
         self.check_server()
+        print(
+            f"[{self.timestamp()}] Sending\n{self.buf.getvalue()}",
+            file=self.log_file
+        )
         self.ostream.write(self.buf.getvalue().encode())
         self.ostream.flush()
 
@@ -390,6 +408,10 @@ class LspTestClient(LspClient):
     def receive_message(self) -> JsonObject:
         self.check_server()
         message = self.message_stream.next()
+        print(
+            f"[{self.timestamp()}] Receiving\n{self.message_stream.message()}",
+            file=self.log_file
+        )
         match message:
             case dict():
                 self.events.append(IncomingEvent(message))

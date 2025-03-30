@@ -54,6 +54,7 @@ namespace LCompilers::LanguageServerProtocol {
         ),
         std::move(workspaceConfig)
       )
+      , logger(logger.having("LFortranLspLanguageServer"))
     {
         optionsByUri.reserve(256);
     }
@@ -152,7 +153,7 @@ namespace LCompilers::LanguageServerProtocol {
         compilerOptions.continue_compilation = true;
         compilerOptions.use_colors = false;  // disable ANSI terminal colors
 
-        std::unique_lock<std::shared_mutex> writeLock(configMutex);
+        std::unique_lock<std::shared_mutex> writeLock(optionMutex);
         optionIter = optionsByUri.find(uri);
         if (optionIter != optionsByUri.end()) {
             return optionIter->second;
@@ -191,7 +192,7 @@ namespace LCompilers::LanguageServerProtocol {
                     // NOTE: These value may have been updated since the validation was
                     // requested, but that's okay because we want to validate the latest
                     // version anyway:
-                    std::unique_lock<std::shared_mutex> readLock(document->mutex());
+                    std::shared_lock<std::shared_mutex> readLock(document->mutex());
                     const std::string &path = document->path().string();
                     const std::string &text = document->text();
                     int version = document->version();
@@ -458,10 +459,12 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        std::shared_lock<std::shared_mutex> documentLock(document->mutex());
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
         CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        documentLock.unlock();
         compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
         compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
         std::vector<lc::document_symbols> symbols =

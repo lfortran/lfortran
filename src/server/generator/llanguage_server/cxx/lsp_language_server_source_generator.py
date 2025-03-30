@@ -36,6 +36,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                         'logger',
                     ]),
                 ],
+                inits=[
+                    ('logger', ['logger.having("LspLanguageServer")'])
+                ],
         ):
             self.write('// empty')
         self.newline()

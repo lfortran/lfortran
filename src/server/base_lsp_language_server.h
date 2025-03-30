@@ -90,6 +90,7 @@ namespace LCompilers::LanguageServerProtocol {
             std::shared_ptr<lsc::LspConfig> workspaceConfig
         );
 
+        lsl::Logger logger;
         const std::string configSection;
         const std::string extensionId;
         const std::string compilerVersion;

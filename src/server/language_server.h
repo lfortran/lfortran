@@ -29,7 +29,7 @@ namespace LCompilers::LLanguageServer {
         );
         MessageQueue &incomingMessages;
         MessageQueue &outgoingMessages;
-        lsl::Logger &logger;
+        lsl::Logger logger;
         std::string buffer;
 
         auto send(const std::string &request) -> void;

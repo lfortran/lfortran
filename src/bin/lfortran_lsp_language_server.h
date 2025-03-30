@@ -95,6 +95,7 @@ namespace LCompilers::LanguageServerProtocol {
 
     private:
         const std::string source = "lfortran";
+        lsl::Logger logger;
         ls::LFortranAccessor lfortran;
         std::unordered_map<
             DocumentUri,

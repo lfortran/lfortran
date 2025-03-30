@@ -19,7 +19,7 @@ namespace LCompilers::LanguageServerProtocol {
             ")\\s*\\}$"
         )
         , istream(istream)
-        , logger(logger)
+        , logger(logger.having("LspMessageStream"))
     {
         message.reserve(16384);
         position = 0;

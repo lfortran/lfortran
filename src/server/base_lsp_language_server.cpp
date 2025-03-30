@@ -56,6 +56,7 @@ namespace LCompilers::LanguageServerProtocol {
         outgoingMessages,
         logger
       )
+      , logger(logger.having("BaseLspLanguageServer"))
       , configSection(configSection)
       , extensionId(extensionId)
       , compilerVersion(compilerVersion)
@@ -65,11 +66,11 @@ namespace LCompilers::LanguageServerProtocol {
       , lspConfigTransformer(std::move(lspConfigTransformer))
       , randomEngine(seed)
       , listener([this, &logger]{
-          logger.threadName("BaseLspLanguageServer_listener");
+          logger.threadName("listener");
           listen();
       })
       , cron([this, &logger]{
-          logger.threadName("BaseLspLanguageServer_cron");
+          logger.threadName("cron");
           chronicle();
       })
     {
@@ -92,12 +93,16 @@ namespace LCompilers::LanguageServerProtocol {
             },
             [this]{ return ttl(1000ms); }
         );
-        schedule(
-            [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
-                retryRequests(std::move(taskIsRunning));
-            },
-            [this]{ return ttl(100ms); }
-        );
+        if (this->workspaceConfig->timeoutMs > 0) {
+            schedule(
+                [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
+                    retryRequests(std::move(taskIsRunning));
+                },
+                [this]{ return ttl(100ms); }
+            );
+        } else {
+            this->logger.warn() << "Request time-outs are disabled." << std::endl;
+        }
     }
 
     auto BaseLspLanguageServer::nextSendId() -> std::size_t
@@ -172,17 +177,13 @@ namespace LCompilers::LanguageServerProtocol {
         if (listener.joinable()) {
             listener.join();
             logger.debug()
-                << "[LspLanguageServer] Incoming-message listener terminated."
+                << "Incoming-message listener terminated."
                 << std::endl;
         }
         requestPool.join();
-        logger.debug()
-            << "[LspLanguageServer] Request thread-pool terminated."
-            << std::endl;
+        logger.debug() << "Request thread-pool terminated." << std::endl;
         workerPool.join();
-        logger.debug()
-            << "[LspLanguageServer] Worker thread-pool terminated."
-            << std::endl;
+        logger.debug() << "Worker thread-pool terminated." << std::endl;
     }
 
     auto BaseLspLanguageServer::listen() -> void
@@ -230,13 +231,11 @@ namespace LCompilers::LanguageServerProtocol {
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "[LspLanguageServer] "
-                       "Unhandled exception caught: " << e.what()
+                    << "Unhandled exception caught: " << e.what()
                     << std::endl;
             } else {
                 logger.trace()
-                    << "[LspLanguageServer] "
-                       "Interrupted while dequeuing messages: " << e.what()
+                    << "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
         }
@@ -317,6 +316,8 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::chronicle() -> void {
         try {
             while (!_exit) {
+                requestPool.ensureCapacity();
+                workerPool.ensureCapacity();
                 bool changed;
                 do {
                     changed = false;
@@ -363,12 +364,11 @@ namespace LCompilers::LanguageServerProtocol {
                 } while (!_exit && changed);
 
                 // NOTE: Wait a short period of time before running the cron jobs again:
-                std::this_thread::sleep_for(100ms);
+                std::this_thread::sleep_for(40ms);
             }
         } catch (std::exception &e) {
             logger.error()
-                << "[LspLanguageServer] "
-                   "Unhandled exception caught: " << e.what()
+                << "Unhandled exception caught: " << e.what()
                 << std::endl;
         }
     }

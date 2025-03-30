@@ -23,12 +23,12 @@ namespace LCompilers::LLanguageServer {
     private:
         std::streambuf* cout_sbuf;
         int stdout_fd;
-        // FILE *stdout_fp;
+        FILE *stdout_fp;
         LanguageServer &languageServer;
         MessageStream &messageStream;
         MessageQueue &incomingMessages;
         MessageQueue &outgoingMessages;
-        lsl::Logger &logger;
+        lsl::Logger logger;
         std::atomic_bool running = true;
 
         // NOTE: By convention and to encourage proper initialization order,
