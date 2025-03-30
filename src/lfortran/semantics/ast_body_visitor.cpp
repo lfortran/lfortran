@@ -1349,7 +1349,7 @@ public:
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
+                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                         new_arg.m_type = struct_t;
                     } else {
                         diag.add(Diagnostic(
@@ -1524,7 +1524,7 @@ public:
                         diag.add(Diagnostic(
                             "Cannot allocate an array from a scalar source.",
                             Level::Error, Stage::Semantic, {
-                                Label("allocated variable is an array, but `source` is a scalar", 
+                                Label("allocated variable is an array, but `source` is a scalar",
                                     {alloc_args_vec.p[i].m_a->base.loc})
                             }));
                         throw SemanticAbort();
@@ -1549,7 +1549,7 @@ public:
                 }
                 if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
                     ASRUtils::make_ArrayBroadcast_t_util(
-                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source); 
+                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
                 }
                 ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
                     al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr));
@@ -1825,7 +1825,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
@@ -1875,7 +1875,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
@@ -3148,10 +3148,10 @@ public:
                         array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
                     }
                 } else {
-                    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) && 
+                    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
                           ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value)->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Maskl) &&
                             ASRUtils::extract_kind_from_ttype_t(target_type) == 8) {
-                        // Do return_type = kind(8) 
+                        // Do return_type = kind(8)
                         ASR::ttype_t* int_64 = ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 8));
                         ASR::IntrinsicElementalFunction_t* int_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
                         value = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, value->base.loc, int_func->m_intrinsic_id,
@@ -3930,7 +3930,7 @@ public:
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {args_loc})}));
                     throw SemanticAbort();
-            }  
+            }
 
             // Validate required arguments are provided
             for (size_t i = 0; i + offset < f->n_args; i++) {
