@@ -2687,14 +2687,26 @@ public:
         current_der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
         int64_t ptr_loads_copy = ptr_loads;
+
         if( ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
             ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)) ) {
             ptr_loads = 0;
         } else {
             ptr_loads = 2 - LLVM::is_llvm_pointer(*x_m_v_type);
         }
+
+
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
+
+        llvm::Value* base_tmp = tmp; // Save the result of x.m_v
+        ASR::ttype_t* base_type = x_m_v_type;
+        llvm::Type* base_llvm_type = llvm_utils->get_type_from_ttype_t_util(base_type, module.get());
+        
+        if (!base_tmp) {
+            throw CodeGenError("Base pointer is null in StructInstanceMember", x.base.base.loc);
+        }
+
         if( ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(x_m_v_type))) ) {
             if (ASRUtils::is_allocatable(x_m_v_type)) {
@@ -2709,9 +2721,94 @@ public:
             } else {
                 // TODO: Select type by comparing with vtab
             }
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_v)) {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_v);
+            ASR::ttype_t* element_type = array_item->m_type;
+            ASR::Array_t* array;
+            ASR::expr_t* array_m_v = array_item->m_v;
+            bool is_fixed_size=false;
+
+            if(ASR::is_a<ASR::StructInstanceMember_t>(*array_m_v)){
+                ASR::StructInstanceMember_t* struct_member = ASR::down_cast<ASR::StructInstanceMember_t>(array_m_v);
+                ASR::ttype_t* struct_ttype = struct_member->m_type;
+                if(ASR::is_a<ASR::Array_t>(*struct_ttype)){
+                    array = ASR::down_cast<ASR::Array_t>(struct_ttype);
+                    is_fixed_size = (array->m_physical_type == ASR::array_physical_typeType::FixedSizeArray);
+                }
+            }
+            
+            std::string array_size;
+            llvm::Value* index;
+    
+            if (is_fixed_size) {
+                // Fixed-size array: Get size from dimensions
+                if (array->n_dims > 0 && array->m_dims) {
+                    array_size = ASRUtils::extract_dim_value(array->m_dims[0].m_length);
+                } else {
+                    throw CodeGenError("Fixed-size array has no dimension information", x.base.base.loc);
+                }
+                // TODO Fetch index from ASR ;Hardcoded index for now 
+                int a_size = atoi(array_size.c_str());
+                ASR::expr_t* fortran_i = array_item->m_args[0].m_right;
+                if (ASR::is_a<ASR::IntegerConstant_t>(*fortran_i)) {
+                    // Case 1: Constant Index
+                    ASR::IntegerConstant_t* a_index = ASR::down_cast<ASR::IntegerConstant_t>(fortran_i);
+                    int fortran_index = a_index->m_n;
+
+                    // Optional: Bounds checking (adjust a_size based on array dimensions)
+                    if (fortran_index < 1 || fortran_index > a_size) {
+                        throw CodeGenError("Index " + std::to_string(fortran_index) +
+                                        " out of bounds for array of size " + std::to_string(a_size),
+                                        x.base.base.loc);
+                    }
+                    // Fortran is 1-based, LLVM is 0-based, so subtract 1
+                    index = llvm::ConstantInt::get(context, llvm::APInt(32, fortran_index - 1));
+                } else if (ASR::is_a<ASR::Var_t>(*fortran_i)) {
+                    // Case 2: Variable Index
+                    ASR::Var_t* var_index = ASR::down_cast<ASR::Var_t>(fortran_i);
+                    ASR::symbol_t* var_sym = var_index->m_v;
+                    std::string var_name = ASRUtils::symbol_name(var_sym);
+
+                    // Look up the variable in the LLVM symbol table
+                    uint32_t h = get_hash((ASR::asr_t*)var_sym);
+                    if (llvm_symtab.find(h) == llvm_symtab.end()) {
+                        throw CodeGenError("Variable " + var_name + " not found in symbol table",
+                                            x.base.base.loc);
+                    }
+                    llvm::Value* var_ptr = llvm_symtab[h];  // Pointer to the variable’s memory
+
+                    // Load the variable’s runtime value (assuming it’s an i32)
+                    index = builder->CreateLoad(llvm::Type::getInt32Ty(context), var_ptr);
+
+                    // Convert from Fortran 1-based to LLVM 0-based indexing
+                    index = builder->CreateSub(index, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                } else {
+                    throw CodeGenError("Unsupported index type in ArrayItem", x.base.base.loc);
+                }
+            } else {
+                //TODO Handle Descriptor array: Load size and index from runtime descriptor
+                index = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+            }
+    
+            // Create GEP for array element access
+            std::vector<llvm::Value*> idx_vec = {
+                index
+            };
+            llvm::Type* element_llvm_type = llvm_utils->get_type_from_ttype_t_util(element_type, module.get());
+            tmp = builder->CreateGEP(base_llvm_type, base_tmp, idx_vec);
+            base_type = element_type;
+            base_llvm_type = element_llvm_type;
+    
+            // If element is a struct, update derived type name
+            if (ASR::is_a<ASR::StructType_t>(*element_type)) {
+                ASR::symbol_t* s_sym = ASR::down_cast<ASR::StructType_t>(element_type)->m_derived_type;
+                current_der_type_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(s_sym));
+            }
         }
+        //Process struct member
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
+
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
         while( name2memidx[current_der_type_name].find(member_name) == name2memidx[current_der_type_name].end() ) {
             if( dertype2parent.find(current_der_type_name) == dertype2parent.end() ) {
@@ -2721,8 +2818,9 @@ public:
             tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
             current_der_type_name = dertype2parent[current_der_type_name];
         }
-        int member_idx = name2memidx[current_der_type_name][member_name];
 
+        // Access the member
+        int member_idx = name2memidx[current_der_type_name][member_name];
         llvm::Type *xtype = name2dertype[current_der_type_name];
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
@@ -2731,6 +2829,7 @@ public:
         ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(
             member_type, module.get());
 #endif
+        
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = ASR::down_cast<ASR::StructType_t>(
                 member_type)->m_derived_type;
