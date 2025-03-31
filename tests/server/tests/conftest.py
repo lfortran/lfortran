@@ -3,7 +3,7 @@ import shutil
 import signal
 import sys
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional
 
 import pytest
 
@@ -77,27 +77,18 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         "--extension-id", "lcompilers.lfortran",
     ]
 
-    client = LFortranLspTestClient(
-        server_path=server_path,
-        server_params=server_args,
-        workspace_path=None,
-        timeout_ms=1000,
-        config=config,
-        client_log_path=client_log_path,
-        stdout_log_path=stdout_log_path,
-        stdin_log_path=stdin_log_path
-    )
-
     def print_log(log_path: str, heading: str) -> None:
+        border = "~" * (len(heading) + 6)
+        print(file=sys.stderr)
+        print(border, file=sys.stderr)
+        print(f"~~ {heading} ~~", file=sys.stderr)
+        print(border, file=sys.stderr)
+        print(file=sys.stderr)
         if os.path.exists(log_path):
-            print(file=sys.stderr)
-            border = "~" * (len(heading) + 6)
-            print(border, file=sys.stderr)
-            print(f"~~ {heading} ~~", file=sys.stderr)
-            print(border, file=sys.stderr)
-            print(file=sys.stderr)
             with open(log_path) as f:
                 print(f.read(), file=sys.stderr)
+        else:
+            print(f"Log file does not exist: {log_path}")
 
     def print_logs() -> None:
         print_log(client_log_path, "Client Logs")
@@ -105,8 +96,20 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         print_log(stdout_log_path, "Standard Output")
         print_log(server_log_path, "Server Logs")
 
+    client: Optional[LFortranLspTestClient] = None
     logs_printed = False
     try:
+        client = LFortranLspTestClient(
+            server_path=server_path,
+            server_params=server_args,
+            workspace_path=None,
+            timeout_ms=1000,
+            config=config,
+            client_log_path=client_log_path,
+            stdout_log_path=stdout_log_path,
+            stdin_log_path=stdin_log_path
+        )
+
         with client.serve():
             # Steps abstracted by context manager:
             # 1. Send request: initialize
@@ -115,13 +118,18 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
             # 4. Send request: shutdown
             # 5. Send notification: exit
             yield client
-    except Exception as e:
-        print_logs()
-        logs_printed = True
+    except BaseException as e:
+        if not isinstance(e, SystemExit) or e.code != 0:
+            print_logs()
+            logs_printed = True
         raise e
     finally:
-        if hasattr(client, 'server') and not client.server.poll():
-            print('Server did not terminate cleanly, terminating it forcefully ...', file=sys.stderr)
+        if client is not None and hasattr(client, 'server') \
+           and not client.server.poll():
+            print(
+                'Server did not terminate cleanly, terminating it forcefully ...',
+                file=sys.stderr
+            )
             os.kill(client.server.pid, signal.SIGKILL)
             if not logs_printed:
                 print_logs()
