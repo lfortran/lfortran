@@ -6595,7 +6595,13 @@ public:
     }
 
     ASR::asr_t* create_StringLen_from_expr(ASR::expr_t* v, ASR::ttype_t* type, const Location& loc) {
+        ASR::expr_t* len_compiletime = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(v)) ) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(v)));
+            ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
+            int length = str->m_len;
+            len_compiletime = make_ConstantWithType(
+                make_IntegerConstant_t, length, type, loc);
             // TODO: If possible try to use m_len_expr of `character(len=m_len_expr)`
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v));
             Vec<ASR::array_index_t> lbs; lbs.reserve(al, n_dims);
@@ -6608,12 +6614,19 @@ public:
                 lbs.push_back(al, index);
             }
             v = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, v, lbs.p, lbs.size(),
-                ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v)))),
+                    ASRUtils::extract_type(ASRUtils::expr_type(v)),
                         ASR::arraystorageType::ColMajor, nullptr));
+        } else if(ASR::is_a<ASR::ArrayItem_t>(*v)) {
+            ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(v);
+            ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(arr_item->m_v);
+            ASR::symbol_t* arr_sym = arr_var->m_v;
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::symbol_type(arr_sym)));
+            ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
+            int length = str->m_len;
+            len_compiletime = make_ConstantWithType(
+                make_IntegerConstant_t, length, type, loc);
         }
-        ASR::expr_t* len_compiletime = nullptr;
+
         std::string input_string;
         if( ASRUtils::extract_string_value(ASRUtils::expr_value(v), input_string) ) {
             len_compiletime = make_ConstantWithType(
