@@ -54,6 +54,37 @@ module continue_compilation_2_mod
         print *, "Inside subroutine"
     end subroutine different_name 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end module continue_compilation_1_mod
 
 block data myname
@@ -164,6 +195,8 @@ program continue_compilation_2
     integer :: x_bad_implicit
     !unsupported kind
     real*16 :: unsupported_kind
+
+
 
 
 
