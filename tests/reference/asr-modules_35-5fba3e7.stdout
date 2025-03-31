@@ -142,7 +142,7 @@
                                                         ()
                                                     )
                                                     (Integer 4)
-                                                    ()
+                                                    (IntegerConstant -2 (Integer 4) Decimal)
                                                 )
                                                 LtE
                                                 (StringLen
@@ -162,10 +162,13 @@
                                                         ()
                                                     )
                                                     (Integer 4)
-                                                    ()
+                                                    (IntegerConstant -1 (Integer 4) Decimal)
                                                 )
                                                 (Logical 4)
-                                                ()
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
                                             )
                                             [(Assignment
                                                 (Var 3 strings)
