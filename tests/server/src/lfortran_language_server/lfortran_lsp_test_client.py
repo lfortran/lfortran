@@ -28,7 +28,9 @@ class LFortranLspTestClient(LspTestClient):
             workspace_path: Optional[Path],
             timeout_ms: float,
             config: Dict[str, Any],
-            client_log_path: str
+            client_log_path: str,
+            stdout_log_path: str,
+            stdin_log_path: str
     ) -> None:
         super().__init__(
             server_path,
@@ -36,7 +38,9 @@ class LFortranLspTestClient(LspTestClient):
             workspace_path,
             timeout_ms,
             config,
-            client_log_path
+            client_log_path,
+            stdout_log_path,
+            stdin_log_path
         )
 
     def await_validation(self, uri: str, version: int) -> Any:

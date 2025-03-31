@@ -10,10 +10,10 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from io import StringIO
+from io import BytesIO, StringIO
 from pathlib import Path
-from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple,
-                    Union)
+from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List,
+                    Optional, Tuple, Union)
 
 from cattrs import Converter
 
@@ -68,13 +68,75 @@ from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
 from llanguage_test_client.lsp_json_stream import LspJsonStream
 from llanguage_test_client.lsp_text_document import LspTextDocument
 
-
 # NOTE: File URIs follow one of the following schemes:
 # 1. `file:/path` (no hostname)
 # 2. `file:///path` (empty hostname)
 # 3. `file://hostname/path`
 # NOTE: All we are interested in is the `/path` portion
 RE_FILE_URI = re.compile(r"^file:(?://[^/]*)?", re.IGNORECASE)
+
+
+def timestamp() -> str:
+    now_utc = datetime.now(timezone.utc)
+    return now_utc.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + ' UTC'
+
+
+class SpyIO(IO[bytes]):
+    stream: IO[bytes]
+    spy: BinaryIO
+    buf: BytesIO
+
+    def __init__(self, stream: IO[bytes], spy: BinaryIO) -> None:
+        self.stream = stream
+        self.spy = spy
+        self.buf = BytesIO()
+
+    def escape(self, bs: bytes) -> bytes:
+        self.buf.seek(0)
+        self.buf.truncate(0)
+        for b in bs:
+            match b:
+                case 0x00:  #-> null
+                    self.buf.write(b'\\0')
+                case 0x07:  #-> bell
+                    self.buf.write(b'\\a')
+                case 0x08:  #-> backspace
+                    self.buf.write(b'\\b')
+                case 0x09:  #-> horizontal tab
+                    self.buf.write(b'\\t')
+                case 0x0A:  #-> line feed
+                    self.buf.write(b'\\n')
+                case 0x0B:  #-> vertical tab
+                    self.buf.write(b'\\v')
+                case 0x0C:  #-> form feed
+                    self.buf.write(b'\\f')
+                case 0x0D:  #-> carriage return
+                    self.buf.write(b'\\r')
+                # case 0x1A:  #-> Control-Z
+                #     self.buf.write(b'^Z')
+                case 0x1B:  #-> escape
+                    self.buf.write(b'\\e')
+                case 0x5C:  #-> backslash
+                    self.buf.write(b'\\\\')
+                case _:
+                    self.buf.write(b.to_bytes(2, sys.byteorder))
+        return self.buf.getvalue()
+
+    def read(self, size: int = -1, /) -> Union[bytes, Any]:
+        bs = self.stream.read(size)
+        self.spy.write(f'[{timestamp()}] READ: '.encode("utf-8"))
+        if bs is not None:
+            self.spy.write(self.escape(bs))
+        self.spy.write(b'\n')
+        return bs
+
+    def write(self, b) -> int:
+        self.spy.write(f'[{timestamp()}] WRITE: '.encode("utf-8"))
+        num_bytes = self.stream.write(b)
+        if num_bytes is not None:
+            self.spy.write(self.escape(b[:num_bytes]))
+        self.spy.write(b'\n')
+        return num_bytes
 
 
 @dataclass
@@ -113,7 +175,7 @@ class LspTestClient(LspClient):
     server: ServerProcess
     message_stream: LspJsonStream
     ostream: IO[bytes]
-    buf: StringIO
+    buf: BytesIO
     converter: Converter
     serial_request_id: int
     config: Dict[str, Any]
@@ -131,6 +193,8 @@ class LspTestClient(LspClient):
     stop: threading.Event
     # stderr_printer: threading.Thread
     client_log_path: str
+    stdout_log_path: str
+    stdin_log_path: str
 
     def __init__(
             self,
@@ -139,13 +203,15 @@ class LspTestClient(LspClient):
             workspace_path: Optional[Path],
             timeout_ms: float,
             config: Dict[str, Any],
-            client_log_path: str
+            client_log_path: str,
+            stdout_log_path: str,
+            stdin_log_path: str
     ) -> None:
         self.server_path = server_path
         self.server_params = server_params
         self.workspace_path = workspace_path
         self.timeout_s = timeout_ms * SECONDS_PER_MILLISECOND
-        self.buf = StringIO()
+        self.buf = BytesIO()
         self.converter = converters.get_converter()
         self.serial_request_id = 0
         self.config = config
@@ -164,6 +230,8 @@ class LspTestClient(LspClient):
         #     args=tuple()
         # )
         self.client_log_path = client_log_path
+        self.stdout_log_path = stdout_log_path
+        self.stdin_log_path = stdin_log_path
 
     def print_stderr(self) -> None:
         if self.server.stderr is not None:
@@ -175,7 +243,7 @@ class LspTestClient(LspClient):
                         buf.seek(0)
                         buf.truncate(0)
                         while (bs is not None) and not self.stop.is_set():
-                            buf.write(bs.decode())
+                            buf.write(bs.decode("utf-8"))
                             bs = self.server.stderr.read(1)
                         print(buf.getvalue(), file=sys.stderr)
                         continue
@@ -221,9 +289,13 @@ class LspTestClient(LspClient):
     def serve(self) -> Iterator["LspTestClient"]:
         with open(self.client_log_path, "w") as log_file:
             self.log_file = log_file
-            self.initialize()
-            yield self
-            self.terminate()
+            with open(self.stdout_log_path, "wb") as stdout_log:
+                self.stdout_log = stdout_log
+                with open(self.stdin_log_path, "wb") as stdin_log:
+                    self.stdin_log = stdin_log
+                    self.initialize()
+                    yield self
+                    self.terminate()
 
     def new_document(self, language_id: str) -> LspTextDocument:
         return self.open_document(language_id, None)
@@ -337,8 +409,11 @@ class LspTestClient(LspClient):
         # stderr_fd = self.server.stderr.fileno()
         # os.set_blocking(stderr_fd, False)
 
-        self.message_stream = LspJsonStream(self.server.stdout, self.timeout_s)
-        self.ostream = self.server.stdin
+        self.message_stream = LspJsonStream(
+            SpyIO(self.server.stdout, self.stdout_log),
+            self.timeout_s
+        )
+        self.ostream = SpyIO(self.server.stdin, self.stdin_log)
 
         # self.stderr_printer.start()
 
@@ -371,28 +446,24 @@ class LspTestClient(LspClient):
             )
         return True
 
-    def timestamp(self) -> str:
-        now_utc = datetime.now(timezone.utc)
-        return now_utc.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + ' UTC'
-
     def send_message(self, message: Any) -> None:
         self.events.append(OutgoingEvent(message))
         body = json.dumps(
             message,
             separators=(",",":"),
             default=self.converter.unstructure,
-        )
+        ).encode("utf-8")
         self.buf.seek(0)
         self.buf.truncate(0)
-        self.buf.write(f"Content-Length: {len(body)}\r\n")
-        self.buf.write("\r\n")
+        self.buf.write(f"Content-Length: {len(body)}\r\n".encode("utf-8"))
+        self.buf.write(b"\r\n")
         self.buf.write(body)
         self.check_server()
         print(
-            f"[{self.timestamp()}] Sending\n{self.buf.getvalue()}",
+            f"[{timestamp()}] Sending\n{self.buf.getvalue()}",
             file=self.log_file
         )
-        self.ostream.write(self.buf.getvalue().encode())
+        self.ostream.write(self.buf.getvalue())
         self.ostream.flush()
 
     def send_request(
@@ -409,7 +480,7 @@ class LspTestClient(LspClient):
         self.check_server()
         message = self.message_stream.next()
         print(
-            f"[{self.timestamp()}] Receiving\n{self.message_stream.message()}",
+            f"[{timestamp()}] Receiving\n{self.message_stream.message()}",
             file=self.log_file
         )
         match message:

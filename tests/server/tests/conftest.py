@@ -25,6 +25,8 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
 
     server_log_path = f"{request.node.name}-server.log"
     client_log_path = f"{request.node.name}-client.log"
+    stdout_log_path = f"{request.node.name}-stdout.log"
+    stdin_log_path = f"{request.node.name}-stdin.log"
 
     config = {
         "LFortran": {
@@ -75,25 +77,33 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         "--extension-id", "lcompilers.lfortran",
     ]
 
-    client = LFortranLspTestClient(server_path, server_args, None, 1000, config, client_log_path)
+    client = LFortranLspTestClient(
+        server_path=server_path,
+        server_params=server_args,
+        workspace_path=None,
+        timeout_ms=1000,
+        config=config,
+        client_log_path=client_log_path,
+        stdout_log_path=stdout_log_path,
+        stdin_log_path=stdin_log_path
+    )
+
+    def print_log(log_path: str, heading: str) -> None:
+        if os.path.exists(log_path):
+            print(file=sys.stderr)
+            border = "~" * (len(heading) + 6)
+            print(border, file=sys.stderr)
+            print(f"~~ {heading} ~~", file=sys.stderr)
+            print(border, file=sys.stderr)
+            print(file=sys.stderr)
+            with open(log_path) as f:
+                print(f.read(), file=sys.stderr)
 
     def print_logs() -> None:
-        if os.path.exists(client_log_path):
-            print()
-            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
-            print("~~ Client Logs ~~", file=sys.stderr)
-            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
-            print()
-            with open(client_log_path) as f:
-                print(f.read(), file=sys.stderr)
-        if os.path.exists(server_log_path):
-            print()
-            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
-            print("~~ Server Logs ~~", file=sys.stderr)
-            print("~~~~~~~~~~~~~~~~~", file=sys.stderr)
-            print()
-            with open(server_log_path) as f:
-                print(f.read(), file=sys.stderr)
+        print_log(client_log_path, "Client Logs")
+        print_log(stdin_log_path, "Standard Input")
+        print_log(stdout_log_path, "Standard Output")
+        print_log(server_log_path, "Server Logs")
 
     logs_printed = False
     try:
