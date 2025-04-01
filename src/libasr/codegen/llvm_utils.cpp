@@ -1676,7 +1676,7 @@ namespace LCompilers {
         if ( llvm::GetElementPtrInst *
                 gep = llvm::dyn_cast<llvm::GetElementPtrInst>(x) ) {
             // GetElementPtrInst
-            llvm::Type *src_type = gep->getSourceElementType();
+            [[maybe_unused]] llvm::Type *src_type = gep->getSourceElementType();
             LCOMPILERS_ASSERT(llvm::isa<llvm::StructType>(src_type));
             std::string s_name = std::string(llvm::dyn_cast<llvm::StructType>(
                 gep->getSourceElementType())->getName());
