@@ -166,6 +166,16 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                         result_name = f'{request_name}Result'
                         request_enum = method_to_camel_case(request_method)
                         with self.gen_case('OutgoingRequest', request_enum):
+                            self.write('std::unique_lock<std::mutex> lock(requestMutex);')
+                            self.gen_assign('auto iter', 'requestsById.find(requestId.integer())')
+                            with self.gen_if('iter == requestsById.end()'):
+                                self.write('logger.error()')
+                                with self.indent():
+                                    self.write('<< "Cannot locate request with id=" << requestId.integer()')
+                                    self.write('<< std::endl;')
+                                self.write('return;')
+                            self.gen_assign('const RequestMessage &request', 'iter->second')
+                            self.write('lock.unlock();')
                             result_spec = request_spec.get("result", None)
                             if result_spec is not None:
                                 with self.gen_if('!response.result.has_value()'):
@@ -183,9 +193,13 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                     f'{result_name} params',
                                     f'transformer.anyTo{upper_first(result_name)}(result)'
                                 )
-                                self.write(f'{receive_fn(request_method)}(requestId, params);')
+                                self.gen_call(f'{receive_fn(request_method)}', 'request', 'params')
                             else:
-                                self.write(f'{receive_fn(request_method)}(requestId)')
+                                self.gen_call(f'{receive_fn(request_method)}', 'request')
+                            self.write('lock.lock();')
+                            self.gen_assign('iter', 'requestsById.find(requestId.integer())')
+                            with self.gen_if('iter != requestsById.end()'):
+                                self.gen_call('requestsById.erase', 'iter')
                             self.gen_break()
                 with self.gen_default():
                     self.write('invalidMethod:')
@@ -304,7 +318,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         receive_request = receive_fn(request_method)
         request_name = method_to_camel_case(request_method)
         params = [
-            'const RequestId &/*requestId*/',
+            'const RequestMessage &/*request*/',
         ]
         result_spec = request_spec.get("result", None)
         if result_spec is not None:
@@ -404,6 +418,10 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 'const RequestMessage &request',
             ],
         ):
+            request_id_name = self.gensym_init('requestId', 'request.id.integer()')
+            with self.block():
+                self.write('std::unique_lock<std::mutex> lock(requestMutex);')
+                self.gen_call('requestsById.emplace', request_id_name, 'request')
             any_name = self.gensym_init(
                 'any',
                 'transformer.requestMessageToAny(request)'

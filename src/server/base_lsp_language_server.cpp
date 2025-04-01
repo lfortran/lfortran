@@ -375,24 +375,18 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto BaseLspLanguageServer::send(const RequestMessage &request) -> void {
         int requestId = request.id.integer();
-        {
-            std::unique_lock<std::mutex> writeLock(requestMutex);
-            requestsById.emplace(requestId, request);
-        }
         LspLanguageServer::send(request);
         {
             std::unique_lock<std::shared_mutex> retryLock(retryMutex);
-            retryAttempts.push(
-                std::make_pair(
-                    std::make_tuple(
-                        requestId,
-                        0,  // attempt
-                        milliseconds_t(
-                            workspaceConfig->retry.minSleepTimeMs
-                        )
-                    ),
-                    ttl(milliseconds_t(workspaceConfig->timeoutMs))
-                )
+            retryAttempts.emplace(
+                std::make_tuple(
+                    requestId,
+                    0,  // attempt
+                    milliseconds_t(
+                        workspaceConfig->retry.minSleepTimeMs
+                    )
+                ),
+                ttl(milliseconds_t(workspaceConfig->timeoutMs))
             );
         }
     }
@@ -899,8 +893,7 @@ namespace LCompilers::LanguageServerProtocol {
                     return;
                 }
                 const RequestMessage &request = iter->second;
-                method = std::move(request.method);
-                requestsById.erase(iter);
+                method = request.method;
             }
             traceId = method + " - (" + std::to_string(responseId) + ")";
             logReceiveResponseTrace(traceId, document);
@@ -1340,7 +1333,7 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto BaseLspLanguageServer::receiveClient_registerCapability(
-        const RequestId &/*requestId*/,
+        const RequestMessage &/*request*/,
         Client_RegisterCapabilityResult /*params*/
     ) -> void {
         // empty
@@ -1472,9 +1465,10 @@ namespace LCompilers::LanguageServerProtocol {
 
     // request: "workspace/configuration"
     auto BaseLspLanguageServer::receiveWorkspace_configuration(
-        const RequestId &requestId,
+        const RequestMessage &request,
         Workspace_ConfigurationResult &params
     ) -> void {
+        const RequestId &requestId = request.id;
         std::unique_lock<std::shared_mutex> writeLock(configMutex);
         auto iter = pendingConfigsById.find(requestId.integer());
         if (iter != pendingConfigsById.end()) {

@@ -105,8 +105,6 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool _initialized = false;
         std::atomic_bool _shutdown = false;
         std::atomic_bool _exit = false;
-        std::map<int, RequestMessage> requestsById;
-        std::mutex requestMutex;
         std::atomic<TraceValues> trace{TraceValues::Off};
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer;
         std::unordered_map<DocumentUri, std::shared_ptr<LspTextDocument>> documentsByUri;
@@ -287,7 +285,7 @@ namespace LCompilers::LanguageServerProtocol {
         auto receiveShutdown() -> ShutdownResult override;
 
         auto receiveClient_registerCapability(
-            const RequestId &requestId,
+            const RequestMessage &request,
             Client_RegisterCapabilityResult params
         ) -> void override;
 
@@ -306,7 +304,7 @@ namespace LCompilers::LanguageServerProtocol {
         ) -> void override;
 
         auto receiveWorkspace_configuration(
-            const RequestId &requestId,
+            const RequestMessage &request,
             Workspace_ConfigurationResult &params
         ) -> void override;
 

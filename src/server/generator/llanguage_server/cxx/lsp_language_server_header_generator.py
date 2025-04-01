@@ -58,7 +58,7 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         request_name = method_to_camel_case(request_method)
         result_spec = request_spec.get("result", None)
         params = [
-            'const RequestId &requestId',
+            'const RequestMessage &request',
         ]
         if result_spec is not None:
             result_name = f'{request_name}Result'
@@ -193,6 +193,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.write('LspTransformer transformer;')
         self.write('LspJsonSerializer serializer;')
         self.write('std::atomic_int serialRequestId = 0;')
+        self.write('std::map<int, RequestMessage> requestsById;')
+        self.write('std::mutex requestMutex;')
         self.newline()
 
     def generate_next_request_id(self) -> None:
@@ -287,6 +289,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.pragma_once()
         self.newline()
         self.gen_include('atomic')
+        self.gen_include('map')
+        self.gen_include('mutex')
         self.newline()
         self.gen_include('server/language_server.h')
         self.gen_include('server/logger.h')
