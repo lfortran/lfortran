@@ -10898,7 +10898,13 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     if (co.time_report) {
         int time_take_to_run_asr_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-        std::string message = "ASR -> ASR passes: " + std::to_string(time_take_to_run_asr_passes / 1000) + "." + std::to_string(time_take_to_run_asr_passes % 1000) + " ms";
+        double time_in_milliseconds = (double) time_take_to_run_asr_passes / 1000.0;
+        std::string message = "";
+        if ( time_in_milliseconds >= 1.0 ) {
+            message = "ASR -> ASR passes: " + std::to_string(time_take_to_run_asr_passes / 1000) + "." + std::to_string(time_take_to_run_asr_passes % 1000) + " ms";
+        } else {
+            message = "ASR -> ASR passes: " + std::to_string(time_in_milliseconds) + " ms";
+        }
         co.po.vector_of_time_report.push_back(message);
     }
 
