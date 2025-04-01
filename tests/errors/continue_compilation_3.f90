@@ -2,7 +2,45 @@
 ! number of lines below the module to keep the rest of the lines in this file
 ! intact.
 module continue_compilation_3_mod
-    contains
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end module continue_compilation_3_mod
 
 ! Only put declarations and statements here, no subroutines (those go above).
@@ -135,7 +173,7 @@ program continue_compilation_3
         print *, i_incorrect_pragma
     end do
 
-    contains
+    contains 
     subroutine bpe()
         print *, size(bpe)
         bpe = d
