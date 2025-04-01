@@ -71,8 +71,8 @@ namespace LCompilers::LLanguageServer::Logging {
                 std::tm utc_tm = *std::gmtime(&time_now);
                 auto duration = now.time_since_epoch();
                 auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
-                logger << '[' << std::put_time(&utc_tm, "%Y-%m-%d %H:%M:%S")
-                       << "." << std::setfill('0') << std::setw(3) << milliseconds << " UTC]";
+                logger << '[' << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%S")
+                       << "." << std::setfill('0') << std::setw(3) << milliseconds << "Z]";
 
                 logger << '[' << logger.typeName() << ']';
                 for (const std::string &attribute : logger.attributes()) {

@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from io import BytesIO, StringIO
 from pathlib import Path
 from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List,
-                    Optional, Tuple, Union)
+                    Optional, Set, Tuple, Union)
 
 from cattrs import Converter
 
@@ -78,7 +78,7 @@ RE_FILE_URI = re.compile(r"^file:(?://[^/]*)?", re.IGNORECASE)
 
 def timestamp() -> str:
     now_utc = datetime.now(timezone.utc)
-    return now_utc.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + ' UTC'
+    return now_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 
 class SpyIO(IO[bytes]):
@@ -127,6 +127,8 @@ class SpyIO(IO[bytes]):
         self.spy.write(f'[{timestamp()}] READ: '.encode("utf-8"))
         if bs is not None:
             self.spy.write(self.escape(bs))
+        else:
+            self.spy.write(b'\xe2\x90\x80')  #-> U+2400 Unicode null symbol
         self.spy.write(b'\n')
         return bs
 
@@ -135,6 +137,8 @@ class SpyIO(IO[bytes]):
         num_bytes = self.stream.write(b)
         if num_bytes is not None:
             self.spy.write(self.escape(b[:num_bytes]))
+        else:
+            self.spy.write(b'\xe2\x90\x80')  #-> U+2400 Unicode null symbol
         self.spy.write(b'\n')
         return num_bytes
 
@@ -343,16 +347,20 @@ class LspTestClient(LspClient):
             self,
             request_id: int
     ) -> Any:
-        if request_id is not None:
-            message = self.responses_by_id.get(request_id, None)
-            if message is not None:
-                return message
+        message = self.responses_by_id.get(request_id, None)
+        if message is not None:
+            return message
         while not self.stop.is_set():
             message = self.receive_message()
             if "result" in message:
                 response_id = message.get("id", None)
                 if request_id == response_id:
                     return message
+            # NOTE: The response may have been recorder by a nested
+            # iteration of `await_response`
+            message = self.responses_by_id.get(request_id, None)
+            if message is not None:
+                return message
 
     def initialize_params(self) -> InitializeParams:
         params = InitializeParams(
@@ -460,7 +468,7 @@ class LspTestClient(LspClient):
         self.buf.write(body)
         self.check_server()
         print(
-            f"[{timestamp()}] Sending\n{self.buf.getvalue()}",
+            f"[{timestamp()}] Sending:\n{self.buf.getvalue()}",
             file=self.log_file
         )
         self.ostream.write(self.buf.getvalue())
@@ -480,7 +488,7 @@ class LspTestClient(LspClient):
         self.check_server()
         message = self.message_stream.next()
         print(
-            f"[{timestamp()}] Receiving\n{self.message_stream.message()}",
+            f"[{timestamp()}] Receiving:\n{self.message_stream.message()}",
             file=self.log_file
         )
         match message:

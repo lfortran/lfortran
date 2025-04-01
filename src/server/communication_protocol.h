@@ -3,17 +3,6 @@
 #include <atomic>
 #include <thread>
 
-// #ifdef _WIN32
-// #include <windows.h>
-// // These macros conflict with LSP types
-// #ifdef CreateFile
-//   #undef CreateFile
-// #endif
-// #ifdef DeleteFile
-//   #undef DeleteFile
-// #endif
-// #endif // _WIN32
-
 #include <server/language_server.h>
 #include <server/logger.h>
 #include <server/message_stream.h>
@@ -35,9 +24,6 @@ namespace LCompilers::LLanguageServer {
         std::streambuf* cout_sbuf;
         int stdout_fd;
         FILE *stdout_fp;
-// #ifdef _WIN32
-//         HANDLE stdout_fh;
-// #endif // _WIN32
         LanguageServer &languageServer;
         MessageStream &messageStream;
         MessageQueue &incomingMessages;

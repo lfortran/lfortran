@@ -77,6 +77,11 @@ namespace LCompilers::LLanguageServer::Threading {
                 enqueued.notify_one();
                 return elem;
             }
+            logger.warn()
+                << "Failed to add element to queue of size=" << _size
+                << ", capacity=" << N << std::endl;
+        } else {
+            logger.warn() << "Queue is no longer adding values." << std::endl;
         }
         return nullptr;
     }
@@ -95,12 +100,18 @@ namespace LCompilers::LLanguageServer::Threading {
                 dequeued.notify_one();
                 return value;
             }
+            logger.warn()
+                << "Failed to return element from queue of size=" << _size
+                << ", capacity=" << N << std::endl;
+        } else {
+            logger.warn() << "Queue is no longer returning values." << std::endl;
         }
         throw std::runtime_error(DEQUEUE_FAILED_MESSAGE);
     }
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::stop() -> void {
+        logger.debug() << "Stopping queue ..." << std::endl;
         bool expected = true;
         if (receiving.compare_exchange_strong(expected, false)) {
             std::unique_lock<std::mutex> lock(mutex);
@@ -112,9 +123,9 @@ namespace LCompilers::LLanguageServer::Threading {
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::stopNow() -> void {
-        bool expected;
+        logger.trace() << "Stopping queue now!" << std::endl;
 
-        expected = true;
+        bool expected = true;
         if (receiving.compare_exchange_strong(expected, false)) {
             std::unique_lock<std::mutex> lock(mutex);
             dequeued.notify_all();

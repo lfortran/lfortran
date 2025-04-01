@@ -110,7 +110,7 @@ class LspJsonStream:
                     b = self.next_byte()
                     if b != b'\n':
                         raise RuntimeError(
-                            f"Expected \\r to be followed by \\n, not '{self.escape(b)}':\n{self.buf.getvalue()}"
+                            f"Expected \\r to be followed by \\n, not '{self.escape(b)}':\n{self.message()}"
                         )
                     if self.has_content_length:
                         self.buf.seek(start)

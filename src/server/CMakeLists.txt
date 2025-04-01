@@ -31,3 +31,7 @@ set(LLANGUAGE_SERVER_SRC
 add_library(llanguage_server STATIC ${LLANGUAGE_SERVER_SRC})
 target_include_directories(llanguage_server BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(llanguage_server BEFORE PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/..)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(llanguage_server PRIVATE -Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+endif()
