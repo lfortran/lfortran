@@ -6198,7 +6198,6 @@ public:
                 diag.add(Diagnostic("Namespace for modules is an experimental prototype",
                     Level::Warning, Stage::Semantic, {Label("", {loc})}));
                 if (ASR::is_a<ASR::Variable_t>(*v_symbol)) {
-//                    ASR::Variable_t *v_variable = ASR::down_cast<ASR::Variable_t>(v_symbol);
                     ASR::asr_t *v_es = ASR::make_ExternalSymbol_t(
                         al, loc,
                         /* a_symtab */ current_scope,
@@ -6208,6 +6207,7 @@ public:
                         ASR::accessType::Private
                         );
                     ASR::asr_t* v_var = ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(v_es));
+                    // TODO: reuse an existing ExternalSymbol in current_scope, do not override it:
                     current_scope->add_or_overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v_es));
                     return v_var;
                 } else {
