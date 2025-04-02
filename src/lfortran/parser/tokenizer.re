@@ -460,6 +460,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'mold' { KW(MOLD) }
             'name' { KW(NAME) }
             'namelist' { KW(NAMELIST) }
+            'namespace' { KW(NAMESPACE) }
             'new_index' { KW(NEW_INDEX) }
             'nopass' { KW(NOPASS) }
             'non_intrinsic' { KW(NON_INTRINSIC) }
