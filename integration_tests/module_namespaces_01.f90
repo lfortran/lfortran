@@ -8,5 +8,5 @@ program module_namespaces_01
 use, namespace :: module_namespaces_01_mod
 implicit none
 
-print *, module_namespaces_01 % dummy
+print *, module_namespaces_01_mod % dummy
 end
