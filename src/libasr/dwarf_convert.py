@@ -92,8 +92,6 @@ class Parser:
             dir_idx = re.compile(r"dir_index: (\d+)").findall(self.line)[0]
             dir_idx = int(dir_idx)
 
-            self.line = self.file.readline()
-            self.line = self.file.readline()
 
             file_names.append(FileName(n, filename, dir_idx))
 
