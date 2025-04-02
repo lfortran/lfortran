@@ -5207,7 +5207,7 @@ public:
         bool is_type_spec_ommitted { type == nullptr };
         check_if_type_spec_has_asterisk(type);
 
-        bool implied_do_loops_present = false;
+        bool is_compile_time_implied_do_loop = true;
         bool use_descriptorArray = false; // Set to true if any argument has no fixed size (array arguments).
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         size_t n_elements = 0;
@@ -5216,7 +5216,13 @@ public:
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
 
             if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
-                implied_do_loops_present = true;
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                if (idl->m_value && ASR::is_a<ASR::ArrayConstant_t>(*idl->m_value)) {
+                    ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(idl->m_value);
+                    idl->m_type = array_constant->m_type;
+                }
+                std::vector<ASR::symbol_t*> loop_vars; fetch_implied_do_loop_variables(idl, loop_vars);
+                is_compile_time_implied_do_loop = is_compiletime_implied_do_loop(idl,loop_vars);
             }
 
             ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
@@ -5268,7 +5274,7 @@ public:
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         dim.m_start = one;
-        if( implied_do_loops_present || use_descriptorArray) {
+        if( !is_compile_time_implied_do_loop || use_descriptorArray) {
             dim.m_length = nullptr;
         } else {
             ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, n_elements, int_type));

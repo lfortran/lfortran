@@ -3157,6 +3157,18 @@ public:
                         value = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, value->base.loc, int_func->m_intrinsic_id,
                             int_func->m_args, int_func->n_args, int_func->m_overload_id, int_64, int_func->m_value));
                     } else {
+                    if (ASR::is_a<ASR::ArrayReshape_t>(*value)) {
+                        ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(value);
+                        if (ASR::is_a<ASR::ArrayConstructor_t>(*array_reshape->m_array) && ASR::is_a<ASR::ImpliedDoLoop_t>(**ASR::down_cast<ASR::ArrayConstructor_t>(array_reshape->m_array)->m_args)) {
+                            ASR::Array_t* array_reshape_array_type = ASR::down_cast<ASR::Array_t>(array_reshape->m_type);
+                            Vec<ASR::dimension_t> array_reshape_dims; 
+                            array_reshape_dims.reserve(al, array_reshape_array_type->n_dims);
+                            for (size_t i=0;i<array_reshape_array_type->n_dims;i++) {
+                                array_reshape_dims.push_back(al, array_reshape_array_type->m_dims[i]);
+                            }
+                            array_reshape->m_type = ASRUtils::duplicate_type(al, array_reshape->m_type, &array_reshape_dims, ASR::array_physical_typeType::DescriptorArray,true);
+                        }
+                    }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type, diag);
                     }
