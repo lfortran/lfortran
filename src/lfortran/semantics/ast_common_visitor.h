@@ -6185,6 +6185,42 @@ public:
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
+        if (ASR::is_a<ASR::Program_t>(*v)) {
+            diag.add(Diagnostic("Program cannot be used as a variable",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (ASR::is_a<ASR::Module_t>(*v)) {
+            // Module namespace
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(v);
+            ASR::symbol_t* v_symbol = m->m_symtab->resolve_symbol(var_name);
+            if (v_symbol) {
+                diag.add(Diagnostic("Namespace for modules is an experimental prototype",
+                    Level::Warning, Stage::Semantic, {Label("", {loc})}));
+                if (ASR::is_a<ASR::Variable_t>(*v_symbol)) {
+//                    ASR::Variable_t *v_variable = ASR::down_cast<ASR::Variable_t>(v_symbol);
+                    ASR::asr_t *v_es = ASR::make_ExternalSymbol_t(
+                        al, loc,
+                        /* a_symtab */ current_scope,
+                        /* a_name */ s2c(al, var_name),
+                        v_symbol,
+                        m->m_name, nullptr, 0, s2c(al, var_name),
+                        ASR::accessType::Private
+                        );
+                    ASR::asr_t* v_var = ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(v_es));
+                    current_scope->add_or_overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v_es));
+                    return v_var;
+                } else {
+                    diag.add(Diagnostic("The symbol '" + var_name + "' from the module '" + dt_name + "' is not a variable",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+            } else {
+                diag.add(Diagnostic("The symbol '" + var_name + "' not found in the module '" + dt_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t* v_variable_m_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(v_variable->m_type));
         if (ASR::is_a<ASR::StructType_t>(*v_variable_m_type) ||
