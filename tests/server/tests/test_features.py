@@ -1,8 +1,6 @@
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import pytest
-
 from lsprotocol.types import DidChangeConfigurationParams
 
 from llanguage_test_client.lsp_test_client import IncomingEvent
@@ -19,10 +17,10 @@ def test_goto_definition(client: LFortranLspTestClient) -> None:
     assert doc.line == 8
     assert doc.column == 5
 
-@pytest.mark.skip("Timeout")
 def test_diagnostics(client: LFortranLspTestClient) -> None:
     path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
     doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
     line, column = 21, 1
     doc.cursor = line, column
     doc.write("error")
@@ -57,7 +55,6 @@ def test_diagnostics(client: LFortranLspTestClient) -> None:
     diagnostics = validation["params"]["diagnostics"]
     assert len(diagnostics) == 0
 
-@pytest.mark.skip("Timeout")
 def test_configuration_caching(client: LFortranLspTestClient) -> None:
     with NamedTemporaryFile(
             prefix="test_configuration_caching-",
@@ -65,6 +62,7 @@ def test_configuration_caching(client: LFortranLspTestClient) -> None:
             delete=True
     ) as tmp_file:
         doc = client.open_document("fortran", tmp_file.name)
+        assert client.await_validation(doc.uri, doc.version) is not None
         doc.write("foo")
         doc.save()
         assert client.await_validation(doc.uri, doc.version) is not None
@@ -99,6 +97,7 @@ def test_configuration_caching(client: LFortranLspTestClient) -> None:
 def test_rename(client: LFortranLspTestClient) -> None:
     path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
     doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
     line, column = 4, 20
     doc.cursor = line, column
     doc.rename("foo")

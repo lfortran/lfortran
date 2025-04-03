@@ -66,7 +66,7 @@ namespace LCompilers::LanguageServerProtocol {
         ) -> void;
 
         auto getCompilerOptions(
-            const LspTextDocument &document
+            LspTextDocument &document
         ) -> const std::shared_ptr<CompilerOptions>;
 
         auto diagnosticLevelToLspSeverity(
