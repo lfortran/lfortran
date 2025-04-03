@@ -61,7 +61,6 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
 
     gdb_path = shutil.which('gdb')
     if gdb_path is not None:
-        server_path = Path(gdb_path)
         server_args += [
             "-q", "-batch",
             "-ex", "set logging redirect on",
@@ -73,6 +72,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
             "-ex", "bt",
             "--args", str(server_path),
         ]
+        server_path = Path(gdb_path)
 
     server_args += [
         "server",
