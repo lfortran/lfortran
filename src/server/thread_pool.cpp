@@ -64,7 +64,7 @@ namespace LCompilers::LLanguageServer::Threading {
         workers.reserve(workers.size() + size);
         for (std::size_t i = 0; i < size; ++i) {
             std::size_t threadId = workers.size();
-            this->logger.debug()
+            logger.debug()
                 << "Starting thread " << _name << "_" << threadId
                 << std::endl;
             workers.emplace_back([this, threadId]() {

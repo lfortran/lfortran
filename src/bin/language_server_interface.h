@@ -82,6 +82,17 @@ namespace LCompilers::LLanguageServer::Interface {
 
     auto serverProtocolByValue(const std::string &value) -> ServerProtocol;
 
+    enum class ExecutionStrategy {
+        PARALLEL,
+        CONCURRENT,
+    };
+
+    extern const std::map<ExecutionStrategy, std::string> ExecutionStrategyNames;
+
+    extern const std::map<ExecutionStrategy, std::string> ExecutionStrategyValues;
+
+    auto executionStrategyByValue(const std::string &value) -> ExecutionStrategy;
+
     template <typename T, typename U>
     auto transpose(const std::map<T, U> &map) -> std::map<U, T> {
         std::map<U, T> transposed;
@@ -99,6 +110,7 @@ namespace LCompilers::LLanguageServer::Interface {
         DataFormat dataFormat;
         CommunicationProtocol communicationProtocol;
         ServerProtocol serverProtocol;
+        ExecutionStrategy executionStrategy;
         std::size_t numRequestThreads;
         std::size_t numWorkerThreads;
         std::string configSection;

@@ -20,7 +20,7 @@ namespace LCompilers::LLanguageServer {
     public:
         virtual ~LanguageServer();
         virtual bool isTerminated() const = 0;
-        virtual void join() = 0;
+        virtual void join();
     protected:
         LanguageServer(
             MessageQueue &incomingMessages,

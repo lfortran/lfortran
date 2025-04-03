@@ -25,6 +25,7 @@ namespace LCompilers::LanguageServerProtocol {
 
         auto nextChar() -> char;
         auto logEscaped(char c) -> void;
+        auto logEscapedMessage() -> void;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

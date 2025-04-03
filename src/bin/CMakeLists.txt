@@ -11,6 +11,8 @@ if (WITH_LSP)
     set(LFORTRAN_SRC
         lfortran_lsp_config.cpp
         lfortran_lsp_language_server.cpp
+        concurrent_lfortran_lsp_language_server.cpp
+        parallel_lfortran_lsp_language_server.cpp
         language_server_interface.cpp
         ${LFORTRAN_SRC}
     )

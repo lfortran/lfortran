@@ -22,78 +22,19 @@ namespace LCompilers::LanguageServerProtocol {
     namespace lsl = LCompilers::LLanguageServer::Logging;
     namespace lsc = LCompilers::LanguageServerProtocol::Config;
 
-    class LFortranLspLanguageServer : public BaseLspLanguageServer {
-    public:
+    class LFortranLspLanguageServer : virtual public BaseLspLanguageServer {
+    protected:
         LFortranLspLanguageServer(
             ls::MessageQueue &incomingMessages,
             ls::MessageQueue &outgoingMessages,
-            std::size_t numRequestThreads,
-            std::size_t numWorkerThreads,
             lsl::Logger &logger,
             const std::string &configSection,
             const std::string &extensionId,
             const std::string &compilerVersion,
             int parentProcessId,
-            unsigned int seed,
             std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
         );
-    protected:
 
-        auto invalidateConfigCaches() -> void override;
-
-        // ================= //
-        // Incoming Requests //
-        // ================= //
-
-        auto receiveInitialize(
-            InitializeParams &params
-        ) -> InitializeResult override;
-
-        auto receiveTextDocument_definition(
-            DefinitionParams &params
-        ) -> TextDocument_DefinitionResult override;
-
-        auto receiveTextDocument_rename(
-            RenameParams &params
-        ) -> TextDocument_RenameResult override;
-
-        auto receiveTextDocument_documentSymbol(
-            DocumentSymbolParams &params
-        ) -> TextDocument_DocumentSymbolResult override;
-
-        auto receiveTextDocument_hover(
-            HoverParams &params
-        ) -> TextDocument_HoverResult override;
-
-        auto receiveTextDocument_documentHighlight(
-            DocumentHighlightParams &params
-        ) -> TextDocument_DocumentHighlightResult override;
-
-        // ====================== //
-        // Incoming Notifications //
-        // ====================== //
-
-        auto receiveWorkspace_didDeleteFiles(
-            DeleteFilesParams &params
-        ) -> void override;
-
-        auto receiveWorkspace_didChangeConfiguration(
-            DidChangeConfigurationParams &params
-        ) -> void override;
-
-        auto receiveTextDocument_didOpen(
-            DidOpenTextDocumentParams &params
-        ) -> void override;
-
-        auto receiveTextDocument_didChange(
-            DidChangeTextDocumentParams &params
-        ) -> void override;
-
-        auto receiveWorkspace_didChangeWatchedFiles(
-            DidChangeWatchedFilesParams &params
-        ) -> void override;
-
-    private:
         const std::string source = "lfortran";
         lsl::Logger logger;
         ls::LFortranAccessor lfortran;
@@ -115,7 +56,15 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool clientSupportsHover = false;
         std::atomic_bool clientSupportsHighlight = false;
 
-        auto validate(std::shared_ptr<LspTextDocument> document) -> void;
+        virtual auto validate(
+            std::shared_ptr<LspTextDocument> document
+        ) -> void = 0;
+
+        auto validate(
+            LspTextDocument &document,
+            std::atomic_bool &taskIsRunning
+        ) -> void;
+
         auto getCompilerOptions(
             const LspTextDocument &document
         ) -> const std::shared_ptr<CompilerOptions>;
@@ -150,6 +99,71 @@ namespace LCompilers::LanguageServerProtocol {
                 std::vector<const lc::document_symbols *>
             > &childrenBySymbol
         ) -> void;
+
+        auto invalidateConfigCaches() -> void override;
+
+        // ================= //
+        // Incoming Requests //
+        // ================= //
+
+        auto receiveInitialize(
+            const RequestMessage &request,
+            InitializeParams &params
+        ) -> InitializeResult override;
+
+        auto receiveTextDocument_definition(
+            const RequestMessage &request,
+            DefinitionParams &params
+        ) -> TextDocument_DefinitionResult override;
+
+        auto receiveTextDocument_rename(
+            const RequestMessage &request,
+            RenameParams &params
+        ) -> TextDocument_RenameResult override;
+
+        auto receiveTextDocument_documentSymbol(
+            const RequestMessage &request,
+            DocumentSymbolParams &params
+        ) -> TextDocument_DocumentSymbolResult override;
+
+        auto receiveTextDocument_hover(
+            const RequestMessage &request,
+            HoverParams &params
+        ) -> TextDocument_HoverResult override;
+
+        auto receiveTextDocument_documentHighlight(
+            const RequestMessage &request,
+            DocumentHighlightParams &params
+        ) -> TextDocument_DocumentHighlightResult override;
+
+        // ====================== //
+        // Incoming Notifications //
+        // ====================== //
+
+        auto receiveWorkspace_didDeleteFiles(
+            const NotificationMessage &notification,
+            DeleteFilesParams &params
+        ) -> void override;
+
+        auto receiveWorkspace_didChangeConfiguration(
+            const NotificationMessage &notification,
+            DidChangeConfigurationParams &params
+        ) -> void override;
+
+        auto receiveTextDocument_didOpen(
+            const NotificationMessage &notification,
+            DidOpenTextDocumentParams &params
+        ) -> void override;
+
+        auto receiveTextDocument_didChange(
+            const NotificationMessage &notification,
+            DidChangeTextDocumentParams &params
+        ) -> void override;
+
+        auto receiveWorkspace_didChangeWatchedFiles(
+            const NotificationMessage &notification,
+            DidChangeWatchedFilesParams &params
+        ) -> void override;
     };
 
 } // namespace LCompilers::LanguageServerProtocol
