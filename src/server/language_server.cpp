@@ -1,4 +1,5 @@
 #include <ostream>
+
 #include <server/language_server.h>
 
 namespace LCompilers::LLanguageServer {
@@ -15,6 +16,10 @@ namespace LCompilers::LLanguageServer {
     }
 
     LanguageServer::~LanguageServer() {
+        // empty
+    }
+
+    auto LanguageServer::join() -> void {
         // empty
     }
 

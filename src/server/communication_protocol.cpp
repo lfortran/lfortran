@@ -31,7 +31,7 @@ namespace LCompilers::LLanguageServer {
       , outgoingMessages(outgoingMessages)
       , logger(logger.having("CommunicationProtocol"))
       , listener([this, &logger]() {
-          logger.threadName("listener");
+          logger.threadName("CommunicationProtocol_listener");
           listen();
       })
     {

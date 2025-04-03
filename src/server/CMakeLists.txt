@@ -23,6 +23,8 @@ set(LLANGUAGE_SERVER_SRC
   lsp_language_server.cpp
   lsp_issue_reporter.cpp
   base_lsp_language_server.cpp
+  concurrent_lsp_language_server.cpp
+  parallel_lsp_language_server.cpp
   message_stream.cpp
   lsp_message_stream.cpp
   communication_protocol.cpp

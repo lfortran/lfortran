@@ -25,7 +25,9 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         request_name = method_to_camel_case(request_method)
         result_name = f'{request_name}Result'
         params_spec = request_spec.get("params", None)
-        params = []
+        params = [
+            'const RequestMessage &request',
+        ]
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &params',)
         self.gen_fn_decl(
@@ -59,6 +61,7 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         result_spec = request_spec.get("result", None)
         params = [
             'const RequestMessage &request',
+            'const ResponseMessage &response',
         ]
         if result_spec is not None:
             result_name = f'{request_name}Result'
@@ -95,7 +98,9 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
     def generate_receive_notification(self, notification_spec: LspSpec) -> None:
         notification_method = notification_spec["method"]
         params_spec = notification_spec.get("params", None)
-        params = []
+        params = [
+            'const NotificationMessage &notification',
+        ]
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &params')
         self.gen_fn_decl(

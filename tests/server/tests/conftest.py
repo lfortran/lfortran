@@ -75,6 +75,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         "--min-retry-sleep-time-ms", str(config["LFortran"]["retry"]["minSleepTimeMs"]),
         "--max-retry-sleep-time-ms", str(config["LFortran"]["retry"]["maxSleepTimeMs"]),
         "--extension-id", "lcompilers.lfortran",
+        "--execution-strategy", "concurrent",  #-> "parallel" or "concurrent"
     ]
 
     def print_log(log_path: str, heading: str) -> None:

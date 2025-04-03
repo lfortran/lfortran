@@ -28,26 +28,20 @@ namespace LCompilers::LanguageServerProtocol {
     LFortranLspLanguageServer::LFortranLspLanguageServer(
         ls::MessageQueue &incomingMessages,
         ls::MessageQueue &outgoingMessages,
-        std::size_t numRequestThreads,
-        std::size_t numWorkerThreads,
         lsl::Logger &logger,
         const std::string &configSection,
         const std::string &extensionId,
         const std::string &compilerVersion,
         int parentProcessId,
-        unsigned int seed,
         std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
-        numRequestThreads,
-        numWorkerThreads,
         logger,
         configSection,
         extensionId,
         compilerVersion,
         parentProcessId,
-        seed,
         std::make_shared<lsc::LFortranLspConfigTransformer>(
             transformer,
             serializer
@@ -169,137 +163,120 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LFortranLspLanguageServer::validate(
-        std::shared_ptr<LspTextDocument> document
+        LspTextDocument &document,
+        std::atomic_bool &taskIsRunning
     ) -> void {
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
-        const std::string &uri = document->uri();
-        std::unique_lock<std::shared_mutex> writeLock(validationMutex);
-        auto iter = validationsByUri.find(uri);
-        if (iter != validationsByUri.end()) {
-            *iter->second = false;
+        if (!taskIsRunning) {
+            logger.trace()  //<- trace instead of debug because this will happen often
+                << "Validation canceled before execution."
+                << std::endl;
+            return;
         }
-        std::shared_ptr<std::atomic_bool> taskIsRunning =
-            workerPool.execute([this, document = std::move(document)](
-                std::shared_ptr<std::atomic_bool> taskIsRunning
-            ) {
-                if (!*taskIsRunning) {
-                    logger.trace()  //<- trace instead of debug because this will happen often
-                        << "Validation canceled before execution."
-                        << std::endl;
-                    return;
+        const auto start = std::chrono::high_resolution_clock::now();
+        std::shared_lock<std::shared_mutex> readLock(document.mutex());
+        const std::string &path = document.path().string();
+        const std::string &text = document.text();
+        const std::string &uri = document.uri();
+        try {
+            // NOTE: These value may have been updated since the validation was
+            // requested, but that's okay because we want to validate the latest
+            // version anyway:
+            int version = document.version();
+            try {
+                std::shared_ptr<CompilerOptions> compilerOptions =
+                    getCompilerOptions(document);
+                logger.trace()
+                    << "Getting diagnostics from LFortran for document with URI="
+                    << uri << std::endl;
+                std::vector<lc::error_highlight> highlights =
+                    lfortran.showErrors(path, text, *compilerOptions);
+
+                logger.trace()
+                    << "Collected " << highlights.size()
+                    << " diagnostics for document with URI=" << uri
+                    << std::endl;
+
+                const std::shared_ptr<lsc::LFortranLspConfig> config =
+                    getLFortranConfig(uri);
+                unsigned int numProblems = config->maxNumberOfProblems;
+                if (highlights.size() < numProblems) {
+                    numProblems = highlights.size();
                 }
-                const auto start = std::chrono::high_resolution_clock::now();
-                std::shared_lock<std::shared_mutex> readLock(document->mutex());
-                const std::string &path = document->path().string();
-                const std::string &text = document->text();
-                const std::string &uri = document->uri();
-                try {
-                    // NOTE: These value may have been updated since the validation was
-                    // requested, but that's okay because we want to validate the latest
-                    // version anyway:
-                    int version = document->version();
-                    try {
-                        std::shared_ptr<CompilerOptions> compilerOptions =
-                            getCompilerOptions(*document);
-                        logger.trace()
-                            << "Getting diagnostics from LFortran for document with URI="
-                            << uri << std::endl;
-                        std::vector<lc::error_highlight> highlights =
-                            lfortran.showErrors(path, text, *compilerOptions);
 
-                        logger.trace()
-                            << "Collected " << highlights.size()
-                            << " diagnostics for document with URI=" << uri
-                            << std::endl;
+                std::vector<Diagnostic> diagnostics;
+                diagnostics.reserve(numProblems);
+                for (unsigned int i = 0; i < numProblems; ++i) {
+                    const lc::error_highlight &highlight = highlights[i];
 
-                        const std::shared_ptr<lsc::LFortranLspConfig> config =
-                            getLFortranConfig(uri);
-                        unsigned int numProblems = config->maxNumberOfProblems;
-                        if (highlights.size() < numProblems) {
-                            numProblems = highlights.size();
+                    Position start;
+                    start.line = highlight.first_line - 1;
+                    start.character = highlight.first_column - 1;
+
+                    Position end;
+                    end.line = highlight.last_line - 1;
+                    end.character = highlight.last_column;
+
+                    Range range;
+                    range.start = std::move(start);
+                    range.end = std::move(end);
+
+                    Diagnostic diagnostic;
+                    diagnostic.range = std::move(range);
+                    diagnostic.severity =
+                        diagnosticLevelToLspSeverity(highlight.severity);
+                    diagnostic.message = highlight.message;
+                    diagnostic.source = source;
+
+                    diagnostics.push_back(std::move(diagnostic));
+                }
+
+                if (taskIsRunning) {
+                    PublishDiagnosticsParams params;
+                    params.uri = uri;
+                    params.version = version;
+                    params.diagnostics = std::move(diagnostics);
+                    if (trace >= TraceValues::Messages) {
+                        const auto end = std::chrono::high_resolution_clock::now();
+                        const auto duration =
+                            std::chrono::duration_cast<std::chrono::milliseconds>(
+                                (end - start)
+                            );
+                        LogTraceParams logTraceParams;
+                        logTraceParams.message =
+                            "Sending response 'textDocument/publishDiagnostics'. "
+                            "Processing request took " +
+                            std::to_string(duration.count()) + "ms";
+                        if (trace >= TraceValues::Verbose) {
+                            LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
+                            logTraceParams.verbose = "Result: " + toJsonString(any);
                         }
-
-                        std::vector<Diagnostic> diagnostics;
-                        diagnostics.reserve(numProblems);
-                        for (unsigned int i = 0; i < numProblems; ++i) {
-                            const lc::error_highlight &highlight = highlights[i];
-
-                            Position start;
-                            start.line = highlight.first_line - 1;
-                            start.character = highlight.first_column - 1;
-
-                            Position end;
-                            end.line = highlight.last_line - 1;
-                            end.character = highlight.last_column;
-
-                            Range range;
-                            range.start = std::move(start);
-                            range.end = std::move(end);
-
-                            Diagnostic diagnostic;
-                            diagnostic.range = std::move(range);
-                            diagnostic.severity =
-                                diagnosticLevelToLspSeverity(highlight.severity);
-                            diagnostic.message = highlight.message;
-                            diagnostic.source = source;
-
-                            diagnostics.push_back(std::move(diagnostic));
-                        }
-
-                        if (*taskIsRunning) {
-                            PublishDiagnosticsParams params;
-                            params.uri = uri;
-                            params.version = version;
-                            params.diagnostics = std::move(diagnostics);
-                            if (trace >= TraceValues::Messages) {
-                                const auto end = std::chrono::high_resolution_clock::now();
-                                const auto duration =
-                                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                                        (end - start)
-                                    );
-                                LogTraceParams logTraceParams;
-                                logTraceParams.message =
-                                    "Sending response 'textDocument/publishDiagnostics'. "
-                                    "Processing request took " +
-                                    std::to_string(duration.count()) + "ms";
-                                if (trace >= TraceValues::Verbose) {
-                                    LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
-                                    logTraceParams.verbose = "Result: " + toJsonString(any);
-                                }
-                                sendLogTrace(logTraceParams);
-                            }
-                            sendTextDocument_publishDiagnostics(params);
-                        } else {
-                            logger.trace()  //<- trace instead of debug because this will happen often
-                                << "Validation canceled before publishing results."
-                                << std::endl;
-                        }
-                    } catch (std::exception &e) {
-                        logger.error()
-                            << "Failed to validate document (uri=\""
-                            << uri << "\"): " << e.what()
-                            << std::endl;
+                        sendLogTrace(logTraceParams);
                     }
-                } catch (std::exception &e) {
-                    logger.error()
-                        << "Failed to read document attributes: " << e.what()
+                    sendTextDocument_publishDiagnostics(params);
+                } else {
+                    logger.trace()  //<- trace instead of debug because this will happen often
+                        << "Validation canceled before publishing results."
                         << std::endl;
                 }
-
-                std::unique_lock<std::shared_mutex> writeLock(validationMutex);
-                auto iter = validationsByUri.find(uri);
-                if (iter != validationsByUri.end()) {
-                    validationsByUri.erase(iter);
-                }
-            });
-        validationsByUri.insert_or_assign(iter, uri, taskIsRunning);
+            } catch (std::exception &e) {
+                logger.error()
+                    << "Failed to validate document (uri=\""
+                    << uri << "\"): " << e.what()
+                    << std::endl;
+            }
+        } catch (std::exception &e) {
+            logger.error()
+                << "Failed to read document attributes: " << e.what()
+                << std::endl;
+        }
     }
 
     // request: "initialize"
     auto LFortranLspLanguageServer::receiveInitialize(
+        const RequestMessage &request,
         InitializeParams &params
     ) -> InitializeResult {
-        InitializeResult result = BaseLspLanguageServer::receiveInitialize(params);
+        InitializeResult result = BaseLspLanguageServer::receiveInitialize(request, params);
 
         { // Initialize internal parameters
             const ClientCapabilities &capabilities = params.capabilities;
@@ -391,6 +368,7 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LFortranLspLanguageServer::receiveTextDocument_definition(
+        const RequestMessage &/*request*/,
         DefinitionParams &params
     ) -> TextDocument_DefinitionResult {
         const DocumentUri &uri = params.textDocument.uri;
@@ -472,6 +450,7 @@ namespace LCompilers::LanguageServerProtocol {
 
     // request: "textDocument/rename"
     auto LFortranLspLanguageServer::receiveTextDocument_rename(
+        const RequestMessage &/*request*/,
         RenameParams &params
     ) -> TextDocument_RenameResult {
         const DocumentUri &uri = params.textDocument.uri;
@@ -533,6 +512,7 @@ namespace LCompilers::LanguageServerProtocol {
 
     // request: "textDocument/documentSymbol"
     auto LFortranLspLanguageServer::receiveTextDocument_documentSymbol(
+        const RequestMessage &/*request*/,
         DocumentSymbolParams &params
     ) -> TextDocument_DocumentSymbolResult {
         const DocumentUri &uri = params.textDocument.uri;
@@ -622,7 +602,9 @@ namespace LCompilers::LanguageServerProtocol {
         return result;
     }
 
+    // request: "textDocument/hover"
     auto LFortranLspLanguageServer::receiveTextDocument_hover(
+        const RequestMessage &/*request*/,
         HoverParams &params
     ) -> TextDocument_HoverResult {
         const DocumentUri &uri = params.textDocument.uri;
@@ -779,6 +761,7 @@ namespace LCompilers::LanguageServerProtocol {
 
     // request: "textDocument/documentHighlight"
     auto LFortranLspLanguageServer::receiveTextDocument_documentHighlight(
+        const RequestMessage &/*request*/,
         DocumentHighlightParams &params
     ) -> TextDocument_DocumentHighlightResult {
         const DocumentUri &uri = params.textDocument.uri;
@@ -826,6 +809,7 @@ namespace LCompilers::LanguageServerProtocol {
 
     // notification: "workspace/didDeleteFiles"
     auto LFortranLspLanguageServer::receiveWorkspace_didDeleteFiles(
+        const NotificationMessage &/*notification*/,
         DeleteFilesParams &/*params*/
     ) -> void {
         std::shared_lock<std::shared_mutex> readLock(documentMutex);
@@ -836,9 +820,10 @@ namespace LCompilers::LanguageServerProtocol {
 
     // notification: "workspace/didChangeConfiguration"
     auto LFortranLspLanguageServer::receiveWorkspace_didChangeConfiguration(
+        const NotificationMessage &notification,
         DidChangeConfigurationParams &params
     ) -> void {
-        BaseLspLanguageServer::receiveWorkspace_didChangeConfiguration(params);
+        BaseLspLanguageServer::receiveWorkspace_didChangeConfiguration(notification, params);
         std::shared_lock<std::shared_mutex> readLock(documentMutex);
         for (auto &[uri, document] : documentsByUri) {
             validate(document);
@@ -847,24 +832,27 @@ namespace LCompilers::LanguageServerProtocol {
 
     // notification: "textDocument/didOpen"
     auto LFortranLspLanguageServer::receiveTextDocument_didOpen(
+        const NotificationMessage &notification,
         DidOpenTextDocumentParams &params
     ) -> void {
-        BaseLspLanguageServer::receiveTextDocument_didOpen(params);
+        BaseLspLanguageServer::receiveTextDocument_didOpen(notification, params);
         const DocumentUri &uri = params.textDocument.uri;
         validate(getDocument(uri));
     }
 
     // notification: "textDocument/didChange"
     auto LFortranLspLanguageServer::receiveTextDocument_didChange(
+        const NotificationMessage &notification,
         DidChangeTextDocumentParams &params
     ) -> void {
-        BaseLspLanguageServer::receiveTextDocument_didChange(params);
+        BaseLspLanguageServer::receiveTextDocument_didChange(notification, params);
         const DocumentUri &uri = params.textDocument.uri;
         validate(getDocument(uri));
     }
 
     // notification: "workspace/didChangeWatchedFiles"
     auto LFortranLspLanguageServer::receiveWorkspace_didChangeWatchedFiles(
+        const NotificationMessage &/*notification*/,
         DidChangeWatchedFilesParams &/*params*/
     ) -> void {
         std::shared_lock<std::shared_mutex> readLock(documentMutex);

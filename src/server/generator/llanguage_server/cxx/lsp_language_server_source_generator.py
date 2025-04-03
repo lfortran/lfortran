@@ -4,8 +4,7 @@ from llanguage_server.cxx.lsp_file_generator import gensym_context
 from llanguage_server.cxx.visitors import BaseCPlusPlusLspVisitor
 from llanguage_server.lsp.datatypes import LspSpec
 from llanguage_server.lsp.utils import (lower_first, method_to_camel_case,
-                                        receive_fn, rename_enum, rename_field,
-                                        send_fn, upper_first)
+                                        receive_fn, send_fn, upper_first)
 from llanguage_server.lsp.visitors import (LspAnalysisPipeline, LspSymbol)
 
 
@@ -67,12 +66,12 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                 with self.indent():
                                     self.write(f'transformer.as{request_name}Params(messageParams);')
                                 self.write(f'{result_name} result =')
-                                with self.indent(): self.write(f'{receive_fn(request_method)}(requestParams);')
+                                with self.indent(): self.write(f'{receive_fn(request_method)}(request, requestParams);')
                                 self.write(f'response.result =')
                                 with self.indent():
                                     self.write(f'transformer.{lower_first(result_name)}ToAny(result);')
                             else:
-                                self.write(f'{result_name} result = {receive_fn(request_method)}();')
+                                self.write(f'{result_name} result = {receive_fn(request_method)}(request);')
                                 self.write(f'response.result =')
                                 with self.indent():
                                     self.write(f'transformer.{lower_first(result_name)}ToAny(result);')
@@ -110,9 +109,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                 self.write(f'{params_spec["name"]} notificationParams =')
                                 with self.indent():
                                     self.write(f'transformer.as{notification_name}Params(messageParams);')
-                                self.write(f'{receive_fn(notification_method)}(notificationParams);')
+                                self.write(f'{receive_fn(notification_method)}(notification, notificationParams);')
                             else:
-                                self.write(f'{receive_fn(notification_method)}();')
+                                self.write(f'{receive_fn(notification_method)}(notification);')
                             self.gen_break()
                 with self.gen_default():
                     with self.gen_if('notification.method.compare(0, 2, "$/") == 0', end=''):
@@ -193,9 +192,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                     f'{result_name} params',
                                     f'transformer.anyTo{upper_first(result_name)}(result)'
                                 )
-                                self.gen_call(f'{receive_fn(request_method)}', 'request', 'params')
+                                self.gen_call(f'{receive_fn(request_method)}', 'request', 'response', 'params')
                             else:
-                                self.gen_call(f'{receive_fn(request_method)}', 'request')
+                                self.gen_call(f'{receive_fn(request_method)}', 'request', 'response')
                             self.write('lock.lock();')
                             self.gen_assign('iter', 'requestsById.find(requestId.integer())')
                             with self.gen_if('iter != requestsById.end()'):
@@ -246,7 +245,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         request_method = request_spec["method"]
         request_name = method_to_camel_case(request_method)
         result_name = f'{request_name}Result'
-        params = []
+        params = [
+            'const RequestMessage &/*request*/',
+        ]
         params_spec = request_spec.get("params", None)
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &/*params*/')
@@ -267,7 +268,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
     def generate_receive_notification(self, notification_spec: LspSpec) -> None:
         notification_method = notification_spec["method"]
         receive_notification = receive_fn(notification_method)
-        params = []
+        params = [
+            'const NotificationMessage &/*notification*/',
+        ]
         params_spec = notification_spec.get("params", None)
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &/*params*/')
@@ -319,6 +322,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         request_name = method_to_camel_case(request_method)
         params = [
             'const RequestMessage &/*request*/',
+            'const ResponseMessage &/*response*/',
         ]
         result_spec = request_spec.get("result", None)
         if result_spec is not None:
@@ -419,9 +423,6 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
             ],
         ):
             request_id_name = self.gensym_init('requestId', 'request.id.integer()')
-            with self.block():
-                self.write('std::unique_lock<std::mutex> lock(requestMutex);')
-                self.gen_call('requestsById.emplace', request_id_name, 'request')
             any_name = self.gensym_init(
                 'any',
                 'transformer.requestMessageToAny(request)'
@@ -430,6 +431,13 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 'message',
                 f'serializer.serialize({any_name})'
             )
+            with self.block():
+                self.write('std::unique_lock<std::mutex> lock(requestMutex);')
+                self.gen_call(
+                    'requestsById.emplace',
+                    request_id_name,
+                    'std::move(request)'
+                )
             self.gen_call('ls::LanguageServer::send', message_name)
         self.newline()
 
