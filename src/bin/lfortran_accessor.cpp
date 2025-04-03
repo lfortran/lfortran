@@ -17,7 +17,8 @@ namespace LCompilers::LLanguageServer {
         const std::string &filename,
         const std::string &text,
         const CompilerOptions &compiler_options
-    ) const -> std::vector<LCompilers::error_highlight> {
+    ) -> std::vector<LCompilers::error_highlight> {
+        std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
 
         LCompilers::LocationManager lm;
@@ -71,7 +72,8 @@ namespace LCompilers::LLanguageServer {
         const std::string &filename,
         const std::string &text,
         const CompilerOptions &compiler_options
-    ) const -> std::vector<LCompilers::document_symbols> {
+    ) -> std::vector<LCompilers::document_symbols> {
+        std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
         std::vector<LCompilers::document_symbols> symbol_lists;
 
@@ -128,7 +130,8 @@ namespace LCompilers::LLanguageServer {
         const std::string &filename,
         const std::string &text,
         const CompilerOptions &compiler_options
-    ) const -> std::vector<LCompilers::document_symbols> {
+    ) -> std::vector<LCompilers::document_symbols> {
+        std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
         std::vector<LCompilers::document_symbols> symbol_lists;
 
@@ -170,7 +173,8 @@ namespace LCompilers::LLanguageServer {
         bool color,
         int indent,
         bool indent_unit
-    ) const -> LCompilers::Result<std::string> {
+    ) -> LCompilers::Result<std::string> {
+        std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
         LCompilers::LocationManager lm;
         LCompilers::diag::Diagnostics diagnostics;
@@ -200,7 +204,8 @@ namespace LCompilers::LLanguageServer {
         const std::string &filename,
         const std::string &text,
         const CompilerOptions &compiler_options
-    ) const -> std::vector<LCompilers::document_symbols> {
+    ) -> std::vector<LCompilers::document_symbols> {
+        std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
         std::vector<LCompilers::document_symbols> symbol_lists;
 
