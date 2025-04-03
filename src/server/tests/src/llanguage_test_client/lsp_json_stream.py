@@ -19,7 +19,7 @@ class LspJsonStream:
     num_bytes: int
     has_content_length: bool
     position: int
-    sleep_s: float = 0.01
+    sleep_s: float = 0.100
 
     def __init__(self, istream: IO[bytes], timeout_s: float) -> None:
         self.istream = istream
@@ -34,7 +34,7 @@ class LspJsonStream:
         while duration(start_time) < self.timeout_s:
             try:
                 bs: Optional[bytes] = self.istream.read(1)
-                if bs is not None:
+                if bs is not None and len(bs) > 0:
                     self.buf.write(bs)
                     self.position += 1
                     return bs
@@ -131,13 +131,13 @@ class LspJsonStream:
         while (remaining_bytes > 0) and (duration(start_time) < self.timeout_s):
             try:
                 bs = self.istream.read(remaining_bytes)
-                if bs is not None:
+                if bs is not None and len(bs) > 0:
                     self.buf.write(bs)
                     remaining_bytes -= len(bs)
                     continue
             except BlockingIOError:
                 pass
-            time.sleep(0.01)
+            time.sleep(self.sleep_s)
         if remaining_bytes > 0:
             raise RuntimeError(
                 f'Timed-out after {self.timeout_s} seconds while reading from the stream:\n{self.message()}'

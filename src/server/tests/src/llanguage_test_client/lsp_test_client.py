@@ -125,7 +125,7 @@ class SpyIO(IO[bytes]):
     def read(self, size: int = -1, /) -> Union[bytes, Any]:
         bs = self.stream.read(size)
         self.spy.write(f'[{timestamp()}] READ: '.encode("utf-8"))
-        if bs is not None:
+        if bs is not None and len(bs) > 0:
             self.spy.write(self.escape(bs))
         else:
             self.spy.write(b'\xe2\x90\x80')  #-> U+2400 Unicode null symbol
@@ -135,12 +135,16 @@ class SpyIO(IO[bytes]):
     def write(self, b) -> int:
         self.spy.write(f'[{timestamp()}] WRITE: '.encode("utf-8"))
         num_bytes = self.stream.write(b)
-        if num_bytes is not None:
+        if num_bytes is not None and num_bytes > 0:
             self.spy.write(self.escape(b[:num_bytes]))
         else:
             self.spy.write(b'\xe2\x90\x80')  #-> U+2400 Unicode null symbol
         self.spy.write(b'\n')
         return num_bytes
+
+    def flush(self) -> None:
+        self.stream.flush()
+        self.spy.flush()
 
 
 @dataclass
@@ -246,14 +250,14 @@ class LspTestClient(LspClient):
                     if bs is not None:
                         buf.seek(0)
                         buf.truncate(0)
-                        while (bs is not None) and not self.stop.is_set():
+                        while (bs is not None) and (len(bs) > 0) and not self.stop.is_set():
                             buf.write(bs.decode("utf-8"))
                             bs = self.server.stderr.read(1)
                         print(buf.getvalue(), file=sys.stderr)
                         continue
                 except BlockingIOError:
                     pass
-                time.sleep(0.01)
+                time.sleep(0.100)
 
     def has_event(self, pred: EventPredFn) -> bool:
         for event in self.events:
@@ -402,7 +406,8 @@ class LspTestClient(LspClient):
             stdout=subprocess.PIPE,
             # stderr=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            bufsize=0
+            # bufsize=0,
+            # bufsize=1,
         )
         if self.server.stdout is None:
             raise RuntimeError("Cannot read from server stdout")
@@ -412,8 +417,8 @@ class LspTestClient(LspClient):
         #     raise RuntimeError("Cannot read from server stderr")
 
         # Make process stdout non-blocking
-        stdout_fd = self.server.stdout.fileno()
-        os.set_blocking(stdout_fd, False)
+        # stdout_fd = self.server.stdout.fileno()
+        # os.set_blocking(stdout_fd, False)
         # stderr_fd = self.server.stderr.fileno()
         # os.set_blocking(stderr_fd, False)
 

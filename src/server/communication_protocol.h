@@ -21,9 +21,6 @@ namespace LCompilers::LLanguageServer {
         ~CommunicationProtocol();
         auto serve() -> void;
     private:
-        std::streambuf* cout_sbuf;
-        int stdout_fd;
-        FILE *stdout_fp;
         LanguageServer &languageServer;
         MessageStream &messageStream;
         MessageQueue &incomingMessages;

@@ -64,16 +64,9 @@ namespace LCompilers::LLanguageServer::Threading {
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::enqueue(T value) -> T * {
-        logger.debug() << "Inserting element into queue of size=" << _size << ", capacity=" << N << std::endl;
         if (receiving) {
-            logger.debug() << "Awaiting sufficient capacity ..." << std::endl;
             std::unique_lock<std::mutex> lock(mutex);
             dequeued.wait(lock, [this]{
-                logger.debug()
-                    << "(" << _size << " < N) = " << (_size < N)
-                    << ", !receiving = " << (!receiving)
-                    << " => " << "((" << _size << " < N) || !receiving) = " << ((_size < N) || !receiving)
-                    << std::endl;
                 return (_size < N) || !receiving;
             });
             if ((_size < N) && receiving) {
@@ -81,7 +74,7 @@ namespace LCompilers::LLanguageServer::Threading {
                 (*elem) = value;
                 tail = (tail + 1) % N;
                 ++_size;
-                logger.debug() << "Successfully enqueued element." << std::endl;
+                lock.unlock();
                 enqueued.notify_one();
                 return elem;
             }
@@ -96,23 +89,16 @@ namespace LCompilers::LLanguageServer::Threading {
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::dequeue() -> T {
-        logger.debug() << "Pulling element off queue of size=" << _size << ", capacity=" << N << std::endl;
         if (sending) {
-            logger.debug() << "Awaiting availability ..." << std::endl;
             std::unique_lock<std::mutex> lock(mutex);
             enqueued.wait(lock, [this]{
-                logger.debug()
-                    << "(" << _size << " > 0) = " << (_size > 0)
-                    << ", !sending = " << (!sending)
-                    << " => " << "((" << _size << " > 0) || !sending) = " << ((_size > 0) || !sending)
-                    << std::endl;
                 return (_size > 0) || !sending;
             });
             if ((_size > 0) && sending) {
                 T value = buffer[head];
                 head = (head + 1) % N;
                 --_size;
-                logger.debug() << "Successfully dequeued element." << std::endl;
+                lock.unlock();
                 dequeued.notify_one();
                 return value;
             }
@@ -128,9 +114,9 @@ namespace LCompilers::LLanguageServer::Threading {
     template <typename T, std::size_t N>
     auto Queue<T,N>::stop() -> void {
         logger.debug() << "Stopping queue ..." << std::endl;
+
         bool expected = true;
         if (receiving.compare_exchange_strong(expected, false)) {
-            std::unique_lock<std::mutex> lock(mutex);
             dequeued.notify_all();
         } else {
             throw std::runtime_error("Queue has already been stopped!");
@@ -143,13 +129,11 @@ namespace LCompilers::LLanguageServer::Threading {
 
         bool expected = true;
         if (receiving.compare_exchange_strong(expected, false)) {
-            std::unique_lock<std::mutex> lock(mutex);
             dequeued.notify_all();
         }
 
         expected = true;
         if (sending.compare_exchange_strong(expected, false)) {
-            std::unique_lock<std::mutex> lock(mutex);
             enqueued.notify_all();
         }
     }
