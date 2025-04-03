@@ -1,6 +1,5 @@
 #include <cctype>
 #include <cerrno>
-#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <ostream>
@@ -21,14 +20,14 @@ namespace LCompilers::LLanguageServer {
       , incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
       , logger(logger.having("CommunicationProtocol"))
-      , listener([this, &logger]() {
-          logger.threadName("CommunicationProtocol_listener");
-          listen();
-      })
     {
         // Decouple stdin from stdout
         std::ios::sync_with_stdio(false);
         std::cin.tie(nullptr);
+        listener = std::thread([this, &logger]() {
+            logger.threadName("CommunicationProtocol_listener");
+            listen();
+        });
     }
 
     CommunicationProtocol::~CommunicationProtocol() {

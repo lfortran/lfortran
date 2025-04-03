@@ -406,7 +406,7 @@ class LspTestClient(LspClient):
             stdout=subprocess.PIPE,
             # stderr=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            # bufsize=0,
+            bufsize=0,
             # bufsize=1,
         )
         if self.server.stdout is None:
