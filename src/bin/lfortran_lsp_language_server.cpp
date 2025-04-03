@@ -117,8 +117,9 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LFortranLspLanguageServer::getCompilerOptions(
-        const LspTextDocument &document
+        LspTextDocument &document
     ) -> const std::shared_ptr<CompilerOptions> {
+        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
         const DocumentUri &uri = document.uri();
 
         std::shared_lock<std::shared_mutex> readLock(optionMutex);
@@ -129,7 +130,10 @@ namespace LCompilers::LanguageServerProtocol {
 
         readLock.unlock();
 
+        documentLock.unlock();
         const std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(uri);
+        documentLock.lock();
+
         std::vector<std::string> argv(config->compiler.flags);
         argv.push_back(document.path().string());
 
@@ -183,8 +187,10 @@ namespace LCompilers::LanguageServerProtocol {
             // version anyway:
             int version = document.version();
             try {
+                readLock.unlock();
                 std::shared_ptr<CompilerOptions> compilerOptions =
                     getCompilerOptions(document);
+                readLock.lock();
                 logger.trace()
                     << "Getting diagnostics from LFortran for document with URI="
                     << uri << std::endl;
@@ -196,8 +202,11 @@ namespace LCompilers::LanguageServerProtocol {
                     << " diagnostics for document with URI=" << uri
                     << std::endl;
 
+                readLock.unlock();
                 const std::shared_ptr<lsc::LFortranLspConfig> config =
                     getLFortranConfig(uri);
+                readLock.lock();
+
                 unsigned int numProblems = config->maxNumberOfProblems;
                 if (highlights.size() < numProblems) {
                     numProblems = highlights.size();
@@ -378,7 +387,9 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
+        readLock.unlock();
         CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        readLock.lock();
         compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
         compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
         logger.trace()
@@ -460,7 +471,9 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
+        readLock.unlock();
         CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        readLock.lock();
         compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
         compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
         logger.trace()
@@ -520,8 +533,10 @@ namespace LCompilers::LanguageServerProtocol {
         std::shared_lock<std::shared_mutex> readLock(document->mutex());
         const std::string &path = document->path().string();
         const std::string &text = document->text();
+        readLock.unlock();
         std::shared_ptr<CompilerOptions> compilerOptions =
             getCompilerOptions(*document);
+        readLock.lock();
         logger.trace()
             << "Looking up all symbols in document with URI=" << uri
             << std::endl;
@@ -614,7 +629,9 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
+        readLock.unlock();
         CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        readLock.lock();
         compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
         compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
         logger.trace()
@@ -633,11 +650,13 @@ namespace LCompilers::LanguageServerProtocol {
             fs::path symbolPath = resolve(symbol.filename, compilerOptions);
             std::shared_ptr<LspTextDocument> symbolDocument =
                 getDocument("file://" + symbolPath.string());
-            std::shared_lock<std::shared_mutex> symbolLock(document->mutex());
+            std::shared_lock<std::shared_mutex> symbolLock(symbolDocument->mutex());
             const std::string &symbolText = symbolDocument->text();
             std::unique_ptr<Hover> hover = std::make_unique<Hover>();
 
-            std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(uri);
+            readLock.unlock();
+            std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(symbolDocument->uri());
+            readLock.lock();
 
             MarkupContent content;
             content.kind = MarkupKind::Markdown;
@@ -650,9 +669,9 @@ namespace LCompilers::LanguageServerProtocol {
                 symbol.last_line - 1,
                 symbol.last_column
             );
-            symbolLock.unlock();
             uint32_t length = (last_pos - first_pos) + 1;
             std::string preview = symbolText.substr(first_pos, length);
+            symbolLock.unlock();
             logger.trace()
                 << "Formatting hover preview with LFortran"
                 << std::endl;
@@ -771,7 +790,9 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
+        readLock.unlock();
         CompilerOptions compilerOptions = *getCompilerOptions(*document);
+        readLock.lock();
         compilerOptions.line = std::to_string(pos.line + 1);  // 0-to-1 index
         compilerOptions.column = std::to_string(pos.character + 1);  // 0-to-1 index
         logger.trace()

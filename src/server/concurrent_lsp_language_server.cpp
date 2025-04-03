@@ -1,4 +1,5 @@
 #include <atomic>
+#include <chrono>
 #include <cctype>
 #include <exception>
 #include <memory>
@@ -169,9 +170,25 @@ namespace LCompilers::LanguageServerProtocol {
         }
         while (!_exit) {
             const std::string message = incomingMessages.dequeue();
-            handle(message);
-            if ((iter = responsesById.find(requestId)) != responsesById.end()) {
-                return iter->second;
+            try {
+                handle(message);
+                if ((iter = responsesById.find(requestId)) != responsesById.end()) {
+                    return iter->second;
+                }
+            } catch (std::exception &e) {
+                if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
+                    logger.error()
+                        << "Unhandled exception caught: " << e.what()
+                        << std::endl;
+                } else {
+                    logger.trace()
+                        << "Interrupted while dequeuing messages: " << e.what()
+                        << std::endl;
+                }
+            } catch (...) {
+                logger.error()
+                    << "Unhandled exception caught: unknown"
+                    << std::endl;
             }
         }
         throw std::runtime_error(
@@ -196,24 +213,39 @@ namespace LCompilers::LanguageServerProtocol {
         ConfigurationParams params;
         params.items.push_back(std::move(item));
 
-        int requestId = sendWorkspace_configuration(params);
+        int requestId;
 
-        std::promise<std::shared_ptr<LSPAny>> promise;
-        std::shared_future<std::shared_ptr<LSPAny>> future =
-            promise.get_future().share();
-        auto &pairs = pendingConfigsById.emplace(
-            std::piecewise_construct,
-            std::make_tuple(requestId),
-            std::make_tuple()
-        ).first->second;
-        auto &pair = pairs.emplace_back();
-        pair.first = uri;
-        pair.second = std::move(promise);
+        std::shared_future<std::shared_ptr<LSPAny>> future;
+
+        auto pendingIter = pendingConfigsByUri.find(uri);
+        if (pendingIter != pendingConfigsByUri.end()) {
+            requestId = pendingIter->second.first;
+            future = pendingIter->second.second;
+        } else {
+            requestId = sendWorkspace_configuration(params);
+            std::promise<std::shared_ptr<LSPAny>> promise;
+            future = promise.get_future().share();
+            {
+                auto &pairs = pendingConfigsById.emplace(
+                    std::piecewise_construct,
+                    std::make_tuple(requestId),
+                    std::make_tuple()
+                ).first->second;
+                auto &pair = pairs.emplace_back();
+                pair.first = uri;
+                pair.second = std::move(promise);
+            }
+            pendingConfigsByUri.emplace(
+                std::piecewise_construct,
+                std::make_tuple(uri),
+                std::make_tuple(requestId, future)
+            );
+        }
 
         /*const ResponseMessage &response =*/
             awaitResponse(requestId);
 
-        if (future.valid()) {
+        if (future.valid() && (future.wait_for(0ms) == std::future_status::ready)) {
             return future.get();
         }
 

@@ -20,6 +20,8 @@ def test_goto_definition(client: LFortranLspTestClient) -> None:
 def test_diagnostics(client: LFortranLspTestClient) -> None:
     path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
     doc = client.open_document("fortran", path)
+    # assert client.await_validation(doc.uri, doc.version) is not None
+
     line, column = 21, 1
     doc.cursor = line, column
     doc.write("error")
