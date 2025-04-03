@@ -245,15 +245,15 @@ namespace LCompilers::LanguageServerProtocol {
                 break;
             }
             }
-            response.error = std::move(error);
             logger.error() << error.message << std::endl;
+            response.error = std::move(error);
         } catch (const std::exception &e) {
             ResponseError error;
             error.code = static_cast<int>(ErrorCodes::InternalError);
             error.message = "Caught unhandled exception: ";
             error.message.append(e.what());
-            response.error = std::move(error);
             logger.error() << error.message << std::endl;
+            response.error = std::move(error);
         }
         if (*taskIsRunning) {
             LSPAny any = transformer.responseMessageToAny(response);

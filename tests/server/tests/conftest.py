@@ -27,6 +27,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
     client_log_path = f"{request.node.name}-client.log"
     stdout_log_path = f"{request.node.name}-stdout.log"
     stdin_log_path = f"{request.node.name}-stdin.log"
+    gdb_log_path = f"{request.node.name}-gdb.log"
 
     config = {
         "LFortran": {
@@ -56,7 +57,24 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         }
     }
 
-    server_args = [
+    server_args = []
+
+    gdb_path = shutil.which('gdb')
+    if gdb_path is not None:
+        server_path = Path(gdb_path)
+        server_args += [
+            "-q", "-batch",
+            "-ex", "set logging redirect on",
+            "-ex", "set logging debugredirect on",
+            "-ex", "set logging overwrite on",
+            "-ex", f"set logging file {gdb_log_path}",
+            "-ex", "set logging enabled on",
+            "-ex", "run",
+            "-ex", "bt",
+            "--args", str(server_path),
+        ]
+
+    server_args += [
         "server",
         "--parent-process-id", str(os.getpid()),
         "--log-level", config["LFortran"]["log"]["level"],
@@ -79,10 +97,11 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
     ]
 
     def print_log(log_path: str, heading: str) -> None:
-        border = "~" * (len(heading) + 6)
+        header = f"~~ {heading} [{log_path}] ~~"
+        border = "~" * len(header)
         print(file=sys.stderr)
         print(border, file=sys.stderr)
-        print(f"~~ {heading} ~~", file=sys.stderr)
+        print(header, file=sys.stderr)
         print(border, file=sys.stderr)
         print(file=sys.stderr)
         if os.path.exists(log_path):
@@ -96,6 +115,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         print_log(stdin_log_path, "Standard Input")
         print_log(stdout_log_path, "Standard Output")
         print_log(server_log_path, "Server Logs")
+        print_log(gdb_log_path, "GNU Debugger (GDB)")
 
     client: Optional[LFortranLspTestClient] = None
     logs_printed = False

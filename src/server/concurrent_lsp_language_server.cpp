@@ -100,15 +100,17 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto ConcurrentLspLanguageServer::sendAllReady() -> void {
         do {
-            const PendingMessage &pendingMessage = pendingMessages.top();
-            if (pendingSendId == pendingMessage.first) {
-                const std::optional<std::string> &message = pendingMessage.second;
-                if (message.has_value()) {
-                    ls::LanguageServer::send(message.value());
+            if (pendingMessages.size() > 0) {
+                const PendingMessage &pendingMessage = pendingMessages.top();
+                if (pendingSendId == pendingMessage.first) {
+                    const std::optional<std::string> &message = pendingMessage.second;
+                    if (message.has_value()) {
+                        ls::LanguageServer::send(message.value());
+                    }
+                    pendingMessages.pop();
+                    ++pendingSendId;
+                    continue;
                 }
-                pendingMessages.pop();
-                ++pendingSendId;
-                continue;
             }
         } while (false);
     }
@@ -190,11 +192,24 @@ namespace LCompilers::LanguageServerProtocol {
         params.items.push_back(std::move(item));
 
         int requestId = sendWorkspace_configuration(params);
+
+        std::promise<std::shared_ptr<LSPAny>> promise;
+        std::shared_future<std::shared_ptr<LSPAny>> future =
+            promise.get_future().share();
+        auto &pairs = pendingConfigsById.emplace(
+            std::piecewise_construct,
+            std::make_tuple(requestId),
+            std::make_tuple()
+        ).first->second;
+        auto &pair = pairs.emplace_back();
+        pair.first = uri;
+        pair.second = std::move(promise);
+
         /*const ResponseMessage &response =*/
             awaitResponse(requestId);
 
-        if ((configIter = configsByUri.find(uri)) != configsByUri.end()) {
-            return configIter->second;
+        if (future.valid()) {
+            return future.get();
         }
 
         throw std::runtime_error(

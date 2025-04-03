@@ -10,6 +10,7 @@ from lfortran_language_server.lfortran_lsp_test_client import LFortranLspTestCli
 def test_goto_definition(client: LFortranLspTestClient) -> None:
     path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
     doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
     line, column = 18, 18
     doc.cursor = line, column
     doc.goto_definition()

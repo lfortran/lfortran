@@ -417,8 +417,8 @@ class LspTestClient(LspClient):
         #     raise RuntimeError("Cannot read from server stderr")
 
         # Make process stdout non-blocking
-        # stdout_fd = self.server.stdout.fileno()
-        # os.set_blocking(stdout_fd, False)
+        stdout_fd = self.server.stdout.fileno()
+        os.set_blocking(stdout_fd, False)
         # stderr_fd = self.server.stderr.fileno()
         # os.set_blocking(stderr_fd, False)
 
@@ -473,9 +473,10 @@ class LspTestClient(LspClient):
         self.buf.write(body)
         self.check_server()
         print(
-            f"[{timestamp()}] Sending:\n{self.buf.getvalue()}",
+            f"[{timestamp()}] Sending:\n{self.buf.getvalue().decode('utf-8')}",
             file=self.log_file
         )
+        self.log_file.flush()
         self.ostream.write(self.buf.getvalue())
         self.ostream.flush()
 
