@@ -20,8 +20,7 @@ def test_goto_definition(client: LFortranLspTestClient) -> None:
 def test_diagnostics(client: LFortranLspTestClient) -> None:
     path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
     doc = client.open_document("fortran", path)
-    # assert client.await_validation(doc.uri, doc.version) is not None
-
+    assert client.await_validation(doc.uri, doc.version) is not None
     line, column = 21, 1
     doc.cursor = line, column
     doc.write("error")
@@ -63,6 +62,7 @@ def test_configuration_caching(client: LFortranLspTestClient) -> None:
             delete=True
     ) as tmp_file:
         doc = client.open_document("fortran", tmp_file.name)
+        assert client.await_validation(doc.uri, doc.version) is not None
         doc.write("foo")
         doc.save()
         assert client.await_validation(doc.uri, doc.version) is not None
@@ -97,6 +97,7 @@ def test_configuration_caching(client: LFortranLspTestClient) -> None:
 def test_rename(client: LFortranLspTestClient) -> None:
     path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
     doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
     line, column = 4, 20
     doc.cursor = line, column
     doc.rename("foo")
