@@ -64,9 +64,16 @@ namespace LCompilers::LLanguageServer::Threading {
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::enqueue(T value) -> T * {
+        logger.debug() << "Inserting element into queue of size=" << _size << ", capacity=" << N << std::endl;
         if (receiving) {
+            logger.debug() << "Awaiting sufficient capacity ..." << std::endl;
             std::unique_lock<std::mutex> lock(mutex);
             dequeued.wait(lock, [this]{
+                logger.debug()
+                    << "(" << _size << " < N) = " << (_size < N)
+                    << ", !receiving = " << (!receiving)
+                    << " => " << "((" << _size << " < N) || !receiving) = " << ((_size < N) || !receiving)
+                    << std::endl;
                 return (_size < N) || !receiving;
             });
             if ((_size < N) && receiving) {
@@ -74,6 +81,7 @@ namespace LCompilers::LLanguageServer::Threading {
                 (*elem) = value;
                 tail = (tail + 1) % N;
                 ++_size;
+                logger.debug() << "Successfully enqueued element." << std::endl;
                 enqueued.notify_one();
                 return elem;
             }
@@ -88,15 +96,23 @@ namespace LCompilers::LLanguageServer::Threading {
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::dequeue() -> T {
+        logger.debug() << "Pulling element off queue of size=" << _size << ", capacity=" << N << std::endl;
         if (sending) {
+            logger.debug() << "Awaiting availability ..." << std::endl;
             std::unique_lock<std::mutex> lock(mutex);
             enqueued.wait(lock, [this]{
+                logger.debug()
+                    << "(" << _size << " > 0) = " << (_size > 0)
+                    << ", !sending = " << (!sending)
+                    << " => " << "((" << _size << " > 0) || !sending) = " << ((_size > 0) || !sending)
+                    << std::endl;
                 return (_size > 0) || !sending;
             });
             if ((_size > 0) && sending) {
                 T value = buffer[head];
                 head = (head + 1) % N;
                 --_size;
+                logger.debug() << "Successfully dequeued element." << std::endl;
                 dequeued.notify_one();
                 return value;
             }
