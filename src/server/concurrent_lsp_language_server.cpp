@@ -67,6 +67,10 @@ namespace LCompilers::LanguageServerProtocol {
                     << "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
+        } catch (...) {
+            logger.error()
+                << "Unhandled exception caught: unknown"
+                << std::endl;
         }
     }
 
@@ -89,30 +93,31 @@ namespace LCompilers::LanguageServerProtocol {
                     << "Caught unhandled exception: " << e.what()
                     << std::endl;
             }
-            if (pendingSendId == sendId) {
-                ++pendingSendId;
-            } else if (pendingSendId < sendId) {
+            if (pendingSendId <= sendId) {
                 pendingMessages.push(PendingMessage(sendId, {}));
+                sendAllReady();
             }
-            sendAllReady();
         }
     }
 
     auto ConcurrentLspLanguageServer::sendAllReady() -> void {
-        do {
-            if (pendingMessages.size() > 0) {
-                const PendingMessage &pendingMessage = pendingMessages.top();
-                if (pendingSendId == pendingMessage.first) {
-                    const std::optional<std::string> &message = pendingMessage.second;
-                    if (message.has_value()) {
-                        ls::LanguageServer::send(message.value());
-                    }
-                    pendingMessages.pop();
-                    ++pendingSendId;
-                    continue;
+        while ((pendingMessages.size() > 0) && !_exit) {
+            const PendingMessage &pendingMessage = pendingMessages.top();
+            std::size_t sendId = pendingMessage.first;
+            if (pendingSendId >= sendId) {
+                const std::optional<std::string> &message =
+                    pendingMessage.second;
+                if (message.has_value()) {
+                    ls::LanguageServer::send(message.value());
                 }
+                pendingMessages.pop();
+                if (pendingSendId == sendId) {
+                    ++pendingSendId;
+                }
+            } else {
+                break;
             }
-        } while (false);
+        }
     }
 
     auto ConcurrentLspLanguageServer::handleResponse(

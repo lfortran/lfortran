@@ -57,24 +57,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         }
     }
 
-    server_args = []
-
-    gdb_path = shutil.which('gdb')
-    if gdb_path is not None:
-        server_args += [
-            "-q", "-batch",
-            "-ex", "set logging redirect on",
-            "-ex", "set logging debugredirect on",
-            "-ex", "set logging overwrite on",
-            "-ex", f"set logging file {gdb_log_path}",
-            "-ex", "set logging enabled on",
-            "-ex", "run",
-            "-ex", "bt",
-            "--args", str(server_path),
-        ]
-        server_path = Path(gdb_path)
-
-    server_args += [
+    server_args = [
         "server",
         "--parent-process-id", str(os.getpid()),
         "--log-level", config["LFortran"]["log"]["level"],
