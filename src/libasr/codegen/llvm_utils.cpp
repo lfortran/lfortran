@@ -476,6 +476,10 @@ namespace LCompilers {
                 el_type = llvm::Type::getInt1Ty(context);
                 break;
             }
+            case ASR::ttypeType::CPtr: {
+                el_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                break;
+            }
             case ASR::ttypeType::StructType: {
                 el_type = getStructType(m_type_, module);
                 break;
