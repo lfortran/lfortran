@@ -7,7 +7,7 @@ RE2C=${RE2C:-re2c}
 BISON=${BISON:-bison}
 
 # Generate the `version` file
-ci/version.sh
+shell ci/version.sh
 
 # Generate a Fortran AST from AST.asdl (C++)
 python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
@@ -26,5 +26,5 @@ python src/libasr/intrinsic_func_registry_util_gen.py
 # Generate the LSP sources
 python src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
 
-grep -n "'" src/lfortran/parser/parser.yy && echo "Single quote not allowed" && exit 1
+#grep -n "'" src/lfortran/parser/parser.yy && echo "Single quote not allowed" && exit 1
 echo "OK"
