@@ -9,7 +9,7 @@ program c_ptr_03
     y = 20
 
     c_requests(1) = c_loc(x)
-    c_requests(2) = c_loc(x)
+    c_requests(2) = c_loc(y)
     call c_f_pointer(c_requests(1), px)
     call c_f_pointer(c_requests(2), py)
 
