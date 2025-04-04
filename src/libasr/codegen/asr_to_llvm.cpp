@@ -4733,6 +4733,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
+            if (ASR::is_a<ASR::ArrayItem_t>(*cptr)) {
+                llvm_cptr = llvm_utils->CreateLoad(llvm_cptr);
+            }
             ptr_loads = 0;
             this->visit_expr(*fptr);
             llvm::Value* llvm_fptr = tmp;
