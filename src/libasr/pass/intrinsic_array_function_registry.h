@@ -1772,7 +1772,7 @@ namespace Cshift {
                 b.Assignment(i, b.Add(i, b.i32(1))),
             }, nullptr));
         } else {
-            throw LCompilersException("`Nearest` intrinsic is not yet implemented for arrays with rank > 2");
+            throw LCompilersException("`Cshift` intrinsic is not yet implemented for arrays with rank > 2");
         }
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
