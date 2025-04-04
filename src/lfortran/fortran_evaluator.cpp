@@ -120,6 +120,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         return res3.error;
     }
 
+    if (compiler_options.po.fast) {
+        e->opt(*m->m_m);
+    }
+
     if (verbose) {
         result.llvm_ir = m->str();
     }
@@ -337,6 +341,9 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
+        if (compiler_options.po.fast) {
+            e->opt(*m->m_m);
+        }
         return m;
 #else
         throw LCompilersException("LLVM is not enabled");
@@ -382,16 +389,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
             compiler_options, run_fn, "", infile);
     if (res.ok) {
         m = std::move(res.result);
+        return m;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
-
-    if (compiler_options.po.fast) {
-        e->opt(*m->m_m);
-    }
-
-    return m;
 #else
     throw LCompilersException("LLVM is not enabled");
 #endif
