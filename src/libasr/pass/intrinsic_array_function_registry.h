@@ -1626,16 +1626,11 @@ namespace Cshift {
 
     static inline ASR::asr_t* create_Cshift(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        ASR::expr_t *array = args[0], *shift = args[1], *dim = args[2];
+        ASR::expr_t *array = args[0], *shift = args[1];
         bool is_type_allocatable = false;
-        bool is_dim_present = false;
         if (ASRUtils::is_allocatable(array)) {
             is_type_allocatable = true;
         }
-        if (dim) {
-            is_dim_present = true;
-        }
-
         ASR::ttype_t *type_array = ASRUtils::type_get_past_allocatable_pointer(expr_type(array));
         ASR::ttype_t *type_shift = ASRUtils::type_get_past_allocatable_pointer(expr_type(shift));
         ASR::ttype_t *ret_type = ASRUtils::type_get_past_allocatable_pointer(expr_type(array));
@@ -1653,15 +1648,12 @@ namespace Cshift {
         extract_value(array_dims[0].m_length, array_dim);
         ASRUtils::require_impl(array_rank > 0, "The argument `array` in `cshift` must be of rank > 0", array->base.loc, diag);
         ASRBuilder b(al, loc);
-        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, array_rank);
         int overload_id = 2;
-        if (!is_dim_present) {
-            result_dims.push_back(al, b.set_dim(array_dims[0].m_start, array_dims[0].m_length));
-            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
-        } else {
-            result_dims.push_back(al, b.set_dim(dim, dim));
-            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
+        for(int i=0; i<array_rank; i++){
+            result_dims.push_back(al, b.set_dim(array_dims[i].m_start, array_dims[i].m_length));
         }
+        ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
             ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
@@ -1687,14 +1679,33 @@ namespace Cshift {
         /*
             cshift(array, shift, dim)
             int i = 0
-            do j = shift, size(array)
-                result[i] = array[j]
-                i = i + 1
-            end for
-            do j = 1, shift
-                result[i] = array[j]
-                i = i + 1
-            end do
+            if (size(shape(array)) == 1) then
+                do j = shift + 1, n
+                    result(i) = array(j)
+                    i = i + 1
+                end do
+                do j = 1, shift
+                    result(i) = array(j)
+                    i = i + 1
+                end do
+            else if (size(shape(array)) == 2) then
+                rows = size(array, 1)
+                cols = size(array, 2)
+                i = 1
+
+                do j = shift + 1, rows
+                    do k = 1, cols
+                        result(i, k) = array(j, k)
+                    end do
+                    i = i + 1
+                end do
+                do j = 1, shift
+                    do k = 1, cols
+                        result(i, k) = array(j, k)
+                    end do
+                    i = i + 1
+                end do
+            end if
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
@@ -1718,7 +1729,16 @@ namespace Cshift {
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
-        ASR::expr_t* shift_val = declare("shift_val", int32, Local);;
+        ASR::expr_t *k = nullptr;
+        ASR::dimension_t *m_dims = nullptr;
+        ASR::expr_t* dim = nullptr;
+        int n_dims = extract_dimensions_from_ttype(expr_type(result), m_dims);
+        if (n_dims == 2) {
+            k = declare("k", int32, Local);
+            dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, ASR::down_cast<ASR::IntegerConstant_t>(m_dims[1].m_length)->m_n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+
+        }
+        ASR::expr_t* shift_val = declare("shift_val", int32, Local);
         body.push_back(al, b.Assignment(shift_val, args[1]));
         body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
             b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1)))
@@ -1727,16 +1747,33 @@ namespace Cshift {
         }
         ));
         body.push_back(al, b.Assignment(i, b.i32(1)));
-        
-        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
-            b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
-            b.Assignment(i, b.Add(i, b.i32(1))),
-        }, nullptr));
-        body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
-            b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
-            b.Assignment(i, b.Add(i, b.i32(1))),
-        }, nullptr));
-
+        if (n_dims == 1) {
+            body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
+                b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
+                b.Assignment(i, b.Add(i, b.i32(1))),
+            }, nullptr));
+            body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
+                b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
+                b.Assignment(i, b.Add(i, b.i32(1))),
+            }, nullptr));
+        }
+        else if (n_dims == 2) {
+            body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
+                b.Assignment(i, b.i32(1)),
+                b.DoLoop(k, b.i32(1), dim, {
+                    b.Assignment(b.ArrayItem_01(result, {i, k}), b.ArrayItem_01(args[0], {j, k})),
+                }, nullptr),
+                b.Assignment(i, b.Add(i, b.i32(1))),
+            }, nullptr));
+            body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
+                b.DoLoop(k, b.i32(1), dim, {
+                    b.Assignment(b.ArrayItem_01(result, {i, k}), b.ArrayItem_01(args[0], {j, k})),
+                }, nullptr),
+                b.Assignment(i, b.Add(i, b.i32(1))),
+            }, nullptr));
+        } else {
+            throw LCompilersException("`Nearest` intrinsic is not yet implemented for arrays with rank > 2");
+        }
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
