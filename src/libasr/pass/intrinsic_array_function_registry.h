@@ -1730,12 +1730,14 @@ namespace Cshift {
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
         ASR::expr_t *k = nullptr;
+        ASR::expr_t *l = nullptr;
         ASR::dimension_t *m_dims = nullptr;
-        ASR::expr_t* dim = nullptr;
         int n_dims = extract_dimensions_from_ttype(expr_type(result), m_dims);
         if (n_dims == 2) {
             k = declare("k", int32, Local);
-            dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, ASR::down_cast<ASR::IntegerConstant_t>(m_dims[1].m_length)->m_n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        } if (n_dims == 3) {
+            k = declare("k", int32, Local);
+            l = declare("l", int32, Local);
         }
         ASR::expr_t* shift_val = declare("shift_val", int32, Local);
         body.push_back(al, b.Assignment(shift_val, args[1]));
@@ -1759,20 +1761,36 @@ namespace Cshift {
         }
         else if (n_dims == 2) {
             body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
-                b.Assignment(i, b.i32(1)),
-                b.DoLoop(k, b.i32(1), dim, {
+                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
                     b.Assignment(b.ArrayItem_01(result, {i, k}), b.ArrayItem_01(args[0], {j, k})),
                 }, nullptr),
                 b.Assignment(i, b.Add(i, b.i32(1))),
             }, nullptr));
             body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
-                b.DoLoop(k, b.i32(1), dim, {
+                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
                     b.Assignment(b.ArrayItem_01(result, {i, k}), b.ArrayItem_01(args[0], {j, k})),
                 }, nullptr),
                 b.Assignment(i, b.Add(i, b.i32(1))),
             }, nullptr));
+        } else if (n_dims == 3) {
+            body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
+                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
+                    b.DoLoop(l, b.i32(1), UBound(args[0], 3), {
+                        b.Assignment(b.ArrayItem_01(result, {i, k, l}), b.ArrayItem_01(args[0], {j, k, l})),
+                    }, nullptr)
+                }, nullptr),
+                b.Assignment(i, b.Add(i, b.i32(1))),
+            }, nullptr));
+            body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
+                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
+                    b.DoLoop(l, b.i32(1), UBound(args[0], 3), {
+                        b.Assignment(b.ArrayItem_01(result, {i, k, l}), b.ArrayItem_01(args[0], {j, k, l})),
+                    }, nullptr)
+                }, nullptr),
+                b.Assignment(i, b.Add(i, b.i32(1))),
+            }, nullptr));
         } else {
-            throw LCompilersException("`Cshift` intrinsic is not yet implemented for arrays with rank > 2");
+            throw LCompilersException("`Cshift` intrinsic is not yet implemented for arrays with rank > 3");
         }
 
         body.push_back(al, b.Return());
