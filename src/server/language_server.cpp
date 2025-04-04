@@ -24,6 +24,7 @@ namespace LCompilers::LLanguageServer {
     }
 
     auto LanguageServer::send(const std::string &message) -> void {
+        static thread_local std::string buffer;
         buffer.clear();
         prepare(buffer, message);
         if (outgoingMessages.enqueue(buffer) == nullptr) {
