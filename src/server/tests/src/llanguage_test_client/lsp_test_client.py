@@ -27,7 +27,8 @@ from lsprotocol.types import (ClientCapabilities,
                               DidChangeTextDocumentParams,
                               DidCloseTextDocumentParams,
                               DidOpenTextDocumentParams,
-                              DidSaveTextDocumentParams, ExitNotification,
+                              DidSaveTextDocumentParams,
+                              DocumentHighlightParams, ExitNotification,
                               FileCreate, FileDelete,
                               FileOperationClientCapabilities, FileRename,
                               InitializedNotification, InitializedParams,
@@ -43,6 +44,8 @@ from lsprotocol.types import (ClientCapabilities,
                               TextDocumentDidCloseNotification,
                               TextDocumentDidOpenNotification,
                               TextDocumentDidSaveNotification,
+                              TextDocumentDocumentHighlightRequest,
+                              TextDocumentDocumentHighlightResponse,
                               TextDocumentIdentifier, TextDocumentItem,
                               TextDocumentSaveReason,
                               TextDocumentSyncClientCapabilities,
@@ -485,10 +488,11 @@ class LspTestClient(LspClient):
             request_id: int,
             request: Any,
             callback: Callback
-    ) -> None:
+    ) -> int:
         self.requests_by_id[request_id] = request
         self.callbacks_by_id[request_id] = (request, callback)
         self.send_message(request)
+        return request_id
 
     def receive_message(self) -> JsonObject:
         self.check_server()
@@ -562,8 +566,7 @@ class LspTestClient(LspClient):
     def send_initialize(self, params: InitializeParams) -> int:
         request_id = self.next_request_id()
         request = InitializeRequest(request_id, params)
-        self.send_request(request_id, request, self.receive_initialize)
-        return request_id
+        return self.send_request(request_id, request, self.receive_initialize)
 
     def receive_initialize(self, request: Any, message: JsonObject) -> None:
         response = self.converter.structure(
@@ -581,8 +584,7 @@ class LspTestClient(LspClient):
     def send_shutdown(self) -> int:
         request_id = self.next_request_id()
         request = ShutdownRequest(request_id)
-        self.send_request(request_id, request, self.receive_shutdown)
-        return request_id
+        return self.send_request(request_id, request, self.receive_shutdown)
 
     def receive_shutdown(self, request: Any, message: JsonObject) -> None:
         # response = self.converter.structure(
@@ -729,9 +731,11 @@ class LspTestClient(LspClient):
     ) -> int:
         request_id = self.next_request_id()
         request = TextDocumentWillSaveWaitUntilRequest(request_id, params)
-        self.send_request(request_id, request,
-                          self.receive_text_document_will_save_wait_until)
-        return request_id
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_will_save_wait_until
+        )
 
     def receive_text_document_will_save_wait_until(
             self,
@@ -884,9 +888,11 @@ class LspTestClient(LspClient):
     def send_workspace_will_create_files(self, params: CreateFilesParams) -> int:
         request_id = self.next_request_id()
         request = WorkspaceWillCreateFilesRequest(request_id, params)
-        self.send_request(request_id, request,
-                          self.receive_workspace_will_create_files)
-        return request_id
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_workspace_will_create_files
+        )
 
     def receive_workspace_will_create_files(
             self,
@@ -939,9 +945,11 @@ class LspTestClient(LspClient):
     def send_workspace_will_rename_files(self, params: RenameFilesParams) -> int:
         request_id = self.next_request_id()
         request = WorkspaceWillRenameFilesRequest(request_id, params)
-        self.send_request(request_id, request,
-                          self.receive_workspace_will_rename_files)
-        return request_id
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_workspace_will_rename_files
+        )
 
     def receive_workspace_will_rename_files(
             self,
@@ -995,9 +1003,11 @@ class LspTestClient(LspClient):
     def send_workspace_will_delete_files(self, params: DeleteFilesParams) -> int:
         request_id = self.next_request_id()
         request = WorkspaceWillDeleteFilesRequest(request_id, params)
-        self.send_request(request_id, request,
-                          self.receive_workspace_will_delete_files)
-        return request_id
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_workspace_will_delete_files
+        )
 
     def receive_workspace_will_delete_files(
             self,
@@ -1037,3 +1047,46 @@ class LspTestClient(LspClient):
                 files=[FileDelete(uri) for uri in files]
             )
             self.send_workspace_did_delete_files(params)
+
+    def server_supports_document_highlight(self) -> bool:
+        return self.server_capabilities.document_highlight_provider is not None
+
+    def send_text_document_document_highlight(
+            self,
+            params: DocumentHighlightParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentDocumentHighlightRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_document_highlight
+        )
+
+    def receive_text_document_document_highlight(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentDocumentHighlightResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.highlights = response.result
+
+    def highlight(self, uri: str, line: int, column: int) -> None:
+        if self.server_supports_document_highlight():
+            params = DocumentHighlightParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                position=Position(
+                    line=line,
+                    character=column,
+                ),
+            )
+            request_id = self.send_text_document_document_highlight(params)
+            self.await_response(request_id)

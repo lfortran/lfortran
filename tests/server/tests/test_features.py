@@ -1,10 +1,13 @@
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import List
 
-from lsprotocol.types import DidChangeConfigurationParams
+from lsprotocol.types import (DidChangeConfigurationParams, DocumentHighlight,
+                              Position, Range)
 
+from lfortran_language_server.lfortran_lsp_test_client import \
+    LFortranLspTestClient
 from llanguage_test_client.lsp_test_client import IncomingEvent
-from lfortran_language_server.lfortran_lsp_test_client import LFortranLspTestClient
 
 
 def test_goto_definition(client: LFortranLspTestClient) -> None:
@@ -126,3 +129,54 @@ def test_rename(client: LFortranLspTestClient) -> None:
         "    end function eval_1d_prime",
         "end module module_function_call1",
     ]) + "\n"
+
+def test_document_highlight(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent.parent / "examples" / "expr2.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    line, column = 7, 10
+    doc.cursor = line, column
+    doc.highlight()
+    assert doc.highlights is not None
+    # NOTE: DocumentHighlight is not hashable, so we cannot perform set comparison ...
+    expected_highlights: List[DocumentHighlight] = [
+        DocumentHighlight(
+            range=Range(
+                start=Position(
+                    line=3,
+                    character=11,
+                ),
+                end=Position(
+                    line=3,
+                    character=12,
+                ),
+            ),
+        ),
+        DocumentHighlight(
+            range=Range(
+                start=Position(
+                    line=5,
+                    character=0,
+                ),
+                end=Position(
+                    line=5,
+                    character=1,
+                ),
+            ),
+        ),
+        DocumentHighlight(
+            range=Range(
+                start=Position(
+                    line=6,
+                    character=9,
+                ),
+                end=Position(
+                    line=6,
+                    character=10,
+                ),
+            ),
+        ),
+    ]
+    for highlight in doc.highlights:
+        expected_highlights.remove(highlight)
+    assert len(expected_highlights) == 0
