@@ -306,6 +306,7 @@ simple_attribute
     | AttrKind
     | AttrLen
     | AttrModule
+    | AttrNamespace
     | AttrNoPass
     | AttrNonDeferred
     | AttrNon_Intrinsic

@@ -293,6 +293,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_MOLD
 %token <string> KW_NAME
 %token <string> KW_NAMELIST
+%token <string> KW_NAMESPACE
 %token <string> KW_NEW_INDEX
 %token <string> KW_NOPASS
 %token <string> KW_NON_INTRINSIC
@@ -1304,6 +1305,7 @@ use_modifier_list
 use_modifier
     : KW_INTRINSIC { $$ = SIMPLE_ATTR(Intrinsic, @$); }
     | KW_NON_INTRINSIC { $$ = SIMPLE_ATTR(Non_Intrinsic, @$); }
+    | KW_NAMESPACE { $$ = SIMPLE_ATTR(Namespace, @$); }
     ;
 
 // var_decl*
@@ -2631,6 +2633,7 @@ id
     | KW_MOLD { $$ = SYMBOL($1, @$); }
     | KW_NAME { $$ = SYMBOL($1, @$); }
     | KW_NAMELIST { $$ = SYMBOL($1, @$); }
+    | KW_NAMESPACE { $$ = SYMBOL($1, @$); }
     | KW_NEW_INDEX { $$ = SYMBOL($1, @$); }
     | KW_NOPASS { $$ = SYMBOL($1, @$); }
     | KW_NON_INTRINSIC { $$ = SYMBOL($1, @$); }
