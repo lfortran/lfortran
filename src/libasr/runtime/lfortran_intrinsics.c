@@ -4388,7 +4388,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_LFORTRAN_MACHO
                 DIM ", line %lld\n" S_RESET
 #else
-                DIM ", line %ld\n" S_RESET
+                DIM ", line %llu\n" S_RESET
 #endif
                 "    %s\n", source_filename, d.line_numbers[index],
                 remove_whitespace(read_line_from_file(source_filename,
@@ -4398,7 +4398,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_LFORTRAN_MACHO
                 "line %lld\n    %s\n",
 #else
-                "line %ld\n    %s\n",
+                "line %llu\n    %s\n",
 #endif
                 source_filename, d.line_numbers[index],
                 remove_whitespace(read_line_from_file(source_filename,
