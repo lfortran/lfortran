@@ -771,31 +771,6 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
         nullptr, nullptr, nullptr)));
 }
 
-void insert_allocate_stmt_for_struct(Allocator& al, ASR::expr_t* temporary_var,
-    ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body) {
-    if( !ASRUtils::is_allocatable(temporary_var) ) {
-        return ;
-    }
-
-    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
-    ASR::alloc_arg_t alloc_arg;
-    alloc_arg.loc = value->base.loc;
-    alloc_arg.m_a = temporary_var;
-    alloc_arg.m_dims = nullptr;
-    alloc_arg.n_dims = 0;
-    alloc_arg.m_len_expr = nullptr;
-    alloc_arg.m_type = nullptr;
-    alloc_args.push_back(al, alloc_arg);
-
-    Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
-    dealloc_args.push_back(al, temporary_var);
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-        temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
-        temporary_var->base.loc, alloc_args.p, alloc_args.size(),
-        nullptr, nullptr, nullptr)));
-}
-
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     Vec<ASR::stmt_t*>*& current_body, bool inside_where,
     std::function<void(const ASR::stmt_t&)> visit_stmt) {
@@ -887,8 +862,6 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, struct_var_temporary, struct_expr)));
     } else {
-        insert_allocate_stmt_for_struct(al, struct_var_temporary, struct_expr, current_body);
-        struct_expr = ASRUtils::get_past_array_physical_cast(struct_expr);
         current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
             al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
     }

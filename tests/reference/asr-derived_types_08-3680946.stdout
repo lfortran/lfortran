@@ -97,6 +97,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 rectangle
                                     )
                                     ()
@@ -137,6 +140,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 shape
                                     )
                                     ()
@@ -541,6 +547,7 @@
                                     []
                                     [length
                                     width]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -644,6 +651,7 @@
                                     filled
                                     x
                                     y]
+                                    []
                                     Source
                                     Public
                                     .false.

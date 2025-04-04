@@ -81,6 +81,7 @@ class Parser:
                 self.line = self.file.readline()
 
         file_names = []
+        read_two_lines = None
         while self.line.startswith("file_names"):
             n = re.compile(r"file_names\[[ ]*(\d+)\]:").findall(self.line)[0]
             n = int(n)
@@ -92,12 +93,16 @@ class Parser:
             dir_idx = re.compile(r"dir_index: (\d+)").findall(self.line)[0]
             dir_idx = int(dir_idx)
 
-            self.line = self.file.readline()
-            self.line = self.file.readline()
-
             file_names.append(FileName(n, filename, dir_idx))
 
             self.line = self.file.readline()
+            if read_two_lines is None:
+                # on the first iteration determine if we need to read the extra
+                # two lines which happen for older dsymutil versions
+                read_two_lines = not self.line.startswith("file_names")
+            if read_two_lines:
+                self.line = self.file.readline()
+                self.line = self.file.readline()
 
         self.line = self.file.readline()
         self.line = self.file.readline()

@@ -126,6 +126,7 @@
                                     bitset_type
                                     []
                                     [num_bits]
+                                    []
                                     Source
                                     Private
                                     .false.

@@ -95,3 +95,7 @@ class LspClient(ABC):
     @abstractmethod
     def goto_definition(self, uri: str, line: int, column: int) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    def rename(self, uri: str, line: int, column: int, new_name: str) -> None:
+        raise NotImplementedError
