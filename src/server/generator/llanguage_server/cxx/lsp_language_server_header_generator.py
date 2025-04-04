@@ -25,7 +25,9 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         request_name = method_to_camel_case(request_method)
         result_name = f'{request_name}Result'
         params_spec = request_spec.get("params", None)
-        params = []
+        params = [
+            'const RequestMessage &request',
+        ]
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &params',)
         self.gen_fn_decl(
@@ -58,7 +60,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         request_name = method_to_camel_case(request_method)
         result_spec = request_spec.get("result", None)
         params = [
-            'const RequestId &requestId',
+            'const RequestMessage &request',
+            'const ResponseMessage &response',
         ]
         if result_spec is not None:
             result_name = f'{request_name}Result'
@@ -95,7 +98,9 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
     def generate_receive_notification(self, notification_spec: LspSpec) -> None:
         notification_method = notification_spec["method"]
         params_spec = notification_spec.get("params", None)
-        params = []
+        params = [
+            'const NotificationMessage &notification',
+        ]
         if params_spec is not None:
             params.append(f'{params_spec["name"]} &params')
         self.gen_fn_decl(
@@ -189,9 +194,12 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.newline()
 
     def generate_fields(self) -> None:
+        self.write('lsl::Logger logger;')
         self.write('LspTransformer transformer;')
         self.write('LspJsonSerializer serializer;')
         self.write('std::atomic_int serialRequestId = 0;')
+        self.write('std::map<int, RequestMessage> requestsById;')
+        self.write('std::mutex requestMutex;')
         self.newline()
 
     def generate_next_request_id(self) -> None:
@@ -286,6 +294,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.pragma_once()
         self.newline()
         self.gen_include('atomic')
+        self.gen_include('map')
+        self.gen_include('mutex')
         self.newline()
         self.gen_include('server/language_server.h')
         self.gen_include('server/logger.h')

@@ -53,6 +53,7 @@
                                     []
                                     [x
                                     y]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -139,6 +140,7 @@
                                     color_point
                                     []
                                     [color]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -157,6 +159,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         4 color_point
                                     )
                                     ()
@@ -177,6 +182,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         4 point
                                     )
                                     ()
@@ -197,6 +205,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         4 point_3d
                                     )
                                     ()
@@ -266,6 +277,7 @@
                                     point_3d
                                     []
                                     [z]
+                                    []
                                     Source
                                     Public
                                     .false.

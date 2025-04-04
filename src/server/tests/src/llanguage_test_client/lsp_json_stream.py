@@ -1,15 +1,18 @@
 import io
 import json
 import time
+from io import BytesIO
 from typing import IO, Optional, Union
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 
 
+def duration(start_time: float) -> float:
+    return time.perf_counter() - start_time
+
 class LspJsonStream:
     istream: IO[bytes]
     timeout_s: float
-
     buf: io.StringIO
     num_bytes: int
     has_content_length: bool
@@ -39,6 +42,7 @@ class LspJsonStream:
             time.sleep(0.01)
         raise RuntimeError(
             f'Timed-out after {self.timeout_s} seconds while reading from the stream'
+
         )
 
     def next(self) -> Union[JsonObject, JsonArray]:
@@ -73,6 +77,7 @@ class LspJsonStream:
                     if c != '\n':
                         raise RuntimeError(
                             f"Expected \\r to be followed by \\n, not '{self.escape(c)}': {self.buf.getvalue()}"
+
                         )
                     if length == 0 and self.has_content_length:
                         return self.parse_body()

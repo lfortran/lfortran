@@ -57,6 +57,7 @@
                                     []
                                     [success
                                     fatal]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -76,6 +77,9 @@
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 enum_stat
                                         )
                                     )
@@ -84,11 +88,17 @@
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 enum_stat
                                         )
                                     )
                                     Parameter
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         11 enum_stat
                                     )
                                     ()
@@ -203,6 +213,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 toml_table
                                                         )
                                                     )
@@ -324,6 +337,9 @@
                                         )
                                         (Pointer
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 toml_table
                                             )
                                         )
@@ -465,6 +481,7 @@
                                     []
                                     [implicit
                                     inline]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -519,6 +536,7 @@
                                     []
                                     [int
                                     float]
+                                    []
                                     Source
                                     Public
                                     .false.

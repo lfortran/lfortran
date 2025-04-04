@@ -8,6 +8,12 @@ module continue_compilation_1_mod
         procedure :: display
     end type MyClass
 
+    type :: logger_type
+    contains
+        private
+        procedure, public, pass(self) :: add_log_file
+    
+    end type logger_type
 contains
 
     subroutine my_func(x, y)
@@ -21,21 +27,15 @@ contains
         print *, "Value in object:", self%value
     end subroutine display
 
+    subroutine add_log_file(self, filename, unit)
+        class(logger_type), intent(inout) :: self
+        character(*), optional :: filename
+        integer :: unit
+        filename = "lfortran"
+        unit = 10
+    end subroutine add_log_file
+
 end module
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ! Only put declarations and statements here, no subroutines (those go above).
@@ -72,6 +72,9 @@ program continue_compilation_1
     dimension array(3)
     double precision array
     integer , dimension(3) :: array
+    type(logger_type) :: logger
+    integer :: unit
+    character(len=100) :: filename
 
 
 
@@ -94,9 +97,6 @@ program continue_compilation_1
 
 
 
-
-
-    
 
 
     ! Use the space above to insert new declarations, and remove the line, so
@@ -304,4 +304,6 @@ program continue_compilation_1
     allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
     allocate(arr4, source=7)
 
+    call logger % add_log_file(filename=filename)
+    call logger % add_log_file()
 end program

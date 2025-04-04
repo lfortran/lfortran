@@ -133,7 +133,8 @@ namespace LCompilers {
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics) {
+                           [[maybe_unused]] diag::Diagnostics &diagnostics,
+                           double &cummulative_time_taken_by_passes_in_microseconds) {
             if (pass_options.pass_cumulative) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(
@@ -188,7 +189,6 @@ namespace LCompilers {
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
                 _passes_db[passes[i]](al, *asr, pass_options);
-                auto t2 = std::chrono::high_resolution_clock::now();
 #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
@@ -196,10 +196,18 @@ namespace LCompilers {
                         + passes[i]);
                 };
 #endif
+                auto t2 = std::chrono::high_resolution_clock::now();
                 if (pass_options.time_report) {
                     int time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-                    std::string message = "[PASS]" + passes[i] + ": " + std::to_string(time_taken_by_current_pass / 1000) + "." + std::to_string(time_taken_by_current_pass % 1000) + " ms";
+                    double time_in_milliseconds = (double) time_taken_by_current_pass / 1000.0;
+                    std::string message = "";
+                    if ( time_in_milliseconds >= 1.0 ) {
+                        message = "[PASS]" + passes[i] + ": " + std::to_string(time_taken_by_current_pass / 1000) + "." + std::to_string(time_taken_by_current_pass % 1000) + " ms";
+                    } else {
+                        message = "[PASS]" + passes[i] + ": " + std::to_string(time_in_milliseconds) + " ms";
+                    }
                     pass_options.vector_of_time_report.push_back(message);
+                    cummulative_time_taken_by_passes_in_microseconds += (double) std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
                 }
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
@@ -303,14 +311,29 @@ namespace LCompilers {
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                           PassOptions& pass_options,
                           diag::Diagnostics &diagnostics) {
+            double cummulative_time_taken_by_passes_in_microseconds = 0.0;
+            auto t1 = std::chrono::high_resolution_clock::now();
             if( !_user_defined_passes.empty() ) {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
-                    diagnostics);
+                    diagnostics, cummulative_time_taken_by_passes_in_microseconds);
             } else if( apply_default_passes ) {
-                apply_passes(al, asr, _passes, pass_options, diagnostics);
+                apply_passes(al, asr, _passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
                 if (pass_options.fast ){
-                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics);
+                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
                 }
+            }
+            auto t2 = std::chrono::high_resolution_clock::now();
+            if (pass_options.time_report) {
+                int overall_time_in_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                overall_time_in_passes = overall_time_in_passes - cummulative_time_taken_by_passes_in_microseconds;
+                double time_in_milliseconds = (double) overall_time_in_passes / 1000.0;
+                std::string message = "";
+                if ( time_in_milliseconds >= 1.0 ) {
+                    message = "[PASS]other processing time: " + std::to_string(overall_time_in_passes / 1000) + "." + std::to_string(overall_time_in_passes % 1000) + " ms";
+                } else {
+                    message = "[PASS]other processing time: " + std::to_string(time_in_milliseconds) + " ms";
+                }
+                pass_options.vector_of_time_report.push_back(message);
             }
         }
 

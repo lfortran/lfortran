@@ -1349,7 +1349,7 @@ public:
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
+                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                         new_arg.m_type = struct_t;
                     } else {
                         diag.add(Diagnostic(
@@ -1524,7 +1524,8 @@ public:
                         diag.add(Diagnostic(
                             "Cannot allocate an array from a scalar source.",
                             Level::Error, Stage::Semantic, {
-                                Label("allocated variable is an array, but `source` is a scalar", 
+
+                                Label("allocated variable is an array, but `source` is a scalar",
                                     {alloc_args_vec.p[i].m_a->base.loc})
                             }));
                         throw SemanticAbort();
@@ -1549,7 +1550,7 @@ public:
                 }
                 if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
                     ASRUtils::make_ArrayBroadcast_t_util(
-                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source); 
+                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
                 }
                 ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
                     al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr));
@@ -1825,7 +1826,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
@@ -1875,7 +1876,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
@@ -3148,15 +3149,27 @@ public:
                         array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
                     }
                 } else {
-                    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) && 
+                    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
                           ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value)->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Maskl) &&
                             ASRUtils::extract_kind_from_ttype_t(target_type) == 8) {
-                        // Do return_type = kind(8) 
+                        // Do return_type = kind(8)
                         ASR::ttype_t* int_64 = ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 8));
                         ASR::IntrinsicElementalFunction_t* int_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
                         value = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, value->base.loc, int_func->m_intrinsic_id,
                             int_func->m_args, int_func->n_args, int_func->m_overload_id, int_64, int_func->m_value));
                     } else {
+                    if (ASR::is_a<ASR::ArrayReshape_t>(*value)) {
+                        ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(value);
+                        if (ASR::is_a<ASR::ArrayConstructor_t>(*array_reshape->m_array) && ASR::is_a<ASR::ImpliedDoLoop_t>(**ASR::down_cast<ASR::ArrayConstructor_t>(array_reshape->m_array)->m_args)) {
+                            ASR::Array_t* array_reshape_array_type = ASR::down_cast<ASR::Array_t>(array_reshape->m_type);
+                            Vec<ASR::dimension_t> array_reshape_dims; 
+                            array_reshape_dims.reserve(al, array_reshape_array_type->n_dims);
+                            for (size_t i=0;i<array_reshape_array_type->n_dims;i++) {
+                                array_reshape_dims.push_back(al, array_reshape_array_type->m_dims[i]);
+                            }
+                            array_reshape->m_type = ASRUtils::duplicate_type(al, array_reshape->m_type, &array_reshape_dims, ASR::array_physical_typeType::DescriptorArray,true);
+                        }
+                    }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type, diag);
                     }
@@ -3862,7 +3875,10 @@ public:
                 break;
             }
             case (ASR::symbolType::Variable) : {
-                if (compiler_options.implicit_interface && !ASR::is_a<ASR::FunctionType_t>(*ASR::down_cast<ASR::Variable_t>(original_sym)->m_type)) {
+
+                if (compiler_options.implicit_interface &&
+                    !ASRUtils::is_symbol_procedure_variable(original_sym)
+                ) {
                     // In case of implicit_interface, we redefine the symbol
                     // from a Variable to Function. Example:
                     //
@@ -3928,7 +3944,7 @@ public:
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {args_loc})}));
                     throw SemanticAbort();
-            }  
+            }
 
             // Validate required arguments are provided
             for (size_t i = 0; i + offset < f->n_args; i++) {

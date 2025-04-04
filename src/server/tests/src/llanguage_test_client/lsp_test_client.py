@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -8,6 +9,7 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
+
 from io import StringIO
 from pathlib import Path
 from typing import (IO, Any, Callable, Dict, Iterator, List, Optional,
@@ -50,11 +52,90 @@ from lsprotocol.types import (
     WorkspaceDidRenameFilesNotification, WorkspaceWillCreateFilesRequest,
     WorkspaceWillDeleteFilesRequest, WorkspaceWillRenameFilesRequest)
 
+
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
 from llanguage_test_client.lsp_json_stream import LspJsonStream
 from llanguage_test_client.lsp_text_document import LspTextDocument
 
+
+# NOTE: File URIs follow one of the following schemes:
+# 1. `file:/path` (no hostname)
+# 2. `file:///path` (empty hostname)
+# 3. `file://hostname/path`
+# NOTE: All we are interested in is the `/path` portion
+RE_FILE_URI = re.compile(r"^file:(?://[^/]*)?", re.IGNORECASE)
+
+
+def timestamp() -> str:
+    now_utc = datetime.now(timezone.utc)
+    return now_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+
+class SpyIO(IO[bytes]):
+    stream: IO[bytes]
+    spy: BinaryIO
+    buf: BytesIO
+
+    def __init__(self, stream: IO[bytes], spy: BinaryIO) -> None:
+        self.stream = stream
+        self.spy = spy
+        self.buf = BytesIO()
+
+    def escape(self, bs: bytes) -> bytes:
+        self.buf.seek(0)
+        self.buf.truncate(0)
+        for b in bs:
+            match b:
+                case 0x00:  #-> null
+                    self.buf.write(b'\\0')
+                case 0x07:  #-> bell
+                    self.buf.write(b'\\a')
+                case 0x08:  #-> backspace
+                    self.buf.write(b'\\b')
+                case 0x09:  #-> horizontal tab
+                    self.buf.write(b'\\t')
+                case 0x0A:  #-> line feed
+                    self.buf.write(b'\\n')
+                case 0x0B:  #-> vertical tab
+                    self.buf.write(b'\\v')
+                case 0x0C:  #-> form feed
+                    self.buf.write(b'\\f')
+                case 0x0D:  #-> carriage return
+                    self.buf.write(b'\\r')
+                # case 0x1A:  #-> Control-Z
+                #     self.buf.write(b'^Z')
+                case 0x1B:  #-> escape
+                    self.buf.write(b'\\e')
+                case 0x5C:  #-> backslash
+                    self.buf.write(b'\\\\')
+                case _:
+                    self.buf.write(b.to_bytes(2, sys.byteorder))
+        return self.buf.getvalue()
+
+    def read(self, size: int = -1, /) -> Union[bytes, Any]:
+        bs = self.stream.read(size)
+        self.spy.write(f'[{timestamp()}] READ: '.encode("utf-8"))
+        if bs is not None and len(bs) > 0:
+            self.spy.write(self.escape(bs))
+        else:
+            self.spy.write(b'\xe2\x90\x80')  #-> U+2400 Unicode null symbol
+        self.spy.write(b'\n')
+        return bs
+
+    def write(self, b) -> int:
+        self.spy.write(f'[{timestamp()}] WRITE: '.encode("utf-8"))
+        num_bytes = self.stream.write(b)
+        if num_bytes is not None and num_bytes > 0:
+            self.spy.write(self.escape(b[:num_bytes]))
+        else:
+            self.spy.write(b'\xe2\x90\x80')  #-> U+2400 Unicode null symbol
+        self.spy.write(b'\n')
+        return num_bytes
+
+    def flush(self) -> None:
+        self.stream.flush()
+        self.spy.flush()
 
 @dataclass
 class Event:
@@ -110,13 +191,20 @@ class LspTestClient(LspClient):
     stop: threading.Event
     stderr_printer: threading.Thread
 
+    client_log_path: str
+    stdout_log_path: str
+    stdin_log_path: str
+
     def __init__(
             self,
             server_path: Path,
             server_params: List[str],
             workspace_path: Optional[Path],
             timeout_ms: float,
-            config: Dict[str, Any]
+            config: Dict[str, Any],
+            client_log_path: str,
+            stdout_log_path: str,
+            stdin_log_path: str
     ) -> None:
         self.server_path = server_path
         self.server_params = server_params
@@ -136,10 +224,13 @@ class LspTestClient(LspClient):
         self.responses_by_id = dict()
         self.callbacks_by_id = dict()
         self.stop = threading.Event()
-        self.stderr_printer = threading.Thread(
-            target=self.print_stderr,
-            args=tuple()
-        )
+self.stderr_printer = threading.Thread(
+    target=self.print_stderr,
+    args=tuple()
+)
+self.client_log_path = client_log_path
+self.stdout_log_path = stdout_log_path
+self.stdin_log_path = stdin_log_path
 
     def print_stderr(self) -> None:
         if self.server.stderr is not None:
@@ -165,14 +256,17 @@ class LspTestClient(LspClient):
                 return True
         return False
 
-    def find_incoming_event(self, pred: IncomingEventPredFn) -> Optional[IncomingEvent]:
-        for event in self.events:
+    def find_incoming_event(self, pred: IncomingEventPredFn, lower_index: int = 0) \
+            -> Tuple[Optional[IncomingEvent], int]:
+        upper_bound = len(self.events)
+        for index in range(lower_index, upper_bound):
+            event = self.events[index]
             if isinstance(event, IncomingEvent) and pred(event):
-                return event
-        return None
+                return event, index
+        return None, max(upper_bound - 1, 0)
 
     def has_incoming_event(self, pred: IncomingEventPredFn) -> bool:
-        return self.find_incoming_event(pred) is not None
+        return self.find_incoming_event(pred)[0] is not None
 
     def has_outgoing_event(self, pred: OutgoingEventPredFn) -> bool:
         for event in self.events:
@@ -192,9 +286,15 @@ class LspTestClient(LspClient):
 
     @contextmanager
     def serve(self) -> Iterator["LspTestClient"]:
-        self.initialize()
-        yield self
-        self.terminate()
+        with open(self.client_log_path, "w") as log_file:
+            self.log_file = log_file
+            with open(self.stdout_log_path, "wb") as stdout_log:
+                self.stdout_log = stdout_log
+                with open(self.stdin_log_path, "wb") as stdin_log:
+                    self.stdin_log = stdin_log
+                    self.initialize()
+                    yield self
+                    self.terminate()
 
     def new_document(self, language_id: str) -> LspTextDocument:
         return self.open_document(language_id, None)
@@ -215,6 +315,13 @@ class LspTestClient(LspClient):
             self.active_document = document
         return document
 
+    def get_document(self, language_id: str, uri: str) -> LspTextDocument:
+        document = self.documents_by_uri.get(uri, None)
+        if document is not None:
+            return document
+        path = RE_FILE_URI.sub(uri, "")
+        return self.open_document(language_id, path)
+
     def await_validation(self, uri: str, version: int) -> Any:
         def is_validation(message: Any) -> bool:
             if message.get("method", None) == "textDocument/publishDiagnostics":
@@ -222,7 +329,7 @@ class LspTestClient(LspClient):
                 return params["uri"] == uri \
                     and params.get("version", None) == version
             return False
-        event = self.find_incoming_event(lambda event: is_validation(event.data))
+        event, _ = self.find_incoming_event(lambda event: is_validation(event.data))
         if event is not None:
             return event.data
         while not self.stop.is_set():
@@ -235,16 +342,21 @@ class LspTestClient(LspClient):
             self,
             request_id: int
     ) -> Any:
-        if request_id is not None:
-            message = self.responses_by_id.get(request_id, None)
-            if message is not None:
-                return message
+        message = self.responses_by_id.get(request_id, None)
+        if message is not None:
+            return message
         while not self.stop.is_set():
             message = self.receive_message()
             if "result" in message:
                 response_id = message.get("id", None)
                 if request_id == response_id:
                     return message
+
+            # NOTE: The response may have been recorder by a nested
+            # iteration of `await_response`
+            message = self.responses_by_id.get(request_id, None)
+            if message is not None:
+                return message
 
     def initialize_params(self) -> InitializeParams:
         params = InitializeParams(
@@ -308,6 +420,7 @@ class LspTestClient(LspClient):
                         ],
                     ),
                     definition=DefinitionClientCapabilities(),
+
                 ),
             ),
         )
@@ -332,6 +445,7 @@ class LspTestClient(LspClient):
             raise RuntimeError("Cannot write to server stdin")
         if self.server.stderr is None:
             raise RuntimeError("Cannot read from server stderr")
+
 
         # Make process stdout non-blocking
         stdout_fd = self.server.stdout.fileno()
@@ -366,6 +480,7 @@ class LspTestClient(LspClient):
             os.kill(self.server.pid, signal.SIGKILL)
             raise RuntimeError(
                 f"Timed-out after {timeout_s} seconds while awaiting the server to terminate."
+
             ) from e
 
     def check_server(self) -> bool:
@@ -389,6 +504,7 @@ class LspTestClient(LspClient):
 
     def send_request(self, request: Any, callback: Callback) -> None:
         request_id = request.id
+
         self.requests_by_id[request_id] = request
         self.callbacks_by_id[request_id] = (request, callback)
         self.send_message(request)
@@ -396,6 +512,11 @@ class LspTestClient(LspClient):
     def receive_message(self) -> JsonObject:
         self.check_server()
         message = self.message_stream.next()
+
+        print(
+            f"[{timestamp()}] Receiving:\n{self.message_stream.message()}",
+            file=self.log_file
+        )
         match message:
             case dict():
                 self.events.append(IncomingEvent(message))
@@ -441,6 +562,7 @@ class LspTestClient(LspClient):
                 self.receive_text_document_publish_diagnostics(notification)
                 self.respond_to_notification()
 
+
     def respond_to_notification(self) -> None:
         self.send_message({"id": None, "result": None, "jsonrpc": "2.0"})
 
@@ -452,6 +574,7 @@ class LspTestClient(LspClient):
             if record is not None:
                 request, callback = record
                 del self.callbacks_by_id[response_id]
+
                 callback(request, response)
             else:
                 raise ValueError(
@@ -470,6 +593,7 @@ class LspTestClient(LspClient):
         request_id = self.next_request_id()
         request = InitializeRequest(request_id, params)
         self.send_request(request, self.receive_initialize)
+
         return request_id
 
     def receive_initialize(self, request: Any, message: JsonObject) -> None:
@@ -489,6 +613,7 @@ class LspTestClient(LspClient):
         request_id = self.next_request_id()
         request = ShutdownRequest(request_id)
         self.send_request(request, self.receive_shutdown)
+
         return request_id
 
     def receive_shutdown(self, request: Any, message: JsonObject) -> None:
@@ -636,7 +761,9 @@ class LspTestClient(LspClient):
     ) -> int:
         request_id = self.next_request_id()
         request = TextDocumentWillSaveWaitUntilRequest(request_id, params)
+
         self.send_request(request, self.receive_text_document_will_save_wait_until)
+
         return request_id
 
     def receive_text_document_will_save_wait_until(
@@ -791,6 +918,7 @@ class LspTestClient(LspClient):
         request_id = self.next_request_id()
         request = WorkspaceWillCreateFilesRequest(request_id, params)
         self.send_request(request, self.receive_workspace_will_create_files)
+
         return request_id
 
     def receive_workspace_will_create_files(

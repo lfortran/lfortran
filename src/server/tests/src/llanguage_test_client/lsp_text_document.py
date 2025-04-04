@@ -2,7 +2,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
-from lsprotocol.types import TextDocumentSaveReason, TextEdit
+from lsprotocol.types import Position, Range, TextDocumentSaveReason, TextEdit
 
 from llanguage_test_client.lsp_client import LspClient
 
@@ -52,12 +52,8 @@ class LspTextDocument:
     pos_by_line: List[int]
     len_by_line: List[int]
 
-    # Selection/Range coordinates
-    start_line: int
-    start_column: int
-    end_lne: int
-    end_column: int
-
+    selection: Optional[Range]
+    highlight: Optional[Range]
     def __init__(
             self,
             client: LspClient,
@@ -77,7 +73,8 @@ class LspTextDocument:
         self.pos_by_line = [0]
         self.len_by_line = [1]
         self.is_new = (path is None)
-
+        self.selection = None
+        self.highlight = None
     @property
     def path(self) -> Path:
         if self._path is not None:
@@ -118,12 +115,13 @@ class LspTextDocument:
 
     @property
     def cursor(self) -> Tuple[int, int]:
-        return self.pos_to_linecol(self.position)
+        line, column = self.pos_to_linecol(self.position)
+        return line + 1, column + 1
 
     @cursor.setter
     def cursor(self, line_and_col: Tuple[int, int]) -> None:
         line, col = line_and_col
-        self.seek(line, col)
+        self.seek(line - 1, col - 1)
 
     @property
     def position(self) -> int:
@@ -206,7 +204,7 @@ class LspTextDocument:
             self.is_new = False
         self.client.text_document_did_save(self.uri, self.text)
 
-    def rename(self, path: Union[Path, str]) -> None:
+    def move(self, path: Union[Path, str]) -> None:
         old_path = self._path
         if old_path is not None:
             old_uri = self.uri
@@ -260,7 +258,7 @@ class LspTextDocument:
         num_lines = len(self.pos_by_line)
         if line < num_lines:
             num_columns = self.len_by_line[line]
-            if column < num_columns:
+            if column <= num_columns:
                 position = self.pos_by_line[line] + column
                 return position
             raise ValueError(
@@ -284,19 +282,14 @@ class LspTextDocument:
             end_line: int,
             end_column: int
     ) -> None:
+        start = Position(start_line, start_column)
+        end = Position(end_line, end_column)
+        self.selection = Range(start, end)
         if (start_line < end_line) \
            or ((start_line == end_line) and (start_column <= end_column)):
-            self.start_line = start_line
-            self.start_column = start_column
-            self.end_line = end_line
-            self.end_column = end_column
-            self.seek(end_line, end_column)
+            self.seek(end_line - 1, end_column - 1)
         else:
-            self.start_line = end_line
-            self.start_column = end_column
-            self.end_line = start_line
-            self.end_column = start_column
-            self.seek(start_line, start_column)
+            self.seek(start_line - 1, start_column - 1)
 
     def delete(self, length: int = 1) -> None:
         """
@@ -315,8 +308,8 @@ class LspTextDocument:
         if self._path is not None:
             self.client.text_document_did_change(
                 self.uri, self.bump_version(),
-                start_line, start_column + 1,
-                end_line, end_column + 1,
+                start_line, start_column,
+                end_line, end_column,
                 self.text, ""
             )
         self.recompute_indices()
@@ -345,8 +338,8 @@ class LspTextDocument:
         if self._path is not None:
             self.client.text_document_did_change(
                 self.uri, self.bump_version(),
-                start_line, start_column + 1,
-                end_line, end_column + 1,
+                start_line, start_column,
+                end_line, end_column,
                 self.text, text
             )
         self.recompute_indices()
@@ -369,8 +362,8 @@ class LspTextDocument:
         if self._path is not None:
             self.client.text_document_did_change(
                 self.uri, self.bump_version(),
-                start_line, start_column + 1,
-                end_line, end_column + 1,
+                start_line, start_column,
+                end_line, end_column,
                 self.text, text
             )
         self.recompute_indices()
@@ -381,10 +374,13 @@ class LspTextDocument:
             range = edit.range
             start = range.start
             end = range.end
-            self.cursor = (end.line, end.character)
+            self.seek(end.line, end.character)
             suffix = self.buf.read()
-            self.cursor = (start.line, start.character)
+            self.seek(start.line, start.character)
             self.buf.write(edit.new_text)
+            # Append the newline if it was replaced
+            if end.character == self.len_by_line[end.line]:
+                self.buf.write('\n')
             self.buf.write(suffix)
             self.buf.truncate()
         origin = min(origin, len(self.text) - 1)
@@ -395,3 +391,8 @@ class LspTextDocument:
         if self._path is not None:
             line, column = self.pos_to_linecol(self.position)
             self.client.goto_definition(self.uri, line, column)
+
+    def rename(self, new_name: str) -> None:
+        if self._path is not None:
+            line, column = self.pos_to_linecol(self.position)
+            self.client.rename(self.uri, line, column, new_name)
