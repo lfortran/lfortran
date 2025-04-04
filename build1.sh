@@ -6,7 +6,7 @@ set -x
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DWITH_LLVM=yes \
-    -DLFORTRAN_BUILD_ALL=yes \
+    -DLFORTRAN_BUILD_ALL=no \
     -DWITH_STACKTRACE=no \
     -DWITH_RUNTIME_STACKTRACE=no \
     -DWITH_LSP=no \
