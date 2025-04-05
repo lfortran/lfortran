@@ -180,3 +180,16 @@ def test_document_highlight(client: LFortranLspTestClient) -> None:
     for highlight in doc.highlights:
         expected_highlights.remove(highlight)
     assert len(expected_highlights) == 0
+
+def test_segfault(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent.parent / "examples" / "expr2.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    line, column = 4, 12
+    doc.cursor = line, column
+    doc.write("x")
+    validation = client.await_validation(doc.uri, doc.version)
+    assert validation is not None
+    print(doc.text)
+    doc.highlight()
+    assert doc.highlights is not None
