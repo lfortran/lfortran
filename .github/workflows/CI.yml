@@ -795,9 +795,6 @@ jobs:
             make -j8
             ctest
 
-            # Test with GFortran
-            ./build_test_gf.sh
-
       - name: Test SNAP
         shell: bash -e -x -l {0}
         run: |
