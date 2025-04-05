@@ -83,6 +83,7 @@
                                     []
                                     [r
                                     i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -162,6 +163,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 complextype
                                                     )
                                                     ()
@@ -201,6 +205,9 @@
                                         (Integer 4)
                                         (Integer 4)
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 complextype
                                         )]
                                         ()
@@ -355,6 +362,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 complextype
                                                     )
                                                     ()
@@ -394,6 +404,9 @@
                                         (Real 4)
                                         (Real 4)
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 complextype
                                         )]
                                         ()
@@ -538,6 +551,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 complextype
                                     )
                                     ()
@@ -558,6 +574,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 complextype
                                     )
                                     ()
@@ -745,6 +764,9 @@
                             [((Var 6 fpone))
                             ((Var 6 fptwo))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 6 complextype
                             )
                             ()

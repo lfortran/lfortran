@@ -69,6 +69,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 logger_type
                                                     )
                                                     ()
@@ -101,6 +104,9 @@
                                     final_logger
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 logger_type
                                         )]
                                         ()
@@ -202,6 +208,7 @@
                                     [add_blank_line
                                     log_units
                                     max_width]
+                                    []
                                     Source
                                     Private
                                     .false.

@@ -44,6 +44,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 error_t
                                                         )
                                                     )
@@ -65,6 +68,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 package_config_t
                                                     )
                                                     ()
@@ -102,10 +108,16 @@
                                             7 dependency_tree_t
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             7 package_config_t
                                         )
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 error_t
                                             )
                                         )]
@@ -148,6 +160,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 error_t
                                                         )
                                                     )
@@ -225,6 +240,9 @@
                                         (Logical 4)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 error_t
                                             )
                                         )]
@@ -302,6 +320,7 @@
                                     []
                                     [name
                                     path]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -410,6 +429,7 @@
                                     revision
                                     done
                                     update]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -485,6 +505,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 7 dependency_node_t
                                                             )
                                                             [(()
@@ -601,6 +624,7 @@
                                     ndep
                                     dep
                                     cache]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -638,6 +662,7 @@
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -675,6 +700,7 @@
                                     package_config_t
                                     []
                                     [name]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -699,6 +725,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 error_t
                                                         )
                                                     )
@@ -757,6 +786,9 @@
                                         (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 error_t
                                             )
                                         )]
@@ -879,6 +911,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         17 dependency_tree_t
                                                     )
                                                     ()
@@ -984,6 +1019,7 @@
                                     build_prefix
                                     deps
                                     include_tests]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -1059,6 +1095,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -1090,6 +1129,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 fpm_model_t
                                                     )
                                                     ()
@@ -1110,6 +1152,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 package_config_t
                                                     )
                                                     ()
@@ -1124,13 +1169,22 @@
                                     build_model
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 fpm_model_t
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 package_config_t
                                         )
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 error_t
                                             )
                                         )]
@@ -1159,6 +1213,9 @@
                                             (Var 5 model)
                                             5 1_fpm_model_t_deps
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 fpm_dependency_modules_33_dependency_tree_t
                                             )
                                             ()

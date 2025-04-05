@@ -308,6 +308,7 @@
                                     t_1
                                     []
                                     [i]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -397,6 +398,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 t_1
                                     )
                                     ()

@@ -84,6 +84,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         15 version_t
                                                     )
                                                     ()
@@ -99,6 +102,7 @@
                                     [version_t]
                                     [name
                                     version]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -221,6 +225,9 @@
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 6 fpm_versioning_modules_34_version_t
                                                             )
                                                             ()
@@ -255,6 +262,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 package_config_t
                                                     )
                                                     ()
@@ -289,6 +299,9 @@
                                     build_model
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 package_config_t
                                         )]
                                         ()
@@ -553,6 +566,7 @@
                                     version_t
                                     []
                                     [num]
+                                    []
                                     Source
                                     Public
                                     .false.
