@@ -1,6 +1,9 @@
+// Compile with:
+// clang++ -std=c++20 -o lsp_server lsp_server.cpp
+
 #include <iostream>
 #include <string>
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 
 using json = nlohmann::json;
 

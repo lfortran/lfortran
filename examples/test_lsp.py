@@ -31,7 +31,7 @@ class LSPClient:
                 raise EOFError("Server closed stdout unexpectedly")
             header += byte
         # Parse content length
-        match = re.search(b'Content-Length: (\d+)\r\n\r\n', header)
+        match = re.search(br'Content-Length: (\d+)\r\n\r\n', header)
         if not match:
             raise ValueError("Invalid header")
         length = int(match.group(1))
