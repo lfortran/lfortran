@@ -2115,7 +2115,7 @@ RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # TODO: ASR is incorrect, check `1_diag_type_len` node in ASR of `set_diag_len`
 RUN(NAME struct_type_02 LABELS gfortran llvm)
 RUN(NAME struct_type_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME struct_type_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2130,6 +2130,7 @@ RUN(NAME elemental_function_overloaded_compare LABELS gfortran llvm llvm_wasm ll
     EXTRA_ARGS --realloc-lhs)
 
 RUN(NAME procedure_decl_01_a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES  procedure_decl_01_b.f90)
+RUN(NAME separate_compilation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_01b.f90)
 RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array passed in ArrayInitializer
 
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
