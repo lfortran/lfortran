@@ -7,7 +7,7 @@ class LSPClient:
     def __init__(self, server_path):
         # Launch the server with pipes for stdin, stdout, and stderr
         self.proc = subprocess.Popen(
-            server_path,
+            [server_path, "server"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
@@ -60,7 +60,7 @@ class LSPClient:
 
 def test_lsp():
     # Replace with the actual path to your compiled server executable
-    client = LSPClient('examples/lsp_server')
+    client = LSPClient('src/bin/lfortran')
     try:
         # Test 1: Send initialize request
         init_request = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
