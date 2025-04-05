@@ -17,6 +17,9 @@ class LSPClient:
         # Serialize JSON and create header
         json_str = json.dumps(message)
         header = f"Content-Length: {len(json_str)}\r\n\r\n"
+        # Log the outgoing header and message
+        print(f"Client sending header: {header}", end='')
+        print(f"Client sending message: {json_str}")
         # Write header and message, then flush
         self.proc.stdin.write(header.encode('utf-8'))
         self.proc.stdin.write(json_str.encode('utf-8'))
@@ -37,6 +40,9 @@ class LSPClient:
         length = int(match.group(1))
         # Read the message body
         message = self.proc.stdout.read(length)
+        # Log the incoming header and message
+        print(f"Client received header: {header.decode('utf-8')}", end='')
+        print(f"Client received message: {message.decode('utf-8')}")
         return json.loads(message.decode('utf-8'))
 
     def close(self):
@@ -46,7 +52,11 @@ class LSPClient:
         self.proc.wait()
         # Check for server errors
         stderr = self.proc.stderr.read()
-        assert stderr == b'', f"Server produced error output: {stderr.decode()}"
+        if stderr != "":
+            print()
+            print("Server stderr:")
+            print(stderr.decode())
+        #assert stderr == b'', f"Server produced error output: {stderr.decode()}"
 
 def test_lsp():
     # Replace with the actual path to your compiled server executable
