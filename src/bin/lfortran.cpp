@@ -1206,9 +1206,53 @@ int compile_src_to_object_file(const std::string &infile,
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e(compiler_options.target);
-
     if (!compiler_options.generate_object_code && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
+        LCompilers::ASRUtils::remove_module_and_mapped_procedures(*asr, global_procedures_using_module);
+        if ( LCompilers::ASRUtils::global_function_present(*asr) ) {
+            std::unique_ptr<LCompilers::LLVMModule> m;
+            diagnostics.diagnostics.clear();
+            if (compiler_options.emit_debug_info) {
+#ifndef HAVE_RUNTIME_STACKTRACE
+                diagnostics.add(LCompilers::diag::Diagnostic(
+                    "The `runtime stacktrace` is not enabled. To get the stack traces "
+                    "or debugging information, please re-build LFortran with "
+                    "`-DWITH_RUNTIME_STACKTRACE=yes`",
+                    LCompilers::diag::Level::Error,
+                    LCompilers::diag::Stage::Semantic, {})
+                );
+                std::cerr << diagnostics.render(lm, compiler_options);
+                return 1;
+#endif
+            }
+            LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+                res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+            std::cerr << diagnostics.render(lm, compiler_options);
+            if (res.ok) {
+                m = std::move(res.result);
+            } else {
+                LCOMPILERS_ASSERT(diagnostics.has_error())
+                return 5;
+            }
+
+            if (compiler_options.po.fast) {
+                t1 = std::chrono::high_resolution_clock::now();
+                e.opt(*m->m_m);
+                t2 = std::chrono::high_resolution_clock::now();
+                time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+            }
+
+            // LLVM -> Machine code (saves to an object file)
+            if (assembly) {
+                e.save_asm_file(*(m->m_m), outfile);
+            } else {
+                t1 = std::chrono::high_resolution_clock::now();
+                e.save_object_file(*(m->m_m), outfile);
+                t2 = std::chrono::high_resolution_clock::now();
+                time_llvm_to_bin = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+            }
+            return has_error_w_cc;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
