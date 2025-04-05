@@ -41,21 +41,27 @@ std::string read_message(size_t length) {
 void send_response(const json& response) {
     std::string response_str = response.dump();
     std::string header = "Content-Length: " + std::to_string(response_str.size()) + "\r\n\r\n";
+    // Log outgoing header and message
+    std::cerr << "Server sending header: " << header;
+    std::cerr << "Server sending message: " << response_str << std::endl;
     std::cout << header << response_str << std::flush;
 }
 
 int main() {
     while (true) {
-        // Read and parse the incoming message
+        // Read and log the incoming header
         std::string header = read_header();
+        std::cerr << "Server received header: " << header;
         size_t length = get_content_length(header);
+        // Read and log the incoming message
         std::string message_str = read_message(length);
+        std::cerr << "Server received message: " << message_str << std::endl;
         json message = json::parse(message_str);
 
         std::string method = message["method"];
         int id = message["id"];
 
-        // Process the request
+        // Process the request and send response
         if (method == "initialize") {
             json result = {{"capabilities", json::object()}};
             send_response({{"jsonrpc", "2.0"}, {"id", id}, {"result", result}});
