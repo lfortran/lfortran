@@ -1019,7 +1019,10 @@ public:
                     llvm_utils->string_init(alloc_size, ptr_to_init);
                 } else if(ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::ClassType_t>(*curr_arg_m_a_type) ||
-                          ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type)) {
+                          ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
                     llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
@@ -5332,11 +5335,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         }
                     }
                 }
-            } else if (is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
-                if( ASRUtils::is_allocatable(x.m_target) &&
-                    !ASRUtils::is_character(*ASRUtils::expr_type(x.m_target)) ) {
-                    target = llvm_utils->CreateLoad(target);
-                }
+
             } else if( ASR::is_a<ASR::StringItem_t>(*x.m_target) ) {
                 ASR::StringItem_t *asr_target0 = ASR::down_cast<ASR::StringItem_t>(x.m_target);
                 if (is_a<ASR::Var_t>(*asr_target0->m_arg)) {
@@ -5635,7 +5634,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             llvm_utils->dict_api->write_item(pdict, key, value, module.get(),
                                 dict_type->m_key_type,
                                 dict_type->m_value_type, name2memidx);
-        } else if (ASR::is_a<ASR::Allocatable_t>(*target_type) && ASR::is_a<ASR::StructType_t>(*value_type)) {
+        } else if (ASR::is_a<ASR::Allocatable_t>(*target_type)) {
             target = llvm_utils->CreateLoad(target);
             builder->CreateStore(value, target);
         } else {

@@ -3099,9 +3099,10 @@ public:
             throw SemanticAbort();
         } else if (compiler_options.po.realloc_lhs &&
                  ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(target)) &&
-                 ASR::is_a<ASR::StructConstructor_t>(*value) &&
+                 !ASRUtils::is_character(*ASRUtils::expr_type(target)) &&
+                 !ASRUtils::is_array(ASRUtils::expr_type(target)) &&
                  (allocated_symbols.find(get_allocate_expr_sym(target)) == allocated_symbols.end())) {
-            // Implicitly allocate the Struct by pushing an Allocate_t to the body
+            // Automatically allocate by pushing an Allocate_t to the body
             Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
             ASR::alloc_arg_t alloc_arg;
             alloc_arg.loc = x.base.base.loc;
@@ -3114,6 +3115,7 @@ public:
             current_body->push_back( al,
                 ASRUtils::STMT(
                     ASR::make_Allocate_t(al, x.base.base.loc, alloc_args.p, 1, nullptr, nullptr, nullptr)));
+            allocated_symbols.insert(get_allocate_expr_sym(alloc_arg.m_a));
         }
 
         check_ArrayAssignmentCompatibility(target, value, x);
