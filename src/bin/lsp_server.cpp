@@ -1,5 +1,5 @@
 // Compile with:
-// clang++ -std=c++20 -o lsp_server lsp_server.cpp
+// clang++ -std=c++11 -o lsp_server lsp_server.cpp
 
 #include <iostream>
 #include <string>
