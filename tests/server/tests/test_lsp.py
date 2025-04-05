@@ -60,7 +60,7 @@ class LSPClient:
 
 def test_lsp():
     # Replace with the actual path to your compiled server executable
-    client = LSPClient('./lsp_server')
+    client = LSPClient('examples/lsp_server')
     try:
         # Test 1: Send initialize request
         init_request = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
