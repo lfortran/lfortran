@@ -50,6 +50,10 @@ struct SymbolTable {
         return scope[name];
     }
 
+    void set_scope(std::map<std::string, ASR::symbol_t*> scope) {
+        this->scope = scope;
+    }
+
     SymbolTable* get_global_scope() {
         SymbolTable* global_scope = this;
         while (global_scope->parent) {
