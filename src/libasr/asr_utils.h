@@ -1507,6 +1507,10 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             }
             break;
         }
+        case ASR::exprType::Cast : {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(value_expr);
+            return extract_value(cast->m_arg, value);
+        }
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::FunctionCall:

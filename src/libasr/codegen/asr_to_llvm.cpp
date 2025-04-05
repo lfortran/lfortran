@@ -6807,27 +6807,38 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 break;
             };
             case ASR::binopType::Pow: {
-                const int expr_return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                llvm::Type* const exponent_type = llvm::Type::getInt32Ty(context);
-                llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
-                llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
-                #if LLVM_VERSION_MAJOR <= 12
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32";
-                #else
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32";
-                #endif
-                llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
-                llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
-                llvm::Function *fn_pow = module->getFunction(func_name);
-                if (!fn_pow) {
-                    llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            base_type, {base_type, exponent_type}, false);
-                    fn_pow = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, func_name,
-                            module.get());
+                int64_t exponent_const =  INT64_MAX;
+                ASRUtils::extract_value(x.m_right, exponent_const);
+                // Handle simple-common exponent cases for faster computation.
+                if (exponent_const == 2) {
+                    tmp = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
+                } else if (exponent_const == 3) {
+                    tmp = builder->CreateMul(
+                            left_val,
+                            builder->CreateMul( 
+                                left_val,
+                                left_val,
+                                "simplified_pow_operation"),
+                            "simplified_pow_operation");
+                } else { // Use runtime power function
+                    llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
+                    llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
+                    llvm::Value* _left = llvm_utils->convert_kind(left_val, i64_ty);
+                    const std::string func_name = "_lfortran_integer_pow_64";
+                    llvm::Function *fn_pow = module->getFunction(func_name);
+                    if (!fn_pow) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                i64_ty, {i64_ty, i64_ty}, false);
+                        fn_pow = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, func_name,
+                                module.get());
+                    }
+                    tmp = builder->CreateCall(fn_pow, {_left, _right});
+                    llvm::Type* const return_type =
+                        llvm_utils->getIntType(
+                            ASRUtils::extract_kind_from_ttype_t(x.m_type)); // returnType of the expression.
+                    tmp = llvm_utils->convert_kind(tmp, return_type);
                 }
-                tmp = builder->CreateCall(fn_pow, {fleft, fright});
-                tmp = builder->CreateFPToSI(tmp, return_type);
                 break;
             };
             case ASR::binopType::BitOr: {
