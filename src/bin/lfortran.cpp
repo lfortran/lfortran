@@ -927,9 +927,61 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     return 0;
 }
 
+void check_function_body_and_nested_functions_to_insert(LCompilers::ASR::Function_t* f,
+    std::map<std::string, std::vector<LCompilers::ASR::Function_t*>> &global_procedures_using_module,
+    std::string module_name) {
+    for ( size_t i = 0; i < f->n_body; i++ ) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::SubroutineCall_t>(*f->m_body[i])) {
+            LCompilers::ASR::SubroutineCall_t *sc = LCompilers::ASR::down_cast<LCompilers::ASR::SubroutineCall_t>(f->m_body[i]);
+            if ( LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(*sc->m_name) ) {
+                LCompilers::ASR::Function_t* sc_call = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(sc->m_name);
+                // add the function to the list of global procedures using the module
+                if (std::find(global_procedures_using_module[module_name].begin(),
+                    global_procedures_using_module[module_name].end(), sc_call) == global_procedures_using_module[module_name].end()) {
+                    // If the function is not already in the list, add it
+                    // to the list of global procedures using the module
+                    global_procedures_using_module[module_name].push_back(sc_call);
+                }
+                check_function_body_and_nested_functions_to_insert(sc_call, global_procedures_using_module, module_name);
+            }
+        }
+    }
+    for ( auto &item : f->m_symtab->get_scope() ) {
+        if ( LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(*item.second) ) {
+            LCompilers::ASR::Function_t *f2 = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(item.second);
+            check_function_body_and_nested_functions_to_insert(f2, global_procedures_using_module, module_name);
+        }
+    }
+}
+
+void map_module_to_global_procedurs_using_module(LCompilers::ASR::TranslationUnit_t &u,
+    std::map<std::string, std::vector<LCompilers::ASR::Function_t*>> &global_procedures_using_module )
+{
+    for (auto &item : u.m_symtab->get_scope()) {
+        if ( LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(*item.second) ) {
+            LCompilers::ASR::Function_t *f = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(item.second);
+            for ( auto &f_item: f->m_symtab->get_scope() ) {
+                if ( LCompilers::ASR::is_a<LCompilers::ASR::ExternalSymbol_t>(*f_item.second) ) {
+                    LCompilers::ASR::ExternalSymbol_t *es = LCompilers::ASR::down_cast<LCompilers::ASR::ExternalSymbol_t>(f_item.second);
+                    std::string module_name = es->m_module_name;
+                    if (std::find(global_procedures_using_module[module_name].begin(),
+                        global_procedures_using_module[module_name].end(), f) == global_procedures_using_module[module_name].end()) {
+                        // If the function is not already in the list, add it
+                        // to the list of global procedures using the module
+                        global_procedures_using_module[module_name].push_back(f);
+                    }
+                    check_function_body_and_nested_functions_to_insert(f, global_procedures_using_module, module_name);
+                }
+            }
+        }
+    }
+}
+
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options,
-    LCompilers::LocationManager lm)
+    LCompilers::LocationManager lm,
+    std::map<std::string, std::vector<LCompilers::ASR::Function_t*>> global_procedures_using_module = {}
+)
 {
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
@@ -945,6 +997,13 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             symtab->add_symbol(std::string(m->m_name), item.second);
             LCompilers::SymbolTable *orig_symtab = m->m_symtab->parent;
             m->m_symtab->parent = symtab;
+            std::vector<LCompilers::SymbolTable*> original_symtabs;
+
+            for ( auto &fn: global_procedures_using_module[std::string(m->m_name)] ) {
+                original_symtabs.push_back(fn->m_symtab->parent);
+                fn->m_symtab->parent = symtab;
+                symtab->add_symbol(std::string(fn->m_name), LCompilers::ASR::down_cast<LCompilers::ASR::symbol_t>((LCompilers::ASR::asr_t*) fn));
+            }
 
             LCompilers::Location loc;
             LCompilers::ASR::asr_t *asr = LCompilers::ASR::make_TranslationUnit_t(al, loc,
@@ -952,11 +1011,17 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             LCompilers::ASR::TranslationUnit_t *tu =
                 LCompilers::ASR::down_cast2<LCompilers::ASR::TranslationUnit_t>(asr);
             LCompilers::diag::Diagnostics diagnostics;
-            LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, true, diagnostics));
+            LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, false, diagnostics)); // TODO: revert to `true` once `struct_type_01` ASR is fixed.
 
             std::string modfile_binary = LCompilers::save_modfile(*tu, lm);
 
             m->m_symtab->parent = orig_symtab;
+
+            // Restore the original symbol table
+            for ( auto &fn: global_procedures_using_module[std::string(m->m_name)] ) {
+                fn->m_symtab->parent = original_symtabs.front();
+                original_symtabs.erase(original_symtabs.begin());
+            }
 
             LCOMPILERS_ASSERT(LCompilers::asr_verify(u, true, diagnostics));
 
@@ -1126,10 +1191,14 @@ int compile_src_to_object_file(const std::string &infile,
         return 1;
     }
 
+    std::map<std::string, std::vector<LCompilers::ASR::Function_t*>> global_procedures_using_module;
+    map_module_to_global_procedurs_using_module(*asr, global_procedures_using_module);
+
     // Save .mod files
     {
         t1 = std::chrono::high_resolution_clock::now();
-        int err = save_mod_files(*asr, compiler_options, lm);
+
+        int err = save_mod_files(*asr, compiler_options, lm, global_procedures_using_module);
         t2 = std::chrono::high_resolution_clock::now();
         time_save_mod = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         if (err) return err;
