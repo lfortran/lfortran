@@ -2306,7 +2306,7 @@ int main_app(int argc, char *argv[]) {
     CLI::App &mod = *parser.mod;
     CLI::App &pywrap = *parser.pywrap;
 #ifdef WITH_LSP
-    lsi::LanguageServerInterface &languageServerInterface = parser.languageServerInterface;
+    //lsi::LanguageServerInterface &languageServerInterface = parser.languageServerInterface;
     CLI::App &server = *parser.server;
 #endif // WITH_LSP
 
