@@ -7,6 +7,8 @@
 
 using json = nlohmann::json;
 
+namespace LCompilers {
+
 // Read the header until "\r\n\r\n" to determine content length
 std::string read_header() {
     std::string header;
@@ -47,7 +49,7 @@ void send_response(const json& response) {
     std::cout << header << response_str << std::flush;
 }
 
-int main() {
+int run_lsp() {
     while (true) {
         // Read and log the incoming header
         std::string header = read_header();
@@ -73,4 +75,6 @@ int main() {
         }
     }
     return 0;
+}
+
 }
