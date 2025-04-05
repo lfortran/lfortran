@@ -282,12 +282,29 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     }
 }
 
-ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
-    LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
+ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m,
+        SymbolTable *symtab, std::string module_name) {
+    // LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
+    ASR::Module_t* mod = nullptr;
     for (auto &a : m.m_symtab->get_scope()) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
-        return ASR::down_cast<ASR::Module_t>(a.second);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second) ||
+                          ASR::is_a<ASR::Function_t>(*a.second));
+        if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            symtab->add_symbol(module_name, a.second);
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(a.second);
+            m->m_symtab->parent = symtab;
+            m->m_loaded_from_mod = true;
+            mod = m;
+        } else if ( ASR::is_a<ASR::Function_t>(*a.second) ) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(a.second);
+            f->m_symtab->parent = symtab;
+            symtab->add_symbol(a.first, a.second);
+        }
     }
+    if (mod) {
+        return mod;
+    }
+    // If we reach here, it means that the module was not found
     throw LCompilersException("ICE: Module not found");
 }
 
@@ -323,10 +340,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         err("Module '" + module_name + "' not declared in the current source and the modfile was not found",
             loc);
     }
-    ASR::Module_t *mod2 = extract_module(*mod1);
-    symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
-    mod2->m_symtab->parent = symtab;
-    mod2->m_loaded_from_mod = true;
+    ASR::Module_t *mod2 = extract_module(*mod1, symtab, module_name);
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 
     // Create a temporary TranslationUnit just for fixing the symbols
@@ -366,10 +380,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 if (mod1 == nullptr) {
                     err("Module '" + item + "' modfile was not found", loc);
                 }
-                ASR::Module_t *mod2 = extract_module(*mod1);
-                symtab->add_symbol(item, (ASR::symbol_t*)mod2);
-                mod2->m_symtab->parent = symtab;
-                mod2->m_loaded_from_mod = true;
+                extract_module(*mod1, symtab, item);
                 rerun = true;
             }
         }
