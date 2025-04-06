@@ -8492,7 +8492,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
-        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr, *size_val = nullptr;
+        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr, *size_val = nullptr,
+        *pos_val = nullptr;
 
         if (x.m_file) {
             this->visit_expr_wrapper(x.m_file, true);
@@ -8540,6 +8541,17 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             llvm::Type::getInt32Ty(context));
         }
 
+        if (x.m_pos) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_pos, true);
+            pos_val = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            pos_val = llvm_utils->CreateAlloca(*builder,
+                            llvm::Type::getInt32Ty(context));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -8550,11 +8562,12 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt1Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val, size_val});
+        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val, size_val, pos_val});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {

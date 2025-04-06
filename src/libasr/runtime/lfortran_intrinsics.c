@@ -3230,7 +3230,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         *(end + 1) = '\0';
     }
 
-    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL);
+    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL, NULL);
     char *access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -3329,9 +3329,10 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened, int32_t *size) {
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num,
+                                    bool *opened, int32_t *size, int32_t *pos) {
     if (f_name && unit_num != -1) {
-        printf("File name and file unit number cannot be specifed together.\n");
+        printf("File name and file unit number cannot be specified together.\n");
         exit(1);
     }
     if (f_name != NULL) {
@@ -3349,10 +3350,11 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num
     }
     if (unit_num != -1) {
         bool unit_file_bin;
-        if (get_file_pointer_from_unit(unit_num, &unit_file_bin) != NULL) {
-            *opened = true;
-        } else {
-            *opened = false;
+        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+        *opened = (fp != NULL);
+        if (pos != NULL && fp != NULL) {
+            long p = ftell(fp);
+            *pos = (int32_t)p + 1;
         }
     }
 }
