@@ -571,10 +571,27 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type);
         ASR::expr_t* value = nullptr;
         v = ASRUtils::symbol_get_past_external(v);
-        if (v != nullptr && ASR::down_cast<ASR::Variable_t>(v)->m_storage
-                == ASR::storage_typeType::Parameter) {
+        if (v != nullptr &&
+            ASR::down_cast<ASR::Variable_t>(v)->m_storage == ASR::storage_typeType::Parameter) {
             if (member_variable->m_symbolic_value != nullptr) {
                 value = expr_value(member_variable->m_symbolic_value);
+            }
+            // Check for compile time value in StructConstant
+            ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
+            if (v_variable_s != nullptr && v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
+                ASR::StructType_t *struct_type = ASR::down_cast<ASR::StructType_t>(v_variable_s->m_type);
+                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(struct_type->m_derived_type);
+                std::string mem_name = ASRUtils::symbol_name(member);
+                // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
+                size_t i = 0;
+                for (i = 0; i < struct_s->n_members; i++) {
+                    if (struct_s->m_members[i] == mem_name) {
+                        break;
+                    }
+                }
+
+                ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
+                value = stc->m_args[i].m_value;
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
