@@ -3650,6 +3650,9 @@ public:
                                 is_struct_const = true;
                             }
                         }
+                        if (is_derived_type) {
+                            is_struct_const = true;
+                        }
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
