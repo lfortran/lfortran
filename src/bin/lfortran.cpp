@@ -954,7 +954,7 @@ void check_function_body_and_nested_functions_to_insert(LCompilers::ASR::Functio
     }
 }
 
-void map_module_to_global_procedurs_using_module(LCompilers::ASR::TranslationUnit_t &u,
+void map_module_to_global_procedures_using_module(LCompilers::ASR::TranslationUnit_t &u,
     std::map<std::string, std::vector<LCompilers::ASR::Function_t*>> &global_procedures_using_module )
 {
     for (auto &item : u.m_symtab->get_scope()) {
@@ -1192,7 +1192,7 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     std::map<std::string, std::vector<LCompilers::ASR::Function_t*>> global_procedures_using_module;
-    map_module_to_global_procedurs_using_module(*asr, global_procedures_using_module);
+    map_module_to_global_procedures_using_module(*asr, global_procedures_using_module);
 
     // Save .mod files
     {
