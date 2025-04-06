@@ -3255,7 +3255,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
             exit(1);
         }
         access_mode = "w+";
-    } else if (streql(status, "replace")) {
+    } else if (streql(status, "replace") || streql(status, "scratch")) {
         access_mode = "w+";
     } else if (streql(status, "unknown")) {
         if (!*file_exists) {
@@ -3265,9 +3265,6 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
             }
         }
         access_mode = "r+";
-    } else if (streql(status, "scratch")) {
-        printf("Runtime error: Unhandled type status=`scratch`\n");
-        exit(1);
     } else {
         printf("Runtime error: STATUS specifier in OPEN statement has "
             "invalid value '%s'\n", status);
@@ -4037,8 +4034,10 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
         exit(1);
     }
     // TODO: Support other `status` specifiers
-    if (status && strcmp(status, "delete") == 0) {
-        if (remove(get_file_name_from_unit(unit_num, &unit_file_bin)) != 0) {
+    char * file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
+    bool is_temp_file = strcmp(file_name, "_lfortran_generated_file.txt") == 0;
+    if ((status && strcmp(status, "delete") == 0) || is_temp_file) {
+        if (remove(file_name) != 0) {
             printf("Error in deleting file!\n");
             exit(1);
         }
