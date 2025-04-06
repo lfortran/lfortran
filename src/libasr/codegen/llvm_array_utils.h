@@ -279,7 +279,7 @@ namespace LCompilers {
                     std::vector<llvm::Value*>& m_args, int n_args,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
-                    bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false) = 0;
+                    bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false, llvm::Value* string_size = nullptr) = 0;
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
@@ -330,7 +330,7 @@ namespace LCompilers {
 
                 llvm::Value* cmo_convertor_single_element_data_only(
                     llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-                    int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data = false);
+                    int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data = false, bool is_string_array = false);
 
             public:
 
@@ -456,7 +456,7 @@ namespace LCompilers {
                     std::vector<llvm::Value*>& m_args, int n_args,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
-                    bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false);
+                    bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false, llvm::Value* string_size=nullptr);
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);

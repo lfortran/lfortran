@@ -191,6 +191,7 @@ public:
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     std::vector<llvm::Value*> heap_arrays;
     std::map<llvm::Value*, llvm::Value*> strings_to_be_allocated; // (array, size)
+    std::vector<std::pair<llvm::Value*, int64_t>> string_fixeSize_arrays_to_be_initalized; // (array, Size : ArraySize*StringSize). Sets every single character to empty char.
     Vec<llvm::Value*> strings_to_be_deallocated;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         llvm::Constant* pointer_to_array_type;
@@ -2447,9 +2448,56 @@ public:
                 } else {
                     type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(x_mv_type), module.get());
                 }
+                if((array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray) &&
+                    ASRUtils::is_character(*ASRUtils::type_get_past_array(x.m_type))){ // Refactor this
+                        array = builder->CreateLoad(character_type, array);
+                }
+                // std::cout<<"---------------------------\n";
+                // module->print(llvm::outs(), nullptr);
+                // std::cout<<"---------------------------\n";
+                bool array_of_strings_2D = (array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray || 
+                    array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray) &&
+                    ASRUtils::is_character(*array_t->m_type);
+                ASR::expr_t* string_size_expr = nullptr /*if exist*/;
+                int64_t string_size_len = -1 /*if exist*/;
+                if(array_of_strings_2D){
+                    if(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(x.m_type))->m_len){
+                        string_size_len = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(x.m_type))->m_len;
+                    } else if (ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(x.m_type))->m_len_expr) {
+                        string_size_expr = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(x.m_type))->m_len_expr;
+                    }
+                }
+                if(string_size_expr){
+                    this->visit_expr_wrapper(string_size_expr, true);
+                    tmp = builder->CreateAdd(tmp, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                } else if (string_size_len != -1) { 
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, string_size_len + 1));
+                } else {
+                    tmp = nullptr;
+                }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
-                                                    is_fixed_size, llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
+                                                    is_fixed_size, llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
+                                                    false, tmp);
+                if(array_of_strings_2D){
+                    // std::cout<<"START : atleaset we knew we're failing here\n";
+                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(x.m_type));
+                    LCOMPILERS_ASSERT(!s->m_len_expr);
+                    if(array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray){
+                        llvm::Type* const array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context),s->m_len+1);
+                        llvm::Value* ptr_to_string = llvm_utils->create_gep2(array_type, tmp, 0);
+                        tmp = builder->CreateBitCast(ptr_to_string, llvm::Type::getInt8PtrTy(context), "string_array_item");
+                    }
+                    llvm::Value* null_char = llvm_utils->create_ptr_gep(tmp, s->m_len); // null_char of the string
+                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(8, '\0')), null_char);
+                    llvm::Value* pp_char = builder->CreateAlloca(llvm::Type::getInt8PtrTy(context)); // strings are used as `i8**` throughout llvm backend.
+                    builder->CreateStore(tmp, pp_char);
+                    tmp = pp_char;
+                    // std::cout<<"END : :)\n";
+                }
+                // std::cout<<"---------------------------\n";
+                // module->print(llvm::outs(), nullptr, true);
+                // std::cout<<"---------------------------\n";
             }
         }
     }
@@ -2905,6 +2953,10 @@ public:
                 if (value) {
                     llvm::Constant* initializer = get_const_array(value, type);
                     module->getNamedGlobal(x.m_name)->setInitializer(initializer);
+                } else if(ASRUtils::is_character(*x.m_type) && ASRUtils::is_fixed_size_array(x.m_type)){
+                    int64_t whole_size = ASRUtils::get_fixed_size_of_array(x.m_type) * (ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(x.m_type))->m_len + 1);
+                    string_fixeSize_arrays_to_be_initalized.emplace_back(ptr, whole_size);
+                    module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                 } else {
                     module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                 }
@@ -3417,6 +3469,13 @@ public:
         }
         for(auto &value: strings_to_be_allocated) {
             llvm_utils->initialize_string_heap(value.first, value.second);
+        }
+        for(auto &value: string_fixeSize_arrays_to_be_initalized) {
+            builder->CreateMemSet(
+                value.first,
+                llvm::ConstantInt::get(context, llvm::APInt(8, 32)),
+                value.second,
+                llvm::MaybeAlign());
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
         for (size_t i=0; i<x.n_body; i++) {
@@ -4024,6 +4083,21 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 fill_array_details_(ptr, type_, m_dims, n_dims,
                     is_malloc_array_type, is_array_type, is_list, v->m_type);
             }
+
+            // Fill Array of strings with space character
+            if( ASRUtils::is_array(v->m_type) &&
+                ASRUtils::is_character(*v->m_type) &&
+                (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::FixedSizeArray)){
+                llvm::Value* ptr_to_string_array = builder->CreateBitCast(ptr, llvm::Type::getInt8PtrTy(context));
+                ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(v->m_type);
+                int64_t size_of_whole_array = ASRUtils::get_fixed_size_of_array(arr_type->m_dims, arr_type->n_dims) *
+                                            (ASR::down_cast<ASR::String_t>(arr_type->m_type)->m_len + 1 /*null character*/);
+                builder->CreateMemSet(ptr_to_string_array, 
+                    llvm::ConstantInt::get(context, llvm::APInt(8, 32)),
+                    llvm::ConstantInt::get(context, llvm::APInt(64, size_of_whole_array)),
+                    llvm::MaybeAlign());
+            }
+
             ASR::expr_t* init_expr = v->m_symbolic_value;
             if( v->m_storage != ASR::storage_typeType::Parameter ) {
                 for( size_t i = 0; i < v->n_dependencies; i++ ) {
@@ -5451,7 +5525,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 if (lhs_is_string_arrayref && value->getType()->isPointerTy()) {
                     value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
                 }
-                if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) /*Workaround : All LHS strings should use str_copy(#6572)*/){
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) || 
+                    ASR::is_a<ASR::ArrayItem_t>(*x.m_target) /*Workaround : All LHS strings should use str_copy(#6572)*/){
                     tmp = lfortran_str_copy(target, value,
                         ASRUtils::is_descriptorString(target_type));
                     return;
@@ -5694,6 +5769,14 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::expr_value(m_arg) == nullptr ) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->CreateGEP2(ASRUtils::expr_type(m_arg), tmp, 0);
+                if(ASRUtils::is_character(*m_type)){
+                    tmp = builder->CreateBitCast(tmp, llvm::Type::getInt8Ty(context)->getPointerTo());
+                    // I don't like that, strings in the code base should be handled as char* not char**
+                    llvm::Value* pp_char = builder->CreateAlloca(llvm::Type::getInt8PtrTy(context));
+                    builder->CreateStore(tmp, pp_char);
+                    tmp = pp_char;
+                }
+                
             }
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerToDataArray &&
