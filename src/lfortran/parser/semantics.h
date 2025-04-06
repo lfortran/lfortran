@@ -1703,7 +1703,7 @@ return make_Program_t(al, a_loc,
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
+        /*end_name*/ (name_opt) ? &((name_opt)->loc) : nullptr)
 #define RESULT(x) p.result.push_back(p.m_a, x)
 
 #define STMT_NAME(id_first, id_last, stmt) \
