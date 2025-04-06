@@ -35,6 +35,12 @@ semantic error: Symbol is already declared in the same scope
 73 |     double precision array
    |                      ~~~~~ original declaration
 
+semantic error: Array members must me of the same type as the struct
+  --> tests/errors/continue_compilation_1.f90:78:53
+   |
+78 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+   |                                                     ^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
     |
