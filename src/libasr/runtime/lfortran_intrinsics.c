@@ -3255,7 +3255,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
             exit(1);
         }
         access_mode = "w+";
-    } else if (streql(status, "replace")) {
+    } else if (streql(status, "replace") || streql(status, "scratch")) {
         access_mode = "w+";
     } else if (streql(status, "unknown")) {
         if (!*file_exists) {
@@ -3265,9 +3265,6 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
             }
         }
         access_mode = "r+";
-    } else if (streql(status, "scratch")) {
-        printf("Runtime error: Unhandled type status=`scratch`\n");
-        exit(1);
     } else {
         printf("Runtime error: STATUS specifier in OPEN statement has "
             "invalid value '%s'\n", status);
