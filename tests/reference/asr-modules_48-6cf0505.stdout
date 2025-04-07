@@ -228,6 +228,9 @@
                                     Default
                                     (Array
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_t
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -278,6 +281,9 @@
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     8 string_t
                                 )
                                 ColMajor
@@ -308,6 +314,9 @@
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     8 string_t
                                 )
                                 ColMajor
@@ -390,6 +399,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -416,6 +428,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -465,6 +480,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -575,6 +593,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -948,6 +969,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 string_t
                                                         )
                                                         [(()
@@ -985,6 +1009,9 @@
                                     (FunctionType
                                         [(Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 string_t
                                             )
                                             [(()
@@ -1020,6 +1047,9 @@
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 string_t
                                                         )
                                                         ColMajor
@@ -1069,6 +1099,9 @@
                                                             (Var 5 i)
                                                             ())]
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 string_t
                                                             )
                                                             ColMajor
@@ -1572,6 +1605,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 string_t
                                                         )
                                                         [(()
@@ -1591,6 +1627,9 @@
                                     (FunctionType
                                         [(Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 string_t
                                             )
                                             [(()
@@ -1694,6 +1733,9 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 string_t
                                                 )
                                                 ColMajor
@@ -1752,6 +1794,9 @@
                                                                 (Var 7 i)
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 string_t
                                                                 )
                                                                 ColMajor
@@ -1819,6 +1864,7 @@
                                     string_t
                                     []
                                     [s]
+                                    []
                                     Source
                                     Public
                                     .false.
