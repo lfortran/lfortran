@@ -3299,7 +3299,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         access_id = 2;
     } else {
         printf("Runtime error: ACCESS specifier in OPEN statement has "
-            "invalid value '%s'\n", form);
+            "invalid value '%s'\n", access);
         exit(1);
     }
 
@@ -3478,7 +3478,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
         if (access_id != 1) {
             // Read record marker first
             int32_t record_marker_start;
-            fread(&record_marker_start, sizeof(int32_t), 1, filep);
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
         }
         (void)!fread(p, sizeof(int8_t), array_size, filep);
     } else {
@@ -3877,53 +3877,44 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (!filep) {
         filep = stdout;
     }
-    va_list args;
-    va_start(args, format);
-    char* str = va_arg(args, char*);
-    // Detect "\b" to raise error
-    if(str[0] == '\b'){
-        if(iostat == NULL){
-            str = str+1;
-            fprintf(stderr, "%s",str);
-            exit(1);
-        } else { // Delegate error handling to the user.
-            *iostat = 11;
-            return;
-        }
-    }
     if (unit_file_bin) {
-        // size the size of `bin_len` to bytes
-        size_t bin_len = 0;
-        bool is_int_write = strcmp(format, "%d%s") == 0;
-        
-        if (is_int_write) {
-            int* str_ptr = (int*)str;
-            while (*str_ptr) {
-                bin_len++;
-                str_ptr++;
-            }
-            bin_len--;  // remove newline char
-        } else {
-            bin_len = strlen(str);
-        }
-        
-        // calculate record marker size
-        int32_t record_marker = (int32_t)bin_len;
+        fseek(filep, 0, SEEK_END);
+        va_list args;
+        va_start(args, format);
 
-        // write record marker before the data
+        size_t total_size = 0;
+        struct {
+            void *ptr;
+            int32_t len;
+        } data[100];  // support max 100 args
+
+        int count = 0;
+
+        // Read (size, ptr) until len == -1
+        while (1) {
+            int32_t len = va_arg(args, int32_t);
+            if (len == -1) break; // sentinel
+            void* ptr = va_arg(args, void*);
+
+            data[count].ptr = ptr;
+            data[count].len = len;
+            total_size += len;
+            count++;
+        }
+        va_end(args);
+
+        // Write record marker
+        int32_t record_marker = (int32_t)total_size;
+        if (access_id != 1) fwrite(&record_marker, sizeof(record_marker), 1, filep);
+        size_t written = 0;
+        // Write all data chunks
+        for (int i = 0; i < count; i++) {
+            written += fwrite(data[i].ptr, 1, data[i].len, filep);
+        }
+        // Write record marker again
         if (access_id != 1) fwrite(&record_marker, sizeof(record_marker), 1, filep);
 
-        size_t written;
-        if (is_int_write) { // write as binary data
-            written = fwrite(str, sizeof(int32_t), record_marker, filep);
-        } else {
-            written = fwrite(str, sizeof(char), record_marker, filep);
-        }
-
-        // write the record marker after the data
-        if (access_id != 1) fwrite(&record_marker, sizeof(record_marker), 1, filep);
-
-        if (written != bin_len) {
+        if (written != total_size) {
             printf("Error writing data to file.\n");
             // TODO: not sure what is the right value of "iostat" in this case
             // it should be a positive value unique from other predefined iostat values
@@ -3935,6 +3926,20 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             if(iostat != NULL) *iostat = 0;
         }
     } else {
+        va_list args;
+        va_start(args, format);
+        char* str = va_arg(args, char*);
+        // Detect "\b" to raise error
+        if(str[0] == '\b'){
+            if(iostat == NULL){
+                str = str+1;
+                fprintf(stderr, "%s",str);
+                exit(1);
+            } else { // Delegate error handling to the user.
+                *iostat = 11;
+                return;
+            }
+        }
         if(strcmp(format, "%s%s") == 0){
             char* end = va_arg(args, char*);
             fprintf(filep, format, str, end);
@@ -3942,8 +3947,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             fprintf(filep, format, str);
         }
         if(iostat != NULL) *iostat = 0;
+        va_end(args);
     }
-    va_end(args);
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 

@@ -8,6 +8,7 @@ program file_26
 
   open(newunit=write_unit, file='data.dat', form='unformatted', status='replace')
   write(write_unit) data_out
+  write(9, *) data_out
   close(write_unit)
   open(newunit=read_unit, file='data.dat', form='unformatted', status='old')
   read(read_unit) data_in
@@ -18,6 +19,7 @@ program file_26
 
   open(newunit=write_unit, file='data.dat', form='unformatted', status='replace', access="stream")
   write(write_unit) data_out
+  write(9, *) data_out
   close(write_unit)
   open(newunit=read_unit, file='data.dat', form='unformatted', status='old', access="stream")
   read(read_unit) data_in
