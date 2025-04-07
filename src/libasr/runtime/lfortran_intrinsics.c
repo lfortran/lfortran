@@ -3453,6 +3453,9 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 
     if (unit_file_bin) {
+        // Read record marker first
+        int32_t record_marker_start;
+        fread(&record_marker_start, sizeof(int32_t), 1, filep);
         (void)!fread(p, sizeof(int8_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
@@ -3479,6 +3482,9 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
+        // Read record marker first
+        int32_t record_marker_start;
+        fread(&record_marker_start, sizeof(int32_t), 1, filep);
         (void)!fread(p, sizeof(int32_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
@@ -3858,21 +3864,37 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     }
     if (unit_file_bin) {
-        // size the size of `str_len` to bytes
-        size_t str_len = strlen(str);
-
+        // size the size of `bin_len` to bytes
+        size_t bin_len = 0;
+        bool is_int_write = strcmp(format, "%d%s") == 0;
+        
+        if (is_int_write) {
+            int* str_ptr = (int*)str;
+            while (*str_ptr) {
+                bin_len++;
+                str_ptr++;
+            }
+            bin_len--;  // remove newline char
+        } else {
+            bin_len = strlen(str);
+        }
+        
         // calculate record marker size
-        int32_t record_marker = (int32_t)str_len;
+        int32_t record_marker = (int32_t)bin_len;
 
         // write record marker before the data
         fwrite(&record_marker, sizeof(record_marker), 1, filep);
-
-        size_t written = fwrite(str, sizeof(char), str_len, filep); // write as binary data
+        size_t written;
+        if (is_int_write) { // write as binary data
+            written = fwrite(str, sizeof(int32_t), record_marker, filep);
+        } else {
+            written = fwrite(str, sizeof(char), record_marker, filep);
+        }
 
         // write the record marker after the data
         fwrite(&record_marker, sizeof(record_marker), 1, filep);
 
-        if (written != str_len) {
+        if (written != bin_len) {
             printf("Error writing data to file.\n");
             // TODO: not sure what is the right value of "iostat" in this case
             // it should be a positive value unique from other predefined iostat values
