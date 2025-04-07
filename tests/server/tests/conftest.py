@@ -11,8 +11,20 @@ import pytest
 from lfortran_language_server.lfortran_lsp_test_client import LFortranLspTestClient
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--execution-strategy",
+        action="store",
+        default="concurrent",
+        help="Specifies the execution strategy for handling messages. The `parallel` strategy implies multiple messages may be processed alongside each other, while the `concurrent` strategy implies multiple messages may be processed but only one processor will be active at a time (they will yield control to each other).",
+        choices=("concurrent", "parallel"),
+    )
+
+
 @pytest.fixture
 def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
+    execution_strategy = request.config.getoption("--execution-strategy")
+
     server_path = None
     if 'LFORTRAN_PATH' in os.environ:
         server_path = os.environ['LFORTRAN_PATH']
@@ -28,12 +40,12 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
 
     compiler_path = server_path
 
-    server_log_path = f"{request.node.name}-server.log"
-    client_log_path = f"{request.node.name}-client.log"
-    stdout_log_path = f"{request.node.name}-stdout.log"
-    stdin_log_path = f"{request.node.name}-stdin.log"
-    gdb_log_path = f"{request.node.name}-gdb.log"
-    lldb_log_path = f"{request.node.name}-lldb.log"
+    server_log_path = f"{request.node.name}-{execution_strategy}-server.log"
+    client_log_path = f"{request.node.name}-{execution_strategy}-client.log"
+    stdout_log_path = f"{request.node.name}-{execution_strategy}-stdout.log"
+    stdin_log_path = f"{request.node.name}-{execution_strategy}-stdin.log"
+    gdb_log_path = f"{request.node.name}-{execution_strategy}-gdb.log"
+    lldb_log_path = f"{request.node.name}-{execution_strategy}-lldb.log"
 
     config = {
         "LFortran": {
@@ -124,7 +136,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         "--min-retry-sleep-time-ms", str(config["LFortran"]["retry"]["minSleepTimeMs"]),
         "--max-retry-sleep-time-ms", str(config["LFortran"]["retry"]["maxSleepTimeMs"]),
         "--extension-id", "lcompilers.lfortran",
-        "--execution-strategy", "concurrent",  #-> "parallel" or "concurrent"
+        "--execution-strategy", execution_strategy,
     ]
 
     def print_log(log_path: str, heading: str) -> None:

@@ -14,5 +14,6 @@ if [[ $WIN != "1" ]]; then
     # `--capture` as follows:
     # --------------------------------------------------------------------------
     # pytest -vv --showlocals --capture=no --timeout=10 tests/server
-    pytest -vv --showlocals --timeout=10 tests/server
+    pytest -vv --showlocals --timeout=10 --execution-strategy="concurrent" tests/server
+    pytest -vv --showlocals --timeout=10 --execution-strategy="parallel" tests/server
 fi
