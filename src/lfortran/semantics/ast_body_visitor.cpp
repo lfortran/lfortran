@@ -238,7 +238,7 @@ public:
     }
 
     void visit_Open(const AST::Open_t& x) {
-        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr;
+        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, *a_access = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -376,8 +376,32 @@ public:
                     a_form = ASRUtils::cast_string_descriptor_to_pointer(al, a_form);
                 }
 
+            } else if( m_arg_str == std::string("access") ) {  //TODO: Handle 'direct' as access argument
+                if ( a_access != nullptr ) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `form` found, unit has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_access = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_access_type = ASRUtils::expr_type(a_access);
+                if (!ASRUtils::is_character(*a_access_type)) {
+                    diag.add(Diagnostic(
+                        "`form` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_access))){
+                    a_access = ASRUtils::cast_string_descriptor_to_pointer(al, a_access);
+                }
             } else {
-                const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
+                const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", \
                                                                         "recl", "fileopt", "action", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
@@ -402,7 +426,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
