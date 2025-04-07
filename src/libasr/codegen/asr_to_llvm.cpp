@@ -8748,14 +8748,35 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
         for (size_t i=0; i<n_values; i++) {
-            if (i != 0 && !is_string) {
+            if (i != 0 && !is_string && x.m_is_formatted) {
                 fmt.push_back("%s");
                 args.push_back(sep);
+            }
+            if (!x.m_is_formatted) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(ASRUtils::expr_type(m_values[i])));
+                llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
+                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
+                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, m_values[i]->base.loc,
+                        m_values[i], nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size);
+                    args.push_back(builder->CreateMul(kind_val, tmp));
+                } else if (ASRUtils::is_character(*ASRUtils::expr_type(m_values[i]))) {
+                    ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al, 
+                        m_values[i]->base.loc, m_values[i], type32, nullptr));
+                    visit_StringLen(*strlen);
+                    args.push_back(builder->CreateMul(kind_val, tmp));
+                } else {
+                    args.push_back(kind_val);
+                }
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc);
         }
-        if (!is_string) {
+        if (!x.m_is_formatted) {  // give -1 argument for end of arguments
+            llvm::Value* minus_one = llvm::ConstantInt::get(context, llvm::APInt(32, -1, true));
+            args.push_back(minus_one);
+        } else if (!is_string) {
             fmt.push_back("%s");
             args.push_back(end);
         }
