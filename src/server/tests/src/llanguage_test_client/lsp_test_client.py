@@ -273,6 +273,8 @@ class LspTestClient(LspClient):
                             buf.truncate(0)
                             while (bs is not None) and (len(bs) > 0):
                                 buf.write(bs)
+                                if not self.check_server():
+                                    break
                                 bs = self.server.stderr.read(4096)
                             print(buf.getvalue().decode('utf-8'), end='', file=sys.stderr)
                             continue
