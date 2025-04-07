@@ -1,10 +1,12 @@
 #pragma once
 
+#include <atomic>
+#include <condition_variable>
 #include <cstddef>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <regex>
-#include <stdexcept>
 #include <string>
 
 #ifndef CLI11_HAS_FILESYSTEM
@@ -134,7 +136,10 @@ namespace LCompilers::LLanguageServer::Interface {
         auto buildLanguageServer(
             ls::MessageQueue &incomingMessages,
             ls::MessageQueue &outgoingMessages,
-            lsl::Logger &logger
+            lsl::Logger &logger,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         ) -> std::unique_ptr<ls::LanguageServer>;
 
         auto buildCommunicationProtocol(
@@ -142,7 +147,10 @@ namespace LCompilers::LLanguageServer::Interface {
             ls::MessageStream &messageStream,
             ls::MessageQueue &incomingMessages,
             ls::MessageQueue &outgoingMessages,
-            lsl::Logger &logger
+            lsl::Logger &logger,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         ) -> std::unique_ptr<ls::CommunicationProtocol>;
     };
 
