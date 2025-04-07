@@ -23,12 +23,14 @@ subroutine solsy ()
     print *, set_exponent([1, 2, 3], 2)
 end
 
+! Only put declarations and statements here, no subroutines (those go above).
 program continue_compilation_2
     use iso_fortran_env
     use iso_c_binding, only: c_ptr, c_f_pointer
     use Geometry
     implicit real(a-z)
 
+    ! Put declarations below without empty lines
     integer, pointer, parameter :: v => null()
     integer, allocatable, parameter :: v=1
     integer init_x = 1
@@ -61,6 +63,110 @@ program continue_compilation_2
     complex :: a_4
     complex :: a_5
     real :: y_4
+    integer :: idaa2_x(1:2,1:2,1:2)
+    integer :: idaa2_y(1:2,1:2,1:1)
+    logical, parameter :: idlalb1_x(3) = [.true., .false., .false.]
+    logical, parameter :: idlalb2_x1(3) = [.true., .false., .false.]
+    logical, parameter :: idlalb2_x2(2) = [.true., .true.]
+    integer, allocatable :: iraa1_arr1(:, :)
+    integer, allocatable :: iraa2_arr1(:, :, :)
+    integer, allocatable :: iraa2_arr3(:)
+    integer :: iatw1_b(5)
+    integer :: iatw2_i1(5)
+    integer :: iatw2_b(5)
+    integer  :: itw1_b(5)
+    integer  :: itw2_b(5)
+    integer  :: itw3_b(5)
+    INTEGER :: intent_x
+    real(8) :: intr2_x, intr2_y, datan2
+    integer(4) :: intr8_x = 1
+    integer(8) :: intr8_y = 2
+    integer(4) :: intr9_x = 1
+    integer(8) :: intr9_y = 2
+    integer(4) :: intr10_x = 1
+    integer(8) :: intr10_y = 2
+    integer, parameter :: ici_ios = 1
+    character(len=100) :: ici_buffer
+    integer :: insv_ios(2) = 1
+    character(len=100) :: insv_buffer
+    complex :: complex_z = (1, 2)
+    integer :: tm1_x
+    integer :: tm2_x
+    !int_01_1.f90
+    integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
+    !int_01_2.f90
+    integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
+    !kind_invalid_float_of_int
+    integer(4.2) :: ifoix
+    !kind_invalid_int_of_complex
+    complex(6) :: iiocx
+    !kind_invalid_int_of_int
+    integer(3) :: iifix
+    !kind_invalid_int_of_logical
+    logical(10) :: iiolx
+    !kind_star_of_complex
+    complex(*) :: ksoca
+    !kind_star_of_int
+    integer(*) :: ksoia
+    !kind_star_of_logical
+    logical(*) :: ksola
+    !kind_string_of_int
+    integer('a') :: ksoix
+    !kind_var_of_int
+    integer :: kvoia = 4
+    real(kvoia) :: kvoix
+    !kind1
+    real(3) :: x
+    !kind2
+    real(*) kind2_a
+    !type_conflict1
+    integer, parameter, target :: foo=4
+    integer :: x_bad_implicit
+    !unsupported kind
+    real*16 :: unsupported_kind
+    ! argument not specified
+    type(Circle) :: myCircle2 = Circle()
+    ! invalid keyword argument specified
+    type(Circle) :: myCircle3 = Circle(mykeyword=10)
+    !tokenizer error
+    integer  :: ? tokenizer_error
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     ! c_f_pointer_01
     call c_f_pointer(queries_1, y_1, [2])
@@ -170,57 +276,41 @@ program continue_compilation_2
     integer :: arr1(1)
     arr1 = [1, 2, 3]
     !incompatible_dimension_assignment_arr2
-    integer :: idaa2_x(1:2,1:2,1:2)
-    integer :: idaa2_y(1:2,1:2,1:1)
     idaa2_x = reshape([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2])
     idaa2_y = reshape([1, 2, 3, 4], [2, 2, 1])
     idaa2_y = idaa2_x
     !incompatible_dimension_logical_arrays_logical_binop_01
-    logical, parameter :: idlalb1_x(3) = [.true., .false., .false.]
     print *, idlalb1_x .neqv. [.true., .true.]
     !incompatible_dimension_logical_arrays_logical_binop_02
-    logical, parameter :: idlalb2_x1(3) = [.true., .false., .false.]
-    logical, parameter :: idlalb2_x2(2) = [.true., .true.]
     print *, idlalb2_x1 .neqv. idlalb2_x2
     !incompatible_rank_allocatable_arr1
-    integer, allocatable :: iraa1_arr1(:, :)
     iraa1_arr1 = [1, 2, 3]
     !incompatible_rank_allocatable_arr2
-    integer, allocatable :: iraa2_arr1(:, :, :)
-    integer, allocatable :: iraa2_arr3(:)
     iraa2_arr3 = iraa2_arr1
     !incorrect_array_type_where_01
-    integer :: iatw1_b(5)
     where([1, 2, 3, 4, 5]) iatw1_b = 1
     print *, iatw1_b
     if (all(iatw1_b /= [1, 0, 1, 0, 1])) error stop
     !incorrect_array_type_where_02
-    integer :: iatw2_i1(5)
-    integer :: iatw2_b(5)
     iatw2_i1 = [1, 2, 3, 4, 5]
     where(iatw2_i1) iatw2_b = 1
     print *, iatw2_b
     if (all(iatw2_b /= [1, 0, 1, 0, 1])) error stop
     !incorrect_type_where_01
-    integer  :: itw1_b(5)
     where(.true.) itw1_b = 12121
     print *, itw1_b
     !incorrect_type_where_02
-    integer  :: itw2_b(5)
     where(1) itw2_b = 12121
     print *, itw2_b
     !incorrect_type_where_03
-    integer  :: itw3_b(5)
     where(max(1.33, 2.67)) itw3_b = 12121
     print *, itw3_b
     !intent1
-    INTEGER :: intent_x
     intent_x = 42
     CALL try_to_change(intent_x)
     !intrinsics1
     print *, radix((2.4, 1.0))
     !intrinsics2
-    real(8) :: intr2_x, intr2_y, datan2
     intr2_x = 2.33D0
     intr2_y = 3.41D0
     print *, datan2(x,y)
@@ -236,16 +326,10 @@ program continue_compilation_2
     !intrinsics7
     print *, hypot(1.0, 2.7_8)
     !intrinsics8
-    integer(4) :: intr8_x = 1
-    integer(8) :: intr8_y = 2
     print *, ior(intr8_x, intr8_y)
     !intrinsics9
-    integer(4) :: intr9_x = 1
-    integer(8) :: intr9_y = 2
     print *, iand(intr9_x, intr9_y)
     !intrinsics10
-    integer(4) :: intr10_x = 1
-    integer(8) :: intr10_y = 2
     print *, ieor(intr10_x, intr10_y)
     !intrinsics11
     real(4) :: intr11_x = 1
@@ -260,78 +344,29 @@ program continue_compilation_2
     !intrinsics15
     print *, set_exponent([1, 2, 3], 2)
     !iostat_constant_integer
-    integer, parameter :: ici_ios = 1
-    character(len=100) :: ici_buffer
     ici_buffer = 'Temporary date for testing purpose'
     read(ici_buffer, *, iostat=ici_ios)
     !iostat_non_scalar_value
-    integer :: insv_ios(2) = 1
-    character(len=100) :: insv_buffer
     insv_buffer = 'Temporary date for testing purpose'
     read(insv_buffer, *, iostat=insv_ios(1:1))
     !ishftc_size
     print *, ishftc(10, 6, 4)
     !complex_01
-    complex :: complex_z = (1, 2)
     print *, cmplx(complex_z , 1)
     !kind_01
     print *, aint([1.0, 2.0, 3.0], [4, 4])
     !type_mismatch_1
-    integer :: tm1_x
     tm1_x = "x"
     !type_mismatch_2
-    integer :: tm2_x
     tm2_x = 5 + "x"
-    !int_01_1.f90
-    integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
-    !int_01_2.f90
-    integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
 
-    !kind_invalid_float_of_int
-    integer(4.2) :: ifoix
-    !kind_invalid_int_of_complex
-    complex(6) :: iiocx
-    !kind_invalid_int_of_int
-    integer(3) :: iifix
-    !kind_invalid_int_of_logical
-    logical(10) :: iiolx
-    !kind_star_of_complex
-    complex(*) :: ksoca
-    !kind_star_of_int
-    integer(*) :: ksoia
-    !kind_star_of_logical
-    logical(*) :: ksola
-    !kind_string_of_int
-    integer('a') :: ksoix
-    !kind_var_of_int
-    integer :: kvoia = 4
-    real(kvoia) :: kvoix
-    !kind1
-    real(3) :: x
-    !kind2
-    real(*) kind2_a
-    !type_conflict1
-    integer, parameter, target :: foo=4
     print *,foo
-
-    integer :: x_bad_implicit
     x_bad_implicit = 10
     print *, x_bad_implicit
-
-    !unsupported kind
-    real*16 :: unsupported_kind
 
     ! member not found
     print *, myCircle%mymember
 
-    ! argument not specified
-    type(Circle) :: myCircle2 = Circle()
-
-    ! invalid keyword argument specified
-    type(Circle) :: myCircle3 = Circle(mykeyword=10)
-
-    !tokenizer error
-    integer  :: ? tokenizer_error
     100 FORMAT(A10, @)
 
     contains
