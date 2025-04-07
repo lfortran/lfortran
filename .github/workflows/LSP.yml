@@ -1,4 +1,4 @@
-name: CI
+name: LSP (can fail)
 
 on:
   push:
