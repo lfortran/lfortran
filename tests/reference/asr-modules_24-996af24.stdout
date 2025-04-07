@@ -27,9 +27,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         7 toml_tokenizer_
                                     )
                                     ()
@@ -157,9 +154,6 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_table
                                                         )
                                                     )
@@ -200,9 +194,6 @@
                                             6 1_toml_tokenizer_current
                                             (Pointer
                                                 (StructType
-                                                    []
-                                                    []
-                                                    .true.
                                                     2 toml_table
                                                 )
                                             )
@@ -249,7 +240,6 @@
                                     toml_table
                                     []
                                     [inline]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -272,9 +262,6 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 toml_table
                                                             )
                                                         )
@@ -282,9 +269,6 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 toml_table
                                                             )
                                                         )
@@ -292,9 +276,6 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_table
                                                         )
                                                     )
@@ -310,7 +291,6 @@
                                     toml_tokenizer
                                     [toml_table]
                                     [current]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -327,7 +307,6 @@
                                             
                                         })
                                     toml_tokenizer_
-                                    []
                                     []
                                     []
                                     Source

@@ -55,7 +55,6 @@
                                     []
                                     [x
                                     y]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -79,9 +78,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         5 point
                                                     )
                                                     ()
@@ -102,9 +98,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         5 point
                                                     )
                                                     ()
@@ -137,15 +130,9 @@
                                     point_dist_func
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             5 point
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             5 point
                                         )]
                                         (Real 4)
@@ -185,9 +172,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         5 point
                                                     )
                                                     ()
@@ -208,9 +192,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         5 point
                                                     )
                                                     ()
@@ -243,15 +224,9 @@
                                     point_dist_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             5 point
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             5 point
                                         )
                                         (Real 4)]
@@ -344,9 +319,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         9 point
                                                     )
                                                     ()
@@ -367,9 +339,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         9 point
                                                     )
                                                     ()
@@ -402,15 +371,9 @@
                                     point_dist_func
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             9 point
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             9 point
                                         )]
                                         (Real 4)
@@ -530,9 +493,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         9 point
                                                     )
                                                     ()
@@ -553,9 +513,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         9 point
                                                     )
                                                     ()
@@ -588,15 +545,9 @@
                                     point_dist_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             9 point
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             9 point
                                         )
                                         (Real 4)]

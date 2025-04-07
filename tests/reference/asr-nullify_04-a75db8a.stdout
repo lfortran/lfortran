@@ -41,7 +41,6 @@
                                     scaled_data_structure
                                     []
                                     [one_d_real_pointer]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -81,9 +80,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         4 scaled_data_structure
                                     )
                                     ()
@@ -104,9 +100,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         4 scaled_data_structure
                                     )
                                     ()

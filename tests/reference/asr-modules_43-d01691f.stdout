@@ -29,9 +29,6 @@
                                     (Allocatable
                                         (Array
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 5 srcfile_t
                                             )
                                             [(()
@@ -99,9 +96,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -152,9 +146,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -176,9 +167,6 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
-                                                    []
-                                                    []
-                                                    .true.
                                                     2 srcfile_t
                                                 )
                                                 [(()
@@ -253,9 +241,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -301,9 +286,6 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
-                                                                    []
-                                                                    []
-                                                                    .true.
                                                                     2 srcfile_t
                                                                 )
                                                                 [(()
@@ -317,9 +299,6 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 srcfile_t
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -408,7 +387,6 @@
                                     [file_name
                                     exe_name
                                     digest]
-                                    []
                                     Source
                                     Public
                                     .false.

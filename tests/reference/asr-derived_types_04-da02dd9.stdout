@@ -285,9 +285,6 @@
                                                 8 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 toml_date
                                                     )
                                                 )
@@ -306,9 +303,6 @@
                                                 8 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 toml_date
                                                     )
                                                 )
@@ -323,9 +317,6 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_time
                                                         )
                                                     )
@@ -344,9 +335,6 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_time
                                                         )
                                                     )
@@ -397,9 +385,6 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_time
                                                         )
                                                     )
@@ -416,9 +401,6 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_time
                                                         )
                                                     )
@@ -433,9 +415,6 @@
                                                         8 1_toml_datetime_time
                                                         (Allocatable
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 toml_time
                                                             )
                                                         )
@@ -590,9 +569,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 toml_time
                                                     )
                                                     ()
@@ -630,9 +606,6 @@
                                         (Integer 4)
                                         (String 1 -1 () PointerString)]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 toml_time
                                         )
                                         Source
@@ -1166,7 +1139,6 @@
                                     [year
                                     month
                                     day]
-                                    []
                                     Source
                                     Private
                                     .false.
@@ -1191,9 +1163,6 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_date
                                                         )
                                                     )
@@ -1216,9 +1185,6 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             2 toml_time
                                                         )
                                                     )
@@ -1253,7 +1219,6 @@
                                     []
                                     [date
                                     time]
-                                    []
                                     Source
                                     Private
                                     .false.
@@ -1387,7 +1352,6 @@
                                     second
                                     millisec
                                     zone]
-                                    []
                                     Source
                                     Private
                                     .false.

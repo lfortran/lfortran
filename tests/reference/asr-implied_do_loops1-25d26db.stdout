@@ -20,12 +20,7 @@
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 10 (Integer 4) Decimal)
                                             ()
-                                            (Array
-                                                (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 10 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                            )
+                                            (Integer 4)
                                             (ArrayConstant
                                                 40
                                                 [1, 2, 3, ...., 8, 9, 10]
@@ -41,8 +36,8 @@
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerConstant 10 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            ())]
+                                            DescriptorArray
                                         )
                                         (ArrayConstant
                                             40
@@ -51,7 +46,7 @@
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
                                             ColMajor
                                         )
@@ -64,7 +59,7 @@
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 10 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            DescriptorArray
                                         )
                                         ColMajor
                                     )

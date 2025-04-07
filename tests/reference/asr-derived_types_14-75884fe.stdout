@@ -129,7 +129,6 @@
                                     int
                                     float
                                     datetime]
-                                    []
                                     Source
                                     Private
                                     .false.
@@ -153,9 +152,6 @@
                                         ((IntegerConstant 104 (Integer 4) Decimal))
                                         ((IntegerConstant 105 (Integer 4) Decimal))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             4 enum_type
                                         )
                                     )
@@ -168,17 +164,11 @@
                                         ((IntegerConstant 104 (Integer 4) Decimal))
                                         ((IntegerConstant 105 (Integer 4) Decimal))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             4 enum_type
                                         )
                                     )
                                     Parameter
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         4 enum_type
                                     )
                                     ()

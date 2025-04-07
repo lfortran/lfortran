@@ -183,9 +183,6 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         9 toml_node
                                                                     )
                                                                     [(()
@@ -199,9 +196,6 @@
                                                         (Var 13 i)
                                                         ())]
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             9 toml_node
                                                         )
                                                         ColMajor
@@ -234,9 +228,6 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
-                                                                            []
-                                                                            []
-                                                                            .true.
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -250,9 +241,6 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -277,9 +265,6 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
-                                                                            []
-                                                                            []
-                                                                            .true.
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -293,9 +278,6 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -378,9 +360,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -395,9 +374,6 @@
                                     new_vector
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             9 toml_vector
                                         )
                                         (Integer 4)]
@@ -441,9 +417,6 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             9 toml_node
                                                         )
                                                         [(()
@@ -507,7 +480,6 @@
                                     toml_node
                                     []
                                     [val]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -543,9 +515,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             [(()
@@ -584,7 +553,6 @@
                                     []
                                     [n
                                     lst]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -785,7 +753,6 @@
                                     toml_keyval
                                     []
                                     [raw]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -1075,7 +1042,6 @@
                                     toml_value
                                     []
                                     [key]
-                                    []
                                     Source
                                     Public
                                     .false.

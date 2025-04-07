@@ -17,9 +17,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         2 x
                                     )
                                     ()
@@ -57,7 +54,6 @@
                                     x
                                     []
                                     [i]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -98,7 +94,6 @@
                                                     a
                                                     []
                                                     [i]
-                                                    []
                                                     Source
                                                     Public
                                                     .false.
@@ -117,9 +112,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         4 a
                                                     )
                                                     ()
@@ -187,7 +179,6 @@
                                                     a
                                                     []
                                                     [i]
-                                                    []
                                                     Source
                                                     Public
                                                     .false.
@@ -206,9 +197,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         6 a
                                                     )
                                                     ()

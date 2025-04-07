@@ -112,9 +112,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -149,9 +146,6 @@
                                                     get_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -213,9 +207,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -250,9 +241,6 @@
                                                     get_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -359,7 +347,6 @@
                                                     []
                                                     [fst
                                                     snd]
-                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -446,9 +433,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -481,9 +465,6 @@
                                                     get_int_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -541,9 +522,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -576,9 +554,6 @@
                                                     get_int_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -636,9 +611,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -671,9 +643,6 @@
                                                     get_real_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -731,9 +700,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -766,9 +732,6 @@
                                                     get_real_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -847,7 +810,6 @@
                                                     []
                                                     [fst
                                                     snd]
-                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -902,7 +864,6 @@
                                                     []
                                                     [fst
                                                     snd]
-                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -921,9 +882,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         8 int_tuple
                                                     )
                                                     ()
@@ -944,9 +902,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         8 real_tuple
                                                     )
                                                     ()

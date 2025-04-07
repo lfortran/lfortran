@@ -32,9 +32,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 dependency_config_t
                                                     )
                                                     ()
@@ -90,9 +87,6 @@
                                             2 dependency_tree_t
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 dependency_config_t
                                         )]
                                         ()
@@ -179,7 +173,6 @@
                                     []
                                     [name
                                     path]
-                                    []
                                     Source
                                     Private
                                     .false.
@@ -288,7 +281,6 @@
                                     revision
                                     done
                                     update]
-                                    []
                                     Source
                                     Private
                                     .false.
@@ -352,9 +344,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 dependency_node_t
                                                             )
                                                             [(()
@@ -471,7 +460,6 @@
                                     ndep
                                     dep
                                     cache]
-                                    []
                                     Source
                                     Private
                                     .false.

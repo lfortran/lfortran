@@ -302,9 +302,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         2 test_obj
                                     )
                                     ()
@@ -389,7 +386,6 @@
                                     test_obj
                                     []
                                     [ptr]
-                                    []
                                     Source
                                     Public
                                     .false.

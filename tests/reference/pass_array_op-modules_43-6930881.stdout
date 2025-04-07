@@ -29,9 +29,6 @@
                                     (Allocatable
                                         (Array
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 5 srcfile_t
                                             )
                                             [(()
@@ -135,9 +132,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -188,9 +182,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -212,9 +203,6 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
-                                                    []
-                                                    []
-                                                    .true.
                                                     2 srcfile_t
                                                 )
                                                 [(()
@@ -289,9 +277,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -340,9 +325,6 @@
                                                     (Var 4 __1__libasr_index_)
                                                     ())]
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 srcfile_t
                                                     )
                                                     RowMajor
@@ -354,9 +336,6 @@
                                                     (Var 4 __1_t)
                                                     ())]
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 srcfile_t
                                                     )
                                                     RowMajor
@@ -415,9 +394,6 @@
                                                                     (Allocatable
                                                                         (Array
                                                                             (StructType
-                                                                                []
-                                                                                []
-                                                                                .true.
                                                                                 2 srcfile_t
                                                                             )
                                                                             [(()
@@ -443,9 +419,6 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 (Array
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 srcfile_t
                                                     )
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -488,9 +461,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -538,9 +508,6 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         2 srcfile_t
                                                                     )
                                                                     [(()
@@ -636,7 +603,6 @@
                                     [file_name
                                     exe_name
                                     digest]
-                                    []
                                     Source
                                     Public
                                     .false.

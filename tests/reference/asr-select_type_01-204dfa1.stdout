@@ -54,7 +54,6 @@
                                     base
                                     []
                                     [i]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -73,9 +72,6 @@
                                         2 base
                                         [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 base
                                         )
                                         ()
@@ -83,9 +79,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         2 base
                                     )
                                     ()
@@ -145,7 +138,6 @@
                                     child
                                     []
                                     [j]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -164,9 +156,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         2 child
                                     )
                                     ()
@@ -402,9 +391,6 @@
                             [((IntegerConstant 20 (Integer 4) Decimal))
                             ((IntegerConstant 30 (Integer 4) Decimal))]
                             (StructType
-                                []
-                                []
-                                .true.
                                 2 child
                             )
                             ()

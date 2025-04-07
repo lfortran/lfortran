@@ -55,7 +55,6 @@
                                     ls0001
                                     []
                                     [rowns]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -74,9 +73,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         3 ls0001
                                     )
                                     ()

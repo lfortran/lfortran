@@ -81,7 +81,6 @@
                                     circle
                                     []
                                     [radius]
-                                    []
                                     Source
                                     Private
                                     .false.
@@ -350,9 +349,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 circle
                                                     )
                                                     ()
@@ -390,9 +386,6 @@
                                                 (Real 4)
                                             ))]
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 2 circle
                                             )
                                             ()

@@ -77,7 +77,6 @@
                                     [a
                                     b
                                     c]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -96,9 +95,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         3 block_1
                                     )
                                     ()

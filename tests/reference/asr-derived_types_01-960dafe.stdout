@@ -77,9 +77,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 x
                                     )
                                     ()
@@ -100,9 +97,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 z
                                     )
                                     ()
@@ -293,18 +287,12 @@
                                     (Var 8 c)
                                     8 1_z_l
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 derived_types_01_m_01_y
                                     )
                                     ()
                                 )
                                 8 1_y_d
                                 (StructType
-                                    []
-                                    []
-                                    .true.
                                     8 x
                                 )
                                 ()
@@ -326,18 +314,12 @@
                                     (Var 8 c)
                                     8 1_z_l
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 derived_types_01_m_01_y1
                                     )
                                     ()
                                 )
                                 8 1_y_d
                                 (StructType
-                                    []
-                                    []
-                                    .true.
                                     8 x
                                 )
                                 ()
@@ -383,18 +365,12 @@
                                         (Var 8 c)
                                         8 1_z_l
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             8 derived_types_01_m_01_y2
                                         )
                                         ()
                                     )
                                     8 1_y_d
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 x
                                     )
                                     ()
@@ -409,18 +385,12 @@
                                         (Var 8 c)
                                         8 1_z_l
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             8 derived_types_01_m_01_y3
                                         )
                                         ()
                                     )
                                     8 1_y_d
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 x
                                     )
                                     ()
@@ -448,18 +418,12 @@
                                 (Var 8 c)
                                 8 1_z_l
                                 (StructType
-                                    []
-                                    []
-                                    .true.
                                     8 derived_types_01_m_01_y4
                                 )
                                 ()
                             )
                             8 1_y_d
                             (StructType
-                                []
-                                []
-                                .true.
                                 8 x
                             )
                             ()
@@ -475,18 +439,12 @@
                                         (Var 8 c)
                                         8 1_z_l
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             8 derived_types_01_m_01_y5
                                         )
                                         ()
                                     )
                                     8 1_y_d
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 x
                                     )
                                     ()
@@ -501,18 +459,12 @@
                                         (Var 8 c)
                                         8 1_z_l
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             8 derived_types_01_m_01_y6
                                         )
                                         ()
                                     )
                                     8 1_y_d
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 x
                                     )
                                     ()
@@ -573,9 +525,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 x
                                                     )
                                                     ()
@@ -590,9 +539,6 @@
                                     set
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             2 x
                                         )]
                                         ()
@@ -684,7 +630,6 @@
                                     []
                                     [r
                                     i]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -726,9 +671,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 x
                                                     )
                                                     ()
@@ -744,7 +686,6 @@
                                     [x]
                                     [c
                                     d]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -807,9 +748,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         6 y
                                                     )
                                                     ()
@@ -825,7 +763,6 @@
                                     [y]
                                     [k
                                     l]
-                                    []
                                     Source
                                     Public
                                     .false.

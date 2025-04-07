@@ -5,9 +5,9 @@
     "infile_hash": "f9667bbf530e590cc36867452394e8660a3a6d5984cde2c67c63b8fe",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "run-floatStringInput-95c963d.stdout",
-    "stdout_hash": "e30ae761554c4a5a9d0ee2af5cac1e16b8abbc0c6611e3fdefd8588b",
-    "stderr": null,
-    "stderr_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-floatStringInput-95c963d.stderr",
+    "stderr_hash": "a656e8ee1b6d252346699740f83e24800bfbd09f333abe165b0ec327",
     "returncode": 1
 }

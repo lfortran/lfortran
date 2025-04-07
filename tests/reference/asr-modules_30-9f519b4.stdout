@@ -70,9 +70,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         7 executable_config
                                                     )
                                                     ()
@@ -87,9 +84,6 @@
                                     default_executable
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             7 executable_config
                                         )
                                         (String 1 -1 () PointerString)]
@@ -251,7 +245,6 @@
                                     [name
                                     source_dir
                                     main]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -336,9 +329,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 package_config_t
                                                     )
                                                     ()
@@ -371,9 +361,6 @@
                                     package_defaults
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             2 package_config_t
                                         )
                                         (String 1 -1 () PointerString)]
@@ -399,9 +386,6 @@
                                             (Allocatable
                                                 (Array
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         10 1_executable_config
                                                     )
                                                     [(()
@@ -429,9 +413,6 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             10 1_executable_config
                                                         )
                                                         [(()
@@ -445,9 +426,6 @@
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 10 1_executable_config
                                             )
                                             ColMajor
@@ -516,9 +494,6 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 4 executable_config
                                                             )
                                                             [(()
@@ -559,7 +534,6 @@
                                     []
                                     [name
                                     executable]
-                                    []
                                     Source
                                     Public
                                     .false.

@@ -32,9 +32,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -67,9 +64,6 @@
                                     assign_string_char
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             2 string_type
                                         )
                                         (String 1 -1 () PointerString)]
@@ -143,7 +137,6 @@
                                     string_type
                                     []
                                     [raw]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -177,9 +170,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -200,9 +190,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -217,15 +204,9 @@
                                     trim_string
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             2 string_type
                                         )]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -323,9 +304,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -364,9 +342,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -391,15 +366,9 @@
                                     chomp_string
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             6 string_type
                                         )]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             6 string_type
                                         )
                                         Source

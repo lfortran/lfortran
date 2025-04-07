@@ -48,9 +48,6 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             3 toml_table
                                                         )
                                                     )
@@ -236,9 +233,6 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 toml_error
                                                         )
                                                     )
@@ -261,9 +255,6 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 toml_table
                                                         )
                                                     )
@@ -280,9 +271,6 @@
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 5 toml_table
                                             )
                                         )
@@ -294,9 +282,6 @@
                                         )
                                         (Allocatable
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 5 toml_error
                                             )
                                         )]
@@ -339,9 +324,6 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 toml_error
                                                         )
                                                     )
@@ -364,9 +346,6 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 toml_table
                                                         )
                                                     )
@@ -401,18 +380,12 @@
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 5 toml_table
                                             )
                                         )
                                         (Integer 4)
                                         (Allocatable
                                             (StructType
-                                                []
-                                                []
-                                                .true.
                                                 5 toml_error
                                             )
                                         )]
@@ -509,7 +482,6 @@
                                     []
                                     [stat
                                     message]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -587,7 +559,6 @@
                                     []
                                     [implicit
                                     inline]
-                                    []
                                     Source
                                     Public
                                     .false.

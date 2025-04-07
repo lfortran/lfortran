@@ -100,7 +100,6 @@
                                     toml_ordered
                                     []
                                     []
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -127,7 +126,6 @@
                                                 )
                                         })
                                     toml_structure
-                                    []
                                     []
                                     []
                                     Source
@@ -404,9 +402,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         4 toml_array
                                                     )
                                                     ()
@@ -421,9 +416,6 @@
                                     new_array
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             4 toml_array
                                         )]
                                         ()
@@ -489,7 +481,6 @@
                                     toml_array
                                     []
                                     [list]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -694,9 +685,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         20 toml_keyval
                                                     )
                                                     ()
@@ -711,9 +699,6 @@
                                     new_keyval
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             20 toml_keyval
                                         )]
                                         ()
@@ -777,7 +762,6 @@
                                     toml_keyval
                                     []
                                     [raw]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -826,7 +810,6 @@
                                     toml_value
                                     []
                                     [key]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -938,7 +921,6 @@
                                     toml_value
                                     []
                                     [key]
-                                    []
                                     Source
                                     Private
                                     .false.

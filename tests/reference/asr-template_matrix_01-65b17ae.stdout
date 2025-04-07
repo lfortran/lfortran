@@ -27,9 +27,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -50,9 +47,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -73,9 +67,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -96,9 +87,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -162,9 +150,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -185,9 +170,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -208,9 +190,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -225,21 +204,12 @@
                                     int_add_matrix
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             11 int_matrix
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             11 int_matrix
                                         )]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             11 int_matrix
                                         )
                                         Source
@@ -352,7 +322,6 @@
                                     int_matrix
                                     []
                                     [elements]
-                                    []
                                     Source
                                     Private
                                     .false.
@@ -386,9 +355,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -409,9 +375,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -509,9 +472,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -544,21 +504,12 @@
                                     int_mul_matrix
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             11 int_matrix
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             11 int_matrix
                                         )]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             11 int_matrix
                                         )
                                         Source
@@ -1201,9 +1152,6 @@
                             [((Var 11 am))
                             ((Var 11 bm))]
                             (StructType
-                                []
-                                []
-                                .true.
                                 11 int_matrix
                             )
                             ()
@@ -1219,9 +1167,6 @@
                             [((Var 11 am))
                             ((Var 11 bm))]
                             (StructType
-                                []
-                                []
-                                .true.
                                 11 int_matrix
                             )
                             ()
@@ -1628,9 +1573,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1651,9 +1593,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1674,9 +1613,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1691,21 +1627,12 @@
                                                     add_matrix
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 matrix
                                                         )
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 matrix
                                                         )]
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 matrix
                                                         )
                                                         Source
@@ -1828,7 +1755,6 @@
                                                     matrix
                                                     []
                                                     [elements]
-                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -1862,9 +1788,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1885,9 +1808,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1987,9 +1907,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -2024,21 +1941,12 @@
                                                     mul_matrix
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 matrix
                                                         )
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 matrix
                                                         )]
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 matrix
                                                         )
                                                         Source

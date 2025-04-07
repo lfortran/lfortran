@@ -42,9 +42,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 toml_context
                                                     )
                                                     ()
@@ -118,9 +115,6 @@
                                             (String 1 -2 () DescriptorString)
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 toml_context
                                         )]
                                         ()
@@ -400,7 +394,6 @@
                                     [pos
                                     num
                                     ptr]
-                                    []
                                     Source
                                     Public
                                     .false.

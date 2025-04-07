@@ -634,7 +634,6 @@
                                                     []
                                                     [elements
                                                     sz]
-                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -653,9 +652,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         7 intvector
                                                     )
                                                     ()
@@ -1349,7 +1345,6 @@
                                                     []
                                                     [elements
                                                     sz]
-                                                    []
                                                     Source
                                                     Private
                                                     .false.

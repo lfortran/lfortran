@@ -1303,9 +1303,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1326,9 +1323,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1349,9 +1343,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1366,15 +1357,9 @@
                                                     __asr_swp2
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 my_type
                                                         )
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 my_type
                                                         )]
                                                         ()
@@ -1775,9 +1760,6 @@
                                                                     Default
                                                                     (Array
                                                                         (StructType
-                                                                            []
-                                                                            []
-                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         [(()
@@ -1874,9 +1856,6 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1892,9 +1871,6 @@
                                                     (FunctionType
                                                         [(Array
                                                             (StructType
-                                                                []
-                                                                []
-                                                                .true.
                                                                 5 my_type
                                                             )
                                                             [(()
@@ -1936,9 +1912,6 @@
                                                                 (Var 17 high)
                                                                 ())]
                                                                 (StructType
-                                                                    []
-                                                                    []
-                                                                    .true.
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -1979,9 +1952,6 @@
                                                                         (Var 17 i)
                                                                         ())]
                                                                         (StructType
-                                                                            []
-                                                                            []
-                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -2012,9 +1982,6 @@
                                                                         (Var 17 last)
                                                                         ())]
                                                                         (StructType
-                                                                            []
-                                                                            []
-                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -2026,9 +1993,6 @@
                                                                         (Var 17 i)
                                                                         ())]
                                                                         (StructType
-                                                                            []
-                                                                            []
-                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -2055,9 +2019,6 @@
                                                                 )
                                                                 ())]
                                                                 (StructType
-                                                                    []
-                                                                    []
-                                                                    .true.
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -2069,9 +2030,6 @@
                                                                 (Var 17 high)
                                                                 ())]
                                                                 (StructType
-                                                                    []
-                                                                    []
-                                                                    .true.
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -2088,9 +2046,6 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     [(()
@@ -2112,9 +2067,6 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     [(()
@@ -2503,9 +2455,6 @@
                                                     Default
                                                     (Array
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             5 my_type
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2604,9 +2553,6 @@
                                                 (Var 14 i)
                                                 ())]
                                                 (StructType
-                                                    []
-                                                    []
-                                                    .true.
                                                     5 my_type
                                                 )
                                                 ColMajor
@@ -2624,9 +2570,6 @@
                                                     ()
                                                 ))]
                                                 (StructType
-                                                    []
-                                                    []
-                                                    .true.
                                                     5 my_type
                                                 )
                                                 ()
@@ -2682,9 +2625,6 @@
                                             DescriptorArray
                                             (Array
                                                 (StructType
-                                                    []
-                                                    []
-                                                    .true.
                                                     5 my_type
                                                 )
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2767,9 +2707,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 my_type
                                                     )
                                                     ()
@@ -2808,9 +2745,6 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
-                                                        .true.
                                                         2 my_type
                                                     )
                                                     ()
@@ -2825,15 +2759,9 @@
                                     lt_my_type
                                     (FunctionType
                                         [(StructType
-                                            []
-                                            []
-                                            .true.
                                             2 my_type
                                         )
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 my_type
                                         )]
                                         (Logical 4)
@@ -2905,7 +2833,6 @@
                                     my_type
                                     []
                                     [d]
-                                    []
                                     Source
                                     Public
                                     .false.

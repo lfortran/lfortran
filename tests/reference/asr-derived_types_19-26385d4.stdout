@@ -23,9 +23,6 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
-                                                            []
-                                                            .true.
                                                             4 child_value
                                                         )
                                                     )
@@ -174,7 +171,6 @@
                                     child_value
                                     []
                                     [ok]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -291,7 +287,6 @@
                                     toml_value
                                     []
                                     [key]
-                                    []
                                     Source
                                     Public
                                     .false.

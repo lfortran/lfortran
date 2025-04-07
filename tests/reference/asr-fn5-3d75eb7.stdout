@@ -397,12 +397,12 @@
                                                             ()
                                                         )
                                                         (Integer 4)
-                                                        (IntegerConstant -2 (Integer 4) Decimal)
+                                                        ()
                                                     )
                                                     (IntegerConstant 8 (Integer 4) Decimal)]
                                                     0
                                                     (Integer 4)
-                                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                                    ()
                                                 ))
                                                 (())]
                                                 (String 1 -3 (IntrinsicElementalFunction
@@ -426,12 +426,12 @@
                                                                 ()
                                                             )
                                                             (Integer 4)
-                                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
-                                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                                        ()
                                                     )
                                                     (StringLen
                                                         (IntrinsicElementalFunction
@@ -517,12 +517,12 @@
                                                                 ()
                                                             )
                                                             (Integer 4)
-                                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
-                                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                                        ()
                                                     ))
                                                     (())]
                                                     (String 1 -3 (IntrinsicElementalFunction
@@ -546,12 +546,12 @@
                                                                     ()
                                                                 )
                                                                 (Integer 4)
-                                                                (IntegerConstant -2 (Integer 4) Decimal)
+                                                                ()
                                                             )
                                                             (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
-                                                            (IntegerConstant 8 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (StringLen
                                                             (IntrinsicElementalFunction
@@ -644,12 +644,12 @@
                                                                     ()
                                                                 )
                                                                 (Integer 4)
-                                                                (IntegerConstant -2 (Integer 4) Decimal)
+                                                                ()
                                                             )
                                                             (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
-                                                            (IntegerConstant 8 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (StringLen
                                                             (IntrinsicElementalFunction

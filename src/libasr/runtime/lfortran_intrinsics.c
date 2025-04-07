@@ -3382,7 +3382,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        char buffer[100];
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
@@ -3429,7 +3429,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        char buffer[100];
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
@@ -3609,7 +3609,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        char buffer[100];
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);

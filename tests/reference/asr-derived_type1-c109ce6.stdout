@@ -56,7 +56,6 @@
                                     enum_escape
                                     []
                                     [newline]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -145,9 +144,6 @@
                                             (String 1 1 () PointerString)
                                         ))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 enum_escape
                                         )
                                     )
@@ -158,17 +154,11 @@
                                             (String 1 1 () PointerString)
                                         ))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 enum_escape
                                         )
                                     )
                                     Parameter
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         2 enum_escape
                                     )
                                     ()

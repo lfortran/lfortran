@@ -47,9 +47,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         5 test_type
                                     )
                                     ()
@@ -166,7 +163,6 @@
                                     test_type
                                     []
                                     [test_real_value]
-                                    []
                                     Source
                                     Public
                                     .false.

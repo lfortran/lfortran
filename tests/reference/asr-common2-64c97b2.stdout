@@ -103,7 +103,6 @@
                                     [a
                                     b
                                     h]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -122,9 +121,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         3 block_1
                                     )
                                     ()
@@ -192,7 +188,6 @@
                                     []
                                     [c
                                     d]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -211,9 +206,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         5 block_2
                                     )
                                     ()
@@ -281,7 +273,6 @@
                                     []
                                     [e
                                     g]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -300,9 +291,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         7 block_3
                                     )
                                     ()
@@ -351,7 +339,6 @@
                                     block_4
                                     []
                                     [i]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -370,9 +357,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         9 block_4
                                     )
                                     ()
@@ -440,7 +424,6 @@
                                     []
                                     [j
                                     k]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -459,9 +442,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         11 block_5
                                     )
                                     ()

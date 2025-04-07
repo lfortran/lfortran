@@ -269,7 +269,6 @@
                                     [a
                                     b
                                     c]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -310,9 +309,6 @@
                                             ColMajor
                                         ))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 mytype
                                         )
                                     )
@@ -342,17 +338,11 @@
                                             ColMajor
                                         ))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 mytype
                                         )
                                     )
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         2 mytype
                                     )
                                     ()

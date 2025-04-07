@@ -61,7 +61,6 @@
                                     []
                                     [working_dir
                                     verbose]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -274,7 +273,6 @@
                                     with_full
                                     with_bare
                                     backfill]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -427,9 +425,6 @@
                                         []
                                         ()
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             4 fpm_new_settings
                                         ))]
                                         ()

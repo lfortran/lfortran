@@ -30,9 +30,6 @@
                                             (String 1 1 () PointerString)
                                         ))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 y
                                         )
                                     )
@@ -43,17 +40,11 @@
                                             (String 1 1 () PointerString)
                                         ))]
                                         (StructType
-                                            []
-                                            []
-                                            .true.
                                             2 y
                                         )
                                     )
                                     Parameter
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         2 y
                                     )
                                     ()
@@ -137,7 +128,6 @@
                                     y
                                     []
                                     [backslash]
-                                    []
                                     Source
                                     Public
                                     .false.

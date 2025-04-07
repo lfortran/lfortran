@@ -195,7 +195,6 @@
                                     [d
                                     e
                                     f]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -214,9 +213,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         6 b
                                     )
                                     ()
@@ -284,7 +280,6 @@
                                     []
                                     [z1
                                     z2]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -303,9 +298,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         8 blank#block
                                     )
                                     ()
@@ -411,7 +403,6 @@
                                     g
                                     h
                                     j]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -430,9 +421,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         10 c
                                     )
                                     ()
@@ -529,7 +517,6 @@
                                     [a
                                     b
                                     i]
-                                    []
                                     Source
                                     Public
                                     .false.
@@ -548,9 +535,6 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
-                                        .true.
                                         3 sample
                                     )
                                     ()
