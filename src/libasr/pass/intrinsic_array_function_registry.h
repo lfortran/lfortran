@@ -1679,33 +1679,20 @@ namespace Cshift {
         ASR::ttype_t* return_type_ = return_type;
         /*
             cshift(array, shift, dim)
-            int i = 0
-            if (size(shape(array)) == 1) then
-                do j = shift + 1, n
-                    result(i) = array(j)
-                    i = i + 1
+            for array of rank 2, the following code is generated:
+            i = 1
+            do j = shift + 1, ubound(array, 1)
+                do k = 1, ubound(array, 2)
+                    result(i, k) = array(j, k)
                 end do
-                do j = 1, shift
-                    result(i) = array(j)
-                    i = i + 1
+                i = i + 1
+            end do
+            do j = 1, shift
+                do k = 1, ubound(array, 2)
+                    result(i, k) = array(j, k)
                 end do
-            else if (size(shape(array)) == 2) then
-                rows = size(array, 1)
-                cols = size(array, 2)
-                i = 1
-                do j = shift + 1, rows
-                    do k = 1, cols
-                        result(i, k) = array(j, k)
-                    end do
-                    i = i + 1
-                end do
-                do j = 1, shift
-                    do k = 1, cols
-                        result(i, k) = array(j, k)
-                    end do
-                    i = i + 1
-                end do
-            end if
+                i = i + 1
+            end do
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
