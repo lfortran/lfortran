@@ -10,5 +10,9 @@ src/bin/lfortran --version
 cmake --version
 if [[ $WIN != "1" ]]; then
     pip install src/server/tests tests/server
-    pytest -vv --showlocals --capture=no --timeout=10 tests/server
+    # NOTE: If you want to print all the messages, even on success, then disable
+    # `--capture` as follows:
+    # --------------------------------------------------------------------------
+    # pytest -vv --showlocals --capture=no --timeout=10 tests/server
+    pytest -vv --showlocals --timeout=10 tests/server
 fi

@@ -84,7 +84,10 @@ namespace LCompilers::LanguageServerProtocol {
             int parentProcessId,
             unsigned int seed,
             std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-            std::shared_ptr<lsc::LspConfig> workspaceConfig
+            std::shared_ptr<lsc::LspConfig> workspaceConfig,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         );
 
         lsl::Logger logger;

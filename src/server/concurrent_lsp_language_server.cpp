@@ -35,7 +35,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &compilerVersion,
         int parentProcessId,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-        std::shared_ptr<lsc::LspConfig> workspaceConfig
+        std::shared_ptr<lsc::LspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -45,7 +48,10 @@ namespace LCompilers::LanguageServerProtocol {
         compilerVersion,
         parentProcessId,
         lspConfigTransformer,
-        workspaceConfig
+        workspaceConfig,
+        start,
+        startChanged,
+        startMutex
       )
       , logger(logger.having("ConcurrentLspLanguageServer"))
     {

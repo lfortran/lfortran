@@ -71,7 +71,12 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
     # lldb_path = shutil.which('lldb')
     lldb_path = None  #<- FIXME: When LLDB is enabled, remove this line.
 
-    gdb_path = shutil.which('gdb')
+    # NOTE: If you have GDB on your system and would like to run the tests with,
+    # uncomment the following line so it may be found and disable the line that
+    # assigns `None` to it:
+    # --------------------------------------------------------------------------
+    # gdb_path = shutil.which('gdb')
+    gdb_path = None
 
     if lldb_path is not None:
         server_args += [

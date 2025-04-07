@@ -11,10 +11,11 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List,
-                    Optional, Tuple, Union)
+from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List, Optional,
+                    Tuple, Union)
 
 import psutil
 
@@ -73,6 +74,18 @@ from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
 from llanguage_test_client.lsp_json_stream import LspJsonStream
 from llanguage_test_client.lsp_text_document import LspTextDocument
+
+
+def requires_server_capabilities(fn: Callable) -> Callable:
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        # NOTE: If an error occurred during the server's initialization, the
+        # `server_capabilities` attribute may never have been set.
+        if hasattr(self, 'server_capabilities'):
+            return fn(self, *args, **kwargs)
+        return False
+    return wrapper
+
 
 # NOTE: File URIs follow one of the following schemes:
 # 1. `file:/path` (no hostname)
@@ -693,6 +706,7 @@ class LspTestClient(LspClient):
         response = WorkspaceConfigurationResponse(request.id, configs)
         return response
 
+    @requires_server_capabilities
     def server_supports_text_document_did_open_or_close(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
         if isinstance(text_document_sync, TextDocumentSyncOptions):
@@ -763,6 +777,7 @@ class LspTestClient(LspClient):
         notification = TextDocumentWillSaveNotification(params)
         self.send_message(notification)
 
+    @requires_server_capabilities
     def server_supports_text_document_will_save(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
         if isinstance(text_document_sync, TextDocumentSyncOptions):
@@ -809,6 +824,7 @@ class LspTestClient(LspClient):
             document = self.documents_by_uri[uri]
             document.apply(response.result)
 
+    @requires_server_capabilities
     def server_supports_text_document_will_save_wait_until(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
         if isinstance(text_document_sync, TextDocumentSyncOptions):
@@ -837,6 +853,7 @@ class LspTestClient(LspClient):
         notification = TextDocumentDidSaveNotification(params)
         self.send_message(notification)
 
+    @requires_server_capabilities
     def server_supports_full_text_on_save(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
         if isinstance(text_document_sync, TextDocumentSyncOptions):
@@ -845,6 +862,7 @@ class LspTestClient(LspClient):
                 return bool(save.include_text)
         return False
 
+    @requires_server_capabilities
     def server_supports_did_save(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
         if isinstance(text_document_sync, TextDocumentSyncOptions):
@@ -868,6 +886,7 @@ class LspTestClient(LspClient):
         notification = TextDocumentDidChangeNotification(params)
         self.send_message(notification)
 
+    @requires_server_capabilities
     def server_supports_text_document_sync_kind(
             self,
             kind: TextDocumentSyncKind
@@ -882,6 +901,7 @@ class LspTestClient(LspClient):
                         return kind == text_document_sync.change
         return kind == TextDocumentSyncKind.Full
 
+    @requires_server_capabilities
     def server_supports_text_document_did_change(self) -> bool:
         text_document_sync = self.server_capabilities.text_document_sync
         if isinstance(text_document_sync, TextDocumentSyncOptions):
@@ -934,6 +954,7 @@ class LspTestClient(LspClient):
             )
             self.send_text_document_did_change(params)
 
+    @requires_server_capabilities
     def server_supports_workspace_will_create_files(self) -> bool:
         workspace = self.server_capabilities.workspace
         if workspace is not None:
@@ -968,6 +989,7 @@ class LspTestClient(LspClient):
             request_id = self.send_workspace_will_create_files(params)
             self.await_response(request_id)
 
+    @requires_server_capabilities
     def server_supports_workspace_did_create_files(self) -> bool:
         workspace = self.server_capabilities.workspace
         if workspace is not None:
@@ -991,6 +1013,7 @@ class LspTestClient(LspClient):
             )
             self.send_workspace_did_create_files(params)
 
+    @requires_server_capabilities
     def server_supports_workspace_will_rename_files(self) -> bool:
         workspace = self.server_capabilities.workspace
         if workspace is not None:
@@ -1025,6 +1048,7 @@ class LspTestClient(LspClient):
             request_id = self.send_workspace_will_rename_files(params)
             self.await_response(request_id)
 
+    @requires_server_capabilities
     def server_supports_workspace_did_rename_files(self) -> bool:
         workspace = self.server_capabilities.workspace
         if workspace is not None:
@@ -1049,6 +1073,7 @@ class LspTestClient(LspClient):
             )
             self.send_workspace_did_rename_files(params)
 
+    @requires_server_capabilities
     def server_supports_workspace_will_delete_files(self) -> bool:
         workspace = self.server_capabilities.workspace
         if workspace is not None:
@@ -1083,6 +1108,7 @@ class LspTestClient(LspClient):
             request_id = self.send_workspace_will_delete_files(params)
             self.await_response(request_id)
 
+    @requires_server_capabilities
     def server_supports_workspace_did_delete_files(self) -> bool:
         workspace = self.server_capabilities.workspace
         if workspace is not None:
@@ -1106,6 +1132,7 @@ class LspTestClient(LspClient):
             )
             self.send_workspace_did_delete_files(params)
 
+    @requires_server_capabilities
     def server_supports_document_highlight(self) -> bool:
         return self.server_capabilities.document_highlight_provider is not None
 

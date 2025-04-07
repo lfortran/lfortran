@@ -33,7 +33,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &extensionId,
         const std::string &compilerVersion,
         int parentProcessId,
-        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
+        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -46,7 +49,10 @@ namespace LCompilers::LanguageServerProtocol {
             transformer,
             serializer
         ),
-        std::move(workspaceConfig)
+        std::move(workspaceConfig),
+        start,
+        startChanged,
+        startMutex
       )
       , logger(logger.having("LFortranLspLanguageServer"))
     {

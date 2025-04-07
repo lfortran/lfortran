@@ -40,7 +40,10 @@ namespace LCompilers::LanguageServerProtocol {
         int parentProcessId,
         unsigned int seed,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-        std::shared_ptr<lsc::LspConfig> workspaceConfig
+        std::shared_ptr<lsc::LspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -50,14 +53,23 @@ namespace LCompilers::LanguageServerProtocol {
         compilerVersion,
         parentProcessId,
         lspConfigTransformer,
-        workspaceConfig
+        workspaceConfig,
+        start,
+        startChanged,
+        startMutex
       )
       , logger(logger.having("ParallelLspLanguageServer"))
       , requestPool("request", numRequestThreads, logger)
       , workerPool("worker", numWorkerThreads, logger)
       , randomEngine(seed)
-      , cron([this, &logger]{
+      , cron([this, &logger, &start, &startChanged, &startMutex]{
           logger.threadName("cron");
+          if (!start) {
+              std::unique_lock<std::mutex> startLock(startMutex);
+              startChanged.wait(startLock, [&start]{
+                  return start.load();
+              });
+          }
           chronicle();
       })
     {
