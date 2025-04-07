@@ -8451,7 +8451,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {
         llvm::Value *unit_val = nullptr, *f_name = nullptr;
-        llvm::Value *status = nullptr, *form = nullptr;
+        llvm::Value *status = nullptr, *form = nullptr, *access = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         int ptr_copy = ptr_loads;
@@ -8476,6 +8476,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         } else {
             form = llvm::Constant::getNullValue(character_type);
         }
+        if (x.m_access) {
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_access);
+            access = tmp;
+        } else {
+            access = llvm::Constant::getNullValue(character_type);
+        }
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -8483,12 +8490,12 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt64Ty(context), {
                         llvm::Type::getInt32Ty(context),
-                        character_type, character_type, character_type
+                        character_type, character_type, character_type, character_type
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {unit_val, f_name, status, form});
+        tmp = builder->CreateCall(fn, {unit_val, f_name, status, form, access});
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
