@@ -3,7 +3,8 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from lsprotocol.types import (DocumentHighlight, Hover, Position, Range,
+from lsprotocol.types import (DocumentHighlight, DocumentSymbol, Hover,
+                              Position, Range, SymbolInformation,
                               TextDocumentSaveReason, TextEdit)
 
 from llanguage_test_client.lsp_client import LspClient
@@ -50,6 +51,9 @@ def requires_path(fn: Callable) -> Callable:
     return wrapper
 
 
+ChangeListener = Callable[[int, Optional[str]], None]
+
+
 class LspTextDocument:
     client: LspClient
     document_id: int
@@ -62,9 +66,12 @@ class LspTextDocument:
     pos_by_line: List[int]
     len_by_line: List[int]
 
+    change_listeners: List[ChangeListener]
+
     selection: Optional[Range]
     highlights: Optional[List[DocumentHighlight]]
     preview: Optional[Hover]
+    symbols: Union[List[SymbolInformation], List[DocumentSymbol], None]
 
     def __init__(
             self,
@@ -88,6 +95,16 @@ class LspTextDocument:
         self.selection = None
         self.highlights = None
         self.preview = None
+        self.symbols = None
+        self.change_listeners = []
+
+    def on_change(self, listener: ChangeListener) -> None:
+        self.change_listeners.append(listener)
+
+    def signal_change(self) -> None:
+        uri = self.uri if self._path is not None else None
+        for change_fn in self.change_listeners:
+            change_fn(self.document_id, uri)
 
     @property
     def path(self) -> Path:
@@ -187,6 +204,7 @@ class LspTextDocument:
                 self.bump_version(),
                 self.text
             )
+            self.signal_change()
         else:
             raise RuntimeError('`path` must be set before calling `load()`')
 
@@ -327,6 +345,7 @@ class LspTextDocument:
                 self.text, ""
             )
         self.recompute_indices()
+        self.signal_change()
 
     def backspace(self, length: int = 1) -> None:
         """
@@ -357,6 +376,7 @@ class LspTextDocument:
                 self.text, text
             )
         self.recompute_indices()
+        self.signal_change()
 
     def newline(self) -> None:
         """
@@ -381,6 +401,7 @@ class LspTextDocument:
                 self.text, text
             )
         self.recompute_indices()
+        self.signal_change()
 
     def apply(self, edits: List[TextEdit]) -> None:
         origin = self.position

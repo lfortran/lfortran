@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List, Optional,
-                    Tuple, Union)
+from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List,
+                    Optional, Tuple, Union)
 
 import psutil
 
@@ -32,12 +32,12 @@ from lsprotocol.types import (ClientCapabilities,
                               DidCloseTextDocumentParams,
                               DidOpenTextDocumentParams,
                               DidSaveTextDocumentParams,
-                              DocumentHighlightParams, ExitNotification,
-                              FileCreate, FileDelete,
+                              DocumentHighlightParams, DocumentSymbolParams,
+                              ExitNotification, FileCreate, FileDelete,
                               FileOperationClientCapabilities, FileRename,
-                              InitializedNotification, InitializedParams,
-                              InitializeParams, InitializeRequest,
-                              InitializeResponse,
+                              HoverParams, InitializedNotification,
+                              InitializedParams, InitializeParams,
+                              InitializeRequest, InitializeResponse,
                               InitializeResultServerInfoType, Position, Range,
                               Registration, RenameFilesParams, SaveOptions,
                               ServerCapabilities, ShutdownRequest,
@@ -49,9 +49,9 @@ from lsprotocol.types import (ClientCapabilities,
                               TextDocumentDidOpenNotification,
                               TextDocumentDidSaveNotification,
                               TextDocumentDocumentHighlightRequest,
-                              TextDocumentDocumentHighlightResponse,
-                              TextDocumentIdentifier, TextDocumentItem,
-                              TextDocumentSaveReason,
+                              TextDocumentDocumentSymbolRequest,
+                              TextDocumentHoverRequest, TextDocumentIdentifier,
+                              TextDocumentItem, TextDocumentSaveReason,
                               TextDocumentSyncClientCapabilities,
                               TextDocumentSyncKind, TextDocumentSyncOptions,
                               TextDocumentWillSaveNotification,
@@ -68,8 +68,7 @@ from lsprotocol.types import (ClientCapabilities,
                               WorkspaceDidRenameFilesNotification,
                               WorkspaceWillCreateFilesRequest,
                               WorkspaceWillDeleteFilesRequest,
-                              WorkspaceWillRenameFilesRequest,
-                              HoverParams, TextDocumentHoverRequest)
+                              WorkspaceWillRenameFilesRequest)
 
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
@@ -348,6 +347,7 @@ class LspTestClient(LspClient):
     ) -> LspTextDocument:
         document_id = self.next_document_id()
         document = LspTextDocument(self, document_id, language_id, path)
+        document.on_change(self.update_document_symbols)
         self.documents_by_id[document_id] = document
         if path is not None:
             self.documents_by_uri[document.uri] = document
@@ -946,11 +946,7 @@ class LspTestClient(LspClient):
                     ) \
                     else TextDocumentContentChangeEvent_Type2(
                         text=full_text
-                    ) \
-                    if self.server_supports_text_document_sync_kind(
-                        TextDocumentSyncKind.Full
-                    ) \
-                    else None
+                    )
                 ]
             )
             self.send_text_document_did_change(params)
@@ -1211,4 +1207,40 @@ class LspTestClient(LspClient):
                 ),
             )
             request_id = self.send_text_document_hover(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_document_symbols(self) -> bool:
+        return self.server_capabilities.document_symbol_provider is not None
+
+    def send_text_document_document_symbol(
+            self,
+            params: DocumentSymbolParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentDocumentSymbolRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_document_symbol
+        )
+
+    def receive_text_document_document_symbol(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def update_document_symbols(self, document_id: int, uri: Optional[str]) -> None:
+        if (uri is not None) and self.server_supports_document_symbols():
+            params = DocumentSymbolParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri
+                )
+            )
+            request_id = self.send_text_document_document_symbol(params)
             self.await_response(request_id)

@@ -3,10 +3,12 @@ from tempfile import NamedTemporaryFile
 from typing import List
 
 from lsprotocol.types import (DidChangeConfigurationParams, DocumentHighlight,
-                              Hover, Position, Range, MarkupContent, MarkupKind)
+                              DocumentSymbol, Hover, MarkupContent, MarkupKind,
+                              Position, Range, SymbolKind)
 
 from lfortran_language_server.lfortran_lsp_test_client import \
     LFortranLspTestClient
+
 from llanguage_test_client.lsp_test_client import IncomingEvent
 
 
@@ -205,3 +207,116 @@ def test_document_hover(client: LFortranLspTestClient) -> None:
             )
         )
     )
+
+
+def test_symbol_tree(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent.parent / "examples" / "expr2.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    assert doc.symbols == [
+        DocumentSymbol(
+            children=[
+                DocumentSymbol(
+                    kind=SymbolKind.Variable,
+                    name="x",
+                    range=Range(
+                        start=Position(
+                            line=3,
+                            character=11,
+                        ),
+                        end=Position(
+                            line=3,
+                            character=12,
+                        ),
+                    ),
+                    selection_range=Range(
+                        start=Position(
+                            line=3,
+                            character=11,
+                        ),
+                        end=Position(
+                            line=3,
+                            character=12,
+                        ),
+                    ),
+                ),
+            ],
+            kind=SymbolKind.Function,
+            name="expr2",
+            range=Range(
+                start=Position(
+                    line=0,
+                    character=0,
+                ),
+                end=Position(
+                    line=8,
+                    character=11,
+                ),
+            ),
+            selection_range=Range(
+                start=Position(
+                    line=0,
+                    character=0,
+                ),
+                end=Position(
+                    line=8,
+                    character=11,
+                ),
+            ),
+        ),
+    ]
+    line, column = 4, 12
+    doc.cursor = line, column
+    doc.rename("y")  # x -> y
+    assert doc.symbols == [
+        DocumentSymbol(
+            children=[
+                DocumentSymbol(
+                    kind=SymbolKind.Variable,
+                    name="y",
+                    range=Range(
+                        start=Position(
+                            line=3,
+                            character=11,
+                        ),
+                        end=Position(
+                            line=3,
+                            character=12,
+                        ),
+                    ),
+                    selection_range=Range(
+                        start=Position(
+                            line=3,
+                            character=11,
+                        ),
+                        end=Position(
+                            line=3,
+                            character=12,
+                        ),
+                    ),
+                ),
+            ],
+            kind=SymbolKind.Function,
+            name="expr2",
+            range=Range(
+                start=Position(
+                    line=0,
+                    character=0,
+                ),
+                end=Position(
+                    line=8,
+                    character=11,
+                ),
+            ),
+            selection_range=Range(
+                start=Position(
+                    line=0,
+                    character=0,
+                ),
+                end=Position(
+                    line=8,
+                    character=11,
+                ),
+            ),
+        ),
+    ]
