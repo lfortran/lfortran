@@ -679,11 +679,26 @@ public:
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
-            require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
-                    (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                    (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
-                    "Initialisation of " + std::string(x.m_name) +
-                    " must reduce to a compile time constant.");
+            ASR::ArrayConstructor_t *array_construct = nullptr;
+            if (x.m_symbolic_value && ASR::is_a<ASR::ArrayConstructor_t>(*x.m_symbolic_value)) {
+                array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(x.m_symbolic_value);
+            }
+
+            if (array_construct && array_construct->n_args > 0 && ASR::is_a<ASR::StructConstructor_t>(*array_construct->m_args[0])) {
+                for (size_t j = 0; j < array_construct->n_args; j++) {
+                    require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                            (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])),
+                            "Initialisation of " + std::string(x.m_name) +
+                            " must reduce to a compile time constant.");
+                }
+            } else {
+                require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                        (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        "Initialisation of " + std::string(x.m_name) +
+                        " must reduce to a compile time constant.");
+            }
         }
 
         if (x.m_symbolic_value)

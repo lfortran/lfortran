@@ -1384,6 +1384,7 @@ RUN(NAME derived_types_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
 RUN(NAME derived_types_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -1575,10 +1576,12 @@ RUN(NAME file_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_
 RUN(NAME file_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_22_data.txt)
 RUN(NAME file_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_23_data.txt)
 RUN(NAME file_24 LABELS gfortran llvm COPY_TO_BIN "file 24 data.txt" file_22_data.txt)
+RUN(NAME file_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME inquire_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 
 RUN(NAME class_01 LABELS gfortran llvm NO_STD_F23)
@@ -2119,6 +2122,7 @@ RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME struct_type_02 LABELS gfortran llvm)
 RUN(NAME struct_type_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME struct_type_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME struct_type_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
