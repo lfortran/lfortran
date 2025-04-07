@@ -3412,7 +3412,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
         }
 
         char *endptr;
-        *p = strtol(token, &endptr, 10);
+        *p = (int32_t)strtol(token, &endptr, 10);
 
         // If any junk remains in the token, reject the input
         if (*endptr != '\0') {
@@ -3458,7 +3458,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
         }
 
         char *endptr;
-        *p = strtoll(token, &endptr, 10);
+        *p = (int64_t)strtoll(token, &endptr, 10);
 
         if (*endptr != '\0') {
             fprintf(stderr, "Error: Invalid input for int64_t.\n");
