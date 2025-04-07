@@ -3510,7 +3510,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
         if (access_id != 1) {
             // Read record marker first
             int32_t record_marker_start;
-            fread(&record_marker_start, sizeof(int32_t), 1, filep);
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
         }
         (void)!fread(p, sizeof(int32_t), array_size, filep);
     } else {

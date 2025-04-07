@@ -700,6 +700,14 @@ public:
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
+        // check if format as a keyword arg
+        for (size_t i = 0; i < n_kwargs; i++) {
+            if (strcmp(m_kwargs[i].m_arg, "fmt") == 0) {
+                formatted = true;
+                break;
+            }
+        }
+
         if( n_args > 2 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 2 in Read/Write statement.",
