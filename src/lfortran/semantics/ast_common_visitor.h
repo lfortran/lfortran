@@ -3650,6 +3650,9 @@ public:
                                 is_struct_const = true;
                             }
                         }
+                        if (is_derived_type) {
+                            is_struct_const = true;
+                        }
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
@@ -3702,6 +3705,29 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
+                    } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
+                        AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
+                        if (array_init->n_args > 0) {
+                            bool is_correct_type = true;
+                            AST::FuncCallOrArray_t* func_call = nullptr;
+
+                            is_correct_type = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
+                            if (is_correct_type) {
+                                func_call = AST::down_cast<AST::FuncCallOrArray_t>(array_init->m_args[0]);
+                            }
+
+                            if (!is_correct_type || strcmp(func_call->m_func, sym_type->m_name) != 0) {
+                                diag.add(Diagnostic(
+                                    "Array members must me of the same type as the struct",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{array_init->m_args[0]->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+
+                        visit_ArrayInitializer(*array_init);
+                        init_expr = ASRUtils::EXPR(tmp);
                     } else {
                         diag.add(Diagnostic(
                             "Only function call assignment is allowed for now",
@@ -3715,6 +3741,20 @@ public:
                     if ( init_expr ) {
                         if( ASRUtils::is_value_constant(value) ) {
                         } else if( ASRUtils::is_value_constant(init_expr) ) {
+                            value = nullptr;
+                        } else if (ASR::is_a<ASR::ArrayConstructor_t>(*init_expr)) {
+                            ASR::ArrayConstructor_t *array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(init_expr);
+                            for (size_t j = 0; j < array_construct->n_args; j++) {
+                                if (!ASRUtils::is_value_constant(array_construct->m_args[j])) {
+                                    diag.add(Diagnostic(
+                                        "Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                        "` must reduce to a compile time constant.",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("",{array_construct->m_args[j]->base.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
+                            }
                             value = nullptr;
                         } else {
                             diag.add(Diagnostic(

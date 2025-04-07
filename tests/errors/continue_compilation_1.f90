@@ -75,8 +75,8 @@ program continue_compilation_1
     type(logger_type) :: logger
     integer :: unit
     character(len=100) :: filename
-
-
+    type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+    type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
 
 
 
