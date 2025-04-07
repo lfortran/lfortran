@@ -6,14 +6,17 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from io import BytesIO, StringIO
+from io import BytesIO
 from pathlib import Path
 from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List,
-                    Optional, Set, Tuple, Union)
+                    Optional, Tuple, Union)
+
+import psutil
 
 from cattrs import Converter
 
@@ -184,6 +187,7 @@ class LspTestClient(LspClient):
     timeout_s: float
 
     server: ServerProcess
+    process: psutil.Process
     message_stream: LspJsonStream
     ostream: IO[bytes]
     buf: BytesIO
@@ -202,7 +206,7 @@ class LspTestClient(LspClient):
     responses_by_id: Dict[JsonValue, Any]
     callbacks_by_id: Dict[JsonValue, Tuple[Any, Callback]]
     stop: threading.Event
-    # stderr_printer: threading.Thread
+    stderr_printer: threading.Thread
     client_log_path: str
     stdout_log_path: str
     stdin_log_path: str
@@ -236,37 +240,48 @@ class LspTestClient(LspClient):
         self.responses_by_id = dict()
         self.callbacks_by_id = dict()
         self.stop = threading.Event()
-        # self.stderr_printer = threading.Thread(
-        #     target=self.print_stderr,
-        #     args=tuple()
-        # )
+        self.stderr_printer = threading.Thread(
+            target=self.print_stderr,
+            args=tuple()
+        )
         self.client_log_path = client_log_path
         self.stdout_log_path = stdout_log_path
         self.stdin_log_path = stdin_log_path
 
     def print_stderr(self) -> None:
-        if self.server.stderr is not None:
-            buf = StringIO()
-            while self.check_server() and not self.stop.is_set():
-                try:
-                    bs = self.server.stderr.read(1)
-                    if bs is not None:
-                        buf.seek(0)
-                        buf.truncate(0)
-                        while (bs is not None) and (len(bs) > 0) and not self.stop.is_set():
-                            buf.write(bs.decode("utf-8"))
-                            bs = self.server.stderr.read(1)
-                        print(buf.getvalue(), file=sys.stderr)
-                        continue
-                except BlockingIOError:
-                    pass
-                time.sleep(0.100)
-
-    def has_event(self, pred: EventPredFn) -> bool:
-        for event in self.events:
-            if pred(event):
-                return True
-        return False
+        buf = BytesIO()
+        try:
+            if self.server.stderr is not None:
+                while self.check_server():
+                    try:
+                        bs = self.server.stderr.read(4096)
+                        if bs is not None:
+                            buf.seek(0)
+                            buf.truncate(0)
+                            while (bs is not None) and (len(bs) > 0):
+                                buf.write(bs)
+                                bs = self.server.stderr.read(4096)
+                            print(buf.getvalue().decode('utf-8'), end='', file=sys.stderr)
+                            continue
+                    except BlockingIOError:
+                        pass
+                    time.sleep(0.100)
+        except BaseException as e:
+            print(
+                "Caught unhandled exception while printing stderr logs from the server:", e,
+                file=sys.stderr
+            )
+            traceback.print_exc(file=sys.stderr)
+        finally:
+            # Print whatever is left in the buffer
+            buf.seek(0)
+            buf.truncate(0)
+            if self.server.stderr is not None:
+                bs = self.server.stderr.read(4096)
+                while (bs is not None) and (len(bs) > 0):
+                    buf.write(bs)
+                    bs = self.server.stderr.read(4096)
+            print(buf.getvalue().decode('utf-8'), file=sys.stderr)
 
     def find_incoming_event(self, pred: IncomingEventPredFn, lower_index: int = 0) \
             -> Tuple[Optional[IncomingEvent], int]:
@@ -407,31 +422,33 @@ class LspTestClient(LspClient):
             [self.server_path] + self.server_params,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            # stderr=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             bufsize=0,
-            # bufsize=1,
         )
+
         if self.server.stdout is None:
             raise RuntimeError("Cannot read from server stdout")
         if self.server.stdin is None:
             raise RuntimeError("Cannot write to server stdin")
-        # if self.server.stderr is None:
-        #     raise RuntimeError("Cannot read from server stderr")
+        if self.server.stderr is None:
+            raise RuntimeError("Cannot read from server stderr")
 
         # Make process stdout non-blocking
         stdout_fd = self.server.stdout.fileno()
         os.set_blocking(stdout_fd, False)
-        # stderr_fd = self.server.stderr.fileno()
-        # os.set_blocking(stderr_fd, False)
+        stderr_fd = self.server.stderr.fileno()
+        os.set_blocking(stderr_fd, False)
+
+        self.process = psutil.Process(self.server.pid)
 
         self.message_stream = LspJsonStream(
             SpyIO(self.server.stdout, self.stdout_log),
-            self.timeout_s
+            self.timeout_s,
+            self.check_server
         )
         self.ostream = SpyIO(self.server.stdin, self.stdin_log)
 
-        # self.stderr_printer.start()
+        self.stderr_printer.start()
 
         initialize_id = self.send_initialize(self.initialize_params())
         self.await_response(initialize_id)
@@ -445,22 +462,61 @@ class LspTestClient(LspClient):
         self.send_exit()
 
         self.stop.set()
-        # self.stderr_printer.join()
+        self.stderr_printer.join()
 
         try:
-            self.server.wait(timeout=self.timeout_s)
+            if self.timeout_s > 0.0:
+                self.server.wait(timeout=self.timeout_s)
+            else:
+                self.server.wait()
         except subprocess.TimeoutExpired as e:
-            os.kill(self.server.pid, signal.SIGKILL)
+            self.kill_server()
             raise RuntimeError(
                 f"Timed-out after {self.timeout_s} seconds while awaiting the server to terminate."
             ) from e
 
-    def check_server(self) -> bool:
-        if self.server.poll():
-            raise RuntimeError(
-                f"ServerProcess crashed with status: {self.server.returncode}"
+    def kill_server(self) -> None:
+        self.stop.set()
+        if self.server.poll() is None:
+            print(
+                'Server did not terminate cleanly, terminating it forcefully ...',
+                file=sys.stderr
             )
-        return True
+            try:
+                os.kill(self.server.pid, signal.SIGINT)
+                self.server.wait(timeout=1.0)
+            except ProcessLookupError:
+                pass
+            finally:
+                if self.server.poll() is None:
+                    try:
+                        os.kill(self.server.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+
+    def check_server(self) -> bool:
+        try:
+            if self.process.is_running():
+                if self.process.status() == psutil.STATUS_ZOMBIE:
+                    self.kill_server()
+                    print(
+                        "ServerProcess has become defunct and will no longer respond",
+                        file=sys.stderr
+                    )
+                else:
+                    # The server is running as expected; there's nothing to do
+                    pass
+            else:
+                self.stop.set()
+                print(
+                    f"ServerProcess crashed with status: {self.server.returncode}",
+                    file=sys.stderr
+                )
+        except BaseException as e:
+            self.stop.set()
+            raise e
+        finally:
+            return not self.stop.is_set()
 
     def send_message(self, message: Any) -> None:
         self.events.append(OutgoingEvent(message))
@@ -474,14 +530,14 @@ class LspTestClient(LspClient):
         self.buf.write(f"Content-Length: {len(body)}\r\n".encode("utf-8"))
         self.buf.write(b"\r\n")
         self.buf.write(body)
-        self.check_server()
         print(
             f"[{timestamp()}] Sending:\n{self.buf.getvalue().decode('utf-8')}",
             file=self.log_file
         )
         self.log_file.flush()
-        self.ostream.write(self.buf.getvalue())
-        self.ostream.flush()
+        if self.check_server():
+            self.ostream.write(self.buf.getvalue())
+            self.ostream.flush()
 
     def send_request(
             self,
@@ -495,21 +551,23 @@ class LspTestClient(LspClient):
         return request_id
 
     def receive_message(self) -> JsonObject:
-        self.check_server()
-        message = self.message_stream.next()
-        print(
-            f"[{timestamp()}] Receiving:\n{self.message_stream.message()}",
-            file=self.log_file
-        )
-        match message:
-            case dict():
-                self.events.append(IncomingEvent(message))
-                self.dispatch_message(message)
-                return message
-            case _:
-                raise RuntimeError(
-                    f"Unsupported message type ({type(message)}): {message}"
-                )
+        if self.check_server():
+            message = self.message_stream.next()
+            print(
+                f"[{timestamp()}] Receiving:\n{self.message_stream.message()}",
+                file=self.log_file
+            )
+            match message:
+                case dict():
+                    self.events.append(IncomingEvent(message))
+                    self.dispatch_message(message)
+                    return message
+                case _:
+                    raise RuntimeError(
+                        f"Unsupported message type ({type(message)}): {message}"
+                    )
+        else:
+            raise RuntimeError("Server has terminated.")
 
     def dispatch_message(self, message: JsonObject) -> None:
         if 'method' in message:
