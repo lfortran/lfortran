@@ -103,3 +103,7 @@ class LspClient(ABC):
     @abstractmethod
     def highlight(self, uri: str, line: int, column: int) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    def hover(self, uri: str, line: int, column: int) -> None:
+        raise NotImplementedError

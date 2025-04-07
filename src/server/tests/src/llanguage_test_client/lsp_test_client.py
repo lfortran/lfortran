@@ -68,7 +68,8 @@ from lsprotocol.types import (ClientCapabilities,
                               WorkspaceDidRenameFilesNotification,
                               WorkspaceWillCreateFilesRequest,
                               WorkspaceWillDeleteFilesRequest,
-                              WorkspaceWillRenameFilesRequest)
+                              WorkspaceWillRenameFilesRequest,
+                              HoverParams, TextDocumentHoverRequest)
 
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
@@ -1153,14 +1154,10 @@ class LspTestClient(LspClient):
             request: Any,
             message: JsonObject
     ) -> None:
-        response = self.converter.structure(
-            message,
-            TextDocumentDocumentHighlightResponse
-        )
-        if response.result is not None:
-            uri = request.params.text_document.uri
-            doc = self.get_document("fortran", uri)
-            doc.highlights = response.result
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
 
     def highlight(self, uri: str, line: int, column: int) -> None:
         if self.server_supports_document_highlight():
@@ -1174,4 +1171,44 @@ class LspTestClient(LspClient):
                 ),
             )
             request_id = self.send_text_document_document_highlight(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_document_hover(self) -> bool:
+        return self.server_capabilities.hover_provider is not None
+
+    def send_text_document_hover(
+            self,
+            params: HoverParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentHoverRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_hover
+        )
+
+    def receive_text_document_hover(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def hover(self, uri: str, line: int, column: int) -> None:
+        if self.server_supports_document_hover():
+            params = HoverParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                position=Position(
+                    line=line,
+                    character=column,
+                ),
+            )
+            request_id = self.send_text_document_hover(params)
             self.await_response(request_id)

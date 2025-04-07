@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 from typing import List
 
 from lsprotocol.types import (DidChangeConfigurationParams, DocumentHighlight,
-                              Position, Range)
+                              Hover, Position, Range, MarkupContent, MarkupKind)
 
 from lfortran_language_server.lfortran_lsp_test_client import \
     LFortranLspTestClient
@@ -180,3 +180,28 @@ def test_document_highlight(client: LFortranLspTestClient) -> None:
     for highlight in doc.highlights:
         expected_highlights.remove(highlight)
     assert len(expected_highlights) == 0
+
+
+def test_document_hover(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    line, column = 18, 22
+    doc.cursor = line, column
+    doc.hover()
+    assert doc.preview == Hover(
+        contents=MarkupContent(
+            kind=MarkupKind.Markdown,
+            value="```fortran\npure function eval_1d(self, x) result(res)\n    class(softmax), intent(in) :: self\n    real, intent(in) :: x(:)\n    real :: res(size(x))\nend function eval_1d\n\n```"
+        ),
+        range=Range(
+            end=Position(
+                character=24,
+                line=11
+            ),
+            start=Position(
+                character=4,
+                line=7
+            )
+        )
+    )

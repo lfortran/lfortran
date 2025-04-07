@@ -3,7 +3,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from lsprotocol.types import (DocumentHighlight, Position, Range,
+from lsprotocol.types import (DocumentHighlight, Hover, Position, Range,
                               TextDocumentSaveReason, TextEdit)
 
 from llanguage_test_client.lsp_client import LspClient
@@ -64,6 +64,7 @@ class LspTextDocument:
 
     selection: Optional[Range]
     highlights: Optional[List[DocumentHighlight]]
+    preview: Optional[Hover]
 
     def __init__(
             self,
@@ -86,6 +87,7 @@ class LspTextDocument:
         self.is_new = (path is None)
         self.selection = None
         self.highlights = None
+        self.preview = None
 
     @property
     def path(self) -> Path:
@@ -413,3 +415,8 @@ class LspTextDocument:
     def highlight(self) -> None:
         line, column = self.pos_to_linecol(self.position)
         self.client.highlight(self.uri, line, column)
+
+    @requires_path
+    def hover(self) -> None:
+        line, column = self.pos_to_linecol(self.position)
+        self.client.hover(self.uri, line, column)

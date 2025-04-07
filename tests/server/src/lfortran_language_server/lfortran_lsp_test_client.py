@@ -12,8 +12,9 @@ from lsprotocol.types import (
     InitializeParams, InsertTextMode, Location, LocationLink, MarkupKind,
     Position, RenameClientCapabilities, RenameParams,
     TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
-    TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
-    TextDocumentRenameRequest, TextDocumentRenameResponse, WorkspaceEdit)
+    TextDocumentDocumentHighlightResponse, TextDocumentIdentifier,
+    TextDocumentPublishDiagnosticsNotification, TextDocumentRenameRequest,
+    TextDocumentRenameResponse, WorkspaceEdit, TextDocumentHoverResponse)
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 from llanguage_test_client.lsp_test_client import LspTestClient
@@ -107,7 +108,6 @@ class LFortranLspTestClient(LspTestClient):
                 context_support=True,
             )
             text_document.hover = HoverClientCapabilities(
-                dynamic_registration=True,
                 content_format=[
                     MarkupKind.PlainText,
                     MarkupKind.Markdown,
@@ -255,3 +255,31 @@ class LFortranLspTestClient(LspTestClient):
             )
             request_id = self.send_text_document_rename(params)
             self.await_response(request_id)
+
+    def receive_text_document_document_highlight(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentDocumentHighlightResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.highlights = response.result
+
+    def receive_text_document_hover(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentHoverResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.preview = response.result
