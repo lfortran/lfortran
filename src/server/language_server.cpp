@@ -1,4 +1,5 @@
 #include <ostream>
+
 #include <server/language_server.h>
 
 namespace LCompilers::LLanguageServer {
@@ -9,7 +10,7 @@ namespace LCompilers::LLanguageServer {
         lsl::Logger &logger
     ) : incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
-      , logger(logger)
+      , logger(logger.having("LanguageServer"))
     {
         // empty
     }
@@ -18,7 +19,12 @@ namespace LCompilers::LLanguageServer {
         // empty
     }
 
+    auto LanguageServer::join() -> void {
+        // empty
+    }
+
     auto LanguageServer::send(const std::string &message) -> void {
+        static thread_local std::string buffer;
         buffer.clear();
         prepare(buffer, message);
         if (outgoingMessages.enqueue(buffer) == nullptr) {

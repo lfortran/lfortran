@@ -20,7 +20,7 @@ namespace LCompilers::LLanguageServer {
     public:
         virtual ~LanguageServer();
         virtual bool isTerminated() const = 0;
-        virtual void join() = 0;
+        virtual void join();
     protected:
         LanguageServer(
             MessageQueue &incomingMessages,
@@ -29,8 +29,7 @@ namespace LCompilers::LLanguageServer {
         );
         MessageQueue &incomingMessages;
         MessageQueue &outgoingMessages;
-        lsl::Logger &logger;
-        std::string buffer;
+        lsl::Logger logger;
 
         auto send(const std::string &request) -> void;
 

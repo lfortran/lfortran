@@ -16,8 +16,9 @@
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 
+#include <bin/concurrent_lfortran_lsp_language_server.h>
 #include <bin/language_server_interface.h>
-#include <bin/lfortran_lsp_language_server.h>
+#include <bin/parallel_lfortran_lsp_language_server.h>
 
 namespace LCompilers::LLanguageServer::Interface {
     namespace fs = std::filesystem;
@@ -27,20 +28,16 @@ namespace LCompilers::LLanguageServer::Interface {
 
     auto validateConfigSection(const std::string &configSection) -> std::string {
         if (!std::regex_match(configSection, RE_CONFIG_SECTION)) {
-            throw lc::LCompilersException(
-                ("Configuration section is not a valid sequence of dot-separated, "
-                 "ECMAScript Ids: " + configSection)
-            );
+            return ("Configuration section is not a valid sequence of dot-separated, "
+                    "ECMAScript Ids: " + configSection) ;
         }
 
         if (std::regex_match(configSection, RE_RESERVED_CONFIG_IDS)) {
-            throw lc::LCompilersException(
-                ("Configuration section contains a reserved Id for ECMAScript: " +
-                 configSection)
-            );
+            return ("Configuration section contains a reserved Id for ECMAScript: " +
+                    configSection);
         }
 
-        return configSection;
+        return "";
     }
 
     auto existsAndIsWritable(const std::string &pathString) -> std::string {
@@ -176,6 +173,27 @@ namespace LCompilers::LLanguageServer::Interface {
         );
     }
 
+    const std::map<ExecutionStrategy, std::string> ExecutionStrategyNames = {
+        {ExecutionStrategy::PARALLEL, "PARALLEL"},
+        {ExecutionStrategy::CONCURRENT, "CONCURRENT"},
+    };
+
+    const std::map<ExecutionStrategy, std::string> ExecutionStrategyValues {
+        {ExecutionStrategy::PARALLEL, "parallel"},
+        {ExecutionStrategy::CONCURRENT, "concurrent"},
+    };
+
+    auto executionStrategyByValue(const std::string &value) -> ExecutionStrategy {
+        for (const auto &[strategy_key, strategy_value] : ExecutionStrategyValues) {
+            if (strategy_value == value) {
+                return strategy_key;
+            }
+        }
+        throw std::invalid_argument(
+            "Invalid ExecutionStrategy value: \"" + value + "\""
+        );
+    }
+
     LanguageServerInterface::LanguageServerInterface()
         : workspaceConfig(std::make_shared<lsc::LFortranLspConfig>())
     {
@@ -228,6 +246,17 @@ namespace LCompilers::LLanguageServer::Interface {
         )->capture_default_str()->transform(
             CLI::CheckedTransformer(
                 transpose(ServerProtocolValues),
+                CLI::ignore_case
+            )
+        );
+
+        opts.executionStrategy = ExecutionStrategy::PARALLEL;
+        server->add_option(
+            "--execution-strategy", opts.executionStrategy,
+            "Specifies the execution strategy for handling messages. The `parallel` strategy implies multiple messages may be processed alongside each other, while the `concurrent` strategy implies multiple messages may be processed but only one processor will be active at a time (they will yield control to each other)."
+        )->capture_default_str()->transform(
+            CLI::CheckedTransformer(
+                transpose(ExecutionStrategyValues),
                 CLI::ignore_case
             )
         );
@@ -378,36 +407,59 @@ namespace LCompilers::LLanguageServer::Interface {
         if (opts.language == Language::FORTRAN) {
             if (opts.dataFormat == DataFormat::JSON_RPC) {
                 if (opts.serverProtocol == ServerProtocol::LSP) {
-                    std::random_device randomSeed;
-                    return std::make_unique<lsp::LFortranLspLanguageServer>(
-                        incomingMessages,
-                        outgoingMessages,
-                        opts.numRequestThreads,
-                        opts.numWorkerThreads,
-                        logger,
-                        opts.configSection,
-                        opts.extensionId,
-                        LFORTRAN_VERSION,
-                        opts.parentProcessId,
-                        randomSeed(),
-                        workspaceConfig
-                    );
+                    switch (opts.executionStrategy) {
+                    case ExecutionStrategy::PARALLEL: {
+                        std::random_device randomSeed;
+                        return std::make_unique<lsp::ParallelLFortranLspLanguageServer>(
+                            incomingMessages,
+                            outgoingMessages,
+                            opts.numRequestThreads,
+                            opts.numWorkerThreads,
+                            logger,
+                            opts.configSection,
+                            opts.extensionId,
+                            LFORTRAN_VERSION,
+                            opts.parentProcessId,
+                            randomSeed(),
+                            workspaceConfig
+                        );
+                        break;
+                    }
+                    case ExecutionStrategy::CONCURRENT: {
+                        return std::make_unique<lsp::ConcurrentLFortranLspLanguageServer>(
+                            incomingMessages,
+                            outgoingMessages,
+                            logger,
+                            opts.configSection,
+                            opts.extensionId,
+                            LFORTRAN_VERSION,
+                            opts.parentProcessId,
+                            workspaceConfig
+                        );
+                        break;
+                    }
+                    default: {
+                        throw lc::LCompilersException(
+                            ("Unsupported execution strategy: " +
+                             ExecutionStrategyValues.at(opts.executionStrategy))
+                        );
+                    }
+                    }
                 } else {
                     throw lc::LCompilersException(
                         ("Unsupported server protocol for fortran: " +
-                         std::to_string(static_cast<int>(opts.serverProtocol)))
+                         ServerProtocolValues.at(opts.serverProtocol))
                     );
                 }
             } else {
                 throw lc::LCompilersException(
                     ("Unsupported data format for fortran: " +
-                     std::to_string(static_cast<int>(opts.dataFormat)))
+                     DataFormatValues.at(opts.dataFormat))
                 );
             }
         } else {
             throw lc::LCompilersException(
-                ("Unsupported language: " +
-                 std::to_string(static_cast<int>(opts.language)))
+                ("Unsupported language: " + LanguageValues.at(opts.language))
             );
         }
     }
@@ -438,20 +490,16 @@ namespace LCompilers::LLanguageServer::Interface {
         }
     }
 
-    auto LanguageServerInterface::buildMessageQueue(
-        lsl::Logger &logger
-    ) -> std::unique_ptr<ls::MessageQueue> {
-        return std::make_unique<ls::MessageQueue>(logger);
-    }
-
     auto LanguageServerInterface::serve() -> void {
         try {
-            lsl::Logger logger(workspaceConfig->log.path);
+            lsl::Logger logger(workspaceConfig->log.path, "LanguageServerInterface");
+            logger.setLevel(workspaceConfig->log.level);
+            logger.threadName("main");
             try {
                 std::unique_ptr<ls::MessageStream> messageStream =
                     buildMessageStream(logger);
-                ls::MessageQueue communicatorToServer(logger);
-                ls::MessageQueue serverToCommunicator(logger);
+                ls::MessageQueue communicatorToServer(logger, "communicator-to-server");
+                ls::MessageQueue serverToCommunicator(logger, "server-to-communicator");
                 std::unique_ptr<ls::LanguageServer> languageServer =
                     buildLanguageServer(
                         communicatorToServer,
@@ -466,10 +514,9 @@ namespace LCompilers::LLanguageServer::Interface {
                         logger
                     );
                 communicationProtocol->serve();
-                logger.debug()
-                    << "[LanguageServerInterface] Communication protocol terminated."
+                logger.info()
+                    << "Language server terminated cleanly."
                     << std::endl;
-                logger.info() << "Language server terminated cleanly.";
             } catch (const std::exception &e) {
                 std::string buffer = "Language server terminated erroneously: ";
                 buffer.append(e.what());

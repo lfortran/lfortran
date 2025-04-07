@@ -1645,6 +1645,22 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
 
 }
 
+int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
+    int64_t res = 1;
+    int64_t temp = base;
+    if( exponent < 0 ) return 0;
+    while(exponent){
+        if(exponent%2){
+            exponent--;
+            res *= temp;
+        } else {
+            temp *= temp;
+            exponent/=2;
+        }
+    }
+    return res;
+}
+
 // sqrt ------------------------------------------------------------------------
 
 LFORTRAN_API float_complex_t _lfortran_csqrt(float_complex_t x)
@@ -4465,7 +4481,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_LFORTRAN_MACHO
                 DIM ", line %lld\n" S_RESET
 #else
-                DIM ", line %ld\n" S_RESET
+                DIM ", line %" PRIu64 "\n" S_RESET
 #endif
                 "    %s\n", source_filename, d.line_numbers[index],
                 remove_whitespace(read_line_from_file(source_filename,
@@ -4475,7 +4491,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_LFORTRAN_MACHO
                 "line %lld\n    %s\n",
 #else
-                "line %ld\n    %s\n",
+                "line %" PRIu64 "\n    %s\n",
 #endif
                 source_filename, d.line_numbers[index],
                 remove_whitespace(read_line_from_file(source_filename,

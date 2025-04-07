@@ -1628,7 +1628,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
+                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                     break;
                 }
                 default :
@@ -1986,7 +1986,7 @@ public:
         }
         tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
-            data_member_names.p, data_member_names.size(),
+            data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -2224,7 +2224,7 @@ public:
 
                             ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
                             ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
-                            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_StructType_t(al, struct_as_sym->base.loc, struct_as_sym));
+                            ASR::ttype_t* type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym));
 
                             Vec<ASR::call_arg_t> vals;
                             auto member2sym = struct_s->m_symtab->get_scope();
@@ -2950,6 +2950,11 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if( ASR::is_a<ASR::Struct_t>(*t) ) {
+            // Check for any interface overriding a constructor for the struct
+            ASR::symbol_t *interface_override_s = m->m_symtab->resolve_symbol("~" + remote_sym);
+            if (interface_override_s) {
+                to_be_imported_later.push(std::make_pair("~" + remote_sym, "~" + local_sym));
+            }
             ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
             ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(t);
             if (imported_struct_type != nullptr) {
@@ -3629,7 +3634,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.m_args[i]->base.loc, arg_sym0));
+                            arg_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0));
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }

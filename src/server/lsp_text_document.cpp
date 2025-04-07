@@ -16,28 +16,26 @@ namespace LCompilers::LanguageServerProtocol {
         int version,
         const std::string &text,
         lsl::Logger &logger
-    ) : _uri(uri)
-      , _languageId(languageId)
+    ) : _languageId(languageId)
       , _version(version)
       , _text(text)
-      , logger(logger)
+      , logger(logger.having("LspTextDocument"))
     {
         buffer.reserve(8196);
-        validateUriAndSetPath();
+        setUri(uri);
         indexLines();
     }
 
     LspTextDocument::LspTextDocument(
         const std::string &uri,
         lsl::Logger &logger
-    ) : _uri{uri}
-      , _languageId{""}
-      , _version{-1}
-      , _text{""}
-      , logger{logger}
+    ) : _languageId("")
+      , _version(-1)
+      , _text("")
+      , logger(logger.having("LspTextDocument"))
     {
         buffer.reserve(8196);
-        validateUriAndSetPath();
+        setUri(uri);
         loadText();
         indexLines();
     }
@@ -47,17 +45,12 @@ namespace LCompilers::LanguageServerProtocol {
         , _languageId(std::move(other._languageId))
         , _version(other._version)
         , _text(std::move(other._text))
-        , logger(other.logger)
+        , logger(std::move(other.logger))
         , _path(std::move(other._path))
         , buffer(std::move(other.buffer))
         , lineIndices(std::move(other.lineIndices))
     {
         // empty
-    }
-
-    auto LspTextDocument::validateUriAndSetPath() -> void {
-        std::string path = std::regex_replace(_uri, RE_FILE_URI, "");
-        _path = fs::absolute(path).lexically_normal();
     }
 
     auto LspTextDocument::loadText() -> void {
@@ -67,6 +60,12 @@ namespace LCompilers::LanguageServerProtocol {
             ss << fs.rdbuf();
             _text = ss.str();
         }
+    }
+
+    auto LspTextDocument::setUri(const DocumentUri &uri) -> void {
+        _uri = uri;
+        std::string path = std::regex_replace(uri, RE_FILE_URI, "");
+        _path = fs::absolute(path).lexically_normal();
     }
 
     auto LspTextDocument::update(
