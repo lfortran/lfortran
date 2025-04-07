@@ -3741,13 +3741,13 @@ public:
                             value = nullptr;
                         } else if (ASR::is_a<ASR::ArrayConstructor_t>(*init_expr)) {
                             ASR::ArrayConstructor_t *array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(init_expr);
-                            for (size_t i = 0; i < array_construct->n_args; i++) {
-                                if (!ASRUtils::is_value_constant(array_construct->m_args[i])) {
+                            for (size_t j = 0; j < array_construct->n_args; j++) {
+                                if (!ASRUtils::is_value_constant(array_construct->m_args[j])) {
                                     diag.add(Diagnostic(
                                         "Initialization of `" + std::string(x.m_syms[i].m_name) +
                                         "` must reduce to a compile time constant.",
                                         Level::Error, Stage::Semantic, {
-                                            Label("",{array_construct->base.base.loc})
+                                            Label("",{array_construct->m_args[j]->base.loc})
                                         }));
                                     throw SemanticAbort();
                                 }
