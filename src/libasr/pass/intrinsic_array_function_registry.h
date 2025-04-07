@@ -1729,16 +1729,7 @@ namespace Cshift {
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
-        ASR::expr_t *k = nullptr;
-        ASR::expr_t *l = nullptr;
-        ASR::dimension_t *m_dims = nullptr;
-        int n_dims = extract_dimensions_from_ttype(expr_type(result), m_dims);
-        if (n_dims == 2) {
-            k = declare("k", int32, Local);
-        } if (n_dims == 3) {
-            k = declare("k", int32, Local);
-            l = declare("l", int32, Local);
-        }
+        int n_dims = extract_n_dims_from_ttype(return_type);
         ASR::expr_t* shift_val = declare("shift_val", int32, Local);
         body.push_back(al, b.Assignment(shift_val, args[1]));
         body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
@@ -1747,52 +1738,15 @@ namespace Cshift {
             b.Assignment(shift_val, shift_val)
         }
         ));
+        std::vector<ASR::expr_t*> do_loop_variables;
+        for(int i=0; i<n_dims-1; i++) {
+            ASR::expr_t* var = declare("i_" + std::to_string(i), int32, Local);
+            do_loop_variables.push_back(var);
+        }
         body.push_back(al, b.Assignment(i, b.i32(1)));
-        
-        if (n_dims == 1) {
-            body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
-                b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
-                b.Assignment(i, b.Add(i, b.i32(1))),
-            }, nullptr));
-            body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
-                b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
-                b.Assignment(i, b.Add(i, b.i32(1))),
-            }, nullptr));
-        }
-        else if (n_dims == 2) {
-            body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
-                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
-                    b.Assignment(b.ArrayItem_01(result, {i, k}), b.ArrayItem_01(args[0], {j, k})),
-                }, nullptr),
-                b.Assignment(i, b.Add(i, b.i32(1))),
-            }, nullptr));
-            body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
-                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
-                    b.Assignment(b.ArrayItem_01(result, {i, k}), b.ArrayItem_01(args[0], {j, k})),
-                }, nullptr),
-                b.Assignment(i, b.Add(i, b.i32(1))),
-            }, nullptr));
-        } else if (n_dims == 3) {
-            body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
-                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
-                    b.DoLoop(l, b.i32(1), UBound(args[0], 3), {
-                        b.Assignment(b.ArrayItem_01(result, {i, k, l}), b.ArrayItem_01(args[0], {j, k, l})),
-                    }, nullptr)
-                }, nullptr),
-                b.Assignment(i, b.Add(i, b.i32(1))),
-            }, nullptr));
-            body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
-                b.DoLoop(k, b.i32(1), UBound(args[0], 2), {
-                    b.DoLoop(l, b.i32(1), UBound(args[0], 3), {
-                        b.Assignment(b.ArrayItem_01(result, {i, k, l}), b.ArrayItem_01(args[0], {j, k, l})),
-                    }, nullptr)
-                }, nullptr),
-                b.Assignment(i, b.Add(i, b.i32(1))),
-            }, nullptr));
-        } else {
-            throw LCompilersException("`Cshift` intrinsic is not yet implemented for arrays with rank > 3");
-        }
-
+        ASR::stmt_t *do_loop = PassUtils::create_do_loop_helper_cshift(al, loc, do_loop_variables, j, i, args[0], result, 0);
+        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {do_loop, b.Assignment(i, b.Add(i, b.i32(1)))}, nullptr));
+        body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {do_loop, b.Assignment(i, b.Add(i, b.i32(1)))}, nullptr));
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

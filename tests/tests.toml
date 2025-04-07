@@ -2552,6 +2552,10 @@ filename = "../integration_tests/return_06.f90"
 llvm = true
 
 [[test]]
+filename = "../integration_tests/binop_03.f90"
+llvm = true
+
+[[test]]
 filename = "../integration_tests/modules_13.f90"
 llvm = true
 

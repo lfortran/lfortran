@@ -8,8 +8,9 @@ from lsprotocol.types import (
     CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
     CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
     CompletionItemTag, DefinitionClientCapabilities, DefinitionParams,
-    HoverClientCapabilities, InitializeParams, InsertTextMode, Location,
-    LocationLink, MarkupKind, Position, RenameClientCapabilities, RenameParams,
+    DocumentHighlightClientCapabilities, HoverClientCapabilities,
+    InitializeParams, InsertTextMode, Location, LocationLink, MarkupKind,
+    Position, RenameClientCapabilities, RenameParams,
     TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
     TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
     TextDocumentRenameRequest, TextDocumentRenameResponse, WorkspaceEdit)
@@ -114,6 +115,7 @@ class LFortranLspTestClient(LspTestClient):
             )
             text_document.definition = DefinitionClientCapabilities()
             text_document.rename = RenameClientCapabilities()
+            text_document.document_highlight = DocumentHighlightClientCapabilities()
         return params
 
     def receive_text_document_publish_diagnostics(

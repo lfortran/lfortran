@@ -723,6 +723,32 @@ namespace LCompilers {
             }, nullptr);
         }
 
+        ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
+                    ASR::expr_t* array_var, ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if ( do_loop_variables.size() == 0 ) {
+                return b.Assignment(b.ArrayItem_01(res, {res_var}), b.ArrayItem_01(array, {array_var}));
+            }
+            if (curr_idx == (int)do_loop_variables.size() - 1) {
+                std::vector<ASR::expr_t*> array_vars;
+                array_vars.push_back(array_var);
+                for (size_t i = 0; i < do_loop_variables.size(); i++) {
+                    array_vars.push_back(do_loop_variables[i]);
+                } 
+                std::vector<ASR::expr_t*> res_vars;
+                res_vars.push_back(res_var);
+                for (size_t i = 0; i < do_loop_variables.size(); i++) {
+                    res_vars.push_back(do_loop_variables[i]);
+                }
+                return b.DoLoop(do_loop_variables[curr_idx], b.i32(1), UBound(array, curr_idx + 2), {
+                    b.Assignment(b.ArrayItem_01(res, res_vars), b.ArrayItem_01(array, array_vars)),
+                }, nullptr);
+            } 
+            return b.DoLoop(do_loop_variables[curr_idx], LBound(array, curr_idx + 2), UBound(array, curr_idx + 2), {
+                create_do_loop_helper_cshift(al, loc, do_loop_variables, array_var, res_var, array, res, curr_idx + 1)
+            }, nullptr);
+        }
+
         ASR::stmt_t* create_do_loop_helper_random_number(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
                     ASR::symbol_t* s, ASR::expr_t* arr, ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx) {
             ASRUtils::ASRBuilder b(al, loc);

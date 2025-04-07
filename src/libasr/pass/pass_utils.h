@@ -119,6 +119,10 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
+        ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc, 
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array_var, 
+            ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx);
+
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res,
             int curr_idx);

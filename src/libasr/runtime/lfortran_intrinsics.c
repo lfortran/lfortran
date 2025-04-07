@@ -1644,6 +1644,22 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
 
 }
 
+int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
+    int64_t res = 1;
+    int64_t temp = base;
+    if( exponent < 0 ) return 0;
+    while(exponent){
+        if(exponent%2){
+            exponent--;
+            res *= temp;
+        } else {
+            temp *= temp;
+            exponent/=2;
+        }
+    }
+    return res;
+}
+
 // sqrt ------------------------------------------------------------------------
 
 LFORTRAN_API float_complex_t _lfortran_csqrt(float_complex_t x)
@@ -3214,7 +3230,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         *(end + 1) = '\0';
     }
 
-    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL);
+    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL, NULL);
     char *access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -3239,7 +3255,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
             exit(1);
         }
         access_mode = "w+";
-    } else if (streql(status, "replace")) {
+    } else if (streql(status, "replace") || streql(status, "scratch")) {
         access_mode = "w+";
     } else if (streql(status, "unknown")) {
         if (!*file_exists) {
@@ -3249,9 +3265,6 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
             }
         }
         access_mode = "r+";
-    } else if (streql(status, "scratch")) {
-        printf("Runtime error: Unhandled type status=`scratch`\n");
-        exit(1);
     } else {
         printf("Runtime error: STATUS specifier in OPEN statement has "
             "invalid value '%s'\n", status);
@@ -3313,9 +3326,10 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened, int32_t *size) {
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num,
+                                    bool *opened, int32_t *size, int32_t *pos) {
     if (f_name && unit_num != -1) {
-        printf("File name and file unit number cannot be specifed together.\n");
+        printf("File name and file unit number cannot be specified together.\n");
         exit(1);
     }
     if (f_name != NULL) {
@@ -3333,10 +3347,11 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num
     }
     if (unit_num != -1) {
         bool unit_file_bin;
-        if (get_file_pointer_from_unit(unit_num, &unit_file_bin) != NULL) {
-            *opened = true;
-        } else {
-            *opened = false;
+        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+        *opened = (fp != NULL);
+        if (pos != NULL && fp != NULL) {
+            long p = ftell(fp);
+            *pos = (int32_t)p + 1;
         }
     }
 }
@@ -4019,8 +4034,10 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
         exit(1);
     }
     // TODO: Support other `status` specifiers
-    if (status && strcmp(status, "delete") == 0) {
-        if (remove(get_file_name_from_unit(unit_num, &unit_file_bin)) != 0) {
+    char * file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
+    bool is_temp_file = strcmp(file_name, "_lfortran_generated_file.txt") == 0;
+    if ((status && strcmp(status, "delete") == 0) || is_temp_file) {
+        if (remove(file_name) != 0) {
             printf("Error in deleting file!\n");
             exit(1);
         }

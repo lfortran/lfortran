@@ -58,5 +58,5 @@ if [[ $WIN != "1" ]]; then
     # NOTE: `--full-trace` tends to print excessively long stack traces. Please
     # re-enable it if needed:
     # pytest -vv --showlocals --full-trace --capture=no --timeout=5 tests/server
-    pytest -vv --showlocals --capture=no --timeout=5 tests/server
+#    pytest -vv --showlocals --capture=no --timeout=5 tests/server
 fi

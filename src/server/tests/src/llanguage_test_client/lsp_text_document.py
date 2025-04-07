@@ -1,8 +1,10 @@
+from functools import wraps
 from io import StringIO
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
-from lsprotocol.types import Position, Range, TextDocumentSaveReason, TextEdit
+from lsprotocol.types import (DocumentHighlight, Position, Range,
+                              TextDocumentSaveReason, TextEdit)
 
 from llanguage_test_client.lsp_client import LspClient
 
@@ -40,6 +42,14 @@ def edit_key_fn(edit: TextEdit) -> int:
     )
 
 
+def requires_path(fn: Callable) -> Callable:
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        if self._path is not None:
+            fn(self, *args, **kwargs)
+    return wrapper
+
+
 class LspTextDocument:
     client: LspClient
     document_id: int
@@ -53,7 +63,7 @@ class LspTextDocument:
     len_by_line: List[int]
 
     selection: Optional[Range]
-    highlight: Optional[Range]
+    highlights: Optional[List[DocumentHighlight]]
 
     def __init__(
             self,
@@ -75,7 +85,7 @@ class LspTextDocument:
         self.len_by_line = [1]
         self.is_new = (path is None)
         self.selection = None
-        self.highlight = None
+        self.highlights = None
 
     @property
     def path(self) -> Path:
@@ -164,7 +174,7 @@ class LspTextDocument:
         self.len_by_line.append(col + 1)
 
     def load(self) -> None:
-        if self.path is not None:
+        if self._path is not None:
             with open(self.path, "r", encoding="utf-8") as f:
                 self.buf.write(f.read())
             self.recompute_indices()
@@ -389,12 +399,17 @@ class LspTextDocument:
         self.buf.seek(origin)
         self.recompute_indices()
 
+    @requires_path
     def goto_definition(self) -> None:
-        if self._path is not None:
-            line, column = self.pos_to_linecol(self.position)
-            self.client.goto_definition(self.uri, line, column)
+        line, column = self.pos_to_linecol(self.position)
+        self.client.goto_definition(self.uri, line, column)
 
+    @requires_path
     def rename(self, new_name: str) -> None:
-        if self._path is not None:
-            line, column = self.pos_to_linecol(self.position)
-            self.client.rename(self.uri, line, column, new_name)
+        line, column = self.pos_to_linecol(self.position)
+        self.client.rename(self.uri, line, column, new_name)
+
+    @requires_path
+    def highlight(self) -> None:
+        line, column = self.pos_to_linecol(self.position)
+        self.client.highlight(self.uri, line, column)
