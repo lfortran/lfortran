@@ -250,7 +250,7 @@ namespace LCompilers::LLanguageServer::Interface {
             )
         );
 
-        opts.executionStrategy = ExecutionStrategy::PARALLEL;
+        opts.executionStrategy = ExecutionStrategy::CONCURRENT;
         server->add_option(
             "--execution-strategy", opts.executionStrategy,
             "Specifies the execution strategy for handling messages. The `parallel` strategy implies multiple messages may be processed alongside each other, while the `concurrent` strategy implies multiple messages may be processed but only one processor will be active at a time (they will yield control to each other)."
