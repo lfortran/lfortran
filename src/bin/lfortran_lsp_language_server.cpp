@@ -176,116 +176,124 @@ namespace LCompilers::LanguageServerProtocol {
         LspTextDocument &document,
         std::atomic_bool &taskIsRunning
     ) -> void {
-        if (!taskIsRunning) {
-            logger.trace()  //<- trace instead of debug because this will happen often
-                << "Validation canceled before execution."
-                << std::endl;
-            return;
-        }
-        const auto start = std::chrono::high_resolution_clock::now();
-        std::shared_lock<std::shared_mutex> readLock(document.mutex());
-        const std::string &path = document.path().string();
-        const std::string &text = document.text();
-        const std::string &uri = document.uri();
+        const std::string taskType = "validate";
+        startRunning(taskType, std::chrono::system_clock::now());
         try {
-            // NOTE: These value may have been updated since the validation was
-            // requested, but that's okay because we want to validate the latest
-            // version anyway:
-            int version = document.version();
-            try {
-                readLock.unlock();
-                std::shared_ptr<CompilerOptions> compilerOptions =
-                    getCompilerOptions(document);
-                readLock.lock();
-                logger.trace()
-                    << "Getting diagnostics from LFortran for document with URI="
-                    << uri << std::endl;
-                // NOTE: Lock the logger to add debug statements to stderr within LFortran.
-                // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-                std::vector<lc::error_highlight> highlights =
-                    lfortran.showErrors(path, text, *compilerOptions);
-                // loggerLock.unlock();
-
-                logger.trace()
-                    << "Collected " << highlights.size()
-                    << " diagnostics for document with URI=" << uri
+            if (!taskIsRunning) {
+                logger.trace()  //<- trace instead of debug because this will happen often
+                    << "Validation canceled before execution."
                     << std::endl;
+                return;
+            }
+            const auto start = std::chrono::high_resolution_clock::now();
+            std::shared_lock<std::shared_mutex> readLock(document.mutex());
+            const std::string &path = document.path().string();
+            const std::string &text = document.text();
+            const std::string &uri = document.uri();
+            try {
+                // NOTE: These value may have been updated since the validation was
+                // requested, but that's okay because we want to validate the latest
+                // version anyway:
+                int version = document.version();
+                try {
+                    readLock.unlock();
+                    std::shared_ptr<CompilerOptions> compilerOptions =
+                        getCompilerOptions(document);
+                    readLock.lock();
+                    logger.trace()
+                        << "Getting diagnostics from LFortran for document with URI="
+                        << uri << std::endl;
+                    // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+                    // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+                    std::vector<lc::error_highlight> highlights =
+                        lfortran.showErrors(path, text, *compilerOptions);
+                    // loggerLock.unlock();
 
-                readLock.unlock();
-                const std::shared_ptr<lsc::LFortranLspConfig> config =
-                    getLFortranConfig(uri);
-                readLock.lock();
+                    logger.trace()
+                        << "Collected " << highlights.size()
+                        << " diagnostics for document with URI=" << uri
+                        << std::endl;
 
-                unsigned int numProblems = config->maxNumberOfProblems;
-                if (highlights.size() < numProblems) {
-                    numProblems = highlights.size();
-                }
+                    readLock.unlock();
+                    const std::shared_ptr<lsc::LFortranLspConfig> config =
+                        getLFortranConfig(uri);
+                    readLock.lock();
 
-                std::vector<Diagnostic> diagnostics;
-                diagnostics.reserve(numProblems);
-                for (unsigned int i = 0; i < numProblems; ++i) {
-                    const lc::error_highlight &highlight = highlights[i];
-
-                    Position start;
-                    start.line = highlight.first_line - 1;
-                    start.character = highlight.first_column - 1;
-
-                    Position end;
-                    end.line = highlight.last_line - 1;
-                    end.character = highlight.last_column;
-
-                    Range range;
-                    range.start = std::move(start);
-                    range.end = std::move(end);
-
-                    Diagnostic diagnostic;
-                    diagnostic.range = std::move(range);
-                    diagnostic.severity =
-                        diagnosticLevelToLspSeverity(highlight.severity);
-                    diagnostic.message = highlight.message;
-                    diagnostic.source = source;
-
-                    diagnostics.push_back(std::move(diagnostic));
-                }
-
-                if (taskIsRunning) {
-                    PublishDiagnosticsParams params;
-                    params.uri = uri;
-                    params.version = version;
-                    params.diagnostics = std::move(diagnostics);
-                    if (trace >= TraceValues::Messages) {
-                        const auto end = std::chrono::high_resolution_clock::now();
-                        const auto duration =
-                            std::chrono::duration_cast<std::chrono::milliseconds>(
-                                (end - start)
-                            );
-                        LogTraceParams logTraceParams;
-                        logTraceParams.message =
-                            "Sending response 'textDocument/publishDiagnostics'. "
-                            "Processing request took " +
-                            std::to_string(duration.count()) + "ms";
-                        if (trace >= TraceValues::Verbose) {
-                            LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
-                            logTraceParams.verbose = "Result: " + toJsonString(any);
-                        }
-                        sendLogTrace(logTraceParams);
+                    unsigned int numProblems = config->maxNumberOfProblems;
+                    if (highlights.size() < numProblems) {
+                        numProblems = highlights.size();
                     }
-                    sendTextDocument_publishDiagnostics(params);
-                } else {
-                    logger.trace()  //<- trace instead of debug because this will happen often
-                        << "Validation canceled before publishing results."
+
+                    std::vector<Diagnostic> diagnostics;
+                    diagnostics.reserve(numProblems);
+                    for (unsigned int i = 0; i < numProblems; ++i) {
+                        const lc::error_highlight &highlight = highlights[i];
+
+                        Position start;
+                        start.line = highlight.first_line - 1;
+                        start.character = highlight.first_column - 1;
+
+                        Position end;
+                        end.line = highlight.last_line - 1;
+                        end.character = highlight.last_column;
+
+                        Range range;
+                        range.start = std::move(start);
+                        range.end = std::move(end);
+
+                        Diagnostic diagnostic;
+                        diagnostic.range = std::move(range);
+                        diagnostic.severity =
+                            diagnosticLevelToLspSeverity(highlight.severity);
+                        diagnostic.message = highlight.message;
+                        diagnostic.source = source;
+
+                        diagnostics.push_back(std::move(diagnostic));
+                    }
+
+                    if (taskIsRunning) {
+                        PublishDiagnosticsParams params;
+                        params.uri = uri;
+                        params.version = version;
+                        params.diagnostics = std::move(diagnostics);
+                        if (trace >= TraceValues::Messages) {
+                            const auto end = std::chrono::high_resolution_clock::now();
+                            const auto duration =
+                                std::chrono::duration_cast<std::chrono::milliseconds>(
+                                    (end - start)
+                                );
+                            LogTraceParams logTraceParams;
+                            logTraceParams.message =
+                                "Sending response 'textDocument/publishDiagnostics'. "
+                                "Processing request took " +
+                                std::to_string(duration.count()) + "ms";
+                            if (trace >= TraceValues::Verbose) {
+                                LSPAny any = transformer.publishDiagnosticsParamsToAny(params);
+                                logTraceParams.verbose = "Result: " + toJsonString(any);
+                            }
+                            sendLogTrace(logTraceParams);
+                        }
+                        sendTextDocument_publishDiagnostics(params);
+                    } else {
+                        logger.trace()  //<- trace instead of debug because this will happen often
+                            << "Validation canceled before publishing results."
+                            << std::endl;
+                    }
+                } catch (std::exception &e) {
+                    logger.error()
+                        << "Failed to validate document (uri=\""
+                        << uri << "\"): " << e.what()
                         << std::endl;
                 }
             } catch (std::exception &e) {
                 logger.error()
-                    << "Failed to validate document (uri=\""
-                    << uri << "\"): " << e.what()
+                    << "Failed to read document attributes: " << e.what()
                     << std::endl;
             }
-        } catch (std::exception &e) {
-            logger.error()
-                << "Failed to read document attributes: " << e.what()
-                << std::endl;
+            stopRunning(taskType);
+        } catch (std::exception &exception) {
+            stopRunning(taskType);
+            throw exception;
         }
     }
 

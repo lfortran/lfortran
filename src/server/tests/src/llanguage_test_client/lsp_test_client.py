@@ -68,7 +68,8 @@ from lsprotocol.types import (ClientCapabilities,
                               WorkspaceDidRenameFilesNotification,
                               WorkspaceWillCreateFilesRequest,
                               WorkspaceWillDeleteFilesRequest,
-                              WorkspaceWillRenameFilesRequest)
+                              WorkspaceWillRenameFilesRequest,
+                              TelemetryEventNotification)
 
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
@@ -362,22 +363,6 @@ class LspTestClient(LspClient):
         path = RE_FILE_URI.sub(uri, "")
         return self.open_document(language_id, path)
 
-    def await_validation(self, uri: str, version: int) -> Any:
-        def is_validation(message: Any) -> bool:
-            if message.get("method", None) == "textDocument/publishDiagnostics":
-                params = message["params"]
-                return params["uri"] == uri \
-                    and params.get("version", None) == version
-            return False
-        event, _ = self.find_incoming_event(lambda event: is_validation(event.data))
-        if event is not None:
-            return event.data
-        while not self.stop.is_set():
-            message = self.receive_message()
-            if is_validation(message):
-                return message
-        return None
-
     def await_response(
             self,
             request_id: int
@@ -609,6 +594,12 @@ class LspTestClient(LspClient):
                 )
                 response = self.receive_workspace_configuration(request)
                 self.send_message(response)
+            case "telemetry/event":
+                notification = self.converter.structure(
+                    message,
+                    TelemetryEventNotification
+                )
+                self.receive_telemetry_event(notification)
 
     def respond_to_notification(self) -> None:
         self.send_message({"id": None, "result": None, "jsonrpc": "2.0"})
@@ -633,6 +624,10 @@ class LspTestClient(LspClient):
 
     def serialize_json(self, message: Any) -> str:
         return json.dumps(message, default=self.converter.unstructure)
+
+    def receive_telemetry_event(self, notification: TelemetryEventNotification) -> None:
+        # Check the event in the logs
+        pass
 
     def send_initialize(self, params: InitializeParams) -> int:
         request_id = self.next_request_id()

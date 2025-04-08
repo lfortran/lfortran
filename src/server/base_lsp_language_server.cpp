@@ -179,6 +179,83 @@ namespace LCompilers::LanguageServerProtocol {
         sendCancelRequest(params);
     }
 
+    auto BaseLspLanguageServer::collectTelemetry() -> LSPAny {
+        LSPArray array;
+        {
+            LSPObject object;
+            object.emplace(
+                "key",
+                std::make_unique<LSPAny>(
+                    transformer.stringToAny("runningHistogram")
+                )
+            );
+            std::shared_lock<std::shared_mutex> readLock(runningMutex);
+            object.emplace(
+                "value",
+                std::make_unique<LSPAny>(
+                    toAny(runningHistogram)
+                )
+            );
+            readLock.unlock();
+            std::unique_ptr<LSPAny> &any =
+                array.emplace_back(std::make_unique<LSPAny>());
+            (*any) = std::move(object);
+        }
+        LSPAny any;
+        any = std::move(array);
+        return any;
+    }
+
+    auto BaseLspLanguageServer::sendTelemetry() -> void {
+        LSPAny data = collectTelemetry();
+        sendTelemetry_event(data);
+    }
+
+    auto BaseLspLanguageServer::toAny(const time_point_t &timePoint) -> LSPAny {
+        LSPAny any;
+        any = lsl::formatTimePoint(timePoint);
+        return any;
+    }
+
+    auto BaseLspLanguageServer::startRunning(
+        const std::string &taskType,
+        const time_point_t &startTime
+    ) -> void {
+        std::unique_lock<std::shared_mutex> writeLock(runningMutex);
+        auto iter = runningHistogram.find(taskType);
+        std::map<std::string, time_point_t> &startTimesByThread =
+            ((iter == runningHistogram.end())
+             ? runningHistogram.emplace_hint(
+                 iter,
+                 std::piecewise_construct,
+                 std::make_tuple(taskType),
+                 std::make_tuple()
+               )->second
+             : iter->second);
+        startTimesByThread.insert_or_assign(logger.threadName(), startTime);
+    }
+
+    auto BaseLspLanguageServer::stopRunning(const std::string &taskType) -> void {
+        std::shared_lock<std::shared_mutex> readLock(runningMutex);
+        auto histIter = runningHistogram.find(taskType);
+        if (histIter != runningHistogram.end()) {
+            readLock.unlock();
+            std::unique_lock<std::shared_mutex> writeLock(runningMutex);
+            histIter = runningHistogram.find(taskType);
+            if (histIter != runningHistogram.end()) {
+                std::map<std::string, time_point_t> &startTimesByThread =
+                    histIter->second;
+                auto threadIter = startTimesByThread.find(logger.threadName());
+                if (threadIter != startTimesByThread.end()) {
+                    startTimesByThread.erase(threadIter);
+                    if (startTimesByThread.empty()) {
+                        runningHistogram.erase(histIter);
+                    }
+                }
+            }
+        }
+    }
+
     auto BaseLspLanguageServer::handle(
         const std::string &incoming,
         std::size_t sendId,
@@ -494,7 +571,15 @@ namespace LCompilers::LanguageServerProtocol {
                 );
             }
         }
-        LspLanguageServer::dispatch(response, request, method);
+        const std::string taskType = "request:" + request.method;
+        startRunning(taskType, std::chrono::system_clock::now());
+        try {
+            LspLanguageServer::dispatch(response, request, method);
+            stopRunning(taskType);
+        } catch (std::exception &exception) {
+            stopRunning(taskType);
+            throw exception;
+        }
     }
 
     auto BaseLspLanguageServer::dispatch(
@@ -526,7 +611,15 @@ namespace LCompilers::LanguageServerProtocol {
             }
             assertRunning();
         }
-        LspLanguageServer::dispatch(response, notification, method);
+        const std::string taskType = "notification:" + notification.method;
+        startRunning(taskType, std::chrono::system_clock::now());
+        try {
+            LspLanguageServer::dispatch(response, notification, method);
+            stopRunning(taskType);
+        } catch (std::exception &exception) {
+            stopRunning(taskType);
+            throw exception;
+        }
     }
 
     auto BaseLspLanguageServer::dispatch(
@@ -553,7 +646,15 @@ namespace LCompilers::LanguageServerProtocol {
             }
             traceId = method + " - (" + std::to_string(responseId) + ")";
             logReceiveResponseTrace(traceId, document);
-            LspLanguageServer::dispatch(response, method);
+            const std::string taskType = "response:" + method;
+            startRunning(taskType, std::chrono::system_clock::now());
+            try {
+                LspLanguageServer::dispatch(response, method);
+                stopRunning(taskType);
+            } catch (std::exception &exception) {
+                stopRunning(taskType);
+                throw exception;
+            }
             break;
         }
         case ResponseIdType::Null: {

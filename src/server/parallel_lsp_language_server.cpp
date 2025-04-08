@@ -100,6 +100,14 @@ namespace LCompilers::LanguageServerProtocol {
         } else {
             this->logger.warn() << "Request time-outs are disabled." << std::endl;
         }
+        schedule(
+            [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
+                if (*taskIsRunning) {
+                    sendTelemetry();
+                }
+            },
+            [this]{ return ttl(250ms); }
+        );
     }
 
     auto ParallelLspLanguageServer::join() -> void {
@@ -206,8 +214,10 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto ParallelLspLanguageServer::chronicle() -> void {
+        const std::string taskType = "cron";
         try {
             while (!_exit) {
+                startRunning(taskType, std::chrono::system_clock::now());
                 requestPool.ensureCapacity();
                 workerPool.ensureCapacity();
                 bool changed;
@@ -226,9 +236,13 @@ namespace LCompilers::LanguageServerProtocol {
                             ) {
                                 if (!_exit) {
                                     if (*taskIsRunning) {
+                                        const std::string taskType = "job:" + std::to_string(cronId);
+                                        startRunning(taskType, std::chrono::system_clock::now());
                                         try {
                                             cronJob(std::move(taskIsRunning));
+                                            stopRunning(taskType);
                                         } catch (const std::exception &e) {
+                                            stopRunning(taskType);
                                             logger.error()
                                                 << "Caught unhandled exception while executing cron job with id="
                                                 << cronId << ": " << e.what() << std::endl;
@@ -254,11 +268,13 @@ namespace LCompilers::LanguageServerProtocol {
                         }
                     }
                 } while (!_exit && changed);
+                stopRunning(taskType);
 
                 // NOTE: Wait a short period of time before running the cron jobs again:
                 std::this_thread::sleep_for(40ms);
             }
         } catch (std::exception &e) {
+            stopRunning(taskType);
             logger.error()
                 << "Unhandled exception caught: " << e.what()
                 << std::endl;
