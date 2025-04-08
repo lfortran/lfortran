@@ -22,7 +22,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 @pytest.fixture
-def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
+def client(request: pytest.FixtureRequest, capfd: pytest.CaptureFixture) -> Iterator[LFortranLspTestClient]:
     execution_strategy = request.config.getoption("--execution-strategy")
 
     server_path = None
@@ -198,3 +198,6 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         finally:
             if not logs_printed:
                 print_logs()
+
+    # Consuming stderr should prevent leaks
+    capfd.readouterr()
