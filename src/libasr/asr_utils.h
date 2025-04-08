@@ -622,7 +622,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "integer";
         }
         case ASR::ttypeType::UnsignedInteger: {
-            return "unsigned integer";
+            return "type(unsigned)";
         }
         case ASR::ttypeType::Real: {
             return "real";
@@ -673,7 +673,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "type(c_ptr)";
         }
         case ASR::ttypeType::SymbolicExpression: {
-            return "symbolic expression";
+            return "type(symbolic)";
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -687,15 +687,13 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
         }
         case ASR::ttypeType::FunctionType: {
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
-            std::string result = "(";
+            std::string result = "FunctionType(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
                 result += type_to_str_fortran(ftp->m_arg_types[i]) + ", ";
             }
-            result += "return_type: ";
             if( ftp->m_return_var_type ) {
+                result += "return_type: ";
                 result += type_to_str_fortran(ftp->m_return_var_type);
-            } else {
-                result += "void";
             }
             result += ")";
             return result;
