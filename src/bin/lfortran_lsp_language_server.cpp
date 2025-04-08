@@ -157,6 +157,9 @@ namespace LCompilers::LanguageServerProtocol {
         compilerOptions.continue_compilation = true;
         compilerOptions.use_colors = false;  // disable ANSI terminal colors
 
+        // Do not err on partially-constructed blocks when formatting:
+        compilerOptions.interactive = true;
+
         std::unique_lock<std::shared_mutex> writeLock(optionMutex);
         optionIter = optionsByUri.find(uri);
         if (optionIter != optionsByUri.end()) {
