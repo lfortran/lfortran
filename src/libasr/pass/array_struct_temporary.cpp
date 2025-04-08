@@ -968,7 +968,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::expr_t* array_var_temporary = nullptr;
         bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) &&
                     !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr) &&
-                    !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
+                    !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i)) &&
+                    (ASR::down_cast<ASR::Array_t>(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i)->m_type)->n_dims > 1);
         array_var_temporary = create_and_allocate_temporary_variable_for_array(
             x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
             is_pointer_required);
