@@ -659,61 +659,25 @@ namespace LCompilers::LanguageServerProtocol {
             << std::endl;
         // NOTE: Lock the logger to add debug statements to stderr within LFortran.
         // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-        std::vector<lc::document_symbols> symbols =
-            lfortran.lookupName(path, text, compilerOptions);
+        std::vector<std::pair<lc::document_symbols, std::string>> previews =
+            lfortran.previewSymbol(path, text, compilerOptions);
         // loggerLock.unlock();
         logger.trace()
-            << "Found " << symbols.size() << " symbol(s) matching the query."
+            << "Found " << previews.size() << " preview(s) matching the query."
             << std::endl;
         TextDocument_HoverResult result;
-        if (symbols.size() > 0) {
-            lc::document_symbols &symbol = symbols.front();
-            fs::path symbolPath = resolve(symbol.filename, compilerOptions);
-            std::shared_ptr<LspTextDocument> symbolDocument =
-                getDocument("file://" + symbolPath.string());
-            std::shared_lock<std::shared_mutex> symbolLock(symbolDocument->mutex());
-            const std::string &symbolText = symbolDocument->text();
-            std::unique_ptr<Hover> hover = std::make_unique<Hover>();
+        if (previews.size() > 0) {
+            std::pair<lc::document_symbols, std::string> &pair = previews.front();
+            lc::document_symbols &symbol = pair.first;
+            std::string &preview = pair.second;
 
-            readLock.unlock();
-            std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(symbolDocument->uri());
-            readLock.lock();
+            fs::path symbolPath = resolve(symbol.filename, compilerOptions);
+            std::unique_ptr<Hover> hover = std::make_unique<Hover>();
 
             MarkupContent content;
             content.kind = MarkupKind::Markdown;
             content.value = "```fortran\n";
-            uint32_t first_pos = symbolDocument->toPosition(
-                symbol.first_line - 1,
-                symbol.first_column - 1
-            );
-            uint32_t last_pos = symbolDocument->toPosition(
-                symbol.last_line - 1,
-                symbol.last_column
-            );
-            uint32_t length = (last_pos - first_pos) + 1;
-            std::string preview = symbolText.substr(first_pos, length);
-            symbolLock.unlock();
-            logger.trace()
-                << "Formatting hover preview with LFortran"
-                << std::endl;
-            // NOTE: Lock the logger to add debug statements to stderr within LFortran.
-            // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-            lc::Result<std::string> formatted = lfortran.format(
-                path,
-                preview,
-                compilerOptions,
-                false,  //<- apply ANSI colors
-                config->indentSize,
-                true  //<- indent units like module bodies
-            );
-            // loggerLock.unlock();
-            if (formatted.ok) {
-                logger.trace() << "Successfully formatted the preview." << std::endl;
-                content.value.append(formatted.result);
-            } else {
-                logger.warn() << "Failed to format the preview." << std::endl;
-                content.value.append(preview);
-            }
+            content.value.append(preview);
             content.value.append("\n```");
 
             Hover_contents &contents = hover->contents;
