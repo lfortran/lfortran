@@ -622,7 +622,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "integer";
         }
         case ASR::ttypeType::UnsignedInteger: {
-            return "unsigned integer";
+            return "type(unsigned)";
         }
         case ASR::ttypeType::Real: {
             return "real";
@@ -630,35 +630,36 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
         case ASR::ttypeType::Complex: {
             return "complex";
         }
-        case ASR::ttypeType::Logical: {
-            return "logical";
-        }
         case ASR::ttypeType::String: {
             return "string";
         }
-        case ASR::ttypeType::Tuple: {
-            return "tuple";
+        case ASR::ttypeType::Logical: {
+            return "logical";
         }
         case ASR::ttypeType::Set: {
             return "set";
         }
-        case ASR::ttypeType::Dict: {
-            return "dict";
-        }
         case ASR::ttypeType::List: {
             return "list";
+        }
+        case ASR::ttypeType::Tuple: {
+            return "tuple";
         }
         case ASR::ttypeType::StructType: {
             return ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(t)->m_derived_type);
         }
-        case ASR::ttypeType::ClassType: {
-            return ASRUtils::symbol_name(ASR::down_cast<ASR::ClassType_t>(t)->m_class_type);
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
+            return ASRUtils::symbol_name(enum_type->m_enum_type);
         }
         case ASR::ttypeType::UnionType: {
             return "union";
         }
-        case ASR::ttypeType::CPtr: {
-            return "type(c_ptr)";
+        case ASR::ttypeType::ClassType: {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::ClassType_t>(t)->m_class_type);
+        }
+        case ASR::ttypeType::Dict: {
+            return "dict";
         }
         case ASR::ttypeType::Pointer: {
             return type_to_str_fortran(ASRUtils::type_get_past_pointer(
@@ -668,35 +669,37 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return type_to_str_fortran(ASRUtils::type_get_past_allocatable(
                         const_cast<ASR::ttype_t*>(t))) + " allocatable";
         }
+        case ASR::ttypeType::CPtr: {
+            return "type(c_ptr)";
+        }
+        case ASR::ttypeType::SymbolicExpression: {
+            return "type(symbolic)";
+        }
+        case ASR::ttypeType::TypeParameter: {
+            ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
+            return tp->m_param;
+        }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
             std::string res = type_to_str_fortran(array_t->m_type);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
-        case ASR::ttypeType::TypeParameter: {
-            ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            return tp->m_param;
-        }
-        case ASR::ttypeType::SymbolicExpression: {
-            return "symbolic expression";
-        }
         case ASR::ttypeType::FunctionType: {
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
-            std::string result = "(";
+            std::string result = "FunctionType(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
                 result += type_to_str_fortran(ftp->m_arg_types[i]) + ", ";
             }
-            result += "return_type: ";
             if( ftp->m_return_var_type ) {
+                result += "return_type: ";
                 result += type_to_str_fortran(ftp->m_return_var_type);
-            } else {
-                result += "void";
             }
             result += ")";
             return result;
         }
-        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t) + ".");
+        default : throw LCompilersException("Type number " +
+              std::to_string(t->type) + " not implemented.");
     }
 }
 
