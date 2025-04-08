@@ -30,7 +30,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         server_path = os.environ['LFORTRAN_PATH']
     if server_path is None or not os.path.exists(server_path):
         server_path = Path(__file__).absolute().parent.parent.parent.parent / "src" / "bin" / "lfortran"
-    if server_path is None:
+    if server_path is None or not os.path.exists(server_path):
         server_path = shutil.which('lfortran')
     if server_path is None:
         raise RuntimeError('cannot determine location of lfortran')
