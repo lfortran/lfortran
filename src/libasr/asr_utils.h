@@ -696,6 +696,10 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             result += ")";
             return result;
         }
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* enum_asr = ASR::down_cast<ASR::EnumType_t>(t);
+            return ASRUtils::type_to_str_fortran(ASRUtils::symbol_type(enum_asr->m_enum_type));
+        }
         default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t) + ".");
     }
 }
