@@ -33,7 +33,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &extensionId,
         const std::string &compilerVersion,
         int parentProcessId,
-        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
+        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -46,7 +49,10 @@ namespace LCompilers::LanguageServerProtocol {
             transformer,
             serializer
         ),
-        std::move(workspaceConfig)
+        std::move(workspaceConfig),
+        start,
+        startChanged,
+        startMutex
       )
       , logger(logger.having("LFortranLspLanguageServer"))
     {
@@ -194,8 +200,11 @@ namespace LCompilers::LanguageServerProtocol {
                 logger.trace()
                     << "Getting diagnostics from LFortran for document with URI="
                     << uri << std::endl;
+                // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+                // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
                 std::vector<lc::error_highlight> highlights =
                     lfortran.showErrors(path, text, *compilerOptions);
+                // loggerLock.unlock();
 
                 logger.trace()
                     << "Collected " << highlights.size()
@@ -397,8 +406,11 @@ namespace LCompilers::LanguageServerProtocol {
             << " on line=" << compilerOptions.line
             << ", column=" << compilerOptions.column
             << std::endl;
+        // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+        // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
         std::vector<lc::document_symbols> symbols =
             lfortran.lookupName(path, text, compilerOptions);
+        // loggerLock.unlock();
         logger.trace()
             << "Found " << symbols.size() << " symbol(s) matching the query."
             << std::endl;
@@ -481,8 +493,11 @@ namespace LCompilers::LanguageServerProtocol {
             << " on line=" << compilerOptions.line
             << ", column=" << compilerOptions.column
             << std::endl;
+        // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+        // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
         std::vector<lc::document_symbols> symbols =
             lfortran.getAllOccurrences(path, text, compilerOptions);
+        // loggerLock.unlock();
         logger.trace()
             << "Found " << symbols.size() << " symbol(s) matching the query."
             << std::endl;
@@ -540,8 +555,11 @@ namespace LCompilers::LanguageServerProtocol {
         logger.trace()
             << "Looking up all symbols in document with URI=" << uri
             << std::endl;
+        // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+        // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
         std::vector<lc::document_symbols> symbols =
             lfortran.getSymbols(path, text, *compilerOptions);
+        // loggerLock.unlock();
         logger.trace()
             << "Found " << symbols.size() << " symbol(s) matching the query."
             << std::endl;
@@ -639,8 +657,11 @@ namespace LCompilers::LanguageServerProtocol {
             << " on line=" << compilerOptions.line
             << ", column=" << compilerOptions.column
             << std::endl;
+        // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+        // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
         std::vector<lc::document_symbols> symbols =
             lfortran.lookupName(path, text, compilerOptions);
+        // loggerLock.unlock();
         logger.trace()
             << "Found " << symbols.size() << " symbol(s) matching the query."
             << std::endl;
@@ -675,6 +696,8 @@ namespace LCompilers::LanguageServerProtocol {
             logger.trace()
                 << "Formatting hover preview with LFortran"
                 << std::endl;
+            // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+            // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
             lc::Result<std::string> formatted = lfortran.format(
                 path,
                 preview,
@@ -683,6 +706,7 @@ namespace LCompilers::LanguageServerProtocol {
                 config->indentSize,
                 true  //<- indent units like module bodies
             );
+            // loggerLock.unlock();
             if (formatted.ok) {
                 logger.trace() << "Successfully formatted the preview." << std::endl;
                 content.value.append(formatted.result);
@@ -798,8 +822,11 @@ namespace LCompilers::LanguageServerProtocol {
         logger.trace()
             << "Finding all occurrences of symbol to highlight in document with URI="
             << uri << std::endl;
+        // NOTE: Lock the logger to add debug statements to stderr within LFortran.
+        // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
         std::vector<lc::document_symbols> symbols =
             lfortran.getAllOccurrences(path, text, compilerOptions);
+        // loggerLock.unlock();
         logger.trace()
             << "Found " << symbols.size() << " symbol(s) matching the query."
             << std::endl;

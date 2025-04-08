@@ -402,7 +402,10 @@ namespace LCompilers::LLanguageServer::Interface {
     auto LanguageServerInterface::buildLanguageServer(
         ls::MessageQueue &incomingMessages,
         ls::MessageQueue &outgoingMessages,
-        lsl::Logger &logger
+        lsl::Logger &logger,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) -> std::unique_ptr<ls::LanguageServer> {
         if (opts.language == Language::FORTRAN) {
             if (opts.dataFormat == DataFormat::JSON_RPC) {
@@ -421,7 +424,10 @@ namespace LCompilers::LLanguageServer::Interface {
                             LFORTRAN_VERSION,
                             opts.parentProcessId,
                             randomSeed(),
-                            workspaceConfig
+                            workspaceConfig,
+                            start,
+                            startChanged,
+                            startMutex
                         );
                         break;
                     }
@@ -434,7 +440,10 @@ namespace LCompilers::LLanguageServer::Interface {
                             opts.extensionId,
                             LFORTRAN_VERSION,
                             opts.parentProcessId,
-                            workspaceConfig
+                            workspaceConfig,
+                            start,
+                            startChanged,
+                            startMutex
                         );
                         break;
                     }
@@ -469,7 +478,10 @@ namespace LCompilers::LLanguageServer::Interface {
         ls::MessageStream &messageStream,
         ls::MessageQueue &incomingMessages,
         ls::MessageQueue &outgoingMessages,
-        lsl::Logger &logger
+        lsl::Logger &logger,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) -> std::unique_ptr<ls::CommunicationProtocol> {
         switch (opts.communicationProtocol) {
         case CommunicationProtocol::STDIO: {
@@ -478,7 +490,10 @@ namespace LCompilers::LLanguageServer::Interface {
                 messageStream,
                 incomingMessages,
                 outgoingMessages,
-                logger
+                logger,
+                start,
+                startChanged,
+                startMutex
             );
         }
         default: {
@@ -495,6 +510,11 @@ namespace LCompilers::LLanguageServer::Interface {
             lsl::Logger logger(workspaceConfig->log.path, "LanguageServerInterface");
             logger.setLevel(workspaceConfig->log.level);
             logger.threadName("main");
+
+            std::atomic_bool start{false};
+            std::condition_variable startChanged;
+            std::mutex startMutex;
+
             try {
                 std::unique_ptr<ls::MessageStream> messageStream =
                     buildMessageStream(logger);
@@ -504,15 +524,24 @@ namespace LCompilers::LLanguageServer::Interface {
                     buildLanguageServer(
                         communicatorToServer,
                         serverToCommunicator,
-                        logger);
+                        logger,
+                        start,
+                        startChanged,
+                        startMutex
+                    );
                 std::unique_ptr<ls::CommunicationProtocol> communicationProtocol =
                     buildCommunicationProtocol(
                         *languageServer,
                         *messageStream,
                         serverToCommunicator,
                         communicatorToServer,
-                        logger
+                        logger,
+                        start,
+                        startChanged,
+                        startMutex
                     );
+                start = true;
+                startChanged.notify_all();
                 communicationProtocol->serve();
                 logger.info()
                     << "Language server terminated cleanly."

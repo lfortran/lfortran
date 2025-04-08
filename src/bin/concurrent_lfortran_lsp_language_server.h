@@ -1,6 +1,9 @@
 #pragma once
 
+#include <atomic>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 #include <libasr/asr.h>
 #include <libasr/diagnostics.h>
@@ -30,7 +33,10 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &extensionId,
             const std::string &compilerVersion,
             int parentProcessId,
-            std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
+            std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         );
 
     protected:

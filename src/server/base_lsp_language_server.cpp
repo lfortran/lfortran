@@ -38,7 +38,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &compilerVersion,
         int parentProcessId,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-        std::shared_ptr<lsc::LspConfig> workspaceConfig
+        std::shared_ptr<lsc::LspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : LspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -50,15 +53,21 @@ namespace LCompilers::LanguageServerProtocol {
       , compilerVersion(compilerVersion)
       , parentProcessId(parentProcessId)
       , lspConfigTransformer(std::move(lspConfigTransformer))
+      , listener([this, &logger, &start, &startChanged, &startMutex]{
+          logger.threadName("BaseLspLanguageServer_listener");
+          if (!start) {
+              std::unique_lock<std::mutex> startLock(startMutex);
+              startChanged.wait(startLock, [&start]{
+                  return start.load();
+              });
+          }
+          listen();
+      })
     {
         documentsByUri.reserve(256);
         configsByUri.reserve(256);
         lspConfigsByUri.reserve(256);
         updateWorkspaceConfig(std::move(workspaceConfig));
-        listener = std::thread([this, &logger]{
-            logger.threadName("BaseLspLanguageServer_listener");
-            listen();
-        });
     }
 
     auto BaseLspLanguageServer::nextSendId() -> std::size_t
