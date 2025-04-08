@@ -20,7 +20,7 @@ module template_sort_01_m
     use template_sort_01_type
     implicit none
     private
-    public :: sort_t
+    public :: sort_t, test_template
 
     requirement op_r(T, U, V, op_func)
         type, deferred :: T
