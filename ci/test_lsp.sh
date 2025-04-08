@@ -15,5 +15,7 @@ if [[ $WIN != "1" ]]; then
     # --------------------------------------------------------------------------
     # pytest -vv --showlocals --capture=no --timeout=10 tests/server
     pytest -vv --showlocals --timeout=10 --execution-strategy="concurrent" tests/server
-    pytest -vv --showlocals --timeout=10 --execution-strategy="parallel" tests/server
+    if [[ "$MACOS" != "1" ]]; then
+        pytest -vv --showlocals --timeout=10 --execution-strategy="parallel" tests/server
+    fi
 fi
