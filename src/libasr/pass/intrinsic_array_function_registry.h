@@ -1915,6 +1915,55 @@ namespace Spread {
         }
     }
 
+    static inline ASR::expr_t* get_result_dimension(Allocator& al, const Location& loc,
+        ASR::expr_t* array, ASR::expr_t* ncopies, int64_t i_, ASR::expr_t* dim,
+        bool is_dim_const, diag::Diagnostics& diag) {
+        int64_t i = i_ + 1;
+        ASRUtils::ASRBuilder b(al, loc);
+        if( is_dim_const ) {
+            int64_t dim_ = -1;
+            ASRUtils::is_value_constant(dim, dim_);
+            if( i == dim_ ) {
+                return ncopies;
+            }
+
+            bool is_fixed_size_array = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(array));
+            ASR::dimension_t* array_dims = nullptr;
+            ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array), array_dims);
+            if( i < dim_ ) {
+                if( is_fixed_size_array ) {
+                    return array_dims[i - 1].m_length;
+                }
+                return b.ArraySize(array, b.i32(i), int32);
+            } else {
+                if( is_fixed_size_array ) {
+                    return array_dims[i - 2].m_length;
+                }
+
+                return b.ArraySize(array, b.i32(i - 1), int32);
+            }
+        }
+        // merge(ncopies, merge(original_shape[i], original_shape[merge(1, i - 1, i == 1)], i < dim), i == dim)
+        Vec<ASR::expr_t*> args_merge1; args_merge1.reserve(al, 3);
+        Vec<ASR::expr_t*> args_merge2; args_merge2.reserve(al, 3);
+        Vec<ASR::expr_t*> args_merge3; args_merge3.reserve(al, 3);
+
+        args_merge1.push_back(al, b.i32(1));
+        args_merge1.push_back(al, b.i32(i - 1));
+        args_merge1.push_back(al, b.Eq(b.i32(i), b.i32(1)));
+        ASR::expr_t* merge_for_i = EXPR(Merge::create_Merge(al, loc, args_merge1, diag));
+
+        args_merge2.push_back(al, b.ArraySize(array, b.i32(i), int32));
+        args_merge2.push_back(al, b.ArraySize(array, merge_for_i, int32));
+        args_merge2.push_back(al, b.Lt(b.i32(i), dim));
+        ASR::expr_t* merge_for_i_ne_dim = EXPR(Merge::create_Merge(al, loc, args_merge2, diag));
+
+        args_merge3.push_back(al, ncopies);
+        args_merge3.push_back(al, merge_for_i_ne_dim);
+        args_merge3.push_back(al, b.Eq(b.i32(i), dim));
+        return EXPR(Merge::create_Merge(al, loc, args_merge3, diag));
+    }
+
     static inline ASR::asr_t* create_Spread(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
@@ -1959,31 +2008,20 @@ namespace Spread {
             result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
+            bool is_dim_compile_time_constant = ASRUtils::is_value_constant(dim);
             Vec<ASR::dimension_t> result_dims;
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(type_source);
             result_dims.reserve(al, (int) n_dims + 1);
             Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
             ASRUtils::ASRBuilder b(al, loc);
-            args_merge.push_back(al, ncopies);
-            args_merge.push_back(al, b.ArraySize(args[0], b.i32(1), int32));
-            args_merge.push_back(al, b.Eq(dim, b.i32(1)));
-            ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
-            ASR::dimension_t dim_;
-            dim_.loc = source->base.loc;
-            dim_.m_start = b.i32(1);
-            dim_.m_length = merge;
-            result_dims.push_back(al, dim_);
-            for( int it = 0; it < (int) n_dims; it++ ) {
-                Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
-                args_merge.push_back(al, ncopies);
-                args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+1), int32));
-                args_merge.push_back(al, b.Eq(dim, b.i32(it+2)));
-                ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
-                ASR::dimension_t dim;
-                dim.loc = source->base.loc;
-                dim.m_start = b.i32(1);
-                dim.m_length = merge;
-                result_dims.push_back(al, dim);
+            for( int it = 0; it < (int) n_dims + 1; it++ ) {
+                ASR::dimension_t rdim;
+                rdim.loc = source->base.loc;
+                rdim.m_start = b.i32(1);
+                rdim.m_length = Spread::get_result_dimension(
+                    al, loc, source, ncopies, it, dim,
+                    is_dim_compile_time_constant, diag);
+                result_dims.push_back(al, rdim);
             }
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
