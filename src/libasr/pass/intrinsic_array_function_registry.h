@@ -3593,6 +3593,8 @@ namespace FindLoc {
     ASR::expr_t* dim = args[2];
     ASR::expr_t *mask = args[3];
     ASR::expr_t *back = args[5];
+    ASR::expr_t *dim_val = declare("dim_val", type, Local);
+    body.push_back(al, b.Assignment(dim_val, dim));
     if (overload_id == 1) {
         ASR::expr_t *mask_new = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(mask)) ){
@@ -3627,32 +3629,35 @@ namespace FindLoc {
             Vec<ASR::expr_t*> idx_vars_ji; idx_vars_ji.reserve(al, 2);
             idx_vars_ij.push_back(al, i); idx_vars_ij.push_back(al, j);
             idx_vars_ji.push_back(al, j); idx_vars_ji.push_back(al, i);
+            body.push_back(al, b.If(b.Eq(dim_val, b.i_t(-1, type)), {b.Assignment(dim_val, b.i_t(1, type))},{}));
             body.push_back(al, b.Assignment(result, b.i_t(0, type)));
-            body.push_back(al, b.If(b.Eq(dim, b.i_t(1, type)), {
+            body.push_back(al, b.If(b.Eq(dim_val, b.i_t(1, type)), {
                 b.DoLoop(i, b.i_t(1, type), UBound(array, 2), {
                     b.Assignment(found_value, b.bool_t(0, logical)),
                     b.DoLoop(j, b.i_t(1, type), UBound(array, 1), {
-                        b.If(b.Eq(ArrayItem_02(array, idx_vars_ji), value), {
-                            b.Assignment(b.ArrayItem_01(result, {i}), j),
+                        b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ji), value), b.Or(b.Not(found_value), back)), {
+                            b.Assignment(b.ArrayItem_01(result, {b.i32(1)}), j),
+                            b.Assignment(b.ArrayItem_01(result, {b.i32(2)}), i),
                             b.Assignment(found_value, b.bool_t(1, logical)),
                         }, {}),
-                        b.If(b.And(found_value, b.Not(back)), {
-                            b.Exit()
-                        }, {})
-                    })
+                    }), 
+                    b.If(b.And(found_value, b.Not(back)), {
+                        b.Exit()
+                    }, {})
                 })
             }, {
                 b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
                     b.Assignment(found_value, b.bool_t(0, logical)),
                     b.DoLoop(j, b.i_t(1, type), UBound(array, 2), {
-                        b.If(b.Eq(ArrayItem_02(array, idx_vars_ij), value), {
-                            b.Assignment(b.ArrayItem_01(result, {i}), j),
+                        b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ij), value), b.Or(b.Not(found_value), back)), {
+                            b.Assignment(b.ArrayItem_01(result, {b.i32(1)}), j),
+                            b.Assignment(b.ArrayItem_01(result, {b.i32(2)}), i),
                             b.Assignment(found_value, b.bool_t(1, logical)),
                         }, {}),
-                        b.If(b.And(found_value, b.Not(back)), {
-                            b.Exit()
-                        }, {})
-                    })
+                    }),
+                    b.If(b.And(found_value, b.Not(back)), {
+                        b.Exit()
+                    }, {})
                 })
             }));
         }
