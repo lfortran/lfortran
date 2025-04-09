@@ -2053,6 +2053,36 @@ static inline bool main_program_present(const ASR::TranslationUnit_t &unit)
     return false;
 }
 
+static inline void remove_module_and_mapped_procedures(const ASR::TranslationUnit_t &unit,
+    std::map<std::string, std::vector<LCompilers::ASR::Function_t*>> global_procedures_using_module = {}) {
+    std::map<std::string, ASR::symbol_t*> scope_after_removing_module;
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            continue;
+        }
+        if (ASR::is_a<ASR::Function_t>(*a.second)) {
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(a.second);
+            bool func_is_mapped_to_module = false;
+            for (auto &b: global_procedures_using_module) {
+                for (auto &fn: b.second) {
+                    if (func->m_name == fn->m_name) {
+                        func_is_mapped_to_module = true;
+                        break;
+                    }
+                }
+                if (func_is_mapped_to_module) {
+                    break;
+                }
+            }
+            if (func_is_mapped_to_module) {
+                continue;
+            }
+        }
+        scope_after_removing_module[a.first] = a.second;
+    }
+    unit.m_symtab->set_scope(scope_after_removing_module);
+}
+
 static inline bool global_function_present(const ASR::TranslationUnit_t &unit)
 {
     bool contains_global_function = false;
