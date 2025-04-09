@@ -95,6 +95,7 @@ struct CompilerOptions {
     bool continue_compilation = false;
     bool semantics_only = false;
     bool generate_object_code = false;
+    bool separate_compilation = false;
     bool no_warnings = false;
     bool disable_style = false;
     bool logical_casting = false;
