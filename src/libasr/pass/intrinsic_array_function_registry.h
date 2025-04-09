@@ -2037,6 +2037,44 @@ namespace Spread {
             m_args.p, m_args.n, overload_id, ret_type, value);
     }
 
+    static inline ASR::stmt_t* generate_loop(Allocator& al, const Location& loc,
+        int64_t n_dims_return_type, int64_t d, ASR::expr_t* i, ASR::expr_t* result,
+        ASR::expr_t* source, ASR::expr_t* ncopies, ASR::ttype_t* return_type) {
+        ASRBuilder b(al, loc);
+        Vec<ASR::array_index_t> result_indices; result_indices.reserve(al, n_dims_return_type);
+        for( int64_t ri = 0; ri < n_dims_return_type; ri++ ) {
+            ASR::array_index_t rindex;
+            rindex.loc = loc;
+            if( ri + 1 == d ) {
+                rindex.m_left = nullptr;
+                rindex.m_right = i;
+                rindex.m_step = nullptr;
+                result_indices.push_back(al, rindex);
+                continue;
+            }
+            rindex.m_left = b.ArrayLBound(result, ri + 1);
+            rindex.m_right = b.ArrayUBound(result, ri + 1);
+            rindex.m_step = b.i32(1);
+            result_indices.push_back(al, rindex);
+        }
+
+        ASR::expr_t* result_section = nullptr;
+        if( n_dims_return_type == 1 ) {
+            result_section = EXPR(ASR::make_ArrayItem_t(al, loc, result,
+                    result_indices.p, result_indices.size(), ASRUtils::extract_type(return_type),
+                    ASR::arraystorageType::ColMajor, nullptr));
+            source = b.ArrayItem_01(source, {b.i32(1)});
+        } else {
+            ASR::ttype_t* result_section_type = ASRUtils::create_array_type_with_empty_dims(
+                al, n_dims_return_type - 1, ASRUtils::extract_type(return_type));
+            result_section = EXPR(ASR::make_ArraySection_t(al, loc, result,
+                    result_indices.p, result_indices.size(), result_section_type, nullptr));
+        }
+        return b.DoLoop(i, b.i32(1), ncopies, {
+            b.Assignment(result_section, source)
+        }, nullptr);
+    }
+
     static inline ASR::expr_t* instantiate_Spread(Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
@@ -2045,67 +2083,37 @@ namespace Spread {
         fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("dim", arg_types[1]);
         fill_func_arg("ncopies", arg_types[2]);
-        // TODO: this logic is incorrect, fix it.
-        /*
-            spread(source, dim, ncopies)
-            if (dim == 1) then
-                do j = 1, size(source)
-                    ele = source(j)
-                    do k = 1, ncopies
-                        result(i) = ele
-                        i = i + 1
-                    end do
-                end do
-            else if (dim == 2) then
-                do j = 1, ncopies
-                    do k = 1, size(source)
-                        ele = source(k)
-                        result(i) = ele
-                        i = i + 1
-                    end do
-                end do
-            end if
-        */
-        if( !ASRUtils::is_fixed_size_array(return_type) ) {
-            int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
-            bool is_allocatable = ASRUtils::is_allocatable(return_type);
-            Vec<ASR::dimension_t> empty_dims;
-            empty_dims.reserve(al, n_dims_return_type);
-            for( int idim = 0; idim < n_dims_return_type; idim++ ) {
-                ASR::dimension_t empty_dim;
-                empty_dim.loc = loc;
-                empty_dim.m_start = nullptr;
-                empty_dim.m_length = nullptr;
-                empty_dims.push_back(al, empty_dim);
-            }
-            return_type = ASRUtils::make_Array_t_util(al, loc,
-                ASRUtils::extract_type(return_type), empty_dims.p, empty_dims.size());
-            if( is_allocatable ) {
-                return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type));
-            }
+        int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
+        bool is_allocatable = ASRUtils::is_allocatable(return_type);
+        Vec<ASR::dimension_t> empty_dims;
+        empty_dims.reserve(al, n_dims_return_type);
+        for( int idim = 0; idim < n_dims_return_type; idim++ ) {
+            ASR::dimension_t empty_dim;
+            empty_dim.loc = loc;
+            empty_dim.m_start = nullptr;
+            empty_dim.m_length = nullptr;
+            empty_dims.push_back(al, empty_dim);
         }
+        return_type = ASRUtils::make_Array_t_util(al, loc,
+            ASRUtils::extract_type(return_type), empty_dims.p, empty_dims.size());
+        if( is_allocatable ) {
+            return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type));
+        }
+
+        diag::Diagnostics diag;
+
         ASR::expr_t *result = declare("result", return_type, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
-        ASR::expr_t *j = declare("j", int32, Local);
-        ASR::expr_t *k = declare("k", int32, Local);
-        body.push_back(al, b.Assignment(i, b.i32(1)));
-        body.push_back(al, b.If(b.Eq(args[1], b.i32(1)), {
-            b.DoLoop(j, b.i32(1), UBound(args[0], 1), {
-                b.DoLoop(k, b.i32(1), args[2], {
-                    b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
-                    b.Assignment(i, b.Add(i, b.i32(1))),
-                }, nullptr),
-            }, nullptr),
-        }, {
-            b.DoLoop(j, b.i32(1), args[2], {
-                b.DoLoop(k, b.i32(1), UBound(args[0], 1), {
-                    b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {k})),
-                    b.Assignment(i, b.Add(i, b.i32(1))),
-                }, nullptr),
-            }, nullptr),
-        }));
-
+        ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
+        ASR::stmt_t* current_else = generate_loop(al, loc, n_dims_return_type,
+            n_dims_return_type, i, result, source, ncopies, return_type);
+        for( int64_t d = n_dims_return_type - 2; d >= 0; d-- ) {
+            ASR::stmt_t* if_stmt = generate_loop(al, loc, n_dims_return_type,
+                d + 1, i, result, source, ncopies, return_type);
+            current_else = b.If(b.Eq(dim, b.i32(d + 1)), {if_stmt}, {current_else});
+        }
+        body.push_back(al, current_else);
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
