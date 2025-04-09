@@ -201,7 +201,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     for( int j = 0, k = 0; j < n_dims; j++ ) {
                         ASR::dimension_t new_dim;
                         new_dim.loc = dims[j].loc;
-                        new_dim.m_start = dim_variables[k];
+                        if (dims[j].m_start) {
+                            new_dim.m_start = dims[j].m_start;
+                        } else {
+                            new_dim.m_start = dim_variables[k];
+                        }
                         new_dim.m_length = dim_variables[k + 1];
                         new_dims.push_back(al, new_dim);
                         k += 2;
