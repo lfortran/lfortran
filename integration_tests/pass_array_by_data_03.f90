@@ -1,12 +1,22 @@
 program main
 implicit none
+integer :: x1(20)
 call find_fit(expression)
+call ub_proc(x1)
 
 contains
 real function expression(x) result(y)
     real, intent(in) :: x(3)
     y = x(1) + x(2) + x(3)
 end function expression
+
+subroutine ub_proc (x)
+    integer, intent(in) :: x(0:)
+    integer :: temp (0:ubound (x, 1))
+
+    if (lbound(x,1) /= 0 .or. ubound(x,1) /= 19 ) error stop 
+    if (lbound(temp,1) /= 0 .or. ubound(temp, 1) /= 19) error stop 
+end subroutine
 
 subroutine find_fit(expr)
 real :: x(3)
