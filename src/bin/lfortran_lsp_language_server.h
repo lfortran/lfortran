@@ -62,6 +62,11 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool clientSupportsHover = false;
         std::atomic_bool clientSupportsHighlight = false;
 
+        auto formatException(
+            const std::string &heading,
+            const std::exception_ptr &exception_ptr
+        ) const -> std::string override;
+
         virtual auto validate(
             std::shared_ptr<LspTextDocument> document
         ) -> void = 0;

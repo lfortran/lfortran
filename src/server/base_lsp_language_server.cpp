@@ -355,11 +355,13 @@ namespace LCompilers::LanguageServerProtocol {
             }
             logger.error() << error.message << std::endl;
             response.error = std::move(error);
-        } catch (const std::exception &e) {
+        } catch (...) {
             ResponseError error;
             error.code = static_cast<int>(ErrorCodes::InternalError);
-            error.message = "Caught unhandled exception: ";
-            error.message.append(e.what());
+            error.message = formatException(
+                "Caught unhandled exception",
+                std::current_exception()
+            );
             logger.error() << error.message << std::endl;
             response.error = std::move(error);
         }
@@ -397,9 +399,12 @@ namespace LCompilers::LanguageServerProtocol {
                     std::string issueTitle = reporter.title();
                     std::string issueBody = reporter.body();
                     sendOpenIssue(issueTitle, issueBody);
-                } catch (const std::exception &e) {
+                } catch (...) {
                     logger.error()
-                        << "Failed to open issue: " << e.what()
+                        << formatException(
+                            "Failed to open issue",
+                            std::current_exception()
+                        )
                         << std::endl;
                 }
             }
@@ -1095,9 +1100,12 @@ namespace LCompilers::LanguageServerProtocol {
             (this->workspaceConfig->log.level != workspaceConfig.log.level)) {
             try {
                 logger.setLevel(workspaceConfig.log.level);
-            } catch (std::exception &e) {
+            } catch (...) {
                 logger.error()
-                    << "Caught unhandled exception while updating log level: " << e.what()
+                    << formatException(
+                        "Caught unhandled exception while updating log level",
+                        std::current_exception()
+                    )
                     << std::endl;
             }
         }
