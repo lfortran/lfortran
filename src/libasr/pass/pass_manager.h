@@ -129,7 +129,7 @@ namespace LCompilers {
 
         public:
         // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
-        std::vector<std::string> passes_to_skip_with_llvm; 
+        std::vector<std::string> passes_to_skip_with_llvm;
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
