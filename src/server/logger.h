@@ -32,6 +32,10 @@ namespace LCompilers::LLanguageServer::Logging {
 
     class Logger;
 
+    auto formatTimePoint(
+        const std::chrono::system_clock::time_point& tp
+    ) -> std::string;
+
     class Formatter {
     public:
         Formatter(Logger &logger, Level level, const std::string &prompt);

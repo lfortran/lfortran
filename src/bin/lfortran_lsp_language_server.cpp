@@ -176,6 +176,8 @@ namespace LCompilers::LanguageServerProtocol {
         LspTextDocument &document,
         std::atomic_bool &taskIsRunning
     ) -> void {
+        const std::string taskType = "validate";
+        auto tracer = startRunning(taskType);
         if (!taskIsRunning) {
             logger.trace()  //<- trace instead of debug because this will happen often
                 << "Validation canceled before execution."

@@ -100,6 +100,14 @@ namespace LCompilers::LanguageServerProtocol {
         } else {
             this->logger.warn() << "Request time-outs are disabled." << std::endl;
         }
+        schedule(
+            [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
+                if (*taskIsRunning) {
+                    sendTelemetry();
+                }
+            },
+            [this]{ return ttl(250ms); }
+        );
     }
 
     auto ParallelLspLanguageServer::join() -> void {
