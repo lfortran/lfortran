@@ -58,6 +58,7 @@
                             (String 1 3 () PointerString)
                         )
                         ()
+                        ()
                     )
                     (FileRead
                         0
@@ -92,6 +93,7 @@
                         ()
                         ()
                         ()
+                        .true.
                     )
                     (FileBackspace
                         0
@@ -135,6 +137,7 @@
                         ()
                         ()
                         ()
+                        .true.
                     )
                     (FileWrite
                         0
@@ -155,6 +158,7 @@
                         ()
                         ()
                         ()
+                        .true.
                     )
                     (If
                         (StringCompare
