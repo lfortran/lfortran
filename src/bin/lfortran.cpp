@@ -60,6 +60,7 @@
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
+#include <bin/lsp_server.h>
 
 #ifdef WITH_LSP
 #include <bin/language_server_interface.h>
@@ -2305,7 +2306,7 @@ int main_app(int argc, char *argv[]) {
     CLI::App &mod = *parser.mod;
     CLI::App &pywrap = *parser.pywrap;
 #ifdef WITH_LSP
-    lsi::LanguageServerInterface &languageServerInterface = parser.languageServerInterface;
+    //lsi::LanguageServerInterface &languageServerInterface = parser.languageServerInterface;
     CLI::App &server = *parser.server;
 #endif // WITH_LSP
 
@@ -2407,16 +2408,7 @@ int main_app(int argc, char *argv[]) {
 
 #ifdef WITH_LSP
     if (server) {
-        try {
-            languageServerInterface.serve();
-        } catch (const LCompilers::LCompilersException &e) {
-            std::cerr << e.what() << std::endl;
-            return 1;
-        } catch (const std::exception &e) {
-            std::cerr << "Caught unhandled exception: " << e.what() << std::endl;
-            return 1;
-        }
-        return 0;
+        return LCompilers::run_lsp();
     }
 #endif
 
