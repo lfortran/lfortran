@@ -3131,9 +3131,9 @@ namespace Sum {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
             diag.add(diag::Diagnostic("Input to `Sum` is expected to be numeric, but got " +
-                type_to_str_fortran(array_type), 
-                diag::Level::Error, 
-                diag::Stage::Semantic, 
+                type_to_str_fortran(array_type),
+                diag::Level::Error,
+                diag::Stage::Semantic,
                 {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
             return nullptr;
         }
@@ -3172,9 +3172,9 @@ namespace Product {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_complex(*array_type)) {
             diag.add(diag::Diagnostic("Input to `Product` is expected to be numeric, but got " +
-                type_to_str_fortran(array_type), 
-                diag::Level::Error, 
-                diag::Stage::Semantic, 
+                type_to_str_fortran(array_type),
+                diag::Level::Error,
+                diag::Stage::Semantic,
                 {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
             return nullptr;
         }
@@ -3213,9 +3213,9 @@ namespace Iparity {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type)) {
             diag.add(diag::Diagnostic("Input to `Iparity` is expected to be an integer, but got " +
-                type_to_str_fortran(array_type), 
-                diag::Level::Error, 
-                diag::Stage::Semantic, 
+                type_to_str_fortran(array_type),
+                diag::Level::Error,
+                diag::Stage::Semantic,
                 {diag::Label("must be of integer type", { args[0]->base.loc })}));
         return nullptr;
     }
@@ -3255,9 +3255,9 @@ namespace MaxVal {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
             diag.add(diag::Diagnostic("Input to `MaxVal` is expected to be of integer, real or character type, but got " +
-                type_to_str_fortran(array_type), 
-                diag::Level::Error, 
-                diag::Stage::Semantic, 
+                type_to_str_fortran(array_type),
+                diag::Level::Error,
+                diag::Stage::Semantic,
                 {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
             return nullptr;
         }
@@ -3458,19 +3458,19 @@ namespace FindLoc {
         if (is_real(*array_type) && is_integer(*value_type)){
             if (ASR::is_a<ASR::IntegerConstant_t>(*value)){
                 ASR::IntegerConstant_t *value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
-                value = EXPR(ASR::make_RealConstant_t(al, loc, value_int->m_n, 
+                value = EXPR(ASR::make_RealConstant_t(al, loc, value_int->m_n,
                 ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type)))));
             } else{
-                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::IntegerToReal, 
+                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::IntegerToReal,
                 ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
             }
         } else if (is_integer(*array_type) && is_real(*value_type)){
             if (ASR::is_a<ASR::RealConstant_t>(*value)){
                 ASR::RealConstant_t *value_real = ASR::down_cast<ASR::RealConstant_t>(value);
-                value = EXPR(ASR::make_IntegerConstant_t(al, loc, value_real->m_r, 
+                value = EXPR(ASR::make_IntegerConstant_t(al, loc, value_real->m_r,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type)))));
             } else{
-                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::RealToInteger, 
+                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::RealToInteger,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr ));
             }
         }
@@ -3732,9 +3732,9 @@ namespace MinVal {
         ASR::ttype_t* array_type = expr_type(args[0]);
         if (!is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
             diag.add(diag::Diagnostic("Input to `MinVal` is expected to be of integer, real or character type, but got " +
-                type_to_str_fortran(array_type), 
-                diag::Level::Error, 
-                diag::Stage::Semantic, 
+                type_to_str_fortran(array_type),
+                diag::Level::Error,
+                diag::Stage::Semantic,
                 {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
             return nullptr;
         }
