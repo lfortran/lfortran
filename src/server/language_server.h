@@ -21,6 +21,11 @@ namespace LCompilers::LLanguageServer {
         virtual ~LanguageServer();
         virtual bool isTerminated() const = 0;
         virtual void join();
+
+        virtual auto formatException(
+            const std::string &heading,
+            const std::exception_ptr &exception_ptr
+        ) const -> std::string;
     protected:
         LanguageServer(
             MessageQueue &incomingMessages,
