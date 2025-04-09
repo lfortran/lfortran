@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iomanip>
+#include <sstream>
 #include <stdexcept>
 
 #include <server/logger.h>

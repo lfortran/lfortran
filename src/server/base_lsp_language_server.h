@@ -30,6 +30,19 @@ namespace LCompilers::LanguageServerProtocol {
         std::map<std::string, time_point_t>
     > RunningHistogram;
 
+    class BaseLspLanguageServer;
+
+    class RunTracer {
+    public:
+        RunTracer(BaseLspLanguageServer *server, const std::string &taskType);
+        ~RunTracer();
+        auto stop() -> void;
+    private:
+        BaseLspLanguageServer *server;
+        const std::string &taskType;
+        bool stopped{false};
+    }; // class RunTracer
+
     class BaseLspLanguageServer : public LspLanguageServer {
     public:
         auto isTerminated() const -> bool override;
@@ -128,10 +141,7 @@ namespace LCompilers::LanguageServerProtocol {
 
         auto toAny(const time_point_t &timePoint) -> LSPAny;
 
-        auto startRunning(
-            const std::string &taskType,
-            const time_point_t &startTime
-        ) -> void;
+        auto startRunning(const std::string &taskType) -> RunTracer;
 
         auto stopRunning(const std::string &taskType) -> void;
 
@@ -316,6 +326,7 @@ namespace LCompilers::LanguageServerProtocol {
             GetDocumentParams &params
         ) -> GetDocumentResult override;
 
+        friend class RunTracer;
     }; // class BaseLspLanguageServer
 
 } // namespace LCompilers::LanguageServerProtocol
