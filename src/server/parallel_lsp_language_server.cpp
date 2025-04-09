@@ -216,8 +216,6 @@ namespace LCompilers::LanguageServerProtocol {
     auto ParallelLspLanguageServer::chronicle() -> void {
         try {
             while (!_exit) {
-                const std::string taskType = "cron";
-                auto tracer = startRunning(taskType);
                 requestPool.ensureCapacity();
                 workerPool.ensureCapacity();
                 bool changed;
@@ -237,8 +235,6 @@ namespace LCompilers::LanguageServerProtocol {
                                 if (!_exit) {
                                     if (*taskIsRunning) {
                                         try {
-                                            const std::string taskType = "job:" + std::to_string(cronId);
-                                            auto tracer = startRunning(taskType);
                                             cronJob(std::move(taskIsRunning));
                                         } catch (const std::exception &e) {
                                             logger.error()
