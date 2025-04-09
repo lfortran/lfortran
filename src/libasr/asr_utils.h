@@ -4505,6 +4505,12 @@ class SymbolDuplicator {
                 new_symbol_name = variable->m_name;
                 break;
             }
+            case ASR::symbolType::Module: {
+                ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(symbol);
+                new_symbol = duplicate_Module(module, destination_symtab);
+                new_symbol_name = module->m_name;
+                break;
+            }
             case ASR::symbolType::ExternalSymbol: {
                 ASR::ExternalSymbol_t* external_symbol = ASR::down_cast<ASR::ExternalSymbol_t>(symbol);
                 new_symbol = duplicate_ExternalSymbol(external_symbol, destination_symtab);
@@ -4673,6 +4679,19 @@ class SymbolDuplicator {
             function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
             function->m_side_effect_free));
+    }
+
+    ASR::symbol_t* duplicate_Module(ASR::Module_t* module_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* module_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(module_t->m_symtab, module_symtab);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(
+            al, module_t->base.base.loc, module_symtab,
+            module_t->m_name, module_t->m_dependencies, module_t->n_dependencies,
+            module_t->m_loaded_from_mod, module_t->m_intrinsic,
+            module_t->m_start_name, module_t->m_end_name
+        ));
     }
 
     ASR::symbol_t* duplicate_Block(ASR::Block_t* block_t,
