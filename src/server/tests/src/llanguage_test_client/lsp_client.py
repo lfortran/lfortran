@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from lsprotocol.types import TextDocumentSaveReason
 
@@ -102,4 +102,8 @@ class LspClient(ABC):
 
     @abstractmethod
     def highlight(self, uri: str, line: int, column: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def hover(self, uri: str, line: int, column: int) -> None:
         raise NotImplementedError

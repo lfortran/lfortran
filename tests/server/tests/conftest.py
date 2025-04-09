@@ -1,8 +1,6 @@
 import os
 import shutil
-import signal
 import sys
-import time
 from pathlib import Path
 from typing import Iterator, Optional
 
@@ -83,10 +81,10 @@ def client(request: pytest.FixtureRequest, capfd: pytest.CaptureFixture) -> Iter
     # lldb_path = shutil.which('lldb')
     lldb_path = None  #<- FIXME: When LLDB is enabled, remove this line.
 
-    # NOTE: If you have GDB on your system and would like to run the tests with,
-    # uncomment the following line so it may be found and disable the line that
-    # assigns `None` to it:
-    # --------------------------------------------------------------------------
+    # NOTE: If you have GDB on your system and would like to run the tests with
+    # it, uncomment the following line so GDB may be found and disable the line
+    # that assigns `None` to it:
+    # -------------------------------------------------------------------------
     # gdb_path = shutil.which('gdb')
     gdb_path = None
 
