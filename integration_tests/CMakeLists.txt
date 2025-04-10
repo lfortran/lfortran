@@ -139,6 +139,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_sc")
+            # append `--separate-compilation` to extra args
+            list(APPEND extra_args "--separate-compilation")
             foreach (file ${extra_files})
                 get_filename_component(file_name_ ${file} NAME_WE)
                 add_custom_command(
@@ -2156,7 +2158,5 @@ RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME separate_compilation_01 LABELS gfortran llvm_sc EXTRAFILES
-    separate_compilation_01b.f90 EXTRA_ARGS --separate-compilation)
-RUN(NAME separate_compilation_02 LABELS gfortran llvm_sc EXTRAFILES
-    separate_compilation_02b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_01 LABELS gfortran llvm_sc EXTRAFILES separate_compilation_01b.f90)
+RUN(NAME separate_compilation_02 LABELS gfortran llvm_sc EXTRAFILES separate_compilation_02b.f90)
