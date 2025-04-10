@@ -14,20 +14,29 @@ namespace LCompilers::LLanguageServer {
         MessageStream &messageStream,
         MessageQueue &incomingMessages,
         MessageQueue &outgoingMessages,
-        lsl::Logger &logger
+        lsl::Logger &logger,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : languageServer(languageServer)
       , messageStream(messageStream)
       , incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
       , logger(logger.having("CommunicationProtocol"))
+      , listener([this, &logger, &start, &startChanged, &startMutex]() {
+          logger.threadName("CommunicationProtocol_listener");
+          if (!start) {
+              std::unique_lock<std::mutex> startLock(startMutex);
+              startChanged.wait(startLock, [&start]{
+                  return start.load();
+              });
+          }
+          listen();
+      })
     {
         // Decouple stdin from stdout
         std::ios::sync_with_stdio(false);
         std::cin.tie(nullptr);
-        listener = std::thread([this, &logger]() {
-            logger.threadName("CommunicationProtocol_listener");
-            listen();
-        });
     }
 
     CommunicationProtocol::~CommunicationProtocol() {
