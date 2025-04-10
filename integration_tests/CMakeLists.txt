@@ -1070,6 +1070,7 @@ RUN(NAME intrinsics_370 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_371 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_372 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
 RUN(NAME intrinsics_373 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_374 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # get_environment_variable
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
