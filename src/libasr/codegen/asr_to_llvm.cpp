@@ -8178,7 +8178,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             llvm::Type::getVoidTy(context), {
                                 character_type->getPointerTo(),
                                 llvm::Type::getInt32Ty(context)
-                            }, false);
+                            }, true);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
                 }
@@ -8422,7 +8422,16 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     visit_ArraySize(*array_size);
                     builder->CreateCall(fn, {arr, tmp, unit_val});
                 } else {
-                    builder->CreateCall(fn, {tmp, unit_val});
+                    if (ASR::is_a<ASR::String_t>(*type) && !is_string && !x.m_is_formatted) {
+                        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al, 
+                            x.m_values[i]->base.loc, x.m_values[i], type32, nullptr));
+                        llvm::Value *str = tmp;  
+                        visit_StringLen(*strlen);
+                        builder->CreateCall(fn, {str, unit_val, tmp});
+                    } else {
+                        builder->CreateCall(fn, {tmp, unit_val});
+                    }
                 }
             }
 

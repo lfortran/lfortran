@@ -1033,8 +1033,8 @@ public:
                         a_values_vec.size(), a_separator, a_end, nullptr, true);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
-                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr);
+                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg, 
+                        a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr, formatted);
                     print_statements[tmp] = std::make_pair(&r->base,label);
                 }
                 return;
@@ -1067,7 +1067,7 @@ public:
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt);
+                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted);
         }
 
         tmp_vec.push_back(tmp);

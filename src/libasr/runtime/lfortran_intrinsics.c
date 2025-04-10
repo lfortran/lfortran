@@ -3520,7 +3520,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 }
 
-LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
+LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
 {
     const char SPACE = ' ';
     int n = strlen(*p);
@@ -3539,7 +3539,8 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3547,41 +3548,48 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 
     if (unit_file_bin) {
         // read the record marker for data length
+        va_list args;
+        va_start(args, unit_num); 
+        int32_t var_len = va_arg(args, int32_t);
+
         int32_t data_length;
-        if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+        // Only read header if not access=stream and is at start of file
+        if (access_id != 1 && ftell(filep) == 0 &&               
+                fread(&data_length, sizeof(int32_t), 1, filep) != 1) {   
             printf("Error reading data length from file.\n");
             exit(1);
         }
 
+        long current_pos = ftell(filep);
+        fseek(filep, 0L, SEEK_END);
+        long end_pos = ftell(filep);
+        fseek(filep, current_pos, SEEK_SET);
+
+        if (access_id != 1) {
+            data_length = end_pos - current_pos - 4;  // leave last 4 bits as record marker
+        } else {
+            data_length = end_pos - current_pos;  // For access=stream read till last
+        }
+        if (data_length < var_len) {
+            printf("Error reading data as reached end of file.\n");
+            exit(1);
+        }
+
         // allocate memory for the data based on data length
-        *p = (char*)malloc((data_length + 1) * sizeof(char));
+        *p = (char*)malloc((var_len + 1) * sizeof(char));
         if (*p == NULL) {
             printf("Memory allocation failed.\n");
             exit(1);
         }
 
         // read the actual data
-        if (fread(*p, sizeof(char), data_length, filep) != data_length) {
+        if (fread(*p, sizeof(char), var_len, filep) != var_len) {
             printf("Error reading data from file.\n");
             free(*p);
             exit(1);
         }
-        (*p)[data_length] = '\0';
-
-        // read the record marker after data
-        int32_t check_length;
-        if (fread(&check_length, sizeof(int32_t), 1, filep) != 1) {
-            printf("Error reading end data length from file.\n");
-            free(*p);
-            exit(1);
-        }
-
-        // verify that the start and end markers match
-        if (check_length != data_length) {
-            printf("Data length mismatch between start and end markers.\n");
-            free(*p);
-            exit(1);
-        }
+        (*p)[var_len] = '\0';
+        va_end(args);
     } else {
         char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
         (void)!fscanf(filep, "%s", tmp_buffer);
