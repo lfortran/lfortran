@@ -6891,7 +6891,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 } else if (exponent_const == 3) {
                     tmp = builder->CreateMul(
                             left_val,
-                            builder->CreateMul( 
+                            builder->CreateMul(
                                 left_val,
                                 left_val,
                                 "simplified_pow_operation"),
@@ -6992,7 +6992,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 } else if (exponent_const == 3) {
                     tmp = builder->CreateFMul(
                             left_val,
-                            builder->CreateFMul( 
+                            builder->CreateFMul(
                                 left_val,
                                 left_val,
                                 "simplified_pow_operation"),
@@ -8867,7 +8867,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     visit_ArraySize(*array_size);
                     args.push_back(builder->CreateMul(kind_val, tmp));
                 } else if (ASRUtils::is_character(*ASRUtils::expr_type(m_values[i]))) {
-                    ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al, 
+                    ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al,
                         m_values[i]->base.loc, m_values[i], type32, nullptr));
                     visit_StringLen(*strlen);
                     args.push_back(builder->CreateMul(kind_val, tmp));
