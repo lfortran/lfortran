@@ -100,6 +100,14 @@ namespace LCompilers::LanguageServerProtocol {
         } else {
             this->logger.warn() << "Request time-outs are disabled." << std::endl;
         }
+        schedule(
+            [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
+                if (*taskIsRunning) {
+                    sendTelemetry();
+                }
+            },
+            [this]{ return ttl(250ms); }
+        );
     }
 
     auto ParallelLspLanguageServer::join() -> void {
@@ -133,13 +141,16 @@ namespace LCompilers::LanguageServerProtocol {
                                         << "Canceled before message could be handled."
                                         << std::endl;
                                 }
-                            } catch (std::exception &e) {
+                            } catch (...) {
                                 std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
                                 logger.error()
                                     << "Failed to handle message: " << message
                                     << std::endl;
                                 logger.error()
-                                    << "Caught unhandled exception: " << e.what()
+                                    << formatException(
+                                        "Caught unhandled exception",
+                                        std::current_exception()
+                                    )
                                     << std::endl;
                             }
                             {
@@ -159,13 +170,23 @@ namespace LCompilers::LanguageServerProtocol {
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "Unhandled exception caught: " << e.what()
+                    << formatException(
+                        "Unhandled exception caught",
+                        std::current_exception()
+                    )
                     << std::endl;
             } else {
                 logger.trace()
                     << "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
+        } catch (...) {
+            logger.error()
+                << formatException(
+                    "Unhandled exception caught",
+                    std::current_exception()
+                )
+                << std::endl;
         }
     }
 
@@ -228,10 +249,15 @@ namespace LCompilers::LanguageServerProtocol {
                                     if (*taskIsRunning) {
                                         try {
                                             cronJob(std::move(taskIsRunning));
-                                        } catch (const std::exception &e) {
+                                        } catch (...) {
                                             logger.error()
-                                                << "Caught unhandled exception while executing cron job with id="
-                                                << cronId << ": " << e.what() << std::endl;
+                                                << formatException(
+                                                    ("Caught unhandled exception "
+                                                     "while executing cron job "
+                                                     "with id=" + std::to_string(cronId)),
+                                                    std::current_exception()
+                                                )
+                                                << std::endl;
                                         }
                                     } else {
                                         logger.debug()
@@ -258,9 +284,12 @@ namespace LCompilers::LanguageServerProtocol {
                 // NOTE: Wait a short period of time before running the cron jobs again:
                 std::this_thread::sleep_for(40ms);
             }
-        } catch (std::exception &e) {
+        } catch (...) {
             logger.error()
-                << "Unhandled exception caught: " << e.what()
+                << formatException(
+                    "Unhandled exception caught",
+                    std::current_exception()
+                )
                 << std::endl;
         }
     }

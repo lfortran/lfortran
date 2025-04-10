@@ -25,6 +25,24 @@ namespace LCompilers::LanguageServerProtocol {
     typedef std::chrono::system_clock::time_point time_point_t;
     typedef std::chrono::milliseconds milliseconds_t;
 
+    typedef std::map<
+        std::string,
+        std::map<std::string, time_point_t>
+    > RunningHistogram;
+
+    class BaseLspLanguageServer;
+
+    class RunTracer {
+    public:
+        RunTracer(BaseLspLanguageServer *server, const std::string &taskType);
+        ~RunTracer();
+        auto stop() -> void;
+    private:
+        BaseLspLanguageServer *server;
+        const std::string &taskType;
+        bool stopped{false};
+    }; // class RunTracer
+
     class BaseLspLanguageServer : public LspLanguageServer {
     public:
         auto isTerminated() const -> bool override;
@@ -59,6 +77,10 @@ namespace LCompilers::LanguageServerProtocol {
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer;
         std::unordered_map<DocumentUri, std::shared_ptr<LspTextDocument>> documentsByUri;
         std::shared_mutex documentMutex;
+
+        // taskType -> threadName -> startTime
+        RunningHistogram runningHistogram;
+        std::shared_mutex runningMutex;
 
         std::unordered_map<DocumentUri, std::shared_ptr<LSPAny>> configsByUri;
         std::map<
@@ -102,6 +124,26 @@ namespace LCompilers::LanguageServerProtocol {
         auto isRunning() const -> bool;
 
         virtual auto listen() -> void = 0;
+
+        auto collectTelemetry() -> LSPAny;
+        auto sendTelemetry() -> void;
+
+        template <typename V>
+        auto toAny(const std::map<std::string, V> &map) -> LSPAny {
+            LSPObject object;
+            for (const auto &[key, value] : map) {
+                object.emplace(key, std::make_unique<LSPAny>(toAny(value)));
+            }
+            LSPAny any;
+            any = std::move(object);
+            return any;
+        }
+
+        auto toAny(const time_point_t &timePoint) -> LSPAny;
+
+        auto startRunning(const std::string &taskType) -> RunTracer;
+
+        auto stopRunning(const std::string &taskType) -> void;
 
         auto to_string(const RequestId &requestId) -> std::string;
 
@@ -284,6 +326,7 @@ namespace LCompilers::LanguageServerProtocol {
             GetDocumentParams &params
         ) -> GetDocumentResult override;
 
+        friend class RunTracer;
     }; // class BaseLspLanguageServer
 
 } // namespace LCompilers::LanguageServerProtocol

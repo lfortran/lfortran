@@ -567,6 +567,10 @@ filename = "preprocessor18.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor19.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true

@@ -102,7 +102,9 @@ namespace LCompilers::LanguageServerProtocol {
             ) {
                 std::shared_lock<std::shared_mutex> readLock(document->mutex());
                 const std::string &uri = document->uri();
+                readLock.unlock();
                 LFortranLspLanguageServer::validate(*document, *taskIsRunning);
+                readLock.lock();
                 std::unique_lock<std::shared_mutex> writeLock(validationMutex);
                 auto iter = validationsByUri.find(uri);
                 if (iter != validationsByUri.end()) {

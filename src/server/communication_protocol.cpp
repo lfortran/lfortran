@@ -55,7 +55,10 @@ namespace LCompilers::LLanguageServer {
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "Unhandled exception caught: " << e.what()
+                    << languageServer.formatException(
+                        "Unhandled exception caught",
+                        std::current_exception()
+                    )
                     << std::endl;
             } else {
                 logger.trace()
@@ -64,7 +67,10 @@ namespace LCompilers::LLanguageServer {
             }
         } catch (...) {
             logger.error()
-                << "Unhandled exception caught: unknown"
+                << languageServer.formatException(
+                    "Unhandled exception caught",
+                    std::current_exception()
+                )
                 << std::endl;
         }
         logger.debug() << "Incoming-message listener terminated." << std::endl;
@@ -85,10 +91,12 @@ namespace LCompilers::LLanguageServer {
                         << std::endl;
                 }
             }
-        } catch (std::exception &e) {
+        } catch (...) {
             logger.error()
-                << "Caught unhandled exception while serving requests: "
-                << e.what()
+                << languageServer.formatException(
+                    "Caught unhandled exception while serving requests",
+                    std::current_exception()
+                )
                 << std::endl;
         }
         running = false;

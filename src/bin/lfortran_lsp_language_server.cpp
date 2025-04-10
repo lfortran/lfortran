@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 
+#include <libasr/exception.h>
+#include <libasr/stacktrace.h>
+
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
 #include <server/lsp_specification.h>
@@ -146,11 +149,14 @@ namespace LCompilers::LanguageServerProtocol {
         lcli::LFortranCommandLineParser parser(argv);
         try {
             parser.parse();
-        } catch (const lc::LCompilersException &e) {
-            logger.error()
-                << "Failed to initialize compiler options for document with uri=\""
-                << uri << "\": " << e.what() << std::endl;
-            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
+        } catch (...) {
+            const std::string message = formatException(
+                ("Failed to initialize compiler options for document with "
+                 "uri=\"" + uri + "\""),
+                std::current_exception()
+            );
+            logger.error() << message << std::endl;
+            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, message);
         }
 
         CompilerOptions &compilerOptions = parser.opts.compiler_options;
@@ -172,10 +178,38 @@ namespace LCompilers::LanguageServerProtocol {
         return record.first->second;
     }
 
+    auto LFortranLspLanguageServer::formatException(
+        const std::string &heading,
+        const std::exception_ptr &exception_ptr
+    ) const -> std::string {
+        try {
+            if (exception_ptr) {
+                std::rethrow_exception(exception_ptr);
+            } else {
+                return std::string{heading}.append(": ").append("unknown");
+            }
+        } catch (const LCompilers::LCompilersException &e) {
+            std::vector<LCompilers::StacktraceItem> stacktrace =
+                e.stacktrace_addresses();
+            get_local_addresses(stacktrace);
+            get_local_info(stacktrace);
+            return std::string{heading}.append("\n")
+                .append(stacktrace2str(stacktrace, LCompilers::stacktrace_depth, false))
+                .append(e.name()).append(": ").append(e.msg());
+        } catch (...) {
+            return BaseLspLanguageServer::formatException(
+                heading,
+                std::current_exception()
+            );
+        }
+    }
+
     auto LFortranLspLanguageServer::validate(
         LspTextDocument &document,
         std::atomic_bool &taskIsRunning
     ) -> void {
+        const std::string taskType = "validate";
+        auto tracer = startRunning(taskType);
         if (!taskIsRunning) {
             logger.trace()  //<- trace instead of debug because this will happen often
                 << "Validation canceled before execution."
@@ -276,15 +310,20 @@ namespace LCompilers::LanguageServerProtocol {
                         << "Validation canceled before publishing results."
                         << std::endl;
                 }
-            } catch (std::exception &e) {
+            } catch (...) {
                 logger.error()
-                    << "Failed to validate document (uri=\""
-                    << uri << "\"): " << e.what()
+                    << formatException(
+                        ("Failed to validate document (uri=\"" + uri + "\")"),
+                        std::current_exception()
+                    )
                     << std::endl;
             }
-        } catch (std::exception &e) {
+        } catch (...) {
             logger.error()
-                << "Failed to read document attributes: " << e.what()
+                << formatException(
+                    "Failed to read document attributes",
+                    std::current_exception()
+                )
                 << std::endl;
         }
     }

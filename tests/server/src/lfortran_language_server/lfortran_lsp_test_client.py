@@ -8,12 +8,17 @@ from lsprotocol.types import (
     CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
     CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
     CompletionItemTag, DefinitionClientCapabilities, DefinitionParams,
-    DocumentHighlightClientCapabilities, HoverClientCapabilities,
+    DidChangeTextDocumentParams, DocumentHighlightClientCapabilities,
+    DocumentSymbolClientCapabilities, HoverClientCapabilities,
     InitializeParams, InsertTextMode, Location, LocationLink, MarkupKind,
     Position, RenameClientCapabilities, RenameParams,
-    TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
+    TextDocumentContentChangeEvent, TextDocumentContentChangeEvent_Type1,
+    TextDocumentContentChangeEvent_Type2, TextDocumentDefinitionRequest,
+    TextDocumentDefinitionResponse, TextDocumentDocumentHighlightResponse,
+    TextDocumentDocumentSymbolResponse, TextDocumentHoverResponse,
     TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
-    TextDocumentRenameRequest, TextDocumentRenameResponse, WorkspaceEdit)
+    TextDocumentRenameRequest, TextDocumentRenameResponse,
+    TextDocumentSyncKind, VersionedTextDocumentIdentifier, WorkspaceEdit)
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 from llanguage_test_client.lsp_test_client import LspTestClient
@@ -107,7 +112,6 @@ class LFortranLspTestClient(LspTestClient):
                 context_support=True,
             )
             text_document.hover = HoverClientCapabilities(
-                dynamic_registration=True,
                 content_format=[
                     MarkupKind.PlainText,
                     MarkupKind.Markdown,
@@ -116,6 +120,9 @@ class LFortranLspTestClient(LspTestClient):
             text_document.definition = DefinitionClientCapabilities()
             text_document.rename = RenameClientCapabilities()
             text_document.document_highlight = DocumentHighlightClientCapabilities()
+            text_document.document_symbol = DocumentSymbolClientCapabilities(
+                hierarchical_document_symbol_support=True,
+            )
         return params
 
     def receive_text_document_publish_diagnostics(
@@ -228,6 +235,34 @@ class LFortranLspTestClient(LspTestClient):
             for uri, text_edits in changes.items():
                 document = self.get_document("fortran", uri)
                 document.apply(text_edits)
+                if self.server_supports_text_document_did_change():
+                    version = document.bump_version()
+                    content_changes: List[TextDocumentContentChangeEvent]
+                    if self.server_supports_text_document_sync_kind(
+                            TextDocumentSyncKind.Incremental
+                    ):
+                        content_changes = [
+                            TextDocumentContentChangeEvent_Type1(
+                                range=text_edit.range,
+                                text=text_edit.new_text
+                            )
+                            for text_edit in text_edits
+                        ]
+                    else:
+                        content_changes = [
+                            TextDocumentContentChangeEvent_Type2(
+                                text=document.text
+                            )
+                        ]
+                    params = DidChangeTextDocumentParams(
+                        text_document=VersionedTextDocumentIdentifier(
+                            version=version,
+                            uri=uri
+                        ),
+                        content_changes=content_changes
+                    )
+                    self.send_text_document_did_change(params)
+                document.signal_change()
 
     def receive_text_document_rename(
             self,
@@ -255,3 +290,44 @@ class LFortranLspTestClient(LspTestClient):
             )
             request_id = self.send_text_document_rename(params)
             self.await_response(request_id)
+
+    def receive_text_document_document_highlight(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentDocumentHighlightResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.highlights = response.result
+
+    def receive_text_document_hover(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentHoverResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.preview = response.result
+
+    def receive_text_document_document_symbol(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentDocumentSymbolResponse
+        )
+        uri = request.params.text_document.uri
+        doc = self.get_document("fortran", uri)
+        doc.symbols = response.result

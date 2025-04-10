@@ -1,3 +1,4 @@
+#include <exception>
 #include <filesystem>
 #include <random>
 #include <regex>
@@ -515,46 +516,50 @@ namespace LCompilers::LLanguageServer::Interface {
             std::condition_variable startChanged;
             std::mutex startMutex;
 
-            try {
-                std::unique_ptr<ls::MessageStream> messageStream =
-                    buildMessageStream(logger);
-                ls::MessageQueue communicatorToServer(logger, "communicator-to-server");
-                ls::MessageQueue serverToCommunicator(logger, "server-to-communicator");
-                std::unique_ptr<ls::LanguageServer> languageServer =
-                    buildLanguageServer(
-                        communicatorToServer,
-                        serverToCommunicator,
-                        logger,
-                        start,
-                        startChanged,
-                        startMutex
-                    );
-                std::unique_ptr<ls::CommunicationProtocol> communicationProtocol =
-                    buildCommunicationProtocol(
-                        *languageServer,
-                        *messageStream,
-                        serverToCommunicator,
-                        communicatorToServer,
-                        logger,
-                        start,
-                        startChanged,
-                        startMutex
-                    );
-                start = true;
-                startChanged.notify_all();
-                communicationProtocol->serve();
-                logger.info()
-                    << "Language server terminated cleanly."
-                    << std::endl;
-            } catch (const std::exception &e) {
-                std::string buffer = "Language server terminated erroneously: ";
-                buffer.append(e.what());
-                throw lc::LCompilersException(buffer);
-            }
+            std::unique_ptr<ls::MessageStream> messageStream =
+                buildMessageStream(logger);
+            ls::MessageQueue communicatorToServer(logger, "communicator-to-server");
+            ls::MessageQueue serverToCommunicator(logger, "server-to-communicator");
+            std::unique_ptr<ls::LanguageServer> languageServer =
+                buildLanguageServer(
+                    communicatorToServer,
+                    serverToCommunicator,
+                    logger,
+                    start,
+                    startChanged,
+                    startMutex
+                );
+            std::unique_ptr<ls::CommunicationProtocol> communicationProtocol =
+                buildCommunicationProtocol(
+                    *languageServer,
+                    *messageStream,
+                    serverToCommunicator,
+                    communicatorToServer,
+                    logger,
+                    start,
+                    startChanged,
+                    startMutex
+                );
+            start = true;
+            startChanged.notify_all();
+            communicationProtocol->serve();
+            logger.info()
+                << "Language server terminated cleanly."
+                << std::endl;
+        } catch(const LCompilers::LCompilersException &e) {
+            std::cerr << "Caught unhandled exception" << std::endl;
+            std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
+            get_local_addresses(d);
+            get_local_info(d);
+            std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth, false);
+            std::cerr << e.name() + ": " << e.msg() << std::endl;
+            throw e;
         } catch (const std::exception &e) {
             std::string buffer = "Caught unhandled exception: ";
             buffer.append(e.what());
             throw lc::LCompilersException(buffer);
+        } catch (...) {
+            std::cerr << "Unknown Exception" << std::endl;
         }
     }
 
