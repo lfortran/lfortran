@@ -101,9 +101,13 @@ class LspClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def highlight(self, uri: str, line: int, column: int) -> None:
+    def highlight_symbol(self, uri: str, line: int, column: int) -> None:
         raise NotImplementedError
 
     @abstractmethod
     def hover(self, uri: str, line: int, column: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def semantic_highlight(self, uri: str) -> None:
         raise NotImplementedError

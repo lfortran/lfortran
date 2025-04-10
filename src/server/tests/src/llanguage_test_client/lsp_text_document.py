@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 from lsprotocol.types import (DocumentHighlight, DocumentSymbol, Hover,
-                              Position, Range, SymbolInformation,
-                              TextDocumentSaveReason, TextEdit)
+                              Position, Range, SemanticTokens,
+                              SymbolInformation, TextDocumentSaveReason,
+                              TextEdit)
 
 from llanguage_test_client.lsp_client import LspClient
 
@@ -69,9 +70,10 @@ class LspTextDocument:
     change_listeners: List[ChangeListener]
 
     selection: Optional[Range]
-    highlights: Optional[List[DocumentHighlight]]
+    symbol_highlights: Optional[List[DocumentHighlight]]
     preview: Optional[Hover]
     symbols: Union[List[SymbolInformation], List[DocumentSymbol], None]
+    semantic_highlights: Union[SemanticTokens, None]
 
     def __init__(
             self,
@@ -93,10 +95,11 @@ class LspTextDocument:
         self.len_by_line = [1]
         self.is_new = (path is None)
         self.selection = None
-        self.highlights = None
+        self.symbol_highlights = None
         self.preview = None
         self.symbols = None
         self.change_listeners = []
+        self.semantic_highlights = None
 
     def on_change(self, listener: ChangeListener) -> None:
         self.change_listeners.append(listener)
@@ -433,11 +436,15 @@ class LspTextDocument:
         self.client.rename(self.uri, line, column, new_name)
 
     @requires_path
-    def highlight(self) -> None:
+    def highlight_symbol(self) -> None:
         line, column = self.pos_to_linecol(self.position)
-        self.client.highlight(self.uri, line, column)
+        self.client.highlight_symbol(self.uri, line, column)
 
     @requires_path
     def hover(self) -> None:
         line, column = self.pos_to_linecol(self.position)
         self.client.hover(self.uri, line, column)
+
+    @requires_path
+    def semantic_highlight(self) -> None:
+        self.client.semantic_highlight(self.uri)

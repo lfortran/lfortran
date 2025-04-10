@@ -1,5 +1,6 @@
 #pragma once
 
+#include "server/lsp_text_document.h"
 #include <atomic>
 #include <condition_variable>
 #include <memory>
@@ -18,6 +19,7 @@
 
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_lsp_config.h>
+#include <bin/semantic_highlighter.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace lc = LCompilers;
@@ -55,12 +57,16 @@ namespace LCompilers::LanguageServerProtocol {
         > validationsByUri;
         std::shared_mutex validationMutex;
 
+        std::unordered_map<std::size_t, SemanticHighlighter> highlightsByDocumentId;
+        std::shared_mutex highlightsMutex;
+
         std::atomic_bool clientSupportsGotoDefinition = false;
         std::atomic_bool clientSupportsGotoDefinitionLinks = false;
         std::atomic_bool clientSupportsDocumentSymbols = false;
         std::atomic_bool clientSupportsHierarchicalDocumentSymbols = false;
         std::atomic_bool clientSupportsHover = false;
         std::atomic_bool clientSupportsHighlight = false;
+        std::atomic_bool clientSupportsSemanticHighlight = false;
 
         auto formatException(
             const std::string &heading,
@@ -87,6 +93,16 @@ namespace LCompilers::LanguageServerProtocol {
         auto asrSymbolTypeToLspSymbolKind(
             ASR::symbolType symbol_type
         ) const -> SymbolKind;
+
+        auto encodeHighlights(
+            std::vector<unsigned int> &encodings,
+            LspTextDocument &document,
+            SemanticHighlighter &highlights
+        ) -> void;
+
+        auto getHighlights(
+            LspTextDocument &document
+        ) -> SemanticHighlighter &;
 
         auto getLFortranConfig(
             const DocumentUri &uri
@@ -146,6 +162,11 @@ namespace LCompilers::LanguageServerProtocol {
             const RequestMessage &request,
             DocumentHighlightParams &params
         ) -> TextDocument_DocumentHighlightResult override;
+
+        auto receiveTextDocument_semanticTokens_full(
+            const RequestMessage &request,
+            SemanticTokensParams &params
+        ) -> TextDocument_SemanticTokens_FullResult override;
 
         // ====================== //
         // Incoming Notifications //

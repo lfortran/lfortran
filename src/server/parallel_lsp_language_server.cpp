@@ -106,7 +106,7 @@ namespace LCompilers::LanguageServerProtocol {
                     sendTelemetry();
                 }
             },
-            [this]{ return ttl(250ms); }
+            [this]{ return ttl(1000ms); }
         );
     }
 

@@ -1,3 +1,4 @@
+#include "bin/semantic_highlighter.h"
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -5,6 +6,7 @@
 #include <memory>
 #include <shared_mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <libasr/exception.h>
@@ -358,6 +360,7 @@ namespace LCompilers::LanguageServerProtocol {
                 }
                 clientSupportsHover = textDocument.hover.has_value();
                 clientSupportsHighlight = textDocument.documentHighlight.has_value();
+                clientSupportsSemanticHighlight = textDocument.semanticTokens.has_value();
             }
             logger.debug()
                 << "clientSupportsGotoDefinition = "
@@ -382,6 +385,10 @@ namespace LCompilers::LanguageServerProtocol {
             logger.debug()
                 << "clientSupportsHighlight = "
                 << clientSupportsHighlight
+                << std::endl;
+            logger.debug()
+                << "clientSupportsSemanticHighlight = "
+                << clientSupportsSemanticHighlight
                 << std::endl;
         }
 
@@ -419,6 +426,53 @@ namespace LCompilers::LanguageServerProtocol {
             ServerCapabilities_documentHighlightProvider &documentHighlightProvider =
                 capabilities.documentHighlightProvider.emplace();
             documentHighlightProvider = true;
+        }
+
+        if (clientSupportsSemanticHighlight) {
+            auto semanticTokensOptions = std::make_unique<SemanticTokensOptions>();
+            SemanticTokensLegend &legend = semanticTokensOptions->legend;
+            legend.tokenTypes = {
+                "namespace",
+                "type",
+                "class",
+                "enum",
+                "interface",
+                "struct",
+                "typeParameter",
+                "parameter",
+                "variable",
+                "property",
+                "enumMember",
+                "event",
+                "function",
+                "method",
+                "macro",
+                "keyword",
+                "modifier",
+                "comment",
+                "string",
+                "number",
+                "regexp",
+                "operator",
+                "decorator"
+            };
+            legend.tokenModifiers = {
+                "declaration",
+                "definition",
+                "readonly",
+                "static",
+                "deprecated",
+                "abstract",
+                "async",
+                "modification",
+                "documentation",
+                "defaultLibrary"
+            };
+            SemanticTokensOptions_full &full = semanticTokensOptions->full.emplace();
+            full = true;
+            ServerCapabilities_semanticTokensProvider &semanticTokensProvider =
+                capabilities.semanticTokensProvider.emplace();
+            semanticTokensProvider = std::move(semanticTokensOptions);
         }
 
         return result;
@@ -852,6 +906,79 @@ namespace LCompilers::LanguageServerProtocol {
                 }
             }
             result = std::move(highlights);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    auto LFortranLspLanguageServer::getHighlights(
+        LspTextDocument &document
+    ) -> SemanticHighlighter & {
+        std::shared_lock<std::shared_mutex> readLock(highlightsMutex);
+        auto iter = highlightsByDocumentId.find(document.documentId());
+        if (iter != highlightsByDocumentId.end()) {
+            return iter->second;
+        }
+        readLock.unlock();
+        std::unique_lock<std::shared_mutex> writeLock(highlightsMutex);
+        iter = highlightsByDocumentId.find(document.documentId());
+        if (iter != highlightsByDocumentId.end()) {
+            return iter->second;
+        }
+        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        return highlightsByDocumentId.emplace_hint(
+            iter,
+            std::piecewise_construct,
+            std::make_tuple(document.documentId()),
+            std::make_tuple(document.text())
+        )->second;
+    }
+
+    auto LFortranLspLanguageServer::encodeHighlights(
+        std::vector<unsigned int> &encodings,
+        LspTextDocument &document,
+        SemanticHighlighter &highlights
+    ) -> void {
+        encodings.reserve(5 * highlights.size());
+        std::shared_lock<std::shared_mutex> highlightsLock(highlights.mutex());
+        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        std::size_t prevLine = 0;
+        std::size_t prevColumn = 0;
+        for (const F90Token &token : highlights) {
+            std::size_t line, column, deltaLine, deltaStart;
+            document.fromPosition(line, column, token.position);
+            deltaLine = line - prevLine;
+            deltaStart = (line == prevLine)
+                ? (column - prevColumn)
+                : column;
+            unsigned int modifiers = 0x0000;
+            for (SemanticTokenModifiers modifier : token.modifiers) {
+                modifiers |= (1 << static_cast<unsigned int>(modifier));
+            }
+            encodings.push_back(deltaLine);
+            encodings.push_back(deltaStart);
+            encodings.push_back(token.length);
+            encodings.push_back(static_cast<unsigned int>(token.type));
+            encodings.push_back(modifiers);
+            prevLine = line;
+            prevColumn = column;
+        }
+    }
+
+    // request: "textDocument/semanticTokens/full"
+    auto LFortranLspLanguageServer::receiveTextDocument_semanticTokens_full(
+        const RequestMessage &/*request*/,
+        SemanticTokensParams &params
+    ) -> TextDocument_SemanticTokens_FullResult {
+        TextDocument_SemanticTokens_FullResult result;
+        if (clientSupportsSemanticHighlight) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            SemanticHighlighter &highlights = getHighlights(*document);
+            auto semanticTokens = std::make_unique<SemanticTokens>();
+            encodeHighlights(semanticTokens->data, *document, highlights);
+            result = std::move(semanticTokens);
         } else {
             result = nullptr;
         }

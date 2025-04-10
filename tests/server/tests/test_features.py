@@ -138,8 +138,8 @@ def test_document_highlight(client: LFortranLspTestClient) -> None:
     assert client.await_validation(doc.uri, doc.version) is not None
     line, column = 7, 10
     doc.cursor = line, column
-    doc.highlight()
-    assert doc.highlights is not None
+    doc.highlight_symbol()
+    assert doc.symbol_highlights is not None
     # NOTE: DocumentHighlight is not hashable, so we cannot perform set comparison ...
     expected_highlights: List[DocumentHighlight] = [
         DocumentHighlight(
@@ -179,7 +179,7 @@ def test_document_highlight(client: LFortranLspTestClient) -> None:
             ),
         ),
     ]
-    for highlight in doc.highlights:
+    for highlight in doc.symbol_highlights:
         expected_highlights.remove(highlight)
     assert len(expected_highlights) == 0
 
@@ -320,3 +320,76 @@ def test_symbol_tree(client: LFortranLspTestClient) -> None:
             ),
         ),
     ]
+
+def test_semantic_highlighting(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    doc.semantic_highlight()
+    expected_highlights = [
+        0,0,6,15,0, # Keyword at line=0, column=0, length=6, text=`module`
+        0,7,21,8,0, # Variable at line=0, column=7, length=21, text=`module_function_call1`
+        1,4,4,15,0, # Keyword at line=1, column=4, length=4, text=`type`
+        0,8,7,8,0,  # Variable at line=1, column=12, length=7, text=`softmax`
+        1,4,8,15,0, # Keyword at line=2, column=4, length=8, text=`contains`
+        1,6,9,8,0,  # Variable at line=3, column=6, length=9, text=`procedure`
+        0,13,7,8,0, # Variable at line=3, column=19, length=7, text=`eval_1d`
+        1,4,3,15,0, # Keyword at line=4, column=4, length=3, text=`end`
+        0,4,4,15,0, # Keyword at line=4, column=8, length=4, text=`type`
+        0,5,7,8,0,  # Variable at line=4, column=13, length=7, text=`softmax`
+        1,2,8,15,0, # Keyword at line=5, column=2, length=8, text=`contains`
+        2,4,4,8,0,  # Variable at line=7, column=4, length=4, text=`pure`
+        0,5,8,15,0, # Keyword at line=7, column=9, length=8, text=`function`
+        0,9,7,8,0,  # Variable at line=7, column=18, length=7, text=`eval_1d`
+        0,8,4,8,0,  # Variable at line=7, column=26, length=4, text=`self`
+        0,6,1,8,0,  # Variable at line=7, column=32, length=1, text=`x`
+        0,3,6,8,0,  # Variable at line=7, column=35, length=6, text=`result`
+        0,7,3,8,0,  # Variable at line=7, column=42, length=3, text=`res`
+        1,6,5,8,0,  # Variable at line=8, column=6, length=5, text=`class`
+        0,6,7,8,0,  # Variable at line=8, column=12, length=7, text=`softmax`
+        0,10,6,8,0, # Variable at line=8, column=22, length=6, text=`intent`
+        0,7,2,8,0,  # Variable at line=8, column=29, length=2, text=`in`
+        0,7,4,8,0,  # Variable at line=8, column=36, length=4, text=`self`
+        1,6,4,15,0, # Keyword at line=9, column=6, length=4, text=`real`
+        0,6,6,8,0,  # Variable at line=9, column=12, length=6, text=`intent`
+        0,7,2,8,0,  # Variable at line=9, column=19, length=2, text=`in`
+        0,7,1,8,0,  # Variable at line=9, column=26, length=1, text=`x`
+        1,6,4,15,0, # Keyword at line=10, column=6, length=4, text=`real`
+        0,8,3,8,0,  # Variable at line=10, column=14, length=3, text=`res`
+        0,4,4,8,0,  # Variable at line=10, column=18, length=4, text=`size`
+        0,5,1,8,0,  # Variable at line=10, column=23, length=1, text=`x`
+        1,4,3,15,0, # Keyword at line=11, column=4, length=3, text=`end`
+        0,4,8,15,0, # Keyword at line=11, column=8, length=8, text=`function`
+        0,9,7,8,0,  # Variable at line=11, column=17, length=7, text=`eval_1d`
+        2,4,4,8,0,  # Variable at line=13, column=4, length=4, text=`pure`
+        0,5,8,15,0, # Keyword at line=13, column=9, length=8, text=`function`
+        0,9,13,8,0, # Variable at line=13, column=18, length=13, text=`eval_1d_prime`
+        0,14,4,8,0, # Variable at line=13, column=32, length=4, text=`self`
+        0,6,1,8,0,  # Variable at line=13, column=38, length=1, text=`x`
+        0,3,6,8,0,  # Variable at line=13, column=41, length=6, text=`result`
+        0,7,3,8,0,  # Variable at line=13, column=48, length=3, text=`res`
+        1,6,5,8,0,  # Variable at line=14, column=6, length=5, text=`class`
+        0,6,7,8,0,  # Variable at line=14, column=12, length=7, text=`softmax`
+        0,10,6,8,0, # Variable at line=14, column=22, length=6, text=`intent`
+        0,7,2,8,0,  # Variable at line=14, column=29, length=2, text=`in`
+        0,7,4,8,0,  # Variable at line=14, column=36, length=4, text=`self`
+        1,6,4,15,0, # Keyword at line=15, column=6, length=4, text=`real`
+        0,6,6,8,0,  # Variable at line=15, column=12, length=6, text=`intent`
+        0,7,2,8,0,  # Variable at line=15, column=19, length=2, text=`in`
+        0,7,1,8,0,  # Variable at line=15, column=26, length=1, text=`x`
+        1,6,4,15,0, # Keyword at line=16, column=6, length=4, text=`real`
+        0,8,3,8,0,  # Variable at line=16, column=14, length=3, text=`res`
+        0,4,4,8,0,  # Variable at line=16, column=18, length=4, text=`size`
+        0,5,1,8,0,  # Variable at line=16, column=23, length=1, text=`x`
+        1,6,3,8,0,  # Variable at line=17, column=6, length=3, text=`res`
+        0,6,4,8,0,  # Variable at line=17, column=12, length=4, text=`self`
+        0,5,7,8,0,  # Variable at line=17, column=17, length=7, text=`eval_1d`
+        0,8,1,8,0,  # Variable at line=17, column=25, length=1, text=`x`
+        1,4,3,15,0, # Keyword at line=18, column=4, length=3, text=`end`
+        0,4,8,15,0, # Keyword at line=18, column=8, length=8, text=`function`
+        0,9,13,8,0, # Variable at line=18, column=17, length=13, text=`eval_1d_prime`
+        1,0,3,15,0, # Keyword at line=19, column=0, length=3, text=`end`
+        0,4,6,15,0, # Keyword at line=19, column=4, length=6, text=`module`
+        0,7,21,8,0, # Variable at line=19, column=11, length=21, text=`module_function_call1`
+    ]
+    assert doc.semantic_highlights.data == expected_highlights
