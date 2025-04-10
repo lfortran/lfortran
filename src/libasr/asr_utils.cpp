@@ -373,6 +373,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 ASR::Module_t *mod2 = extract_module(*mod1);
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
+                if ( separate_compilation ) {
+                    mod2->m_symtab->mark_all_variables_external(al);
+                }
                 mod2->m_loaded_from_mod = true;
                 rerun = true;
             }
