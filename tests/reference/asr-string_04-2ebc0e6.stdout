@@ -310,7 +310,11 @@
                                         DescriptorString
                                         PointerString
                                         (Allocatable
-                                            (String 1 -2 () PointerString)
+                                            (String 1 -1 (StringLen
+                                                (Var 2 str)
+                                                (Integer 8)
+                                                ()
+                                            ) PointerString)
                                         )
                                         ()
                                     )

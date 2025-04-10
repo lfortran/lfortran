@@ -696,7 +696,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (Var 6 profile_name)
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             ))
@@ -705,7 +709,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (Var 6 compiler_name)
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             ))
@@ -715,7 +723,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (Var 6 flags)
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             ))
@@ -724,7 +736,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (Var 6 c_flags)
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             ))
@@ -733,7 +749,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (Var 6 cxx_flags)
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             ))
@@ -742,7 +762,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (Var 6 link_time_flags)
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             ))

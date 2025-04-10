@@ -23,7 +23,7 @@ source_filename = "LFortran"
 @19 = private unnamed_addr constant [14 x i8] c"Invalid marks\00", align 1
 @20 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @21 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info = private unnamed_addr constant [5 x i8] c"S,I4\00", align 1
+@serialization_info = private unnamed_addr constant [8 x i8] c"S-15,I4\00", align 1
 @22 = private unnamed_addr constant [16 x i8] c"Your marks are \00", align 1
 @23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @24 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
@@ -51,7 +51,7 @@ source_filename = "LFortran"
 @46 = private unnamed_addr constant [14 x i8] c"Invalid marks\00", align 1
 @47 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @48 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info.1 = private unnamed_addr constant [5 x i8] c"S,I4\00", align 1
+@serialization_info.1 = private unnamed_addr constant [8 x i8] c"S-15,I4\00", align 1
 @49 = private unnamed_addr constant [16 x i8] c"Your marks are \00", align 1
 @50 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @51 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -76,7 +76,7 @@ source_filename = "LFortran"
 @70 = private unnamed_addr constant [14 x i8] c"Invalid marks\00", align 1
 @71 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @72 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info.2 = private unnamed_addr constant [5 x i8] c"S,I4\00", align 1
+@serialization_info.2 = private unnamed_addr constant [8 x i8] c"S-15,I4\00", align 1
 @73 = private unnamed_addr constant [16 x i8] c"Your marks are \00", align 1
 @74 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
@@ -190,7 +190,7 @@ ifcont16:                                         ; preds = %ifcont15, %then3
 ifcont17:                                         ; preds = %ifcont16, %then
   %34 = alloca i8*, align 8
   store i8* getelementptr inbounds ([16 x i8], [16 x i8]* @22, i32 0, i32 0), i8** %34, align 8
-  %35 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @serialization_info, i32 0, i32 0), i32 0, i8** %34, i32* %marks1)
+  %35 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i8** %34, i32* %marks1)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @21, i32 0, i32 0))
   %36 = load i32, i32* %out2, align 4
   %37 = icmp ne i32 %36, 1
@@ -300,7 +300,7 @@ ifcont37:                                         ; preds = %ifcont36, %then23
 ifcont38:                                         ; preds = %ifcont37, %then21
   %70 = alloca i8*, align 8
   store i8* getelementptr inbounds ([16 x i8], [16 x i8]* @49, i32 0, i32 0), i8** %70, align 8
-  %71 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i8** %70, i32* %marks1)
+  %71 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i8** %70, i32* %marks1)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @50, i32 0, i32 0), i8* %71, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
   %72 = load i32, i32* %marks1, align 4
   %73 = icmp sle i32 91, %72
@@ -397,7 +397,7 @@ ifcont55:                                         ; preds = %ifcont54, %then41
 ifcont56:                                         ; preds = %ifcont55, %then39
   %104 = alloca i8*, align 8
   store i8* getelementptr inbounds ([16 x i8], [16 x i8]* @73, i32 0, i32 0), i8** %104, align 8
-  %105 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @serialization_info.2, i32 0, i32 0), i32 0, i8** %104, i32* %marks1)
+  %105 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.2, i32 0, i32 0), i32 0, i32 0, i8** %104, i32* %marks1)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @74, i32 0, i32 0), i8* %105, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
@@ -410,7 +410,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

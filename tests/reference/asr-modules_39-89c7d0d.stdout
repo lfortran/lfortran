@@ -109,7 +109,30 @@
                                             DescriptorString
                                             PointerString
                                             (Allocatable
-                                                (String 1 -2 () PointerString)
+                                                (String 1 -1 (StringLen
+                                                    (FunctionCall
+                                                        2 join_path
+                                                        ()
+                                                        [((StringConstant
+                                                            "build"
+                                                            (String 1 5 () PointerString)
+                                                        ))
+                                                        ((StringConstant
+                                                            ".gitignore"
+                                                            (String 1 10 () PointerString)
+                                                        ))
+                                                        (())
+                                                        (())
+                                                        (())]
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (Integer 8)
+                                                    ()
+                                                ) PointerString)
                                             )
                                             ()
                                         ))

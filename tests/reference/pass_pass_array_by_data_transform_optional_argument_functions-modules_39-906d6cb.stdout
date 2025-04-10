@@ -106,6 +106,60 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                ),
+                                            __libasr_created_variable_3:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_3
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 1 () PointerString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_4:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_4
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 1 () PointerString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_5:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_5
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 1 () PointerString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
                                                 )
                                         })
                                     build_model
@@ -164,7 +218,42 @@
                                             DescriptorString
                                             PointerString
                                             (Allocatable
-                                                (String 1 -2 () PointerString)
+                                                (String 1 -1 (StringLen
+                                                    (FunctionCall
+                                                        2 join_path
+                                                        ()
+                                                        [((StringConstant
+                                                            "build"
+                                                            (String 1 5 () PointerString)
+                                                        ))
+                                                        ((StringConstant
+                                                            ".gitignore"
+                                                            (String 1 10 () PointerString)
+                                                        ))
+                                                        ((Var 7 __libasr_created_variable_3))
+                                                        ((LogicalConstant
+                                                            .false.
+                                                            (Logical 4)
+                                                        ))
+                                                        ((Var 7 __libasr_created_variable_4))
+                                                        ((LogicalConstant
+                                                            .false.
+                                                            (Logical 4)
+                                                        ))
+                                                        ((Var 7 __libasr_created_variable_5))
+                                                        ((LogicalConstant
+                                                            .false.
+                                                            (Logical 4)
+                                                        ))]
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (Integer 8)
+                                                    ()
+                                                ) PointerString)
                                             )
                                             ()
                                         ))

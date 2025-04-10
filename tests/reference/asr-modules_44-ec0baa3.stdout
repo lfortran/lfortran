@@ -201,7 +201,18 @@
                                             DescriptorString
                                             PointerString
                                             (Allocatable
-                                                (String 1 -2 () PointerString)
+                                                (String 1 -1 (StringLen
+                                                    (StructInstanceMember
+                                                        (Var 8 settings)
+                                                        8 1_fpm_new_settings_name
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Integer 8)
+                                                    ()
+                                                ) PointerString)
                                             )
                                             ()
                                         ))

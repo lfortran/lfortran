@@ -3145,9 +3145,14 @@ static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR:
 static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR::expr_t* string){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
     is_descriptorString(expr_type(string)));
-    // Create string node with `PointerString` physical type
-    ASR::ttype_t* stringPointer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(string));
-    ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable(stringPointer_type))->m_physical_type = ASR::string_physical_typeType::PointerString;
+    // Create allocatable-string type with `PointerString` physical type + StringLen expression as size.
+    ASR::ttype_t* stringPointer_type =
+        ASRUtils::TYPE(ASR::make_Allocatable_t(
+            al, string->base.loc, 
+            ASRUtils::TYPE(ASR::make_String_t(al, string->base.loc, 1, -1,
+                ASRUtils::EXPR(ASR::make_StringLen_t(al, string->base.loc, string, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, string->base.loc, 8)), nullptr)), 
+                ASR::string_physical_typeType::PointerString))));
     // Create descriptorString to pointerString cast node
     ASR::expr_t* des_to_ptr_string_cast = ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,

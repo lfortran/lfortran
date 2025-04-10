@@ -108,7 +108,18 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 4 string)
+                                                            4 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             )]
@@ -261,7 +272,18 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 string)
+                                                            5 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             )]
@@ -283,7 +305,18 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 string)
+                                                            5 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             )

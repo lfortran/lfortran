@@ -229,7 +229,48 @@
                                             DescriptorString
                                             PointerString
                                             (Allocatable
-                                                (String 1 -2 () PointerString)
+                                                (String 1 -1 (StringLen
+                                                    (StructInstanceMember
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 7 deps)
+                                                                7 1_dependency_tree_t_dep
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
+                                                                            7 fpm_dependency_modules_31_dependency_node_t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 7 ii)
+                                                            ())]
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .true.
+                                                                7 fpm_dependency_modules_31_dependency_node_t
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        7 1_dependency_config_t_name
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Integer 8)
+                                                    ()
+                                                ) PointerString)
                                             )
                                             ()
                                         ))

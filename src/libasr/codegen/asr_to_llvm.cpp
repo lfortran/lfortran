@@ -492,7 +492,33 @@ public:
         arr_descr->fill_malloc_array_details(arr, arr_type, llvm_data_type,
             n_dims, llvm_dims, module.get(), realloc);
     }
-
+    /*
+     * Returns length of the string (int64)
+    */
+    llvm::Value* get_string_length(ASR::expr_t* expr){
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*
+            ASRUtils::extract_type(expr_type(expr))));
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+            ASRUtils::extract_type(expr_type(expr)));
+        if (ASRUtils::is_array(expr_type(expr)) && 
+            ASRUtils::is_allocatable(expr_type(expr))){ 
+            // Needs handling for how its descritptor. Maybe we end up just using physicalType  
+            // Wrong
+            return llvm::ConstantInt::get(context, llvm::APInt(64, 10));
+        } else if(str->m_physical_type == ASR::string_physical_typeType::PointerString){
+            if(str->m_len_expr){
+                visit_expr(*str->m_len_expr);
+                return llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
+            } else {
+                return llvm::ConstantInt::get(context, llvm::APInt(64, str->m_len));
+            }
+        } else if (str->m_physical_type == ASR::string_physical_typeType::DescriptorString){
+            visit_expr(*expr);
+            return llvm_utils->create_gep2(string_descriptor, tmp, 1);
+        } else {
+            LCOMPILERS_ASSERT(false);
+        }
+    }
     /*
     * Dispatches the required function from runtime library to
     * perform the specified binary operation.
@@ -6725,19 +6751,21 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             }
         } else if ( x.m_old == ASR::string_physical_typeType::PointerString &&
             x.m_new == ASR::string_physical_typeType::DescriptorString){
-            // Create string descriptor and fetch its char*, size, capacity
+            // Create string descriptor and fetch its char*, len, capacity
             llvm::Value* string_desc = llvm_utils->CreateAlloca(*builder, string_descriptor, nullptr,"casted_string_ptr_to_desc");
             llvm::Value* char_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 0);
-            llvm::Value* string_size_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 1);
+            llvm::Value* string_len_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 1);
             llvm::Value* string_capacity_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 2);
+
+            llvm::Value* pointerString_len = get_string_length(x.m_arg);
 
             ptr_loads = 1; // load char**
             this->visit_expr_wrapper(x.m_arg, true);
 
             // Store char*, size, capacity
             builder->CreateStore(tmp, char_ptr);
-            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1), string_size_ptr);
-            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1), string_capacity_ptr);
+            builder->CreateStore(pointerString_len, string_len_ptr);
+            builder->CreateStore(pointerString_len, string_capacity_ptr);
             tmp = string_desc;
         }
         ptr_loads = ptr_loads_copy;
@@ -8855,7 +8883,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         ( ) --> Struct
         I   --> Integer
         R   --> Real
-        STR --> Character
+        S --> Character `S-len`
         L   --> Logical
         { } --> Struct for COMPLEX
         The serialization corresponds to how these arguments are represented in LLVM backend;
@@ -8875,6 +8903,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
         } else if (ASR::is_a<ASR::String_t>(*type)) {
             res += "S";
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+            if(str_type->m_len >= 0){res += "-" + std::to_string(str_type->m_len);}
         } else if (ASR::is_a<ASR::Complex_t>(*type)){
             res += "{R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
                     ",R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
@@ -10910,6 +10940,55 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             args.insert(args.end()-ArraySizesCnt,
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                     ArraySizesCnt));
+            // Push runtime-size of strings and n_size
+            size_t string_lengths_cnt = 0;
+            for(size_t i=0; i<x.n_args; i++) {
+                // Only loop on string types.
+                if(!ASRUtils::is_character(*
+                    ASRUtils::extract_type(
+                        expr_type(x.m_args[i])))){continue;}
+
+                ASR::String_t* str_type =
+                    ASR::down_cast<ASR::String_t>(
+                        ASRUtils::extract_type(
+                            expr_type(x.m_args[i])));
+                // Refactor
+                // if (ASRUtils::is_array(expr_type(x.m_args[i])) && 
+                //     ASRUtils::extract_physical_type(expr_type(x.m_args[i])) ==
+                //     ASR::array_physical_typeType::DescriptorArray) { // TODO: This incorrect, We have to fetch the actual string_size
+                //     args.push_back(
+                //         llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1));
+                //     ++string_lengths_cnt;
+                // } else if (str_type->m_len_expr){ 
+                //     visit_expr(*str_type->m_len_expr);
+                //     args.push_back(llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context)));
+                //     tmp = nullptr;
+                //     ++string_lengths_cnt;
+                // } else if (ASRUtils::is_descriptorString(expr_type(x.m_args[i]))) {
+                //     visit_expr(*ASRUtils::EXPR(ASR::make_StringLen_t(
+                //         al, x.m_args[i]->base.loc,
+                //         x.m_args[i],
+                //         ASRUtils::TYPE(ASR::make_Integer_t(
+                //             al, x.m_args[i]->base.loc, 8)),
+                //         nullptr)));
+                //     args.push_back(tmp);
+                //     ++string_lengths_cnt;
+                //     tmp = nullptr;
+                // } else {
+                //     // It's serialized at compile time (`S-len`).
+                // }
+
+                if(str_type->m_len >=0 ){
+                    // It's serialized at compile time (`S-len`).
+                } else {
+                    args.push_back(get_string_length(x.m_args[i]));
+                    ++string_lengths_cnt;
+                }
+            }
+            args.insert(args.end()- string_lengths_cnt - ArraySizesCnt,
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                    string_lengths_cnt));
+
             // Push the args.
             for (size_t i=0; i<x.n_args; i++) {
                 // Push the args as raw pointers
