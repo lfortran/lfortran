@@ -11,7 +11,7 @@ on:
       - main
 
 env:
-  MACOSX_DEPLOYMENT_TARGET: 14.0
+  MACOSX_DEPLOYMENT_TARGET: 15.0
 
 jobs:
   Check_for_Added_Binary_Files:
