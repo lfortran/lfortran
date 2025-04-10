@@ -73,6 +73,7 @@
                         ()
                         [(Var 2 line)]
                         ()
+                        .true.
                     )
                     (FileWrite
                         0
@@ -114,6 +115,7 @@
                         ()
                         [(Var 2 line)]
                         ()
+                        .true.
                     )
                     (FileWrite
                         0
