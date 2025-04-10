@@ -249,7 +249,18 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 15 self)
+                                                            15 1_toml_value_key
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             )]

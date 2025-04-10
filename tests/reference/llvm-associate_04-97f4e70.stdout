@@ -63,14 +63,14 @@ define i32 @main(i32 %0, i8** %1) {
   %17 = alloca float, align 4
   store float %16, float* %17, align 4
   %18 = load float*, float** %v, align 8
-  %19 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i32 0, float* %13, float* %17, float* %18)
+  %19 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, float* %13, float* %17, float* %18)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   %20 = load float*, float** %v, align 8
   %21 = load float*, float** %v, align 8
   %22 = load float, float* %21, align 4
   %23 = fmul float %22, 0x4012666660000000
   store float %23, float* %20, align 4
-  %24 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, float* %myreal)
+  %24 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, float* %myreal)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   %25 = load float, float* %myreal, align 4
   %26 = fsub float %25, 0x4044EE1480000000
@@ -100,7 +100,7 @@ return:                                           ; preds = %ifcont
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

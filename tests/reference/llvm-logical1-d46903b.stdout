@@ -12,7 +12,7 @@ define i32 @main(i32 %0, i8** %1) {
   %b = alloca i1, align 1
   store i1 true, i1* %a, align 1
   store i1 false, i1* %b, align 1
-  %2 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @serialization_info, i32 0, i32 0), i32 0, i1* %a, i1* %b)
+  %2 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i1* %a, i1* %b)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
@@ -23,7 +23,7 @@ return:                                           ; preds = %.entry
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

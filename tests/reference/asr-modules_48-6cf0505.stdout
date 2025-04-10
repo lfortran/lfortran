@@ -511,7 +511,11 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (String 1 -2 () PointerString)
+                                    (String 1 -1 (StringLen
+                                        (Var 8 cat_str_alloc)
+                                        (Integer 8)
+                                        ()
+                                    ) PointerString)
                                 )
                                 ()
                             )
@@ -523,7 +527,11 @@
                                     DescriptorString
                                     PointerString
                                     (Allocatable
-                                        (String 1 -2 () PointerString)
+                                        (String 1 -1 (StringLen
+                                            (Var 8 cat_str_alloc)
+                                            (Integer 8)
+                                            ()
+                                        ) PointerString)
                                     )
                                     ()
                                 ))]
@@ -543,7 +551,11 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (String 1 -2 () PointerString)
+                                    (String 1 -1 (StringLen
+                                        (Var 8 cat_str_alloc)
+                                        (Integer 8)
+                                        ()
+                                    ) PointerString)
                                 )
                                 ()
                             )
@@ -569,7 +581,11 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (String 1 -2 () PointerString)
+                                    (String 1 -1 (StringLen
+                                        (Var 8 cat_str_alloc)
+                                        (Integer 8)
+                                        ()
+                                    ) PointerString)
                                 )
                                 ()
                             ))]
@@ -621,7 +637,11 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (String 1 -2 () PointerString)
+                                    (String 1 -1 (StringLen
+                                        (Var 8 cat_str_alloc)
+                                        (Integer 8)
+                                        ()
+                                    ) PointerString)
                                 )
                                 ()
                             )
@@ -633,7 +653,11 @@
                                     DescriptorString
                                     PointerString
                                     (Allocatable
-                                        (String 1 -2 () PointerString)
+                                        (String 1 -1 (StringLen
+                                            (Var 8 cat_str_alloc)
+                                            (Integer 8)
+                                            ()
+                                        ) PointerString)
                                     )
                                     ()
                                 ))]
@@ -653,7 +677,11 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (String 1 -2 () PointerString)
+                                    (String 1 -1 (StringLen
+                                        (Var 8 cat_str_alloc)
+                                        (Integer 8)
+                                        ()
+                                    ) PointerString)
                                 )
                                 ()
                             )
@@ -680,7 +708,11 @@
                                     DescriptorString
                                     PointerString
                                     (Allocatable
-                                        (String 1 -2 () PointerString)
+                                        (String 1 -1 (StringLen
+                                            (Var 8 cat_str_alloc)
+                                            (Integer 8)
+                                            ()
+                                        ) PointerString)
                                     )
                                     ()
                                 ))]
@@ -1064,7 +1096,31 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 -1 (StringLen
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 5 input)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
+                                                                    2 string_t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            5 1_string_t_s
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 8)
+                                                        ()
+                                                    ) PointerString)
                                                 )
                                                 ()
                                             ))
@@ -1116,7 +1172,31 @@
                                                     DescriptorString
                                                     PointerString
                                                     (Allocatable
-                                                        (String 1 -2 () PointerString)
+                                                        (String 1 -1 (StringLen
+                                                            (StructInstanceMember
+                                                                (ArrayItem
+                                                                    (Var 5 input)
+                                                                    [(()
+                                                                    (Var 5 i)
+                                                                    ())]
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        2 string_t
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                5 1_string_t_s
+                                                                (Allocatable
+                                                                    (String 1 -2 () DescriptorString)
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Integer 8)
+                                                            ()
+                                                        ) PointerString)
                                                     )
                                                     ()
                                                 ))
@@ -1386,7 +1466,11 @@
                                                                         DescriptorString
                                                                         PointerString
                                                                         (Allocatable
-                                                                            (String 1 -2 () PointerString)
+                                                                            (String 1 -1 (StringLen
+                                                                                (Var 6 name)
+                                                                                (Integer 8)
+                                                                                ()
+                                                                            ) PointerString)
                                                                         )
                                                                         ()
                                                                     )
@@ -1449,7 +1533,11 @@
                                                                 DescriptorString
                                                                 PointerString
                                                                 (Allocatable
-                                                                    (String 1 -2 () PointerString)
+                                                                    (String 1 -1 (StringLen
+                                                                        (Var 6 name)
+                                                                        (Integer 8)
+                                                                        ()
+                                                                    ) PointerString)
                                                                 )
                                                                 ()
                                                             )
@@ -1770,7 +1858,11 @@
                                                             DescriptorString
                                                             PointerString
                                                             (Allocatable
-                                                                (String 1 -2 () PointerString)
+                                                                (String 1 -1 (StringLen
+                                                                    (Var 7 cat)
+                                                                    (Integer 8)
+                                                                    ()
+                                                                ) PointerString)
                                                             )
                                                             ()
                                                         )
@@ -1779,7 +1871,11 @@
                                                             DescriptorString
                                                             PointerString
                                                             (Allocatable
-                                                                (String 1 -2 () PointerString)
+                                                                (String 1 -1 (StringLen
+                                                                    (Var 7 delim_str)
+                                                                    (Integer 8)
+                                                                    ()
+                                                                ) PointerString)
                                                             )
                                                             ()
                                                         )
@@ -1811,7 +1907,31 @@
                                                         DescriptorString
                                                         PointerString
                                                         (Allocatable
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 -1 (StringLen
+                                                                (StructInstanceMember
+                                                                    (ArrayItem
+                                                                        (Var 7 strings)
+                                                                        [(()
+                                                                        (Var 7 i)
+                                                                        ())]
+                                                                        (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
+                                                                            2 string_t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    )
+                                                                    7 1_string_t_s
+                                                                    (Allocatable
+                                                                        (String 1 -2 () DescriptorString)
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (Integer 8)
+                                                                ()
+                                                            ) PointerString)
                                                         )
                                                         ()
                                                     )
