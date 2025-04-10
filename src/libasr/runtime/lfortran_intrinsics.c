@@ -3621,6 +3621,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 
 // Improved input validation for float reading
 // - Prevents auto-casting of invalid inputs to float/real
+// NOTE:- More changes need to be implemented for error detection and check
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {

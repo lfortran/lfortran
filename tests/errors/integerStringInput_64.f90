@@ -4,7 +4,7 @@ program integerStringInput_int64
     integer(int64) :: x                   ! Declare x as int64 explicitly
     integer :: ios
 
-    open(unit=10, file="invalidInput_integer.txt", status="old")
+    open(unit=10, file="../invalidInput_integer.txt", status="old")
 
     do
         read(10, *, iostat=ios) x
