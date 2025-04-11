@@ -71,6 +71,8 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool clientSupportsHover = false;
         std::atomic_bool clientSupportsHighlight = false;
         std::atomic_bool clientSupportsSemanticHighlight = false;
+        std::atomic_bool clientSupportsCodeCompletion = false;
+        std::atomic_bool clientSupportsCodeCompletionContext = false;
 
         auto formatException(
             const std::string &heading,
@@ -97,6 +99,10 @@ namespace LCompilers::LanguageServerProtocol {
         auto asrSymbolTypeToLspSymbolKind(
             ASR::symbolType symbol_type
         ) const -> SymbolKind;
+
+        auto asrSymbolTypeToCompletionItemKind(
+            ASR::symbolType symbol_type
+        ) const -> CompletionItemKind;
 
         auto encodeHighlights(
             std::vector<unsigned int> &encodings,
@@ -175,6 +181,16 @@ namespace LCompilers::LanguageServerProtocol {
             const RequestMessage &request,
             SemanticTokensParams &params
         ) -> TextDocument_SemanticTokens_FullResult override;
+
+        auto receiveTextDocument_completion(
+            const RequestMessage &request,
+            CompletionParams &params
+        ) -> TextDocument_CompletionResult override;
+
+        auto receiveCompletionItem_resolve(
+            const RequestMessage &request,
+            CompletionItem &params
+        ) -> CompletionItem_ResolveResult override;
 
         // ====================== //
         // Incoming Notifications //

@@ -5,6 +5,7 @@
 #include <shared_mutex>
 #include <regex>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <server/logger.h>
@@ -70,6 +71,8 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t &column,
             std::size_t position
         ) const -> void;
+
+        auto symbolAt(std::size_t line, std::size_t column) const -> std::string_view;
     private:
         // NOTE: The document's URI might change but its id will remain
         // the same.

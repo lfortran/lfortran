@@ -21,7 +21,7 @@ from lsprotocol.types import (
     TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
     TextDocumentRenameRequest, TextDocumentRenameResponse,
     TextDocumentSemanticTokensFullResponse, TextDocumentSyncKind, TokenFormat,
-    VersionedTextDocumentIdentifier, WorkspaceEdit)
+    VersionedTextDocumentIdentifier, WorkspaceEdit, TextDocumentCompletionResponse)
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 from llanguage_test_client.lsp_test_client import LspTestClient
@@ -390,3 +390,16 @@ class LFortranLspTestClient(LspTestClient):
         uri = request.params.text_document.uri
         doc = self.get_document("fortran", uri)
         doc.semantic_highlights = response.result
+
+    def receive_text_document_completion(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentCompletionResponse
+        )
+        uri = request.params.text_document.uri
+        doc = self.get_document("fortran", uri)
+        doc.completions = response.result

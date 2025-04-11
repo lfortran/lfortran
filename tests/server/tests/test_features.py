@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import List
 
-from lsprotocol.types import (DidChangeConfigurationParams, DocumentHighlight,
+from lsprotocol.types import (CompletionItem, CompletionItemKind, DidChangeConfigurationParams, DocumentHighlight,
                               DocumentSymbol, Hover, MarkupContent, MarkupKind,
                               Position, Range, SymbolKind)
 
@@ -392,4 +392,67 @@ def test_semantic_highlighting(client: LFortranLspTestClient) -> None:
         0,4,6,15,0, # Keyword at line=19, column=4, length=6, text=`module`
         0,7,21,8,0, # Variable at line=19, column=11, length=21, text=`module_function_call1`
     ]
+    assert doc.semantic_highlights is not None
     assert doc.semantic_highlights.data == expected_highlights
+
+def test_code_completion(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    line, column = 18, -1
+    doc.cursor = line, column
+    doc.newline()
+    doc.write("self")
+    doc.complete()
+    expected_completions = [
+        CompletionItem(
+            label="self",
+            kind=CompletionItemKind.Variable
+        )
+    ]
+    assert doc.completions is not None
+    assert isinstance(doc.completions, list)
+    for completion in doc.completions:
+        expected_completions.remove(completion)
+    assert len(expected_completions) == 0
+    doc.write("%")
+    doc.complete()
+    expected_completions = [
+        CompletionItem(
+            label="module_function_call1",
+            kind=CompletionItemKind.Module,
+        ),
+        CompletionItem(
+            label="eval_1d",
+            kind=CompletionItemKind.Function,
+        ),
+        CompletionItem(
+            label="res",
+            kind=CompletionItemKind.Variable,
+        ),
+        CompletionItem(
+            label="self",
+            kind=CompletionItemKind.Variable,
+        ),
+        CompletionItem(
+            label="x",
+            kind=CompletionItemKind.Variable,
+        ),
+        CompletionItem(
+            label="eval_1d_prime",
+            kind=CompletionItemKind.Function,
+        ),
+        CompletionItem(
+            label="1_eval_1d",
+            kind=CompletionItemKind.Function,
+        ),
+        CompletionItem(
+            label="softmax",
+            kind=CompletionItemKind.Struct,
+        ),
+    ]
+    assert doc.completions is not None
+    assert isinstance(doc.completions, list)
+    for completion in doc.completions:
+        expected_completions.remove(completion)
+    assert len(expected_completions) == 0

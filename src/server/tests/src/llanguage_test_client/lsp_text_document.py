@@ -3,7 +3,8 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from lsprotocol.types import (DocumentHighlight, DocumentSymbol, Hover,
+from lsprotocol.types import (CompletionItem, CompletionList,
+                              DocumentHighlight, DocumentSymbol, Hover,
                               Position, Range, SemanticTokens,
                               SymbolInformation, TextDocumentSaveReason,
                               TextEdit)
@@ -74,6 +75,7 @@ class LspTextDocument:
     preview: Optional[Hover]
     symbols: Union[List[SymbolInformation], List[DocumentSymbol], None]
     semantic_highlights: Union[SemanticTokens, None]
+    completions: Union[List[CompletionItem], CompletionList, None]
 
     def __init__(
             self,
@@ -100,6 +102,7 @@ class LspTextDocument:
         self.symbols = None
         self.change_listeners = []
         self.semantic_highlights = None
+        self.completions = None
 
     def on_change(self, listener: ChangeListener) -> None:
         self.change_listeners.append(listener)
@@ -155,7 +158,15 @@ class LspTextDocument:
     @cursor.setter
     def cursor(self, line_and_col: Tuple[int, int]) -> None:
         line, col = line_and_col
-        self.seek(line - 1, col - 1)
+        if line < 0:
+            line = len(self.pos_by_line) + line
+        else:
+            line -= 1
+        if col < 0:
+            col = self.len_by_line[line] + col
+        else:
+            col -= 1
+        self.seek(line, col)
 
     @property
     def position(self) -> int:
@@ -448,3 +459,8 @@ class LspTextDocument:
     @requires_path
     def semantic_highlight(self) -> None:
         self.client.semantic_highlight(self.uri)
+
+    @requires_path
+    def complete(self) -> None:
+        line, column = self.pos_to_linecol(self.position)
+        self.client.complete(self.uri, line, column)
