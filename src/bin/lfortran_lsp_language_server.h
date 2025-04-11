@@ -1,6 +1,5 @@
 #pragma once
 
-#include "server/lsp_text_document.h"
 #include <atomic>
 #include <condition_variable>
 #include <memory>
@@ -16,6 +15,7 @@
 #include <server/base_lsp_language_server.h>
 #include <server/logger.h>
 #include <server/lsp_specification.h>
+#include <server/lsp_text_document.h>
 
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_lsp_config.h>

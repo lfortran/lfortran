@@ -1,4 +1,3 @@
-#include "bin/semantic_highlighter.h"
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -25,6 +24,7 @@
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lfortran_lsp_config.h>
 #include <bin/lfortran_lsp_language_server.h>
+#include <bin/semantic_highlighter.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace lc = LCompilers;
