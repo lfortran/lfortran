@@ -8,7 +8,9 @@ from lsprotocol.types import (
     CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
     CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
     CompletionItemTag, DefinitionClientCapabilities, DefinitionParams,
-    DidChangeTextDocumentParams, DocumentHighlightClientCapabilities,
+    DidChangeTextDocumentParams, DocumentFormattingClientCapabilities,
+    DocumentHighlightClientCapabilities,
+    DocumentRangeFormattingClientCapabilities,
     DocumentSymbolClientCapabilities, HoverClientCapabilities,
     InitializeParams, InsertTextMode, Location, LocationLink, MarkupKind,
     Position, RenameClientCapabilities, RenameParams,
@@ -18,8 +20,9 @@ from lsprotocol.types import (
     TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
     TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
     TextDocumentDocumentHighlightResponse, TextDocumentDocumentSymbolResponse,
-    TextDocumentHoverResponse, TextDocumentIdentifier,
-    TextDocumentPublishDiagnosticsNotification, TextDocumentRenameRequest,
+    TextDocumentFormattingResponse, TextDocumentHoverResponse,
+    TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
+    TextDocumentRangeFormattingResponse, TextDocumentRenameRequest,
     TextDocumentRenameResponse, TextDocumentSemanticTokensFullResponse,
     TextDocumentSyncKind, TokenFormat, VersionedTextDocumentIdentifier,
     WorkspaceEdit)
@@ -170,6 +173,8 @@ class LFortranLspTestClient(LspTestClient):
                 ],
                 formats=[TokenFormat.Relative],
             )
+            text_document.formatting = DocumentFormattingClientCapabilities()
+            text_document.range_formatting = DocumentRangeFormattingClientCapabilities()
         return params
 
     def receive_text_document_publish_diagnostics(
@@ -404,3 +409,31 @@ class LFortranLspTestClient(LspTestClient):
         uri = request.params.text_document.uri
         doc = self.get_document("fortran", uri)
         doc.completions = response.result
+
+    def receive_text_document_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentFormattingResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.apply(response.result)
+
+    def receive_text_document_range_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentRangeFormattingResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.apply(response.result)

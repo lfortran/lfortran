@@ -73,6 +73,8 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool clientSupportsSemanticHighlight = false;
         std::atomic_bool clientSupportsCodeCompletion = false;
         std::atomic_bool clientSupportsCodeCompletionContext = false;
+        std::atomic_bool clientSupportsFormatting = false;
+        std::atomic_bool clientSupportsRangeFormatting = false;
 
         auto formatException(
             const std::string &heading,
@@ -191,6 +193,16 @@ namespace LCompilers::LanguageServerProtocol {
             const RequestMessage &request,
             CompletionItem &params
         ) -> CompletionItem_ResolveResult override;
+
+        auto receiveTextDocument_formatting(
+            const RequestMessage &request,
+            DocumentFormattingParams &params
+        ) -> TextDocument_FormattingResult override;
+
+        auto receiveTextDocument_rangeFormatting(
+            const RequestMessage &request,
+            DocumentRangeFormattingParams &params
+        ) -> TextDocument_RangeFormattingResult override;
 
         // ====================== //
         // Incoming Notifications //

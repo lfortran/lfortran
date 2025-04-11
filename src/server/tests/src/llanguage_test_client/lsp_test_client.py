@@ -33,12 +33,16 @@ from lsprotocol.types import (ClientCapabilities,
                               DidCloseTextDocumentParams,
                               DidOpenTextDocumentParams,
                               DidSaveTextDocumentParams,
-                              DocumentHighlightParams, DocumentSymbolParams,
-                              ExitNotification, FileCreate, FileDelete,
+                              DocumentFormattingParams,
+                              DocumentHighlightParams,
+                              DocumentRangeFormattingParams,
+                              DocumentSymbolParams, ExitNotification,
+                              FileCreate, FileDelete,
                               FileOperationClientCapabilities, FileRename,
-                              HoverParams, InitializedNotification,
-                              InitializedParams, InitializeParams,
-                              InitializeRequest, InitializeResponse,
+                              FormattingOptions, HoverParams,
+                              InitializedNotification, InitializedParams,
+                              InitializeParams, InitializeRequest,
+                              InitializeResponse,
                               InitializeResultServerInfoType, Position, Range,
                               Registration, RenameFilesParams, SaveOptions,
                               SemanticTokensParams, ServerCapabilities,
@@ -53,8 +57,11 @@ from lsprotocol.types import (ClientCapabilities,
                               TextDocumentDidSaveNotification,
                               TextDocumentDocumentHighlightRequest,
                               TextDocumentDocumentSymbolRequest,
+                              TextDocumentFormattingRequest,
                               TextDocumentHoverRequest, TextDocumentIdentifier,
-                              TextDocumentItem, TextDocumentSaveReason,
+                              TextDocumentItem,
+                              TextDocumentRangeFormattingRequest,
+                              TextDocumentSaveReason,
                               TextDocumentSemanticTokensFullRequest,
                               TextDocumentSyncClientCapabilities,
                               TextDocumentSyncKind, TextDocumentSyncOptions,
@@ -1317,4 +1324,85 @@ class LspTestClient(LspClient):
                 ),
             )
             request_id = self.send_text_document_completion(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_formatting(self) -> bool:
+        return self.server_capabilities.document_formatting_provider is not None
+
+    def send_text_document_formatting(
+            self,
+            params: DocumentFormattingParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentFormattingRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_formatting
+        )
+
+    def receive_text_document_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def format(self, uri: str) -> None:
+        if self.server_supports_formatting():
+            params = DocumentFormattingParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                options=FormattingOptions(
+                    tab_size=4,
+                    insert_spaces=True,
+                ),
+            )
+            request_id = self.send_text_document_formatting(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_range_formatting(self) -> bool:
+        return self.server_capabilities.document_range_formatting_provider is not None
+
+    def send_text_document_range_formatting(
+            self,
+            params: DocumentRangeFormattingParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentRangeFormattingRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_range_formatting
+        )
+
+    def receive_text_document_range_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def format_range(self, uri: str, selection: Range) -> None:
+        if self.server_supports_range_formatting():
+            params = DocumentRangeFormattingParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                range=selection,
+                options=FormattingOptions(
+                    tab_size=4,
+                    insert_spaces=True,
+                ),
+            )
+            request_id = self.send_text_document_range_formatting(params)
             self.await_response(request_id)

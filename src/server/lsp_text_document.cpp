@@ -107,6 +107,56 @@ namespace LCompilers::LanguageServerProtocol {
         return _mutex;
     }
 
+    auto LspTextDocument::numLines() const -> std::size_t {
+        return lenByLine.size();
+    }
+
+    auto LspTextDocument::lastLine() const -> std::size_t {
+        return numLines() - 1;
+    }
+
+    inline auto isIndent(unsigned char c) -> bool {
+        return (c == ' ') || (c == '\t');
+    }
+
+    // might include mixed tabs and spaces ...
+    auto LspTextDocument::leadingIndentation(std::size_t line) -> std::string_view {
+        std::size_t start = toPosition(line, 0);
+        std::size_t stop = start;
+        while ((stop < _text.length()) && isIndent(_text[stop])) {
+            ++stop;
+        }
+        std::size_t length = stop - start;
+        return std::string_view(_text.data() + start, length);
+    }
+
+    auto LspTextDocument::slice(
+        std::size_t startLine,
+        std::size_t startColumn,
+        std::size_t endLine,
+        std::size_t endColumn
+    ) const -> std::string {
+        std::size_t start = toPosition(startLine, startColumn);
+        std::size_t stop = toPosition(endLine, endColumn);
+        std::size_t length = stop - start;
+        return _text.substr(start, length);
+    }
+
+    auto LspTextDocument::numColumns(std::size_t line) const -> std::size_t {
+        if (line < numLines()) {
+            return lenByLine.at(line);
+        }
+        throw std::invalid_argument(
+            ("line=" + std::to_string(line) +
+             " is out-of-bounds for document with " +
+             std::to_string(numLines()) + " lines.")
+        );
+    }
+
+    auto LspTextDocument::lastColumn(std::size_t line) const -> std::size_t {
+        return numColumns(line) - 1;
+    }
+
     auto LspTextDocument::update(
         const std::string &languageId,
         int version,
