@@ -284,7 +284,7 @@ namespace LCompilers {
                 "div_to_mul",
                 "fma",
                 // "inline_function_calls",
-                // "promote_allocatable_to_nonallocatable"
+                "promote_allocatable_to_nonallocatable"
             };
 
             // These are re-write passes which are already handled
