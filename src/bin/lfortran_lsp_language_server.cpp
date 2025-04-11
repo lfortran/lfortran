@@ -5,6 +5,7 @@
 #include <memory>
 #include <shared_mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <libasr/exception.h>
@@ -23,6 +24,7 @@
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lfortran_lsp_config.h>
 #include <bin/lfortran_lsp_language_server.h>
+#include <bin/semantic_highlighter.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace lc = LCompilers;
@@ -358,6 +360,7 @@ namespace LCompilers::LanguageServerProtocol {
                 }
                 clientSupportsHover = textDocument.hover.has_value();
                 clientSupportsHighlight = textDocument.documentHighlight.has_value();
+                clientSupportsSemanticHighlight = textDocument.semanticTokens.has_value();
             }
             logger.debug()
                 << "clientSupportsGotoDefinition = "
@@ -382,6 +385,10 @@ namespace LCompilers::LanguageServerProtocol {
             logger.debug()
                 << "clientSupportsHighlight = "
                 << clientSupportsHighlight
+                << std::endl;
+            logger.debug()
+                << "clientSupportsSemanticHighlight = "
+                << clientSupportsSemanticHighlight
                 << std::endl;
         }
 
@@ -419,6 +426,53 @@ namespace LCompilers::LanguageServerProtocol {
             ServerCapabilities_documentHighlightProvider &documentHighlightProvider =
                 capabilities.documentHighlightProvider.emplace();
             documentHighlightProvider = true;
+        }
+
+        if (clientSupportsSemanticHighlight) {
+            auto semanticTokensOptions = std::make_unique<SemanticTokensOptions>();
+            SemanticTokensLegend &legend = semanticTokensOptions->legend;
+            legend.tokenTypes = {
+                "namespace",
+                "type",
+                "class",
+                "enum",
+                "interface",
+                "struct",
+                "typeParameter",
+                "parameter",
+                "variable",
+                "property",
+                "enumMember",
+                "event",
+                "function",
+                "method",
+                "macro",
+                "keyword",
+                "modifier",
+                "comment",
+                "string",
+                "number",
+                "regexp",
+                "operator",
+                "decorator"
+            };
+            legend.tokenModifiers = {
+                "declaration",
+                "definition",
+                "readonly",
+                "static",
+                "deprecated",
+                "abstract",
+                "async",
+                "modification",
+                "documentation",
+                "defaultLibrary"
+            };
+            SemanticTokensOptions_full &full = semanticTokensOptions->full.emplace();
+            full = true;
+            ServerCapabilities_semanticTokensProvider &semanticTokensProvider =
+                capabilities.semanticTokensProvider.emplace();
+            semanticTokensProvider = std::move(semanticTokensOptions);
         }
 
         return result;
@@ -858,6 +912,82 @@ namespace LCompilers::LanguageServerProtocol {
         return result;
     }
 
+    auto LFortranLspLanguageServer::getHighlights(
+        LspTextDocument &document
+    ) -> std::shared_ptr<std::pair<std::vector<FortranToken>, int>> {
+        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        int version = document.version();
+        std::shared_lock<std::shared_mutex> readLock(highlightsMutex);
+        auto iter = highlightsByDocumentId.find(document.id());
+        if ((iter != highlightsByDocumentId.end())
+            && (iter->second->second == version)) {
+            return iter->second;
+        }
+        readLock.unlock();
+        std::unique_lock<std::shared_mutex> writeLock(highlightsMutex);
+        iter = highlightsByDocumentId.find(document.id());
+        if ((iter != highlightsByDocumentId.end())
+            && (iter->second->second == version)) {
+            return iter->second;
+        }
+        return highlightsByDocumentId.emplace_hint(
+            iter,
+            document.id(),
+            std::make_shared<std::pair<std::vector<FortranToken>, int>>(
+                std::make_pair(semantic_tokenize(document.text()), version)
+            )
+        )->second;
+    }
+
+    auto LFortranLspLanguageServer::encodeHighlights(
+        std::vector<unsigned int> &encodings,
+        LspTextDocument &document,
+        std::vector<FortranToken> &highlights
+    ) -> void {
+        encodings.reserve(5 * highlights.size());
+        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        std::size_t prevLine = 0;
+        std::size_t prevColumn = 0;
+        for (const FortranToken &token : highlights) {
+            std::size_t line, column, deltaLine, deltaStart;
+            document.fromPosition(line, column, token.position);
+            deltaLine = line - prevLine;
+            deltaStart = (line == prevLine)
+                ? (column - prevColumn)
+                : column;
+            unsigned int modifiers = 0x0000;
+            for (SemanticTokenModifiers modifier : token.modifiers) {
+                modifiers |= (1 << static_cast<unsigned int>(modifier));
+            }
+            encodings.push_back(deltaLine);
+            encodings.push_back(deltaStart);
+            encodings.push_back(token.length);
+            encodings.push_back(static_cast<unsigned int>(token.type));
+            encodings.push_back(modifiers);
+            prevLine = line;
+            prevColumn = column;
+        }
+    }
+
+    // request: "textDocument/semanticTokens/full"
+    auto LFortranLspLanguageServer::receiveTextDocument_semanticTokens_full(
+        const RequestMessage &/*request*/,
+        SemanticTokensParams &params
+    ) -> TextDocument_SemanticTokens_FullResult {
+        TextDocument_SemanticTokens_FullResult result;
+        if (clientSupportsSemanticHighlight) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            auto highlights = getHighlights(*document);
+            auto semanticTokens = std::make_unique<SemanticTokens>();
+            encodeHighlights(semanticTokens->data, *document, highlights->first);
+            result = std::move(semanticTokens);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
     // notification: "workspace/didDeleteFiles"
     auto LFortranLspLanguageServer::receiveWorkspace_didDeleteFiles(
         const NotificationMessage &/*notification*/,
@@ -888,7 +1018,9 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didOpen(notification, params);
         const DocumentUri &uri = params.textDocument.uri;
-        validate(getDocument(uri));
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        validate(document);
+        updateHighlights(document);
     }
 
     // notification: "textDocument/didChange"
@@ -898,7 +1030,26 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didChange(notification, params);
         const DocumentUri &uri = params.textDocument.uri;
-        validate(getDocument(uri));
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        validate(document);
+        updateHighlights(document);
+    }
+
+    // notification: "textDocument/didClose"
+    auto LFortranLspLanguageServer::receiveTextDocument_didClose(
+        const NotificationMessage &notification,
+        DidCloseTextDocumentParams &params
+    ) -> void {
+        const DocumentUri &uri = params.textDocument.uri;
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        {
+            std::unique_lock<std::shared_mutex> highlightsLock(highlightsMutex);
+            auto iter = highlightsByDocumentId.find(document->id());
+            if (iter != highlightsByDocumentId.end()) {
+                highlightsByDocumentId.erase(iter);
+            }
+        }
+        BaseLspLanguageServer::receiveTextDocument_didClose(notification, params);
     }
 
     // notification: "workspace/didChangeWatchedFiles"

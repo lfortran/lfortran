@@ -12,13 +12,16 @@ from lsprotocol.types import (
     DocumentSymbolClientCapabilities, HoverClientCapabilities,
     InitializeParams, InsertTextMode, Location, LocationLink, MarkupKind,
     Position, RenameClientCapabilities, RenameParams,
+    SemanticTokensClientCapabilities,
+    SemanticTokensClientCapabilitiesRequestsType,
     TextDocumentContentChangeEvent, TextDocumentContentChangeEvent_Type1,
     TextDocumentContentChangeEvent_Type2, TextDocumentDefinitionRequest,
     TextDocumentDefinitionResponse, TextDocumentDocumentHighlightResponse,
     TextDocumentDocumentSymbolResponse, TextDocumentHoverResponse,
     TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
     TextDocumentRenameRequest, TextDocumentRenameResponse,
-    TextDocumentSyncKind, VersionedTextDocumentIdentifier, WorkspaceEdit)
+    TextDocumentSemanticTokensFullResponse, TextDocumentSyncKind, TokenFormat,
+    VersionedTextDocumentIdentifier, WorkspaceEdit)
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 from llanguage_test_client.lsp_test_client import LspTestClient
@@ -122,6 +125,49 @@ class LFortranLspTestClient(LspTestClient):
             text_document.document_highlight = DocumentHighlightClientCapabilities()
             text_document.document_symbol = DocumentSymbolClientCapabilities(
                 hierarchical_document_symbol_support=True,
+            )
+            text_document.semantic_tokens = SemanticTokensClientCapabilities(
+                requests=SemanticTokensClientCapabilitiesRequestsType(
+                    full=True,
+                ),
+                token_types=[
+                    "namespace",
+                    "type",
+                    "class",
+                    "enum",
+                    "interface",
+                    "struct",
+                    "typeParameter",
+                    "parameter",
+                    "variable",
+                    "property",
+                    "enumMember",
+                    "event",
+                    "function",
+                    "method",
+                    "macro",
+                    "keyword",
+                    "modifier",
+                    "comment",
+                    "string",
+                    "number",
+                    "regexp",
+                    "operator",
+                    "decorator",
+                ],
+                token_modifiers=[
+                    "declaration",
+                    "definition",
+                    "readonly",
+                    "static",
+                    "deprecated",
+                    "abstract",
+                    "async",
+                    "modification",
+                    "documentation",
+                    "defaultLibrary",
+                ],
+                formats=[TokenFormat.Relative],
             )
         return params
 
@@ -303,7 +349,7 @@ class LFortranLspTestClient(LspTestClient):
         if response.result is not None:
             uri = request.params.text_document.uri
             doc = self.get_document("fortran", uri)
-            doc.highlights = response.result
+            doc.symbol_highlights = response.result
 
     def receive_text_document_hover(
             self,
@@ -331,3 +377,16 @@ class LFortranLspTestClient(LspTestClient):
         uri = request.params.text_document.uri
         doc = self.get_document("fortran", uri)
         doc.symbols = response.result
+
+    def receive_text_document_semantic_tokens_full(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentSemanticTokensFullResponse
+        )
+        uri = request.params.text_document.uri
+        doc = self.get_document("fortran", uri)
+        doc.semantic_highlights = response.result

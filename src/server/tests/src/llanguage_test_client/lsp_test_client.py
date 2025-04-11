@@ -40,7 +40,8 @@ from lsprotocol.types import (ClientCapabilities,
                               InitializeRequest, InitializeResponse,
                               InitializeResultServerInfoType, Position, Range,
                               Registration, RenameFilesParams, SaveOptions,
-                              ServerCapabilities, ShutdownRequest,
+                              SemanticTokensParams, ServerCapabilities,
+                              ShutdownRequest, TelemetryEventNotification,
                               TextDocumentClientCapabilities,
                               TextDocumentContentChangeEvent_Type1,
                               TextDocumentContentChangeEvent_Type2,
@@ -52,6 +53,7 @@ from lsprotocol.types import (ClientCapabilities,
                               TextDocumentDocumentSymbolRequest,
                               TextDocumentHoverRequest, TextDocumentIdentifier,
                               TextDocumentItem, TextDocumentSaveReason,
+                              TextDocumentSemanticTokensFullRequest,
                               TextDocumentSyncClientCapabilities,
                               TextDocumentSyncKind, TextDocumentSyncOptions,
                               TextDocumentWillSaveNotification,
@@ -68,8 +70,7 @@ from lsprotocol.types import (ClientCapabilities,
                               WorkspaceDidRenameFilesNotification,
                               WorkspaceWillCreateFilesRequest,
                               WorkspaceWillDeleteFilesRequest,
-                              WorkspaceWillRenameFilesRequest,
-                              TelemetryEventNotification)
+                              WorkspaceWillRenameFilesRequest)
 
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
@@ -1150,7 +1151,7 @@ class LspTestClient(LspClient):
         # associated text document).
         raise NotImplementedError
 
-    def highlight(self, uri: str, line: int, column: int) -> None:
+    def highlight_symbol(self, uri: str, line: int, column: int) -> None:
         if self.server_supports_document_highlight():
             params = DocumentHighlightParams(
                 text_document=TextDocumentIdentifier(
@@ -1238,4 +1239,40 @@ class LspTestClient(LspClient):
                 )
             )
             request_id = self.send_text_document_document_symbol(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_semantic_highlight(self) -> bool:
+        return self.server_capabilities.semantic_tokens_provider is not None
+
+    def send_text_document_semantic_tokens_full(
+            self,
+            params: SemanticTokensParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentSemanticTokensFullRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_semantic_tokens_full
+        )
+
+    def receive_text_document_semantic_tokens_full(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def semantic_highlight(self, uri: str) -> None:
+        if self.server_supports_document_highlight():
+            params = SemanticTokensParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+            )
+            request_id = self.send_text_document_semantic_tokens_full(params)
             self.await_response(request_id)
