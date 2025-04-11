@@ -626,7 +626,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element_data_only(
             llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data) {
+            int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data, bool is_string_array) {
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
@@ -649,11 +649,12 @@ namespace LCompilers {
             }
             return idx;
         }
-
+        
+        // Works with array item
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
             std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
-            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data) {
+            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, llvm::Value* string_size) {
             llvm::Value* tmp = nullptr;
             // TODO: Uncomment later
             // bool check_for_bounds = is_explicit_shape(v);
@@ -662,10 +663,15 @@ namespace LCompilers {
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data);
+                if(data_only && string_size){ idx = builder->CreateMul(idx, string_size);}
                 if( is_fixed_size ) {
                     tmp = llvm_utils->create_gep2(type, array, idx);
                 } else {
-                    tmp = llvm_utils->create_ptr_gep2(type, array, idx);
+                    if (data_only && string_size){type = llvm::Type::getInt8Ty(context);}
+                    // llvm::cast<llvm::PointerType>(array->getType()->getScalarType())->getElementType()->print(llvm::outs());
+                    // type->print(llvm::outs());
+                    // array->getType()->print(llvm::outs());
+                    tmp = llvm_utils->create_ptr_gep2(type , array, idx);
                 }
             } else {
                 idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);

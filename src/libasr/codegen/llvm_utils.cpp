@@ -611,9 +611,23 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
-                        type = llvm::ArrayType::get(get_el_type(v_type->m_type, module),
-                                        ASRUtils::get_fixed_size_of_array(
-                                            v_type->m_dims, v_type->n_dims))->getPointerTo();
+                        if(ASR::is_a<ASR::String_t>(*v_type->m_type) && 
+                            ASR::down_cast<ASR::String_t>(v_type->m_type)->m_physical_type == ASR::string_physical_typeType::PointerString){
+                            int64_t string_len = ASR::down_cast<ASR::String_t>(v_type->m_type)->m_len 
+                                                + 1 /*null character*/;
+                            LCOMPILERS_ASSERT(!ASR::down_cast<ASR::String_t>(v_type->m_type)->m_len_expr); 
+                            type = llvm::ArrayType::get(
+                                llvm::ArrayType::get(
+                                    llvm::Type::getInt8Ty(context), string_len), 
+                                    ASRUtils::get_fixed_size_of_array(
+                                        v_type->m_dims, v_type->n_dims))->getPointerTo();
+                        } else {
+
+                            type = llvm::ArrayType::get(get_el_type(v_type->m_type, module),
+                                            ASRUtils::get_fixed_size_of_array(
+                                                v_type->m_dims, v_type->n_dims))->getPointerTo();
+                        }
+                        
                         break;
                     }
                     case ASR::array_physical_typeType::StringArraySinglePointer: {
@@ -1343,7 +1357,7 @@ namespace LCompilers {
                 m_dims = v_type->m_dims;
                 n_dims = v_type->n_dims;
                 a_kind = ASRUtils::extract_kind_from_ttype_t(v_type->m_type);
-                                switch( v_type->m_physical_type ) {
+                switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
                         llvm::Type* el_type = get_el_type(v_type->m_type, module);
@@ -1352,14 +1366,29 @@ namespace LCompilers {
                     }
                     case ASR::array_physical_typeType::PointerToDataArray:
                     case ASR::array_physical_typeType::UnboundedPointerToDataArray : {
-                        llvm_type = get_el_type(v_type->m_type, module)->getPointerTo();
+                        if(ASRUtils::is_character(*v_type->m_type)){ // Refactor this
+                            llvm_type = get_el_type(v_type->m_type, module);
+                        } else {
+                            llvm_type = get_el_type(v_type->m_type, module)->getPointerTo();
+                        }
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
                         LCOMPILERS_ASSERT(ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims));
-                        llvm_type = llvm::ArrayType::get(get_el_type(v_type->m_type, module),
-                                        ASRUtils::get_fixed_size_of_array(
-                                            v_type->m_dims, v_type->n_dims));
+                        int64_t array_size = ASRUtils::get_fixed_size_of_array(
+                            v_type->m_dims, v_type->n_dims);
+                        if(ASRUtils::is_character(*v_type->m_type)){
+                            int64_t string_len = ASR::down_cast<ASR::String_t>(v_type->m_type)->m_len 
+                                                + 1 /*null character*/;
+                            LCOMPILERS_ASSERT(!ASR::down_cast<ASR::String_t>(v_type->m_type)->m_len_expr); 
+                            llvm_type = llvm::ArrayType::get(
+                                llvm::ArrayType::get(
+                                    llvm::Type::getInt8Ty(context), string_len), 
+                                array_size);
+                        } else {
+                            llvm_type = llvm::ArrayType::get(
+                                get_el_type(v_type->m_type, module), array_size);
+                        }
                         break;
                     }
                     case ASR::array_physical_typeType::SIMDArray: {
