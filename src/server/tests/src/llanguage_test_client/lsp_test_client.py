@@ -25,7 +25,8 @@ from lsprotocol import converters
 from lsprotocol.types import (ClientCapabilities,
                               ClientRegisterCapabilityRequest,
                               ClientRegisterCapabilityResponse,
-                              CreateFilesParams, DeleteFilesParams,
+                              CompletionParams, CreateFilesParams,
+                              DeleteFilesParams,
                               DidChangeConfigurationClientCapabilities,
                               DidChangeConfigurationParams,
                               DidChangeTextDocumentParams,
@@ -43,6 +44,7 @@ from lsprotocol.types import (ClientCapabilities,
                               SemanticTokensParams, ServerCapabilities,
                               ShutdownRequest, TelemetryEventNotification,
                               TextDocumentClientCapabilities,
+                              TextDocumentCompletionRequest,
                               TextDocumentContentChangeEvent_Type1,
                               TextDocumentContentChangeEvent_Type2,
                               TextDocumentDidChangeNotification,
@@ -1275,4 +1277,44 @@ class LspTestClient(LspClient):
                 ),
             )
             request_id = self.send_text_document_semantic_tokens_full(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_code_completion(self) -> bool:
+        return self.server_capabilities.completion_provider is not None
+
+    def send_text_document_completion(
+            self,
+            params: CompletionParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentCompletionRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_completion
+        )
+
+    def receive_text_document_completion(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def complete(self, uri: str, line: int, column: int) -> None:
+        if self.server_supports_document_highlight():
+            params = CompletionParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                position=Position(
+                    line=line,
+                    character=column,
+                ),
+            )
+            request_id = self.send_text_document_completion(params)
             self.await_response(request_id)

@@ -1,3 +1,4 @@
+#include <cctype>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -5,6 +6,7 @@
 #include <memory>
 #include <shared_mutex>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -21,6 +23,7 @@
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 
+#include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lfortran_lsp_config.h>
 #include <bin/lfortran_lsp_language_server.h>
@@ -107,6 +110,35 @@ namespace LCompilers::LanguageServerProtocol {
             return SymbolKind::TypeParameter;
         default:
             return SymbolKind::Function;
+        }
+    }
+
+    auto LFortranLspLanguageServer::asrSymbolTypeToCompletionItemKind(
+        ASR::symbolType symbolType
+    ) const -> CompletionItemKind {
+        switch (symbolType) {
+        case ASR::symbolType::Module:
+            return CompletionItemKind::Module;
+        case ASR::symbolType::Function:
+            return CompletionItemKind::Function;
+        case ASR::symbolType::GenericProcedure:
+            return CompletionItemKind::Function;
+        case ASR::symbolType::CustomOperator:
+            return CompletionItemKind::Operator;
+        case ASR::symbolType::Struct:
+            return CompletionItemKind::Struct;
+        case ASR::symbolType::Enum:
+            return CompletionItemKind::Enum;
+        case ASR::symbolType::Variable:
+            return CompletionItemKind::Variable;
+        case ASR::symbolType::Class:
+            return CompletionItemKind::Class;
+        case ASR::symbolType::ClassProcedure:
+            return CompletionItemKind::Method;
+        case ASR::symbolType::Template:
+            return CompletionItemKind::TypeParameter;
+        default:
+            return CompletionItemKind::Function;
         }
     }
 
@@ -361,6 +393,14 @@ namespace LCompilers::LanguageServerProtocol {
                 clientSupportsHover = textDocument.hover.has_value();
                 clientSupportsHighlight = textDocument.documentHighlight.has_value();
                 clientSupportsSemanticHighlight = textDocument.semanticTokens.has_value();
+                if (textDocument.completion.has_value()) {
+                    clientSupportsCodeCompletion = true;
+                    const CompletionClientCapabilities &completion =
+                        textDocument.completion.value();
+                    clientSupportsCodeCompletionContext =
+                        completion.contextSupport.has_value()
+                        && completion.contextSupport.value();
+                }
             }
             logger.debug()
                 << "clientSupportsGotoDefinition = "
@@ -389,6 +429,14 @@ namespace LCompilers::LanguageServerProtocol {
             logger.debug()
                 << "clientSupportsSemanticHighlight = "
                 << clientSupportsSemanticHighlight
+                << std::endl;
+            logger.debug()
+                << "clientSupportsCodeCompletion = "
+                << clientSupportsCodeCompletion
+                << std::endl;
+            logger.debug()
+                << "clientSupportsCodeCompletionContext = "
+                << clientSupportsCodeCompletionContext
                 << std::endl;
         }
 
@@ -473,6 +521,13 @@ namespace LCompilers::LanguageServerProtocol {
             ServerCapabilities_semanticTokensProvider &semanticTokensProvider =
                 capabilities.semanticTokensProvider.emplace();
             semanticTokensProvider = std::move(semanticTokensOptions);
+        }
+
+        if (clientSupportsCodeCompletion) {
+            CompletionOptions &completionProvider =
+                capabilities.completionProvider.emplace();
+            completionProvider.triggerCharacters = {"%"};
+            completionProvider.resolveProvider = true;
         }
 
         return result;
@@ -985,6 +1040,73 @@ namespace LCompilers::LanguageServerProtocol {
         } else {
             result = nullptr;
         }
+        return result;
+    }
+
+    inline auto startsWith(
+        const std::string &term,
+        const std::string_view &prefix
+    ) -> bool {
+        return (term.length() >= prefix.length())
+            && (term.compare(0, prefix.size(), prefix) == 0);
+    }
+
+    // request: "textDocument/completion"
+    auto LFortranLspLanguageServer::receiveTextDocument_completion(
+        const RequestMessage &/*request*/,
+        CompletionParams &params
+    ) -> TextDocument_CompletionResult {
+        TextDocument_CompletionResult result;
+        if (clientSupportsCodeCompletion) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            const std::shared_ptr<CompilerOptions> compilerOptions = getCompilerOptions(*document);
+            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            const std::string &path = document->path().string();
+            const std::string &text = document->text();
+            logger.trace()
+                << "Looking up all symbols in document with URI=" << uri
+                << std::endl;
+            std::vector<lc::document_symbols> symbols =
+                lfortran.getSymbols(path, text, *compilerOptions);
+            logger.trace()
+                << "Found " << symbols.size() << " symbol(s) matching the query."
+                << std::endl;
+            std::string_view query = document->symbolAt(
+                params.position.line,
+                params.position.character
+            );
+            auto completionItems = std::make_unique<std::vector<CompletionItem>>();
+            completionItems->reserve(symbols.size());
+            std::unordered_set<std::string> visited;
+            visited.reserve(symbols.size());
+            for (const lc::document_symbols &symbol : symbols) {
+                if (startsWith(symbol.symbol_name, query)
+                    && (visited.find(symbol.symbol_name) == visited.end())) {
+                    CompletionItem &item = completionItems->emplace_back();
+                    item.label = symbol.symbol_name;
+                    item.kind = asrSymbolTypeToCompletionItemKind(symbol.symbol_type);
+                    visited.insert(symbol.symbol_name);
+                }
+            }
+            result = std::move(completionItems);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    // request: "completionItem/resolve"
+    auto LFortranLspLanguageServer::receiveCompletionItem_resolve(
+        const RequestMessage &/*request*/,
+        CompletionItem &params
+    ) -> CompletionItem_ResolveResult {
+        // NOTE: Use this handler to lazily populate code-completion attributes
+        // --------------------------------------------------------------------
+        // NOTE: `CompletionItem_ResolveResult` is an alias of `CompletionItem`,
+        // so returning the params, directly, is acceptable (making this a sort
+        // of identity function).
+        CompletionItem_ResolveResult &result = params;
         return result;
     }
 

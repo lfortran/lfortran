@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -256,6 +257,26 @@ namespace LCompilers::LanguageServerProtocol {
             scol = position - posByLine[line];
         }
         column = static_cast<std::size_t>(scol);
+    }
+
+    inline bool isIdentifier(unsigned char c) {
+        return std::isalnum(c) || (c == '_');
+    }
+
+    auto LspTextDocument::symbolAt(
+        std::size_t line,
+        std::size_t column
+    ) const -> std::string_view {
+        std::size_t lower = toPosition(line, column);
+        std::size_t upper = lower;
+        while ((lower > 0) && isIdentifier(_text[lower - 1])) {
+            --lower;
+        }
+        while ((upper < _text.length()) && isIdentifier(upper + 1)) {
+            ++upper;
+        }
+        std::size_t length = upper - lower;
+        return std::string_view(_text.data() + lower, length);
     }
 
     auto LspTextDocument::from(

@@ -111,3 +111,7 @@ class LspClient(ABC):
     @abstractmethod
     def semantic_highlight(self, uri: str) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    def complete(self, uri: str, line: int, column: int) -> None:
+        raise NotImplementedError
