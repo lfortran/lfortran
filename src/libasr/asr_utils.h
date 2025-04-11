@@ -437,6 +437,192 @@ static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
     return ASR::abiType::Source;
 }
 
+
+// Helper function to convert intentType to Fortran intent string
+static std::string intent_to_str(ASR::intentType intent) {
+    switch (intent) {
+        case ASR::intentType::In: return "in";
+        case ASR::intentType::Out: return "out";
+        case ASR::intentType::InOut: return "inout";
+        case ASR::intentType::ReturnVar: return "return";
+        default: return "";
+    }
+}
+
+static inline std::string type_to_str_fortran(const ASR::ttype_t *t);
+static inline char *symbol_name(const ASR::symbol_t *f);
+
+static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
+    switch (s.type) {
+        case ASR::symbolType::Variable: {
+            const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
+            std::string res = type_to_str_fortran(v->m_type);
+            // Collect attributes
+            if (v->m_storage == ASR::storage_typeType::Parameter) {
+                res += ", parameter";
+            }
+            if (v->m_access == ASR::accessType::Private) {
+                res += ", private";
+            } else if (v->m_access == ASR::accessType::Public) {
+                res += ", public";
+            }
+            if (v->m_presence == ASR::presenceType::Optional) {
+                res += ", optional";
+            }
+            if (v->m_intent != ASR::intentType::Unspecified) {
+                res += ", intent(" + intent_to_str(v->m_intent) + ")";
+            }
+            res += " :: " + std::string(v->m_name);
+            if (v->m_value) {
+                // TODO:
+                //res += " = " + expr_to_str_fortran(v->m_value);
+            }
+            return res;
+        }
+        case ASR::symbolType::Function: {
+            const ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(&s);
+            std::string res = "function " + std::string(f->m_name) + "(";
+            std::vector<std::string> arg_names;
+            // Extract argument names
+            for (size_t i = 0; i < f->n_args; i++) {
+                const ASR::expr_t *arg = f->m_args[i];
+                if (ASR::is_a<ASR::Var_t>(*arg)) {
+                    const ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg);
+                    const ASR::symbol_t *v_sym = var->m_v;
+                    if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
+                        const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
+                        arg_names.push_back(std::string(v->m_name));
+                    }
+                }
+            }
+            res += join(", ", arg_names) + ")";
+            // Handle return variable
+            if (f->m_return_var) {
+                const ASR::expr_t *ret = f->m_return_var;
+                if (ASR::is_a<ASR::Var_t>(*ret)) {
+                    const ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(ret);
+                    const ASR::symbol_t *v_sym = var->m_v;
+                    if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
+                        const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
+                        res += " result(" + std::string(v->m_name) + ")";
+                    }
+                }
+            }
+            res += "\n";
+            // Add argument declarations
+            for (const std::string &arg_name : arg_names) {
+                ASR::symbol_t *arg_sym = f->m_symtab->get_symbol(arg_name);
+                if (arg_sym && ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                    const ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                    std::string arg_decl = type_to_str_fortran(arg_var->m_type);
+                    if (arg_var->m_intent != ASR::intentType::Unspecified) {
+                        arg_decl += ", intent(" + intent_to_str(arg_var->m_intent) + ")";
+                    }
+                    arg_decl += " :: " + arg_name;
+                    res += "    " + arg_decl + "\n";
+                }
+            }
+            // Add return variable declaration
+            if (f->m_return_var) {
+                const ASR::expr_t *ret = f->m_return_var;
+                if (ASR::is_a<ASR::Var_t>(*ret)) {
+                    const ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(ret);
+                    const ASR::symbol_t *v_sym = var->m_v;
+                    if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
+                        const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
+                        std::string ret_type = type_to_str_fortran(v->m_type);
+                        res += "    " + ret_type + " :: " + std::string(v->m_name) + "\n";
+                    }
+                }
+            }
+            res += "end function";
+            return res;
+        }
+        case ASR::symbolType::Module: {
+            const ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(&s);
+            std::string res = "module " + std::string(m->m_name);
+            // Optionally add more details, e.g., intrinsic status
+            if (m->m_intrinsic) {
+                res += "\n    ! intrinsic module";
+            }
+            return res;
+        }
+        case ASR::symbolType::Program: {
+            const ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(&s);
+            return "program " + std::string(p->m_name);
+        }
+        case ASR::symbolType::ExternalSymbol: {
+            const ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(&s);
+            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(ext->m_external);
+            if (orig_sym) {
+                std::string orig_str = symbol_to_str_fortran(*orig_sym);
+                return orig_str + "  ! from module " + std::string(ext->m_module_name);
+            } else {
+                return "external symbol " + std::string(ext->m_name);
+            }
+        }
+        case ASR::symbolType::Struct: {
+            const ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(&s);
+            return "type " + std::string(st->m_name);
+        }
+        case ASR::symbolType::Enum: {
+            const ASR::Enum_t *en = ASR::down_cast<ASR::Enum_t>(&s);
+            return "enum " + std::string(en->m_name);
+        }
+        case ASR::symbolType::Union: {
+            const ASR::Union_t *un = ASR::down_cast<ASR::Union_t>(&s);
+            return "type " + std::string(un->m_name) + "  ! union";
+        }
+        case ASR::symbolType::GenericProcedure: {
+            const ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(&s);
+            std::string res = "interface " + std::string(gp->m_name) + "\n";
+            for (size_t i = 0; i < gp->n_procs; i++) {
+                ASR::symbol_t *proc = gp->m_procs[i];
+                res += "    procedure " + std::string(ASRUtils::symbol_name(proc)) + "\n";
+            }
+            res += "end interface";
+            return res;
+        }
+        case ASR::symbolType::CustomOperator: {
+            const ASR::CustomOperator_t *co = ASR::down_cast<ASR::CustomOperator_t>(&s);
+            std::string res = "interface operator(" + std::string(co->m_name) + ")\n";
+            for (size_t i = 0; i < co->n_procs; i++) {
+                ASR::symbol_t *proc = co->m_procs[i];
+                res += "    procedure " + std::string(ASRUtils::symbol_name(proc)) + "\n";
+            }
+            res += "end interface";
+            return res;
+        }
+        case ASR::symbolType::Class: {
+            const ASR::Class_t *cl = ASR::down_cast<ASR::Class_t>(&s);
+            return "type " + std::string(cl->m_name) + "  ! class";
+        }
+        case ASR::symbolType::ClassProcedure: {
+            const ASR::ClassProcedure_t *cp = ASR::down_cast<ASR::ClassProcedure_t>(&s);
+            return "procedure " + std::string(cp->m_name) + "  ! class-bound";
+        }
+        case ASR::symbolType::AssociateBlock: {
+            const ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(&s);
+            return "associate (" + std::string(ab->m_name) + ")";
+        }
+        case ASR::symbolType::Block: {
+            const ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(&s);
+            return "block " + std::string(b->m_name);
+        }
+        case ASR::symbolType::Requirement: {
+            const ASR::Requirement_t *req = ASR::down_cast<ASR::Requirement_t>(&s);
+            return "requirement " + std::string(req->m_name);
+        }
+        case ASR::symbolType::Template: {
+            const ASR::Template_t *tpl = ASR::down_cast<ASR::Template_t>(&s);
+            return "template " + std::string(tpl->m_name);
+        }
+        default: {
+            return "symbol " + std::string(ASRUtils::symbol_name(&s));
+        }
+    }
+}
+
 static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type, int overload=0) {
     switch( asr_type->type ) {
         case ASR::ttypeType::List: {
@@ -2112,7 +2298,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
-                            LCompilers::LocationManager &lm);
+                            LCompilers::LocationManager &lm,
+                            bool separate_compilation = false);
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
@@ -4508,6 +4695,12 @@ class SymbolDuplicator {
                 new_symbol_name = variable->m_name;
                 break;
             }
+            case ASR::symbolType::Module: {
+                ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(symbol);
+                new_symbol = duplicate_Module(module, destination_symtab);
+                new_symbol_name = module->m_name;
+                break;
+            }
             case ASR::symbolType::ExternalSymbol: {
                 ASR::ExternalSymbol_t* external_symbol = ASR::down_cast<ASR::ExternalSymbol_t>(symbol);
                 new_symbol = duplicate_ExternalSymbol(external_symbol, destination_symtab);
@@ -4676,6 +4869,19 @@ class SymbolDuplicator {
             function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
             function->m_side_effect_free));
+    }
+
+    ASR::symbol_t* duplicate_Module(ASR::Module_t* module_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* module_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(module_t->m_symtab, module_symtab);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(
+            al, module_t->base.base.loc, module_symtab,
+            module_t->m_name, module_t->m_dependencies, module_t->n_dependencies,
+            module_t->m_loaded_from_mod, module_t->m_intrinsic,
+            module_t->m_start_name, module_t->m_end_name
+        ));
     }
 
     ASR::symbol_t* duplicate_Block(ASR::Block_t* block_t,

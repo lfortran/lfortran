@@ -194,7 +194,7 @@ def test_document_hover(client: LFortranLspTestClient) -> None:
     assert doc.preview == Hover(
         contents=MarkupContent(
             kind=MarkupKind.Markdown,
-            value="```fortran\nreal[:]\n```"
+            value="```fortran\nfunction eval_1d(self, x) result(res)\n    softmax, intent(in) :: self\n    real[:], intent(in) :: x\n    real[:] :: res\nend function\n```"
         ),
         range=Range(
             end=Position(

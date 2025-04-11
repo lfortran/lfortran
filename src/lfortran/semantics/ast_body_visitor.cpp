@@ -238,7 +238,7 @@ public:
     }
 
     void visit_Open(const AST::Open_t& x) {
-        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr;
+        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, *a_access = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -376,8 +376,32 @@ public:
                     a_form = ASRUtils::cast_string_descriptor_to_pointer(al, a_form);
                 }
 
+            } else if( m_arg_str == std::string("access") ) {  //TODO: Handle 'direct' as access argument
+                if ( a_access != nullptr ) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `form` found, unit has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_access = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_access_type = ASRUtils::expr_type(a_access);
+                if (!ASRUtils::is_character(*a_access_type)) {
+                    diag.add(Diagnostic(
+                        "`form` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_access))){
+                    a_access = ASRUtils::cast_string_descriptor_to_pointer(al, a_access);
+                }
             } else {
-                const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
+                const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", \
                                                                         "recl", "fileopt", "action", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
@@ -402,7 +426,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
@@ -676,6 +700,14 @@ public:
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
+        // check if format as a keyword arg
+        for (size_t i = 0; i < n_kwargs; i++) {
+            if (strcmp(m_kwargs[i].m_arg, "fmt") == 0) {
+                formatted = true;
+                break;
+            }
+        }
+
         if( n_args > 2 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 2 in Read/Write statement.",
@@ -904,7 +936,7 @@ public:
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
                         nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline, nullptr)));
+                        nullptr, 0, nullptr, newline, nullptr, formatted)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     newline_for_advance.push_back(ASR::make_If_t(al, loc, test, body.p,
@@ -922,7 +954,7 @@ public:
             throw SemanticAbort();
         }
         if (_type == AST::stmtType::Write && a_fmt == nullptr
-                && compiler_options.print_leading_space) {
+                && compiler_options.print_leading_space && formatted) {
             ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
             ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
             file_write->m_id = a_id;
@@ -998,11 +1030,11 @@ public:
                 if( _type == AST::stmtType::Write ) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                         a_iomsg, a_iostat, a_id, a_values_vec.p,
-                        a_values_vec.size(), a_separator, a_end, nullptr);
+                        a_values_vec.size(), a_separator, a_end, nullptr, true);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
-                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr);
+                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg, 
+                        a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr, formatted);
                     print_statements[tmp] = std::make_pair(&r->base,label);
                 }
                 return;
@@ -1019,21 +1051,23 @@ public:
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
-            a_values_vec.size(), a_separator, a_end, overloaded_stmt);
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
-            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
-                a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
-                type, nullptr));
-            a_values_vec.reserve(al, 1);
-            a_values_vec.push_back(al, string_format);
+            if (formatted) {
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(
+                            al, loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+                ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
+                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
+                    type, nullptr));
+                a_values_vec.reserve(al, 1);
+                a_values_vec.push_back(al, string_format);
+            }
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end, overloaded_stmt);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt);
+                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted);
         }
 
         tmp_vec.push_back(tmp);
@@ -4016,7 +4050,7 @@ public:
         args.reserve(al, 1);
         args.push_back(al, space);
         return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr);
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true);
     }
 
     void visit_Print(const AST::Print_t &x) {

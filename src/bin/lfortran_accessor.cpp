@@ -182,9 +182,7 @@ namespace LCompilers::LLanguageServer {
                     );
                     loc.symbol_type = s->type;
 
-                    // TODO: Replace the following with a full preview of the symbol:
-                    ASR::ttype_t *t = ASRUtils::symbol_type(s);
-                    pair.second = ASRUtils::type_to_str_fortran(t);
+                    pair.second = ASRUtils::symbol_to_str_fortran(*s);
                 }
             }
         }
