@@ -2,7 +2,7 @@ module template_travel_01b_m
 
     implicit none
     private
-    public :: travel_tmpl
+    public :: travel_tmpl, test_template
 
     requirement operation(A, B, C, op)
         type, deferred :: A

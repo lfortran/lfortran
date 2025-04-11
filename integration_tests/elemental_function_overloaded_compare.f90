@@ -8,6 +8,7 @@ module mod_elemental_function_overloaded_compare
     use iso_fortran_env, only: int32
     implicit none
     !> String type holding an arbitrary sequence of characters.
+    public :: test_constructor
 
     interface operator(==)
         module procedure :: eq_string_char
