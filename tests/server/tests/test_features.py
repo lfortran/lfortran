@@ -457,3 +457,68 @@ def test_code_completion(client: LFortranLspTestClient) -> None:
     for completion in doc.completions:
         expected_completions.remove(completion)
     assert len(expected_completions) == 0
+
+def test_whole_document_formatting(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    doc.format()
+    assert doc.text == "\n".join([
+        "module module_function_call1",
+        "    type :: softmax",
+        "",
+        "contains",
+        "",
+        "procedure :: eval_1d",
+        "    end type softmax",
+        "",
+        "contains",
+        "",
+        "    pure function eval_1d(self, x) result(res)",
+        "        class(softmax), intent(in) :: self",
+        "        real, intent(in) :: x(:)",
+        "        real :: res(size(x))",
+        "    end function eval_1d",
+        "",
+        "",
+        "    pure function eval_1d_prime(self, x) result(res)",
+        "        class(softmax), intent(in) :: self",
+        "        real, intent(in) :: x(:)",
+        "        real :: res(size(x))",
+        "        res = self%eval_1d(x)",
+        "    end function eval_1d_prime",
+        "",
+        "end module module_function_call1",
+        ""
+    ])
+
+def test_partial_document_formatting(client: LFortranLspTestClient) -> None:
+    path = Path(__file__).absolute().parent.parent.parent / "function_call1.f90"
+    doc = client.open_document("fortran", path)
+    assert client.await_validation(doc.uri, doc.version) is not None
+    doc.select(14, 5, 19, 31)
+    doc.format_range()
+    assert doc.text == "\n".join([
+        "module module_function_call1",
+        "    type :: softmax",
+        "    contains",
+        "      procedure :: eval_1d",
+        "    end type softmax",
+        "  contains",
+        "  ",
+        "    pure function eval_1d(self, x) result(res)",
+        "      class(softmax), intent(in) :: self",
+        "      real, intent(in) :: x(:)",
+        "      real :: res(size(x))",
+        "    end function eval_1d",
+        "  ",
+        "    pure function eval_1d_prime(self, x) result(res)",
+        "        class(softmax), intent(in) :: self",
+        "        real, intent(in) :: x(:)",
+        "        real :: res(size(x))",
+        "        res = self%eval_1d(x)",
+        "    end function eval_1d_prime",
+        "",
+        "end module module_function_call1",
+        ""
+    ])

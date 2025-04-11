@@ -328,8 +328,8 @@ class LspTextDocument:
             end_line: int,
             end_column: int
     ) -> None:
-        start = Position(start_line, start_column)
-        end = Position(end_line, end_column)
+        start = Position(start_line - 1, start_column - 1)
+        end = Position(end_line - 1, end_column - 1)
         self.selection = Range(start, end)
         if (start_line < end_line) \
            or ((start_line == end_line) and (start_column <= end_column)):
@@ -464,3 +464,12 @@ class LspTextDocument:
     def complete(self) -> None:
         line, column = self.pos_to_linecol(self.position)
         self.client.complete(self.uri, line, column)
+
+    @requires_path
+    def format(self) -> None:
+        self.client.format(self.uri)
+
+    @requires_path
+    def format_range(self) -> None:
+        if self.selection is not None:
+            self.client.format_range(self.uri, self.selection)
