@@ -7,6 +7,7 @@
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include <libasr/asr.h>
 #include <libasr/diagnostics.h>
@@ -57,7 +58,10 @@ namespace LCompilers::LanguageServerProtocol {
         > validationsByUri;
         std::shared_mutex validationMutex;
 
-        std::unordered_map<std::size_t, SemanticHighlighter> highlightsByDocumentId;
+        std::unordered_map<
+            std::size_t,
+            std::shared_ptr<std::pair<std::vector<FortranToken>, int>>
+        > highlightsByDocumentId;
         std::shared_mutex highlightsMutex;
 
         std::atomic_bool clientSupportsGotoDefinition = false;
@@ -97,12 +101,16 @@ namespace LCompilers::LanguageServerProtocol {
         auto encodeHighlights(
             std::vector<unsigned int> &encodings,
             LspTextDocument &document,
-            SemanticHighlighter &highlights
+            std::vector<FortranToken> &highlights
         ) -> void;
 
         auto getHighlights(
             LspTextDocument &document
-        ) -> SemanticHighlighter &;
+        ) -> std::shared_ptr<std::pair<std::vector<FortranToken>, int>>;
+
+        virtual auto updateHighlights(
+            std::shared_ptr<LspTextDocument> document
+        ) -> void = 0;
 
         auto getLFortranConfig(
             const DocumentUri &uri
@@ -190,6 +198,11 @@ namespace LCompilers::LanguageServerProtocol {
         auto receiveTextDocument_didChange(
             const NotificationMessage &notification,
             DidChangeTextDocumentParams &params
+        ) -> void override;
+
+        auto receiveTextDocument_didClose(
+            const NotificationMessage &notification,
+            DidCloseTextDocumentParams &params
         ) -> void override;
 
         auto receiveWorkspace_didChangeWatchedFiles(

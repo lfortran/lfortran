@@ -40,7 +40,7 @@ namespace LCompilers::LanguageServerProtocol {
         );
         LspTextDocument(LspTextDocument &&other) noexcept;    // move constructor
 
-        auto documentId() const -> std::size_t;
+        auto id() const -> std::size_t;
         auto uri() const -> const DocumentUri &;
         auto setUri(const DocumentUri &uri) -> void;
         auto path() const -> const fs::path &;
@@ -71,9 +71,9 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t position
         ) const -> void;
     private:
-        // NOTE: The document's URI might change but its documentId will remain
+        // NOTE: The document's URI might change but its id will remain
         // the same.
-        const std::size_t _documentId;
+        const std::size_t _id;
         DocumentUri _uri;
         std::string _languageId;
         int _version;

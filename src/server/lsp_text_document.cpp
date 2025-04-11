@@ -11,9 +11,9 @@
 
 namespace LCompilers::LanguageServerProtocol {
 
-    auto nextDocumentId() -> std::size_t {
-        static std::atomic_size_t serialDocumentId{0};
-        return serialDocumentId++;
+    auto nextId() -> std::size_t {
+        static std::atomic_size_t serialId{0};
+        return serialId++;
     }
 
     LspTextDocument::LspTextDocument(
@@ -22,7 +22,7 @@ namespace LCompilers::LanguageServerProtocol {
         int version,
         const std::string &text,
         lsl::Logger &logger
-    ) : _documentId(nextDocumentId())
+    ) : _id(nextId())
       , _languageId(languageId)
       , _version(version)
       , _text(text)
@@ -36,7 +36,7 @@ namespace LCompilers::LanguageServerProtocol {
     LspTextDocument::LspTextDocument(
         const std::string &uri,
         lsl::Logger &logger
-    ) : _documentId(nextDocumentId())
+    ) : _id(nextId())
       , _languageId("")
       , _version(-1)
       , _text("")
@@ -49,7 +49,7 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     LspTextDocument::LspTextDocument(LspTextDocument &&other) noexcept
-        : _documentId(nextDocumentId())
+        : _id(nextId())
         , _uri(std::move(other._uri))
         , _languageId(std::move(other._languageId))
         , _version(other._version)
@@ -72,8 +72,8 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
-    auto LspTextDocument::documentId() const -> std::size_t {
-        return _documentId;
+    auto LspTextDocument::id() const -> std::size_t {
+        return _id;
     }
 
     auto LspTextDocument::uri() const -> const DocumentUri & {

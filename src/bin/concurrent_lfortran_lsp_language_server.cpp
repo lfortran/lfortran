@@ -85,4 +85,32 @@ namespace LCompilers::LanguageServerProtocol {
         LFortranLspLanguageServer::validate(*document, taskIsRunning);
     }
 
+    auto ConcurrentLFortranLspLanguageServer::updateHighlights(
+        std::shared_ptr<LspTextDocument> document
+    ) -> void {
+        int version = document->version();
+        auto iter = highlightsByDocumentId.find(document->id());
+        if (iter != highlightsByDocumentId.end()) {
+            if (iter->second->second < version) {
+                iter->second = std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                    std::make_pair(
+                        semantic_tokenize(document->text()),
+                        version
+                    )
+                );
+            }
+        } else {
+            highlightsByDocumentId.emplace_hint(
+                iter,
+                document->id(),
+                std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                    std::make_pair(
+                        semantic_tokenize(document->text()),
+                        version
+                    )
+                )
+            );
+        }
+    }
+
 } // namespace LCompilers::LanguageServerProtocol
