@@ -14,14 +14,15 @@ from lsprotocol.types import (
     Position, RenameClientCapabilities, RenameParams,
     SemanticTokensClientCapabilities,
     SemanticTokensClientCapabilitiesRequestsType,
-    TextDocumentContentChangeEvent, TextDocumentContentChangeEvent_Type1,
-    TextDocumentContentChangeEvent_Type2, TextDocumentDefinitionRequest,
-    TextDocumentDefinitionResponse, TextDocumentDocumentHighlightResponse,
-    TextDocumentDocumentSymbolResponse, TextDocumentHoverResponse,
-    TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
-    TextDocumentRenameRequest, TextDocumentRenameResponse,
-    TextDocumentSemanticTokensFullResponse, TextDocumentSyncKind, TokenFormat,
-    VersionedTextDocumentIdentifier, WorkspaceEdit, TextDocumentCompletionResponse)
+    TextDocumentCompletionResponse, TextDocumentContentChangeEvent,
+    TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
+    TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
+    TextDocumentDocumentHighlightResponse, TextDocumentDocumentSymbolResponse,
+    TextDocumentHoverResponse, TextDocumentIdentifier,
+    TextDocumentPublishDiagnosticsNotification, TextDocumentRenameRequest,
+    TextDocumentRenameResponse, TextDocumentSemanticTokensFullResponse,
+    TextDocumentSyncKind, TokenFormat, VersionedTextDocumentIdentifier,
+    WorkspaceEdit)
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 from llanguage_test_client.lsp_test_client import LspTestClient

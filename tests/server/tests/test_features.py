@@ -2,7 +2,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import List
 
-from lsprotocol.types import (CompletionItem, CompletionItemKind, DidChangeConfigurationParams, DocumentHighlight,
+from lsprotocol.types import (CompletionItem, CompletionItemKind,
+                              DidChangeConfigurationParams, DocumentHighlight,
                               DocumentSymbol, Hover, MarkupContent, MarkupKind,
                               Position, Range, SymbolKind)
 

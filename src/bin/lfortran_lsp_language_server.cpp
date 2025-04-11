@@ -1,4 +1,3 @@
-#include "bin/lfortran_accessor.h"
 #include <cctype>
 #include <chrono>
 #include <cstdlib>
@@ -24,6 +23,7 @@
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 
+#include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lfortran_lsp_config.h>
 #include <bin/lfortran_lsp_language_server.h>

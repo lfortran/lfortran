@@ -25,7 +25,8 @@ from lsprotocol import converters
 from lsprotocol.types import (ClientCapabilities,
                               ClientRegisterCapabilityRequest,
                               ClientRegisterCapabilityResponse,
-                              CreateFilesParams, DeleteFilesParams,
+                              CompletionParams, CreateFilesParams,
+                              DeleteFilesParams,
                               DidChangeConfigurationClientCapabilities,
                               DidChangeConfigurationParams,
                               DidChangeTextDocumentParams,
@@ -43,6 +44,7 @@ from lsprotocol.types import (ClientCapabilities,
                               SemanticTokensParams, ServerCapabilities,
                               ShutdownRequest, TelemetryEventNotification,
                               TextDocumentClientCapabilities,
+                              TextDocumentCompletionRequest,
                               TextDocumentContentChangeEvent_Type1,
                               TextDocumentContentChangeEvent_Type2,
                               TextDocumentDidChangeNotification,
@@ -70,9 +72,7 @@ from lsprotocol.types import (ClientCapabilities,
                               WorkspaceDidRenameFilesNotification,
                               WorkspaceWillCreateFilesRequest,
                               WorkspaceWillDeleteFilesRequest,
-                              WorkspaceWillRenameFilesRequest,
-                              CompletionParams,
-                              TextDocumentCompletionRequest)
+                              WorkspaceWillRenameFilesRequest)
 
 from llanguage_test_client.json_rpc import JsonObject, JsonValue
 from llanguage_test_client.lsp_client import FileRenameMapping, LspClient, Uri
