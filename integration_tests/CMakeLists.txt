@@ -1379,7 +1379,7 @@ RUN(NAME derived_types_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F
 RUN(NAME derived_types_32 LABELS gfortran)
 RUN(NAME derived_types_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME derived_types_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME derived_types_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN derived_types_35_file.txt NO_SEPARATE_COMPILATION)
+RUN(NAME derived_types_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN derived_types_35_file.txt)
 RUN(NAME derived_types_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1747,7 +1747,7 @@ RUN(NAME modules_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME enum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME enum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
-         enum_02_module.f90 NO_SEPARATE_COMPILATION)
+         enum_02_module.f90)
 RUN(NAME enum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME array_section_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
