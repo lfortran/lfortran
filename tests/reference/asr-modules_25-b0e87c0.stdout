@@ -133,7 +133,7 @@
                                         )
                                         (Logical 4)]
                                         ()
-                                        Source
+                                        Interactive
                                         Implementation
                                         ()
                                         .false.
@@ -305,7 +305,7 @@
                                         )
                                         (Logical 4)]
                                         ()
-                                        Source
+                                        Interactive
                                         Interface
                                         ()
                                         .false.
@@ -393,7 +393,7 @@
                                             8 toml_tokenizer
                                         )]
                                         ()
-                                        Source
+                                        Interactive
                                         Implementation
                                         ()
                                         .false.
@@ -406,25 +406,7 @@
                                     )
                                     []
                                     [(Var 13 de)]
-                                    [(Nullify
-                                        [(Var 13 table)]
-                                    )
-                                    (Associate
-                                        (StructInstanceMember
-                                            (Var 13 de)
-                                            13 1_toml_tokenizer_current
-                                            (Pointer
-                                                (StructType
-                                                    []
-                                                    []
-                                                    .true.
-                                                    8 toml_table
-                                                )
-                                            )
-                                            ()
-                                        )
-                                        (Var 13 table)
-                                    )]
+                                    []
                                     ()
                                     Private
                                     .false.

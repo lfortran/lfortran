@@ -70,7 +70,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        Source
+                                        Interactive
                                         Implementation
                                         ()
                                         .false.
@@ -83,12 +83,7 @@
                                     )
                                     []
                                     []
-                                    [(SubroutineCall
-                                        5 default_help
-                                        ()
-                                        []
-                                        ()
-                                    )]
+                                    []
                                     ()
                                     Public
                                     .false.
