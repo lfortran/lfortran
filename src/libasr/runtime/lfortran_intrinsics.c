@@ -3319,7 +3319,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
                 char *temp = "STATUS specifier in OPEN statement has invalid value.";
                 int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
                 size += 1;   // endline char
-                snprintf(*iomsg, size, temp);
+                snprintf(*iomsg, size, "%s", temp);
                 for (size_t i = size; i < iomsg_len; i++) {
                     (*iomsg)[i - 1] = ' ';
                 }
@@ -3345,7 +3345,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
                 char *temp = "FORM specifier in OPEN statement has invalid value.";
                 int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
                 size += 1;   // endline char
-                snprintf(*iomsg, size, temp);
+                snprintf(*iomsg, size, "%s", temp);
                 for (size_t i = size; i < iomsg_len; i++) {
                     (*iomsg)[i - 1] = ' ';
                 }
@@ -3371,7 +3371,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
                 char *temp = "ACCESS specifier in OPEN statement has invalid value.";
                 int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
                 size += 1;   // endline char
-                snprintf(*iomsg, size, temp);
+                snprintf(*iomsg, size, "%s", temp);
                 for (size_t i = size; i < iomsg_len; i++) {
                     (*iomsg)[i - 1] = ' ';
                 }
