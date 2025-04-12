@@ -3154,6 +3154,9 @@ public:
     }
 
     void visit_Enum(const ASR::Enum_t& x) {
+        if ( x.m_abi == ASR::abiType::Interactive ) {
+            return;
+        }
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
             x.m_abi == ASR::abiType::BindC ) {
             throw CodeGenError("C-interoperation support for non-consecutive but uniquely "
@@ -4482,7 +4485,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
             if (interactive) return;
 
-            if (compiler_options.generate_object_code
+            if (compiler_options.generate_object_code && compiler_options.disable_separate_compilation
                     && (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic)
                     && !compiler_options.rtlib) {
                 // Skip intrinsic functions in generate_object_code mode
