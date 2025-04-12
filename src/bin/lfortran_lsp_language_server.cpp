@@ -1145,7 +1145,7 @@ namespace LCompilers::LanguageServerProtocol {
                 getCompilerOptions(*document);
             std::shared_lock<std::shared_mutex> readLock(document->mutex());
             const std::string &text = document->text();
-            const std::string &path = document->path();
+            const std::string &path = document->path().string();
             auto formatted = lfortran.format(
                 path,
                 text,
@@ -1165,8 +1165,9 @@ namespace LCompilers::LanguageServerProtocol {
                 Position &end = range.end;
                 start.line = 0;
                 start.character = 0;
-                end.line = document->lastLine();
-                end.character = document->lastColumn(end.line);
+                end.line = static_cast<uinteger_t>(document->lastLine());
+                end.character =
+                    static_cast<uinteger_t>(document->lastColumn(end.line));
                 edit.newText = formatted.result;
             }
             result = std::move(edits);
@@ -1212,7 +1213,7 @@ namespace LCompilers::LanguageServerProtocol {
             CompilerOptions compilerOptions = *getCompilerOptions(*document);
             compilerOptions.interactive = true;
             std::shared_lock<std::shared_mutex> readLock(document->mutex());
-            const std::string &path = document->path();
+            const std::string &path = document->path().string();
             const std::string fragment = document->slice(
                 params.range.start.line,
                 params.range.start.character,
