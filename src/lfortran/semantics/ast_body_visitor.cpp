@@ -238,7 +238,7 @@ public:
     }
 
     void visit_Open(const AST::Open_t& x) {
-        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, *a_access = nullptr;
+        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -379,7 +379,7 @@ public:
             } else if( m_arg_str == std::string("access") ) {  //TODO: Handle 'direct' as access argument
                 if ( a_access != nullptr ) {
                     diag.add(Diagnostic(
-                        R"""(Duplicate value of `form` found, unit has already been specified via arguments or keyword arguments)""",
+                        R"""(Duplicate value of `access` found, unit has already been specified via arguments or keyword arguments)""",
                         Level::Error, Stage::Semantic, {
                             Label("",{x.base.base.loc})
                         }));
@@ -391,7 +391,7 @@ public:
                 ASR::ttype_t* a_access_type = ASRUtils::expr_type(a_access);
                 if (!ASRUtils::is_character(*a_access_type)) {
                     diag.add(Diagnostic(
-                        "`form` must be of type, String or StringPointer",
+                        "`access` must be of type, String or StringPointer",
                         Level::Error, Stage::Semantic, {
                             Label("",{x.base.base.loc})
                         }));
@@ -400,9 +400,67 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_access))){
                     a_access = ASRUtils::cast_string_descriptor_to_pointer(al, a_access);
                 }
+            } else if( m_arg_str == std::string("iostat") ) {
+                if ( a_iostat != nullptr ) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `iostat` found, unit has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_iostat = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
+                if (!ASRUtils::is_variable(a_iostat)) {
+                    diag.add(Diagnostic(
+                        "Non-variable expression for `iostat`",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_integer(*a_iostat_type)) {
+                    diag.add(Diagnostic(
+                        "`iostat` must be of type, integer or integer*",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                } 
+            } else if (m_arg_str == std::string("iomsg")) {
+                if( a_iomsg != nullptr ) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `iomsg` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_iomsg = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
+                if (!ASRUtils::is_variable(a_iomsg)) {
+                    diag.add(Diagnostic(
+                        "Non-variable expression for `iomsg`",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable_pointer(a_iomsg_type))) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be of type, String",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_iomsg))) {
+                    a_iomsg = ASRUtils::cast_string_descriptor_to_pointer(al, a_iomsg);
+                } 
             } else {
-                const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", \
-                                                                        "recl", "fileopt", "action", "position", "pad"};
+                const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "action", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -426,7 +484,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
