@@ -74,9 +74,10 @@ namespace LCompilers::LFortran {
     {
     private:
         FortranEvaluator e;
+        CompilerOptions compiler_options;
 
     public:
-        custom_interpreter() : e{CompilerOptions()} {
+        custom_interpreter() : e{&compiler_options} {
             e.compiler_options.interactive = true;
         }
         virtual ~custom_interpreter() = default;
