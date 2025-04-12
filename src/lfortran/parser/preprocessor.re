@@ -274,6 +274,8 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             end = "\x00";
             newline = "\n";
             single_line_comment = "//" [^\n\x00]*;
+            multi_line_comment = "/*" ([^*] | "*"[^/])* "*/";
+            comment = (single_line_comment | multi_line_comment);
             whitespace = [ \t\v\r]+;
             digit = [0-9];
             digits = digit+;
@@ -402,7 +404,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "else" whitespace? single_line_comment? newline  {
+            "#" whitespace? "else" whitespace? comment? newline  {
                 if (ifdef_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -456,7 +458,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "endif" whitespace? single_line_comment? newline  {
+            "#" whitespace? "endif" whitespace? comment? newline  {
                 if (ifdef_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
