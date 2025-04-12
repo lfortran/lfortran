@@ -519,7 +519,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             git checkout -t origin/lf6
             git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
-            FC=lfortran make
+            FC="lfortran --disable-separate-compilation" make
             ./test_fix_point.exe
             ./test_integrate_one.exe
             ./test_linear.exe
@@ -548,7 +548,7 @@ jobs:
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
             git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
             git checkout eb05c69d30b7c88454d97d66ab6be46db10e7552
-            FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" ./build_and_run.sh
             FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
 
       - name: Test PRIMA
@@ -565,7 +565,7 @@ jobs:
             if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
               export LFORTRAN_RUNNER_OS='linux';
             fi
-            FC="$(pwd)/../src/bin/lfortran --cpp" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            FC="$(pwd)/../src/bin/lfortran --cpp --disable-separate-compilation" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_bobyqa_fortran_2_exe
             ./build/fortran/example_cobyla_fortran_1_exe
@@ -579,17 +579,17 @@ jobs:
 
             if [[ "${{matrix.os}}" == "macos-latest" ]]; then
               cd fortran/
-              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
-              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
-              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
-              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
-              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_bobyqa.f90 FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" ./script.sh
+              test_name=test_newuoa.f90 FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" ./script.sh
+              test_name=test_cobyla.f90 FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" ./script.sh
+              test_name=test_lincoa.f90 FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" ./script.sh
               cd ../
             fi
 
             if [[ "${{matrix.os}}" == "ubuntu-latest" ]]; then
               cd fortran/
-              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran" ./script.sh
+              test_name=test_uobyqa.f90 FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" ./script.sh
               cd ../
             fi
 
@@ -631,10 +631,10 @@ jobs:
             cd modern_minpack_01
             git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections minpack.o
 
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
@@ -644,10 +644,10 @@ jobs:
             git checkout -t origin/w5
             git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections minpack.o
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -661,7 +661,7 @@ jobs:
             cd dftatom
             git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
             export PATH="$(pwd)/../src/bin:$PATH"
-            make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --disable-separate-compilation"
             make -f Makefile.manual quicktest
 
             git clean -dfx
@@ -677,7 +677,7 @@ jobs:
             git checkout -t origin/lf6
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -696,7 +696,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -708,7 +708,7 @@ jobs:
 
             mkdir lf-fast
             cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -722,7 +722,7 @@ jobs:
 
             cd lf
             git clean -dfx
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -732,7 +732,7 @@ jobs:
 
             cd lf-fast
             git clean -dfx
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -791,7 +791,7 @@ jobs:
             micromamba install -c conda-forge fypp
 
             git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --disable-separate-compilation"
             make -j8
             ctest
 
@@ -805,11 +805,11 @@ jobs:
             git checkout lf11
             git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
             cd ./src
-            make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--disable-separate-compilation" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast --disable-separate-compilation" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
       # The below projects are tested with a higher CMake version, so replace the current installed version
@@ -1097,10 +1097,10 @@ jobs:
             cd modern_minpack_01
             git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections minpack.o
 
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
@@ -1110,10 +1110,10 @@ jobs:
             git checkout -t origin/w5
             git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections minpack.o
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections minpack.o
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -1127,11 +1127,11 @@ jobs:
             cd dftatom
             git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
             export PATH="$(pwd)/../src/bin:$PATH"
-            make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --disable-separate-compilation"
             ./tests/atom_U/F_atom_U
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast --disable-separate-compilation"
             ./tests/atom_U/F_atom_U
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -1142,7 +1142,7 @@ jobs:
             git checkout -t origin/lf6
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -1161,7 +1161,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1173,7 +1173,7 @@ jobs:
 
             mkdir lf-fast
             cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1187,7 +1187,7 @@ jobs:
 
             cd lf
             git clean -dfx
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1197,7 +1197,7 @@ jobs:
 
             cd lf-fast
             git clean -dfx
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -1228,7 +1228,7 @@ jobs:
             git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
             micromamba install -c conda-forge fypp
             git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --disable-separate-compilation"
             make -j8
             ctest
 
@@ -1242,11 +1242,11 @@ jobs:
             git checkout lf11
             git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
             cd ./src
-            make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--disable-separate-compilation" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast" MPI=no OPENMP=no
+            make -j8 FORTRAN=lfortran FFLAGS="--fast --disable-separate-compilation" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
