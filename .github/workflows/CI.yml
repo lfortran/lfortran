@@ -549,7 +549,7 @@ jobs:
             git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
             git checkout eb05c69d30b7c88454d97d66ab6be46db10e7552
             FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" ./build_and_run.sh
-            FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
+            FC="$(pwd)/../src/bin/lfortran --fast --disable-separate-compilation --skip-pass=dead_code_removal" ./build_and_run.sh
 
       - name: Test PRIMA
         shell: bash -e -l {0}
