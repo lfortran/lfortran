@@ -401,6 +401,8 @@ namespace LCompilers::LanguageServerProtocol {
                         completion.contextSupport.has_value()
                         && completion.contextSupport.value();
                 }
+                clientSupportsFormatting = textDocument.formatting.has_value();
+                clientSupportsRangeFormatting = textDocument.rangeFormatting.has_value();
             }
             logger.debug()
                 << "clientSupportsGotoDefinition = "
@@ -437,6 +439,14 @@ namespace LCompilers::LanguageServerProtocol {
             logger.debug()
                 << "clientSupportsCodeCompletionContext = "
                 << clientSupportsCodeCompletionContext
+                << std::endl;
+            logger.debug()
+                << "clientSupportsFormatting = "
+                << clientSupportsFormatting
+                << std::endl;
+            logger.debug()
+                << "clientSupportsRangeFormatting = "
+                << clientSupportsRangeFormatting
                 << std::endl;
         }
 
@@ -528,6 +538,18 @@ namespace LCompilers::LanguageServerProtocol {
                 capabilities.completionProvider.emplace();
             completionProvider.triggerCharacters = {"%"};
             completionProvider.resolveProvider = true;
+        }
+
+        if (clientSupportsFormatting) {
+            ServerCapabilities_documentFormattingProvider &documentFormattingProvider =
+                capabilities.documentFormattingProvider.emplace();
+            documentFormattingProvider = true;
+        }
+
+        if (clientSupportsRangeFormatting) {
+            ServerCapabilities_documentRangeFormattingProvider &documentRangeFormattingProvider =
+                capabilities.documentRangeFormattingProvider.emplace();
+            documentRangeFormattingProvider = true;
         }
 
         return result;
@@ -1107,6 +1129,124 @@ namespace LCompilers::LanguageServerProtocol {
         // so returning the params, directly, is acceptable (making this a sort
         // of identity function).
         CompletionItem_ResolveResult &result = params;
+        return result;
+    }
+
+    // request: "textDocument/formatting"
+    auto LFortranLspLanguageServer::receiveTextDocument_formatting(
+        const RequestMessage &/*request*/,
+        DocumentFormattingParams &params
+    ) -> TextDocument_FormattingResult {
+        TextDocument_FormattingResult result;
+        if (clientSupportsFormatting) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            const std::shared_ptr<CompilerOptions> compilerOptions =
+                getCompilerOptions(*document);
+            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            const std::string &text = document->text();
+            const std::string &path = document->path().string();
+            auto formatted = lfortran.format(
+                path,
+                text,
+                *compilerOptions,
+                false,  //-> color
+                params.options.tabSize,
+                true  //-> indent_unit
+            );
+            std::vector<TextEdit> edits;
+            if (formatted.ok) {
+                // TODO: Specify the reformatted document in terms of a diff
+                // between the previous text and the formatted text rather than
+                // replacing the whole text with the formatted version:
+                TextEdit &edit = edits.emplace_back();
+                Range &range = edit.range;
+                Position &start = range.start;
+                Position &end = range.end;
+                start.line = 0;
+                start.character = 0;
+                end.line = static_cast<uinteger_t>(document->lastLine());
+                end.character =
+                    static_cast<uinteger_t>(document->lastColumn(end.line));
+                edit.newText = formatted.result;
+            }
+            result = std::move(edits);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    inline auto isNewline(unsigned char c) -> bool {
+        return (c == '\r') || (c == '\n');
+    }
+
+    auto correctIndentation(
+        std::string &fragment,
+        const std::string_view &indentation
+    ) -> std::string & {
+        for (std::size_t i = 1; i < fragment.length(); ++i) {
+            if ((fragment[i] == '\n')
+                && ((i + 1) < fragment.length())
+                && !isNewline(fragment[i + 1])) {
+                fragment.insert(i + 1, indentation);
+                i += indentation.length();
+                if ((fragment[i + 1] == '\r')
+                    && ((i + 2) < fragment.length())
+                    && (fragment[i + 2] == '\n')) {
+                    ++i;
+                }
+            }
+        }
+        return fragment;
+    }
+
+    // request: "textDocument/rangeFormatting"
+    auto LFortranLspLanguageServer::receiveTextDocument_rangeFormatting(
+        const RequestMessage &/*request*/,
+        DocumentRangeFormattingParams &params
+    ) -> TextDocument_RangeFormattingResult {
+        TextDocument_RangeFormattingResult result;
+        if (clientSupportsRangeFormatting) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            CompilerOptions compilerOptions = *getCompilerOptions(*document);
+            compilerOptions.interactive = true;
+            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            const std::string &path = document->path().string();
+            const std::string fragment = document->slice(
+                params.range.start.line,
+                params.range.start.character,
+                params.range.end.line,
+                params.range.end.character
+            );
+            auto formatted = lfortran.format(
+                path,
+                fragment,
+                compilerOptions,
+                false,  //-> color
+                params.options.tabSize,
+                true  //-> indent_unit
+            );
+            std::vector<TextEdit> edits;
+            if (formatted.ok) {
+                // TODO: Specify the reformatted document in terms of a diff
+                // between the previous text and the formatted text rather than
+                // replacing the whole text with the formatted version:
+                TextEdit &edit = edits.emplace_back();
+                edit.range.start.line = params.range.start.line;
+                edit.range.start.character = params.range.start.character;
+                edit.range.end.line = params.range.end.line;
+                edit.range.end.character = params.range.end.character;
+                edit.newText = correctIndentation(
+                    formatted.result,
+                    document->leadingIndentation(params.range.start.line)
+                );
+            }
+            result = std::move(edits);
+        } else {
+            result = nullptr;
+        }
         return result;
     }
 

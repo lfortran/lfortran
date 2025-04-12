@@ -49,6 +49,17 @@ namespace LCompilers::LanguageServerProtocol {
         auto version() const -> int;
         auto text() const -> const std::string &;
         auto mutex() -> std::shared_mutex &;
+        auto numLines() const -> std::size_t;
+        auto lastLine() const -> std::size_t;
+        auto numColumns(std::size_t line) const -> std::size_t;
+        auto lastColumn(std::size_t line) const -> std::size_t;
+        auto leadingIndentation(std::size_t line) -> std::string_view;
+        auto slice(
+            std::size_t startLine,
+            std::size_t startColumn,
+            std::size_t endLine,
+            std::size_t endColumn
+        ) const -> std::string;
 
         auto update(
             const std::string &languageId,
