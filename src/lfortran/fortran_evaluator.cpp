@@ -38,7 +38,7 @@ namespace LCompilers {
 /* ------------------------------------------------------------------------- */
 // FortranEvaluator
 
-FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
+FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
     :
     compiler_options{compiler_options},
     al{1024*1024},
@@ -361,7 +361,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     eval_count++;
     run_fn = "__lfortran_evaluate_" + std::to_string(eval_count);
 
-    if (compiler_options.separate_compilation) {
+    if (!compiler_options.disable_separate_compilation) {
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
 
