@@ -46,7 +46,7 @@ stmt
     | If(expr test, stmt* body, stmt* orelse)
     | IfArithmetic(expr test, int lt_label, int eq_label, int gt_label)
     | Print(expr text)
-    | FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form, expr? access)
+    | FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form, expr? access, expr? iostat, expr? iomsg)
     | FileClose(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
     | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? size, expr? id, expr* values, stmt? overloaded, bool is_formatted)
     | FileBackspace(int label, expr? unit, expr? iostat, expr? err)
