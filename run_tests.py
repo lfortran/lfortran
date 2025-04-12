@@ -55,6 +55,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_no_warnings = is_included("asr_no_warnings")
     asr_disable_style_and_warnings = is_included("asr_disable_style_and_warnings")
     continue_compilation = is_included("continue_compilation")
+    disable_separate_compilation = is_included("disable_separate_compilation")
     fixed_form_cc = is_included("fixed_form_cc")
     semantics_only_cc = is_included("semantics_only_cc")
     show_errors = is_included("show_errors")
@@ -113,6 +114,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
 
     extra_args = f"--no-error-banner {show_verbose}"
+    if disable_separate_compilation:
+        extra_args += " --disable-separate-compilation"
     if print_leading_space:
         extra_args += " --print-leading-space"
     if interactive:
@@ -125,6 +128,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         extra_args += " --column=" + column
     if options:
         extra_args += " " + options
+
 
     if tokens:
         run_test(
@@ -282,7 +286,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     extrafile_ = os.path.join("tests", extrafile_)
                     modfile = extrafile_[:-4] + ".mod"
                     if not os.path.exists(modfile):
-                        run_cmd("lfortran -c {}".format(extrafile_))
+                        run_cmd(f"lfortran -c {extrafile_} {extra_args}")
 
             if not skip_test:
                 run_test(
