@@ -3209,8 +3209,11 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
-LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form, char *access)
+LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form, char *access, int32_t *iostat, char **iomsg)
 {
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
     if (f_name == NULL) {
         f_name = "_lfortran_generated_file.txt";
     }
@@ -3249,18 +3252,54 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
      * "replace" (file will be created, replacing any existing file)
      * "unknown" (it is not known whether the file exists)
      */
+    size_t iomsg_len;
+    if (iomsg && *iomsg) {
+        iomsg_len = strlen(*iomsg);
+    } else {
+        iomsg_len = 0;
+    }
     if (streql(status, "old")) {
         if (!*file_exists) {
-            printf("Runtime error: File `%s` does not exists!\nCannot open a "
-                "file with the `status=old`\n", f_name);
-            exit(1);
+            if (iostat != NULL) {
+                *iostat = 2;
+                if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                    char *temp = "File `%s` does not exists! Cannot open a file with the `status=old`";
+                    size_t err_len = strlen(temp) - 1 + strlen(f_name); 
+                    int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
+                    size += 1;   // endline char
+                    snprintf(*iomsg, size, temp, f_name);
+                    for (size_t i = size - 1; i < iomsg_len; i++) {
+                        (*iomsg)[i - 1] = ' ';
+                    }
+                    (*iomsg)[iomsg_len] = '\0';
+                }
+            } else {
+                printf("Runtime error: File `%s` does not exists!\nCannot open a "
+                    "file with the `status=old`\n", f_name);
+                exit(1);
+            }
         }
         access_mode = "r+";
     } else if (streql(status, "new")) {
         if (*file_exists) {
-            printf("Runtime error: File `%s` exists!\nCannot open a file with "
-                "the `status=new`\n", f_name);
-            exit(1);
+            if (iostat != NULL) {
+                *iostat = 17;
+                if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                    char *temp = "File `%s` exists! Cannot open a file with the `status=new`";
+                    size_t err_len = strlen(temp) - 1 + strlen(f_name); 
+                    int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
+                    size += 1;   // endline char
+                    snprintf(*iomsg, size, temp, f_name);
+                    for (size_t i = size - 1; i < iomsg_len; i++) {
+                        (*iomsg)[i - 1] = ' ';
+                    }
+                    (*iomsg)[iomsg_len] = '\0';
+                }
+            } else {
+                printf("Runtime error: File `%s` exists!\nCannot open a file with "
+                    "the `status=new`\n", f_name);
+                exit(1);
+            }
         }
         access_mode = "w+";
     } else if (streql(status, "replace") || streql(status, "scratch")) {
@@ -3274,9 +3313,23 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         }
         access_mode = "r+";
     } else {
-        printf("Runtime error: STATUS specifier in OPEN statement has "
-            "invalid value '%s'\n", status);
-        exit(1);
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                char *temp = "STATUS specifier in OPEN statement has invalid value.";
+                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
+                size += 1;   // endline char
+                snprintf(*iomsg, size, temp);
+                for (size_t i = size; i < iomsg_len; i++) {
+                    (*iomsg)[i - 1] = ' ';
+                }
+                (*iomsg)[iomsg_len] = '\0';
+            }
+        } else {
+            printf("Runtime error: STATUS specifier in OPEN statement has "
+                "invalid value '%s'\n", status);
+            exit(1);
+        }
     }
 
     bool unit_file_bin;
@@ -3286,9 +3339,23 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     } else if (streql(form, "unformatted")) {
         unit_file_bin = true;
     } else {
-        printf("Runtime error: FORM specifier in OPEN statement has "
-            "invalid value '%s'\n", form);
-        exit(1);
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                char *temp = "FORM specifier in OPEN statement has invalid value.";
+                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
+                size += 1;   // endline char
+                snprintf(*iomsg, size, temp);
+                for (size_t i = size; i < iomsg_len; i++) {
+                    (*iomsg)[i - 1] = ' ';
+                }
+                (*iomsg)[iomsg_len] = '\0';
+            }
+        } else {
+            printf("Runtime error: FORM specifier in OPEN statement has "
+                "invalid value '%s'\n", form);
+            exit(1);
+        }
     }
 
     if (streql(access, "stream")) {
@@ -3298,20 +3365,41 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     } else if (streql(access, "direct")) { //TODO: Handle 'direct' as access while reading or writing
         access_id = 2;
     } else {
-        printf("Runtime error: ACCESS specifier in OPEN statement has "
-            "invalid value '%s'\n", access);
-        exit(1);
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                char *temp = "ACCESS specifier in OPEN statement has invalid value.";
+                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
+                size += 1;   // endline char
+                snprintf(*iomsg, size, temp);
+                for (size_t i = size; i < iomsg_len; i++) {
+                    (*iomsg)[i - 1] = ' ';
+                }
+                (*iomsg)[iomsg_len] = '\0';
+            }
+        } else {
+            printf("Runtime error: ACCESS specifier in OPEN statement has "
+                "invalid value '%s'\n", access);
+            exit(1);
+        }
     }
 
-    FILE *fd = fopen(f_name, access_mode);
-    if (!fd)
-    {
-        printf("Runtime error: Error in opening the file!\n");
-        perror(f_name);
-        exit(1);
+    if (access_mode == NULL && iostat != NULL) {     // Case: when iostat is present we don't want to terminate
+        access_mode = "r";
     }
-    store_unit_file(unit_num, f_name, fd, unit_file_bin, access_id);
-    return (int64_t)fd;
+
+    if (iostat == NULL || (*iostat == 0)) {
+        FILE *fd = fopen(f_name, access_mode);
+        if (!fd && iostat == NULL)
+        {
+            printf("Runtime error: Error in opening the file!\n");
+            perror(f_name);
+            exit(1);
+        }
+        store_unit_file(unit_num, f_name, fd, unit_file_bin, access_id);
+        return (int64_t)fd;
+    }
+    return 0;
 }
 
 LFORTRAN_API void _lfortran_flush(int32_t unit_num)
@@ -4090,8 +4178,7 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
-        printf("No file found with given unit\n");
-        exit(1);
+        return;
     }
     if (fclose(filep) != 0) {
         printf("Error in closing the file!\n");
