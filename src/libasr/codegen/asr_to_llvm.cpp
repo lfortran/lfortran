@@ -529,6 +529,7 @@ public:
             return tmp; 
         } else {
             LCOMPILERS_ASSERT(false);
+            return nullptr; // For sake of avoiding compilation wanrings.
         }
     }
     /*
@@ -10973,32 +10974,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     ASR::down_cast<ASR::String_t>(
                         ASRUtils::extract_type(
                             expr_type(x.m_args[i])));
-                // Refactor
-                // if (ASRUtils::is_array(expr_type(x.m_args[i])) && 
-                //     ASRUtils::extract_physical_type(expr_type(x.m_args[i])) ==
-                //     ASR::array_physical_typeType::DescriptorArray) { // TODO: This incorrect, We have to fetch the actual string_size
-                //     args.push_back(
-                //         llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1));
-                //     ++string_lengths_cnt;
-                // } else if (str_type->m_len_expr){ 
-                //     visit_expr(*str_type->m_len_expr);
-                //     args.push_back(llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context)));
-                //     tmp = nullptr;
-                //     ++string_lengths_cnt;
-                // } else if (ASRUtils::is_descriptorString(expr_type(x.m_args[i]))) {
-                //     visit_expr(*ASRUtils::EXPR(ASR::make_StringLen_t(
-                //         al, x.m_args[i]->base.loc,
-                //         x.m_args[i],
-                //         ASRUtils::TYPE(ASR::make_Integer_t(
-                //             al, x.m_args[i]->base.loc, 8)),
-                //         nullptr)));
-                //     args.push_back(tmp);
-                //     ++string_lengths_cnt;
-                //     tmp = nullptr;
-                // } else {
-                //     // It's serialized at compile time (`S-len`).
-                // }
-
                 if(str_type->m_len >=0 ){
                     // It's serialized at compile time (`S-len`).
                 } else {

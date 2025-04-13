@@ -6250,9 +6250,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                // LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type),
-                //     "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
-                //         ASRUtils::get_type_code(orig_arg_type) + ")");
+                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type),
+                    "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
+                        ASRUtils::get_type_code(orig_arg_type) + ")");
             }
         }
         if( ASRUtils::is_array(arg_type) && ASRUtils::is_array(orig_arg_type) ) {
