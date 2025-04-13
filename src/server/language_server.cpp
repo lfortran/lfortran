@@ -5,6 +5,21 @@
 
 namespace LCompilers::LLanguageServer {
 
+#ifdef DEBUG
+    OwnerRecord::OwnerRecord(
+        const std::string &thread,
+        const char *file,
+        int line,
+        time_point_t timestamp
+    ) : thread(thread)
+      , file(file)
+      , line(line)
+      , timestamp(timestamp)
+    {
+        // empty
+    }
+#endif // DEBUG
+
     LanguageServer::LanguageServer(
         MessageQueue &incomingMessages,
         MessageQueue &outgoingMessages,
@@ -13,7 +28,10 @@ namespace LCompilers::LLanguageServer {
       , outgoingMessages(outgoingMessages)
       , logger(logger.having("LanguageServer"))
     {
-        // empty
+#ifdef DEBUG
+        waitingById.reserve(32);
+        ownersById.reserve(32);
+#endif // DEBUG
     }
 
     LanguageServer::~LanguageServer() {
@@ -49,6 +67,96 @@ namespace LCompilers::LLanguageServer {
         } catch (...) {
             return std::string{heading}.append(": ").append("unknown");
         }
+    }
+
+    auto LanguageServer::readLock(
+#ifdef DEBUG
+        const char *file,
+        int line,
+        std::shared_mutex &mutex,
+        std::string &&identifier
+#else
+        const char */*file*/,
+        int /*line*/,
+        std::shared_mutex &mutex,
+        std::string &&/*identifier*/
+#endif // DEBUG
+    ) -> ReadLock {
+#ifdef DEBUG
+        ReadLock lock(
+            *this, file, line,
+            // NOTE: A read lock may be acquired by multiple threads,
+            // simultaneously, so the identifier must be unique to each to avoid
+            // collisions:
+            "read:" + lsl::Logger::threadName() + ":" + identifier,
+            std::shared_lock<std::shared_mutex>(
+                mutex,
+                std::defer_lock
+            )
+        );
+        acquire(lock);
+        return lock;
+#else
+        return std::shared_lock<std::shared_mutex>(mutex);
+#endif // DEBUG
+    }
+
+    auto LanguageServer::writeLock(
+#ifdef DEBUG
+        const char *file,
+        int line,
+        std::shared_mutex &mutex,
+        std::string &&identifier
+#else
+        const char */*file*/,
+        int /*line*/,
+        std::shared_mutex &mutex,
+        std::string &&/*identifier*/
+#endif // DEBUG
+    ) -> WriteLock {
+#ifdef DEBUG
+        WriteLock lock(
+            *this, file, line,
+            "write:" + identifier,
+            std::unique_lock<std::shared_mutex>(
+                mutex,
+                std::defer_lock
+            )
+        );
+        acquire(lock);
+        return lock;
+#else
+        return std::unique_lock<std::shared_mutex>(mutex);
+#endif // DEBUG
+    }
+
+    auto LanguageServer::mutexLock(
+#ifdef DEBUG
+        const char *file,
+        int line,
+        std::mutex &mutex,
+        std::string &&identifier
+#else
+        const char */*file*/,
+        int /*line*/,
+        std::mutex &mutex,
+        std::string &&/*identifier*/
+#endif // DEBUG
+    ) -> MutexLock {
+#ifdef DEBUG
+        MutexLock lock(
+            *this, file, line,
+            "mutex:" + identifier,
+            std::unique_lock<std::mutex>(
+                mutex,
+                std::defer_lock
+            )
+        );
+        acquire(lock);
+        return lock;
+#else
+        return std::unique_lock<std::mutex>(mutex);
+#endif // DEBUG
     }
 
 } // namespace LCompilers::LLanguageServer

@@ -312,7 +312,7 @@ namespace LCompilers::LLanguageServer::Logging {
         m_threadName = threadName;
     }
 
-    auto Logger::threadName() const -> const std::string & {
+    auto Logger::threadName() -> const std::string & {
         return m_threadName;
     }
 

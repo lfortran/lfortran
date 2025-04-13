@@ -145,7 +145,7 @@ namespace LCompilers::LanguageServerProtocol {
     auto LFortranLspLanguageServer::invalidateConfigCaches() -> void {
         BaseLspLanguageServer::invalidateConfigCaches();
         {
-            std::unique_lock<std::shared_mutex> writeLock(optionMutex);
+            auto writeLock = this->writeLock(__FILE__, __LINE__, optionMutex, "compiler-options");
             optionsByUri.clear();
             logger.debug() << "Invalidated compiler options cache." << std::endl;
         }
@@ -162,10 +162,10 @@ namespace LCompilers::LanguageServerProtocol {
     auto LFortranLspLanguageServer::getCompilerOptions(
         LspTextDocument &document
     ) -> const std::shared_ptr<CompilerOptions> {
-        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        auto documentLock = this->readLock(__FILE__, __LINE__, document.mutex(), "document:" + document.uri());
         const DocumentUri &uri = document.uri();
 
-        std::shared_lock<std::shared_mutex> readLock(optionMutex);
+        auto readLock = this->readLock(__FILE__, __LINE__, optionMutex, "compiler-options");
         auto optionIter = optionsByUri.find(uri);
         if (optionIter != optionsByUri.end()) {
             return optionIter->second;
@@ -197,7 +197,7 @@ namespace LCompilers::LanguageServerProtocol {
         compilerOptions.continue_compilation = true;
         compilerOptions.use_colors = false;  // disable ANSI terminal colors
 
-        std::unique_lock<std::shared_mutex> writeLock(optionMutex);
+        auto writeLock = this->writeLock(__FILE__, __LINE__, optionMutex, "compiler-options");
         optionIter = optionsByUri.find(uri);
         if (optionIter != optionsByUri.end()) {
             return optionIter->second;
@@ -251,7 +251,7 @@ namespace LCompilers::LanguageServerProtocol {
             return;
         }
         const auto start = std::chrono::high_resolution_clock::now();
-        std::shared_lock<std::shared_mutex> readLock(document.mutex());
+        auto readLock = this->readLock(__FILE__, __LINE__, document.mutex(), "document:" + document.uri());
         const std::string &path = document.path().string();
         const std::string &text = document.text();
         const std::string &uri = document.uri();
@@ -562,7 +562,7 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
+        auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
@@ -649,7 +649,7 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
+        auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
@@ -688,8 +688,8 @@ namespace LCompilers::LanguageServerProtocol {
                     edits = &changes.emplace_hint(
                         iter,
                         std::piecewise_construct,
-                        std::make_tuple(symbolUri),
-                        std::make_tuple()
+                        std::forward_as_tuple(symbolUri),
+                        std::forward_as_tuple()
                     )->second;
                 }
                 TextEdit &edit = edits->emplace_back();
@@ -715,13 +715,11 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> TextDocument_DocumentSymbolResult {
         const DocumentUri &uri = params.textDocument.uri;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
-        const std::string &path = document->path().string();
-        const std::string &text = document->text();
-        readLock.unlock();
         std::shared_ptr<CompilerOptions> compilerOptions =
             getCompilerOptions(*document);
-        readLock.lock();
+        auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
+        const std::string &path = document->path().string();
+        const std::string &text = document->text();
         logger.trace()
             << "Looking up all symbols in document with URI=" << uri
             << std::endl;
@@ -754,8 +752,8 @@ namespace LCompilers::LanguageServerProtocol {
                             children = &childrenBySymbol.emplace_hint(
                                 iter,
                                 std::piecewise_construct,
-                                std::make_tuple(&parent),
-                                std::make_tuple()
+                                std::forward_as_tuple(&parent),
+                                std::forward_as_tuple()
                             )->second;
                         }
 #ifdef DEBUG
@@ -813,7 +811,7 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
+        auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
@@ -944,7 +942,7 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
+        auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
         const std::string &path = document->path().string();
         const std::string &text = document->text();
         // NOTE: Copy the compiler options since we will modify them.
@@ -992,16 +990,16 @@ namespace LCompilers::LanguageServerProtocol {
     auto LFortranLspLanguageServer::getHighlights(
         LspTextDocument &document
     ) -> std::shared_ptr<std::pair<std::vector<FortranToken>, int>> {
-        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        auto documentLock = this->readLock(__FILE__, __LINE__, document.mutex(), "document:" + document.uri());
         int version = document.version();
-        std::shared_lock<std::shared_mutex> readLock(highlightsMutex);
+        auto readLock = this->readLock(__FILE__, __LINE__, highlightsMutex, "highlights");
         auto iter = highlightsByDocumentId.find(document.id());
         if ((iter != highlightsByDocumentId.end())
             && (iter->second->second == version)) {
             return iter->second;
         }
         readLock.unlock();
-        std::unique_lock<std::shared_mutex> writeLock(highlightsMutex);
+        auto writeLock = this->writeLock(__FILE__, __LINE__, highlightsMutex, "highlights");
         iter = highlightsByDocumentId.find(document.id());
         if ((iter != highlightsByDocumentId.end())
             && (iter->second->second == version)) {
@@ -1022,7 +1020,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::vector<FortranToken> &highlights
     ) -> void {
         encodings.reserve(5 * highlights.size());
-        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        auto documentLock = this->readLock(__FILE__, __LINE__, document.mutex(), "document:" + document.uri());
         std::size_t prevLine = 0;
         std::size_t prevColumn = 0;
         for (const FortranToken &token : highlights) {
@@ -1083,7 +1081,7 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &uri = params.textDocument.uri;
             std::shared_ptr<LspTextDocument> document = getDocument(uri);
             const std::shared_ptr<CompilerOptions> compilerOptions = getCompilerOptions(*document);
-            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
             const std::string &path = document->path().string();
             const std::string &text = document->text();
             logger.trace()
@@ -1143,7 +1141,7 @@ namespace LCompilers::LanguageServerProtocol {
             std::shared_ptr<LspTextDocument> document = getDocument(uri);
             const std::shared_ptr<CompilerOptions> compilerOptions =
                 getCompilerOptions(*document);
-            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
             const std::string &text = document->text();
             const std::string &path = document->path().string();
             auto formatted = lfortran.format(
@@ -1212,7 +1210,7 @@ namespace LCompilers::LanguageServerProtocol {
             std::shared_ptr<LspTextDocument> document = getDocument(uri);
             CompilerOptions compilerOptions = *getCompilerOptions(*document);
             compilerOptions.interactive = true;
-            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
             const std::string &path = document->path().string();
             const std::string fragment = document->slice(
                 params.range.start.line,
@@ -1255,7 +1253,7 @@ namespace LCompilers::LanguageServerProtocol {
         const NotificationMessage &/*notification*/,
         DeleteFilesParams &/*params*/
     ) -> void {
-        std::shared_lock<std::shared_mutex> readLock(documentMutex);
+        auto readLock = this->readLock(__FILE__, __LINE__, documentMutex, "documents");
         for (auto &[uri, document] : documentsByUri) {
             validate(document);
         }
@@ -1267,7 +1265,7 @@ namespace LCompilers::LanguageServerProtocol {
         DidChangeConfigurationParams &params
     ) -> void {
         BaseLspLanguageServer::receiveWorkspace_didChangeConfiguration(notification, params);
-        std::shared_lock<std::shared_mutex> readLock(documentMutex);
+        auto readLock = this->readLock(__FILE__, __LINE__, documentMutex, "documents");
         for (auto &[uri, document] : documentsByUri) {
             validate(document);
         }
@@ -1305,7 +1303,7 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri = params.textDocument.uri;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
         {
-            std::unique_lock<std::shared_mutex> highlightsLock(highlightsMutex);
+            auto highlightsLock = this->writeLock(__FILE__, __LINE__, highlightsMutex, "highlights");
             auto iter = highlightsByDocumentId.find(document->id());
             if (iter != highlightsByDocumentId.end()) {
                 highlightsByDocumentId.erase(iter);
@@ -1319,7 +1317,7 @@ namespace LCompilers::LanguageServerProtocol {
         const NotificationMessage &/*notification*/,
         DidChangeWatchedFilesParams &/*params*/
     ) -> void {
-        std::shared_lock<std::shared_mutex> readLock(documentMutex);
+        auto readLock = this->readLock(__FILE__, __LINE__, documentMutex, "documents");
         for (auto &[uri, document] : documentsByUri) {
             validate(document);
         }

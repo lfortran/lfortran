@@ -198,8 +198,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.write('LspTransformer transformer;')
         self.write('LspJsonSerializer serializer;')
         self.write('std::atomic_int serialRequestId = 0;')
-        self.write('std::map<int, RequestMessage> requestsById;')
-        self.write('std::mutex requestMutex;')
+        self.write('std::map<int, std::shared_ptr<RequestMessage>> requestsById;')
+        self.write('std::shared_mutex requestMutex;')
         self.newline()
 
     def generate_next_request_id(self) -> None:
@@ -295,7 +295,8 @@ class CPlusPlusLspLanguageServerHeaderGenerator(BaseCPlusPlusLspVisitor):
         self.newline()
         self.gen_include('atomic')
         self.gen_include('map')
-        self.gen_include('mutex')
+        self.gen_include('memory')
+        self.gen_include('shared_mutex')
         self.newline()
         self.gen_include('server/language_server.h')
         self.gen_include('server/logger.h')
