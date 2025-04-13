@@ -665,7 +665,7 @@ jobs:
             make -f Makefile.manual quicktest
 
             git clean -dfx
-            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast"
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --fast --disable-separate-compilation"
             make -f Makefile.manual quicktest
 
       - name: Test fastGPT ( ubuntu-latest )
