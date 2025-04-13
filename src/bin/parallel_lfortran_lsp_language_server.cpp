@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <shared_mutex>
 #include <string>
 
 #include <server/lsp_exception.h>
@@ -88,9 +87,9 @@ namespace LCompilers::LanguageServerProtocol {
     auto ParallelLFortranLspLanguageServer::validate(
         std::shared_ptr<LspTextDocument> document
     ) -> void {
-        auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
+        auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
         const std::string &uri = document->uri();
-        auto writeLock = this->writeLock(__FILE__, __LINE__, validationMutex, "validation");
+        auto writeLock = LSP_WRITE_LOCK(validationMutex, "validation");
         auto iter = validationsByUri.find(uri);
         if (iter != validationsByUri.end()) {
             // If an older version of the document is being validated, cancel it
@@ -101,12 +100,12 @@ namespace LCompilers::LanguageServerProtocol {
             workerPool.execute([this, document = std::move(document)](
                 std::shared_ptr<std::atomic_bool> taskIsRunning
             ) {
-                auto readLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
+                auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
                 const std::string &uri = document->uri();
                 readLock.unlock();
                 LFortranLspLanguageServer::validate(*document, *taskIsRunning);
                 readLock.lock();
-                auto writeLock = this->writeLock(__FILE__, __LINE__, validationMutex, "validation");
+                auto writeLock = LSP_WRITE_LOCK(validationMutex, "validation");
                 auto iter = validationsByUri.find(uri);
                 if (iter != validationsByUri.end()) {
                     validationsByUri.erase(iter);
@@ -125,12 +124,15 @@ namespace LCompilers::LanguageServerProtocol {
                 if (!*taskIsRunning) {
                     return;
                 }
-                auto documentLock = this->readLock(__FILE__, __LINE__, document->mutex(), "document:" + document->uri());
+                auto documentLock = LSP_READ_LOCK(
+                    document->mutex(),
+                    "document:" + document->uri()
+                );
                 if (!*taskIsRunning) {
                     return;
                 }
                 int version = document->version();
-                auto highlightsLock = this->writeLock(__FILE__, __LINE__, highlightsMutex, "highlights");
+                auto highlightsLock = LSP_WRITE_LOCK(highlightsMutex, "highlights");
                 if (!*taskIsRunning) {
                     return;
                 }

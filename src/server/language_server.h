@@ -1,16 +1,17 @@
 #pragma once
 
-#include <chrono>
-#include <map>
-#include <mutex>
-#include <shared_mutex>
 #include <string>
-#include <unordered_map>
 
 #include <server/logger.h>
 #include <server/queue.hpp>
 #include <server/thread_pool.h>
+
 #ifdef DEBUG
+#include <chrono>
+#include <map>
+#include <mutex>
+#include <shared_mutex>
+#include <unordered_map>
 #include <server/observable_lock.hpp>
 #endif // DEBUG
 
@@ -18,18 +19,14 @@ namespace LCompilers::LLanguageServer {
     namespace lsl = LCompilers::LLanguageServer::Logging;
     namespace lst = LCompilers::LLanguageServer::Threading;
 
+#ifdef DEBUG
     typedef std::chrono::system_clock::time_point time_point_t;
 
     class LanguageServer;
 
-#ifdef DEBUG
     typedef lst::ObservableLock<LanguageServer, std::shared_lock<std::shared_mutex>> ReadLock;
     typedef lst::ObservableLock<LanguageServer, std::unique_lock<std::shared_mutex>> WriteLock;
     typedef lst::ObservableLock<LanguageServer, std::unique_lock<std::mutex>> MutexLock;
-#else
-    typedef std::shared_lock<std::shared_mutex> ReadLock;
-    typedef std::unique_lock<std::shared_mutex> WriteLock;
-    typedef std::unique_lock<std::mutex> MutexLock;
 #endif // DEBUG
 
     const std::size_t MESSAGE_QUEUE_CAPACITY = 64;
@@ -89,6 +86,7 @@ namespace LCompilers::LLanguageServer {
             const std::string &message
         ) const = 0;
 
+#ifdef DEBUG
         auto readLock(
             const char *file,
             int line,
@@ -108,7 +106,6 @@ namespace LCompilers::LLanguageServer {
             std::string &&identifier
         ) -> MutexLock;
 
-#ifdef DEBUG
         template <typename LockType>
         auto acquire(lst::ObservableLock<LanguageServer, LockType> &observable) -> void {
             const std::string &identifier = observable.identifier();
@@ -212,6 +209,22 @@ namespace LCompilers::LLanguageServer {
         friend class lst::ObservableLock;
 #endif // DEBUG
     };
+
+#ifdef DEBUG
+#define LSP_READ_LOCK(target, identifier) \
+    this->readLock(__FILE__, __LINE, (target), (identifier))
+#define LSP_WRITE_LOCK(target, identifier) \
+    this->writeLock(__FILE__, __LINE__, (target), (identifier))
+#define LSP_MUTEX_LOCK(target, identifier) \
+    this->mutexLock(__FILE__, __LINE__, (target), (identifier))
+#else
+#define LSP_READ_LOCK(target, identifier) \
+    std::shared_lock<std::shared_mutex>((target))
+#define LSP_WRITE_LOCK(target, identifier) \
+    std::unique_lock<std::shared_mutex>((target))
+#define LSP_MUTEX_LOCK(target, identifier) \
+    std::unique_lock<std::mutex>((target))
+#endif // DEBUG
 
 } // namespace LCompilers::LLanguageServer
 

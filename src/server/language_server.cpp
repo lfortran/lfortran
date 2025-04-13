@@ -69,20 +69,13 @@ namespace LCompilers::LLanguageServer {
         }
     }
 
-    auto LanguageServer::readLock(
 #ifdef DEBUG
+    auto LanguageServer::readLock(
         const char *file,
         int line,
         std::shared_mutex &mutex,
         std::string &&identifier
-#else
-        const char */*file*/,
-        int /*line*/,
-        std::shared_mutex &mutex,
-        std::string &&/*identifier*/
-#endif // DEBUG
     ) -> ReadLock {
-#ifdef DEBUG
         ReadLock lock(
             *this, file, line,
             // NOTE: A read lock may be acquired by multiple threads,
@@ -96,25 +89,14 @@ namespace LCompilers::LLanguageServer {
         );
         acquire(lock);
         return lock;
-#else
-        return std::shared_lock<std::shared_mutex>(mutex);
-#endif // DEBUG
     }
 
     auto LanguageServer::writeLock(
-#ifdef DEBUG
         const char *file,
         int line,
         std::shared_mutex &mutex,
         std::string &&identifier
-#else
-        const char */*file*/,
-        int /*line*/,
-        std::shared_mutex &mutex,
-        std::string &&/*identifier*/
-#endif // DEBUG
     ) -> WriteLock {
-#ifdef DEBUG
         WriteLock lock(
             *this, file, line,
             "write:" + identifier,
@@ -125,25 +107,14 @@ namespace LCompilers::LLanguageServer {
         );
         acquire(lock);
         return lock;
-#else
-        return std::unique_lock<std::shared_mutex>(mutex);
-#endif // DEBUG
     }
 
     auto LanguageServer::mutexLock(
-#ifdef DEBUG
         const char *file,
         int line,
         std::mutex &mutex,
         std::string &&identifier
-#else
-        const char */*file*/,
-        int /*line*/,
-        std::mutex &mutex,
-        std::string &&/*identifier*/
-#endif // DEBUG
     ) -> MutexLock {
-#ifdef DEBUG
         MutexLock lock(
             *this, file, line,
             "mutex:" + identifier,
@@ -154,9 +125,7 @@ namespace LCompilers::LLanguageServer {
         );
         acquire(lock);
         return lock;
-#else
-        return std::unique_lock<std::mutex>(mutex);
-#endif // DEBUG
     }
+#endif // DEBUG
 
 } // namespace LCompilers::LLanguageServer

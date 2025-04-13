@@ -165,7 +165,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                         result_name = f'{request_name}Result'
                         request_enum = method_to_camel_case(request_method)
                         with self.gen_case('OutgoingRequest', request_enum):
-                            self.write('auto readLock = this->readLock(__FILE__, __LINE__, requestMutex, "requests");')
+                            self.write('auto readLock = LSP_READ_LOCK(requestMutex, "requests");')
                             self.gen_assign('auto iter', 'requestsById.find(requestId.integer())')
                             with self.gen_if('iter == requestsById.end()'):
                                 self.write('logger.error()')
@@ -195,7 +195,7 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                                 self.gen_call(f'{receive_fn(request_method)}', '*request', 'response', 'params')
                             else:
                                 self.gen_call(f'{receive_fn(request_method)}', 'request', 'response')
-                            self.write('auto writeLock = this->writeLock(__FILE__, __LINE__, requestMutex, "requests");')
+                            self.write('auto writeLock = LSP_WRITE_LOCK(requestMutex, "requests");')
                             self.gen_assign('iter', 'requestsById.find(requestId.integer())')
                             with self.gen_if('iter != requestsById.end()'):
                                 self.gen_call('requestsById.erase', 'iter')
@@ -432,9 +432,9 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
                 f'serializer.serialize({any_name})'
             )
             with self.block():
-                self.write('auto writeLock = this->writeLock(__FILE__, __LINE__, requestMutex, "requests");')
+                self.write('auto writeLock = LSP_WRITE_LOCK(requestMutex, "requests");')
                 iter_name = self.gensym_init('iter', f'requestsById.find({request_id_name})')
-                with self.gen_if_ne(iter_name, 'requestsById.end()'):
+                with self.gen_if_eq(iter_name, 'requestsById.end()'):
                     self.gen_call(
                         'requestsById.emplace_hint',
                         iter_name,
@@ -570,7 +570,6 @@ class CPlusPlusLspLanguageServerSourceGenerator(BaseCPlusPlusLspVisitor):
         print(f'Generating: {self.file_path}')
         self.generate_disclaimer()
         self.gen_include('cctype')
-        self.gen_include('cstdio')
         self.gen_include('iostream')
         self.gen_include('stdexcept')
         self.newline()
