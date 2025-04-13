@@ -13,8 +13,8 @@ src/bin/lfortran -o expr2 expr2.o
 ./expr2
 
 # Compile C and Fortran
-src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
-src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
+src/bin/lfortran --disable-separate-compilation -c integration_tests/modules_15b.f90 -o modules_15b.o
+src/bin/lfortran --disable-separate-compilation -c integration_tests/modules_15.f90 -o modules_15.o
 
 if [[ $WIN == "1" ]]; then # Windows
     cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
@@ -24,7 +24,7 @@ else # Linux
     gcc -c integration_tests/modules_15c.c -o modules_15c.o
 fi
 
-src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
+src/bin/lfortran --disable-separate-compilation modules_15.o modules_15b.o modules_15c.o -o modules_15
 ./modules_15
 
 
