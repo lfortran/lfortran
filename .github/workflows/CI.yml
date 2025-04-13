@@ -594,7 +594,7 @@ jobs:
             fi
 
             git clean -dfx
-            FC="$(pwd)/../src/bin/lfortran --cpp --fast" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
+            FC="$(pwd)/../src/bin/lfortran --cpp --fast --disable-separate-compilation" cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_Fortran_FLAGS=""  -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS=""  -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_SKIP_INSTALL_RPATH=ON  -DCMAKE_SKIP_RPATH=ON && cmake --build build --target install
             ./build/fortran/example_bobyqa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_1_exe
             ./build/fortran/example_newuoa_fortran_2_exe
@@ -759,7 +759,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC="$(pwd)/../../src/bin/lfortran --separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -771,13 +771,13 @@ jobs:
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu')
         run: |
-            git clone https://github.com/czgdp1807/fpm.git
+            git clone https://github.com/Pranavchiku/fpm.git
             cd fpm
-            git fetch origin lfortran_build_4
-            git checkout lfortran_build_4
-            git checkout 910c461f04506bf87a05a8fbaf7d1b0a79f0bd48
+            git fetch origin
+            git checkout -t origin/lfortran_build_4
+            git checkout d907044c2d890b4b002c02a27ba16fd470cfa552
             export PATH="$(pwd)/../src/bin:$PATH"
-            ./build.sh
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" ./build.sh
 
       - name: Test stdlib
         shell: bash -e -x -l {0}
@@ -848,15 +848,15 @@ jobs:
         shell: bash -e -l {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
-            git clone https://github.com/Shaikh-Ubaid/lapack.git
+            git clone https://github.com/Pranavchiku/lapack.git
             cd lapack
             git fetch origin lf_05
             git checkout lf_05
-            git checkout eb551db50eb1bdce9fb8a8f51c7d1fd19a1697bf
+            git checkout 2244ca9aedd3e82e8b292fac8e8a179e79a8bde5
             cd build
             micromamba create -f environment_unix.yml
             micromamba activate lapack
-            ./build_lf.sh
+            FC="$(pwd)/../../src/bin/lfortran --disable-separate-compilation" ./build_lf.sh
 
 
 # Commented out to save CI runners:
@@ -1210,12 +1210,12 @@ jobs:
       - name: Test fpm
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/certik/fpm.git
+            git clone https://github.com/Pranavchiku/fpm.git
             cd fpm
             git checkout lfortran_build_3
-            git checkout a63eb805747f717d420c12de1984e5e15cdb6984
+            git checkout a2f284dd939a49d0b5a6daa52db323632b4c1044
             export PATH="$(pwd)/../src/bin:$PATH"
-            ./build.sh
+            FC="$(pwd)/../src/bin/lfortran --disable-separate-compilation" ./build.sh
 
       - name: Test stdlib
         shell: bash -e -x -l {0}
