@@ -259,8 +259,10 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
 
         Allocator& al;
         FixArrayPhysicalCast replacer;
+        bool remove_original_stmt;
 
-        FixArrayPhysicalCastVisitor(Allocator& al_): al(al_), replacer(al_) {}
+        FixArrayPhysicalCastVisitor(Allocator& al_):
+            al(al_), replacer(al_), remove_original_stmt(false) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -276,6 +278,39 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
             ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
             xx.m_args = subrout_call->m_args;
             xx.n_args = subrout_call->n_args;
+        }
+
+        void visit_Associate(const ASR::Associate_t& x) {
+            if( ASRUtils::is_fixed_size_array(
+                    ASRUtils::expr_type(x.m_value)) ) {
+                ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
+                xx.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, x.m_value->base.loc, xx.m_value,
+                    ASRUtils::extract_physical_type(ASRUtils::expr_type(xx.m_value)),
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, ASRUtils::expr_type(x.m_value),
+                    nullptr, ASR::array_physical_typeType::DescriptorArray, true), nullptr));
+            } else if( ASRUtils::is_fixed_size_array(
+                        ASRUtils::expr_type(x.m_target)) ) {
+                remove_original_stmt = true;
+            }
+        }
+
+        void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+            bool remove_original_stmt_copy = remove_original_stmt;
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, n_body);
+            for (size_t i = 0; i < n_body; i++) {
+                remove_original_stmt = false;
+                visit_stmt(*m_body[i]);
+                if( !remove_original_stmt ) {
+                    body.push_back(al, m_body[i]);
+                    remove_original_stmt = false;
+                }
+            }
+            m_body = body.p;
+            n_body = body.size();
+            remove_original_stmt = remove_original_stmt_copy;
         }
 };
 
