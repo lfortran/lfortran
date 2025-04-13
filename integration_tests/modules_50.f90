@@ -16,6 +16,9 @@ subroutine prune_build_targets()
     allocate(modules_used(1))
 
     modules_used(1)%i = 0
+    print *, modules_used
+    print *, modules_used(1)%i
+    if( modules_used(1)%i /= 0 ) error stop
     call collect_used_modules()
     print *, modules_used
     print *, modules_used(1)%i
