@@ -3503,6 +3503,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 
 // Improved input validation for integer reading
 // - Prevents auto-casting of invalid inputs to integers
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -3750,7 +3751,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
 
 // Improved input validation for float reading
 // - Prevents auto-casting of invalid inputs to float/real
-// NOTE:- More changes need to be implemented for error detection and check
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {

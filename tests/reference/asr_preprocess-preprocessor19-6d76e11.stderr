@@ -1,0 +1,11 @@
+warning: #define ignored
+ --> tests/preprocessor19.f90:1:1
+  |
+1 | #define Fn(x)
+  | ^^^^^^^^^^^^^^ help: use the '--cpp' command line option to preprocess it
+
+syntax error: Newline is unexpected here
+ --> tests/preprocessor19.f90:5:8
+  |
+5 |   Fn(1)
+  |        ^ 
