@@ -6443,7 +6443,10 @@ public:
             if( ASRUtils::is_descriptorString(ASRUtils::expr_type(args.p[i])) ) {
                 // Any compile-time intrinsic function doesn't need a cast from
                 // descriptorString to pointerString. Only runtime ones need a cast.
-                if(intrinsic_name != "present" && intrinsic_name != "len" && intrinsic_name != "move_alloc"){
+                if(intrinsic_name != "present" && intrinsic_name != "len" &&
+                    intrinsic_name != "get_command_argument" &&
+                    intrinsic_name != "get_environment_variable" && 
+                    intrinsic_name != "move_alloc"){
                     args.p[i] = ASRUtils::cast_string_descriptor_to_pointer(al, args.p[i]);
                 }
             }

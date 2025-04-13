@@ -510,11 +510,23 @@ public:
                 visit_expr(*str->m_len_expr);
                 return llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
             } else {
-                return llvm::ConstantInt::get(context, llvm::APInt(64, str->m_len));
+                if(str->m_len < 0) { // This shouldn't be a valid case.(When we shift to non-null termianted strings that would segfault as it uses C's `strlen`)
+                    visit_expr(*ASRUtils::EXPR(ASR::make_StringLen_t(al, expr->base.loc, expr, 
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, expr->base.loc, 8)), nullptr)));
+                    return tmp; 
+
+                } else {
+                    return llvm::ConstantInt::get(context, llvm::APInt(64, str->m_len));
+                }
             }
         } else if (str->m_physical_type == ASR::string_physical_typeType::DescriptorString){
             visit_expr(*expr);
             return llvm_utils->create_gep2(string_descriptor, tmp, 1);
+        } else if (str->m_physical_type == ASR::string_physical_typeType::CString) {
+            // Use C's `strlen` function as this string is null-terminated
+            visit_expr(*ASRUtils::EXPR(ASR::make_StringLen_t(al, expr->base.loc, expr, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, expr->base.loc, 8)), nullptr)));
+            return tmp; 
         } else {
             LCOMPILERS_ASSERT(false);
         }
@@ -6749,8 +6761,10 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             } else {
                 tmp = fetched_ptr;
             }
-        } else if ( x.m_old == ASR::string_physical_typeType::PointerString &&
-            x.m_new == ASR::string_physical_typeType::DescriptorString){
+        } else if ( 
+            (x.m_old == ASR::string_physical_typeType::PointerString || 
+                x.m_old == ASR::string_physical_typeType::CString)
+            && x.m_new == ASR::string_physical_typeType::DescriptorString){
             // Create string descriptor and fetch its char*, len, capacity
             llvm::Value* string_desc = llvm_utils->CreateAlloca(*builder, string_descriptor, nullptr,"casted_string_ptr_to_desc");
             llvm::Value* char_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 0);
@@ -6767,6 +6781,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             builder->CreateStore(pointerString_len, string_len_ptr);
             builder->CreateStore(pointerString_len, string_capacity_ptr);
             tmp = string_desc;
+        } else if (x.m_old == ASR::string_physical_typeType::CString &&
+            x.m_new == ASR::string_physical_typeType::PointerString){
+            // Do nothing (They both have the same representation in the backend).
+            ptr_loads = 0;
+            this->visit_expr(*x.m_arg);
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
         ptr_loads = ptr_loads_copy;
     }

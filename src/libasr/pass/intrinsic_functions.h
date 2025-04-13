@@ -4859,7 +4859,7 @@ namespace StringLenTrim {
 
         body.push_back(al, b.Assignment(result, b.StringLen(args[0])));
         body.push_back(al, b.If(b.NotEq(result, b.i32(0)), {
-            b.While(b.Eq(b.StringItem(args[0], result), b.StringConstant(" ", arg_types[0])), {
+            b.While(b.Eq(b.StringItem(args[0], result), b.StringConstant(" ", character(1))), {
                 b.Assignment(result, b.Sub(result, b.i32(1))),
                 b.If(b.Eq(result, b.i32(0)), {
                     b.Exit()
