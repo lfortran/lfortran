@@ -4382,7 +4382,9 @@ public:
                 tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
                     head, body.p, body.size(), nullptr, 0);
             }
-            do_loop_variables.pop_back();
+            if (do_loop_variables.size() > 0) {
+                do_loop_variables.pop_back();
+            }
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
