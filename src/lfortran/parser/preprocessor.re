@@ -312,7 +312,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' whitespace @t3 [^\n\x00]* @t4 newline  {
+            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' (whitespace @t3 [^\n\x00]* @t4)? newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);

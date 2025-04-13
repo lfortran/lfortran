@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iomanip>
+#include <sstream>
 #include <stdexcept>
 
 #include <server/logger.h>
@@ -57,6 +58,33 @@ namespace LCompilers::LLanguageServer::Logging {
         );
     }
 
+    auto formatTimePoint(const std::chrono::system_clock::time_point& tp) -> std::string {
+        static thread_local std::ostringstream oss;
+        oss.str("");
+        oss.clear();
+
+        // Convert time_point to time_t for seconds
+        auto time_t = std::chrono::system_clock::to_time_t(tp);
+
+        // Convert to UTC time
+        std::tm* tm = std::gmtime(&time_t);
+
+        // Extract milliseconds
+        auto duration = tp.time_since_epoch();
+        auto milliseconds =
+            std::chrono::duration_cast<
+                std::chrono::milliseconds
+            >(duration).count() % 1000;
+
+        // Format the time with seconds
+        oss << std::put_time(tm, "%Y-%m-%dT%H:%M:%S");
+
+        // Append milliseconds (3 digits) and 'Z' for UTC
+        oss << '.' << std::setfill('0') << std::setw(3) << milliseconds << 'Z';
+
+        return oss.str();
+    }
+
     Formatter::Formatter(Logger &logger, Level level, const std::string &prompt)
         : logger(logger)
         , lock(logger.mutex(), std::defer_lock)
@@ -67,12 +95,7 @@ namespace LCompilers::LLanguageServer::Logging {
                 enabled = true;
 
                 auto now = std::chrono::system_clock::now();
-                std::time_t time_now = std::chrono::system_clock::to_time_t(now);
-                std::tm utc_tm = *std::gmtime(&time_now);
-                auto duration = now.time_since_epoch();
-                auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
-                logger << '[' << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%S")
-                       << "." << std::setfill('0') << std::setw(3) << milliseconds << "Z]";
+                logger << '[' << formatTimePoint(now) << "]";
 
                 logger << '[' << logger.typeName() << ']';
                 for (const std::string &attribute : logger.attributes()) {

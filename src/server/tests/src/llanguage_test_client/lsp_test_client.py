@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List, Optional,
-                    Tuple, Union)
+from typing import (IO, Any, BinaryIO, Callable, Dict, Iterator, List,
+                    Optional, Tuple, Union)
 
 import psutil
 
@@ -25,23 +25,30 @@ from lsprotocol import converters
 from lsprotocol.types import (ClientCapabilities,
                               ClientRegisterCapabilityRequest,
                               ClientRegisterCapabilityResponse,
-                              CreateFilesParams, DeleteFilesParams,
+                              CompletionParams, CreateFilesParams,
+                              DeleteFilesParams,
                               DidChangeConfigurationClientCapabilities,
                               DidChangeConfigurationParams,
                               DidChangeTextDocumentParams,
                               DidCloseTextDocumentParams,
                               DidOpenTextDocumentParams,
                               DidSaveTextDocumentParams,
-                              DocumentHighlightParams, ExitNotification,
+                              DocumentFormattingParams,
+                              DocumentHighlightParams,
+                              DocumentRangeFormattingParams,
+                              DocumentSymbolParams, ExitNotification,
                               FileCreate, FileDelete,
                               FileOperationClientCapabilities, FileRename,
+                              FormattingOptions, HoverParams,
                               InitializedNotification, InitializedParams,
                               InitializeParams, InitializeRequest,
                               InitializeResponse,
                               InitializeResultServerInfoType, Position, Range,
                               Registration, RenameFilesParams, SaveOptions,
-                              ServerCapabilities, ShutdownRequest,
+                              SemanticTokensParams, ServerCapabilities,
+                              ShutdownRequest, TelemetryEventNotification,
                               TextDocumentClientCapabilities,
+                              TextDocumentCompletionRequest,
                               TextDocumentContentChangeEvent_Type1,
                               TextDocumentContentChangeEvent_Type2,
                               TextDocumentDidChangeNotification,
@@ -49,9 +56,13 @@ from lsprotocol.types import (ClientCapabilities,
                               TextDocumentDidOpenNotification,
                               TextDocumentDidSaveNotification,
                               TextDocumentDocumentHighlightRequest,
-                              TextDocumentDocumentHighlightResponse,
-                              TextDocumentIdentifier, TextDocumentItem,
+                              TextDocumentDocumentSymbolRequest,
+                              TextDocumentFormattingRequest,
+                              TextDocumentHoverRequest, TextDocumentIdentifier,
+                              TextDocumentItem,
+                              TextDocumentRangeFormattingRequest,
                               TextDocumentSaveReason,
+                              TextDocumentSemanticTokensFullRequest,
                               TextDocumentSyncClientCapabilities,
                               TextDocumentSyncKind, TextDocumentSyncOptions,
                               TextDocumentWillSaveNotification,
@@ -347,6 +358,7 @@ class LspTestClient(LspClient):
     ) -> LspTextDocument:
         document_id = self.next_document_id()
         document = LspTextDocument(self, document_id, language_id, path)
+        document.on_change(self.update_document_symbols)
         self.documents_by_id[document_id] = document
         if path is not None:
             self.documents_by_uri[document.uri] = document
@@ -361,22 +373,6 @@ class LspTestClient(LspClient):
             return document
         path = RE_FILE_URI.sub(uri, "")
         return self.open_document(language_id, path)
-
-    def await_validation(self, uri: str, version: int) -> Any:
-        def is_validation(message: Any) -> bool:
-            if message.get("method", None) == "textDocument/publishDiagnostics":
-                params = message["params"]
-                return params["uri"] == uri \
-                    and params.get("version", None) == version
-            return False
-        event, _ = self.find_incoming_event(lambda event: is_validation(event.data))
-        if event is not None:
-            return event.data
-        while not self.stop.is_set():
-            message = self.receive_message()
-            if is_validation(message):
-                return message
-        return None
 
     def await_response(
             self,
@@ -609,6 +605,12 @@ class LspTestClient(LspClient):
                 )
                 response = self.receive_workspace_configuration(request)
                 self.send_message(response)
+            case "telemetry/event":
+                notification = self.converter.structure(
+                    message,
+                    TelemetryEventNotification
+                )
+                self.receive_telemetry_event(notification)
 
     def respond_to_notification(self) -> None:
         self.send_message({"id": None, "result": None, "jsonrpc": "2.0"})
@@ -633,6 +635,10 @@ class LspTestClient(LspClient):
 
     def serialize_json(self, message: Any) -> str:
         return json.dumps(message, default=self.converter.unstructure)
+
+    def receive_telemetry_event(self, notification: TelemetryEventNotification) -> None:
+        # Check the event in the logs
+        pass
 
     def send_initialize(self, params: InitializeParams) -> int:
         request_id = self.next_request_id()
@@ -945,11 +951,7 @@ class LspTestClient(LspClient):
                     ) \
                     else TextDocumentContentChangeEvent_Type2(
                         text=full_text
-                    ) \
-                    if self.server_supports_text_document_sync_kind(
-                        TextDocumentSyncKind.Full
-                    ) \
-                    else None
+                    )
                 ]
             )
             self.send_text_document_did_change(params)
@@ -1153,16 +1155,12 @@ class LspTestClient(LspClient):
             request: Any,
             message: JsonObject
     ) -> None:
-        response = self.converter.structure(
-            message,
-            TextDocumentDocumentHighlightResponse
-        )
-        if response.result is not None:
-            uri = request.params.text_document.uri
-            doc = self.get_document("fortran", uri)
-            doc.highlights = response.result
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
 
-    def highlight(self, uri: str, line: int, column: int) -> None:
+    def highlight_symbol(self, uri: str, line: int, column: int) -> None:
         if self.server_supports_document_highlight():
             params = DocumentHighlightParams(
                 text_document=TextDocumentIdentifier(
@@ -1174,4 +1172,237 @@ class LspTestClient(LspClient):
                 ),
             )
             request_id = self.send_text_document_document_highlight(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_document_hover(self) -> bool:
+        return self.server_capabilities.hover_provider is not None
+
+    def send_text_document_hover(
+            self,
+            params: HoverParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentHoverRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_hover
+        )
+
+    def receive_text_document_hover(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def hover(self, uri: str, line: int, column: int) -> None:
+        if self.server_supports_document_hover():
+            params = HoverParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                position=Position(
+                    line=line,
+                    character=column,
+                ),
+            )
+            request_id = self.send_text_document_hover(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_document_symbols(self) -> bool:
+        return self.server_capabilities.document_symbol_provider is not None
+
+    def send_text_document_document_symbol(
+            self,
+            params: DocumentSymbolParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentDocumentSymbolRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_document_symbol
+        )
+
+    def receive_text_document_document_symbol(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def update_document_symbols(self, document_id: int, uri: Optional[str]) -> None:
+        if (uri is not None) and self.server_supports_document_symbols():
+            params = DocumentSymbolParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri
+                )
+            )
+            request_id = self.send_text_document_document_symbol(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_semantic_highlight(self) -> bool:
+        return self.server_capabilities.semantic_tokens_provider is not None
+
+    def send_text_document_semantic_tokens_full(
+            self,
+            params: SemanticTokensParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentSemanticTokensFullRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_semantic_tokens_full
+        )
+
+    def receive_text_document_semantic_tokens_full(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def semantic_highlight(self, uri: str) -> None:
+        if self.server_supports_document_highlight():
+            params = SemanticTokensParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+            )
+            request_id = self.send_text_document_semantic_tokens_full(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_code_completion(self) -> bool:
+        return self.server_capabilities.completion_provider is not None
+
+    def send_text_document_completion(
+            self,
+            params: CompletionParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentCompletionRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_completion
+        )
+
+    def receive_text_document_completion(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def complete(self, uri: str, line: int, column: int) -> None:
+        if self.server_supports_document_highlight():
+            params = CompletionParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                position=Position(
+                    line=line,
+                    character=column,
+                ),
+            )
+            request_id = self.send_text_document_completion(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_formatting(self) -> bool:
+        return self.server_capabilities.document_formatting_provider is not None
+
+    def send_text_document_formatting(
+            self,
+            params: DocumentFormattingParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentFormattingRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_formatting
+        )
+
+    def receive_text_document_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def format(self, uri: str) -> None:
+        if self.server_supports_formatting():
+            params = DocumentFormattingParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                options=FormattingOptions(
+                    tab_size=4,
+                    insert_spaces=True,
+                ),
+            )
+            request_id = self.send_text_document_formatting(params)
+            self.await_response(request_id)
+
+    @requires_server_capabilities
+    def server_supports_range_formatting(self) -> bool:
+        return self.server_capabilities.document_range_formatting_provider is not None
+
+    def send_text_document_range_formatting(
+            self,
+            params: DocumentRangeFormattingParams
+    ) -> int:
+        request_id = self.next_request_id()
+        request = TextDocumentRangeFormattingRequest(request_id, params)
+        return self.send_request(
+            request_id,
+            request,
+            self.receive_text_document_range_formatting
+        )
+
+    def receive_text_document_range_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        # NOTE: Implement this in the concrete subclass because it may require
+        # language-specific information (such as the language identifier for the
+        # associated text document).
+        raise NotImplementedError
+
+    def format_range(self, uri: str, selection: Range) -> None:
+        if self.server_supports_range_formatting():
+            params = DocumentRangeFormattingParams(
+                text_document=TextDocumentIdentifier(
+                    uri=uri,
+                ),
+                range=selection,
+                options=FormattingOptions(
+                    tab_size=4,
+                    insert_spaces=True,
+                ),
+            )
+            request_id = self.send_text_document_range_formatting(params)
             self.await_response(request_id)

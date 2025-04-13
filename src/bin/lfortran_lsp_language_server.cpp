@@ -1,3 +1,4 @@
+#include <cctype>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -5,7 +6,12 @@
 #include <memory>
 #include <shared_mutex>
 #include <string>
+#include <unordered_set>
+#include <utility>
 #include <vector>
+
+#include <libasr/exception.h>
+#include <libasr/stacktrace.h>
 
 #include <server/base_lsp_language_server.h>
 #include <server/lsp_exception.h>
@@ -17,9 +23,11 @@
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 
+#include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lfortran_lsp_config.h>
 #include <bin/lfortran_lsp_language_server.h>
+#include <bin/semantic_highlighter.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace lc = LCompilers;
@@ -105,6 +113,35 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
+    auto LFortranLspLanguageServer::asrSymbolTypeToCompletionItemKind(
+        ASR::symbolType symbolType
+    ) const -> CompletionItemKind {
+        switch (symbolType) {
+        case ASR::symbolType::Module:
+            return CompletionItemKind::Module;
+        case ASR::symbolType::Function:
+            return CompletionItemKind::Function;
+        case ASR::symbolType::GenericProcedure:
+            return CompletionItemKind::Function;
+        case ASR::symbolType::CustomOperator:
+            return CompletionItemKind::Operator;
+        case ASR::symbolType::Struct:
+            return CompletionItemKind::Struct;
+        case ASR::symbolType::Enum:
+            return CompletionItemKind::Enum;
+        case ASR::symbolType::Variable:
+            return CompletionItemKind::Variable;
+        case ASR::symbolType::Class:
+            return CompletionItemKind::Class;
+        case ASR::symbolType::ClassProcedure:
+            return CompletionItemKind::Method;
+        case ASR::symbolType::Template:
+            return CompletionItemKind::TypeParameter;
+        default:
+            return CompletionItemKind::Function;
+        }
+    }
+
     auto LFortranLspLanguageServer::invalidateConfigCaches() -> void {
         BaseLspLanguageServer::invalidateConfigCaches();
         {
@@ -146,11 +183,14 @@ namespace LCompilers::LanguageServerProtocol {
         lcli::LFortranCommandLineParser parser(argv);
         try {
             parser.parse();
-        } catch (const lc::LCompilersException &e) {
-            logger.error()
-                << "Failed to initialize compiler options for document with uri=\""
-                << uri << "\": " << e.what() << std::endl;
-            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, e.what());
+        } catch (...) {
+            const std::string message = formatException(
+                ("Failed to initialize compiler options for document with "
+                 "uri=\"" + uri + "\""),
+                std::current_exception()
+            );
+            logger.error() << message << std::endl;
+            throw LSP_EXCEPTION(ErrorCodes::InvalidParams, message);
         }
 
         CompilerOptions &compilerOptions = parser.opts.compiler_options;
@@ -172,10 +212,38 @@ namespace LCompilers::LanguageServerProtocol {
         return record.first->second;
     }
 
+    auto LFortranLspLanguageServer::formatException(
+        const std::string &heading,
+        const std::exception_ptr &exception_ptr
+    ) const -> std::string {
+        try {
+            if (exception_ptr) {
+                std::rethrow_exception(exception_ptr);
+            } else {
+                return std::string{heading}.append(": ").append("unknown");
+            }
+        } catch (const LCompilers::LCompilersException &e) {
+            std::vector<LCompilers::StacktraceItem> stacktrace =
+                e.stacktrace_addresses();
+            get_local_addresses(stacktrace);
+            get_local_info(stacktrace);
+            return std::string{heading}.append("\n")
+                .append(stacktrace2str(stacktrace, LCompilers::stacktrace_depth, false))
+                .append(e.name()).append(": ").append(e.msg());
+        } catch (...) {
+            return BaseLspLanguageServer::formatException(
+                heading,
+                std::current_exception()
+            );
+        }
+    }
+
     auto LFortranLspLanguageServer::validate(
         LspTextDocument &document,
         std::atomic_bool &taskIsRunning
     ) -> void {
+        const std::string taskType = "validate";
+        auto tracer = startRunning(taskType);
         if (!taskIsRunning) {
             logger.trace()  //<- trace instead of debug because this will happen often
                 << "Validation canceled before execution."
@@ -276,15 +344,20 @@ namespace LCompilers::LanguageServerProtocol {
                         << "Validation canceled before publishing results."
                         << std::endl;
                 }
-            } catch (std::exception &e) {
+            } catch (...) {
                 logger.error()
-                    << "Failed to validate document (uri=\""
-                    << uri << "\"): " << e.what()
+                    << formatException(
+                        ("Failed to validate document (uri=\"" + uri + "\")"),
+                        std::current_exception()
+                    )
                     << std::endl;
             }
-        } catch (std::exception &e) {
+        } catch (...) {
             logger.error()
-                << "Failed to read document attributes: " << e.what()
+                << formatException(
+                    "Failed to read document attributes",
+                    std::current_exception()
+                )
                 << std::endl;
         }
     }
@@ -319,6 +392,17 @@ namespace LCompilers::LanguageServerProtocol {
                 }
                 clientSupportsHover = textDocument.hover.has_value();
                 clientSupportsHighlight = textDocument.documentHighlight.has_value();
+                clientSupportsSemanticHighlight = textDocument.semanticTokens.has_value();
+                if (textDocument.completion.has_value()) {
+                    clientSupportsCodeCompletion = true;
+                    const CompletionClientCapabilities &completion =
+                        textDocument.completion.value();
+                    clientSupportsCodeCompletionContext =
+                        completion.contextSupport.has_value()
+                        && completion.contextSupport.value();
+                }
+                clientSupportsFormatting = textDocument.formatting.has_value();
+                clientSupportsRangeFormatting = textDocument.rangeFormatting.has_value();
             }
             logger.debug()
                 << "clientSupportsGotoDefinition = "
@@ -343,6 +427,26 @@ namespace LCompilers::LanguageServerProtocol {
             logger.debug()
                 << "clientSupportsHighlight = "
                 << clientSupportsHighlight
+                << std::endl;
+            logger.debug()
+                << "clientSupportsSemanticHighlight = "
+                << clientSupportsSemanticHighlight
+                << std::endl;
+            logger.debug()
+                << "clientSupportsCodeCompletion = "
+                << clientSupportsCodeCompletion
+                << std::endl;
+            logger.debug()
+                << "clientSupportsCodeCompletionContext = "
+                << clientSupportsCodeCompletionContext
+                << std::endl;
+            logger.debug()
+                << "clientSupportsFormatting = "
+                << clientSupportsFormatting
+                << std::endl;
+            logger.debug()
+                << "clientSupportsRangeFormatting = "
+                << clientSupportsRangeFormatting
                 << std::endl;
         }
 
@@ -380,6 +484,72 @@ namespace LCompilers::LanguageServerProtocol {
             ServerCapabilities_documentHighlightProvider &documentHighlightProvider =
                 capabilities.documentHighlightProvider.emplace();
             documentHighlightProvider = true;
+        }
+
+        if (clientSupportsSemanticHighlight) {
+            auto semanticTokensOptions = std::make_unique<SemanticTokensOptions>();
+            SemanticTokensLegend &legend = semanticTokensOptions->legend;
+            legend.tokenTypes = {
+                "namespace",
+                "type",
+                "class",
+                "enum",
+                "interface",
+                "struct",
+                "typeParameter",
+                "parameter",
+                "variable",
+                "property",
+                "enumMember",
+                "event",
+                "function",
+                "method",
+                "macro",
+                "keyword",
+                "modifier",
+                "comment",
+                "string",
+                "number",
+                "regexp",
+                "operator",
+                "decorator"
+            };
+            legend.tokenModifiers = {
+                "declaration",
+                "definition",
+                "readonly",
+                "static",
+                "deprecated",
+                "abstract",
+                "async",
+                "modification",
+                "documentation",
+                "defaultLibrary"
+            };
+            SemanticTokensOptions_full &full = semanticTokensOptions->full.emplace();
+            full = true;
+            ServerCapabilities_semanticTokensProvider &semanticTokensProvider =
+                capabilities.semanticTokensProvider.emplace();
+            semanticTokensProvider = std::move(semanticTokensOptions);
+        }
+
+        if (clientSupportsCodeCompletion) {
+            CompletionOptions &completionProvider =
+                capabilities.completionProvider.emplace();
+            completionProvider.triggerCharacters = {"%"};
+            completionProvider.resolveProvider = true;
+        }
+
+        if (clientSupportsFormatting) {
+            ServerCapabilities_documentFormattingProvider &documentFormattingProvider =
+                capabilities.documentFormattingProvider.emplace();
+            documentFormattingProvider = true;
+        }
+
+        if (clientSupportsRangeFormatting) {
+            ServerCapabilities_documentRangeFormattingProvider &documentRangeFormattingProvider =
+                capabilities.documentRangeFormattingProvider.emplace();
+            documentRangeFormattingProvider = true;
         }
 
         return result;
@@ -659,61 +829,25 @@ namespace LCompilers::LanguageServerProtocol {
             << std::endl;
         // NOTE: Lock the logger to add debug statements to stderr within LFortran.
         // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-        std::vector<lc::document_symbols> symbols =
-            lfortran.lookupName(path, text, compilerOptions);
+        std::vector<std::pair<lc::document_symbols, std::string>> previews =
+            lfortran.previewSymbol(path, text, compilerOptions);
         // loggerLock.unlock();
         logger.trace()
-            << "Found " << symbols.size() << " symbol(s) matching the query."
+            << "Found " << previews.size() << " preview(s) matching the query."
             << std::endl;
         TextDocument_HoverResult result;
-        if (symbols.size() > 0) {
-            lc::document_symbols &symbol = symbols.front();
-            fs::path symbolPath = resolve(symbol.filename, compilerOptions);
-            std::shared_ptr<LspTextDocument> symbolDocument =
-                getDocument("file://" + symbolPath.string());
-            std::shared_lock<std::shared_mutex> symbolLock(symbolDocument->mutex());
-            const std::string &symbolText = symbolDocument->text();
-            std::unique_ptr<Hover> hover = std::make_unique<Hover>();
+        if (previews.size() > 0) {
+            std::pair<lc::document_symbols, std::string> &pair = previews.front();
+            lc::document_symbols &symbol = pair.first;
+            std::string &preview = pair.second;
 
-            readLock.unlock();
-            std::shared_ptr<lsc::LFortranLspConfig> config = getLFortranConfig(symbolDocument->uri());
-            readLock.lock();
+            fs::path symbolPath = resolve(symbol.filename, compilerOptions);
+            std::unique_ptr<Hover> hover = std::make_unique<Hover>();
 
             MarkupContent content;
             content.kind = MarkupKind::Markdown;
             content.value = "```fortran\n";
-            uint32_t first_pos = symbolDocument->toPosition(
-                symbol.first_line - 1,
-                symbol.first_column - 1
-            );
-            uint32_t last_pos = symbolDocument->toPosition(
-                symbol.last_line - 1,
-                symbol.last_column
-            );
-            uint32_t length = (last_pos - first_pos) + 1;
-            std::string preview = symbolText.substr(first_pos, length);
-            symbolLock.unlock();
-            logger.trace()
-                << "Formatting hover preview with LFortran"
-                << std::endl;
-            // NOTE: Lock the logger to add debug statements to stderr within LFortran.
-            // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-            lc::Result<std::string> formatted = lfortran.format(
-                path,
-                preview,
-                compilerOptions,
-                false,  //<- apply ANSI colors
-                config->indentSize,
-                true  //<- indent units like module bodies
-            );
-            // loggerLock.unlock();
-            if (formatted.ok) {
-                logger.trace() << "Successfully formatted the preview." << std::endl;
-                content.value.append(formatted.result);
-            } else {
-                logger.warn() << "Failed to format the preview." << std::endl;
-                content.value.append(preview);
-            }
+            content.value.append(preview);
             content.value.append("\n```");
 
             Hover_contents &contents = hover->contents;
@@ -855,6 +989,267 @@ namespace LCompilers::LanguageServerProtocol {
         return result;
     }
 
+    auto LFortranLspLanguageServer::getHighlights(
+        LspTextDocument &document
+    ) -> std::shared_ptr<std::pair<std::vector<FortranToken>, int>> {
+        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        int version = document.version();
+        std::shared_lock<std::shared_mutex> readLock(highlightsMutex);
+        auto iter = highlightsByDocumentId.find(document.id());
+        if ((iter != highlightsByDocumentId.end())
+            && (iter->second->second == version)) {
+            return iter->second;
+        }
+        readLock.unlock();
+        std::unique_lock<std::shared_mutex> writeLock(highlightsMutex);
+        iter = highlightsByDocumentId.find(document.id());
+        if ((iter != highlightsByDocumentId.end())
+            && (iter->second->second == version)) {
+            return iter->second;
+        }
+        return highlightsByDocumentId.emplace_hint(
+            iter,
+            document.id(),
+            std::make_shared<std::pair<std::vector<FortranToken>, int>>(
+                std::make_pair(semantic_tokenize(document.text()), version)
+            )
+        )->second;
+    }
+
+    auto LFortranLspLanguageServer::encodeHighlights(
+        std::vector<unsigned int> &encodings,
+        LspTextDocument &document,
+        std::vector<FortranToken> &highlights
+    ) -> void {
+        encodings.reserve(5 * highlights.size());
+        std::shared_lock<std::shared_mutex> documentLock(document.mutex());
+        std::size_t prevLine = 0;
+        std::size_t prevColumn = 0;
+        for (const FortranToken &token : highlights) {
+            std::size_t line, column, deltaLine, deltaStart;
+            document.fromPosition(line, column, token.position);
+            deltaLine = line - prevLine;
+            deltaStart = (line == prevLine)
+                ? (column - prevColumn)
+                : column;
+            unsigned int modifiers = 0x0000;
+            for (SemanticTokenModifiers modifier : token.modifiers) {
+                modifiers |= (1 << static_cast<unsigned int>(modifier));
+            }
+            encodings.push_back(deltaLine);
+            encodings.push_back(deltaStart);
+            encodings.push_back(token.length);
+            encodings.push_back(static_cast<unsigned int>(token.type));
+            encodings.push_back(modifiers);
+            prevLine = line;
+            prevColumn = column;
+        }
+    }
+
+    // request: "textDocument/semanticTokens/full"
+    auto LFortranLspLanguageServer::receiveTextDocument_semanticTokens_full(
+        const RequestMessage &/*request*/,
+        SemanticTokensParams &params
+    ) -> TextDocument_SemanticTokens_FullResult {
+        TextDocument_SemanticTokens_FullResult result;
+        if (clientSupportsSemanticHighlight) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            auto highlights = getHighlights(*document);
+            auto semanticTokens = std::make_unique<SemanticTokens>();
+            encodeHighlights(semanticTokens->data, *document, highlights->first);
+            result = std::move(semanticTokens);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    inline auto startsWith(
+        const std::string &term,
+        const std::string_view &prefix
+    ) -> bool {
+        return (term.length() >= prefix.length())
+            && (term.compare(0, prefix.size(), prefix) == 0);
+    }
+
+    // request: "textDocument/completion"
+    auto LFortranLspLanguageServer::receiveTextDocument_completion(
+        const RequestMessage &/*request*/,
+        CompletionParams &params
+    ) -> TextDocument_CompletionResult {
+        TextDocument_CompletionResult result;
+        if (clientSupportsCodeCompletion) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            const std::shared_ptr<CompilerOptions> compilerOptions = getCompilerOptions(*document);
+            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            const std::string &path = document->path().string();
+            const std::string &text = document->text();
+            logger.trace()
+                << "Looking up all symbols in document with URI=" << uri
+                << std::endl;
+            std::vector<lc::document_symbols> symbols =
+                lfortran.getSymbols(path, text, *compilerOptions);
+            logger.trace()
+                << "Found " << symbols.size() << " symbol(s) matching the query."
+                << std::endl;
+            std::string_view query = document->symbolAt(
+                params.position.line,
+                params.position.character
+            );
+            auto completionItems = std::make_unique<std::vector<CompletionItem>>();
+            completionItems->reserve(symbols.size());
+            std::unordered_set<std::string> visited;
+            visited.reserve(symbols.size());
+            for (const lc::document_symbols &symbol : symbols) {
+                if (startsWith(symbol.symbol_name, query)
+                    && (visited.find(symbol.symbol_name) == visited.end())) {
+                    CompletionItem &item = completionItems->emplace_back();
+                    item.label = symbol.symbol_name;
+                    item.kind = asrSymbolTypeToCompletionItemKind(symbol.symbol_type);
+                    visited.insert(symbol.symbol_name);
+                }
+            }
+            result = std::move(completionItems);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    // request: "completionItem/resolve"
+    auto LFortranLspLanguageServer::receiveCompletionItem_resolve(
+        const RequestMessage &/*request*/,
+        CompletionItem &params
+    ) -> CompletionItem_ResolveResult {
+        // NOTE: Use this handler to lazily populate code-completion attributes
+        // --------------------------------------------------------------------
+        // NOTE: `CompletionItem_ResolveResult` is an alias of `CompletionItem`,
+        // so returning the params, directly, is acceptable (making this a sort
+        // of identity function).
+        CompletionItem_ResolveResult &result = params;
+        return result;
+    }
+
+    // request: "textDocument/formatting"
+    auto LFortranLspLanguageServer::receiveTextDocument_formatting(
+        const RequestMessage &/*request*/,
+        DocumentFormattingParams &params
+    ) -> TextDocument_FormattingResult {
+        TextDocument_FormattingResult result;
+        if (clientSupportsFormatting) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            const std::shared_ptr<CompilerOptions> compilerOptions =
+                getCompilerOptions(*document);
+            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            const std::string &text = document->text();
+            const std::string &path = document->path().string();
+            auto formatted = lfortran.format(
+                path,
+                text,
+                *compilerOptions,
+                false,  //-> color
+                params.options.tabSize,
+                true  //-> indent_unit
+            );
+            std::vector<TextEdit> edits;
+            if (formatted.ok) {
+                // TODO: Specify the reformatted document in terms of a diff
+                // between the previous text and the formatted text rather than
+                // replacing the whole text with the formatted version:
+                TextEdit &edit = edits.emplace_back();
+                Range &range = edit.range;
+                Position &start = range.start;
+                Position &end = range.end;
+                start.line = 0;
+                start.character = 0;
+                end.line = static_cast<uinteger_t>(document->lastLine());
+                end.character =
+                    static_cast<uinteger_t>(document->lastColumn(end.line));
+                edit.newText = formatted.result;
+            }
+            result = std::move(edits);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
+    inline auto isNewline(unsigned char c) -> bool {
+        return (c == '\r') || (c == '\n');
+    }
+
+    auto correctIndentation(
+        std::string &fragment,
+        const std::string_view &indentation
+    ) -> std::string & {
+        for (std::size_t i = 1; i < fragment.length(); ++i) {
+            if ((fragment[i] == '\n')
+                && ((i + 1) < fragment.length())
+                && !isNewline(fragment[i + 1])) {
+                fragment.insert(i + 1, indentation);
+                i += indentation.length();
+                if ((fragment[i + 1] == '\r')
+                    && ((i + 2) < fragment.length())
+                    && (fragment[i + 2] == '\n')) {
+                    ++i;
+                }
+            }
+        }
+        return fragment;
+    }
+
+    // request: "textDocument/rangeFormatting"
+    auto LFortranLspLanguageServer::receiveTextDocument_rangeFormatting(
+        const RequestMessage &/*request*/,
+        DocumentRangeFormattingParams &params
+    ) -> TextDocument_RangeFormattingResult {
+        TextDocument_RangeFormattingResult result;
+        if (clientSupportsRangeFormatting) {
+            const std::string &uri = params.textDocument.uri;
+            std::shared_ptr<LspTextDocument> document = getDocument(uri);
+            CompilerOptions compilerOptions = *getCompilerOptions(*document);
+            compilerOptions.interactive = true;
+            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            const std::string &path = document->path().string();
+            const std::string fragment = document->slice(
+                params.range.start.line,
+                params.range.start.character,
+                params.range.end.line,
+                params.range.end.character
+            );
+            auto formatted = lfortran.format(
+                path,
+                fragment,
+                compilerOptions,
+                false,  //-> color
+                params.options.tabSize,
+                true  //-> indent_unit
+            );
+            std::vector<TextEdit> edits;
+            if (formatted.ok) {
+                // TODO: Specify the reformatted document in terms of a diff
+                // between the previous text and the formatted text rather than
+                // replacing the whole text with the formatted version:
+                TextEdit &edit = edits.emplace_back();
+                edit.range.start.line = params.range.start.line;
+                edit.range.start.character = params.range.start.character;
+                edit.range.end.line = params.range.end.line;
+                edit.range.end.character = params.range.end.character;
+                edit.newText = correctIndentation(
+                    formatted.result,
+                    document->leadingIndentation(params.range.start.line)
+                );
+            }
+            result = std::move(edits);
+        } else {
+            result = nullptr;
+        }
+        return result;
+    }
+
     // notification: "workspace/didDeleteFiles"
     auto LFortranLspLanguageServer::receiveWorkspace_didDeleteFiles(
         const NotificationMessage &/*notification*/,
@@ -885,7 +1280,9 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didOpen(notification, params);
         const DocumentUri &uri = params.textDocument.uri;
-        validate(getDocument(uri));
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        validate(document);
+        updateHighlights(document);
     }
 
     // notification: "textDocument/didChange"
@@ -895,7 +1292,26 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> void {
         BaseLspLanguageServer::receiveTextDocument_didChange(notification, params);
         const DocumentUri &uri = params.textDocument.uri;
-        validate(getDocument(uri));
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        validate(document);
+        updateHighlights(document);
+    }
+
+    // notification: "textDocument/didClose"
+    auto LFortranLspLanguageServer::receiveTextDocument_didClose(
+        const NotificationMessage &notification,
+        DidCloseTextDocumentParams &params
+    ) -> void {
+        const DocumentUri &uri = params.textDocument.uri;
+        std::shared_ptr<LspTextDocument> document = getDocument(uri);
+        {
+            std::unique_lock<std::shared_mutex> highlightsLock(highlightsMutex);
+            auto iter = highlightsByDocumentId.find(document->id());
+            if (iter != highlightsByDocumentId.end()) {
+                highlightsByDocumentId.erase(iter);
+            }
+        }
+        BaseLspLanguageServer::receiveTextDocument_didClose(notification, params);
     }
 
     // notification: "workspace/didChangeWatchedFiles"

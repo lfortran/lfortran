@@ -55,7 +55,7 @@ void get_llvm_info(std::vector<StacktraceItem> &d);
 
 // Converts the information stored in `d` into a string
 std::string stacktrace2str(const std::vector<StacktraceItem> &d,
-    int skip);
+    int skip, bool colorize = true);
 
 // Returns line number information from address
 void address_to_line_number(const std::vector<std::string> &filenames,

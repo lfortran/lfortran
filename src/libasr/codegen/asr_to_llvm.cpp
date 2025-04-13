@@ -8178,7 +8178,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             llvm::Type::getVoidTy(context), {
                                 character_type->getPointerTo(),
                                 llvm::Type::getInt32Ty(context)
-                            }, false);
+                            }, true);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
                 }
@@ -8422,7 +8422,16 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     visit_ArraySize(*array_size);
                     builder->CreateCall(fn, {arr, tmp, unit_val});
                 } else {
-                    builder->CreateCall(fn, {tmp, unit_val});
+                    if (ASR::is_a<ASR::String_t>(*type) && !is_string && !x.m_is_formatted) {
+                        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al, 
+                            x.m_values[i]->base.loc, x.m_values[i], type32, nullptr));
+                        llvm::Value *str = tmp;  
+                        visit_StringLen(*strlen);
+                        builder->CreateCall(fn, {str, unit_val, tmp});
+                    } else {
+                        builder->CreateCall(fn, {tmp, unit_val});
+                    }
                 }
             }
 
@@ -8451,7 +8460,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {
         llvm::Value *unit_val = nullptr, *f_name = nullptr;
-        llvm::Value *status = nullptr, *form = nullptr;
+        llvm::Value *status = nullptr, *form = nullptr, *access = nullptr, *iostat = nullptr, *iomsg = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         int ptr_copy = ptr_loads;
@@ -8476,6 +8485,31 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         } else {
             form = llvm::Constant::getNullValue(character_type);
         }
+        if (x.m_access) {
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_access);
+            access = tmp;
+        } else {
+            access = llvm::Constant::getNullValue(character_type);
+        }
+        if (x.m_iostat) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iostat, false);
+            ptr_loads = ptr_copy;
+            iostat = tmp;
+        } else {
+            iostat = llvm::ConstantInt::getNullValue(llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
+        if (x.m_iomsg) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iomsg);
+            ptr_loads = ptr_copy;
+            iomsg = tmp;
+        } else {
+            iomsg = llvm::Constant::getNullValue(character_type->getPointerTo());
+        }
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -8483,12 +8517,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt64Ty(context), {
                         llvm::Type::getInt32Ty(context),
-                        character_type, character_type, character_type
+                        character_type, character_type, character_type, character_type,
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), character_type->getPointerTo(),
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {unit_val, f_name, status, form});
+        tmp = builder->CreateCall(fn, {unit_val, f_name, status, form, access, iostat, iomsg});
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
@@ -8741,14 +8776,35 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
         for (size_t i=0; i<n_values; i++) {
-            if (i != 0 && !is_string) {
+            if (i != 0 && !is_string && x.m_is_formatted) {
                 fmt.push_back("%s");
                 args.push_back(sep);
+            }
+            if (!x.m_is_formatted) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(ASRUtils::expr_type(m_values[i])));
+                llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
+                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
+                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, m_values[i]->base.loc,
+                        m_values[i], nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size);
+                    args.push_back(builder->CreateMul(kind_val, tmp));
+                } else if (ASRUtils::is_character(*ASRUtils::expr_type(m_values[i]))) {
+                    ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al, 
+                        m_values[i]->base.loc, m_values[i], type32, nullptr));
+                    visit_StringLen(*strlen);
+                    args.push_back(builder->CreateMul(kind_val, tmp));
+                } else {
+                    args.push_back(kind_val);
+                }
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc);
         }
-        if (!is_string) {
+        if (!x.m_is_formatted) {  // give -1 argument for end of arguments
+            llvm::Value* minus_one = llvm::ConstantInt::get(context, llvm::APInt(32, -1, true));
+            args.push_back(minus_one);
+        } else if (!is_string) {
             fmt.push_back("%s");
             args.push_back(end);
         }

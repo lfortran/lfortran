@@ -1,3 +1,4 @@
+#include "bin/semantic_highlighter.h"
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -102,7 +103,9 @@ namespace LCompilers::LanguageServerProtocol {
             ) {
                 std::shared_lock<std::shared_mutex> readLock(document->mutex());
                 const std::string &uri = document->uri();
+                readLock.unlock();
                 LFortranLspLanguageServer::validate(*document, *taskIsRunning);
+                readLock.lock();
                 std::unique_lock<std::shared_mutex> writeLock(validationMutex);
                 auto iter = validationsByUri.find(uri);
                 if (iter != validationsByUri.end()) {
@@ -110,6 +113,50 @@ namespace LCompilers::LanguageServerProtocol {
                 }
             });
         validationsByUri.insert_or_assign(iter, uri, taskIsRunning);
+    }
+
+    auto ParallelLFortranLspLanguageServer::updateHighlights(
+        std::shared_ptr<LspTextDocument> document
+    ) -> void {
+        std::shared_ptr<std::atomic_bool> taskIsRunning =
+            workerPool.execute([this, document = std::move(document)](
+                std::shared_ptr<std::atomic_bool> taskIsRunning
+            ) {
+                if (!*taskIsRunning) {
+                    return;
+                }
+                std::shared_lock<std::shared_mutex> documentLock(document->mutex());
+                if (!*taskIsRunning) {
+                    return;
+                }
+                int version = document->version();
+                std::unique_lock<std::shared_mutex> highlightsLock(highlightsMutex);
+                if (!*taskIsRunning) {
+                    return;
+                }
+                auto iter = highlightsByDocumentId.find(document->id());
+                if (iter != highlightsByDocumentId.end()) {
+                    if (iter->second->second < version) {
+                        iter->second = std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                            std::make_pair(
+                                semantic_tokenize(document->text()),
+                                version
+                            )
+                        );
+                    }
+                } else {
+                    highlightsByDocumentId.emplace_hint(
+                        iter,
+                        document->id(),
+                        std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                            std::make_pair(
+                                semantic_tokenize(document->text()),
+                                version
+                            )
+                        )
+                    );
+                }
+            });
     }
 
 } // namespace LCompilers::LanguageServerProtocol
