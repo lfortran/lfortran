@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
-from lsprotocol.types import TextDocumentSaveReason
+from lsprotocol.types import Range, TextDocumentSaveReason
 
 Uri = str
 OldUri = Uri
@@ -101,5 +101,25 @@ class LspClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def highlight(self, uri: str, line: int, column: int) -> None:
+    def highlight_symbol(self, uri: str, line: int, column: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def hover(self, uri: str, line: int, column: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def semantic_highlight(self, uri: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def complete(self, uri: str, line: int, column: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def format(self, uri: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def format_range(self, uri: str, selection: Range) -> None:
         raise NotImplementedError

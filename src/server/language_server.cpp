@@ -1,3 +1,4 @@
+#include <exception>
 #include <ostream>
 
 #include <server/language_server.h>
@@ -30,6 +31,23 @@ namespace LCompilers::LLanguageServer {
         if (outgoingMessages.enqueue(buffer) == nullptr) {
             logger.error() << "Failed to enqueue message:" << std::endl
                            << buffer << std::endl;
+        }
+    }
+
+    auto LanguageServer::formatException(
+        const std::string &heading,
+        const std::exception_ptr &exception_ptr
+    ) const -> std::string {
+        try {
+            if (exception_ptr) {
+                std::rethrow_exception(exception_ptr);
+            } else {
+                return std::string{heading}.append(": ").append("unknown");
+            }
+        } catch (const std::exception &exception) {
+            return std::string{heading}.append(": ").append(exception.what());
+        } catch (...) {
+            return std::string{heading}.append(": ").append("unknown");
         }
     }
 

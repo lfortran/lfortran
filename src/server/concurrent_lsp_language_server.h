@@ -1,8 +1,11 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <queue>
 #include <string>
@@ -45,7 +48,10 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &compilerVersion,
             int parentProcessId,
             std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-            std::shared_ptr<lsc::LspConfig> workspaceConfig
+            std::shared_ptr<lsc::LspConfig> workspaceConfig,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         );
 
         lsl::Logger logger;

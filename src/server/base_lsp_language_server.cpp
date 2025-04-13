@@ -29,6 +29,26 @@ namespace LCompilers::LanguageServerProtocol {
 
     namespace lsr = LCompilers::LanguageServerProtocol::Reporter;
 
+    RunTracer::RunTracer(
+        BaseLspLanguageServer *server,
+        const std::string &taskType
+    ) : server(server)
+      , taskType(taskType)
+    {
+        // empty
+    }
+
+    RunTracer::~RunTracer() {
+        stop();
+    }
+
+    auto RunTracer::stop() -> void {
+        if (!stopped) {
+            server->stopRunning(taskType);
+            stopped = true;
+        }
+    }
+
     BaseLspLanguageServer::BaseLspLanguageServer(
         ls::MessageQueue &incomingMessages,
         ls::MessageQueue &outgoingMessages,
@@ -38,7 +58,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &compilerVersion,
         int parentProcessId,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-        std::shared_ptr<lsc::LspConfig> workspaceConfig
+        std::shared_ptr<lsc::LspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : LspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -50,15 +73,21 @@ namespace LCompilers::LanguageServerProtocol {
       , compilerVersion(compilerVersion)
       , parentProcessId(parentProcessId)
       , lspConfigTransformer(std::move(lspConfigTransformer))
+      , listener([this, &logger, &start, &startChanged, &startMutex]{
+          logger.threadName("BaseLspLanguageServer_listener");
+          if (!start) {
+              std::unique_lock<std::mutex> startLock(startMutex);
+              startChanged.wait(startLock, [&start]{
+                  return start.load();
+              });
+          }
+          listen();
+      })
     {
         documentsByUri.reserve(256);
         configsByUri.reserve(256);
         lspConfigsByUri.reserve(256);
         updateWorkspaceConfig(std::move(workspaceConfig));
-        listener = std::thread([this, &logger]{
-            logger.threadName("BaseLspLanguageServer_listener");
-            listen();
-        });
     }
 
     auto BaseLspLanguageServer::nextSendId() -> std::size_t
@@ -170,6 +199,85 @@ namespace LCompilers::LanguageServerProtocol {
         sendCancelRequest(params);
     }
 
+    auto BaseLspLanguageServer::collectTelemetry() -> LSPAny {
+        LSPArray array;
+        {
+            LSPObject object;
+            object.emplace(
+                "key",
+                std::make_unique<LSPAny>(
+                    transformer.stringToAny("runningHistogram")
+                )
+            );
+            std::shared_lock<std::shared_mutex> readLock(runningMutex);
+            object.emplace(
+                "value",
+                std::make_unique<LSPAny>(
+                    toAny(runningHistogram)
+                )
+            );
+            readLock.unlock();
+            std::unique_ptr<LSPAny> &any =
+                array.emplace_back(std::make_unique<LSPAny>());
+            (*any) = std::move(object);
+        }
+        LSPAny any;
+        any = std::move(array);
+        return any;
+    }
+
+    auto BaseLspLanguageServer::sendTelemetry() -> void {
+        LSPAny data = collectTelemetry();
+        sendTelemetry_event(data);
+    }
+
+    auto BaseLspLanguageServer::toAny(const time_point_t &timePoint) -> LSPAny {
+        LSPAny any;
+        any = lsl::formatTimePoint(timePoint);
+        return any;
+    }
+
+    auto BaseLspLanguageServer::startRunning(
+        const std::string &taskType
+    ) -> RunTracer {
+        auto startTime = std::chrono::system_clock::now();
+        std::unique_lock<std::shared_mutex> writeLock(runningMutex);
+        auto iter = runningHistogram.find(taskType);
+        std::map<std::string, time_point_t> &startTimesByThread =
+            ((iter == runningHistogram.end())
+             ? runningHistogram.emplace_hint(
+                 iter,
+                 std::piecewise_construct,
+                 std::make_tuple(taskType),
+                 std::make_tuple()
+               )->second
+             : iter->second);
+        startTimesByThread.insert_or_assign(logger.threadName(), startTime);
+        writeLock.unlock();
+        return RunTracer(this, taskType);
+    }
+
+    auto BaseLspLanguageServer::stopRunning(const std::string &taskType) -> void {
+        std::shared_lock<std::shared_mutex> readLock(runningMutex);
+        auto histIter = runningHistogram.find(taskType);
+        if (histIter != runningHistogram.end()) {
+            readLock.unlock();
+            std::unique_lock<std::shared_mutex> writeLock(runningMutex);
+            histIter = runningHistogram.find(taskType);
+            if (histIter != runningHistogram.end()) {
+                std::map<std::string, time_point_t> &startTimesByThread =
+                    histIter->second;
+                auto threadIter = startTimesByThread.find(logger.threadName());
+                if (threadIter != startTimesByThread.end()) {
+                    startTimesByThread.erase(threadIter);
+                    if (startTimesByThread.empty()) {
+                        runningHistogram.erase(histIter);
+                    }
+                }
+            }
+        }
+    }
+
     auto BaseLspLanguageServer::handle(
         const std::string &incoming,
         std::size_t sendId,
@@ -247,11 +355,13 @@ namespace LCompilers::LanguageServerProtocol {
             }
             logger.error() << error.message << std::endl;
             response.error = std::move(error);
-        } catch (const std::exception &e) {
+        } catch (...) {
             ResponseError error;
             error.code = static_cast<int>(ErrorCodes::InternalError);
-            error.message = "Caught unhandled exception: ";
-            error.message.append(e.what());
+            error.message = formatException(
+                "Caught unhandled exception",
+                std::current_exception()
+            );
             logger.error() << error.message << std::endl;
             response.error = std::move(error);
         }
@@ -289,9 +399,12 @@ namespace LCompilers::LanguageServerProtocol {
                     std::string issueTitle = reporter.title();
                     std::string issueBody = reporter.body();
                     sendOpenIssue(issueTitle, issueBody);
-                } catch (const std::exception &e) {
+                } catch (...) {
                     logger.error()
-                        << "Failed to open issue: " << e.what()
+                        << formatException(
+                            "Failed to open issue",
+                            std::current_exception()
+                        )
                         << std::endl;
                 }
             }
@@ -485,6 +598,8 @@ namespace LCompilers::LanguageServerProtocol {
                 );
             }
         }
+        const std::string taskType = "request:" + request.method;
+        auto tracer = startRunning(taskType);
         LspLanguageServer::dispatch(response, request, method);
     }
 
@@ -517,6 +632,8 @@ namespace LCompilers::LanguageServerProtocol {
             }
             assertRunning();
         }
+        const std::string taskType = "notification:" + notification.method;
+        auto tracer = startRunning(taskType);
         LspLanguageServer::dispatch(response, notification, method);
     }
 
@@ -544,6 +661,8 @@ namespace LCompilers::LanguageServerProtocol {
             }
             traceId = method + " - (" + std::to_string(responseId) + ")";
             logReceiveResponseTrace(traceId, document);
+            const std::string taskType = "response:" + method;
+            auto tracer = startRunning(taskType);
             LspLanguageServer::dispatch(response, method);
             break;
         }
@@ -981,9 +1100,12 @@ namespace LCompilers::LanguageServerProtocol {
             (this->workspaceConfig->log.level != workspaceConfig.log.level)) {
             try {
                 logger.setLevel(workspaceConfig.log.level);
-            } catch (std::exception &e) {
+            } catch (...) {
                 logger.error()
-                    << "Caught unhandled exception while updating log level: " << e.what()
+                    << formatException(
+                        "Caught unhandled exception while updating log level",
+                        std::current_exception()
+                    )
                     << std::endl;
             }
         }

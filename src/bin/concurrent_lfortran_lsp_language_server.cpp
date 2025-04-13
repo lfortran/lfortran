@@ -22,7 +22,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &extensionId,
         const std::string &compilerVersion,
         int parentProcessId,
-        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig
+        std::shared_ptr<lsc::LFortranLspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -35,7 +38,10 @@ namespace LCompilers::LanguageServerProtocol {
             transformer,
             serializer
         ),
-        std::move(workspaceConfig)
+        std::move(workspaceConfig),
+        start,
+        startChanged,
+        startMutex
       )
       , ConcurrentLspLanguageServer(
         incomingMessages,
@@ -49,7 +55,10 @@ namespace LCompilers::LanguageServerProtocol {
             transformer,
             serializer
         ),*/
-        nullptr //-> workspaceConfig
+        nullptr, //-> workspaceConfig
+        start,
+        startChanged,
+        startMutex
       )
       , LFortranLspLanguageServer(
         incomingMessages,
@@ -59,7 +68,10 @@ namespace LCompilers::LanguageServerProtocol {
         extensionId,
         compilerVersion,
         parentProcessId,
-        nullptr //-> workspaceConfig
+        nullptr, //-> workspaceConfig
+        start,
+        startChanged,
+        startMutex
       )
       , logger(logger.having("ConcurrentLFortranLspLanguageServer"))
     {
@@ -71,6 +83,34 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> void {
         static std::atomic_bool taskIsRunning(true);
         LFortranLspLanguageServer::validate(*document, taskIsRunning);
+    }
+
+    auto ConcurrentLFortranLspLanguageServer::updateHighlights(
+        std::shared_ptr<LspTextDocument> document
+    ) -> void {
+        int version = document->version();
+        auto iter = highlightsByDocumentId.find(document->id());
+        if (iter != highlightsByDocumentId.end()) {
+            if (iter->second->second < version) {
+                iter->second = std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                    std::make_pair(
+                        semantic_tokenize(document->text()),
+                        version
+                    )
+                );
+            }
+        } else {
+            highlightsByDocumentId.emplace_hint(
+                iter,
+                document->id(),
+                std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                    std::make_pair(
+                        semantic_tokenize(document->text()),
+                        version
+                    )
+                )
+            );
+        }
     }
 
 } // namespace LCompilers::LanguageServerProtocol

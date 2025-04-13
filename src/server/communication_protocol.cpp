@@ -14,20 +14,29 @@ namespace LCompilers::LLanguageServer {
         MessageStream &messageStream,
         MessageQueue &incomingMessages,
         MessageQueue &outgoingMessages,
-        lsl::Logger &logger
+        lsl::Logger &logger,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : languageServer(languageServer)
       , messageStream(messageStream)
       , incomingMessages(incomingMessages)
       , outgoingMessages(outgoingMessages)
       , logger(logger.having("CommunicationProtocol"))
+      , listener([this, &logger, &start, &startChanged, &startMutex]() {
+          logger.threadName("CommunicationProtocol_listener");
+          if (!start) {
+              std::unique_lock<std::mutex> startLock(startMutex);
+              startChanged.wait(startLock, [&start]{
+                  return start.load();
+              });
+          }
+          listen();
+      })
     {
         // Decouple stdin from stdout
         std::ios::sync_with_stdio(false);
         std::cin.tie(nullptr);
-        listener = std::thread([this, &logger]() {
-            logger.threadName("CommunicationProtocol_listener");
-            listen();
-        });
     }
 
     CommunicationProtocol::~CommunicationProtocol() {
@@ -46,7 +55,10 @@ namespace LCompilers::LLanguageServer {
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "Unhandled exception caught: " << e.what()
+                    << languageServer.formatException(
+                        "Unhandled exception caught",
+                        std::current_exception()
+                    )
                     << std::endl;
             } else {
                 logger.trace()
@@ -55,7 +67,10 @@ namespace LCompilers::LLanguageServer {
             }
         } catch (...) {
             logger.error()
-                << "Unhandled exception caught: unknown"
+                << languageServer.formatException(
+                    "Unhandled exception caught",
+                    std::current_exception()
+                )
                 << std::endl;
         }
         logger.debug() << "Incoming-message listener terminated." << std::endl;
@@ -76,10 +91,12 @@ namespace LCompilers::LLanguageServer {
                         << std::endl;
                 }
             }
-        } catch (std::exception &e) {
+        } catch (...) {
             logger.error()
-                << "Caught unhandled exception while serving requests: "
-                << e.what()
+                << languageServer.formatException(
+                    "Caught unhandled exception while serving requests",
+                    std::current_exception()
+                )
                 << std::endl;
         }
         running = false;

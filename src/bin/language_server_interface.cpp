@@ -1,3 +1,4 @@
+#include <exception>
 #include <filesystem>
 #include <random>
 #include <regex>
@@ -250,7 +251,7 @@ namespace LCompilers::LLanguageServer::Interface {
             )
         );
 
-        opts.executionStrategy = ExecutionStrategy::PARALLEL;
+        opts.executionStrategy = ExecutionStrategy::CONCURRENT;
         server->add_option(
             "--execution-strategy", opts.executionStrategy,
             "Specifies the execution strategy for handling messages. The `parallel` strategy implies multiple messages may be processed alongside each other, while the `concurrent` strategy implies multiple messages may be processed but only one processor will be active at a time (they will yield control to each other)."
@@ -402,7 +403,10 @@ namespace LCompilers::LLanguageServer::Interface {
     auto LanguageServerInterface::buildLanguageServer(
         ls::MessageQueue &incomingMessages,
         ls::MessageQueue &outgoingMessages,
-        lsl::Logger &logger
+        lsl::Logger &logger,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) -> std::unique_ptr<ls::LanguageServer> {
         if (opts.language == Language::FORTRAN) {
             if (opts.dataFormat == DataFormat::JSON_RPC) {
@@ -421,7 +425,10 @@ namespace LCompilers::LLanguageServer::Interface {
                             LFORTRAN_VERSION,
                             opts.parentProcessId,
                             randomSeed(),
-                            workspaceConfig
+                            workspaceConfig,
+                            start,
+                            startChanged,
+                            startMutex
                         );
                         break;
                     }
@@ -434,7 +441,10 @@ namespace LCompilers::LLanguageServer::Interface {
                             opts.extensionId,
                             LFORTRAN_VERSION,
                             opts.parentProcessId,
-                            workspaceConfig
+                            workspaceConfig,
+                            start,
+                            startChanged,
+                            startMutex
                         );
                         break;
                     }
@@ -469,7 +479,10 @@ namespace LCompilers::LLanguageServer::Interface {
         ls::MessageStream &messageStream,
         ls::MessageQueue &incomingMessages,
         ls::MessageQueue &outgoingMessages,
-        lsl::Logger &logger
+        lsl::Logger &logger,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) -> std::unique_ptr<ls::CommunicationProtocol> {
         switch (opts.communicationProtocol) {
         case CommunicationProtocol::STDIO: {
@@ -478,7 +491,10 @@ namespace LCompilers::LLanguageServer::Interface {
                 messageStream,
                 incomingMessages,
                 outgoingMessages,
-                logger
+                logger,
+                start,
+                startChanged,
+                startMutex
             );
         }
         default: {
@@ -495,37 +511,55 @@ namespace LCompilers::LLanguageServer::Interface {
             lsl::Logger logger(workspaceConfig->log.path, "LanguageServerInterface");
             logger.setLevel(workspaceConfig->log.level);
             logger.threadName("main");
-            try {
-                std::unique_ptr<ls::MessageStream> messageStream =
-                    buildMessageStream(logger);
-                ls::MessageQueue communicatorToServer(logger, "communicator-to-server");
-                ls::MessageQueue serverToCommunicator(logger, "server-to-communicator");
-                std::unique_ptr<ls::LanguageServer> languageServer =
-                    buildLanguageServer(
-                        communicatorToServer,
-                        serverToCommunicator,
-                        logger);
-                std::unique_ptr<ls::CommunicationProtocol> communicationProtocol =
-                    buildCommunicationProtocol(
-                        *languageServer,
-                        *messageStream,
-                        serverToCommunicator,
-                        communicatorToServer,
-                        logger
-                    );
-                communicationProtocol->serve();
-                logger.info()
-                    << "Language server terminated cleanly."
-                    << std::endl;
-            } catch (const std::exception &e) {
-                std::string buffer = "Language server terminated erroneously: ";
-                buffer.append(e.what());
-                throw lc::LCompilersException(buffer);
-            }
+
+            std::atomic_bool start{false};
+            std::condition_variable startChanged;
+            std::mutex startMutex;
+
+            std::unique_ptr<ls::MessageStream> messageStream =
+                buildMessageStream(logger);
+            ls::MessageQueue communicatorToServer(logger, "communicator-to-server");
+            ls::MessageQueue serverToCommunicator(logger, "server-to-communicator");
+            std::unique_ptr<ls::LanguageServer> languageServer =
+                buildLanguageServer(
+                    communicatorToServer,
+                    serverToCommunicator,
+                    logger,
+                    start,
+                    startChanged,
+                    startMutex
+                );
+            std::unique_ptr<ls::CommunicationProtocol> communicationProtocol =
+                buildCommunicationProtocol(
+                    *languageServer,
+                    *messageStream,
+                    serverToCommunicator,
+                    communicatorToServer,
+                    logger,
+                    start,
+                    startChanged,
+                    startMutex
+                );
+            start = true;
+            startChanged.notify_all();
+            communicationProtocol->serve();
+            logger.info()
+                << "Language server terminated cleanly."
+                << std::endl;
+        } catch(const LCompilers::LCompilersException &e) {
+            std::cerr << "Caught unhandled exception" << std::endl;
+            std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
+            get_local_addresses(d);
+            get_local_info(d);
+            std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth, false);
+            std::cerr << e.name() + ": " << e.msg() << std::endl;
+            throw e;
         } catch (const std::exception &e) {
             std::string buffer = "Caught unhandled exception: ";
             buffer.append(e.what());
             throw lc::LCompilersException(buffer);
+        } catch (...) {
+            std::cerr << "Unknown Exception" << std::endl;
         }
     }
 

@@ -35,7 +35,10 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &compilerVersion,
         int parentProcessId,
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-        std::shared_ptr<lsc::LspConfig> workspaceConfig
+        std::shared_ptr<lsc::LspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
     ) : BaseLspLanguageServer(
         incomingMessages,
         outgoingMessages,
@@ -45,7 +48,10 @@ namespace LCompilers::LanguageServerProtocol {
         compilerVersion,
         parentProcessId,
         lspConfigTransformer,
-        workspaceConfig
+        workspaceConfig,
+        start,
+        startChanged,
+        startMutex
       )
       , logger(logger.having("ConcurrentLspLanguageServer"))
     {
@@ -61,7 +67,10 @@ namespace LCompilers::LanguageServerProtocol {
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "Unhandled exception caught: " << e.what()
+                    << formatException(
+                        "Unhandled exception caught",
+                        std::current_exception()
+                    )
                     << std::endl;
             } else {
                 logger.trace()
@@ -70,7 +79,10 @@ namespace LCompilers::LanguageServerProtocol {
             }
         } catch (...) {
             logger.error()
-                << "Unhandled exception caught: unknown"
+                << formatException(
+                    "Unhandled exception caught",
+                    std::current_exception()
+                )
                 << std::endl;
         }
     }
@@ -86,12 +98,15 @@ namespace LCompilers::LanguageServerProtocol {
                     sendId,
                     std::make_shared<std::atomic_bool>(true)
                 );
-            } catch (std::exception &e) {
+            } catch (...) {
                 logger.error()
                     << "Failed to handle message: " << message
                     << std::endl;
                 logger.error()
-                    << "Caught unhandled exception: " << e.what()
+                    << formatException(
+                        "Caught unhandled exception",
+                        std::current_exception()
+                    )
                     << std::endl;
             }
             if (pendingSendId <= sendId) {
@@ -178,7 +193,10 @@ namespace LCompilers::LanguageServerProtocol {
             } catch (std::exception &e) {
                 if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                     logger.error()
-                        << "Unhandled exception caught: " << e.what()
+                        << formatException(
+                            "Unhandled exception caught",
+                            std::current_exception()
+                        )
                         << std::endl;
                 } else {
                     logger.trace()

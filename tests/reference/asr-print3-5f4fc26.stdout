@@ -49,6 +49,7 @@
                             (String 1 0 () PointerString)
                         )
                         ()
+                        .true.
                     )
                     (Print
                         (StringFormat
@@ -79,6 +80,7 @@
                             (String 1 0 () PointerString)
                         )
                         ()
+                        .true.
                     )
                     (FileWrite
                         0
@@ -100,6 +102,7 @@
                         ()
                         ()
                         ()
+                        .true.
                     )
                     (FileWrite
                         0
@@ -117,6 +120,7 @@
                             (String 1 0 () PointerString)
                         )
                         ()
+                        .true.
                     )
                     (Print
                         (StringConstant
@@ -140,6 +144,7 @@
                             (String 1 0 () PointerString)
                         )
                         ()
+                        .true.
                     )
                     (FileWrite
                         0
@@ -154,6 +159,7 @@
                         ()
                         ()
                         ()
+                        .true.
                     )]
                 )
         })

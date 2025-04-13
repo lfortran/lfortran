@@ -1060,6 +1060,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
+            ./run_tests.py -b llvm_sc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f -nf16
 
@@ -1069,6 +1070,7 @@ jobs:
         run: |
             ctest --output-on-failure
             cd integration_tests
+            ./run_tests.py -b llvm_sc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
 

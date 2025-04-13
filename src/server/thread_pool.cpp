@@ -143,6 +143,10 @@ namespace LCompilers::LLanguageServer::Threading {
                     << "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
+        } catch (...) {
+            logger.error()
+                << "Unhandled exception caught: unknown"
+                << std::endl;
         }
     }
 
