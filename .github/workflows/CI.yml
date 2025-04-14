@@ -536,6 +536,16 @@ jobs:
             ./plot_pendulum.exe
             ./plot_transes_iso.exe
 
+      - name: Test Fortran-Primes
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/jinangshah21/fortran-primes.git
+            cd fortran-primes
+            export PATH="$(pwd)/../src/bin:$PATH"
+            git checkout -t origin/lf-2
+            git checkout 1fb8a91fe0307ce50c56fde9e9ccd20b6d0a07f4
+            ./script.sh
+
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
