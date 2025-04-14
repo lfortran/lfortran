@@ -15,8 +15,8 @@ end module
 program intrinsics_376
     use stdlib_logger_intrinsics_376
     implicit none
-!   integer :: stat
-!   call add_log_unit(stat)
-!   print *, stat
-!   if (stat /= 5) error stop
+  integer :: stat
+  call add_log_unit(stat)
+  print *, stat
+  if (stat /= 5) error stop
 end program
