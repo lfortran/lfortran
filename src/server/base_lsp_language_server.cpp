@@ -209,7 +209,7 @@ namespace LCompilers::LanguageServerProtocol {
                     transformer.stringToAny("runningHistogram")
                 )
             );
-            std::shared_lock<std::shared_mutex> readLock(runningMutex);
+            auto readLock = LSP_READ_LOCK(runningMutex, "running");
             object.emplace(
                 "value",
                 std::make_unique<LSPAny>(
@@ -221,6 +221,44 @@ namespace LCompilers::LanguageServerProtocol {
                 array.emplace_back(std::make_unique<LSPAny>());
             (*any) = std::move(object);
         }
+#ifdef DEBUG
+        {
+            LSPObject waiting;
+            waiting.emplace(
+                "key",
+                std::make_unique<LSPAny>(
+                    transformer.stringToAny("waiting")
+                )
+            );
+            LSPObject owners;
+            owners.emplace(
+                "key",
+                std::make_unique<LSPAny>(
+                    transformer.stringToAny("owners")
+                )
+            );
+            auto ownerLock = LSP_READ_LOCK(ownerMutex, "owner");
+            waiting.emplace(
+                "value",
+                std::make_unique<LSPAny>(
+                    toAny(waitingById)
+                )
+            );
+            owners.emplace(
+                "value",
+                std::make_unique<LSPAny>(
+                    toAny(ownersById)
+                )
+            );
+            ownerLock.unlock();
+            std::unique_ptr<LSPAny> &waitingAny =
+                array.emplace_back(std::make_unique<LSPAny>());
+            (*waitingAny) = std::move(waiting);
+            std::unique_ptr<LSPAny> &ownersAny =
+                array.emplace_back(std::make_unique<LSPAny>());
+            (*ownersAny) = std::move(owners);
+        }
+#endif // DEBUG
         LSPAny any;
         any = std::move(array);
         return any;
@@ -231,25 +269,50 @@ namespace LCompilers::LanguageServerProtocol {
         sendTelemetry_event(data);
     }
 
-    auto BaseLspLanguageServer::toAny(const time_point_t &timePoint) -> LSPAny {
+#ifdef DEBUG
+    auto BaseLspLanguageServer::toAny(const ls::OwnerRecord &record) const -> LSPAny {
+        LSPObject object;
+        object.emplace("thread", std::make_unique<LSPAny>(toAny(record.thread)));
+        object.emplace("file", std::make_unique<LSPAny>(toAny(record.file)));
+        object.emplace("line", std::make_unique<LSPAny>(toAny(record.line)));
+        object.emplace("timestamp", std::make_unique<LSPAny>(toAny(record.timestamp)));
+        LSPAny any;
+        any = std::move(object);
+        return any;
+    }
+#endif // DEBUG
+
+    auto BaseLspLanguageServer::toAny(const char *value) const -> LSPAny {
+        return transformer.stringToAny(value);
+    }
+
+    auto BaseLspLanguageServer::toAny(const int value) const -> LSPAny {
+        return transformer.integerToAny(value);
+    }
+
+    auto BaseLspLanguageServer::toAny(const time_point_t &timePoint) const -> LSPAny {
         LSPAny any;
         any = lsl::formatTimePoint(timePoint);
         return any;
+    }
+
+    auto BaseLspLanguageServer::toAny(const std::string &value) const -> LSPAny {
+        return transformer.stringToAny(value);
     }
 
     auto BaseLspLanguageServer::startRunning(
         const std::string &taskType
     ) -> RunTracer {
         auto startTime = std::chrono::system_clock::now();
-        std::unique_lock<std::shared_mutex> writeLock(runningMutex);
+        auto writeLock = LSP_WRITE_LOCK(runningMutex, "running");
         auto iter = runningHistogram.find(taskType);
         std::map<std::string, time_point_t> &startTimesByThread =
             ((iter == runningHistogram.end())
              ? runningHistogram.emplace_hint(
                  iter,
                  std::piecewise_construct,
-                 std::make_tuple(taskType),
-                 std::make_tuple()
+                 std::forward_as_tuple(taskType),
+                 std::forward_as_tuple()
                )->second
              : iter->second);
         startTimesByThread.insert_or_assign(logger.threadName(), startTime);
@@ -258,11 +321,11 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto BaseLspLanguageServer::stopRunning(const std::string &taskType) -> void {
-        std::shared_lock<std::shared_mutex> readLock(runningMutex);
+        auto readLock = LSP_READ_LOCK(runningMutex, "running");
         auto histIter = runningHistogram.find(taskType);
         if (histIter != runningHistogram.end()) {
             readLock.unlock();
-            std::unique_lock<std::shared_mutex> writeLock(runningMutex);
+            auto writeLock = LSP_WRITE_LOCK(runningMutex, "running");
             histIter = runningHistogram.find(taskType);
             if (histIter != runningHistogram.end()) {
                 std::map<std::string, time_point_t> &startTimesByThread =
@@ -428,7 +491,7 @@ namespace LCompilers::LanguageServerProtocol {
             transformer.anyToRequestMessage(document);
         std::string requestId = to_string(request.id);
         {
-            std::unique_lock<std::mutex> lock(activeMutex);
+            auto lock = LSP_MUTEX_LOCK(activeMutex, "active-requests");
             auto iter = activeRequests.find(requestId);
             if (iter == activeRequests.end()) {
                 activeRequests.emplace_hint(iter, requestId, taskIsRunning);
@@ -455,7 +518,7 @@ namespace LCompilers::LanguageServerProtocol {
         }
         dispatch(response, request);
         {
-            std::unique_lock<std::mutex> lock(activeMutex);
+            auto lock = LSP_MUTEX_LOCK(activeMutex, "active-requests");
             auto iter = activeRequests.find(requestId);
             if (iter != activeRequests.end()) {
                 activeRequests.erase(iter);
@@ -648,7 +711,7 @@ namespace LCompilers::LanguageServerProtocol {
             int responseId = response.id.integer();
             std::string method;
             {
-                std::unique_lock<std::mutex> requestLock(requestMutex);
+                auto requestLock = LSP_READ_LOCK(requestMutex, "requests");
                 auto iter = requestsById.find(responseId);
                 if (iter == requestsById.end()) {
                     logger.error()
@@ -656,8 +719,8 @@ namespace LCompilers::LanguageServerProtocol {
                         << std::endl;
                     return;
                 }
-                const RequestMessage &request = iter->second;
-                method = request.method;
+                std::shared_ptr<RequestMessage> request = iter->second;
+                method = request->method;
             }
             traceId = method + " - (" + std::to_string(responseId) + ")";
             logReceiveResponseTrace(traceId, document);
@@ -836,7 +899,7 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::getConfig(
         const DocumentUri &uri
     ) -> const std::shared_ptr<lsc::LspConfig> {
-        std::shared_lock<std::shared_mutex> readLock(lspConfigMutex);
+        auto readLock = LSP_READ_LOCK(lspConfigMutex, "lsp-configs");
         auto iter = lspConfigsByUri.find(uri);
         if (iter != lspConfigsByUri.end()) {
             return iter->second;
@@ -848,7 +911,7 @@ namespace LCompilers::LanguageServerProtocol {
         std::shared_ptr<lsc::LspConfig> lspConfig =
             lspConfigTransformer->anyToLspConfig(*config);
 
-        std::unique_lock<std::shared_mutex> writeLock(lspConfigMutex);
+        auto writeLock = LSP_WRITE_LOCK(lspConfigMutex, "lsp-configs");
 
         iter = lspConfigsByUri.find(uri);
         if (iter != lspConfigsByUri.end()) {
@@ -861,14 +924,18 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto BaseLspLanguageServer::invalidateConfigCaches() -> void {
         {
-            std::unique_lock<std::shared_mutex> writeLock(configMutex);
+            auto writeLock = LSP_WRITE_LOCK(configMutex, "configs");
             configsByUri.clear();
-            logger.debug() << "Invalidated document configuration cache." << std::endl;
+            logger.debug()
+                << "Invalidated document configuration cache."
+                << std::endl;
         }
         {
-            std::unique_lock<std::shared_mutex> writeLock(lspConfigMutex);
+            auto writeLock = LSP_WRITE_LOCK(lspConfigMutex, "lsp-configs");
             lspConfigsByUri.clear();
-            logger.debug() << "Invalidated LSP configuration cache." << std::endl;
+            logger.debug()
+                << "Invalidated LSP configuration cache."
+                << std::endl;
         }
     }
 
@@ -1067,14 +1134,14 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &oldUri = param.oldUri;
             const std::string &newUri = param.newUri;
             {
-                std::shared_lock<std::shared_mutex> readLock(documentMutex);
+                auto readLock = LSP_READ_LOCK(documentMutex, "documents");
                 auto iter = documentsByUri.find(oldUri);
                 if (iter != documentsByUri.end()) {
                     readLock.unlock();
-                    std::unique_lock<std::shared_mutex> writeLock(documentMutex);
+                    auto writeLock = LSP_WRITE_LOCK(documentMutex, "documents");
                     std::shared_ptr<LspTextDocument> &textDocument = iter->second;
                     {
-                        std::unique_lock<std::shared_mutex> writeLock(textDocument->mutex());
+                        auto documentLock = LSP_WRITE_LOCK(textDocument->mutex(), "document:" + oldUri);
                         textDocument->setUri(newUri);
                     }
                     documentsByUri.emplace(newUri, std::move(textDocument));
@@ -1087,7 +1154,7 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::updateWorkspaceConfig(
         std::shared_ptr<lsc::LspConfig> workspaceConfig
     ) -> void {
-        std::unique_lock<std::shared_mutex> writeLock(workspaceMutex);
+        auto writeLock = LSP_WRITE_LOCK(workspaceMutex, "workspace");
         updateLogLevel(*workspaceConfig);
         updatePrettyPrintIndentSize(*workspaceConfig);
         this->workspaceConfig = std::move(workspaceConfig);
@@ -1167,7 +1234,7 @@ namespace LCompilers::LanguageServerProtocol {
         int version = textDocumentItem.version;
         const std::string &text = textDocumentItem.text;
         {
-            std::unique_lock<std::shared_mutex> writeLock(documentMutex);
+            auto writeLock = LSP_WRITE_LOCK(documentMutex, "documents");
             auto iter = documentsByUri.find(uri);
             if (iter == documentsByUri.end()) {
                 documentsByUri.emplace_hint(
@@ -1195,7 +1262,7 @@ namespace LCompilers::LanguageServerProtocol {
         Workspace_ConfigurationResult &params
     ) -> void {
         const RequestId &requestId = request.id;
-        std::unique_lock<std::shared_mutex> writeLock(configMutex);
+        auto writeLock = LSP_WRITE_LOCK(configMutex, "configs");
         auto iter = pendingConfigsById.find(requestId.integer());
         if (iter != pendingConfigsById.end()) {
             auto &pairs = iter->second;
@@ -1237,14 +1304,14 @@ namespace LCompilers::LanguageServerProtocol {
     auto BaseLspLanguageServer::getDocument(
         const DocumentUri &uri
     ) -> std::shared_ptr<LspTextDocument> {
-        std::shared_lock<std::shared_mutex> readLock(documentMutex);
+        auto readLock = LSP_READ_LOCK(documentMutex, "documents");
         auto iter = documentsByUri.find(uri);
         if (iter != documentsByUri.end()) {
             return iter->second;
         }
         readLock.unlock();
         try {
-            std::unique_lock<std::shared_mutex> writeLock(documentMutex);
+            auto writeLock = LSP_WRITE_LOCK(documentMutex, "documents");
             iter = documentsByUri.find(uri);
             if (iter != documentsByUri.end()) {
                 return iter->second;
@@ -1253,8 +1320,8 @@ namespace LCompilers::LanguageServerProtocol {
             const auto &record = documentsByUri.emplace_hint(
                 iter,
                 std::piecewise_construct,
-                std::make_tuple(uri),
-                std::make_tuple(
+                std::forward_as_tuple(uri),
+                std::forward_as_tuple(
                     std::make_shared<LspTextDocument>(uri, logger)
                 )
             );
@@ -1276,7 +1343,7 @@ namespace LCompilers::LanguageServerProtocol {
         GetDocumentResult result;
         std::shared_ptr<LspTextDocument> document = getDocument(params.uri);
         {
-            std::shared_lock<std::shared_mutex> readLock(document->mutex());
+            auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + params.uri);
             result.uri = document->uri();
             result.version = document->version();
             result.text = document->text();
@@ -1303,11 +1370,11 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> void {
         const DocumentUri &uri = params.textDocument.uri;
         {
-            std::shared_lock<std::shared_mutex> readLock(documentMutex);
+            auto readLock = LSP_READ_LOCK(documentMutex, "documents");
             auto iter = documentsByUri.find(uri);
             if (iter != documentsByUri.end()) {
                 readLock.unlock();
-                std::unique_lock<std::shared_mutex> writeLock(documentMutex);
+                auto writeLock = LSP_WRITE_LOCK(documentMutex, "documents");
                 iter = documentsByUri.find(uri);
                 if (iter != documentsByUri.end()) {
                     documentsByUri.erase(iter);
@@ -1346,7 +1413,7 @@ namespace LCompilers::LanguageServerProtocol {
             );
         }
         }
-        std::unique_lock<std::mutex> lock(activeMutex);
+        auto lock = LSP_MUTEX_LOCK(activeMutex, "active-requests");
         auto iter = activeRequests.find(requestId);
         if (iter != activeRequests.end()) {
             *iter->second = false;

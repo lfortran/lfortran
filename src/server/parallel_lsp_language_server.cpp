@@ -5,7 +5,6 @@
 #include <exception>
 #include <memory>
 #include <mutex>
-#include <shared_mutex>
 #include <string>
 #include <tuple>
 
@@ -160,10 +159,7 @@ namespace LCompilers::LanguageServerProtocol {
                                 });
                             }
                             ++pendingSendId;
-                            {
-                                std::unique_lock<std::mutex> sentLock(sentMutex);
-                                sent.notify_all();
-                            }
+                            sent.notify_all();
                         });
                 }
             }
@@ -200,23 +196,23 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> std::size_t {
         std::size_t cronId = nextCronId();
         {
-            std::unique_lock<std::shared_mutex> writeLock(scheduleMutex);
+            auto writeLock = LSP_WRITE_LOCK(scheduleMutex, "schedule");
             cronSchedules.emplace(cronId, schedule);
         }
         time_point_t nextTimePoint = schedule();
         {
-            std::unique_lock<std::mutex> cronLock(cronMutex);
+            auto cronLock = LSP_MUTEX_LOCK(cronMutex, "cron");
             cronJobs.push(std::make_tuple(cronId, cronJob, nextTimePoint));
         }
         return cronId;
     }
 
     auto ParallelLspLanguageServer::unschedule(std::size_t cronId) -> bool {
-        std::shared_lock<std::shared_mutex> readLock(scheduleMutex);
+        auto readLock = LSP_READ_LOCK(scheduleMutex, "schedule");
         auto iter = cronSchedules.find(cronId);
         if (iter != cronSchedules.end()) {
             readLock.unlock();
-            std::unique_lock<std::shared_mutex> writeLock(scheduleMutex);
+            auto writeLock = LSP_WRITE_LOCK(scheduleMutex, "schedule");
             iter = cronSchedules.find(cronId);
             if (iter != cronSchedules.end()) {
                 cronSchedules.erase(iter);
@@ -234,7 +230,7 @@ namespace LCompilers::LanguageServerProtocol {
                 bool changed;
                 do {
                     changed = false;
-                    std::unique_lock<std::mutex> cronLock(cronMutex);
+                    auto cronLock = LSP_MUTEX_LOCK(cronMutex, "cron");
                     if (cronJobs.size() > 0) {
                         const CronElem &elem = cronJobs.top();
                         if (std::get<2>(elem) < now()) {
@@ -265,13 +261,13 @@ namespace LCompilers::LanguageServerProtocol {
                                             << std::endl;
                                     }
 
-                                    std::shared_lock<std::shared_mutex> readLock(scheduleMutex);
+                                    auto readLock = LSP_READ_LOCK(scheduleMutex, "schedule");
                                     auto iter = cronSchedules.find(cronId);
                                     if (iter != cronSchedules.end()) {
                                         CronSchedule schedule = iter->second;
                                         readLock.unlock();
                                         time_point_t nextTimePoint = schedule();
-                                        std::unique_lock<std::mutex> cronLock(cronMutex);
+                                        auto cronLock = LSP_MUTEX_LOCK(cronMutex, "cron");
                                         cronJobs.push(std::make_tuple(cronId, cronJob, nextTimePoint));
                                     }
                                 }
@@ -296,13 +292,9 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto ParallelLspLanguageServer::send(const RequestMessage &request) -> void {
         int requestId = request.id.integer();
-        {
-            std::unique_lock<std::mutex> writeLock(requestMutex);
-            requestsById.emplace(requestId, request);
-        }
         BaseLspLanguageServer::send(request);
         {
-            std::unique_lock<std::shared_mutex> retryLock(retryMutex);
+            auto retryLock = LSP_WRITE_LOCK(retryMutex, "retry-requests");
             retryAttempts.push(
                 std::make_pair(
                     std::make_tuple(
@@ -352,10 +344,10 @@ namespace LCompilers::LanguageServerProtocol {
         bool changed = true;
         while (!_exit && *taskIsRunning && changed) {
             changed = false;
-            std::shared_lock<std::shared_mutex> readLock(recentMutex);
+            auto readLock = LSP_READ_LOCK(recentMutex, "recent-requests");
             if ((recentRequests.size() > 0) && (recentRequests.top().second < now())) {
                 readLock.unlock();
-                std::unique_lock<std::shared_mutex> writeLock(recentMutex);
+                auto writeLock = LSP_WRITE_LOCK(recentMutex, "recent-requests");
                 if (recentRequests.size() > 0) {
                     const TTLRecord<std::string> &record = recentRequests.top();
                     if (record.second < now()) {
@@ -363,7 +355,7 @@ namespace LCompilers::LanguageServerProtocol {
                         recentRequests.pop();
                         writeLock.unlock();
                         {
-                            std::unique_lock<std::mutex> requestLock(activeMutex);
+                            auto requestLock = LSP_MUTEX_LOCK(activeMutex, "active-requests");
                             auto iter = activeRequests.find(requestId);
                             if (iter != activeRequests.end()) {
                                 activeRequests.erase(iter);  // timeout
@@ -393,10 +385,10 @@ namespace LCompilers::LanguageServerProtocol {
         bool changed = true;
         while (!_exit && *taskIsRunning && changed) {
             changed = false;
-            std::shared_lock<std::shared_mutex> readLock(retryMutex);
+            auto readLock = LSP_READ_LOCK(retryMutex, "retry-requests");
             if ((retryAttempts.size() > 0) && retryAttempts.top().second < now()) {
                 readLock.unlock();
-                std::unique_lock<std::shared_mutex> writeLock(retryMutex);
+                auto writeLock = LSP_WRITE_LOCK(retryMutex, "retry-requests");
                 const TTLRecord<RetryRecord> &record = retryAttempts.top();
                 if (record.second < now()) {
                     int requestId = std::get<0>(record.first);
@@ -425,13 +417,13 @@ namespace LCompilers::LanguageServerProtocol {
                             std::shared_ptr<std::atomic_bool> taskIsRunning
                         ) {
                             if (*taskIsRunning) {
-                                std::unique_lock<std::mutex> requestLock(requestMutex);
+                                auto requestLock = LSP_READ_LOCK(requestMutex, "requests");
                                 auto iter = requestsById.find(requestId);
                                 if (iter != requestsById.end()) {
-                                    const RequestMessage &request = iter->second;
-                                    LspLanguageServer::send(request);
+                                    std::shared_ptr<RequestMessage> request = iter->second;
                                     requestLock.unlock();
-                                    std::unique_lock<std::shared_mutex> writeLock(retryMutex);
+                                    LspLanguageServer::send(*request);
+                                    auto writeLock = LSP_WRITE_LOCK(retryMutex, "retry-requests");
                                     retryAttempts.push(
                                         std::make_pair(
                                             std::make_tuple(
@@ -469,7 +461,7 @@ namespace LCompilers::LanguageServerProtocol {
         BaseLspLanguageServer::dispatch(response, request);
         std::string requestId = to_string(request.id);
         {
-            std::unique_lock<std::shared_mutex> writeLock(recentMutex);
+            auto writeLock = LSP_WRITE_LOCK(recentMutex, "recent-requests");
             recentRequests.push(std::make_pair(requestId, ttl(RECENT_REQUEST_TIMEOUT)));
         }
     }
@@ -478,7 +470,7 @@ namespace LCompilers::LanguageServerProtocol {
         const DocumentUri &uri,
         const std::string &configSection
     ) -> const std::shared_ptr<LSPAny> {
-        std::shared_lock<std::shared_mutex> readLock(configMutex);
+        auto readLock = LSP_READ_LOCK(configMutex, "config:" + uri);
         auto configIter = configsByUri.find(uri);
         if (configIter != configsByUri.end()) {
             return configIter->second;
@@ -493,7 +485,7 @@ namespace LCompilers::LanguageServerProtocol {
         ConfigurationParams params;
         params.items.push_back(std::move(item));
 
-        std::unique_lock<std::shared_mutex> writeLock(configMutex);
+        auto writeLock = LSP_WRITE_LOCK(configMutex, "config:" + uri);
         configIter = configsByUri.find(uri);
         if (configIter != configsByUri.end()) {
             return configIter->second;
@@ -511,8 +503,8 @@ namespace LCompilers::LanguageServerProtocol {
             {
                 auto &pairs = pendingConfigsById.emplace(
                     std::piecewise_construct,
-                    std::make_tuple(requestId),
-                    std::make_tuple()
+                    std::forward_as_tuple(requestId),
+                    std::forward_as_tuple()
                 ).first->second;
                 auto &pair = pairs.emplace_back();
                 pair.first = uri;
@@ -520,8 +512,8 @@ namespace LCompilers::LanguageServerProtocol {
             }
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
-                std::make_tuple(uri),
-                std::make_tuple(requestId, future)
+                std::forward_as_tuple(uri),
+                std::forward_as_tuple(requestId, future)
             );
         }
 

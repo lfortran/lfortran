@@ -246,8 +246,8 @@ namespace LCompilers::LanguageServerProtocol {
             {
                 auto &pairs = pendingConfigsById.emplace(
                     std::piecewise_construct,
-                    std::make_tuple(requestId),
-                    std::make_tuple()
+                    std::forward_as_tuple(requestId),
+                    std::forward_as_tuple()
                 ).first->second;
                 auto &pair = pairs.emplace_back();
                 pair.first = uri;
@@ -255,8 +255,8 @@ namespace LCompilers::LanguageServerProtocol {
             }
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
-                std::make_tuple(uri),
-                std::make_tuple(requestId, future)
+                std::forward_as_tuple(uri),
+                std::forward_as_tuple(requestId, future)
             );
         }
 
