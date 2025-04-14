@@ -59,4 +59,6 @@ if [[ $WIN != "1" ]]; then
     # re-enable it if needed:
     # pytest -vv --showlocals --full-trace --capture=no --timeout=5 tests/server
 #    pytest -vv --showlocals --capture=no --timeout=5 tests/server
+    pytest tests/server/tests/test_lsp.py
+    pytest tests/server/tests/test_lsp.py -s
 fi
