@@ -153,7 +153,7 @@ namespace LCompilers::LLanguageServer {
         if (task_info(
                 mach_task_self(),
                 TASK_BASIC_INFO,
-                static_cast<task_info_t>(&info),
+                (task_info_t)&info,
                 &count
             ) == KERN_SUCCESS
         ) {
