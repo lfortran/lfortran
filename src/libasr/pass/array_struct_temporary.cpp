@@ -2240,8 +2240,9 @@ class TransformVariableInitialiser:
                 result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                     al, loc, target, value)));
             } else {
-                result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-                    al, loc, target, value, nullptr, exprs_with_target)));
+                if (!(xx.m_intent == ASR::intentType::In && xx.m_presence == ASR::presenceType::Optional))
+                    result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                        al, loc, target, value, nullptr, exprs_with_target)));
             }
             xx.m_symbolic_value = nullptr;
             xx.m_value = nullptr;
