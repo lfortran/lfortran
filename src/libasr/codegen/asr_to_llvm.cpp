@@ -8271,7 +8271,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             return ;
         }
 
-        llvm::Value *unit_val, *iostat, *read_size;
+        llvm::Value *unit_val, *iostat, *read_size, *advance;
         bool is_string = false;
         if (x.m_unit == nullptr) {
             // Read from stdin
@@ -8298,6 +8298,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         llvm::Type::getInt32Ty(context));
         }
 
+        if (x.m_advance) {
+            this->visit_expr_wrapper(x.m_advance, true);
+            advance = tmp;
+        } else {
+            advance = builder->CreateGlobalStringPtr("yes");
+        }
+
         if (x.m_size) {
             int ptr_copy = ptr_loads;
             ptr_loads = 0;
@@ -8314,6 +8321,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             args.push_back(unit_val);
             args.push_back(iostat);
             args.push_back(read_size);
+            args.push_back(advance);
             this->visit_expr_wrapper(x.m_fmt, true);
             args.push_back(tmp);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values)));
@@ -8332,7 +8340,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             llvm::Type::getInt32Ty(context),
                             llvm::Type::getInt32Ty(context)->getPointerTo(),
                             llvm::Type::getInt32Ty(context)->getPointerTo(),
-                            character_type,
+                            character_type, character_type,
                             llvm::Type::getInt32Ty(context)
                         }, true);
                 fn = llvm::Function::Create(function_type,
