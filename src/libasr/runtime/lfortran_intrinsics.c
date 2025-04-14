@@ -3167,10 +3167,10 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
 }
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id) {
-    *unit_file_bin = false;
+    if (unit_file_bin) *unit_file_bin = false;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
-            *unit_file_bin = unit_to_file[i].unit_file_bin;
+            if (unit_file_bin) *unit_file_bin = unit_to_file[i].unit_file_bin;
             if (access_id) *access_id = unit_to_file[i].access_id;
             return unit_to_file[i].filep;
         }
@@ -3230,6 +3230,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         access = "sequential";
     }
     bool file_exists[1] = {false};
+    FILE *already_open = get_file_pointer_from_unit(unit_num, NULL, NULL);
 
     size_t len = strlen(f_name);
     if (*(f_name + len - 1) == ' ') {
@@ -3305,7 +3306,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     } else if (streql(status, "replace") || streql(status, "scratch")) {
         access_mode = "w+";
     } else if (streql(status, "unknown")) {
-        if (!*file_exists) {
+        if (!*file_exists && !already_open) {
             FILE *fd = fopen(f_name, "w");
             if (fd) {
                 fclose(fd);
@@ -3389,6 +3390,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     }
 
     if (iostat == NULL || (*iostat == 0)) {
+        if (already_open) {
+            return (int64_t) already_open;
+        }
         FILE *fd = fopen(f_name, access_mode);
         if (!fd && iostat == NULL)
         {
