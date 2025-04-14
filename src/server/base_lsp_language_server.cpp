@@ -1,3 +1,4 @@
+#include "server/process_usage.h"
 #include <cctype>
 #include <chrono>
 #include <exception>
@@ -23,6 +24,7 @@
 #include <server/lsp_language_server.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
+#include <server/process_usage.h>
 
 namespace LCompilers::LanguageServerProtocol {
     using namespace std::chrono_literals;
@@ -199,18 +201,79 @@ namespace LCompilers::LanguageServerProtocol {
         sendCancelRequest(params);
     }
 
+    auto BaseLspLanguageServer::collectMessageQueueTelemetry(
+        const std::string &key,
+        ls::MessageQueue &queue
+    ) -> LSPAny {
+        LSPObject data;
+        data.emplace("name", std::make_unique<LSPAny>(toAny(queue.name())));
+        data.emplace("size", std::make_unique<LSPAny>(toAny(queue.size())));
+        data.emplace("seen", std::make_unique<LSPAny>(toAny(queue.seen())));
+        LSPObject event;
+        event.emplace("key", std::make_unique<LSPAny>(toAny(key)));
+        event.emplace("value", std::make_unique<LSPAny>(toAny(data)));
+        LSPAny any;
+        any = std::move(event);
+        return any;
+    }
+
     auto BaseLspLanguageServer::collectTelemetry() -> LSPAny {
-        LSPArray array;
+        LSPArray events;
         {
-            LSPObject object;
-            object.emplace(
+            LSPObject event;
+            event.emplace("key", std::make_unique<LSPAny>(toAny("timestamp")));
+            event.emplace(
+                "value",
+                std::make_unique<LSPAny>(toAny(std::chrono::system_clock::now()))
+            );
+            std::unique_ptr<LSPAny> &any =
+                events.emplace_back(std::make_unique<LSPAny>());
+            (*any) = std::move(event);
+        }
+        {
+            ls::ProcessUsage usage = ls::ProcessUsage::sample();
+            LSPObject data;
+            data.emplace(
+                "memoryUtilization",
+                std::make_unique<LSPAny>(toAny(usage.memoryUtilization))
+            );
+            data.emplace(
+                "cpuUtilization",
+                std::make_unique<LSPAny>(toAny(usage.cpuUtilization))
+            );
+            LSPObject event;
+            event.emplace("key", std::make_unique<LSPAny>(toAny("processUsage")));
+            event.emplace("value", std::make_unique<LSPAny>(toAny(data)));
+            std::unique_ptr<LSPAny> &any =
+                events.emplace_back(std::make_unique<LSPAny>());
+            (*any) = std::move(event);
+        }
+        events.emplace_back(
+            std::make_unique<LSPAny>(
+                collectMessageQueueTelemetry(
+                    "incomingMessages",
+                    incomingMessages
+                )
+            )
+        );
+        events.emplace_back(
+            std::make_unique<LSPAny>(
+                collectMessageQueueTelemetry(
+                    "outgoingMessages",
+                    outgoingMessages
+                )
+            )
+        );
+        {
+            LSPObject event;
+            event.emplace(
                 "key",
                 std::make_unique<LSPAny>(
                     transformer.stringToAny("runningHistogram")
                 )
             );
             auto readLock = LSP_READ_LOCK(runningMutex, "running");
-            object.emplace(
+            event.emplace(
                 "value",
                 std::make_unique<LSPAny>(
                     toAny(runningHistogram)
@@ -218,33 +281,33 @@ namespace LCompilers::LanguageServerProtocol {
             );
             readLock.unlock();
             std::unique_ptr<LSPAny> &any =
-                array.emplace_back(std::make_unique<LSPAny>());
-            (*any) = std::move(object);
+                events.emplace_back(std::make_unique<LSPAny>());
+            (*any) = std::move(event);
         }
 #ifdef DEBUG
         {
-            LSPObject waiting;
-            waiting.emplace(
+            LSPObject waitingEvent;
+            waitingEvent.emplace(
                 "key",
                 std::make_unique<LSPAny>(
                     transformer.stringToAny("waiting")
                 )
             );
-            LSPObject owners;
-            owners.emplace(
+            LSPObject ownerEvent;
+            ownerEvent.emplace(
                 "key",
                 std::make_unique<LSPAny>(
                     transformer.stringToAny("owners")
                 )
             );
             auto ownerLock = LSP_READ_LOCK(ownerMutex, "owner");
-            waiting.emplace(
+            waitingEvent.emplace(
                 "value",
                 std::make_unique<LSPAny>(
                     toAny(waitingById)
                 )
             );
-            owners.emplace(
+            ownerEvent.emplace(
                 "value",
                 std::make_unique<LSPAny>(
                     toAny(ownersById)
@@ -252,15 +315,15 @@ namespace LCompilers::LanguageServerProtocol {
             );
             ownerLock.unlock();
             std::unique_ptr<LSPAny> &waitingAny =
-                array.emplace_back(std::make_unique<LSPAny>());
-            (*waitingAny) = std::move(waiting);
-            std::unique_ptr<LSPAny> &ownersAny =
-                array.emplace_back(std::make_unique<LSPAny>());
-            (*ownersAny) = std::move(owners);
+                events.emplace_back(std::make_unique<LSPAny>());
+            (*waitingAny) = std::move(waitingEvent);
+            std::unique_ptr<LSPAny> &ownerAny =
+                events.emplace_back(std::make_unique<LSPAny>());
+            (*ownerAny) = std::move(ownerEvent);
         }
 #endif // DEBUG
         LSPAny any;
-        any = std::move(array);
+        any = std::move(events);
         return any;
     }
 
@@ -298,6 +361,34 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto BaseLspLanguageServer::toAny(const std::string &value) const -> LSPAny {
         return transformer.stringToAny(value);
+    }
+
+    auto BaseLspLanguageServer::toAny(const LSPAny &any) const -> LSPAny {
+        return any;
+    }
+
+    auto BaseLspLanguageServer::toAny(LSPObject &object) const -> LSPAny {
+        LSPAny any;
+        any = std::move(object);
+        return any;
+    }
+
+    auto BaseLspLanguageServer::toAny(LSPArray &array) const -> LSPAny {
+        LSPAny any;
+        any = std::move(array);
+        return any;
+    }
+
+    auto BaseLspLanguageServer::toAny(std::size_t value) const -> LSPAny {
+        return transformer.uintegerToAny(static_cast<uinteger_t>(value));
+    }
+
+    auto BaseLspLanguageServer::toAny(double value) const -> LSPAny {
+        return transformer.decimalToAny(value);
+    }
+
+    auto BaseLspLanguageServer::toAny(bool value) const -> LSPAny {
+        return transformer.booleanToAny(value);
     }
 
     auto BaseLspLanguageServer::startRunning(

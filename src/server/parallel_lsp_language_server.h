@@ -117,6 +117,12 @@ namespace LCompilers::LanguageServerProtocol {
         // See: https://github.com/lfortran/lfortran/issues/6756
         std::thread cron;
 
+        auto collectThreadPoolTelemetry(
+            const std::string &key,
+            lst::ThreadPool &pool
+        ) -> LSPAny;
+        auto collectTelemetry() -> LSPAny override;
+
         auto expireCaches(
             std::shared_ptr<std::atomic_bool> taskIsRunning
         ) -> void;

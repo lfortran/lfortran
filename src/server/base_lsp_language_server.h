@@ -129,7 +129,11 @@ namespace LCompilers::LanguageServerProtocol {
 
         virtual auto listen() -> void = 0;
 
-        auto collectTelemetry() -> LSPAny;
+        auto collectMessageQueueTelemetry(
+            const std::string &key,
+            ls::MessageQueue &queue
+        ) -> LSPAny;
+        virtual auto collectTelemetry() -> LSPAny;
         auto sendTelemetry() -> void;
 
         template <typename V>
@@ -161,6 +165,12 @@ namespace LCompilers::LanguageServerProtocol {
         auto toAny(int value) const -> LSPAny;
         auto toAny(const time_point_t &timePoint) const -> LSPAny;
         auto toAny(const std::string &value) const -> LSPAny;
+        auto toAny(const LSPAny &any) const -> LSPAny;
+        auto toAny(LSPObject &object) const -> LSPAny;
+        auto toAny(LSPArray &array) const -> LSPAny;
+        auto toAny(std::size_t value) const -> LSPAny;
+        auto toAny(double value) const -> LSPAny;
+        auto toAny(bool value) const -> LSPAny;
 
         auto startRunning(const std::string &taskType) -> RunTracer;
 
