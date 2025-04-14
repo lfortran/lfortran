@@ -1627,7 +1627,7 @@ public:
                             int source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
                             int var_dim_shape = ASRUtils::extract_dim_value_int(var_m_dims[j].m_length);
 
-                            if (source_dim_shape != var_dim_shape) {
+                            if (source_dim_shape != -1 && var_dim_shape != -1 && source_dim_shape != var_dim_shape) {
                                 diag.add(Diagnostic(
                                             "Shape mismatch in `allocate` statement.",
                                             Level::Error, Stage::Semantic, {
