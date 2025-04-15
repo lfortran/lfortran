@@ -73,6 +73,7 @@ namespace LCompilers::LanguageServerProtocol {
       , compilerVersion(compilerVersion)
       , parentProcessId(parentProcessId)
       , lspConfigTransformer(std::move(lspConfigTransformer))
+      , pu(logger)
       , listener([this, &logger, &start, &startChanged, &startMutex]{
           logger.threadName("BaseLspLanguageServer_listener");
           if (!start) {
@@ -228,17 +229,15 @@ namespace LCompilers::LanguageServerProtocol {
                 events.emplace_back(std::make_unique<LSPAny>());
             (*any) = std::move(event);
         }
-        {
+        if (pu.isValid()) {
             LSPObject data;
             data.emplace(
                 "memoryUtilization",
-                std::make_unique<LSPAny>(toAny(ls::memoryUtilization()))
+                std::make_unique<LSPAny>(toAny(pu.memoryUtilization()))
             );
             data.emplace(
                 "cpuUtilization",
-                std::make_unique<LSPAny>(
-                    toAny(cpuUsageTracker.getInstantaneousCpuUsage())
-                )
+                std::make_unique<LSPAny>(toAny(pu.cpuUsage()))
             );
             LSPObject event;
             event.emplace("key", std::make_unique<LSPAny>(toAny("processUsage")));

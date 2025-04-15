@@ -83,6 +83,8 @@ namespace LCompilers::LanguageServerProtocol {
         > documentsByUri;
         std::shared_mutex documentMutex;
 
+        ls::ProcessUsage pu;
+
         // taskType -> threadName -> startTime
         RunningHistogram runningHistogram;
         std::shared_mutex runningMutex;
@@ -111,8 +113,6 @@ namespace LCompilers::LanguageServerProtocol {
 
         std::unordered_map<DocumentUri, std::shared_ptr<lsc::LspConfig>> lspConfigsByUri;
         std::shared_mutex lspConfigMutex;
-
-        ls::CpuUsageTracker cpuUsageTracker;
 
         std::atomic_bool clientSupportsWorkspaceConfigRequests = false;
         std::atomic_bool clientSupportsWorkspaceConfigChangeNotifications = false;
