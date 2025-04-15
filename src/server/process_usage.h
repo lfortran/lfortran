@@ -7,6 +7,13 @@
 namespace LCompilers::LLanguageServer {
     namespace lsl = LCompilers::LLanguageServer::Logging;
 
+    /**
+     * Contains methods for measuring various resources used by the current
+     * process such as memory utilization and CPU usage. Please note that many
+     * of the methods may be platform-specific. No method should raise an
+     * exception but if the current platform is not supported then they will
+     * return stubbed responses and `isValid()` will return `false`.
+     */
     class ProcessUsage {
     public:
         ProcessUsage(lsl::Logger &logger);

@@ -19,6 +19,7 @@
 #include <mach/thread_info.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
+#include <unistd.h>
 // --------------------------------------------------------------------
 // TODO: Uncomment the BSD-related sections and test them on BSD before
 // commiting them to main.
