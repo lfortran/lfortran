@@ -23,15 +23,17 @@
 // TODO: Uncomment the BSD-related sections and test them on BSD before
 // commiting them to main.
 // --------------------------------------------------------------------
-// #elif defined(__FreeBSD__) \
-//     || defined(__OpenBSD__) \
-//     || defined(__NetBSD__) \
-//     || defined(__DragonFly__) \
-//     || defined(__BSD__)
-// #include <sys/resource.h>
-// #include <sys/sysctl.h>
-// #include <sys/types.h>
-// #include <unistd.h>
+/*
+#elif defined(__FreeBSD__) \
+    || defined(__OpenBSD__) \
+    || defined(__NetBSD__) \
+    || defined(__DragonFly__) \
+    || defined(__BSD__)
+#include <sys/resource.h>
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#include <unistd.h>
+*/
 #endif
 
 #include <server/process_usage.h>
@@ -75,19 +77,21 @@ namespace LCompilers::LLanguageServer {
             return info.resident_size;
         }
         logger.error() << "Failed to get task information" << std::endl;
-// #elif defined(__FreeBSD__) \
-//     || defined(__OpenBSD__) \
-//     || defined(__NetBSD__) \
-//     || defined(__DragonFly__) \
-//     || defined(__BSD__)
-//         int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()};
-//         struct kinfo_proc kp;
-//         size_t len = sizeof(kp);
-//         if (sysctl(mib, 4, &kp, &len, NULL, 0) == 0) {
-//             return kp.kp_vm_rssize * getpagesize();
-//         }
-//         logger.error() << "Failed to get process information" << std::endl;
-// #else
+/*
+#elif defined(__FreeBSD__) \
+    || defined(__OpenBSD__) \
+    || defined(__NetBSD__) \
+    || defined(__DragonFly__) \
+    || defined(__BSD__)
+        int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()};
+        struct kinfo_proc kp;
+        size_t len = sizeof(kp);
+        if (sysctl(mib, 4, &kp, &len, NULL, 0) == 0) {
+            return kp.kp_vm_rssize * getpagesize();
+        }
+        logger.error() << "Failed to get process information" << std::endl;
+*/
+#else
         logger.error() << "Operating system is not supported" << std::endl;
 #endif
         m_isValid = false;
@@ -119,20 +123,22 @@ namespace LCompilers::LLanguageServer {
                 - (boottime.tv_sec + boottime.tv_usec / 1'000'000.0);
         }
         logger.error() << "Failed to get system uptime" << std::endl;
-// #elif defined(__FreeBSD__) \
-//     || defined(__OpenBSD__) \
-//     || defined(__NetBSD__) \
-//     || defined(__DragonFly__) \
-//     || defined(__BSD__)
-//         struct timeval boottime;
-//         size_t len = sizeof(boottime);
-//         int mib[2] = { CTL_KERN, KERN_BOOTTIME };
-//         if (sysctl(mib, 2, &boottime, &len, nullptr, 0) == 0) {
-//             auto now = std::chrono::system_clock::now().time_since_epoch();
-//             return std::chrono::duration<double>(now).count()
-//                 - (boottime.tv_sec + boottime.tv_usec / 1'000'000.0);
-//         }
-//         logger.error() << "Failed to get system uptime" << std::endl;
+/*
+#elif defined(__FreeBSD__) \
+    || defined(__OpenBSD__) \
+    || defined(__NetBSD__) \
+    || defined(__DragonFly__) \
+    || defined(__BSD__)
+        struct timeval boottime;
+        size_t len = sizeof(boottime);
+        int mib[2] = { CTL_KERN, KERN_BOOTTIME };
+        if (sysctl(mib, 2, &boottime, &len, nullptr, 0) == 0) {
+            auto now = std::chrono::system_clock::now().time_since_epoch();
+            return std::chrono::duration<double>(now).count()
+                - (boottime.tv_sec + boottime.tv_usec / 1'000'000.0);
+        }
+        logger.error() << "Failed to get system uptime" << std::endl;
+*/
 #else
         logger.error() << "Operating system is not supported" << std::endl;
 #endif
@@ -211,18 +217,20 @@ namespace LCompilers::LLanguageServer {
             return totalCpuTime;
         }
         logger.error() << "Failed to get thread list" << std::endl;
-// #elif defined(__FreeBSD__) \
-//     || defined(__OpenBSD__) \
-//     || defined(__NetBSD__) \
-//     || defined(__DragonFly__) \
-//     || defined(__BSD__)
-//         struct rusage usage;
-//         if (getrusage(RUSAGE_SELF, &usage) == 0) {
-//             // Total CPU time in seconds:
-//             return (usage.ru_utime.tv_sec + usage.ru_utime.tv_usec / 1'000'000.0)
-//                 + (usage.ru_stime.tv_sec + usage.ru_stime.tv_usec / 1'000'000.0);
-//         }
-//         logger.error() << "Failed to get rusage" << std::endl;
+/*
+#elif defined(__FreeBSD__) \
+    || defined(__OpenBSD__) \
+    || defined(__NetBSD__) \
+    || defined(__DragonFly__) \
+    || defined(__BSD__)
+        struct rusage usage;
+        if (getrusage(RUSAGE_SELF, &usage) == 0) {
+            // Total CPU time in seconds:
+            return (usage.ru_utime.tv_sec + usage.ru_utime.tv_usec / 1'000'000.0)
+                + (usage.ru_stime.tv_sec + usage.ru_stime.tv_usec / 1'000'000.0);
+        }
+        logger.error() << "Failed to get rusage" << std::endl;
+*/
 #else
         logger.error() << "Operating system is not supported" << std::endl;
 #endif
@@ -244,17 +252,19 @@ namespace LCompilers::LLanguageServer {
             return cores;
         }
         logger.error() << "Failed to get number of CPU cores" << std::endl;
-// #elif defined(__FreeBSD__) \
-//     || defined(__OpenBSD__) \
-//     || defined(__NetBSD__) \
-//     || defined(__DragonFly__) \
-//     || defined(__BSD__)
-//         int cores;
-//         size_t len = sizeof(cores);
-//         if (sysctlbyname("hw.ncpu", &cores, &len, nullptr, 0) == 0) {
-//             return cores;
-//         }
-//         logger.error() << "Failed to get number of CPU cores" << std::endl;
+/*
+#elif defined(__FreeBSD__) \
+    || defined(__OpenBSD__) \
+    || defined(__NetBSD__) \
+    || defined(__DragonFly__) \
+    || defined(__BSD__)
+        int cores;
+        size_t len = sizeof(cores);
+        if (sysctlbyname("hw.ncpu", &cores, &len, nullptr, 0) == 0) {
+            return cores;
+        }
+        logger.error() << "Failed to get number of CPU cores" << std::endl;
+*/
 #else
         logger.error() << "Operating system is not supported" << std::endl;
 #endif
