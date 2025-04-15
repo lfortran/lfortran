@@ -270,7 +270,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Interactive
                                         Interface
                                         "GOMP_atomic_end"
                                         .false.
@@ -301,7 +301,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Interactive
                                         Interface
                                         "GOMP_atomic_start"
                                         .false.
@@ -332,7 +332,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Interactive
                                         Interface
                                         "GOMP_barrier"
                                         .false.
@@ -363,7 +363,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Interactive
                                         Interface
                                         "GOMP_critical_end"
                                         .false.
@@ -394,7 +394,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Interactive
                                         Interface
                                         "GOMP_critical_start"
                                         .false.
@@ -499,7 +499,7 @@
                                         (Integer 4)
                                         (Integer 4)]
                                         ()
-                                        BindC
+                                        Interactive
                                         Interface
                                         "GOMP_parallel"
                                         .false.
@@ -550,7 +550,7 @@
                                     (FunctionType
                                         []
                                         (Integer 4)
-                                        BindC
+                                        Interactive
                                         Interface
                                         "omp_get_max_threads"
                                         .false.
@@ -598,7 +598,7 @@
                                     (FunctionType
                                         []
                                         (Integer 4)
-                                        BindC
+                                        Interactive
                                         Interface
                                         "omp_get_num_procs"
                                         .false.
@@ -646,7 +646,7 @@
                                     (FunctionType
                                         []
                                         (Integer 4)
-                                        BindC
+                                        Interactive
                                         Interface
                                         "omp_get_thread_num"
                                         .false.
@@ -694,7 +694,7 @@
                                     (FunctionType
                                         []
                                         (Real 8)
-                                        BindC
+                                        Interactive
                                         Interface
                                         "omp_get_wtime"
                                         .false.
@@ -742,7 +742,7 @@
                                     (FunctionType
                                         [(Integer 4)]
                                         ()
-                                        BindC
+                                        Interactive
                                         Interface
                                         "omp_set_num_threads"
                                         .false.

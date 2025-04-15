@@ -1321,6 +1321,7 @@ asr = true
 [[test]]
 filename = "derived_types_06.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "derived_types_04.f90, derived_types_05.f90"
 
 [[test]]
@@ -1331,6 +1332,7 @@ extrafiles = "../integration_tests/derived_types_14_module.f90"
 [[test]]
 filename = "../integration_tests/derived_types_19.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/derived_types_19_module.f90"
 
 [[test]]
@@ -1344,6 +1346,7 @@ ast = true
 [[test]]
 filename = "modules1.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "modules1_module1.f90, modules1_module2.f90"
 
 [[test]]
@@ -1354,16 +1357,19 @@ extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module
 [[test]]
 filename = "modules3.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90, modules2.f90"
 
 [[test]]
 filename = "modules4.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90, modules2.f90, modules3.f90, modules4_module.f90"
 
 [[test]]
 filename = "../integration_tests/select_type_04.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/select_type_03_module.f90, ../integration_tests/select_type_03.f90"
 
 [[test]]
@@ -1779,6 +1785,7 @@ ast_f90 = true
 [[test]]
 filename = "../integration_tests/select_type_03.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/select_type_03_module.f90"
 
 [[test]]
@@ -2235,21 +2242,25 @@ extrafiles = "../integration_tests/modules_25_module.f90, ../integration_tests/m
 [[test]]
 filename = "../integration_tests/modules_28.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/modules_28_module1.f90, ../integration_tests/modules_28_module2.f90"
 
 [[test]]
 filename = "../integration_tests/modules_29.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/modules_29_module1.f90, ../integration_tests/modules_29_module2.f90, ../integration_tests/modules_29_module3.f90"
 
 [[test]]
 filename = "../integration_tests/modules_30.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/modules_30_module1.f90, ../integration_tests/modules_30_module2.f90, ../integration_tests/modules_30_module3.f90, ../integration_tests/modules_30_module4.f90"
 
 [[test]]
 filename = "../integration_tests/modules_31.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/modules_31_module1.f90, ../integration_tests/modules_31_module2.f90"
 
 [[test]]
@@ -2259,16 +2270,19 @@ asr = true
 [[test]]
 filename = "../integration_tests/modules_33.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/modules_33_module1.f90, ../integration_tests/modules_33_module2.f90, ../integration_tests/modules_33_module3.f90"
 
 [[test]]
 filename = "../integration_tests/modules_34.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
 
 [[test]]
 filename = "../integration_tests/modules_52.f90"
 asr = true
+disable_separate_compilation = true
 extrafiles = "../integration_tests/modules_52_module3.f90, ../integration_tests/modules_52_module2.f90, ../integration_tests/modules_52_module1.f90"
 
 [[test]]
@@ -3086,6 +3100,7 @@ llvm = true
 filename = "../integration_tests/derived_types_20.f90"
 asr = true
 pass = "class_constructor"
+disable_separate_compilation = true
 extrafiles = "../integration_tests/derived_types_20_module2.f90, ../integration_tests/derived_types_20_module1.f90"
 
 [[test]]

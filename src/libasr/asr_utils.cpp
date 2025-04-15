@@ -326,7 +326,12 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     }
     ASR::Module_t *mod2 = extract_module(*mod1);
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
-    if ( separate_compilation ) {
+    bool is_intrinsic = startswith(module_name, "lfortran_intrinsic");
+    if (!(is_intrinsic
+        ||module_name == "iso_c_binding"
+        ||module_name == "iso_fortran_env"
+        ||module_name == "ieee_arithmetic"
+        ||module_name == "custom") && separate_compilation) {
         mod2->m_symtab->mark_all_variables_external(al);
     }
     mod2->m_symtab->parent = symtab;
@@ -373,7 +378,11 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 ASR::Module_t *mod2 = extract_module(*mod1);
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
-                if ( separate_compilation ) {
+                if (!(is_intrinsic
+                    ||item == "iso_c_binding"
+                    ||item == "iso_fortran_env"
+                    ||item == "ieee_arithmetic"
+                    ||item == "custom") && separate_compilation) {
                     mod2->m_symtab->mark_all_variables_external(al);
                 }
                 mod2->m_loaded_from_mod = true;
