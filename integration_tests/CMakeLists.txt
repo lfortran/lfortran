@@ -1609,6 +1609,7 @@ RUN(NAME file_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --cpp)
 RUN(NAME file_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
