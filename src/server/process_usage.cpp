@@ -15,16 +15,18 @@
 #include <sys/times.h>
 #elif defined(__APPLE__)
 #include <mach/mach.h>
-#include <sys/sysctl.h>
+#include <mach/task.h>
+#include <mach/thread_info.h>
 #include <sys/resource.h>
+#include <sys/sysctl.h>
 #endif
 
 #include <server/process_usage.h>
 
 namespace LCompilers::LLanguageServer {
 
-    auto ProcessUsage::sample() -> ProcessUsage {
-        ProcessUsage usage = {0, 0.0};
+    auto memoryUtilization() -> std::size_t {
+        std::size_t numBytes = 0;
 
 #if defined(_WIN32)
         // --- Windows Memory ---
@@ -32,52 +34,7 @@ namespace LCompilers::LLanguageServer {
         mem_info.cb = sizeof(mem_info);
         HANDLE process = GetCurrentProcess();
         if (GetProcessMemoryInfo(process, &mem_info, sizeof(mem_info))) {
-            usage.memoryUtilization = mem_info.WorkingSetSize;
-        }
-
-        // --- Windows CPU Usage ---
-        FILETIME creation_time, exit_time, kernel_time1, user_time1;
-        if (GetProcessTimes(
-                process,
-                &creation_time,
-                &exit_time,
-                &kernel_time1,
-                &user_time1
-            )
-        ) {
-            uint64_t kernel1 =
-                (static_cast<uint64_t>(kernel_time1.dwHighDateTime) << 32)
-                | kernel_time1.dwLowDateTime;
-            uint64_t user1 =
-                (static_cast<uint64_t>(user_time1.dwHighDateTime) << 32)
-                | user_time1.dwLowDateTime;
-            uint64_t cpu1 = kernel1 + user1;
-
-            // Sleep to measure difference
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            FILETIME kernel_time2, user_time2;
-            if (GetProcessTimes(
-                    process,
-                    &creation_time,
-                    &exit_time,
-                    &kernel_time2,
-                    &user_time2
-                )
-            ) {
-                uint64_t kernel2 =
-                    (static_cast<uint64_t>(kernel_time2.dwHighDateTime) << 32)
-                    | kernel_time2.dwLowDateTime;
-                uint64_t user2 =
-                    (static_cast<uint64_t>(user_time2.dwHighDateTime) << 32)
-                    | user_time2.dwLowDateTime;
-                uint64_t cpu2 = kernel2 + user2;
-
-                uint64_t cpu_diff = cpu2 - cpu1;
-                // Convert to seconds (FILETIME is in 100-nanosecond intervals)
-                double seconds = 0.1; // 100ms
-                usage.cpuUtilization = (cpu_diff / (seconds * 10000000.0)) * 100.0;
-            }
+            numBytes = mem_info.WorkingSetSize;
         }
 
 #elif defined(__linux__)
@@ -92,53 +49,12 @@ namespace LCompilers::LLanguageServer {
                 if (std::getline(iss, key, ':')
                     && std::getline(iss >> std::ws, value)) {
                     if (key == "VmRSS") {
-                        usage.memoryUtilization = std::stoull(value) * 1024; // Convert kB to bytes
+                        numBytes = std::stoull(value) * 1024; // Convert kB to bytes
                         break;
                     }
                 }
             }
             status.close();
-        }
-
-        // --- Linux CPU Usage ---
-        struct tms time1, time2;
-        clock_t ticks1 = times(&time1);
-        std::ifstream stat("/proc/self/stat");
-        if (stat.is_open()) {
-            std::string line;
-            std::getline(stat, line);
-            std::istringstream iss(line);
-            std::string temp;
-            uint64_t utime1, stime1;
-            // Skip first 13 fields to reach utime (14) and stime (15)
-            for (int i = 0; i < 13; ++i) iss >> temp;
-            iss >> utime1 >> stime1;
-            uint64_t cpu1 = utime1 + stime1;
-            stat.close();
-
-            // Sleep to measure difference
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            stat.open("/proc/self/stat");
-            if (stat.is_open()) {
-                std::getline(stat, line);
-                iss.str(line);
-                iss.clear();
-                for (int i = 0; i < 13; ++i) iss >> temp;
-                uint64_t utime2, stime2;
-                iss >> utime2 >> stime2;
-                uint64_t cpu2 = utime2 + stime2;
-
-                ticks1 = times(&time1);
-                clock_t ticks2 = times(&time2);
-                if (ticks2 > ticks1) {
-                    uint64_t cpu_diff = cpu2 - cpu1;
-                    double seconds = (ticks2 - ticks1)
-                        / static_cast<double>(sysconf(_SC_CLK_TCK));
-                    usage.cpuUtilization = (cpu_diff / seconds) * 100.0;
-                }
-                stat.close();
-            }
         }
 
 #elif defined(__APPLE__)
@@ -157,30 +73,154 @@ namespace LCompilers::LLanguageServer {
                 &count
             ) == KERN_SUCCESS
         ) {
-            usage.memoryUtilization = info.resident_size;
-        }
-
-        // --- macOS CPU Usage ---
-        struct rusage usage1, usage2;
-        if (getrusage(RUSAGE_SELF, &usage1) == 0) {
-            double cpu1 =
-                usage1.ru_utime.tv_sec + usage1.ru_stime.tv_sec
-                + (usage1.ru_utime.tv_usec + usage1.ru_stime.tv_usec) / 1000000.0;
-
-            // Sleep to measure difference
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            if (getrusage(RUSAGE_SELF, &usage2) == 0) {
-                double cpu2 =
-                    usage2.ru_utime.tv_sec + usage2.ru_stime.tv_sec
-                    + (usage2.ru_utime.tv_usec + usage2.ru_stime.tv_usec) / 1000000.0;
-                double seconds = 0.1; // 100ms
-                usage.cpuUtilization = ((cpu2 - cpu1) / seconds) * 100.0;
-            }
+            numBytes = info.resident_size;
         }
 #endif
 
-        return usage;
+        return numBytes;
+    }
+
+    CpuUsageTracker::CpuUsageTracker()
+        : m_lastCpuTime(0.0)
+        , m_lastUptime(0.0)
+    {
+        m_numCores = getNumCores();
+        m_lastCpuTime = getCpuTime();
+        m_lastUptime = getUptime();
+    }
+
+    double CpuUsageTracker::getUptime() {
+#ifdef __linux__
+        std::ifstream file("/proc/uptime");
+        if (!file) throw std::runtime_error("Failed to open /proc/uptime");
+        double uptime;
+        file >> uptime;
+        return uptime;
+#elif defined(_WIN32)
+        FILETIME system_time;
+        GetSystemTimeAsFileTime(&system_time);
+        ULARGE_INTEGER time;
+        time.LowPart = system_time.dwLowDateTime;
+        time.HighPart = system_time.dwHighDateTime;
+        return time.QuadPart / 10'000'000.0; // Convert 100-nanosecond units to seconds
+#else // macOS
+        struct timeval boottime;
+        size_t len = sizeof(boottime);
+        if (sysctlbyname("kern.boottime", &boottime, &len, nullptr, 0) != 0) {
+            throw std::runtime_error("Failed to get system uptime");
+        }
+        auto now = std::chrono::system_clock::now().time_since_epoch();
+        return std::chrono::duration<double>(now).count()
+            - (boottime.tv_sec + boottime.tv_usec / 1'000'000.0);
+#endif
+    }
+
+    double CpuUsageTracker::getCpuTime() {
+#ifdef __linux__
+        std::ifstream file("/proc/self/stat");
+        if (!file) throw std::runtime_error("Failed to open /proc/self/stat");
+        std::string line;
+        std::getline(file, line);
+        std::istringstream iss(line);
+        std::string token;
+        for (int i = 0; i < 13; ++i) iss >> token;
+        unsigned long utime, stime;
+        iss >> utime >> stime;
+        return (utime + stime) / (double)sysconf(_SC_CLK_TCK); // Convert ticks to seconds
+#elif defined(_WIN32)
+        FILETIME creationTime, exitTime, kernelTime, userTime;
+        if (!GetProcessTimes(
+                GetCurrentProcess(),
+                &creationTime,
+                &exitTime,
+                &kernelTime,
+                &userTime
+            )
+        ) {
+            throw std::runtime_error("Failed to get process times");
+        }
+        ULARGE_INTEGER kernel, user;
+        kernel.LowPart = kernelTime.dwLowDateTime;
+        kernel.HighPart = kernelTime.dwHighDateTime;
+        user.LowPart = userTime.dwLowDateTime;
+        user.HighPart = userTime.dwHighDateTime;
+        // Convert 100-nanosecond units to seconds:
+        return (kernel.QuadPart + user.QuadPart) / 10'000'000.0;
+#else // macOS
+        task_t task = mach_task_self();
+        thread_act_array_t threadList;
+        mach_msg_type_number_t threadCount;
+        kern_return_t kr = task_threads(task, &threadList, &threadCount);
+        if (kr != KERN_SUCCESS) {
+            throw std::runtime_error("Failed to get thread list");
+        }
+
+        double totalCpuTime = 0.0;
+        for (mach_msg_type_number_t i = 0; i < threadCount; ++i) {
+            thread_basic_info_data_t threadInfo;
+            mach_msg_type_number_t threadInfoCount = THREAD_BASIC_INFO_COUNT;
+            kr = thread_info(
+                threadList[i],
+                THREAD_BASIC_INFO,
+                (thread_info_t)&threadInfo,
+                &threadInfoCount
+            );
+            if (kr == KERN_SUCCESS && !(threadInfo.flags & TH_FLAGS_IDLE)) {
+                totalCpuTime += threadInfo.user_time.seconds
+                    + (threadInfo.user_time.microseconds / 1'000'000.0)
+                    + threadInfo.system_time.seconds
+                    + (threadInfo.system_time.microseconds / 1'000'000.0);
+            }
+        }
+
+        for (mach_msg_type_number_t i = 0; i < threadCount; ++i) {
+            mach_port_deallocate(mach_task_self(), threadList[i]);
+        }
+
+        vm_deallocate(
+            mach_task_self(),
+            (vm_address_t)threadList,
+            threadCount * sizeof(thread_act_t)
+        );
+
+        return totalCpuTime;
+#endif
+    }
+
+    int CpuUsageTracker::getNumCores() {
+#ifdef __linux__
+        return sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_WIN32)
+        SYSTEM_INFO sysinfo;
+        GetSystemInfo(&sysinfo);
+        return sysinfo.dwNumberOfProcessors;
+#else // macOS
+        int cores;
+        size_t len = sizeof(cores);
+        if (sysctlbyname("hw.ncpu", &cores, &len, nullptr, 0) != 0) {
+            throw std::runtime_error("Failed to get number of CPU cores");
+        }
+        return cores;
+#endif
+    }
+
+    double CpuUsageTracker::getInstantaneousCpuUsage() {
+        double currentCpuTime = getCpuTime();
+        double currentUptime = getUptime();
+
+        double cpuTimeDiff = currentCpuTime - m_lastCpuTime;
+        double uptimeDiff = currentUptime - m_lastUptime;
+
+        if (uptimeDiff < 0.001) {
+            return 0.0; // Too short an interval
+        }
+
+        double cpuUsage = (cpuTimeDiff / uptimeDiff) * 100.0 / m_numCores;
+
+        m_lastCpuTime = currentCpuTime;
+        m_lastUptime = currentUptime;
+
+        return (cpuUsage > 0.0) ? cpuUsage : 0.0; // Ensure non-negative
     }
 
 } // namespace LCompilers::LLanguageServer

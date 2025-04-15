@@ -1,4 +1,3 @@
-#include "server/process_usage.h"
 #include <cctype>
 #include <chrono>
 #include <exception>
@@ -24,7 +23,6 @@
 #include <server/lsp_language_server.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
-#include <server/process_usage.h>
 
 namespace LCompilers::LanguageServerProtocol {
     using namespace std::chrono_literals;
@@ -231,15 +229,16 @@ namespace LCompilers::LanguageServerProtocol {
             (*any) = std::move(event);
         }
         {
-            ls::ProcessUsage usage = ls::ProcessUsage::sample();
             LSPObject data;
             data.emplace(
                 "memoryUtilization",
-                std::make_unique<LSPAny>(toAny(usage.memoryUtilization))
+                std::make_unique<LSPAny>(toAny(ls::memoryUtilization()))
             );
             data.emplace(
                 "cpuUtilization",
-                std::make_unique<LSPAny>(toAny(usage.cpuUtilization))
+                std::make_unique<LSPAny>(
+                    toAny(cpuUsageTracker.getInstantaneousCpuUsage())
+                )
             );
             LSPObject event;
             event.emplace("key", std::make_unique<LSPAny>(toAny("processUsage")));

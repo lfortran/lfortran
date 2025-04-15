@@ -4,10 +4,20 @@
 
 namespace LCompilers::LLanguageServer {
 
-    struct ProcessUsage {
-        std::size_t memoryUtilization;  // Resident memory usage in bytes
-        double cpuUtilization;          // CPU usage as percentage
-        static auto sample() -> ProcessUsage;
-    };
+    auto memoryUtilization() -> std::size_t;
+
+    class CpuUsageTracker {
+    public:
+        CpuUsageTracker();
+        double getInstantaneousCpuUsage();
+    private:
+        double m_lastCpuTime;
+        double m_lastUptime;
+        int m_numCores;
+
+        double getUptime();
+        double getCpuTime();
+        int getNumCores();
+    }; // class CpuUsageTracker
 
 } // namespace LCompilers::LLanguageServer

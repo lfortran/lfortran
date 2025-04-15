@@ -17,6 +17,7 @@
 #include <server/lsp_language_server.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
+#include <server/process_usage.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace ls = LCompilers::LLanguageServer;
@@ -110,6 +111,8 @@ namespace LCompilers::LanguageServerProtocol {
 
         std::unordered_map<DocumentUri, std::shared_ptr<lsc::LspConfig>> lspConfigsByUri;
         std::shared_mutex lspConfigMutex;
+
+        ls::CpuUsageTracker cpuUsageTracker;
 
         std::atomic_bool clientSupportsWorkspaceConfigRequests = false;
         std::atomic_bool clientSupportsWorkspaceConfigChangeNotifications = false;
