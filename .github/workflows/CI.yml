@@ -638,6 +638,7 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             nodejs=18.20.4
+            openmpi=5.0.6
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '10')
@@ -652,6 +653,7 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             nodejs=18.20.2
+            openmpi=5.0.6
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
@@ -665,6 +667,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
+            openmpi=5.0.6
 
       - uses: hendrikmuhs/ccache-action@main
         with:
