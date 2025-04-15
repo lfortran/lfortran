@@ -109,6 +109,40 @@ namespace LCompilers::LanguageServerProtocol {
         );
     }
 
+    auto ParallelLspLanguageServer::collectThreadPoolTelemetry(
+        const std::string &key,
+        lst::ThreadPool &pool
+    ) -> LSPAny {
+        LSPObject data;
+        data.emplace("name", std::make_unique<LSPAny>(toAny(pool.name())));
+        data.emplace("numThreads", std::make_unique<LSPAny>(toAny(pool.numThreads())));
+        data.emplace("numActive", std::make_unique<LSPAny>(toAny(pool.numActive())));
+        data.emplace("numPending", std::make_unique<LSPAny>(toAny(pool.numPending())));
+        data.emplace("numExecuted", std::make_unique<LSPAny>(toAny(pool.numExecuted())));
+        LSPObject event;
+        event.emplace("key", std::make_unique<LSPAny>(toAny(key)));
+        event.emplace("value", std::make_unique<LSPAny>(toAny(data)));
+        LSPAny any;
+        any = std::move(event);
+        return any;
+    }
+
+    auto ParallelLspLanguageServer::collectTelemetry() -> LSPAny {
+        LSPAny any = BaseLspLanguageServer::collectTelemetry();
+        LSPArray &events = const_cast<LSPArray &>(any.array());
+        events.emplace_back(
+            std::make_unique<LSPAny>(
+                collectThreadPoolTelemetry("requestPool", requestPool)
+            )
+        );
+        events.emplace_back(
+            std::make_unique<LSPAny>(
+                collectThreadPoolTelemetry("workerPool", workerPool)
+            )
+        );
+        return any;
+    }
+
     auto ParallelLspLanguageServer::join() -> void {
         if (listener.joinable()) {
             listener.join();
