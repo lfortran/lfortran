@@ -3,8 +3,8 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
-#include <cstdint>
 #include <mutex>
+#include <string>
 
 #include <server/logger.h>
 
@@ -17,26 +17,17 @@ namespace LCompilers::LLanguageServer::Threading {
     template <typename T, std::size_t N>
     class Queue {
     public:
-        Queue(lsl::Logger &logger);
-
-        inline auto size() const -> std::size_t {
-            return _size;
-        }
-
-        inline auto isRunning() const -> bool {
-            return sending || receiving;
-        }
-
-        inline auto isStopped() const -> bool {
-            return !isRunning();
-        }
-
+        Queue(lsl::Logger &logger, const std::string &name);
+        auto size() const -> std::size_t;
+        auto isRunning() const -> bool;
+        auto isStopped() const -> bool;
         auto enqueue(T value) -> T *;
         auto dequeue() -> T;
         auto stop() -> void;
         auto stopNow() -> void;
     private:
-        lsl::Logger &logger;
+        lsl::Logger logger;
+        const std::string name;
         T buffer[N];
         std::atomic_bool sending = true;
         std::atomic_bool receiving = true;
@@ -49,10 +40,26 @@ namespace LCompilers::LLanguageServer::Threading {
     };
 
     template <typename T, std::size_t N>
-    Queue<T,N>::Queue(lsl::Logger &logger)
-        : logger(logger)
+    Queue<T,N>::Queue(lsl::Logger &logger, const std::string &name)
+        : logger(logger.having("Queue", {name}))
+        , name(name)
     {
         // empty
+    }
+
+    template <typename T, std::size_t N>
+    auto Queue<T,N>::size() const -> std::size_t {
+        return _size;
+    }
+
+    template <typename T, std::size_t N>
+    auto Queue<T,N>::isRunning() const -> bool {
+        return sending || receiving;
+    }
+
+    template <typename T, std::size_t N>
+    auto Queue<T,N>::isStopped() const -> bool {
+        return !isRunning();
     }
 
     template <typename T, std::size_t N>
@@ -67,9 +74,15 @@ namespace LCompilers::LLanguageServer::Threading {
                 (*elem) = value;
                 tail = (tail + 1) % N;
                 ++_size;
+                lock.unlock();
                 enqueued.notify_one();
                 return elem;
             }
+            logger.warn()
+                << "Failed to add element to queue of size=" << _size
+                << ", capacity=" << N << std::endl;
+        } else {
+            logger.warn() << "Queue is no longer adding values." << std::endl;
         }
         return nullptr;
     }
@@ -85,18 +98,25 @@ namespace LCompilers::LLanguageServer::Threading {
                 T value = buffer[head];
                 head = (head + 1) % N;
                 --_size;
+                lock.unlock();
                 dequeued.notify_one();
                 return value;
             }
+            logger.warn()
+                << "Failed to return element from queue of size=" << _size
+                << ", capacity=" << N << std::endl;
+        } else {
+            logger.warn() << "Queue is no longer returning values." << std::endl;
         }
         throw std::runtime_error(DEQUEUE_FAILED_MESSAGE);
     }
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::stop() -> void {
+        logger.debug() << "Stopping queue ..." << std::endl;
+
         bool expected = true;
         if (receiving.compare_exchange_strong(expected, false)) {
-            std::unique_lock<std::mutex> lock(mutex);
             dequeued.notify_all();
         } else {
             throw std::runtime_error("Queue has already been stopped!");
@@ -105,17 +125,15 @@ namespace LCompilers::LLanguageServer::Threading {
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::stopNow() -> void {
-        bool expected;
+        logger.trace() << "Stopping queue now!" << std::endl;
 
-        expected = true;
+        bool expected = true;
         if (receiving.compare_exchange_strong(expected, false)) {
-            std::unique_lock<std::mutex> lock(mutex);
             dequeued.notify_all();
         }
 
         expected = true;
         if (sending.compare_exchange_strong(expected, false)) {
-            std::unique_lock<std::mutex> lock(mutex);
             enqueued.notify_all();
         }
     }

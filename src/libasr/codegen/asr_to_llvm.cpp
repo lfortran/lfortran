@@ -2724,7 +2724,13 @@ public:
         int member_idx = name2memidx[current_der_type_name][member_name];
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
-        tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+        if (llvm::isa<llvm::ConstantStruct>(tmp)) {
+            llvm::Value *v = builder->CreateExtractValue(tmp, {static_cast<unsigned int>(member_idx)});
+            tmp = llvm_utils->CreateAlloca(v->getType());
+            builder->CreateStore(v, tmp);
+        } else {
+            tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+        }
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
 #if LLVM_VERSION_MAJOR > 16
@@ -2782,6 +2788,7 @@ public:
             elements.push_back(initializer);
         }
         tmp = llvm::ConstantStruct::get(t, elements);
+        current_der_type_name = ASRUtils::symbol_name(x.m_dt_sym);
     }
 
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
@@ -4733,6 +4740,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
+            if (ASR::is_a<ASR::ArrayItem_t>(*cptr)) {
+                llvm_cptr = llvm_utils->CreateLoad2(ASRUtils::expr_type(cptr), llvm_cptr);
+            }
             ptr_loads = 0;
             this->visit_expr(*fptr);
             llvm::Value* llvm_fptr = tmp;
@@ -6804,27 +6814,38 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 break;
             };
             case ASR::binopType::Pow: {
-                const int expr_return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                llvm::Type* const exponent_type = llvm::Type::getInt32Ty(context);
-                llvm::Type* const return_type = llvm_utils->getIntType(expr_return_kind); // returnType of the expression.
-                llvm::Type* const base_type =llvm_utils->getFPType(expr_return_kind == 8 ? 8 : 4 );
-                #if LLVM_VERSION_MAJOR <= 12
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f32";
-                #else
-                const std::string func_name = (expr_return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f32.i32";
-                #endif
-                llvm::Value *fleft = builder->CreateSIToFP(left_val, base_type);
-                llvm::Value* fright = llvm_utils->convert_kind(right_val, exponent_type); // `llvm.powi` only has `i32` exponent.
-                llvm::Function *fn_pow = module->getFunction(func_name);
-                if (!fn_pow) {
-                    llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            base_type, {base_type, exponent_type}, false);
-                    fn_pow = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, func_name,
-                            module.get());
+                int64_t exponent_const =  INT64_MAX;
+                ASRUtils::extract_value(x.m_right, exponent_const);
+                // Handle simple-common exponent cases for faster computation.
+                if (exponent_const == 2) {
+                    tmp = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
+                } else if (exponent_const == 3) {
+                    tmp = builder->CreateMul(
+                            left_val,
+                            builder->CreateMul( 
+                                left_val,
+                                left_val,
+                                "simplified_pow_operation"),
+                            "simplified_pow_operation");
+                } else { // Use `pow` function
+                    llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
+                    llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
+                    llvm::Value* _left = llvm_utils->convert_kind(left_val, i64_ty);
+                    const std::string func_name = "_lfortran_integer_pow_64";
+                    llvm::Function *fn_pow = module->getFunction(func_name);
+                    if (!fn_pow) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                i64_ty, {i64_ty, i64_ty}, false);
+                        fn_pow = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, func_name,
+                                module.get());
+                    }
+                    tmp = builder->CreateCall(fn_pow, {_left, _right});
+                    llvm::Type* const return_type =
+                        llvm_utils->getIntType(
+                            ASRUtils::extract_kind_from_ttype_t(x.m_type)); // returnType of the expression.
+                    tmp = llvm_utils->convert_kind(tmp, return_type);
                 }
-                tmp = builder->CreateCall(fn_pow, {fleft, fright});
-                tmp = builder->CreateFPToSI(tmp, return_type);
                 break;
             };
             case ASR::binopType::BitOr: {
@@ -6894,36 +6915,51 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 break;
             };
             case ASR::binopType::Pow: {
-                const int return_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
-                llvm::Type* const base_type = llvm_utils->getFPType(return_kind);
-                llvm::Type *exponent_type = nullptr;
-                std::string func_name;
-                // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
-                if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
-                    #if LLVM_VERSION_MAJOR <= 12
-                    func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
-                    #else
-                    func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
-                    #endif
-                    right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
-                    exponent_type = llvm::Type::getInt32Ty(context);
-                } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
-                    func_name = (return_kind == 4) ? "llvm.pow.f32" : "llvm.pow.f64";
-                    right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
-                    exponent_type = base_type;
-                } else {
-                    LCOMPILERS_ASSERT_MSG(false, "Exponent in RealBinOp should either be [Integer or Real] only.")
-                }
+                int64_t exponent_const =  INT64_MAX;
+                ASRUtils::extract_value(x.m_right, exponent_const);
+                // Handle simple-common exponent cases for faster computation.
+                if (exponent_const == 2) {
+                    tmp = builder->CreateFMul(left_val, left_val, "simplified_pow_operation");
+                } else if (exponent_const == 3) {
+                    tmp = builder->CreateFMul(
+                            left_val,
+                            builder->CreateFMul( 
+                                left_val,
+                                left_val,
+                                "simplified_pow_operation"),
+                            "simplified_pow_operation");
+                } else { // Use `pow` function
+                    const int return_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
+                    llvm::Type* const base_type = llvm_utils->getFPType(return_kind);
+                    llvm::Type *exponent_type = nullptr;
+                    std::string func_name;
+                    // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
+                    if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+                        #if LLVM_VERSION_MAJOR <= 12
+                        func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
+                        #else
+                        func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
+                        #endif
+                        right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
+                        exponent_type = llvm::Type::getInt32Ty(context);
+                    } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
+                        func_name = (return_kind == 4) ? "llvm.pow.f32" : "llvm.pow.f64";
+                        right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
+                        exponent_type = base_type;
+                    } else {
+                        LCOMPILERS_ASSERT_MSG(false, "Exponent in RealBinOp should either be [Integer or Real] only.")
+                    }
 
-                llvm::Function *fn_pow = module->getFunction(func_name);
-                if (!fn_pow) {
-                    llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            base_type, { base_type, exponent_type }, false);
-                    fn_pow = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, func_name,
-                            module.get());
+                    llvm::Function *fn_pow = module->getFunction(func_name);
+                    if (!fn_pow) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                base_type, { base_type, exponent_type }, false);
+                        fn_pow = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, func_name,
+                                module.get());
+                    }
+                    tmp = builder->CreateCall(fn_pow, {left_val, right_val});
                 }
-                tmp = builder->CreateCall(fn_pow, {left_val, right_val});
                 break;
             };
             default: {
@@ -8142,7 +8178,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             llvm::Type::getVoidTy(context), {
                                 character_type->getPointerTo(),
                                 llvm::Type::getInt32Ty(context)
-                            }, false);
+                            }, true);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
                 }
@@ -8386,7 +8422,16 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     visit_ArraySize(*array_size);
                     builder->CreateCall(fn, {arr, tmp, unit_val});
                 } else {
-                    builder->CreateCall(fn, {tmp, unit_val});
+                    if (ASR::is_a<ASR::String_t>(*type) && !is_string && !x.m_is_formatted) {
+                        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al, 
+                            x.m_values[i]->base.loc, x.m_values[i], type32, nullptr));
+                        llvm::Value *str = tmp;  
+                        visit_StringLen(*strlen);
+                        builder->CreateCall(fn, {str, unit_val, tmp});
+                    } else {
+                        builder->CreateCall(fn, {tmp, unit_val});
+                    }
                 }
             }
 
@@ -8415,7 +8460,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {
         llvm::Value *unit_val = nullptr, *f_name = nullptr;
-        llvm::Value *status = nullptr, *form = nullptr;
+        llvm::Value *status = nullptr, *form = nullptr, *access = nullptr, *iostat = nullptr, *iomsg = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         int ptr_copy = ptr_loads;
@@ -8440,6 +8485,31 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         } else {
             form = llvm::Constant::getNullValue(character_type);
         }
+        if (x.m_access) {
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_access);
+            access = tmp;
+        } else {
+            access = llvm::Constant::getNullValue(character_type);
+        }
+        if (x.m_iostat) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iostat, false);
+            ptr_loads = ptr_copy;
+            iostat = tmp;
+        } else {
+            iostat = llvm::ConstantInt::getNullValue(llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
+        if (x.m_iomsg) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iomsg);
+            ptr_loads = ptr_copy;
+            iomsg = tmp;
+        } else {
+            iomsg = llvm::Constant::getNullValue(character_type->getPointerTo());
+        }
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -8447,16 +8517,18 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt64Ty(context), {
                         llvm::Type::getInt32Ty(context),
-                        character_type, character_type, character_type
+                        character_type, character_type, character_type, character_type,
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), character_type->getPointerTo(),
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {unit_val, f_name, status, form});
+        tmp = builder->CreateCall(fn, {unit_val, f_name, status, form, access, iostat, iomsg});
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
-        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr, *size_val = nullptr;
+        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr, *size_val = nullptr,
+        *pos_val = nullptr;
 
         if (x.m_file) {
             this->visit_expr_wrapper(x.m_file, true);
@@ -8504,6 +8576,17 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             llvm::Type::getInt32Ty(context));
         }
 
+        if (x.m_pos) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_pos, true);
+            pos_val = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            pos_val = llvm_utils->CreateAlloca(*builder,
+                            llvm::Type::getInt32Ty(context));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -8514,11 +8597,12 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt1Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val, size_val});
+        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val, size_val, pos_val});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
@@ -8692,14 +8776,35 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
         for (size_t i=0; i<n_values; i++) {
-            if (i != 0 && !is_string) {
+            if (i != 0 && !is_string && x.m_is_formatted) {
                 fmt.push_back("%s");
                 args.push_back(sep);
+            }
+            if (!x.m_is_formatted) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(ASRUtils::expr_type(m_values[i])));
+                llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
+                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                if (ASRUtils::is_array(ASRUtils::expr_type(m_values[i]))) {
+                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, m_values[i]->base.loc,
+                        m_values[i], nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size);
+                    args.push_back(builder->CreateMul(kind_val, tmp));
+                } else if (ASRUtils::is_character(*ASRUtils::expr_type(m_values[i]))) {
+                    ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al, 
+                        m_values[i]->base.loc, m_values[i], type32, nullptr));
+                    visit_StringLen(*strlen);
+                    args.push_back(builder->CreateMul(kind_val, tmp));
+                } else {
+                    args.push_back(kind_val);
+                }
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc);
         }
-        if (!is_string) {
+        if (!x.m_is_formatted) {  // give -1 argument for end of arguments
+            llvm::Value* minus_one = llvm::ConstantInt::get(context, llvm::APInt(32, -1, true));
+            args.push_back(minus_one);
+        } else if (!is_string) {
             fmt.push_back("%s");
             args.push_back(end);
         }
@@ -10898,7 +11003,13 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     if (co.time_report) {
         int time_take_to_run_asr_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-        std::string message = "ASR -> ASR passes: " + std::to_string(time_take_to_run_asr_passes / 1000) + "." + std::to_string(time_take_to_run_asr_passes % 1000) + " ms";
+        double time_in_milliseconds = (double) time_take_to_run_asr_passes / 1000.0;
+        std::string message = "";
+        if ( time_in_milliseconds >= 1.0 ) {
+            message = "ASR -> ASR passes: " + std::to_string(time_take_to_run_asr_passes / 1000) + "." + std::to_string(time_take_to_run_asr_passes % 1000) + " ms";
+        } else {
+            message = "ASR -> ASR passes: " + std::to_string(time_in_milliseconds) + " ms";
+        }
         co.po.vector_of_time_report.push_back(message);
     }
 

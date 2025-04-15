@@ -297,7 +297,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
-                            LCompilers::LocationManager &lm) {
+                            LCompilers::LocationManager &lm,
+                            bool separate_compilation) {
     LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -325,6 +326,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     }
     ASR::Module_t *mod2 = extract_module(*mod1);
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
+    if ( separate_compilation ) {
+        mod2->m_symtab->mark_all_variables_external(al);
+    }
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
@@ -369,6 +373,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 ASR::Module_t *mod2 = extract_module(*mod1);
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
+                if ( separate_compilation ) {
+                    mod2->m_symtab->mark_all_variables_external(al);
+                }
                 mod2->m_loaded_from_mod = true;
                 rerun = true;
             }
@@ -568,13 +575,39 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
             member_variable->base.base.loc, member_type));
         }
+
+        if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(v_var))) {
+            ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(v_var));
+            if( ASRUtils::is_array_indexed_with_array_indices(t->m_args, t->n_args) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(ASRUtils::EXPR(v_var))), m_dims);
+                member_type = ASRUtils::make_Array_t_util(al, loc, member_type_, m_dims, n_dims);
+            }
+        }
+
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type);
         ASR::expr_t* value = nullptr;
         v = ASRUtils::symbol_get_past_external(v);
-        if (v != nullptr && ASR::down_cast<ASR::Variable_t>(v)->m_storage
-                == ASR::storage_typeType::Parameter) {
+        if (v != nullptr &&
+            ASR::down_cast<ASR::Variable_t>(v)->m_storage == ASR::storage_typeType::Parameter) {
             if (member_variable->m_symbolic_value != nullptr) {
                 value = expr_value(member_variable->m_symbolic_value);
+            }
+            // Check for compile time value in StructConstant
+            ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
+            if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
+                ASR::StructType_t *struct_type = ASR::down_cast<ASR::StructType_t>(v_variable_s->m_type);
+                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(struct_type->m_derived_type);
+                std::string mem_name = ASRUtils::symbol_name(member);
+                // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
+                size_t i = 0;
+                for (i = 0; i < struct_s->n_members; i++) {
+                    if (struct_s->m_members[i] == mem_name) {
+                        break;
+                    }
+                }
+
+                ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
+                value = stc->m_args[i].m_value;
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),

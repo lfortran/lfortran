@@ -1460,7 +1460,25 @@ public:
         visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
 
-    // void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {}
+    void visit_IntrinsicImpureFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicImpureFunction_t &x) {
+        src = "";
+        out += func_name;
+        if (x.n_args > 0) visit_expr(*x.m_args[0]);
+        out += "(" + src;
+        for (size_t i = 1; i < x.n_args; i++) {
+            out += ", ";
+            visit_expr(*x.m_args[i]);
+            out += src;
+        }
+        out += ")";
+        src = out;
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+        std::string out;
+        std::string intrinsic_func_name = ASRUtils::get_impure_intrinsic_name(static_cast<int64_t>(x.m_impure_intrinsic_id));
+        visit_IntrinsicImpureFunction_helper(out, intrinsic_func_name, x);
+    }
 
     void visit_StructConstructor(const ASR::StructConstructor_t &x) {
         std::string r = indent;

@@ -3,16 +3,12 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <functional>
 #include <future>
 #include <memory>
 #include <mutex>
-#include <queue>
-#include <random>
 #include <shared_mutex>
 #include <string>
 #include <thread>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -23,53 +19,30 @@
 #include <server/lsp_text_document.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    namespace ls = LCompilers::LLanguageServer;
     namespace lsc = LCompilers::LanguageServerProtocol::Config;
-    namespace lst = LCompilers::LLanguageServer::Threading;
 
     using namespace std::chrono_literals;
     typedef std::chrono::system_clock::time_point time_point_t;
     typedef std::chrono::milliseconds milliseconds_t;
 
-    /**
-     * Returns the next time_point_t, relative to now, at which to execute the
-     * associated cron job.
-     */
-    typedef std::function<time_point_t()> CronSchedule;
+    typedef std::map<
+        std::string,
+        std::map<std::string, time_point_t>
+    > RunningHistogram;
 
-    typedef std::tuple<std::size_t, lst::Task, time_point_t> CronElem;
+    class BaseLspLanguageServer;
 
-    struct CronComparator {
-        auto operator()(const CronElem &lhs, const CronElem &rhs) -> bool;
-    };
-
-    typedef std::priority_queue<
-        CronElem,
-        std::vector<CronElem>,
-        CronComparator
-    > CronQueue;
-
-    template <typename T>
-    using TTLRecord = std::pair<T, time_point_t>;
-
-    template <typename T>
-    struct TTLComparator {
-        auto operator()(const TTLRecord<T> &lhs, const TTLRecord<T> &rhs) {
-            return lhs.second > rhs.second;
-        }
-    };
-
-    template <typename T>
-    using TTLCache = std::priority_queue<
-        TTLRecord<T>,
-        std::vector<TTLRecord<T>>,
-        TTLComparator<T>
-    >;
-
-    typedef std::tuple<
-        int,  // requestId
-        unsigned int,  // attempt
-        milliseconds_t  // last sleep time between attempts
-    > RetryRecord;
+    class RunTracer {
+    public:
+        RunTracer(BaseLspLanguageServer *server, const std::string &taskType);
+        ~RunTracer();
+        auto stop() -> void;
+    private:
+        BaseLspLanguageServer *server;
+        const std::string &taskType;
+        bool stopped{false};
+    }; // class RunTracer
 
     class BaseLspLanguageServer : public LspLanguageServer {
     public:
@@ -78,39 +51,40 @@ namespace LCompilers::LanguageServerProtocol {
         BaseLspLanguageServer(
             ls::MessageQueue &incomingMessages,
             ls::MessageQueue &outgoingMessages,
-            std::size_t numRequestThreads,
-            std::size_t numWorkerThreads,
             lsl::Logger &logger,
             const std::string &configSection,
             const std::string &extensionId,
             const std::string &compilerVersion,
             int parentProcessId,
-            unsigned int seed,
             std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-            std::shared_ptr<lsc::LspConfig> workspaceConfig
+            std::shared_ptr<lsc::LspConfig> workspaceConfig,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         );
 
+        lsl::Logger logger;
         const std::string configSection;
         const std::string extensionId;
         const std::string compilerVersion;
         int parentProcessId;
-        lst::ThreadPool requestPool;
-        lst::ThreadPool workerPool;
         std::atomic_size_t serialSendId = 0;
         std::atomic_size_t pendingSendId = 0;
-        std::condition_variable sent;
-        std::mutex sentMutex;
         std::unique_ptr<InitializeParams> _initializeParams;
         std::atomic_bool _initialized = false;
         std::atomic_bool _shutdown = false;
         std::atomic_bool _exit = false;
-        std::map<int, RequestMessage> requestsById;
-        std::mutex requestMutex;
         std::atomic<TraceValues> trace{TraceValues::Off};
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer;
-        std::unordered_map<DocumentUri, std::shared_ptr<LspTextDocument>> documentsByUri;
+        std::unordered_map<
+            DocumentUri,
+            std::shared_ptr<LspTextDocument>
+        > documentsByUri;
         std::shared_mutex documentMutex;
-        std::default_random_engine randomEngine;
+
+        // taskType -> threadName -> startTime
+        RunningHistogram runningHistogram;
+        std::shared_mutex runningMutex;
 
         std::unordered_map<DocumentUri, std::shared_ptr<LSPAny>> configsByUri;
         std::map<
@@ -131,51 +105,6 @@ namespace LCompilers::LanguageServerProtocol {
         std::map<std::string, std::shared_ptr<std::atomic_bool>> activeRequests;
         std::mutex activeMutex;
 
-        const milliseconds_t RECENT_REQUEST_TIMEOUT = 1000ms;
-        TTLCache<std::string> recentRequests;
-        std::shared_mutex recentMutex;
-        auto expireCaches(std::shared_ptr<std::atomic_bool> taskIsRunning) -> void;
-
-        auto ttl(const milliseconds_t &timeout) const -> time_point_t;
-        auto randomBetween(
-            const milliseconds_t &lower,
-            const milliseconds_t &upper
-        ) -> milliseconds_t;
-
-        TTLCache<RetryRecord> retryAttempts;
-        std::shared_mutex retryMutex;
-        auto retryRequests(std::shared_ptr<std::atomic_bool> taskIsRunning) -> void;
-        auto cancelRequest(int requestId) -> void;
-
-        std::atomic_size_t serialCronId = 0;
-        std::map<std::size_t, CronSchedule> cronSchedules;
-        std::shared_mutex scheduleMutex;
-        CronQueue cronJobs;
-        std::mutex cronMutex;
-        auto nextCronId() -> std::size_t;
-        auto schedule(lst::Task cronJob, CronSchedule schedule) -> std::size_t;
-        auto unschedule(std::size_t cronId) -> bool;
-        auto chronicle() -> void;
-
-        auto isProcessRunning(int pid) -> bool;
-        auto checkParentProcessId(
-            std::shared_ptr<std::atomic_bool> taskIsRunning
-        ) -> void;
-
-        template <class Rep, class Period = std::ratio<1>>
-        auto schedule(
-            lst::Task cronJob,
-            std::chrono::duration<Rep, Period> timeout
-        ) -> void {
-            std::size_t cronId = nextCronId();
-            auto now = std::chrono::system_clock::now();
-            time_point_t nextTimePoint = now + timeout;
-            {
-                std::unique_lock<std::mutex> cronLock(cronMutex);
-                cronJobs.push(std::make_tuple(cronId, cronJob, nextTimePoint));
-            }
-        }
-
         std::shared_ptr<lsc::LspConfig> workspaceConfig;
         std::shared_mutex workspaceMutex;
 
@@ -189,14 +118,54 @@ namespace LCompilers::LanguageServerProtocol {
         // move all std::thread declarations to the bottom of the members!
         // See: https://github.com/lfortran/lfortran/issues/6756
         std::thread listener;
-        std::thread cron;
+
+        auto isProcessRunning(int pid) -> bool;
+        auto checkParentProcessId() -> void;
 
         auto nextSendId() -> std::size_t;
         auto isInitialized() const -> bool;
         auto isShutdown() const -> bool;
         auto isRunning() const -> bool;
-        auto join() -> void override;
-        auto listen() -> void;
+
+        virtual auto listen() -> void = 0;
+
+        auto collectTelemetry() -> LSPAny;
+        auto sendTelemetry() -> void;
+
+        template <typename V>
+        auto toAny(const std::map<std::string, V> &map) const -> LSPAny {
+            LSPObject object;
+            for (const auto &[key, value] : map) {
+                object.emplace(key, std::make_unique<LSPAny>(toAny(value)));
+            }
+            LSPAny any;
+            any = std::move(object);
+            return any;
+        }
+
+        template <typename V>
+        auto toAny(const std::unordered_map<std::string, V> &map) const -> LSPAny {
+            LSPObject object;
+            for (const auto &[key, value] : map) {
+                object.emplace(key, std::make_unique<LSPAny>(toAny(value)));
+            }
+            LSPAny any;
+            any = std::move(object);
+            return any;
+        }
+
+#ifdef DEBUG
+        auto toAny(const ls::OwnerRecord &record) const -> LSPAny;
+#endif // DEBUG
+        auto toAny(const char *value) const -> LSPAny;
+        auto toAny(int value) const -> LSPAny;
+        auto toAny(const time_point_t &timePoint) const -> LSPAny;
+        auto toAny(const std::string &value) const -> LSPAny;
+
+        auto startRunning(const std::string &taskType) -> RunTracer;
+
+        auto stopRunning(const std::string &taskType) -> void;
+
         auto to_string(const RequestId &requestId) -> std::string;
 
         auto toJsonString(const LSPAny &any) -> std::string;
@@ -213,7 +182,7 @@ namespace LCompilers::LanguageServerProtocol {
         ) const -> void override;
 
         auto send(const RequestMessage &request) -> void override;
-        auto send(const std::string &request, std::size_t sendId) -> void;
+        virtual auto send(const std::string &request, std::size_t sendId) -> void = 0;
 
         auto handle(
             const std::string &incoming,
@@ -221,7 +190,30 @@ namespace LCompilers::LanguageServerProtocol {
             std::shared_ptr<std::atomic_bool> taskIsRunning
         ) -> void;
 
-        auto dispatch(
+        auto handleRequest(
+            const LSPAny &document,
+            ResponseMessage &response,
+            const std::string &method,
+            std::string &traceId,
+            std::shared_ptr<std::atomic_bool> taskIsRunning
+        ) -> void;
+
+        auto handleNotification(
+            const LSPAny &document,
+            ResponseMessage &response,
+            const std::string &method,
+            std::string &traceId,
+            std::shared_ptr<std::atomic_bool> taskIsRunning
+        ) -> void;
+
+        virtual auto handleResponse(
+            const LSPAny &document,
+            ResponseMessage &response,
+            std::string &traceId,
+            std::shared_ptr<std::atomic_bool> taskIsRunning
+        ) -> void;
+
+        virtual auto dispatch(
             ResponseMessage &response,
             RequestMessage &request
         ) -> void;
@@ -258,10 +250,10 @@ namespace LCompilers::LanguageServerProtocol {
             const DocumentUri &uri
         ) -> std::shared_ptr<LspTextDocument>;
 
-        auto getConfig(
+        virtual auto getConfig(
             const DocumentUri &uri,
             const std::string &configSection
-        ) -> const std::shared_ptr<LSPAny>;
+        ) -> const std::shared_ptr<LSPAny> = 0;
 
         auto getConfig(
             const DocumentUri &uri
@@ -278,59 +270,84 @@ namespace LCompilers::LanguageServerProtocol {
         ) -> void;
 
         auto receiveInitialize(
+            const RequestMessage &request,
             InitializeParams &params
         ) -> InitializeResult override;
 
-        auto receiveSetTrace(SetTraceParams &params) -> void override;
+        auto receiveSetTrace(
+            const NotificationMessage &notification,
+            SetTraceParams &params
+        ) -> void override;
 
-        auto receiveShutdown() -> ShutdownResult override;
+        auto shutdown() -> bool;
+        auto receiveShutdown(
+            const RequestMessage &request
+        ) -> ShutdownResult override;
 
         auto receiveClient_registerCapability(
-            const RequestId &requestId,
+            const RequestMessage &request,
+            const ResponseMessage &response,
             Client_RegisterCapabilityResult params
         ) -> void override;
 
         auto receiveInitialized(
+            const NotificationMessage &notification,
             InitializedParams &params
         ) -> void override;
 
-        auto receiveExit() -> void override;
+        virtual auto exit() -> bool;
+        auto receiveExit(
+            const NotificationMessage &notification
+        ) -> void override;
 
         auto receiveWorkspace_didRenameFiles(
+            const NotificationMessage &notification,
             RenameFilesParams &params
         ) -> void override;
 
         auto receiveWorkspace_didChangeConfiguration(
+            const NotificationMessage &notification,
             DidChangeConfigurationParams &params
         ) -> void override;
 
         auto receiveWorkspace_configuration(
-            const RequestId &requestId,
+            const RequestMessage &request,
+            const ResponseMessage &response,
             Workspace_ConfigurationResult &params
         ) -> void override;
 
         auto receiveTextDocument_didOpen(
+            const NotificationMessage &notification,
             DidOpenTextDocumentParams &params
         ) -> void override;
 
         auto receiveTextDocument_didChange(
+            const NotificationMessage &notification,
             DidChangeTextDocumentParams &params
         ) -> void override;
 
         auto receiveTextDocument_didClose(
+            const NotificationMessage &notification,
             DidCloseTextDocumentParams &params
         ) -> void override;
 
         auto receiveTextDocument_didSave(
+            const NotificationMessage &notification,
             DidSaveTextDocumentParams &params
         ) -> void override;
 
-        auto receiveCancelRequest(CancelParams &params) -> void override;
+        auto cancelRequest(int requestId) -> void;
+        auto receiveCancelRequest(
+            const NotificationMessage &notification,
+            CancelParams &params
+        ) -> void override;
 
         auto receiveGetDocument(
+            const RequestMessage &request,
             GetDocumentParams &params
         ) -> GetDocumentResult override;
 
-    }; // class LspLanguageServer
+        friend class RunTracer;
+    }; // class BaseLspLanguageServer
 
 } // namespace LCompilers::LanguageServerProtocol

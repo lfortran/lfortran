@@ -19,12 +19,13 @@ namespace LCompilers::LanguageServerProtocol {
         const std::regex RE_IS_EXIT;
 
         std::istream &istream;
-        lsl::Logger &logger;
+        lsl::Logger logger;
         std::string message;
         std::size_t position;
 
         auto nextChar() -> char;
         auto logEscaped(char c) -> void;
+        auto logEscapedMessage() -> void;
     };
 
 } // namespace LCompilers::LanguageServerProtocol

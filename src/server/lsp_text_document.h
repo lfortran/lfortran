@@ -5,6 +5,7 @@
 #include <shared_mutex>
 #include <regex>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <server/logger.h>
@@ -40,31 +41,25 @@ namespace LCompilers::LanguageServerProtocol {
         );
         LspTextDocument(LspTextDocument &&other) noexcept;    // move constructor
 
-        inline auto uri() const -> const DocumentUri & {
-            return _uri;
-        }
-
+        auto id() const -> std::size_t;
+        auto uri() const -> const DocumentUri &;
         auto setUri(const DocumentUri &uri) -> void;
-
-        inline auto path() const -> const fs::path & {
-            return _path;
-        }
-
-        inline auto languageId() const -> const std::string & {
-            return _languageId;
-        }
-
-        inline auto version() const -> int {
-            return _version;
-        }
-
-        inline auto text() const -> const std::string & {
-            return _text;
-        }
-
-        inline auto mutex() -> std::shared_mutex & {
-            return _mutex;
-        }
+        auto path() const -> const fs::path &;
+        auto languageId() const -> const std::string &;
+        auto version() const -> int;
+        auto text() const -> const std::string &;
+        auto mutex() -> std::shared_mutex &;
+        auto numLines() const -> std::size_t;
+        auto lastLine() const -> std::size_t;
+        auto numColumns(std::size_t line) const -> std::size_t;
+        auto lastColumn(std::size_t line) const -> std::size_t;
+        auto leadingIndentation(std::size_t line) -> std::string_view;
+        auto slice(
+            std::size_t startLine,
+            std::size_t startColumn,
+            std::size_t endLine,
+            std::size_t endColumn
+        ) const -> std::string;
 
         auto update(
             const std::string &languageId,
@@ -81,15 +76,27 @@ namespace LCompilers::LanguageServerProtocol {
             std::size_t line,
             std::size_t column
         ) const -> std::size_t;
+
+        auto fromPosition(
+            std::size_t &line,
+            std::size_t &column,
+            std::size_t position
+        ) const -> void;
+
+        auto symbolAt(std::size_t line, std::size_t column) const -> std::string_view;
     private:
+        // NOTE: The document's URI might change but its id will remain
+        // the same.
+        const std::size_t _id;
         DocumentUri _uri;
         std::string _languageId;
         int _version;
         std::string _text;
-        lsl::Logger &logger;
+        lsl::Logger logger;
         fs::path _path;
         std::string buffer;
-        std::vector<std::size_t> lineIndices;
+        std::vector<std::size_t> posByLine;
+        std::vector<std::size_t> lenByLine;
         std::shared_mutex _mutex;
 
         auto indexLines() -> void;

@@ -8,11 +8,24 @@ from lsprotocol.types import (
     CompletionClientCapabilitiesCompletionItemTypeResolveSupportType,
     CompletionClientCapabilitiesCompletionItemTypeTagSupportType,
     CompletionItemTag, DefinitionClientCapabilities, DefinitionParams,
-    HoverClientCapabilities, InitializeParams, InsertTextMode, Location,
-    LocationLink, MarkupKind, Position, RenameClientCapabilities, RenameParams,
+    DidChangeTextDocumentParams, DocumentFormattingClientCapabilities,
+    DocumentHighlightClientCapabilities,
+    DocumentRangeFormattingClientCapabilities,
+    DocumentSymbolClientCapabilities, HoverClientCapabilities,
+    InitializeParams, InsertTextMode, Location, LocationLink, MarkupKind,
+    Position, RenameClientCapabilities, RenameParams,
+    SemanticTokensClientCapabilities,
+    SemanticTokensClientCapabilitiesRequestsType,
+    TextDocumentCompletionResponse, TextDocumentContentChangeEvent,
+    TextDocumentContentChangeEvent_Type1, TextDocumentContentChangeEvent_Type2,
     TextDocumentDefinitionRequest, TextDocumentDefinitionResponse,
+    TextDocumentDocumentHighlightResponse, TextDocumentDocumentSymbolResponse,
+    TextDocumentFormattingResponse, TextDocumentHoverResponse,
     TextDocumentIdentifier, TextDocumentPublishDiagnosticsNotification,
-    TextDocumentRenameRequest, TextDocumentRenameResponse, WorkspaceEdit, TextEdit)
+    TextDocumentRangeFormattingResponse, TextDocumentRenameRequest,
+    TextDocumentRenameResponse, TextDocumentSemanticTokensFullResponse,
+    TextDocumentSyncKind, TokenFormat, VersionedTextDocumentIdentifier,
+    WorkspaceEdit)
 
 from llanguage_test_client.json_rpc import JsonArray, JsonObject
 from llanguage_test_client.lsp_test_client import LspTestClient
@@ -27,14 +40,20 @@ class LFortranLspTestClient(LspTestClient):
             server_params: List[str],
             workspace_path: Optional[Path],
             timeout_ms: float,
-            config: Dict[str, Any]
+            config: Dict[str, Any],
+            client_log_path: str,
+            stdout_log_path: str,
+            stdin_log_path: str
     ) -> None:
         super().__init__(
             server_path,
             server_params,
             workspace_path,
             timeout_ms,
-            config
+            config,
+            client_log_path,
+            stdout_log_path,
+            stdin_log_path
         )
 
     def await_validation(self, uri: str, version: int) -> Any:
@@ -100,7 +119,6 @@ class LFortranLspTestClient(LspTestClient):
                 context_support=True,
             )
             text_document.hover = HoverClientCapabilities(
-                dynamic_registration=True,
                 content_format=[
                     MarkupKind.PlainText,
                     MarkupKind.Markdown,
@@ -108,6 +126,55 @@ class LFortranLspTestClient(LspTestClient):
             )
             text_document.definition = DefinitionClientCapabilities()
             text_document.rename = RenameClientCapabilities()
+            text_document.document_highlight = DocumentHighlightClientCapabilities()
+            text_document.document_symbol = DocumentSymbolClientCapabilities(
+                hierarchical_document_symbol_support=True,
+            )
+            text_document.semantic_tokens = SemanticTokensClientCapabilities(
+                requests=SemanticTokensClientCapabilitiesRequestsType(
+                    full=True,
+                ),
+                token_types=[
+                    "namespace",
+                    "type",
+                    "class",
+                    "enum",
+                    "interface",
+                    "struct",
+                    "typeParameter",
+                    "parameter",
+                    "variable",
+                    "property",
+                    "enumMember",
+                    "event",
+                    "function",
+                    "method",
+                    "macro",
+                    "keyword",
+                    "modifier",
+                    "comment",
+                    "string",
+                    "number",
+                    "regexp",
+                    "operator",
+                    "decorator",
+                ],
+                token_modifiers=[
+                    "declaration",
+                    "definition",
+                    "readonly",
+                    "static",
+                    "deprecated",
+                    "abstract",
+                    "async",
+                    "modification",
+                    "documentation",
+                    "defaultLibrary",
+                ],
+                formats=[TokenFormat.Relative],
+            )
+            text_document.formatting = DocumentFormattingClientCapabilities()
+            text_document.range_formatting = DocumentRangeFormattingClientCapabilities()
         return params
 
     def receive_text_document_publish_diagnostics(
@@ -220,6 +287,34 @@ class LFortranLspTestClient(LspTestClient):
             for uri, text_edits in changes.items():
                 document = self.get_document("fortran", uri)
                 document.apply(text_edits)
+                if self.server_supports_text_document_did_change():
+                    version = document.bump_version()
+                    content_changes: List[TextDocumentContentChangeEvent]
+                    if self.server_supports_text_document_sync_kind(
+                            TextDocumentSyncKind.Incremental
+                    ):
+                        content_changes = [
+                            TextDocumentContentChangeEvent_Type1(
+                                range=text_edit.range,
+                                text=text_edit.new_text
+                            )
+                            for text_edit in text_edits
+                        ]
+                    else:
+                        content_changes = [
+                            TextDocumentContentChangeEvent_Type2(
+                                text=document.text
+                            )
+                        ]
+                    params = DidChangeTextDocumentParams(
+                        text_document=VersionedTextDocumentIdentifier(
+                            version=version,
+                            uri=uri
+                        ),
+                        content_changes=content_changes
+                    )
+                    self.send_text_document_did_change(params)
+                document.signal_change()
 
     def receive_text_document_rename(
             self,
@@ -247,3 +342,98 @@ class LFortranLspTestClient(LspTestClient):
             )
             request_id = self.send_text_document_rename(params)
             self.await_response(request_id)
+
+    def receive_text_document_document_highlight(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentDocumentHighlightResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.symbol_highlights = response.result
+
+    def receive_text_document_hover(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentHoverResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.preview = response.result
+
+    def receive_text_document_document_symbol(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentDocumentSymbolResponse
+        )
+        uri = request.params.text_document.uri
+        doc = self.get_document("fortran", uri)
+        doc.symbols = response.result
+
+    def receive_text_document_semantic_tokens_full(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentSemanticTokensFullResponse
+        )
+        uri = request.params.text_document.uri
+        doc = self.get_document("fortran", uri)
+        doc.semantic_highlights = response.result
+
+    def receive_text_document_completion(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentCompletionResponse
+        )
+        uri = request.params.text_document.uri
+        doc = self.get_document("fortran", uri)
+        doc.completions = response.result
+
+    def receive_text_document_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentFormattingResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.apply(response.result)
+
+    def receive_text_document_range_formatting(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        response = self.converter.structure(
+            message,
+            TextDocumentRangeFormattingResponse
+        )
+        if response.result is not None:
+            uri = request.params.text_document.uri
+            doc = self.get_document("fortran", uri)
+            doc.apply(response.result)

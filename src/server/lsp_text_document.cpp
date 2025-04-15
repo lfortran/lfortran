@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <atomic>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -10,16 +12,22 @@
 
 namespace LCompilers::LanguageServerProtocol {
 
+    auto nextId() -> std::size_t {
+        static std::atomic_size_t serialId{0};
+        return serialId++;
+    }
+
     LspTextDocument::LspTextDocument(
         const DocumentUri &uri,
         const std::string &languageId,
         int version,
         const std::string &text,
         lsl::Logger &logger
-    ) : _languageId(languageId)
+    ) : _id(nextId())
+      , _languageId(languageId)
       , _version(version)
       , _text(text)
-      , logger(logger)
+      , logger(logger.having("LspTextDocument"))
     {
         buffer.reserve(8196);
         setUri(uri);
@@ -29,10 +37,11 @@ namespace LCompilers::LanguageServerProtocol {
     LspTextDocument::LspTextDocument(
         const std::string &uri,
         lsl::Logger &logger
-    ) : _languageId{""}
-      , _version{-1}
-      , _text{""}
-      , logger{logger}
+    ) : _id(nextId())
+      , _languageId("")
+      , _version(-1)
+      , _text("")
+      , logger(logger.having("LspTextDocument"))
     {
         buffer.reserve(8196);
         setUri(uri);
@@ -41,14 +50,16 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     LspTextDocument::LspTextDocument(LspTextDocument &&other) noexcept
-        : _uri(std::move(other._uri))
+        : _id(nextId())
+        , _uri(std::move(other._uri))
         , _languageId(std::move(other._languageId))
         , _version(other._version)
         , _text(std::move(other._text))
-        , logger(other.logger)
+        , logger(std::move(other.logger))
         , _path(std::move(other._path))
         , buffer(std::move(other.buffer))
-        , lineIndices(std::move(other.lineIndices))
+        , posByLine(std::move(other.posByLine))
+        , lenByLine(std::move(other.lenByLine))
     {
         // empty
     }
@@ -62,10 +73,88 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
+    auto LspTextDocument::id() const -> std::size_t {
+        return _id;
+    }
+
+    auto LspTextDocument::uri() const -> const DocumentUri & {
+        return _uri;
+    }
+
     auto LspTextDocument::setUri(const DocumentUri &uri) -> void {
         _uri = uri;
         std::string path = std::regex_replace(uri, RE_FILE_URI, "");
         _path = fs::absolute(path).lexically_normal();
+    }
+
+    auto LspTextDocument::path() const -> const fs::path & {
+        return _path;
+    }
+
+    auto LspTextDocument::languageId() const -> const std::string & {
+        return _languageId;
+    }
+
+    auto LspTextDocument::version() const -> int {
+        return _version;
+    }
+
+    auto LspTextDocument::text() const -> const std::string & {
+        return _text;
+    }
+
+    auto LspTextDocument::mutex() -> std::shared_mutex & {
+        return _mutex;
+    }
+
+    auto LspTextDocument::numLines() const -> std::size_t {
+        return lenByLine.size();
+    }
+
+    auto LspTextDocument::lastLine() const -> std::size_t {
+        return numLines() - 1;
+    }
+
+    inline auto isIndent(unsigned char c) -> bool {
+        return (c == ' ') || (c == '\t');
+    }
+
+    // might include mixed tabs and spaces ...
+    auto LspTextDocument::leadingIndentation(std::size_t line) -> std::string_view {
+        std::size_t start = toPosition(line, 0);
+        std::size_t stop = start;
+        while ((stop < _text.length()) && isIndent(_text[stop])) {
+            ++stop;
+        }
+        std::size_t length = stop - start;
+        return std::string_view(_text.data() + start, length);
+    }
+
+    auto LspTextDocument::slice(
+        std::size_t startLine,
+        std::size_t startColumn,
+        std::size_t endLine,
+        std::size_t endColumn
+    ) const -> std::string {
+        std::size_t start = toPosition(startLine, startColumn);
+        std::size_t stop = toPosition(endLine, endColumn);
+        std::size_t length = stop - start;
+        return _text.substr(start, length);
+    }
+
+    auto LspTextDocument::numColumns(std::size_t line) const -> std::size_t {
+        if (line < numLines()) {
+            return lenByLine.at(line);
+        }
+        throw std::invalid_argument(
+            ("line=" + std::to_string(line) +
+             " is out-of-bounds for document with " +
+             std::to_string(numLines()) + " lines.")
+        );
+    }
+
+    auto LspTextDocument::lastColumn(std::size_t line) const -> std::size_t {
+        return numColumns(line) - 1;
     }
 
     auto LspTextDocument::update(
@@ -116,21 +205,31 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto LspTextDocument::indexLines() -> void {
-        lineIndices.clear();
-        lineIndices.push_back(0);
+        posByLine.clear();
+        lenByLine.clear();
+        posByLine.push_back(0);
+        std::size_t column = 0;
         for (std::size_t index = 0; index < _text.length(); ++index) {
             unsigned char c = _text[index];
             switch (c) {
             case '\r': {
                 if (((index + 1) < _text.length()) && (_text[index + 1] == '\n')) {
                     ++index;
+                    ++column;
                 }
             } // fallthrough
             case '\n': {
-                lineIndices.push_back(index + 1);
+                posByLine.push_back(index + 1);
+                lenByLine.push_back(column + 1);
+                column = 0;
+                break;
+            }
+            default: {
+                ++column;
             }
             }
         }
+        lenByLine.push_back(column + 1);
     }
 
     auto LspTextDocument::from(
@@ -155,7 +254,7 @@ namespace LCompilers::LanguageServerProtocol {
     ) const -> std::size_t {
         const Range &range = event.range;
         const Position &start = range.start;
-        std::size_t index = lineIndices[start.line] + start.character;
+        std::size_t index = posByLine[start.line] + start.character;
         return index;
     }
 
@@ -163,7 +262,71 @@ namespace LCompilers::LanguageServerProtocol {
         std::size_t line,
         std::size_t column
     ) const -> std::size_t {
-        return lineIndices[line] + column;
+        if (line >= posByLine.size()) {
+            throw std::invalid_argument(
+                ("line=" + std::to_string(line) +
+                 " is greater than the number of lines: " +
+                 std::to_string(posByLine.size()))
+            );
+        }
+        if (column >= lenByLine[line]) {
+            throw std::invalid_argument(
+                ("column=" + std::to_string(column) +
+                 " is greater than the number of columns on line=" +
+                 std::to_string(line) + ": " + std::to_string(lenByLine[line]))
+            );
+        }
+        std::size_t position = posByLine[line] + column;
+        return position;
+    }
+
+    auto LspTextDocument::fromPosition(
+        std::size_t &line,
+        std::size_t &column,
+        std::size_t position
+    ) const -> void {
+        if (position >= _text.length()) {
+            throw std::invalid_argument(
+                ("position=" + std::to_string(position) +
+                " is out-of-bounds for text of length=" +
+                std::to_string(_text.length()))
+            );
+        }
+        std::size_t lower = 0;
+        std::size_t upper = posByLine.size() - 1;
+        line = (lower + upper + 1) >> 1;
+        long long scol = position - posByLine[line];
+        while ((scol < 0)
+               || (static_cast<std::size_t>(scol) >= lenByLine[line])) {
+            if (scol < 0) {
+                upper = line - 1;
+            } else {
+                lower = line;
+            }
+            line = (lower + upper + 1) >> 1;
+            scol = position - posByLine[line];
+        }
+        column = static_cast<std::size_t>(scol);
+    }
+
+    inline bool isIdentifier(unsigned char c) {
+        return std::isalnum(c) || (c == '_');
+    }
+
+    auto LspTextDocument::symbolAt(
+        std::size_t line,
+        std::size_t column
+    ) const -> std::string_view {
+        std::size_t lower = toPosition(line, column);
+        std::size_t upper = lower;
+        while ((lower > 0) && isIdentifier(_text[lower - 1])) {
+            --lower;
+        }
+        while ((upper < _text.length()) && isIdentifier(upper + 1)) {
+            ++upper;
+        }
+        std::size_t length = upper - lower;
+        return std::string_view(_text.data() + lower, length);
     }
 
     auto LspTextDocument::from(
@@ -223,21 +386,21 @@ namespace LCompilers::LanguageServerProtocol {
             throw LSP_EXCEPTION(ErrorCodes::InvalidParams, buffer);
         }
 
-        if (start.line < lineIndices.size()) {
-            j = lineIndices[start.line] + start.character;
-        } else if (start.line == lineIndices[lineIndices.size() - 1] + 1) {
+        if (start.line < posByLine.size()) {
+            j = posByLine[start.line] + start.character;
+        } else if (start.line == posByLine[posByLine.size() - 1] + 1) {
             j = _text.length();
         } else {
             buffer.clear();
             buffer.append("start.line must be <= ");
-            buffer.append(std::to_string(lineIndices[lineIndices.size() - 1] + 1));
+            buffer.append(std::to_string(posByLine[posByLine.size() - 1] + 1));
             buffer.append(" but was: ");
             buffer.append(std::to_string(start.line));
             throw LSP_EXCEPTION(ErrorCodes::InvalidParams, buffer);
         }
 
-        if (end.line < lineIndices.size()) {
-            k = lineIndices[end.line] + end.character;
+        if (end.line < posByLine.size()) {
+            k = posByLine[end.line] + end.character;
         } else {
             k = j + event.text.length();
         }

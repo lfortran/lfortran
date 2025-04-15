@@ -1,6 +1,8 @@
 #pragma once
 
+#include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <libasr/exception.h>
@@ -15,30 +17,35 @@ namespace LCompilers::LLanguageServer {
 
     class LFortranAccessor {
     public:
-
         auto showErrors(
             const std::string &filename,
             const std::string &text,
             const CompilerOptions &compiler_options
-        ) const -> std::vector<LCompilers::error_highlight>;
+        ) -> std::vector<LCompilers::error_highlight>;
 
         auto lookupName(
             const std::string &filename,
             const std::string &text,
             const CompilerOptions &compiler_options
-        ) const -> std::vector<LCompilers::document_symbols>;
+        ) -> std::vector<LCompilers::document_symbols>;
+
+        auto previewSymbol(
+            const std::string &filename,
+            const std::string &text,
+            const CompilerOptions &compiler_options
+        ) -> std::vector<std::pair<LCompilers::document_symbols, std::string>>;
 
         auto getAllOccurrences(
             const std::string &filename,
             const std::string &text,
             const CompilerOptions &compiler_options
-        ) const -> std::vector<LCompilers::document_symbols>;
+        ) -> std::vector<LCompilers::document_symbols>;
 
         auto getSymbols(
             const std::string &filename,
             const std::string &text,
             const CompilerOptions &compiler_options
-        ) const -> std::vector<LCompilers::document_symbols>;
+        ) -> std::vector<LCompilers::document_symbols>;
 
         template <typename T>
         auto populateSymbolLists(
@@ -46,7 +53,7 @@ namespace LCompilers::LLanguageServer {
             LCompilers::LocationManager &lm,
             std::vector<LCompilers::document_symbols> &symbol_lists,
             int parent_index
-        ) const -> void {
+        ) -> void {
             for (auto &a : x->m_symtab->get_scope()) {
                 std::size_t index = symbol_lists.size();
                 LCompilers::document_symbols &loc = symbol_lists.emplace_back();
@@ -85,7 +92,9 @@ namespace LCompilers::LLanguageServer {
             bool color,
             int indent,
             bool indent_unit
-        ) const -> LCompilers::Result<std::string>;
+        ) -> LCompilers::Result<std::string>;
+    private:
+        std::mutex mutex;
     };
 
 } // namespace LCompilers::LLanguageServer

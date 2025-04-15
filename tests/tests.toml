@@ -567,6 +567,10 @@ filename = "preprocessor18.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor19.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true
@@ -2556,6 +2560,10 @@ filename = "../integration_tests/return_06.f90"
 llvm = true
 
 [[test]]
+filename = "../integration_tests/binop_03.f90"
+llvm = true
+
+[[test]]
 filename = "../integration_tests/modules_13.f90"
 llvm = true
 
@@ -3501,6 +3509,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/implied_do_loops3.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops10.f90"
+ast = true
 
 [[test]]
 filename = "array10.f90"

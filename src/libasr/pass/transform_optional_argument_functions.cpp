@@ -79,9 +79,22 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
             ASR::symbol_t* present_arg = ASR::down_cast<ASR::Var_t>(x->m_args[0])->m_v;
             size_t i;
             for( i = 0; i < f->n_args; i++ ) {
-                if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == present_arg ) {
-                    i++;
-                    break;
+                if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v ) {
+                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+                    if ( arg_sym == present_arg ) {
+                        i++;
+                        break;
+                    } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*present_arg) ) {
+                        std::string ext_sym_name = ASRUtils::symbol_name(present_arg);
+                        SymbolTable* arg_sym_parent_symtab = ASRUtils::symbol_parent_symtab(arg_sym);
+                        ASR::symbol_t* corresponding_ext_sym_in_parent_symtab = arg_sym_parent_symtab->resolve_symbol(ext_sym_name);
+                        if ( corresponding_ext_sym_in_parent_symtab &&
+                            ASR::is_a<ASR::ExternalSymbol_t>(*corresponding_ext_sym_in_parent_symtab) &&
+                            ASRUtils::symbol_get_past_external(corresponding_ext_sym_in_parent_symtab) == ASRUtils::symbol_get_past_external(present_arg) ) {
+                            i++;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -459,13 +472,23 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
 
                 if( is_present == nullptr ) {
-                    is_present = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-                        al, x.m_args[i - is_method].loc, true, logical_t));
+                    ASR::expr_t* arg_i = x.m_args[i - is_method].m_value;
+                    const Location& loc = arg_i->base.loc;
+                    LCOMPILERS_ASSERT(arg_i != nullptr);
+                    if( ASRUtils::is_pointer(ASRUtils::expr_type(arg_i)) ) {
+                        ASR::ttype_t* associated_type_ = ASRUtils::TYPE(
+                            ASR::make_Logical_t(al, loc, 4));
+                        is_present = ASRUtils::EXPR(ASR::make_PointerAssociated_t(
+                            al, loc, arg_i, nullptr, associated_type_, nullptr));
+                    } else {
+                        is_present = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+                            al, loc, true, logical_t));
+                    }
                 }
             }
             ASR::call_arg_t present_arg;
             present_arg.loc = x.m_args[i - is_method].loc;
-            if( i - is_method < (int)x.n_args && 
+            if( i - is_method < (int)x.n_args &&
                 x.m_args[i - is_method].m_value &&
                 ASRUtils::is_allocatable(x.m_args[i - is_method].m_value) &&
                 !ASRUtils::is_allocatable(func_arg_j->m_type) ) {
