@@ -17,7 +17,7 @@ namespace LCompilers::LLanguageServer {
     auto LFortranAccessor::showErrors(
         const std::string &filename,
         const std::string &text,
-        const CompilerOptions &compiler_options
+        CompilerOptions &compiler_options
     ) -> std::vector<LCompilers::error_highlight> {
         std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
@@ -72,7 +72,7 @@ namespace LCompilers::LLanguageServer {
     auto LFortranAccessor::lookupName(
         const std::string &filename,
         const std::string &text,
-        const CompilerOptions &compiler_options
+        CompilerOptions &compiler_options
     ) -> std::vector<LCompilers::document_symbols> {
         std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
@@ -130,7 +130,7 @@ namespace LCompilers::LLanguageServer {
     auto LFortranAccessor::previewSymbol(
         const std::string &filename,
         const std::string &text,
-        const CompilerOptions &compiler_options
+        CompilerOptions &compiler_options
     ) -> std::vector<std::pair<LCompilers::document_symbols, std::string>> {
         std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
@@ -193,7 +193,7 @@ namespace LCompilers::LLanguageServer {
     auto LFortranAccessor::getAllOccurrences(
         const std::string &filename,
         const std::string &text,
-        const CompilerOptions &compiler_options
+        CompilerOptions &compiler_options
     ) -> std::vector<LCompilers::document_symbols> {
         std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
@@ -233,7 +233,7 @@ namespace LCompilers::LLanguageServer {
     auto LFortranAccessor::format(
         const std::string &filename,
         const std::string &text,
-        const CompilerOptions &compiler_options,
+        CompilerOptions &compiler_options,
         bool color,
         int indent,
         bool indent_unit
@@ -267,7 +267,7 @@ namespace LCompilers::LLanguageServer {
     auto LFortranAccessor::getSymbols(
         const std::string &filename,
         const std::string &text,
-        const CompilerOptions &compiler_options
+        CompilerOptions &compiler_options
     ) -> std::vector<LCompilers::document_symbols> {
         std::unique_lock<std::mutex> lock(mutex);
         LCompilers::FortranEvaluator fe(compiler_options);
