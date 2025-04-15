@@ -80,20 +80,9 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
             size_t i;
             for( i = 0; i < f->n_args; i++ ) {
                 if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v ) {
-                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
-                    if ( arg_sym == present_arg ) {
+                    if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == present_arg ) {
                         i++;
                         break;
-                    } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*present_arg) ) {
-                        std::string ext_sym_name = ASRUtils::symbol_name(present_arg);
-                        SymbolTable* arg_sym_parent_symtab = ASRUtils::symbol_parent_symtab(arg_sym);
-                        ASR::symbol_t* corresponding_ext_sym_in_parent_symtab = arg_sym_parent_symtab->resolve_symbol(ext_sym_name);
-                        if ( corresponding_ext_sym_in_parent_symtab &&
-                            ASR::is_a<ASR::ExternalSymbol_t>(*corresponding_ext_sym_in_parent_symtab) &&
-                            ASRUtils::symbol_get_past_external(corresponding_ext_sym_in_parent_symtab) == ASRUtils::symbol_get_past_external(present_arg) ) {
-                            i++;
-                            break;
-                        }
                     }
                 }
             }
