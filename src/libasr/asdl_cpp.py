@@ -251,6 +251,8 @@ class ASTNodeVisitor(ASDLVisitor):
             self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
             if f.type == "location":
                 args.append("%s a_%s = nullptr" % (type_, f.name))
+            elif f.name == "is_separately_compiled":
+                args.append("%s a_%s = false" % (type_, f.name))
             else:
                 args.append("%s a_%s" % (type_, f.name))
             lines.append("n->m_%s = a_%s;" % (f.name, f.name))
