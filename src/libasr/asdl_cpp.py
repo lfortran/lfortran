@@ -1751,6 +1751,12 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    'else s.append(" ");', 2)
                 else:
                     self.emit(    's.append(" ");', 2)
+            elif n == len(fields) - 4 and fields[n+1].type == "location" and fields[n+3].name == "is_separately_compiled":
+                if name not in symbol:
+                    self.emit(    'if(indent) s.append("\\n" + indented);', 2)
+                    self.emit(    'else s.append(" ");', 2)
+                else:
+                    self.emit(    's.append(" ");', 2)
         if name not in symbol and cons and len(fields) > 0:
             self.emit(    'if(indent) {', 2)
             self.emit(        'dec_indent();', 3)
@@ -2060,6 +2066,8 @@ class JsonVisitorVisitor(ASDLVisitor):
                     continue
                 self.visitField(field, cons)
                 if n < len(fields) - 1 and fields[n+1].type!="location":
+                    self.emit('s.append(",\\n" + indtd);', 2)
+                elif n == len(fields) - 4 and fields[n+1].type == "location" and fields[n+3].name == "is_separately_compiled":
                     self.emit('s.append(",\\n" + indtd);', 2)
             self.emit('dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)

@@ -288,6 +288,13 @@ public:
             } else {
                 s.append("false");
             }
+            s.append(",\n" + indtd);
+            s.append("\"is_separately_compiled\": ");
+            if (x.m_is_separately_compiled) {
+                s.append("true");
+            } else {
+                s.append("false");
+            }
             dec_indent(); s.append("\n" + indtd);
             s.append("}");
             append_location(s, x.base.base.loc.first, x.base.base.loc.last);
