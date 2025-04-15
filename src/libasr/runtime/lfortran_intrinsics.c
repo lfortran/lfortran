@@ -3905,6 +3905,8 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             free(buffer);
             return;
         } else {
+            // If we have advance="no" specified and we also have '\n' in buffer, iostat = -2 (end of record)
+            // (strcspn(buffer, "\n") != n) checks if '\n' is present in buffer or not
             if (streql(buffer, "\n") || (streql(advance, "no") && strcspn(buffer, "\n") != n)) {
                 *iostat = -2;
             } else {
