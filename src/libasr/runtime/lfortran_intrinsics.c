@@ -3662,10 +3662,6 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
         } else {
             data_length = end_pos - current_pos;  // For access=stream read till last
         }
-        if (data_length < var_len) {
-            printf("Error reading data as reached end of file.\n");
-            exit(1);
-        }
 
         // allocate memory for the data based on data length
         *p = (char*)malloc((var_len + 1) * sizeof(char));
@@ -3674,8 +3670,10 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
             exit(1);
         }
 
+        data_length = data_length > var_len ? var_len : data_length;
+
         // read the actual data
-        if (fread(*p, sizeof(char), var_len, filep) != var_len) {
+        if (fread(*p, sizeof(char), data_length, filep) != data_length) {
             printf("Error reading data from file.\n");
             free(*p);
             exit(1);
