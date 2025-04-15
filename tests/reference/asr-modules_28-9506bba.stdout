@@ -226,6 +226,7 @@
                     []
                     .true.
                     .false.
+                    .false.
                 ),
             fpm_manifest_dependency:
                 (Module
@@ -730,6 +731,7 @@
                     fpm_manifest_dependency
                     [fpm_git]
                     .true.
+                    .false.
                     .false.
                 ),
             modules_28:

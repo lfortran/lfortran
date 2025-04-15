@@ -315,6 +315,7 @@
                     iso_c_binding]
                     .false.
                     .false.
+                    .false.
                 ),
             fpm_strings:
                 (Module
@@ -750,6 +751,7 @@
                     [iso_c_binding
                     fpm_strings]
                     .true.
+                    .false.
                     .false.
                 ),
             iso_c_binding:

@@ -13,6 +13,7 @@
                     []
                     .false.
                     .false.
+                    .false.
                 ),
             foo2:
                 (Module
@@ -89,6 +90,7 @@
                         })
                     foo2
                     []
+                    .false.
                     .false.
                     .false.
                 ),

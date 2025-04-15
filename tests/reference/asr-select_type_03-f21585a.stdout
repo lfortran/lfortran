@@ -114,6 +114,7 @@
                     []
                     .true.
                     .false.
+                    .false.
                 ),
             class_default_select_type_user:
                 (Module
@@ -548,6 +549,7 @@
                         })
                     class_default_select_type_user
                     [class_default_select_type]
+                    .false.
                     .false.
                     .false.
                 )
