@@ -4704,7 +4704,10 @@ namespace Pack {
     static inline ASR::expr_t *eval_Pack(Allocator & al,
         const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASRBuilder builder(al, loc);
-        ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
+        ASR::expr_t *array = args[0], *mask = args[1], *vector = nullptr;
+        if (args.size() > 2) {
+            vector = args[2];
+        }
         ASR::ttype_t *type_array = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(array)));
         ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_array);
 
