@@ -32,7 +32,7 @@ subroutine A()
 end
 
 Then using this pass, we first capture the variables that are used by
-nesdted functions. In our example, they are x, y and w from function A.
+nested functions. In our example, they are x, y and w from function A.
 Then we create a __lcompilers_created__nested_context__A which contains all those
 variables with same types but different names, say, global_context_module_for_A_x,
 global_context_module_for_A_y, global_context_module_for_A_w, and
@@ -89,7 +89,7 @@ This Pass is designed using three classes:
 2. ReplaceNestedVisitor - This class replaces all the variables inside the
                           nested functions with external module variables.
 
-3. AssignNestedVars - This class add assignments stmts before and after
+3. AssignNestedVars - This class add assignment stmts before and after
                       each function call stmts in the parent function.
 
 */

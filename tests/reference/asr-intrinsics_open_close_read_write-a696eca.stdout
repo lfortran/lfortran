@@ -304,6 +304,8 @@
                         )
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (DoLoop
                         ()
@@ -376,6 +378,8 @@
                         )
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (DoLoop
                         ()
@@ -386,6 +390,7 @@
                         [(FileRead
                             0
                             (IntegerConstant 2 (Integer 4) Decimal)
+                            ()
                             ()
                             ()
                             ()

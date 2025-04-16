@@ -17,8 +17,10 @@
 #include <server/lsp_language_server.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
+#include <server/process_usage.h>
 
 namespace LCompilers::LanguageServerProtocol {
+    namespace ls = LCompilers::LLanguageServer;
     namespace lsc = LCompilers::LanguageServerProtocol::Config;
 
     using namespace std::chrono_literals;
@@ -75,8 +77,13 @@ namespace LCompilers::LanguageServerProtocol {
         std::atomic_bool _exit = false;
         std::atomic<TraceValues> trace{TraceValues::Off};
         std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer;
-        std::unordered_map<DocumentUri, std::shared_ptr<LspTextDocument>> documentsByUri;
+        std::unordered_map<
+            DocumentUri,
+            std::shared_ptr<LspTextDocument>
+        > documentsByUri;
         std::shared_mutex documentMutex;
+
+        ls::ProcessUsage pu;
 
         // taskType -> threadName -> startTime
         RunningHistogram runningHistogram;
@@ -101,9 +108,6 @@ namespace LCompilers::LanguageServerProtocol {
         std::map<std::string, std::shared_ptr<std::atomic_bool>> activeRequests;
         std::mutex activeMutex;
 
-        auto isProcessRunning(int pid) -> bool;
-        auto checkParentProcessId() -> void;
-
         std::shared_ptr<lsc::LspConfig> workspaceConfig;
         std::shared_mutex workspaceMutex;
 
@@ -118,6 +122,9 @@ namespace LCompilers::LanguageServerProtocol {
         // See: https://github.com/lfortran/lfortran/issues/6756
         std::thread listener;
 
+        auto isProcessRunning(int pid) -> bool;
+        auto checkParentProcessId() -> void;
+
         auto nextSendId() -> std::size_t;
         auto isInitialized() const -> bool;
         auto isShutdown() const -> bool;
@@ -125,11 +132,15 @@ namespace LCompilers::LanguageServerProtocol {
 
         virtual auto listen() -> void = 0;
 
-        auto collectTelemetry() -> LSPAny;
+        auto collectMessageQueueTelemetry(
+            const std::string &key,
+            ls::MessageQueue &queue
+        ) -> LSPAny;
+        virtual auto collectTelemetry() -> LSPAny;
         auto sendTelemetry() -> void;
 
         template <typename V>
-        auto toAny(const std::map<std::string, V> &map) -> LSPAny {
+        auto toAny(const std::map<std::string, V> &map) const -> LSPAny {
             LSPObject object;
             for (const auto &[key, value] : map) {
                 object.emplace(key, std::make_unique<LSPAny>(toAny(value)));
@@ -139,7 +150,30 @@ namespace LCompilers::LanguageServerProtocol {
             return any;
         }
 
-        auto toAny(const time_point_t &timePoint) -> LSPAny;
+        template <typename V>
+        auto toAny(const std::unordered_map<std::string, V> &map) const -> LSPAny {
+            LSPObject object;
+            for (const auto &[key, value] : map) {
+                object.emplace(key, std::make_unique<LSPAny>(toAny(value)));
+            }
+            LSPAny any;
+            any = std::move(object);
+            return any;
+        }
+
+#ifdef DEBUG
+        auto toAny(const ls::OwnerRecord &record) const -> LSPAny;
+#endif // DEBUG
+        auto toAny(const char *value) const -> LSPAny;
+        auto toAny(int value) const -> LSPAny;
+        auto toAny(const time_point_t &timePoint) const -> LSPAny;
+        auto toAny(const std::string &value) const -> LSPAny;
+        auto toAny(const LSPAny &any) const -> LSPAny;
+        auto toAny(LSPObject &object) const -> LSPAny;
+        auto toAny(LSPArray &array) const -> LSPAny;
+        auto toAny(std::size_t value) const -> LSPAny;
+        auto toAny(double value) const -> LSPAny;
+        auto toAny(bool value) const -> LSPAny;
 
         auto startRunning(const std::string &taskType) -> RunTracer;
 

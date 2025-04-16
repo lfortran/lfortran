@@ -6443,7 +6443,7 @@ public:
             if( ASRUtils::is_descriptorString(ASRUtils::expr_type(args.p[i])) ) {
                 // Any compile-time intrinsic function doesn't need a cast from
                 // descriptorString to pointerString. Only runtime ones need a cast.
-                if(intrinsic_name != "present" && intrinsic_name != "len"){
+                if(intrinsic_name != "present" && intrinsic_name != "len" && intrinsic_name != "move_alloc"){
                     args.p[i] = ASRUtils::cast_string_descriptor_to_pointer(al, args.p[i]);
                 }
             }
@@ -9675,7 +9675,8 @@ public:
             throw SemanticAbort();
         }
         std::string boz_str = s.substr(2, s.size() - 2);
-        int64_t boz_int = std::stoll(boz_str, nullptr, base);
+        uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
+        int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
                 int_type, boz_type);

@@ -39,6 +39,8 @@ namespace LCompilers::LLanguageServer::Threading {
         auto name() const -> const std::string &;
         auto numThreads() -> std::size_t;
         auto numActive() const -> std::size_t;
+        auto numPending() const -> std::size_t;
+        auto numExecuted() const -> std::size_t;
         auto isRunning() const -> bool;
         auto hasCapacity() -> bool;
 
@@ -59,6 +61,7 @@ namespace LCompilers::LLanguageServer::Threading {
         std::atomic_bool stopRunningNow = false;
         std::atomic_size_t activeCount = 0;
         std::atomic_size_t nextGrowSize = 1;
+        std::atomic_size_t m_executed = 0;
 
         auto run(const std::size_t threadId) -> void;
     };

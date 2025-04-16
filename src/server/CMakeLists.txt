@@ -9,6 +9,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 set(LLANGUAGE_SERVER_SRC
+  process_usage.cpp
   lsp_specification.cpp
   lsp_exception.cpp
   lsp_json_parser.cpp

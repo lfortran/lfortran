@@ -17,14 +17,80 @@ contains
     end subroutine calculateArea
 end module Geometry
 
-subroutine solsy ()
-    double precision rowns(209)
-    common /rowns/ rowns(209)
-    print *, set_exponent([1, 2, 3], 2)
-end
+module my_module
+    integer :: x = 10
+end module wrong_module_name
+
+subroutine myname
+end subroutine myname
+
+block data myname
+end block data myname
+
+module continue_compilation_2_mod
+    contains
+
+    subroutine solsy ()
+        double precision rowns(209)
+        common /rowns/ rowns(209)
+        print *, set_exponent([1, 2, 3], 2)
+    end
+    
+    subroutine try_to_change(y)
+        integer, intent(in) :: y
+        y = 99  
+    end subroutine
+
+    subroutine my_subroutine1()
+        print *, "Inside subroutine"
+    end subroutine different_name
+
+    function my_function() result(res)
+        integer :: res
+        res = 42
+    end function not_my_function
+
+    subroutine my_subroutine2()
+        print *, "Inside subroutine"
+    end subroutine different_name 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+end module continue_compilation_2_mod
+
+
 
 ! Only put declarations and statements here, no subroutines (those go above).
 program continue_compilation_2
+    use continue_compilation_2_mod
     use iso_fortran_env
     use iso_c_binding, only: c_ptr, c_f_pointer
     use Geometry
@@ -376,32 +442,3 @@ program continue_compilation_2
     end function
 
 end program
-
-
-subroutine try_to_change(y)
-    integer, intent(in) :: y
-    y = 99  
-end subroutine
-
-module my_module
-    integer :: x = 10
-end module wrong_module_name 
-
-subroutine my_subroutine1()
-    print *, "Inside subroutine"
-end subroutine different_name
-
-function my_function() result(res)
-    integer :: res
-    res = 42
-end function not_my_function
-
-subroutine my_subroutine2()
-    print *, "Inside subroutine"
-end subroutine different_name 
-
-subroutine myname
-end subroutine myname
-
-block data myname
-end block data myname
