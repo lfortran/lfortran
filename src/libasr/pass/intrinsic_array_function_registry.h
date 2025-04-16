@@ -4945,7 +4945,7 @@ namespace Pack {
         if (is_type_allocatable) {
             ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
-        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 3);
         arg_values.push_back(al, expr_value(array)); arg_values.push_back(al, expr_value(mask));
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, array); m_args.push_back(al, mask);
