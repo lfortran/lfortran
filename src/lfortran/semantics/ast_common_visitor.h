@@ -8709,6 +8709,17 @@ public:
         }
     }
 
+    void check_global_procedure_and_enable_separate_compilation(SymbolTable *parent_scope) {
+        if ( parent_scope->parent != nullptr ) {
+            return;
+        }
+        compiler_options.separate_compilation = true;
+        compiler_options.generate_object_code = true;
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        return;
+    }
+
+
     ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym) {
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             if (compiler_options.implicit_interface) {
@@ -8730,7 +8741,7 @@ public:
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
-                    }, lm, compiler_options.separate_compilation
+                    }, lm
                 );
 
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);

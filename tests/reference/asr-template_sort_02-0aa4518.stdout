@@ -3503,6 +3503,7 @@
                     template_sort_02_m]
                     .false.
                     .false.
+                    .false.
                 ),
             template_sort_02_type:
                 (Module
@@ -3684,6 +3685,7 @@
                         })
                     template_sort_02_type
                     []
+                    .false.
                     .false.
                     .false.
                 )

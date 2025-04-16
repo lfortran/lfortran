@@ -934,6 +934,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            m->m_is_separately_compiled = compiler_options.separate_compilation;
 
             // Do not save modfiles for modules that were already loaded
             // from modfiles (as full ASR)
@@ -1118,7 +1119,8 @@ int compile_src_to_object_file(const std::string &infile,
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    t2 = std::chrono::high_resolution_clock::now();
+    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);

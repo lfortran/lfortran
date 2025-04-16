@@ -137,7 +137,8 @@
                             "my_other_module"
                         ],
                         "loaded_from_mod": false,
-                        "intrinsic": false
+                        "intrinsic": false,
+                        "is_separately_compiled": false
                     },
                     "loc": {
                         "first": 148,
@@ -396,7 +397,8 @@
                         "name": "my_other_module",
                         "dependencies": [],
                         "loaded_from_mod": false,
-                        "intrinsic": false
+                        "intrinsic": false,
+                        "is_separately_compiled": false
                     },
                     "loc": {
                         "first": 0,

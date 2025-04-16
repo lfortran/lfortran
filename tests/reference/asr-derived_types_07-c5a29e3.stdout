@@ -598,6 +598,7 @@
                     [tomlf_type_value]
                     .false.
                     .false.
+                    .false.
                 ),
             tomlf_type_keyval:
                 (Module
@@ -807,6 +808,7 @@
                         })
                     tomlf_type_keyval
                     [tomlf_type_value]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -1087,6 +1089,7 @@
                         })
                     tomlf_type_value
                     []
+                    .false.
                     .false.
                     .false.
                 )
