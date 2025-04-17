@@ -518,7 +518,7 @@ jobs:
             cd stdlib
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout n-lf-23
+            git checkout n-lf-3
             git checkout ad6469874d26c7ecd6cf76596f795d0de43d253d
             micromamba install -c conda-forge fypp
 
