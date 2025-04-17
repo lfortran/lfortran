@@ -541,10 +541,9 @@ jobs:
         run: |
             git clone https://github.com/jinangshah21/fortran-primes.git
             cd fortran-primes
-            export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout -t origin/lf-2
-            git checkout 1fb8a91fe0307ce50c56fde9e9ccd20b6d0a07f4
-            ./script.sh
+            git checkout -t origin/lf-3
+            git checkout 923b468f79eee1ff07b77d9def67249f4d2efa21
+            FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
 
       - name: Test POT3D
         shell: bash -e -l {0}
