@@ -243,22 +243,24 @@ class LFortranLspTestClient(LspTestClient):
             self,
             method: str,
             request_id: int,
-            params: Optional[Union[JsonObject, JsonArray]]
+            params: Optional[Union[JsonObject, JsonArray]] = None
     ) -> JsonObject:
-        return {
+        request = {
             "jsonrpc": "2.0",
             "method": method,
             "id": request_id,
-            "params": params,
         }
+        if params is not None:
+            request["params"] = params
+        return request
 
-    def send_get_document(self, params: JsonObject) -> int:
+    def send_document(self, params: JsonObject) -> int:
         request_id = self.next_request_id()
-        request = self.build_custom_request("$/getDocument", request_id, params)
-        self.send_request(request_id, request, self.receive_get_document)
+        request = self.build_custom_request("$/document", request_id, params)
+        self.send_request(request_id, request, self.receive_document)
         return request_id
 
-    def receive_get_document(
+    def receive_document(
             self,
             request: Any,
             message: JsonObject
@@ -266,7 +268,7 @@ class LFortranLspTestClient(LspTestClient):
         pass
 
     def get_remote_document(self, uri: str) -> JsonObject:
-        request_id = self.send_get_document({
+        request_id = self.send_document({
             "uri": uri,
         })
         response = self.await_response(request_id)
@@ -437,3 +439,21 @@ class LFortranLspTestClient(LspTestClient):
             uri = request.params.text_document.uri
             doc = self.get_document("fortran", uri)
             doc.apply(response.result)
+
+    def send_telemetry(self) -> int:
+        request_id = self.next_request_id()
+        request = self.build_custom_request("$/telemetry", request_id)
+        self.send_request(request_id, request, self.receive_telemetry)
+        return request_id
+
+    def receive_telemetry(
+            self,
+            request: Any,
+            message: JsonObject
+    ) -> None:
+        pass
+
+    def get_telemetry(self) -> Any:
+        request_id = self.send_telemetry()
+        response = self.await_response(request_id)
+        return response["result"]

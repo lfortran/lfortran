@@ -355,10 +355,14 @@ namespace LCompilers::LanguageServerProtocol {
             CancelParams &params
         ) -> void override;
 
-        auto receiveGetDocument(
+        auto receiveDocument(
             const RequestMessage &request,
-            GetDocumentParams &params
-        ) -> GetDocumentResult override;
+            DocumentParams &params
+        ) -> DocumentResult override;
+
+        auto receiveTelemetry(
+            const RequestMessage &request
+        ) -> TelemetryResult override;
 
         friend class RunTracer;
     }; // class BaseLspLanguageServer

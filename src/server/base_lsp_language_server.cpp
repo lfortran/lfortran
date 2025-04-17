@@ -236,7 +236,7 @@ namespace LCompilers::LanguageServerProtocol {
                 std::make_unique<LSPAny>(toAny(pu.memoryUtilization()))
             );
             data.emplace(
-                "cpuUtilization",
+                "cpuUsage",
                 std::make_unique<LSPAny>(toAny(pu.cpuUsage()))
             );
             LSPObject event;
@@ -533,6 +533,7 @@ namespace LCompilers::LanguageServerProtocol {
         }
         if (response.error.has_value()) {
             const ResponseError &error = response.error.value();
+            auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
             if ((error.code == static_cast<int>(ErrorCodes::InternalError)) &&
                 workspaceConfig->openIssueReporterOnError) {
                 try {
@@ -854,23 +855,29 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto BaseLspLanguageServer::toJsonString(const LSPAny &any) -> std::string {
+        auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
         if (workspaceConfig->log.prettyPrint) {
             return serializer.pprint(any);
         }
+        workspaceLock.unlock();
         return serializer.serialize(any);
     }
 
     auto BaseLspLanguageServer::toJsonString(const LSPArray &array) -> std::string {
+        auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
         if (workspaceConfig->log.prettyPrint) {
             return serializer.pprint(array);
         }
+        workspaceLock.unlock();
         return serializer.serialize(array);
     }
 
     auto BaseLspLanguageServer::toJsonString(const LSPObject &object) -> std::string {
+        auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
         if (workspaceConfig->log.prettyPrint) {
             return serializer.pprint(object);
         }
+        workspaceLock.unlock();
         return serializer.serialize(object);
     }
 
@@ -1424,12 +1431,12 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
-    // request: "$/getDocument"
-    auto BaseLspLanguageServer::receiveGetDocument(
+    // request: "$/document"
+    auto BaseLspLanguageServer::receiveDocument(
         const RequestMessage &/*request*/,
-        GetDocumentParams &params
-    ) -> GetDocumentResult {
-        GetDocumentResult result;
+        DocumentParams &params
+    ) -> DocumentResult {
+        DocumentResult result;
         std::shared_ptr<LspTextDocument> document = getDocument(params.uri);
         {
             auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + params.uri);
@@ -1438,6 +1445,13 @@ namespace LCompilers::LanguageServerProtocol {
             result.text = document->text();
         }
         return result;
+    }
+
+    // request: "$/telemetry"
+    auto BaseLspLanguageServer::receiveTelemetry(
+        const RequestMessage &/*request*/
+    ) -> TelemetryResult {
+        return collectTelemetry();
     }
 
     // notification: "textDocument/didChange"
