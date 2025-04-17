@@ -1,7 +1,7 @@
 module template_simple_01_m
     implicit none
     private
-    public :: generic_sum
+    public :: generic_sum, test_template
 
     requirement operator_r(T, U, V, binary_func)
         type, deferred :: T
