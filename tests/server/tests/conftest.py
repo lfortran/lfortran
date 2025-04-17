@@ -70,6 +70,10 @@ def client(request: pytest.FixtureRequest, capfd: pytest.CaptureFixture) -> Iter
                 "minSleepTimeMs": 10,
                 "maxSleepTimeMs": 300,
             },
+            "telemetry": {
+                "enabled": True,
+                "frequencyMs": 1000,
+            },
         }
     }
 
