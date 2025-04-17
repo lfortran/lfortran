@@ -9383,10 +9383,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 this->visit_expr_wrapper(x.m_args[i].m_value, true);
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
-                int64_t ptr_loads_copy = ptr_loads;
-                if (LLVM::is_llvm_struct(arg_type)) {
-                    ptr_loads = 1;
-                }
                 this->visit_expr_wrapper(x.m_args[i].m_value);
 
                 if( x_abi == ASR::abiType::BindC ) {
@@ -9412,7 +9408,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     }
                 }
                 llvm::Value *value = tmp;
-                ptr_loads = ptr_loads_copy;
                 // TODO: we are getting a warning of uninitialized variable,
                 // there might be a bug below.
                 llvm::Type *target_type = nullptr;
