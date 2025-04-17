@@ -526,6 +526,8 @@ jobs:
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
             make -j8
             ctest
+            cd ..
+            rm -rf stdlib
 
       - name: Test Numerical Methods Fortran
         shell: bash -e -x -l {0}
