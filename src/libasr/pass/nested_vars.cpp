@@ -381,6 +381,49 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                 ASRUtils::type_get_past_allocatable(var_type)));
                         }
                     }
+                } else if (ASR::is_a<ASR::ClassType_t>(*var_type_)) {
+                    ASR::ClassType_t* class_t = ASR::down_cast<ASR::ClassType_t>(var_type_);
+                    if (current_scope->get_counter() != ASRUtils::symbol_parent_symtab(
+                            class_t->m_class_type)->get_counter()) {
+                        ASR::symbol_t* m_class_type = current_scope->get_symbol(
+                            ASRUtils::symbol_name(class_t->m_class_type));
+                        if (m_class_type == nullptr) {
+                            if (!ASR::is_a<ASR::Program_t>(
+                                    *ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
+                                        class_t->m_class_type)))) {
+                                ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(class_t->m_class_type);
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(original_symbol, current_scope);
+                                m_class_type = current_scope->get_symbol(
+                                    ASRUtils::symbol_name(original_symbol));
+                                class_t->m_class_type = m_class_type;
+                            } else {
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(class_t->m_class_type, current_scope);
+                                ASR::down_cast<ASR::Program_t>(
+                                    ASRUtils::get_asr_owner(&var->base))->m_symtab->erase_symbol(
+                                        ASRUtils::symbol_name(class_t->m_class_type));
+                                m_class_type = current_scope->get_symbol(
+                                    ASRUtils::symbol_name(class_t->m_class_type));
+                            }
+                        }
+
+                        var_type_ = ASRUtils::TYPE(ASR::make_ClassType_t(al, class_t->base.base.loc,
+                                    m_class_type));
+
+                        if (ASR::is_a<ASR::Array_t>(*var_type)) {
+                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
+                            var_type = ASRUtils::make_Array_t_util(al, class_t->base.base.loc,
+                                var_type_, array_t->m_dims, array_t->n_dims);
+                        } else {
+                            var_type = var_type_;
+                        }
+
+                        if (ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_allocatable(var->m_type))) {
+                            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
+                                ASRUtils::type_get_past_allocatable(var_type)));
+                        }
+                    }
                 }
                 if( (ASRUtils::is_array(var_type) && !is_pointer) ||
                     is_allocatable ) {
