@@ -459,15 +459,22 @@ public:
                                             false, false);
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         if( x.class_type == AST::modType::Submodule ) {
-            ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
-                                                parent_name, x.base.base.loc, false,
-                                                compiler_options.po, true,
-                                                [&](const std::string &msg, const Location &loc) {
-                                                    diag.add(diag::Diagnostic(
-                                                        msg, diag::Level::Error, diag::Stage::Semantic, {
-                                                            diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm, compiler_options.separate_compilation
-                                                ));
+            ASR::symbol_t* submod_parent = nullptr;
+            try {
+                submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
+                    parent_name, x.base.base.loc, false,
+                    compiler_options.po, true,
+                    [&](const std::string &msg, const Location &loc) {
+                        diag.add(diag::Diagnostic(
+                            msg, diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {loc})}));
+                        throw SemanticAbort();}, lm, compiler_options.separate_compilation
+                    ));
+            } catch ( LCompilersException &e ) {
+                diag.add(Diagnostic(e.msg(),
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
@@ -3047,14 +3054,21 @@ public:
             while (tu_symtab->parent != nullptr) {
                 tu_symtab = tu_symtab->parent;
             }
-            t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
-                msym, x.base.base.loc, false, compiler_options.po, true,
-                [&](const std::string &msg, const Location &loc) {
-                    diag.add(diag::Diagnostic(
-                        msg, diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {loc})}));
-                    throw SemanticAbort();
-            }, lm, compiler_options.separate_compilation));
+            try {
+                t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
+                    msym, x.base.base.loc, false, compiler_options.po, true,
+                    [&](const std::string &msg, const Location &loc) {
+                        diag.add(diag::Diagnostic(
+                            msg, diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {loc})}));
+                        throw SemanticAbort();
+                }, lm, compiler_options.separate_compilation));
+            } catch ( LCompilersException &e ) {
+                diag.add(Diagnostic(e.msg(),
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(

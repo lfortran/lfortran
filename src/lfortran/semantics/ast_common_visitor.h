@@ -8724,14 +8724,20 @@ public:
 
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
 
-        ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,
-                loc, true, compiler_options.po, true,
-                [&](const std::string &msg, const Location &loc) {
-                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                        throw SemanticAbort();
-                    }, lm, compiler_options.separate_compilation
-                );
-
+        ASR::Module_t *m = nullptr;
+        try {
+            m = ASRUtils::load_module(al, tu_symtab, module_name,
+                    loc, true, compiler_options.po, true,
+                    [&](const std::string &msg, const Location &loc) {
+                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
+                            throw SemanticAbort();
+                        }, lm, compiler_options.separate_compilation
+                    );
+        } catch ( LCompilersException &e ) {
+            diag.add(Diagnostic(e.msg(),
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
             diag.add(Diagnostic("The symbol '" + remote_sym
