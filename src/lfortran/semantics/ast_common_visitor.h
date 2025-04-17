@@ -1514,7 +1514,7 @@ public:
             }
         }
 
-        if (var_name == "c_null_ptr") {
+        if (var_name == "c_null_ptr" || var_name == "c_null_funptr") {
             // Check if c_null_ptr is imported from iso_c_binding (intrinsic module)
             if (v && ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
                 std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
@@ -1523,7 +1523,6 @@ public:
                     tmp = ASR::make_PointerNullConstant_t(al, loc, type_);
                     return tmp;
                 }
-
             }
         }
         if (!v) {

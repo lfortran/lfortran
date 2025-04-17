@@ -28,6 +28,7 @@ integer, parameter :: c_bool = 1
 integer, parameter :: c_char = 1
 character(len=1), parameter :: c_null_char = char(0)
 type(c_ptr), parameter :: c_null_ptr = c_ptr(0)
+type(c_funptr), parameter :: c_null_funptr = c_funptr(0)
 
 interface
     logical function c_associated(c_ptr_1)
