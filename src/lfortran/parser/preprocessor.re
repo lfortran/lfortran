@@ -228,6 +228,24 @@ void interval_end_type_0(LocationManager &lm, size_t output_len,
     interval_end(lm, output_len, input_len, input_interval_len, 0);
 }
 
+enum class DirectiveType {
+    If,
+    Ifdef,
+    Ifndef
+};
+
+inline std::string to_string(DirectiveType type) {
+    switch (type) {
+        case DirectiveType::If:
+            return "if";
+        case DirectiveType::Ifdef:
+            return "ifdef";
+        case DirectiveType::Ifndef:
+            return "ifndef";
+        default:
+            return "unknown";
+    }
+}
 
 struct ConditionalDirectives {
     // The conditional directive is active, meaning one of its branches might
@@ -239,7 +257,7 @@ struct ConditionalDirectives {
     // ConditionalDirective's enabled branch has been executed, now we just need to process
     // and skip all `elif` and `else`.
     bool enabled_branch_executed=false;
-    std::string type = "";
+    DirectiveType type;
 };
 
 namespace {
@@ -297,7 +315,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             }
             end {
                 if (ConditionalDirectives_stack.size() > 0) {
-                    std::string unterminated_directive = "#" + ConditionalDirectives_stack[ConditionalDirectives_stack.size() - 1].type;
+                    std::string unterminated_directive = "#" + to_string(ConditionalDirectives_stack[ConditionalDirectives_stack.size() - 1].type);
                     Location loc;
                     loc.first = tok - string_start;
                     loc.last = loc.first;
@@ -362,7 +380,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             "#" whitespace? "ifdef" whitespace @t1 name @t2 whitespace? newline {
                 ConditionalDirectives ifdef;
                 ifdef.active = branch_enabled;
-                ifdef.type = "ifdef";
+                ifdef.type = DirectiveType::Ifdef;
                 if (ifdef.active) {
                     std::string macro_name = token(t1, t2);
                     if (macro_definitions.find(macro_name) != macro_definitions.end()) {
@@ -384,7 +402,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             "#" whitespace? "ifndef" whitespace @t1 name @t2 whitespace? newline {
                 ConditionalDirectives ifndef;
                 ifndef.active = branch_enabled;
-                ifndef.type = "ifndef";
+                ifndef.type = DirectiveType::Ifndef;
                 if (ifndef.active) {
                     std::string macro_name = token(t1, t2);
                     if (macro_definitions.find(macro_name) != macro_definitions.end()) {
@@ -406,7 +424,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 newline {
                 ConditionalDirectives if_directive;
                 if_directive.active = branch_enabled;
-                if_directive.type = "if";
+                if_directive.type = DirectiveType::If;
                 if (if_directive.active) {
                     bool test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
                     cur = t1;
