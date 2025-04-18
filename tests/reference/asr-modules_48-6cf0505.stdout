@@ -1,3 +1,4 @@
+Registering interface: fnv_1a with procedures: fnv_1a_char, fnv_1a_string_t, 
 (TranslationUnit
     (SymbolTable
         1

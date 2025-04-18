@@ -1,3 +1,6 @@
+Registering interface: len with procedures: len_string, 
+Registering interface: char with procedures: char_string, 
+Registering interface: padl with procedures: padl_char_default, padl_char_pad_with, 
 (TranslationUnit
     (SymbolTable
         1

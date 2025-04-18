@@ -1,3 +1,4 @@
+Registering interface: get_value with procedures: get_elem_table, get_elem_value_string, 
 (TranslationUnit
     (SymbolTable
         1

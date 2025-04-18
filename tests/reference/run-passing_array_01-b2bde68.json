@@ -5,8 +5,8 @@
     "infile_hash": "c4f23f8af4c7add1c1eeab42b957fd5885da76f668ca6b1b86660896",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
+    "stdout": "run-passing_array_01-b2bde68.stdout",
+    "stdout_hash": "944c66c151347e0d3a2b103d6e05aa209da060c21ccae3bc4489726a",
     "stderr": "run-passing_array_01-b2bde68.stderr",
     "stderr_hash": "59aa29b7099f795300614c65d9ddb0c7314a7775a9d19e61a4c01e8d",
     "returncode": 1
