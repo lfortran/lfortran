@@ -1,4 +1,4 @@
-#ifndef a
+#ifdef a
 
 program unterminated_ifdef_01
    implicit none
