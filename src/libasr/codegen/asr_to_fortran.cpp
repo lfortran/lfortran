@@ -490,7 +490,9 @@ public:
         }
         bool is_return_var_declared = false;
         if (x.m_return_var) {
-            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var))) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var)) &&
+                !ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_return_var)) &&
+                !ASRUtils::is_pointer(ASRUtils::expr_type(x.m_return_var))) {
                 is_return_var_declared = true;
                 r += get_type(ASRUtils::expr_type(x.m_return_var));
                 r += " ";
