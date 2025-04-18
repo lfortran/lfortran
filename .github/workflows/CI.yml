@@ -519,7 +519,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
 
             git checkout n-lf-3
-            git checkout 55eec60bd43d039a03773ec1471fc467acba7ead
+            git checkout 67b9534ab21daff4dd4922fe0d14f4c5ca37016c
             micromamba install -c conda-forge fypp
 
             git clean -fdx
