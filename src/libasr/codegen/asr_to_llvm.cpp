@@ -8200,6 +8200,31 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 }
                 break;
             }
+            // adding case of boolean type input (TO DO:- boolean array)
+            case (ASR::ttypeType::Logical):{
+                std::string runtime_func_name;
+                llvm::Type *type_arg;
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+
+                if (a_kind == 4) {
+                    runtime_func_name = "_lfortran_read_logical";
+                    type_arg = llvm::Type::getInt1Ty(context); // LLVM boolean type (1 bit)
+                } else {
+                    throw CodeGenError("Read Logical function not implemented for kind: " + std::to_string(a_kind));
+                }
+
+                fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                type_arg->getPointerTo(),
+                                llvm::Type::getInt32Ty(context)
+                            }, false);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                }
+                break;
+            }
             case (ASR::ttypeType::Real): {
                 std::string runtime_func_name;
                 llvm::Type *type_arg;
