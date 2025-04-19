@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr_preprocess-unterminated_ifndef_01-1761667.stderr",
-    "stderr_hash": "4cb0a42050205b47398e8e29e114e5a443ac28595ace1482b9ead7ef",
+    "stderr_hash": "c2c3a02d83fdb5ea648eead71bf83e6460c22d1a43ece2fa084e3fc2",
     "returncode": 2
 }

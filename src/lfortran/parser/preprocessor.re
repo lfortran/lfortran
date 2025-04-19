@@ -247,7 +247,7 @@ inline std::string to_string(DirectiveType type) {
     }
 }
 
-struct ConditionalDirectives {
+struct ConditionalDirective {
     // The conditional directive is active, meaning one of its branches might
     // get executed
     // Inactive conditional directive is in a dead branch of another conditional directive
@@ -258,6 +258,7 @@ struct ConditionalDirectives {
     // and skip all `elif` and `else`.
     bool enabled_branch_executed=false;
     DirectiveType type;
+    Location loc;
 };
 
 namespace {
@@ -276,7 +277,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
     lm.get_newlines(input, lm.files.back().in_newlines0);
     lm.files.back().out_start0.push_back(0);
     lm.files.back().in_start0.push_back(0);
-    std::vector<ConditionalDirectives> ConditionalDirectives_stack;
+    std::vector<ConditionalDirective> ConditionalDirective_stack;
     bool branch_enabled = true;
     macro_definitions["__FILE__"].expansion = "\"" + lm.files.back().in_filename + "\"";
     try {
@@ -314,12 +315,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 continue;
             }
             end {
-                if (ConditionalDirectives_stack.size() > 0) {
-                    std::string unterminated_directive = "#" + to_string(ConditionalDirectives_stack[ConditionalDirectives_stack.size() - 1].type);
-                    Location loc;
-                    loc.first = tok - string_start;
-                    loc.last = loc.first;
-                    throw PreprocessorError("Unterminated " + unterminated_directive, loc);
+                if (ConditionalDirective_stack.size() > 0) {
+                    ConditionalDirective directive = ConditionalDirective_stack[ConditionalDirective_stack.size() - 1];
+                    std::string unterminated_directive = "#" + to_string(directive.type);
+                    throw PreprocessorError("Unterminated " + unterminated_directive, directive.loc);
                 }
                 break;
             }
@@ -378,9 +377,13 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 continue;
             }
             "#" whitespace? "ifdef" whitespace @t1 name @t2 whitespace? newline {
-                ConditionalDirectives ifdef;
+                ConditionalDirective ifdef;
                 ifdef.active = branch_enabled;
                 ifdef.type = DirectiveType::Ifdef;
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = loc.first;
+                ifdef.loc = loc;
                 if (ifdef.active) {
                     std::string macro_name = token(t1, t2);
                     if (macro_definitions.find(macro_name) != macro_definitions.end()) {
@@ -393,16 +396,20 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 } else {
                     ifdef.branch_enabled = false;
                 }
-                ConditionalDirectives_stack.push_back(ifdef);
+                ConditionalDirective_stack.push_back(ifdef);
                 if (!ifdef.active) continue;
 
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
             "#" whitespace? "ifndef" whitespace @t1 name @t2 whitespace? newline {
-                ConditionalDirectives ifndef;
+                ConditionalDirective ifndef;
                 ifndef.active = branch_enabled;
                 ifndef.type = DirectiveType::Ifndef;
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = loc.first;
+                ifndef.loc = loc;
                 if (ifndef.active) {
                     std::string macro_name = token(t1, t2);
                     if (macro_definitions.find(macro_name) != macro_definitions.end()) {
@@ -415,16 +422,20 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 } else {
                     ifndef.branch_enabled = false;
                 }
-                ConditionalDirectives_stack.push_back(ifndef);
+                ConditionalDirective_stack.push_back(ifndef);
                 if (!ifndef.active) continue;
 
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
             "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 newline {
-                ConditionalDirectives if_directive;
+                ConditionalDirective if_directive;
                 if_directive.active = branch_enabled;
                 if_directive.type = DirectiveType::If;
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = loc.first;
+                if_directive.loc = loc;
                 if (if_directive.active) {
                     bool test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
                     cur = t1;
@@ -438,20 +449,20 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 } else {
                     if_directive.branch_enabled = false;
                 }
-                ConditionalDirectives_stack.push_back(if_directive);
+                ConditionalDirective_stack.push_back(if_directive);
                 if (!if_directive.active) continue;
 
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
             "#" whitespace? "else" whitespace? comment? newline  {
-                if (ConditionalDirectives_stack.size() == 0) {
+                if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
                     loc.last = loc.first;
                     throw PreprocessorError("#else encountered outside of #ifdef or #ifndef", loc);
                 }
-                ConditionalDirectives ifdef = ConditionalDirectives_stack[ConditionalDirectives_stack.size()-1];
+                ConditionalDirective ifdef = ConditionalDirective_stack[ConditionalDirective_stack.size()-1];
                 if (ifdef.active) {
                     if (!ifdef.branch_enabled && !ifdef.enabled_branch_executed) {
                         ifdef.branch_enabled = true;
@@ -459,7 +470,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     } else {
                         ifdef.branch_enabled = false;
                     }
-                    ConditionalDirectives_stack[ConditionalDirectives_stack.size()-1] = ifdef;
+                    ConditionalDirective_stack[ConditionalDirective_stack.size()-1] = ifdef;
                     branch_enabled = ifdef.branch_enabled;
                 } else {
                     continue;
@@ -469,13 +480,13 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 continue;
             }
             "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
-                if (ConditionalDirectives_stack.size() == 0) {
+                if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
                     loc.last = loc.first;
                     throw PreprocessorError("#elif encountered outside of #ifdef or #ifndef", loc);
                 }
-                ConditionalDirectives ifdef = ConditionalDirectives_stack[ConditionalDirectives_stack.size()-1];
+                ConditionalDirective ifdef = ConditionalDirective_stack[ConditionalDirective_stack.size()-1];
                 if (ifdef.active) {
                     if (!ifdef.branch_enabled && !ifdef.enabled_branch_executed) {
                         bool test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
@@ -490,7 +501,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         ifdef.branch_enabled = false;
                     }
                     branch_enabled = ifdef.branch_enabled;
-                    ConditionalDirectives_stack[ConditionalDirectives_stack.size()-1] = ifdef;
+                    ConditionalDirective_stack[ConditionalDirective_stack.size()-1] = ifdef;
                 } else {
                     continue;
                 }
@@ -499,14 +510,14 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 continue;
             }
             "#" whitespace? "endif" whitespace? comment? newline  {
-                if (ConditionalDirectives_stack.size() == 0) {
+                if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
                     loc.last = loc.first;
                     throw PreprocessorError("#endif encountered outside of #ifdef or #ifndef", loc);
                 }
-                ConditionalDirectives ifdef = ConditionalDirectives_stack[ConditionalDirectives_stack.size()-1];
-                ConditionalDirectives_stack.pop_back();
+                ConditionalDirective ifdef = ConditionalDirective_stack[ConditionalDirective_stack.size()-1];
+                ConditionalDirective_stack.pop_back();
                 if (ifdef.active) {
                     branch_enabled = true;
                 } else {

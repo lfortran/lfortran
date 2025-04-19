@@ -1,5 +1,5 @@
 C preprocessor error: Unterminated #ifndef
- --> tests/errors/unterminated_ifndef_01.f90:7:1
+ --> tests/errors/unterminated_ifndef_01.f90:1:1
   |
-7 | 
+1 | #ifndef a
   | ^ 
