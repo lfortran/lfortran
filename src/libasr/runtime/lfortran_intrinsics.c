@@ -9,6 +9,7 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
+#include <errno.h>  
 
 #define PI 3.14159265358979323846
 #if defined(_WIN32)
@@ -3504,11 +3505,33 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
     }
 }
 
+// Improved input validation for integer reading
+// - Prevents auto-casting of invalid inputs to integers
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%d", p);
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Use strtok() to extract only the first token before any whitespace
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+            exit(1);
+        }
+
+        char *endptr;
+        *p = (int32_t)strtol(token, &endptr, 10);
+
+        // If any junk remains in the token, reject the input
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+            exit(1);
+        }
         return;
     }
 
@@ -3520,17 +3543,40 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
+            exit(1);
+        }
     } else {
-        (void)!fscanf(filep, "%d", p);
+        if (fscanf(filep, "%d", p) != 1) {
+            fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
+            exit(1);
+        }
     }
 }
 
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%" PRId64, p);
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
+        }
+
+        char *endptr;
+        *p = (int64_t)strtoll(token, &endptr, 10);
+
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
+        }
         return;
     }
 
@@ -3542,12 +3588,18 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
+            exit(1);
+        }
     } else {
-        (void)!fscanf(filep, "%" PRId64, p);
+        if (fscanf(filep, "%" PRId64, p) != 1) {
+            fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
+            exit(1);
+        }
     }
 }
-
+// boolean read implementation is in process
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -3698,11 +3750,32 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
     }
 }
 
+
+// Improved input validation for float reading
+// - Prevents auto-casting of invalid inputs to float/real
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%f", p);
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for float.\n");
+            exit(1);
+        }
+
+        char *endptr;
+        *p = strtof(token, &endptr);
+
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for float.\n");
+            exit(1);
+        }
         return;
     }
 
@@ -3714,9 +3787,15 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read float from binary file.\n");
+            exit(1);
+        }
     } else {
-        (void)!fscanf(filep, "%f", p);
+        if (fscanf(filep, "%f", p) != 1) {
+            fprintf(stderr, "Error: Invalid input for float from file.\n");
+            exit(1);
+        }
     }
 }
 
