@@ -2194,11 +2194,11 @@ namespace LCompilers {
             }
             case ASR::ttypeType::StructType: {
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(asr_type);
-                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
-                std::string der_type_name = std::string(struct_type_t->m_name);
-                while( struct_type_t != nullptr ) {
-                    for( auto item: struct_type_t->m_symtab->get_scope() ) {
+                std::string der_type_name = std::string(struct_sym->m_name);
+                while( struct_sym != nullptr ) {
+                    for( auto item: struct_sym->m_symtab->get_scope() ) {
                         if( ASR::is_a<ASR::ClassProcedure_t>(*item.second) ||
                             ASR::is_a<ASR::CustomOperator_t>(*item.second) ) {
                             continue ;
@@ -2225,18 +2225,18 @@ namespace LCompilers {
                             ASRUtils::symbol_type(item.second),
                             module, name2memidx);
                     }
-                    if( struct_type_t->m_parent != nullptr ) {
+                    if( struct_sym->m_parent != nullptr ) {
                         // gep the parent struct, which is the 0th member of the child struct
-                        src = create_gep2(name2dertype[struct_type_t->m_name], src, 0);
-                        dest = create_gep2(name2dertype[struct_type_t->m_name], dest, 0);
+                        src = create_gep2(name2dertype[struct_sym->m_name], src, 0);
+                        dest = create_gep2(name2dertype[struct_sym->m_name], dest, 0);
 
                         ASR::Struct_t* parent_struct_type_t =
-                            ASR::down_cast<ASR::Struct_t>(struct_type_t->m_parent);
+                            ASR::down_cast<ASR::Struct_t>(struct_sym->m_parent);
 
                         der_type_name = parent_struct_type_t->m_name;
-                        struct_type_t = parent_struct_type_t;
+                        struct_sym = parent_struct_type_t;
                     } else {
-                        struct_type_t = nullptr;
+                        struct_sym = nullptr;
                     }
                 }
                 break ;
