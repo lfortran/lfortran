@@ -115,8 +115,8 @@ namespace LCompilers::LLanguageServer::Logging {
         auto debug() -> Formatter;
         auto trace() -> Formatter;
 
-        auto threadName(const std::string &threadName) -> void;
-        auto threadName() const -> const std::string &;
+        static auto threadName(const std::string &threadName) -> void;
+        static auto threadName() -> const std::string &;
 
         auto typeName() const -> const std::string &;
         auto attributes() const -> const std::vector<std::string> &;

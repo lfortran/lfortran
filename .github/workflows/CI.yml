@@ -511,6 +511,24 @@ jobs:
             ./build0.sh
             ./build1.sh
 
+      - name: Test stdlib ( Less Workarounds )
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/czgdp1807/stdlib.git
+            cd stdlib
+            export PATH="$(pwd)/../src/bin:$PATH"
+
+            git checkout n-lf-3
+            git checkout 02230ca186f22e2b96a1cb25f4255e0f7b042e47
+            micromamba install -c conda-forge fypp
+
+            git clean -fdx
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+            make -j8
+            ctest
+            cd ..
+            rm -rf stdlib
+
       - name: Test Numerical Methods Fortran
         shell: bash -e -x -l {0}
         run: |
@@ -536,6 +554,15 @@ jobs:
             ./plot_pendulum.exe
             ./plot_transes_iso.exe
 
+      - name: Test Fortran-Primes
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/jinangshah21/fortran-primes.git
+            cd fortran-primes
+            git checkout -t origin/lf-3
+            git checkout 923b468f79eee1ff07b77d9def67249f4d2efa21
+            FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
+
       - name: Test POT3D
         shell: bash -e -l {0}
         run: |
@@ -547,7 +574,7 @@ jobs:
             # 3. MPI support replaced with custom MPI wrappers (we've C MPI wrappers from https://github.com/gxyd/c_mpi)
             # 4. moved global procedures to module procedures (see: https://github.com/lfortran/lfortran/issues/6059)
             git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
-            git checkout eb05c69d30b7c88454d97d66ab6be46db10e7552
+            git checkout 83e1e90db7e7517fcbe8c7bce5ba309addfb23f6
             FC="$(pwd)/../src/bin/lfortran" ./build_and_run.sh
             FC="$(pwd)/../src/bin/lfortran --fast --skip-pass=dead_code_removal" ./build_and_run.sh
 

@@ -1,0 +1,5 @@
+C preprocessor error: Unterminated comment
+ --> tests/errors/unterminated_comment_01.f90:3:8
+  |
+3 | #endif /* unterminated comment starts here
+  |        ^ 

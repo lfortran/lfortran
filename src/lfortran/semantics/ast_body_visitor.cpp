@@ -750,8 +750,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         std::string read_write = "";
         bool formatted = (n_args == 2);
@@ -958,6 +958,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 ASR::expr_t* adv_val_expr = ASRUtils::EXPR(tmp);
+                a_advance = adv_val_expr;
                 ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_String_t(
                     al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
                 ASR::expr_t *empty = ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -981,6 +982,11 @@ public:
                         throw SemanticAbort();
                     }
                 } else {
+                    Vec<ASR::expr_t*> trim_arg; trim_arg.reserve(al, 1);
+                    trim_arg.push_back(al, a_advance);
+                    a_advance = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, a_advance->base.loc,
+                        static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim),
+                        trim_arg.p, trim_arg.n, 0, ASRUtils::expr_type(a_advance), nullptr));
                     ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
                         al, loc, 1, 3, nullptr, ASR::string_physical_typeType::PointerString));
                     ASR::expr_t *yes = ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -1091,8 +1097,8 @@ public:
                         a_values_vec.size(), a_separator, a_end, nullptr, true);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
-                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg, 
-                        a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr, formatted);
+                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg, a_iostat,
+                        a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr, formatted);
                     print_statements[tmp] = std::make_pair(&r->base,label);
                 }
                 return;
@@ -1124,8 +1130,8 @@ public:
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
         } else if( _type == AST::stmtType::Read ) {
-            tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted);
+            tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
+               a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted);
         }
 
         tmp_vec.push_back(tmp);
@@ -1627,7 +1633,7 @@ public:
                             int source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
                             int var_dim_shape = ASRUtils::extract_dim_value_int(var_m_dims[j].m_length);
 
-                            if (source_dim_shape != var_dim_shape) {
+                            if (source_dim_shape != -1 && var_dim_shape != -1 && source_dim_shape != var_dim_shape) {
                                 diag.add(Diagnostic(
                                             "Shape mismatch in `allocate` statement.",
                                             Level::Error, Stage::Semantic, {
@@ -4440,7 +4446,9 @@ public:
                 tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
                     head, body.p, body.size(), nullptr, 0);
             }
-            do_loop_variables.pop_back();
+            if (do_loop_variables.size() > 0) {
+                do_loop_variables.pop_back();
+            }
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));

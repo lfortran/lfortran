@@ -3167,10 +3167,10 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
 }
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id) {
-    *unit_file_bin = false;
+    if (unit_file_bin) *unit_file_bin = false;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
-            *unit_file_bin = unit_to_file[i].unit_file_bin;
+            if (unit_file_bin) *unit_file_bin = unit_to_file[i].unit_file_bin;
             if (access_id) *access_id = unit_to_file[i].access_id;
             return unit_to_file[i].filep;
         }
@@ -3230,6 +3230,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         access = "sequential";
     }
     bool file_exists[1] = {false};
+    FILE *already_open = get_file_pointer_from_unit(unit_num, NULL, NULL);
 
     size_t len = strlen(f_name);
     if (*(f_name + len - 1) == ' ') {
@@ -3305,7 +3306,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     } else if (streql(status, "replace") || streql(status, "scratch")) {
         access_mode = "w+";
     } else if (streql(status, "unknown")) {
-        if (!*file_exists) {
+        if (!*file_exists && !already_open) {
             FILE *fd = fopen(f_name, "w");
             if (fd) {
                 fclose(fd);
@@ -3389,6 +3390,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     }
 
     if (iostat == NULL || (*iostat == 0)) {
+        if (already_open) {
+            return (int64_t) already_open;
+        }
         FILE *fd = fopen(f_name, access_mode);
         if (!fd && iostat == NULL)
         {
@@ -3658,10 +3662,6 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
         } else {
             data_length = end_pos - current_pos;  // For access=stream read till last
         }
-        if (data_length < var_len) {
-            printf("Error reading data as reached end of file.\n");
-            exit(1);
-        }
 
         // allocate memory for the data based on data length
         *p = (char*)malloc((var_len + 1) * sizeof(char));
@@ -3670,8 +3670,10 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
             exit(1);
         }
 
+        data_length = data_length > var_len ? var_len : data_length;
+
         // read the actual data
-        if (fread(*p, sizeof(char), var_len, filep) != var_len) {
+        if (fread(*p, sizeof(char), data_length, filep) != data_length) {
             printf("Error reading data from file.\n");
             free(*p);
             exit(1);
@@ -3842,7 +3844,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* fmt, int32_t no_of_args, ...)
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, char* fmt, int32_t no_of_args, ...)
 {
     if (!streql(fmt, "(a)")) {
         printf("Only (a) supported as fmt currently");
@@ -3901,7 +3903,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             free(buffer);
             return;
         } else {
-            if (streql(buffer, "\n")) {
+            // If we have advance="no" specified and we also have '\n' in buffer, iostat = -2 (end of record)
+            // (strcspn(buffer, "\n") != n) checks if '\n' is present in buffer or not
+            if (streql(buffer, "\n") || (streql(advance, "no") && strcspn(buffer, "\n") != n)) {
                 *iostat = -2;
             } else {
                 *iostat = 0;
