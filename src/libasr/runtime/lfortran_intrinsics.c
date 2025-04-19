@@ -3596,6 +3596,64 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
     }
 }
 // boolean read implementation is in process
+// Implementing a Logical read API (starting with the basic input of just logical-further, logicalArray also needed)
+// changes for the same are in: asr_to_llvm.cpp (line 8210 onwards)
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        char buffer[100];   // Long enough buffer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for logical.\n");
+            exit(1);
+        }
+
+        if (strcasecmp(token, "true") == 0 || strcmp(token, ".true") == 0 || strcmp(token, "1") == 0) {
+            *p = true;
+        } else if (strcasecmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, "0") == 0) {
+            *p = false;
+        } else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true, .false, 1 or 0.\n", token);
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read logical from binary file.\n");
+            exit(1);
+        }
+    } else {
+        char token[10];
+        if (fscanf(filep, "%9s", token) != 1) {
+            fprintf(stderr, "Error: Invalid logical input from file.\n");
+            exit(1);
+        }
+
+        if (strcasecmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, "1") == 0) {
+            *p = true;
+        } else if (strcasecmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, "0") == 0) {
+            *p = false;
+        } else {
+            fprintf(stderr, "Error: Invalid logical input '%s' from file. Use .true., .false., 1 or 0.\n", token);
+            exit(1);
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
