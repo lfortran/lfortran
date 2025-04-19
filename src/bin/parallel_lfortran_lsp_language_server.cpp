@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <shared_mutex>
 #include <string>
 
 #include <server/lsp_exception.h>
@@ -88,9 +87,9 @@ namespace LCompilers::LanguageServerProtocol {
     auto ParallelLFortranLspLanguageServer::validate(
         std::shared_ptr<LspTextDocument> document
     ) -> void {
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
+        auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
         const std::string &uri = document->uri();
-        std::unique_lock<std::shared_mutex> writeLock(validationMutex);
+        auto writeLock = LSP_WRITE_LOCK(validationMutex, "validation");
         auto iter = validationsByUri.find(uri);
         if (iter != validationsByUri.end()) {
             // If an older version of the document is being validated, cancel it
@@ -101,12 +100,12 @@ namespace LCompilers::LanguageServerProtocol {
             workerPool.execute([this, document = std::move(document)](
                 std::shared_ptr<std::atomic_bool> taskIsRunning
             ) {
-                std::shared_lock<std::shared_mutex> readLock(document->mutex());
+                auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
                 const std::string &uri = document->uri();
                 readLock.unlock();
                 LFortranLspLanguageServer::validate(*document, *taskIsRunning);
                 readLock.lock();
-                std::unique_lock<std::shared_mutex> writeLock(validationMutex);
+                auto writeLock = LSP_WRITE_LOCK(validationMutex, "validation");
                 auto iter = validationsByUri.find(uri);
                 if (iter != validationsByUri.end()) {
                     validationsByUri.erase(iter);
@@ -125,12 +124,15 @@ namespace LCompilers::LanguageServerProtocol {
                 if (!*taskIsRunning) {
                     return;
                 }
-                std::shared_lock<std::shared_mutex> documentLock(document->mutex());
+                auto documentLock = LSP_READ_LOCK(
+                    document->mutex(),
+                    "document:" + document->uri()
+                );
                 if (!*taskIsRunning) {
                     return;
                 }
                 int version = document->version();
-                std::unique_lock<std::shared_mutex> highlightsLock(highlightsMutex);
+                auto highlightsLock = LSP_WRITE_LOCK(highlightsMutex, "highlights");
                 if (!*taskIsRunning) {
                     return;
                 }

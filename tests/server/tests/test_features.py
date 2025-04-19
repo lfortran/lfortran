@@ -2,6 +2,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import List
 
+import pytest
+
 from lsprotocol.types import (CompletionItem, CompletionItemKind,
                               DidChangeConfigurationParams, DocumentHighlight,
                               DocumentSymbol, Hover, MarkupContent, MarkupKind,
@@ -10,6 +12,7 @@ from lsprotocol.types import (CompletionItem, CompletionItemKind,
 from lfortran_language_server.lfortran_lsp_test_client import \
     LFortranLspTestClient
 
+from llanguage_test_client.json_rpc import JsonArray
 from llanguage_test_client.lsp_test_client import IncomingEvent
 
 
@@ -522,3 +525,8 @@ def test_partial_document_formatting(client: LFortranLspTestClient) -> None:
         "end module module_function_call1",
         ""
     ])
+
+def test_telemetry_event(client: LFortranLspTestClient) -> None:
+    telemetry: JsonArray = client.get_telemetry()
+    if not any(filter(lambda event: event["key"] == "processUsage", telemetry)):
+        pytest.skip("ProcessUsage is not supported on this platform")

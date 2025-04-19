@@ -4,6 +4,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -12,6 +13,7 @@
 #include <string>
 #include <thread>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 
 #include <server/base_lsp_language_server.h>
@@ -100,23 +102,42 @@ namespace LCompilers::LanguageServerProtocol {
         const milliseconds_t RECENT_REQUEST_TIMEOUT = 1000ms;
         TTLCache<std::string> recentRequests;
         std::shared_mutex recentMutex;
-        auto expireCaches(std::shared_ptr<std::atomic_bool> taskIsRunning) -> void;
-
-        auto ttl(const milliseconds_t &timeout) const -> time_point_t;
-        auto randomBetween(
-            const milliseconds_t &lower,
-            const milliseconds_t &upper
-        ) -> milliseconds_t;
 
         TTLCache<RetryRecord> retryAttempts;
         std::shared_mutex retryMutex;
-        auto retryRequests(std::shared_ptr<std::atomic_bool> taskIsRunning) -> void;
 
         std::atomic_size_t serialCronId = 0;
         std::map<std::size_t, CronSchedule> cronSchedules;
         std::shared_mutex scheduleMutex;
         CronQueue cronJobs;
         std::mutex cronMutex;
+
+        // NOTE: By convention and to encourage proper initialization order,
+        // move all std::thread declarations to the bottom of the members!
+        // See: https://github.com/lfortran/lfortran/issues/6756
+        std::thread cron;
+
+        auto collectThreadPoolTelemetry(
+            const std::string &key,
+            lst::ThreadPool &pool
+        ) -> LSPAny;
+        auto collectTelemetry() -> LSPAny override;
+
+        auto expireCaches(
+            std::shared_ptr<std::atomic_bool> taskIsRunning
+        ) -> void;
+
+        auto ttl(const milliseconds_t &timeout) const -> time_point_t;
+
+        auto randomBetween(
+            const milliseconds_t &lower,
+            const milliseconds_t &upper
+        ) -> milliseconds_t;
+
+        auto retryRequests(
+            std::shared_ptr<std::atomic_bool> taskIsRunning
+        ) -> void;
+
         auto nextCronId() -> std::size_t;
         auto schedule(lst::Task cronJob, CronSchedule schedule) -> std::size_t;
         auto unschedule(std::size_t cronId) -> bool;
@@ -135,11 +156,6 @@ namespace LCompilers::LanguageServerProtocol {
                 cronJobs.push(std::make_tuple(cronId, cronJob, nextTimePoint));
             }
         }
-
-        // NOTE: By convention and to encourage proper initialization order,
-        // move all std::thread declarations to the bottom of the members!
-        // See: https://github.com/lfortran/lfortran/issues/6756
-        std::thread cron;
 
         auto join() -> void override;
         auto listen() -> void override;

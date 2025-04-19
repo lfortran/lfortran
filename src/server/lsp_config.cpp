@@ -220,6 +220,66 @@ namespace LCompilers::LanguageServerProtocol::Config {
         return any;
     }
 
+    auto LspConfigTransformer::anyToLspConfig_telemetry(
+        const lsp::LSPAny &any
+    ) const -> LspConfig_telemetry {
+        if (any.type() != LSPAnyType::Object) {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                ("LSPAnyType for a "
+                 "LspConfig_telemetry"
+                 " must be of type LSPAnyType::Object"
+                 " but received LSPAnyType::" + LSPAnyTypeNames.at(any.type()))
+            );
+        }
+
+        LspConfig_telemetry telemetry{};
+
+        const LSPObject &object = any.object();
+        LSPObject::const_iterator iter;
+
+        if ((iter = object.find("enabled")) != object.end()) {
+            telemetry.enabled = transformer.anyToBoolean(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig_telemetry attribute: enabled"
+            );
+        }
+
+        if ((iter = object.find("frequencyMs")) != object.end()) {
+            telemetry.frequencyMs = transformer.anyToUInteger(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig_telemetry attribute: frequencyMs"
+            );
+        }
+
+        return telemetry;
+    }
+
+    auto LspConfigTransformer::lspConfig_telemetryToAny(
+        const LspConfig_telemetry &telemetry
+    ) const -> LSPAny {
+        LSPAny any;
+        LSPObject object;
+        object.emplace(
+            "enabled",
+            std::make_unique<LSPAny>(
+                transformer.booleanToAny(telemetry.enabled)
+            )
+        );
+        object.emplace(
+            "frequencyMs",
+            std::make_unique<LSPAny>(
+                transformer.uintegerToAny(telemetry.frequencyMs)
+            )
+        );
+        any = std::make_unique<LSPObject>(std::move(object));
+        return any;
+    }
+
     auto LspConfigTransformer::anyToLspConfig(
         const lsp::LSPAny &any
     ) const -> std::shared_ptr<LspConfig> {
@@ -291,6 +351,15 @@ namespace LCompilers::LanguageServerProtocol::Config {
             );
         }
 
+        if ((iter = object.find("telemetry")) != object.end()) {
+            config->telemetry = anyToLspConfig_telemetry(*iter->second);
+        } else {
+            throw LSP_EXCEPTION(
+                ErrorCodes::InvalidParams,
+                "Missing required LspConfig attribute: telemetry"
+            );
+        }
+
         return config;
     }
 
@@ -333,6 +402,12 @@ namespace LCompilers::LanguageServerProtocol::Config {
             "retry",
             std::make_unique<LSPAny>(
                 lspConfig_retryToAny(config.retry)
+            )
+        );
+        object.emplace(
+            "telemetry",
+            std::make_unique<LSPAny>(
+                lspConfig_telemetryToAny(config.telemetry)
             )
         );
         any = std::make_unique<LSPObject>(std::move(object));

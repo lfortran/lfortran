@@ -154,7 +154,7 @@ AUXILIARY_SCHEMA: Dict[str, Any] = {
             "documentation": "A Response Message sent as a result of a request. If a request doesn’t\nprovide a result value the receiver of a request still needs to return a\nresponse message to conform to the JSON-RPC specification. The result\nproperty of the ResponseMessage should be set to null in this case to signal\na successful request.",
         },
         {
-            "name": "GetDocumentParams",
+            "name": "DocumentParams",
             "properties": [
                 {
                     "name": "uri",
@@ -166,7 +166,7 @@ AUXILIARY_SCHEMA: Dict[str, Any] = {
             ],
         },
         {
-            "name": "GetDocumentResult",
+            "name": "DocumentResult",
             "properties": [
                 {
                     "name": "uri",
@@ -249,17 +249,25 @@ AUXILIARY_SCHEMA: Dict[str, Any] = {
     ],
     "requests": [
 		{
-			"method": "$/getDocument",
+			"method": "$/document",
 			"messageDirection": "clientToServer",
 			"params": {
 				"kind": "reference",
-				"name": "GetDocumentParams",
+				"name": "DocumentParams",
 			},
             "result": {
                 "kind": "reference",
-                "name": "GetDocumentResult",
+                "name": "DocumentResult",
             },
 		},
+        {
+            "method": "$/telemetry",
+            "messageDirection": "clientToServer",
+            "result": {
+                "kind": "reference",
+				"name": "LSPAny"
+            },
+        },
     ],
     "notifications": [
     ],

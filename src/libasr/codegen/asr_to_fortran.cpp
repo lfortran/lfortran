@@ -490,7 +490,9 @@ public:
         }
         bool is_return_var_declared = false;
         if (x.m_return_var) {
-            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var))) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var)) &&
+                !ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_return_var)) &&
+                !ASRUtils::is_pointer(ASRUtils::expr_type(x.m_return_var))) {
                 is_return_var_declared = true;
                 r += get_type(ASRUtils::expr_type(x.m_return_var));
                 r += " ";
@@ -1379,6 +1381,13 @@ public:
     }
 
     void visit_IntrinsicElementalFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicElementalFunction_t &x) {
+        if ( x.m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::CompilerVersion) ) {
+            src = "";
+            visit_expr(*x.m_value); // we will always have a value
+            out += src;
+            src = out;
+            return;
+        }
         src = "";
         out += func_name;
         if (x.n_args > 0) visit_expr(*x.m_args[0]);

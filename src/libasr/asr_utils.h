@@ -2033,6 +2033,10 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
         }
+        case ASR::ttypeType::ClassType: {
+            ASR::ClassType_t* d = ASR::down_cast<ASR::ClassType_t>(t);
+            return "class " + std::string(symbol_name(d->m_class_type));
+        }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
 }

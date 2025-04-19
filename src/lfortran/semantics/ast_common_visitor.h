@@ -1158,7 +1158,7 @@ public:
         {"dim", IntrinsicSignature({"X", "Y"}, 2, 2)},
         {"selected_real_kind", IntrinsicSignature({"p", "r", "radix"}, 0, 3)},
         {"nearest", IntrinsicSignature({"x", "s"}, 2, 2)},
-        {"compiler_version", IntrinsicSignature({}, 0, 0)},
+        {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
@@ -1514,7 +1514,7 @@ public:
             }
         }
 
-        if (var_name == "c_null_ptr") {
+        if (var_name == "c_null_ptr" || var_name == "c_null_funptr") {
             // Check if c_null_ptr is imported from iso_c_binding (intrinsic module)
             if (v && ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
                 std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
@@ -1523,7 +1523,6 @@ public:
                     tmp = ASR::make_PointerNullConstant_t(al, loc, type_);
                     return tmp;
                 }
-
             }
         }
         if (!v) {
@@ -9675,7 +9674,8 @@ public:
             throw SemanticAbort();
         }
         std::string boz_str = s.substr(2, s.size() - 2);
-        int64_t boz_int = std::stoll(boz_str, nullptr, base);
+        uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
+        int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
                 int_type, boz_type);

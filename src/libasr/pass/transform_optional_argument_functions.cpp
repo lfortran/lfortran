@@ -79,9 +79,11 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
             ASR::symbol_t* present_arg = ASR::down_cast<ASR::Var_t>(x->m_args[0])->m_v;
             size_t i;
             for( i = 0; i < f->n_args; i++ ) {
-                if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == present_arg ) {
-                    i++;
-                    break;
+                if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v ) {
+                    if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == present_arg ) {
+                        i++;
+                        break;
+                    }
                 }
             }
 
