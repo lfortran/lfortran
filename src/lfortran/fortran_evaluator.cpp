@@ -38,7 +38,7 @@ namespace LCompilers {
 /* ------------------------------------------------------------------------- */
 // FortranEvaluator
 
-FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
+FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
     :
     compiler_options{compiler_options},
     al{1024*1024},

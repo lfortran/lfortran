@@ -73,10 +73,11 @@ namespace LCompilers::LFortran {
     class custom_interpreter : public xeus::xinterpreter
     {
     private:
+        CompilerOptions compiler_options;
         FortranEvaluator e;
 
     public:
-        custom_interpreter() : e{CompilerOptions()} {
+        custom_interpreter() : compiler_options{}, e{compiler_options} {
             e.compiler_options.interactive = true;
         }
         virtual ~custom_interpreter() = default;
