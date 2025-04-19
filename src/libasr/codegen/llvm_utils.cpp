@@ -2200,6 +2200,7 @@ namespace LCompilers {
                 while( struct_sym != nullptr ) {
                     for( auto item: struct_sym->m_symtab->get_scope() ) {
                         if( ASR::is_a<ASR::ClassProcedure_t>(*item.second) ||
+                            ASR::is_a<ASR::GenericProcedure_t>(*item.second) ||
                             ASR::is_a<ASR::CustomOperator_t>(*item.second) ) {
                             continue ;
                         }
