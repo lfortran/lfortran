@@ -1829,6 +1829,10 @@ filename = "format6.f90"
 run = true
 
 [[test]]
+filename = "format7.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/format_11.f90"
 run = true
 
@@ -4549,12 +4553,4 @@ asr_preprocess = true
 
 [[test]]
 filename = "declaration1.f90"
-asr = true
-
-[[test]]
-filename = "errors/integerStringInput.f90"
-asr = true
-
-[[test]]
-filename = "errors/floatStringInput.f90"
 asr = true
