@@ -927,6 +927,27 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     return 0;
 }
 
+bool is_program_present(const LCompilers::ASR::TranslationUnit_t &u)
+{
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::Program_t>(*item.second)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
+{
+    Allocator al(4*1024);
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
+            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            m->m_symtab->mark_all_variables_external(al);
+        }
+    }
+}
+
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options,
     LCompilers::LocationManager lm)
@@ -1085,7 +1106,8 @@ int compile_src_to_object_file(const std::string &infile,
         bool time_report,
         bool assembly,
         CompilerOptions &compiler_options,
-        LCompilers::PassManager& lpm)
+        LCompilers::PassManager& lpm,
+        bool arg_c = false)
 {
     int time_file_read=0;
     int time_src_to_asr=0;
@@ -1148,6 +1170,12 @@ int compile_src_to_object_file(const std::string &infile,
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
         return 0;
+    }
+
+    // if compiler_options.separate_compilation is true, then mark all modules as external
+    // so that they are not compiled again
+    if (!is_program_present(*asr) && arg_c && compiler_options.separate_compilation) {
+        mark_modules_as_external(*asr);
     }
 
     std::unique_ptr<LCompilers::LLVMModule> m;
@@ -2575,7 +2603,7 @@ int main_app(int argc, char *argv[]) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             return compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
-                compiler_options, lfortran_pass_manager);
+                compiler_options, lfortran_pass_manager, opts.arg_c);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
