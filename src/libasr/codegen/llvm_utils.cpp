@@ -2226,8 +2226,14 @@ namespace LCompilers {
                             module, name2memidx);
                     }
                     if( struct_type_t->m_parent != nullptr ) {
+                        // gep the parent struct, which is the 0th member of the child struct
+                        src = create_gep2(name2dertype[struct_type_t->m_name], src, 0);
+                        dest = create_gep2(name2dertype[struct_type_t->m_name], dest, 0);
+
                         ASR::Struct_t* parent_struct_type_t =
                             ASR::down_cast<ASR::Struct_t>(struct_type_t->m_parent);
+
+                        der_type_name = parent_struct_type_t->m_name;
                         struct_type_t = parent_struct_type_t;
                     } else {
                         struct_type_t = nullptr;
