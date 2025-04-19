@@ -61,18 +61,21 @@ return:                                           ; preds = %.entry
 
 define void @__module_class_circle2__xx_lcompilers_changed_main_xx() {
 .entry:
+  %0 = alloca %__vtab_circle, align 8
+  %1 = getelementptr %__vtab_circle, %__vtab_circle* %0, i32 0, i32 0
+  store i64 0, i64* %1, align 4
   %c = alloca %circle, align 8
-  %0 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  %1 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.000000e+00, float* %1, align 4
   %2 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.500000e+00, float* %2, align 4
-  %3 = alloca %circle_polymorphic, align 8
-  %4 = getelementptr %circle_polymorphic, %circle_polymorphic* %3, i32 0, i32 0
-  store i64 0, i64* %4, align 4
-  %5 = getelementptr %circle_polymorphic, %circle_polymorphic* %3, i32 0, i32 1
-  store %circle* %c, %circle** %5, align 8
-  call void @__module_class_circle2_circle_print(%circle_polymorphic* %3)
+  %3 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 1.000000e+00, float* %3, align 4
+  %4 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 1.500000e+00, float* %4, align 4
+  %5 = alloca %circle_polymorphic, align 8
+  %6 = getelementptr %circle_polymorphic, %circle_polymorphic* %5, i32 0, i32 0
+  store i64 0, i64* %6, align 4
+  %7 = getelementptr %circle_polymorphic, %circle_polymorphic* %5, i32 0, i32 1
+  store %circle* %c, %circle** %7, align 8
+  call void @__module_class_circle2_circle_print(%circle_polymorphic* %5)
   br label %return
 
 return:                                           ; preds = %.entry
