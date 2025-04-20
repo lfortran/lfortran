@@ -1208,8 +1208,18 @@ struct FixedFormRecursiveDescent {
             return false;
         }
         if (continue_compilation) {
-            tokenize_line(cur);
-            return true;
+            if (next_is(cur, "subroutine")) {
+                while (!next_is(cur, "endprogram")) {
+                    next_line(cur);
+                }
+            } else if (next_is(cur, "function")) {
+                while (!next_is(cur, "endprogram")) {
+                    next_line(cur);
+                }
+            } else {
+                tokenize_line(cur);
+                return true;
+            }
         }
 
         return false;
