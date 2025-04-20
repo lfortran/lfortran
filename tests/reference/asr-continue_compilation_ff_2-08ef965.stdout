@@ -1,0 +1,16 @@
+(TranslationUnit
+    [(Program
+        continue_compilation_ff_2
+        ()
+        []
+        []
+        []
+        [(Print
+            0
+            ()
+            [(String "This is a test program")]
+            ()
+        )]
+        []
+    )]
+)
