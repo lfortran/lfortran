@@ -7,7 +7,7 @@ source_filename = "LFortran"
 
 @pi = global float 0x400921FB60000000
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info = private unnamed_addr constant [10 x i8] c"S,R4,S,R4\00", align 1
+@serialization_info = private unnamed_addr constant [15 x i8] c"S-12,R4,S-8,R4\00", align 1
 @1 = private unnamed_addr constant [13 x i8] c"Circle: r = \00", align 1
 @2 = private unnamed_addr constant [9 x i8] c" area = \00", align 1
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -51,7 +51,7 @@ define void @__module_class_circle2_circle_print(%circle_polymorphic* %this) {
   store float %7, float* %8, align 4
   %9 = alloca i8*, align 8
   store i8* getelementptr inbounds ([9 x i8], [9 x i8]* @2, i32 0, i32 0), i8** %9, align 8
-  %10 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @serialization_info, i32 0, i32 0), i32 0, i8** %3, float* %8, i8** %9, float* %area)
+  %10 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i8** %3, float* %8, i8** %9, float* %area)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   br label %return
 
@@ -79,7 +79,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

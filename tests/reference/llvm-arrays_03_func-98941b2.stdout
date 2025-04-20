@@ -46,7 +46,7 @@ loop.end:                                         ; preds = %loop.head
   store i32 10, i32* %call_arg_value3, align 4
   %14 = call i32 @mysum_integer____0(i32* %13, i32* %call_arg_value, i32* %call_arg_value3)
   store i32 %14, i32* %s2, align 4
-  %15 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32* %s2)
+  %15 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %s2)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   %16 = load i32, i32* %s2, align 4
   %17 = icmp ne i32 %16, 55
@@ -112,7 +112,7 @@ return:                                           ; preds = %loop.end
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 
