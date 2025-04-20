@@ -3789,7 +3789,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 }
             } else if (ASR::is_a<ASR::Struct_t>(
                         *ASRUtils::symbol_get_past_external(var_sym))) {
-                struct_types.push_back(var_sym);
+                struct_types.push_back(ASRUtils::symbol_get_past_external(var_sym));
             }
         }
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
@@ -10107,7 +10107,29 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::is_parent(dt_sym_type, a_dt)) ) {
                 for( auto& item2: item.second ) {
                     if( item2.first == current_scope ) {
-                        vtabs.push_back(std::make_pair(item2.second, item.first));
+                        // Find the Struct symbol to which the ClassProcedure belongs
+                        bool found = false;
+                        while (a_dt) {
+                            for (auto &member : a_dt->m_symtab->get_scope()) {
+                                if (ASR::is_a<ASR::ClassProcedure_t>(*member.second)) {
+                                    ASR::ClassProcedure_t *proc_s = ASR::down_cast<ASR::ClassProcedure_t>(member.second);
+                                    if (proc_s->m_name == proc_sym_name) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (found)
+                                break;
+
+                            if (a_dt->m_parent != nullptr) {
+                                a_dt = ASR::down_cast<ASR::Struct_t>(a_dt->m_parent);
+                            } else {
+                                a_dt = nullptr;
+                            }
+                        }
+                        vtabs.push_back(std::make_pair(item2.second, (ASR::symbol_t *)a_dt));
                     }
                 }
             }
