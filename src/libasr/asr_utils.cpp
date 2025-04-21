@@ -1200,6 +1200,27 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASR::is_a<ASR::StructType_t>(*left_type))
                         || (ASR::is_a<ASR::ClassType_t>(*right_arg_type) &&
                             ASR::is_a<ASR::StructType_t>(*right_type))) {
+                            // If all are StructTypes then the Struct symbols should match
+                            if (ASR::is_a<ASR::StructType_t>(*left_type) &&
+                                ASR::is_a<ASR::StructType_t>(*right_type) &&
+                                ASR::is_a<ASR::StructType_t>(*left_arg_type) &&
+                                ASR::is_a<ASR::StructType_t>(*right_arg_type)) {
+                                ASR::Struct_t *left_sym = ASR::down_cast<ASR::Struct_t>(
+                                        ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                        left_type)->m_derived_type));
+                                ASR::Struct_t *right_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                    right_type)->m_derived_type));
+                                ASR::Struct_t *left_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                        ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                        left_arg_type)->m_derived_type));
+                                ASR::Struct_t *right_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                    right_arg_type)->m_derived_type));
+                                if (left_sym != left_arg_sym || right_sym != right_arg_sym) {
+                                    break;
+                                }
+                            }
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
