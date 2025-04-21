@@ -5677,6 +5677,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
     // Checks if target_expr is allocated and if not then allocate
     // Used for compiler_options.po.realloc_lhs
     void check_and_allocate(ASR::expr_t *target_expr) {
+        LCOMPILERS_ASSERT(compiler_options.po.realloc_lhs);
         ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(
             ASRUtils::expr_type(target_expr)));
