@@ -4540,6 +4540,18 @@ filename = "errors/unterminated_comment_01.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/unterminated_ifndef_01.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/unterminated_ifdef_01.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/unterminated_if_01.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "declaration1.f90"
 asr = true
 
