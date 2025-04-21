@@ -87,7 +87,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             for( size_t i = 0; i < x.n_args; i++ ) {
                 ASR::alloc_arg_t alloc_arg = x.m_args[i];
                 if( !ASRUtils::is_dimension_dependent_only_on_arguments(
-                        alloc_arg.m_dims, alloc_arg.n_dims) ||
+                        alloc_arg.m_dims, alloc_arg.n_dims, true) ||
                     is_array_size_called_on_pointer(alloc_arg.m_dims, alloc_arg.n_dims) ) {
                     if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
                         scope2var[current_scope].push_back(
