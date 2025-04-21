@@ -1692,7 +1692,9 @@ public:
                 parent_scope->erase_symbol(sym_name);
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
-                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                    // TODO: Throw error when interface definition and implementation signatures are different
+                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
