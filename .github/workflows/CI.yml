@@ -515,7 +515,7 @@ jobs:
         shell: bash -e -x -l {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
-            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh
+            RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
 
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Override cmake version to 3.31.2
