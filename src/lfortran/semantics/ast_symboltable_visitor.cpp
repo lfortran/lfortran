@@ -1155,7 +1155,7 @@ public:
         if (is_interface){
             deftype = ASR::deftypeType::Interface;
         }
-        bool is_pure = false, is_module = false, is_elemental = false;
+        bool is_pure = false, is_module = false, is_elemental = false, is_impure = false;
         for( size_t i = 0; i < x.n_attributes; i++ ) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -1166,6 +1166,8 @@ public:
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
                         is_elemental = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrImpure ) {
+                        is_impure = true;
                     }
                     break;
                 }
@@ -1290,7 +1292,7 @@ public:
 
             create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, false, sym_name);
         }
-        if (is_pure || is_elemental) {
+        if (is_pure || (is_elemental && !is_impure)) {
             if (subroutine_contains_print_statement(x.m_body, x.n_body)) {
                 diag.add(diag::Diagnostic(
                     "Print statement is not allowed within `pure` procedure",
