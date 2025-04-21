@@ -3075,6 +3075,16 @@ filename = "../integration_tests/derived_types_41.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/derived_types_45.f90"
+llvm = true
+options = "--realloc-lhs"
+
+[[test]]
+filename = "../integration_tests/automatic_allocation_02.f90"
+llvm = true
+options = "--realloc-lhs"
+
+[[test]]
 filename = "../integration_tests/modules_38.f90"
 llvm = true
 
