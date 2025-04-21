@@ -571,6 +571,10 @@ filename = "preprocessor19.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor20.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true
@@ -4532,5 +4536,33 @@ filename = "errors/subroutine6.f90"
 asr = true
 
 [[test]]
+filename = "errors/unterminated_comment_01.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/unterminated_ifndef_01.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/unterminated_ifdef_01.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/unterminated_if_01.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "declaration1.f90"
 asr = true
+
+[[test]]
+filename = "errors/integerStringInput.f90"
+run = true
+
+[[test]]
+filename = "errors/floatStringInput.f90"
+run = true
+
+[[test]]
+filename = "errors/integerStringInput_64.f90"
+run = true

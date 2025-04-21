@@ -45,8 +45,48 @@ time_section() {
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+
+##########################
+# Section 1: stdlib (Less Workarounds)
+##########################
+time_section "🧪 Testing stdlib (Less Workarounds)" '
+  git clone https://github.com/czgdp1807/stdlib.git
+  cd stdlib
+  export PATH="$(pwd)/../src/bin:$PATH"
+
+  git checkout n-lf-3
+  git checkout 02230ca186f22e2b96a1cb25f4255e0f7b042e47
+  micromamba install -c conda-forge fypp
+
+  git clean -fdx
+  FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+  make -j8
+  ctest
+
+  print_success "Done with stdlib (Less Workarounds)"
+  cd ..
+  rm -rf stdlib
+'
+
+##########################
+# Section 2: Fortran-Primes
+##########################
+time_section "🧪 Testing Fortran-Primes" '
+  git clone https://github.com/jinangshah21/fortran-primes.git
+  cd fortran-primes
+  git checkout -t origin/lf-3
+  git checkout 923b468f79eee1ff07b77d9def67249f4d2efa21
+
+  print_subsection "Building and running Fortran-Primes"
+  FC=$FC ./build_and_run.sh
+
+  print_success "Done with Fortran-Primes"
+  cd ..
+  rm -rf fortran-primes
+'
+
 ########################################
-# Section 1: Numerical Methods Fortran #
+# Section 3: Numerical Methods Fortran #
 ########################################
 time_section "🧪 Testing Numerical Methods Fortran" '
   git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
@@ -79,13 +119,13 @@ time_section "🧪 Testing Numerical Methods Fortran" '
 '
 
 ######################
-# Section 2: POT3D    #
+# Section 4: POT3D    #
 ######################
 time_section "🧪 Testing POT3D" '
   git clone https://github.com/gxyd/pot3d.git
   cd pot3d
   git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
-  git checkout eb05c69d30b7c88454d97d66ab6be46db10e7552
+  git checkout 83e1e90db7e7517fcbe8c7bce5ba309addfb23f6
 
   print_subsection "Building with default flags"
   FC=$FC ./build_and_run.sh
@@ -98,7 +138,7 @@ time_section "🧪 Testing POT3D" '
 '
 
 #######################
-# Section 3: PRIMA    #
+# Section 5: PRIMA    #
 #######################
 time_section "🧪 Testing PRIMA" '
   git clone https://github.com/Pranavchiku/prima.git
@@ -181,7 +221,7 @@ time_section "🧪 Testing PRIMA" '
 '
 
 ##########################
-# Section 4: Legacy Minpack
+# Section 6: Legacy Minpack
 ##########################
 time_section "🧪 Testing Legacy Minpack (SciPy)" '
   git clone https://github.com/certik/minpack.git
@@ -204,7 +244,7 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
 '
 
 ##########################
-# Section 5: Modern Minpack
+# Section 7: Modern Minpack
 ##########################
 time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
   git clone https://github.com/fortran-lang/minpack modern_minpack_01
@@ -232,7 +272,7 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
 '
 
 ##########################
-# Section 6: dftatom
+# Section 8: dftatom
 ##########################
 time_section "🧪 Testing dftatom" '
   git clone https://github.com/certik/dftatom.git
@@ -249,7 +289,7 @@ time_section "🧪 Testing dftatom" '
 
 
 ##########################
-# Section 7: fastGPT
+# Section 9: fastGPT
 ##########################
 time_section "🧪 Testing fastGPT" '
     if [[ "$RUNNER_OS" == "macos-latest" ]]; then
@@ -347,7 +387,7 @@ time_section "🧪 Testing fastGPT" '
 '
 
 ##########################
-# Section 8: FPM
+# Section 10: FPM
 ##########################
 time_section "🧪 Testing FPM" '
     if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
@@ -362,7 +402,7 @@ time_section "🧪 Testing FPM" '
 '
 
 ##########################
-# Section 9: stdlib
+# Section 11: stdlib
 ##########################
 time_section "🧪 Testing stdlib" '
     git clone https://github.com/czgdp1807/stdlib.git
@@ -380,7 +420,7 @@ time_section "🧪 Testing stdlib" '
 '
 
 ##########################
-# Section 10: SNAP
+# Section 12: SNAP
 ##########################
 time_section "🧪 Testing SNAP" '
     git clone https://github.com/certik/SNAP.git

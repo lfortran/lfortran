@@ -2209,12 +2209,15 @@ class TransformVariableInitialiser:
             }
 
             exprs_with_target[value] = std::make_pair(target, targetType::OriginalTarget);
-            if (ASRUtils::is_pointer(x.m_type)) {
-                result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                    al, loc, target, value)));
-            } else {
-                result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-                    al, loc, target, value, nullptr, exprs_with_target)));
+            // Transform local variables, but not dummy arguments
+            if (xx.m_intent == ASR::intentType::Local) {
+                if (ASRUtils::is_pointer(x.m_type)) {
+                    result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+                        al, loc, target, value)));
+                } else {
+                    result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                            al, loc, target, value, nullptr, exprs_with_target)));
+                }
             }
             xx.m_symbolic_value = nullptr;
             xx.m_value = nullptr;

@@ -335,40 +335,51 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, dup_sym);
                     continue;
                 }
-                if( ASR::is_a<ASR::StructType_t>(*var_type_) ) {
-                    ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(var_type_);
-                    if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(
-                            struct_t->m_derived_type)->get_counter() ) {
-                        ASR::symbol_t* m_derived_type = current_scope->get_symbol(
-                            ASRUtils::symbol_name(struct_t->m_derived_type));
-                        if( m_derived_type == nullptr ) {
+                if( ASR::is_a<ASR::StructType_t>(*var_type_) || ASR::is_a<ASR::ClassType_t>(*var_type_) ) {
+                    ASR::symbol_t* derived_type_or_class_type = nullptr;
+                    ASR::StructType_t* struct_t = nullptr;
+                    ASR::ClassType_t* class_t = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
+                        struct_t = ASR::down_cast<ASR::StructType_t>(var_type_);
+                        derived_type_or_class_type = struct_t->m_derived_type;
+                    } else {
+                        class_t = ASR::down_cast<ASR::ClassType_t>(var_type_);
+                        derived_type_or_class_type = class_t->m_class_type;
+                    }
+                    if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(derived_type_or_class_type)->get_counter() ) {
+                        ASR::symbol_t* m_derived_type_or_class_type = current_scope->get_symbol(
+                            ASRUtils::symbol_name(derived_type_or_class_type));
+                        if( m_derived_type_or_class_type == nullptr ) {
                             if (!ASR::is_a<ASR::Program_t>(
                                     *ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
-                                        struct_t->m_derived_type)))) {
-                                char* fn_name = ASRUtils::symbol_name(struct_t->m_derived_type);
-                                ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
+                                        derived_type_or_class_type)))) {
+                                char* fn_name = ASRUtils::symbol_name(derived_type_or_class_type);
+                                ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(derived_type_or_class_type);
                                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                                    al, struct_t->m_derived_type->base.loc,
+                                    al, derived_type_or_class_type->base.loc,
                                     /* a_symtab */ current_scope,
                                     /* a_name */ fn_name,
                                     original_symbol,
                                     ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_symbol)),
                                     nullptr, 0, fn_name, ASR::accessType::Public
                                 );
-                                m_derived_type = ASR::down_cast<ASR::symbol_t>(fn);
-                                current_scope->add_symbol(fn_name, m_derived_type);
+                                m_derived_type_or_class_type = ASR::down_cast<ASR::symbol_t>(fn);
+                                current_scope->add_symbol(fn_name, m_derived_type_or_class_type);
                             } else {
                                 ASRUtils::SymbolDuplicator sd(al);
-                                sd.duplicate_symbol(struct_t->m_derived_type, current_scope);
+                                sd.duplicate_symbol(derived_type_or_class_type, current_scope);
                                 ASR::down_cast<ASR::Program_t>(
                                     ASRUtils::get_asr_owner(&var->base))->m_symtab->erase_symbol(
-                                        ASRUtils::symbol_name(struct_t->m_derived_type));
-                                m_derived_type = current_scope->get_symbol(
-                                    ASRUtils::symbol_name(struct_t->m_derived_type));
+                                        ASRUtils::symbol_name(derived_type_or_class_type));
+                                m_derived_type_or_class_type = current_scope->get_symbol(
+                                    ASRUtils::symbol_name(derived_type_or_class_type));
                             }
                         }
-                        var_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, struct_t->base.base.loc,
-                                    m_derived_type));
+                        if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
+                            var_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, struct_t->base.base.loc, m_derived_type_or_class_type));
+                        } else {
+                            var_type_ = ASRUtils::TYPE(ASR::make_ClassType_t(al, class_t->base.base.loc, m_derived_type_or_class_type));
+                        }
                         if( ASR::is_a<ASR::Array_t>(*var_type) ) {
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
                             var_type = ASRUtils::make_Array_t_util(al, struct_t->base.base.loc,

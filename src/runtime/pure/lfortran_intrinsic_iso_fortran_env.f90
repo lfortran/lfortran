@@ -20,4 +20,11 @@ integer, parameter :: logical_kinds(1) = [4]
 
 integer, parameter :: iostat_end = -1
 
+contains
+function compiler_version() result(version)
+    character(len=:), allocatable :: version
+    version = _lfortran_compiler_version() ! note: LFortran takes this and creates an IntrinsicElementalFunction
+end function compiler_version
+
+
 end module

@@ -1,4 +1,5 @@
 #include "server/base_lsp_language_server.h"
+#include "server/language_server.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -102,11 +103,56 @@ namespace LCompilers::LanguageServerProtocol {
         schedule(
             [this](std::shared_ptr<std::atomic_bool> taskIsRunning) {
                 if (*taskIsRunning) {
-                    sendTelemetry();
+                    auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
+                    bool enabled = this->workspaceConfig->telemetry.enabled;
+                    workspaceLock.unlock();
+                    if (enabled) {
+                        sendTelemetry();
+                    }
                 }
             },
-            [this]{ return ttl(1000ms); }
+            [this]{
+                auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
+                unsigned int frequencyMs =
+                    this->workspaceConfig->telemetry.frequencyMs;
+                workspaceLock.unlock();
+                return ttl(std::chrono::milliseconds(frequencyMs));
+            }
         );
+    }
+
+    auto ParallelLspLanguageServer::collectThreadPoolTelemetry(
+        const std::string &key,
+        lst::ThreadPool &pool
+    ) -> LSPAny {
+        LSPObject data;
+        data.emplace("name", std::make_unique<LSPAny>(toAny(pool.name())));
+        data.emplace("numThreads", std::make_unique<LSPAny>(toAny(pool.numThreads())));
+        data.emplace("numActive", std::make_unique<LSPAny>(toAny(pool.numActive())));
+        data.emplace("numPending", std::make_unique<LSPAny>(toAny(pool.numPending())));
+        data.emplace("numExecuted", std::make_unique<LSPAny>(toAny(pool.numExecuted())));
+        LSPObject event;
+        event.emplace("key", std::make_unique<LSPAny>(toAny(key)));
+        event.emplace("value", std::make_unique<LSPAny>(toAny(data)));
+        LSPAny any;
+        any = std::move(event);
+        return any;
+    }
+
+    auto ParallelLspLanguageServer::collectTelemetry() -> LSPAny {
+        LSPAny any = BaseLspLanguageServer::collectTelemetry();
+        LSPArray &events = const_cast<LSPArray &>(any.array());
+        events.emplace_back(
+            std::make_unique<LSPAny>(
+                collectThreadPoolTelemetry("requestPool", requestPool)
+            )
+        );
+        events.emplace_back(
+            std::make_unique<LSPAny>(
+                collectThreadPoolTelemetry("workerPool", workerPool)
+            )
+        );
+        return any;
     }
 
     auto ParallelLspLanguageServer::join() -> void {
@@ -294,17 +340,19 @@ namespace LCompilers::LanguageServerProtocol {
         int requestId = request.id.integer();
         BaseLspLanguageServer::send(request);
         {
+            auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
+            unsigned int minSleepTimeMs = workspaceConfig->retry.minSleepTimeMs;
+            unsigned int timeoutMs = workspaceConfig->timeoutMs;
+            workspaceLock.unlock();
             auto retryLock = LSP_WRITE_LOCK(retryMutex, "retry-requests");
             retryAttempts.push(
                 std::make_pair(
                     std::make_tuple(
                         requestId,
                         0,  // attempt
-                        milliseconds_t(
-                            workspaceConfig->retry.minSleepTimeMs
-                        )
+                        milliseconds_t(minSleepTimeMs)
                     ),
-                    ttl(milliseconds_t(workspaceConfig->timeoutMs))
+                    ttl(milliseconds_t(timeoutMs))
                 )
             );
         }
@@ -388,6 +436,12 @@ namespace LCompilers::LanguageServerProtocol {
             auto readLock = LSP_READ_LOCK(retryMutex, "retry-requests");
             if ((retryAttempts.size() > 0) && retryAttempts.top().second < now()) {
                 readLock.unlock();
+                auto workspaceLock = LSP_READ_LOCK(workspaceMutex, "workspace");
+                unsigned int maxAttempts = workspaceConfig->retry.maxAttempts;
+                unsigned int minSleepTimeMs = workspaceConfig->retry.minSleepTimeMs;
+                unsigned int maxSleepTimeMs = workspaceConfig->retry.maxSleepTimeMs;
+                unsigned int timeoutMs = workspaceConfig->timeoutMs;
+                workspaceLock.unlock();
                 auto writeLock = LSP_WRITE_LOCK(retryMutex, "retry-requests");
                 const TTLRecord<RetryRecord> &record = retryAttempts.top();
                 if (record.second < now()) {
@@ -396,16 +450,16 @@ namespace LCompilers::LanguageServerProtocol {
                     unsigned int attempt = std::get<1>(record.first);
                     retryAttempts.pop();
                     writeLock.unlock();
-                    if (attempt < workspaceConfig->retry.maxAttempts) {
+                    if (attempt < maxAttempts) {
                         // NOTE: See the section on "Decorrelated Jitter" in the following article:
                         // https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
                         milliseconds_t lastSleepTimeMs =
                             std::get<2>(record.first);
                         milliseconds_t nextSleepTimeMs =
                             std::min<milliseconds_t>(
-                                milliseconds_t(workspaceConfig->retry.maxSleepTimeMs),
+                                milliseconds_t(maxSleepTimeMs),
                                 randomBetween(
-                                    milliseconds_t(workspaceConfig->retry.minSleepTimeMs),
+                                    milliseconds_t(minSleepTimeMs),
                                     lastSleepTimeMs * 3
                                 )
                             );
@@ -413,7 +467,7 @@ namespace LCompilers::LanguageServerProtocol {
                         // while we wait to retry the request. Do not sleep from
                         // the current thread or we may run out of available
                         // workers!
-                        schedule([this, requestId, attempt, &nextSleepTimeMs](
+                        schedule([this, requestId, attempt, nextSleepTimeMs, timeoutMs](
                             std::shared_ptr<std::atomic_bool> taskIsRunning
                         ) {
                             if (*taskIsRunning) {
@@ -431,7 +485,7 @@ namespace LCompilers::LanguageServerProtocol {
                                                 attempt + 1,
                                                 nextSleepTimeMs
                                             ),
-                                            ttl(milliseconds_t(workspaceConfig->timeoutMs))
+                                            ttl(milliseconds_t(timeoutMs))
                                         )
                                     );
                                 }

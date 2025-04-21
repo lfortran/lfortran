@@ -3000,6 +3000,22 @@ public:
                 }
                 llvm_symtab[h] = ptr;
             }
+        } else if ( x.m_type->type == ASR::ttypeType::ClassType) {
+            llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                void_ptr);
+            if (!external) {
+                if (init_value) {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            init_value);
+                } else {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            llvm::ConstantPointerNull::get(
+                                static_cast<llvm::PointerType*>(void_ptr))
+                            );
+                }
+            }
+            llvm_symtab[h] = ptr;
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {
             ASR::dimension_t* m_dims = nullptr;
@@ -3752,8 +3768,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         class2vtab[struct_type_][symtab].push_back(vtab_obj);
     }
 
-    void collect_class_type_names_and_struct_types(
-        std::set<std::string>& class_type_names,
+    void collect_variable_types_and_struct_types(
+        std::set<std::string>& variable_type_names,
         std::vector<ASR::symbol_t*>& struct_types,
         SymbolTable* x_symtab) {
         if (x_symtab == nullptr) {
@@ -3766,14 +3782,17 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v->m_type);
                 if( ASR::is_a<ASR::ClassType_t>(*v_type) ) {
                     ASR::ClassType_t* v_class_t = ASR::down_cast<ASR::ClassType_t>(v_type);
-                    class_type_names.insert(ASRUtils::symbol_name(v_class_t->m_class_type));
+                    variable_type_names.insert(ASRUtils::symbol_name(v_class_t->m_class_type));
+                } else if (ASR::is_a<ASR::StructType_t>(*v_type)) {
+                    ASR::StructType_t* v_struct_t = ASR::down_cast<ASR::StructType_t>(v_type);
+                    variable_type_names.insert(ASRUtils::symbol_name(v_struct_t->m_derived_type));
                 }
             } else if (ASR::is_a<ASR::Struct_t>(
                         *ASRUtils::symbol_get_past_external(var_sym))) {
-                struct_types.push_back(var_sym);
+                struct_types.push_back(ASRUtils::symbol_get_past_external(var_sym));
             }
         }
-        collect_class_type_names_and_struct_types(class_type_names, struct_types, x_symtab->parent);
+        collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         if (v->m_value != nullptr) {
@@ -4101,14 +4120,15 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         uint32_t debug_arg_count = 0;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         if( create_vtabs ) {
-            std::set<std::string> class_type_names;
+            std::set<std::string> variable_type_names;
             std::vector<ASR::symbol_t*> struct_types;
-            collect_class_type_names_and_struct_types(class_type_names, struct_types, x.m_symtab);
+            // Collects all Struct symbols and ClassType and StructType variables type names in x.m_symtab and its parent symtabs
+            collect_variable_types_and_struct_types(variable_type_names, struct_types, x.m_symtab);
             for( size_t i = 0; i < struct_types.size(); i++ ) {
                 ASR::symbol_t* struct_type = struct_types[i];
                 bool create_vtab = false;
-                for( const std::string& class_name: class_type_names ) {
-                    ASR::symbol_t* class_sym = x.m_symtab->resolve_symbol(class_name);
+                for( const std::string& variable_type_name: variable_type_names ) {
+                    ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(x.m_symtab->resolve_symbol(variable_type_name));
                     bool is_vtab_needed = false;
                     while( !is_vtab_needed && struct_type ) {
                         if( struct_type == class_sym ) {
@@ -8271,7 +8291,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             return ;
         }
 
-        llvm::Value *unit_val, *iostat, *read_size;
+        llvm::Value *unit_val, *iostat, *read_size, *advance;
         bool is_string = false;
         if (x.m_unit == nullptr) {
             // Read from stdin
@@ -8298,6 +8318,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         llvm::Type::getInt32Ty(context));
         }
 
+        if (x.m_advance) {
+            this->visit_expr_wrapper(x.m_advance, true);
+            advance = tmp;
+        } else {
+            advance = builder->CreateGlobalStringPtr("yes");
+        }
+
         if (x.m_size) {
             int ptr_copy = ptr_loads;
             ptr_loads = 0;
@@ -8314,6 +8341,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             args.push_back(unit_val);
             args.push_back(iostat);
             args.push_back(read_size);
+            args.push_back(advance);
             this->visit_expr_wrapper(x.m_fmt, true);
             args.push_back(tmp);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values)));
@@ -8332,7 +8360,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             llvm::Type::getInt32Ty(context),
                             llvm::Type::getInt32Ty(context)->getPointerTo(),
                             llvm::Type::getInt32Ty(context)->getPointerTo(),
-                            character_type,
+                            character_type, character_type,
                             llvm::Type::getInt32Ty(context)
                         }, true);
                 fn = llvm::Function::Create(function_type,
@@ -9752,10 +9780,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
         }
-        if( is_deferred ) {
-            visit_RuntimePolymorphicSubroutineCall(x, proc_sym_name);
-            return ;
-        }
         ASR::Function_t *s;
         char* self_argument = nullptr;
         llvm::Value* pass_arg = nullptr;
@@ -9858,7 +9882,14 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 throw CodeGenError("SubroutineCall: StructType symbol type not supported");
             }
         }
-
+        if (is_deferred) {
+            if (is_nopass || args.empty()) {
+                visit_RuntimePolymorphicSubroutineCall(x, proc_sym_name, nullptr);
+            } else {
+                visit_RuntimePolymorphicSubroutineCall(x, proc_sym_name, args[0]);
+            }
+            return;
+        }
         std::string sub_name = s->m_name;
         uint32_t h;
         ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
@@ -10053,7 +10084,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
     }
 
-    void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {
+    void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name, llvm::Value *llvm_polymorphic) {
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
         ASR::Struct_t* dt_sym_type = nullptr;
         ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
@@ -10076,17 +10107,44 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::is_parent(dt_sym_type, a_dt)) ) {
                 for( auto& item2: item.second ) {
                     if( item2.first == current_scope ) {
-                        vtabs.push_back(std::make_pair(item2.second, item.first));
+                        // Find the Struct symbol to which the ClassProcedure belongs
+                        bool found = false;
+                        while (a_dt) {
+                            for (auto &member : a_dt->m_symtab->get_scope()) {
+                                if (ASR::is_a<ASR::ClassProcedure_t>(*member.second)) {
+                                    ASR::ClassProcedure_t *proc_s = ASR::down_cast<ASR::ClassProcedure_t>(member.second);
+                                    if (proc_s->m_name == proc_sym_name) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (found)
+                                break;
+
+                            if (a_dt->m_parent != nullptr) {
+                                a_dt = ASR::down_cast<ASR::Struct_t>(a_dt->m_parent);
+                            } else {
+                                a_dt = nullptr;
+                            }
+                        }
+                        vtabs.push_back(std::make_pair(item2.second, (ASR::symbol_t *)a_dt));
                     }
                 }
             }
         }
 
-        uint64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 0;
-        this->visit_expr_wrapper(x.m_dt);
-        ptr_loads = ptr_loads_copy;
-        llvm::Value* llvm_dt = tmp;
+        llvm::Value *llvm_dt = nullptr;
+        if (llvm_polymorphic == nullptr) {
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_dt);
+            ptr_loads = ptr_loads_copy;
+            llvm_dt = tmp;
+        } else {
+            llvm_dt = llvm_polymorphic;
+        }
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         llvm::Type* i64 = llvm::Type::getInt64Ty(context);
         for( size_t i = 0; i < vtabs.size(); i++ ) {

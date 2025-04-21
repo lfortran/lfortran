@@ -369,6 +369,18 @@ namespace LCompilers::LLanguageServer::Interface {
             "Maximum number of milliseconds to wait between request attempts."
         )->capture_default_str();
 
+        workspaceConfig->telemetry.enabled = false;
+        server->add_option(
+            "--telemetry-enabled", workspaceConfig->telemetry.enabled,
+            "Whether to enable telemetry events (may require a restart)."
+        )->capture_default_str();
+
+        workspaceConfig->telemetry.frequencyMs = 1000;
+        server->add_option(
+            "--telemetry-frequency-ms", workspaceConfig->telemetry.frequencyMs,
+            "Number of milliseconds to wait between telemetry events."
+        )->capture_default_str();
+
         opts.extensionId = "lcompilers.lfortran-lsp";
         server->add_option(
             "--extension-id", opts.extensionId,

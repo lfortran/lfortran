@@ -17,6 +17,7 @@
 #include <server/lsp_language_server.h>
 #include <server/lsp_specification.h>
 #include <server/lsp_text_document.h>
+#include <server/process_usage.h>
 
 namespace LCompilers::LanguageServerProtocol {
     namespace ls = LCompilers::LLanguageServer;
@@ -82,6 +83,8 @@ namespace LCompilers::LanguageServerProtocol {
         > documentsByUri;
         std::shared_mutex documentMutex;
 
+        ls::ProcessUsage pu;
+
         // taskType -> threadName -> startTime
         RunningHistogram runningHistogram;
         std::shared_mutex runningMutex;
@@ -129,7 +132,11 @@ namespace LCompilers::LanguageServerProtocol {
 
         virtual auto listen() -> void = 0;
 
-        auto collectTelemetry() -> LSPAny;
+        auto collectMessageQueueTelemetry(
+            const std::string &key,
+            ls::MessageQueue &queue
+        ) -> LSPAny;
+        virtual auto collectTelemetry() -> LSPAny;
         auto sendTelemetry() -> void;
 
         template <typename V>
@@ -161,6 +168,12 @@ namespace LCompilers::LanguageServerProtocol {
         auto toAny(int value) const -> LSPAny;
         auto toAny(const time_point_t &timePoint) const -> LSPAny;
         auto toAny(const std::string &value) const -> LSPAny;
+        auto toAny(const LSPAny &any) const -> LSPAny;
+        auto toAny(LSPObject &object) const -> LSPAny;
+        auto toAny(LSPArray &array) const -> LSPAny;
+        auto toAny(std::size_t value) const -> LSPAny;
+        auto toAny(double value) const -> LSPAny;
+        auto toAny(bool value) const -> LSPAny;
 
         auto startRunning(const std::string &taskType) -> RunTracer;
 
@@ -342,10 +355,14 @@ namespace LCompilers::LanguageServerProtocol {
             CancelParams &params
         ) -> void override;
 
-        auto receiveGetDocument(
+        auto receiveDocument(
             const RequestMessage &request,
-            GetDocumentParams &params
-        ) -> GetDocumentResult override;
+            DocumentParams &params
+        ) -> DocumentResult override;
+
+        auto receiveTelemetry(
+            const RequestMessage &request
+        ) -> TelemetryResult override;
 
         friend class RunTracer;
     }; // class BaseLspLanguageServer

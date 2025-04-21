@@ -32,6 +32,14 @@ namespace LCompilers::LLanguageServer::Threading {
         return activeCount;
     }
 
+    auto ThreadPool::numPending() const -> std::size_t {
+        return tasks.size();
+    }
+
+    auto ThreadPool::numExecuted() const -> std::size_t {
+        return m_executed;
+    }
+
     auto ThreadPool::isRunning() const -> bool {
         return running;
     }
@@ -130,6 +138,7 @@ namespace LCompilers::LLanguageServer::Threading {
                         logger.error() << "Failed to execute task: " << e.what() << std::endl;
                     }
                     --activeCount;
+                    ++m_executed;
                 }
             }
             logger.trace() << "Terminated successfully." << std::endl;

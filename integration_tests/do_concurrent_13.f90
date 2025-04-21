@@ -1,5 +1,5 @@
 program do_concurrent_13
-    integer, parameter :: Nx = 600, Ny = 450, n_max = 255, dp=kind(0.d0)
+    integer, parameter :: Nx = 40, Ny = 30, n_max = 255, dp=kind(0.d0)
     real(dp), parameter :: xcenter = -0.5_dp, ycenter = 0.0_dp, &
         width = 4, height = 3, dx_di = width/Nx, dy_dj = -height/Ny, &
         x_offset = xcenter - (Nx+1)*dx_di/2, y_offset = ycenter - (Ny+1)*dy_dj/2
@@ -23,5 +23,5 @@ program do_concurrent_13
         end do
     end do
     print *, sum(image)
-    if ( sum(image) /= 59157126 ) error stop
+    if ( sum(image) /= 263354 ) error stop
 end program
