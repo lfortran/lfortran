@@ -8713,7 +8713,6 @@ public:
             return;
         }
         compiler_options.separate_compilation = true;
-        compiler_options.generate_object_code = true;
         compiler_options.po.intrinsic_symbols_mangling = true;
         return;
     }
