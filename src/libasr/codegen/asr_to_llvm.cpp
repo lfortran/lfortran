@@ -8518,6 +8518,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
                         tmp = llvm_utils->CreateLoad(tmp);
                     }
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable_pointer(type),
+                        module.get());
+#endif
                     tmp = arr_descr->get_pointer_to_data(tmp);
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
