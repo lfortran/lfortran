@@ -18,7 +18,7 @@ program functions_30
     if(maxval([1, -y]) /= 3) error stop
     print *, maxval([1, y + y([2,1,3,4])])
     if(maxval([1, y + y([2,1,3,4])]) /= 8) error stop
-    
+
     call check_for_args(x, y)
     !! Assignment with function on rhs having lhs var in its arg
     x = x / norm(x)
@@ -29,7 +29,7 @@ program functions_30
     print *, x
     if(any(abs(x - [0.267261237, 0.534522474, -0.801783681, 1.06904495]) > 10e-12)) error stop
 
-contains 
+contains
 
     real function max_func(x) result(y)
       real, intent(in) :: x(:)
@@ -37,13 +37,13 @@ contains
     end function
 
     real function norm(vec) result(res)
-      real, intent(in) :: vec(:)   
-      integer :: i                 
-      res = 0.0                    
+      real, intent(in) :: vec(:)
+      integer :: i
+      res = 0.0
       do i = 1, size(vec)
-          res = res + vec(i)**2   
+          res = res + vec(i)**2
       end do
-      res = sqrt(res)             
+      res = sqrt(res)
     end function norm
 
     subroutine check_for_args(x, y)
@@ -67,7 +67,7 @@ contains
       if(maxval([1, -y]) /= 3) error stop
       print *, maxval([1, y + y([2,1,3,4])])
       if(maxval([1, y + y([2,1,3,4])]) /= 8) error stop
-      
+
       x2 = x
       x2 = x / norm(x2)
       print *, x2

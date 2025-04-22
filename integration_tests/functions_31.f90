@@ -1,7 +1,7 @@
 program function_31
     integer :: x(2,3) = reshape([1, 2, 3, 4, 5, 6], [2,3])
     call func(x)
-  contains 
+  contains
     subroutine func(x)
         integer, intent(in) :: x(:, :)
         integer :: y2(size(x, 2), size(x, 1) + 1)
@@ -11,8 +11,8 @@ program function_31
     end subroutine
     function allocate_return_type_func(x) result(z)
         integer, intent(in) :: x(:, :)
-        integer, allocatable :: z(:, :) 
+        integer, allocatable :: z(:, :)
         allocate(z(size(x,1), size(x,2)))
         z = x
     end function
-end program 
+end program
