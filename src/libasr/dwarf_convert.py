@@ -60,6 +60,9 @@ class Parser:
         while self.line.startswith("debug_line"):
             d = self.parse_debug_line()
             lines.append(d)
+
+        if (self.line.rstrip() != ""):
+            raise ValueError(f"We haven't reached end of file of {filename}")
         return DebugLines(lines)
 
     def parse_debug_line(self):
