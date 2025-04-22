@@ -1137,7 +1137,7 @@ RUN(NAME modules_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_sc EXTRAF
 RUN(NAME modules_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_sc EXTRAFILES
         modules_08_a.f90 modules_08_b.f90)
 RUN(NAME modules_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_sc EXTRAFILES
-        modules_09_a.f90 modules_09_b.f90 NO_STD_F23)
+        modules_09_b.f90 modules_09_a.f90 NO_STD_F23)
 RUN(NAME modules_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME modules_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_12 LABELS gfortran llvm)
