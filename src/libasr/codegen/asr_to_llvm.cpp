@@ -4807,9 +4807,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         ptr_loads = 0;
         visit_expr_wrapper(x.m_ptr, true);
         ptr = tmp;
+#if LLVM_VERSION_MAJOR > 16
         llvm::Type *ptr_arr_type = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(p_type)), module.get());
+#endif
         ptr = llvm_utils->CreateLoad2(p_type, ptr);
         if( ASRUtils::is_array(p_type) &&
             ASRUtils::extract_physical_type(p_type) ==
@@ -10122,10 +10124,10 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         ptr_loads = ptr_loads_copy;
         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_type);
         if( n_dims > 0 ) {
+#if LLVM_VERSION_MAJOR > 16
             llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::type_get_past_allocatable_pointer(asr_type),
                 module.get(), ASRUtils::expr_abi(arg));
-#if LLVM_VERSION_MAJOR > 16
             ptr_type[tmp] = arr_type;
 #endif
             llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
