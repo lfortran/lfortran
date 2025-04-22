@@ -62,7 +62,7 @@ class Parser:
             lines.append(d)
 
         if (self.line.rstrip() != ""):
-            raise ValueError(f"We haven't reached end of file of {filename}")
+            raise ValueError(f"Failed to completely parse {filename} !!")
         return DebugLines(lines)
 
     def parse_debug_line(self):
