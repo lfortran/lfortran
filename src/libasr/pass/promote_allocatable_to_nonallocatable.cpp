@@ -126,6 +126,8 @@ class PromoteAllocatableToNonAllocatable:
                     ASRUtils::is_array(ASRUtils::expr_type(alloc_arg.m_a)) &&
                     ASR::is_a<ASR::Variable_t>(
                         *ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) &&
+                    !ASR::is_a<ASR::Module_t>(
+                        *ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v)) &&
                     ASRUtils::expr_intent(alloc_arg.m_a) == ASRUtils::intent_local &&
                     ASRUtils::is_dimension_dependent_only_on_arguments(
                         alloc_arg.m_dims, alloc_arg.n_dims) &&
