@@ -3565,13 +3565,14 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
             fprintf(stderr, "Error: Invalid input for logical.\n");
             exit(1);
         }
-
-        if (strcasecmp(token, "true") == 0 || strcmp(token, ".true") == 0 || strcmp(token, "1") == 0) {
+        
+        //using strcmp over casecmp to avoid POSIX use
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || strcmp(token, "1") == 0 || strcmp(token, "True") == 0) {
             *p = true;
-        } else if (strcasecmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, "0") == 0) {
+        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || strcmp(token, "0") == 0 || strcmp(token, "False") == 0) {
             *p = false;
         } else {
-            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true, .false, 1 or 0.\n", token);
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., 1 or 0.\n", token);
             exit(1);
         }
         return;
@@ -3595,13 +3596,14 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
             fprintf(stderr, "Error: Invalid logical input from file.\n");
             exit(1);
         }
-
-        if (strcasecmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, "1") == 0) {
+        
+        //using strcmp over casecmp to avoid POSIX use
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || strcmp(token, "1") == 0 || strcmp(token, "True") == 0) {
             *p = true;
-        } else if (strcasecmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, "0") == 0) {
+        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || strcmp(token, "0") == 0 || strcmp(token, "False") == 0) {
             *p = false;
         } else {
-            fprintf(stderr, "Error: Invalid logical input '%s' from file. Use .true., .false., 1 or 0.\n", token);
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., 1 or 0.\n", token);
             exit(1);
         }
     }
