@@ -466,7 +466,7 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm, compiler_options.separate_compilation
+                                                    throw SemanticAbort();}, lm
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -1010,6 +1010,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
         if (x.n_temp_args > 0) {
@@ -1418,6 +1419,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
         std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
@@ -3063,7 +3065,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm, compiler_options.separate_compilation));
+            }, lm));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(

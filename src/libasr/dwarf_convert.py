@@ -60,6 +60,9 @@ class Parser:
         while self.line.startswith("debug_line"):
             d = self.parse_debug_line()
             lines.append(d)
+
+        if (self.line.rstrip() != ""):
+            raise ValueError(f"Failed to completely parse {filename} !!")
         return DebugLines(lines)
 
     def parse_debug_line(self):
@@ -81,28 +84,46 @@ class Parser:
                 self.line = self.file.readline()
 
         file_names = []
-        read_two_lines = None
         while self.line.startswith("file_names"):
             n = re.compile(r"file_names\[[ ]*(\d+)\]:").findall(self.line)[0]
             n = int(n)
 
-            self.line = self.file.readline()
-            filename = re.compile(r"name: \"([^\"]+)\"").findall(self.line)[0]
+            # these are the only two more values we currently need to make
+            # 'FileName'
+            filename = None
+            dir_idx = None
 
-            self.line = self.file.readline()
-            dir_idx = re.compile(r"dir_index: (\d+)").findall(self.line)[0]
-            dir_idx = int(dir_idx)
+            while True:
+                self.line = self.file.readline()
+                if not self.line or self.line.startswith("file_names") or not self.line.strip():
+                    break
+
+                name_match = re.compile(r"name: \"([^\"]+)\"").findall(self.line)
+                if name_match:
+                    filename = name_match[0]
+                    continue
+
+                dir_match = re.compile(r"dir_index: (\d+)").findall(self.line)
+                if dir_match:
+                    dir_idx = int(dir_match[0])
+                    continue
+
+                # this appear in newer version of dsymutil (Apple clang 17 or higher),
+                # currently we ignore this
+                md5_match = re.compile(r"md5_checksum: ([0-9a-fA-F]+)").findall(self.line)
+                if md5_match:
+                    continue
+
+                # for older version of dsymutil `mod_time` and `length` are ignore,
+                # kindly update this comment when we notice any newer keyword is noticed
+                # in newer version(s) of dsymutil
+                continue
+
+            if filename is None or dir_idx is None:
+                raise ValueError(f"Missing entries in construction of `FileName`")
 
             file_names.append(FileName(n, filename, dir_idx))
 
-            self.line = self.file.readline()
-            if read_two_lines is None:
-                # on the first iteration determine if we need to read the extra
-                # two lines which happen for older dsymutil versions
-                read_two_lines = not self.line.startswith("file_names")
-            if read_two_lines:
-                self.line = self.file.readline()
-                self.line = self.file.readline()
 
         self.line = self.file.readline()
         self.line = self.file.readline()
