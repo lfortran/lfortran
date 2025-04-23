@@ -7574,7 +7574,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         llvm::Value* x_v = llvm_symtab[x_h];
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
+#if LLVM_VERSION_MAJOR > 16
         int loads = 0;
+#endif
         while( ptr_loads_copy-- && !ASRUtils::is_descriptorString(x->m_type)) {
 #if LLVM_VERSION_MAJOR > 16
             if( loads == 0 ) {
@@ -7587,7 +7589,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             }
 #endif
             tmp = llvm_utils->CreateLoad(tmp);
+#if LLVM_VERSION_MAJOR > 16
             loads++;
+#endif
         }
     }
 
