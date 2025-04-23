@@ -1810,7 +1810,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
-        replace_current_expr(x, "_array_reshape_");
+        ASR::expr_t* parent_expr_copy = parent_expr;
+        parent_expr = *current_expr;
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayReshape(x);
+        parent_expr = parent_expr_copy;
+        if( parent_expr == nullptr ) {
+            replace_current_expr(x, "_array_reshape_");
+        }
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
