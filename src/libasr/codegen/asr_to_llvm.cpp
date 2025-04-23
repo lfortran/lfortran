@@ -5594,6 +5594,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 if( ASRUtils::is_allocatable(target_type) ) {
                     target = llvm_utils->CreateLoad(target);
                 }
+#if LLVM_VERSION_MAJOR > 16
+                ptr_type[target] = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable_pointer(target_type),
+                    module.get());
+#endif
                 llvm::Value* llvm_size = arr_descr->get_array_size(target, nullptr, 4);
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(target));
                 value = llvm_utils->create_gep(value, 0);
@@ -5679,6 +5684,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 if( LLVM::is_llvm_pointer(*target_type) ) {
                     target = llvm_utils->CreateLoad(target);
                 }
+#if LLVM_VERSION_MAJOR > 16
+                ptr_type[target] = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable_pointer(target_type),
+                    module.get());
+#endif
                 arr_descr->copy_array(value, target, module.get(),
                                       target_type, false);
             }
