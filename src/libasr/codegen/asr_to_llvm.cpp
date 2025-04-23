@@ -3734,6 +3734,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         break;
                     }
                     case ASR::array_physical_typeType::PointerToDataArray: {
+#if LLVM_VERSION_MAJOR > 16
+                        ptr_type[ptr] = llvm_utils->get_type_from_ttype_t_util(v_m_type, module.get());
+#endif
                         ptr_i = llvm_utils->create_ptr_gep(ptr, llvm_utils->CreateLoad(llvmi));
                         break;
                     }
@@ -4000,6 +4003,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         init_value = llvm::Constant::getNullValue(type);
                     }
                     gptr->setInitializer(init_value);
+                    #if LLVM_VERSION_MAJOR > 16
+                        ptr_type[ptr] = type;
+                    #endif
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
@@ -4016,9 +4022,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 #endif
                 }
             }
-            #if LLVM_VERSION_MAJOR > 16
-                ptr_type[ptr] = type;
-            #endif
             set_pointer_variable_to_null(llvm::ConstantPointerNull::get(
                 static_cast<llvm::PointerType*>(type)), ptr)
             if( ASR::is_a<ASR::StructType_t>(
@@ -4633,6 +4636,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(asr_type), module.get());
             switch( physical_type ) {
                 case ASR::array_physical_typeType::DescriptorArray: {
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[llvm_tmp] = llvm_utils->get_type_from_ttype_t_util(asr_type, module.get());
+#endif
                     llvm_tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_tmp));
                     break;
                 }
@@ -5849,6 +5855,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type[arg] = arr_type;
+#endif
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
@@ -7565,8 +7574,20 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         llvm::Value* x_v = llvm_symtab[x_h];
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
+        int loads = 0;
         while( ptr_loads_copy-- && !ASRUtils::is_descriptorString(x->m_type)) {
+#if LLVM_VERSION_MAJOR > 16
+            if( loads == 0 ) {
+                ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(
+                    x->m_type, module.get());
+            } else {
+                ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable_pointer(x->m_type),
+                    module.get());
+            }
+#endif
             tmp = llvm_utils->CreateLoad(tmp);
+            loads++;
         }
     }
 
