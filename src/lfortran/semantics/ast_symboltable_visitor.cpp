@@ -1315,7 +1315,14 @@ public:
             size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
-        if (n == 0 && compiler_options.implicit_typing && !return_var_sym) {
+        bool are_all_attributes_simple = true;
+        for (size_t i=0; i < n; i++) {
+            if (!ASR::is_a<AST::SimpleAttribute_t>(*attributes[i])) {
+                are_all_attributes_simple = false;
+                break;
+            }
+        }
+        if ((n == 0 || are_all_attributes_simple) && compiler_options.implicit_typing && !return_var_sym) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
