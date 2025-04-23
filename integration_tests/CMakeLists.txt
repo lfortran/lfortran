@@ -1293,9 +1293,9 @@ RUN(NAME implicit_interface_11 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_12 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_13 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_14 LABELS gfortran) # ! TODO: fix this test
-RUN(NAME implicit_interface_15 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface llvm_goc EXTRAFILES implicit_interface_15b)
-RUN(NAME implicit_interface_16 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface llvm_goc EXTRAFILES implicit_interface_16b)
-RUN(NAME implicit_interface_17 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface llvm_goc EXTRAFILES implicit_interface_17b)
+RUN(NAME implicit_interface_15 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_15b)
+RUN(NAME implicit_interface_16 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_16b)
+RUN(NAME implicit_interface_17 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_17b)
 RUN(NAME implicit_interface_18 LABELS gfortran llvmImplicit EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
