@@ -1019,7 +1019,10 @@ public:
                     llvm_utils->string_init(alloc_size, ptr_to_init);
                 } else if(ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::ClassType_t>(*curr_arg_m_a_type) ||
-                          ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type)) {
+                          ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
                     llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
@@ -5336,6 +5339,17 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             builder->CreateStore(tmp, llvm_symtab[target_h]);
             return ;
         }
+
+        // When assigning to a StructInstanceMember, whose instance is allocatable
+        // Check if the underlying struct instance is allocated, if not allocate
+        if (compiler_options.po.realloc_lhs &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
+            ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(sim->m_v))) {
+                check_and_allocate(sim->m_v);
+            }
+        }
+
         llvm::Value *target, *value;
         uint32_t h;
         bool lhs_is_string_arrayref = false;
@@ -5361,11 +5375,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             lhs_is_string_arrayref = true;
                         }
                     }
-                }
-            } else if (is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
-                if( ASRUtils::is_allocatable(x.m_target) &&
-                    !ASRUtils::is_character(*ASRUtils::expr_type(x.m_target)) ) {
-                    target = llvm_utils->CreateLoad(target);
                 }
             } else if( ASR::is_a<ASR::StringItem_t>(*x.m_target) ) {
                 ASR::StringItem_t *asr_target0 = ASR::down_cast<ASR::StringItem_t>(x.m_target);
@@ -5665,12 +5674,52 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             llvm_utils->dict_api->write_item(pdict, key, value, module.get(),
                                 dict_type->m_key_type,
                                 dict_type->m_value_type, name2memidx);
-        } else if (ASR::is_a<ASR::Allocatable_t>(*target_type) && ASR::is_a<ASR::StructType_t>(*value_type)) {
+        } else if (ASRUtils::is_allocatable(target_type)) {
+            if (compiler_options.po.realloc_lhs) {
+                ASR::ttype_t* asr_type = ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(
+                    ASRUtils::expr_type(x.m_target)));
+                if (ASR::is_a<ASR::Integer_t>(*asr_type) ||
+                    ASR::is_a<ASR::Real_t>(*asr_type) ||
+                    ASR::is_a<ASR::Complex_t>(*asr_type) ||
+                    ASR::is_a<ASR::Logical_t>(*asr_type)) {
+                    check_and_allocate(x.m_target);
+                }
+            }
+
             target = llvm_utils->CreateLoad(target);
             builder->CreateStore(value, target);
         } else {
             builder->CreateStore(value, target);
         }
+    }
+
+    // Checks if target_expr is allocated and if not then allocate
+    // Used for compiler_options.po.realloc_lhs
+    void check_and_allocate(ASR::expr_t *target_expr) {
+        LCOMPILERS_ASSERT(compiler_options.po.realloc_lhs);
+        ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(
+            ASRUtils::expr_type(target_expr)));
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(target_expr, false);
+        ptr_loads = ptr_loads_copy;
+        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module.get());
+        llvm_utils->create_if_else(
+            builder->CreateICmpEQ(
+                    builder->CreateLoad(llvm_type->getPointerTo(), tmp),
+                    llvm::ConstantPointerNull::get(llvm_type->getPointerTo())),
+            [&]() {
+                llvm::Value* malloc_size = SizeOfTypeUtil(asr_type, llvm_utils->getIntType(4),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, target_expr->base.loc, 4)));
+                llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
+                    context, *module, *builder, malloc_size);
+                builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
+                builder->CreateStore(builder->CreateBitCast(
+                    malloc_ptr, llvm_type->getPointerTo()), tmp);
+            },
+            []() {});
     }
 
     void PointerToData_to_Descriptor(ASR::ttype_t* m_type, ASR::ttype_t* m_type_for_dimensions) {
@@ -9419,8 +9468,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 this->visit_expr_wrapper(x.m_args[i].m_value, true);
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
-                int64_t ptr_loads_copy = ptr_loads;
-                ptr_loads = !LLVM::is_llvm_struct(arg_type);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
 
                 if( x_abi == ASR::abiType::BindC ) {
@@ -9446,7 +9493,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     }
                 }
                 llvm::Value *value = tmp;
-                ptr_loads = ptr_loads_copy;
                 // TODO: we are getting a warning of uninitialized variable,
                 // there might be a bug below.
                 llvm::Type *target_type = nullptr;
