@@ -32,7 +32,7 @@ program no_explicit_return_type
     end function
 
     ! pure elemental function without explicit type
-    pure elemental real function square(x)
+    pure elemental function square(x)
         real, intent(in) :: x
         square = x * x
     end function square

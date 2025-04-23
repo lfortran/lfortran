@@ -1318,6 +1318,7 @@ public:
         for (size_t i=0; i < n; i++) {
             if (!ASR::is_a<AST::SimpleAttribute_t>(*attributes[i])) {
                 are_all_attributes_simple = false;
+                break;
             }
         }
         if ((n == 0 || are_all_attributes_simple) && compiler_options.implicit_typing && !return_var_sym) {
