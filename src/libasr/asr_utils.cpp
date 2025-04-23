@@ -1790,9 +1790,7 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
     start = builder.i2i_t(start, ASRUtils::expr_type(end));
     if( d == nullptr ) {
-        implied_doloop_size = builder.Add(
-            builder.Sub(end, start),
-            make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+        implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
     } else {
         implied_doloop_size = builder.Add(builder.Div(
             builder.Sub(end, start), d),
