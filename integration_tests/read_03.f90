@@ -1,7 +1,5 @@
 module read_03_module
-    public ::         &
-        bitset_type,  &
-        bitset_large
+    public :: bitset_type, bitset_large
 
     type, abstract :: bitset_type
         integer(4) :: num_bits
@@ -9,17 +7,7 @@ module read_03_module
 
     type, extends(bitset_type) :: bitset_large
         integer(8), allocatable :: blocks(:)
-    contains
-        procedure, pass(self)  :: input => input_large
     end type bitset_large
-
-contains
-
-    module subroutine input_large(self, unit)
-        class(bitset_large), intent(out) :: self
-        integer, intent(in) :: unit
-        read(unit) self % blocks(:)
-    end subroutine input_large
 
 end module read_03_module
 
@@ -33,5 +21,11 @@ program read_03
     bs%num_bits = 64
     allocate(bs%blocks(2))
 
-    print *, bs%blocks
+    open(newunit=unit, file="read_03_data.txt")
+    read(unit, *) bs%blocks
+    if (bs%blocks(1) /= 123456789) error stop
+    if (bs%blocks(2) /= 987654321) error stop
+    close(unit)
+
+    print *, "Read text data:", bs%blocks
 end program read_03
