@@ -8354,6 +8354,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     } else if (a_kind == 4) {
                         runtime_func_name = "_lfortran_read_array_int32";
                         type_arg = llvm::Type::getInt32Ty(context);
+                    } else if (a_kind == 8) {
+                        runtime_func_name = "_lfortran_read_array_int64";
+                        type_arg = llvm::Type::getInt64Ty(context);
                     } else {
                         throw CodeGenError("Integer arrays of kind 1 or 4 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
