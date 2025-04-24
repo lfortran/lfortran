@@ -11,6 +11,7 @@ using LCompilers::diag::Label;
 using LCompilers::diag::Diagnostic;
 
 namespace LCompilers::LFortran {
+unsigned char *string_start_pointer = nullptr;
 
 void Tokenizer::set_string(const std::string &str)
 {
@@ -151,6 +152,9 @@ void Tokenizer::add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form,
 
 int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics, bool continue_compilation)
 {
+    if (string_start_pointer == nullptr) {
+        string_start_pointer = cur;
+    }
     if (enddo_state == 1) {
         enddo_state = 2;
         KW(END_DO)
@@ -810,6 +814,8 @@ void lex_format(unsigned char *&cur, Location &loc,
             * {
                 token_loc(loc);
                 std::string t = token(tok, cur);
+                loc.first = cur-string_start_pointer;
+                loc.last = cur-string_start_pointer;
                 diagnostics.add(diag::Diagnostic(
                     "Token '" + t + "' is not recognized in `format` statement",
                     diag::Level::Error, diag::Stage::Tokenizer, {
