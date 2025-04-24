@@ -57,10 +57,10 @@ tokenizer error: Token '?' is not recognized
     |                 ^ token not recognized
 
 tokenizer error: Token '@' is not recognized in `format` statement
- --> tests/errors/continue_compilation_2.f90:1:2
-  |
-1 | module Geometry
-  |  ^ 
+   --> tests/errors/continue_compilation_2.f90:436:22
+    |
+436 |     100 FORMAT(A10, @)
+    |                      ^ 
 
 semantic error: Global name is already being used
   --> tests/errors/continue_compilation_2.f90:24:1 - 25:21
