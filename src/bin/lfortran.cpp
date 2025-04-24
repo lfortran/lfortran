@@ -2354,6 +2354,9 @@ int main_app(int argc, char *argv[]) {
     }
 
     lcompilers_unique_ID = ( parser.opts.compiler_options.generate_object_code || compiler_options.separate_compilation ) ? get_unique_ID() : "";
+    if (parser.opts.compiler_options.generate_object_code) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+    }
 
     if (opts.arg_version) {
         std::string version = LFORTRAN_VERSION;

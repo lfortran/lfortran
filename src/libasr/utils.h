@@ -94,7 +94,19 @@ struct CompilerOptions {
     std::string column = "";
     bool continue_compilation = false;
     bool semantics_only = false;
+    /*
+        Generates object code for modules as well as global procedures ( subroutines / functions )
+        avialable in ASR. This needs to be explicity set to true.
+    */
     bool generate_object_code = false;
+    /*
+        Generates object code *only* for global procedures ( subroutines / functions ) *if present* in ASR
+        by marking modules as external. We have a utility that identifies global procedures and hence this
+        option is not exposed to user. It gets set to true if there are any global procedures in ASR.
+        This is the default behaviour.
+
+        It is overridden by `generate_object_code` option.
+    */
     bool separate_compilation = false;
     bool no_warnings = false;
     bool disable_style = false;

@@ -553,11 +553,11 @@ jobs:
         shell: bash -e -l {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
-            git clone https://github.com/Shaikh-Ubaid/lapack.git
+            git clone https://github.com/pranavchiku/lapack.git
             cd lapack
-            git fetch origin lf_05
-            git checkout lf_05
-            git checkout eb551db50eb1bdce9fb8a8f51c7d1fd19a1697bf
+            git fetch origin lf_06
+            git checkout lf_06
+            git checkout 2e2144d65348b83423d4ebaf4ce26a378f80ab0c
             cd build
             micromamba create -f environment_unix.yml
             micromamba activate lapack
@@ -782,6 +782,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
+            ./run_tests.py -b llvm_goc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f -nf16
 
@@ -791,6 +792,7 @@ jobs:
         run: |
             ctest --output-on-failure
             cd integration_tests
+            ./run_tests.py -b llvm_goc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
 
