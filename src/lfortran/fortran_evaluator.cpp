@@ -402,7 +402,9 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         auto t1 = std::chrono::high_resolution_clock::now();
         e->opt(*m->m_m);
         auto t2 = std::chrono::high_resolution_clock::now();
-        *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        if (compiler_options.po.time_report && time_opt) {
+            *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        }
     }
 
     return m;
