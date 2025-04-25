@@ -297,7 +297,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
-                            LCompilers::LocationManager &lm) {
+                            LCompilers::LocationManager &lm,
+                            bool generate_object_code) {
     LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -327,6 +328,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
+    if ( generate_object_code ) {
+        mod2->m_symtab->mark_all_variables_external(al);
+    }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 
     // Create a temporary TranslationUnit just for fixing the symbols
@@ -370,6 +374,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
                 mod2->m_loaded_from_mod = true;
+                if ( generate_object_code ) {
+                    mod2->m_symtab->mark_all_variables_external(al);
+                }
                 rerun = true;
             }
         }
@@ -485,7 +492,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 nullptr, 0, member_variable->m_name, ASR::accessType::Public));
             current_scope->add_symbol(mem_name, mem_es);
         }
-        ASR::ttype_t* member_type = ASRUtils::TYPE(ASR::make_StructType_t(al,
+        ASR::ttype_t* member_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al,
             member_variable->base.base.loc, mem_es));
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             mem_es, ASRUtils::fix_scoped_type(al, member_type, current_scope), nullptr);
@@ -548,10 +555,10 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                     } else {
                         der_ext = current_scope->get_symbol(mangled_name);
                     }
-                    ASR::asr_t* der_new = ASR::make_StructType_t(al, loc, der_ext);
+                    ASR::asr_t* der_new = ASRUtils::make_StructType_t_util(al, loc, der_ext);
                     member_type_ = ASRUtils::TYPE(der_new);
                 } else if(ASR::is_a<ASR::ExternalSymbol_t>(*der_type_sym)) {
-                    member_type_ = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, der_type_sym));
+                    member_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, der_type_sym));
                 }
                 member_type = ASRUtils::make_Array_t_util(al, loc,
                     member_type_, m_dims, n_dims);
@@ -568,13 +575,39 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
             member_variable->base.base.loc, member_type));
         }
+
+        if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(v_var))) {
+            ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(v_var));
+            if( ASRUtils::is_array_indexed_with_array_indices(t->m_args, t->n_args) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(ASRUtils::EXPR(v_var))), m_dims);
+                member_type = ASRUtils::make_Array_t_util(al, loc, member_type_, m_dims, n_dims);
+            }
+        }
+
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type);
         ASR::expr_t* value = nullptr;
         v = ASRUtils::symbol_get_past_external(v);
-        if (v != nullptr && ASR::down_cast<ASR::Variable_t>(v)->m_storage
-                == ASR::storage_typeType::Parameter) {
+        if (v != nullptr &&
+            ASR::down_cast<ASR::Variable_t>(v)->m_storage == ASR::storage_typeType::Parameter) {
             if (member_variable->m_symbolic_value != nullptr) {
                 value = expr_value(member_variable->m_symbolic_value);
+            }
+            // Check for compile time value in StructConstant
+            ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
+            if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
+                ASR::StructType_t *struct_type = ASR::down_cast<ASR::StructType_t>(v_variable_s->m_type);
+                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(struct_type->m_derived_type);
+                std::string mem_name = ASRUtils::symbol_name(member);
+                // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
+                size_t i = 0;
+                for (i = 0; i < struct_s->n_members; i++) {
+                    if (struct_s->m_members[i] == mem_name) {
+                        break;
+                    }
+                }
+
+                ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
+                value = stc->m_args[i].m_value;
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
@@ -682,7 +715,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_t->m_derived_type)), nullptr, 0,
                                                 ASRUtils::symbol_name(struct_t->m_derived_type), ASR::accessType::Public)));
                                     }
-                                    return_type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc,
+                                    return_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc,
                                         curr_scope->resolve_symbol(ASRUtils::symbol_name(struct_t->m_derived_type))));
                                     if( is_array ) {
                                         return_type = ASRUtils::make_Array_t_util(al, loc, return_type, m_dims, n_dims);
@@ -774,7 +807,7 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                                 ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_t->m_derived_type)), nullptr, 0,
                                 ASRUtils::symbol_name(struct_t->m_derived_type), ASR::accessType::Public)));
                     }
-                    return_type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc,
+                    return_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc,
                         curr_scope->resolve_symbol(ASRUtils::symbol_name(struct_t->m_derived_type))));
                     if( is_array ) {
                         return_type = ASRUtils::make_Array_t_util(
@@ -1167,6 +1200,27 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASR::is_a<ASR::StructType_t>(*left_type))
                         || (ASR::is_a<ASR::ClassType_t>(*right_arg_type) &&
                             ASR::is_a<ASR::StructType_t>(*right_type))) {
+                            // If all are StructTypes then the Struct symbols should match
+                            if (ASR::is_a<ASR::StructType_t>(*left_type) &&
+                                ASR::is_a<ASR::StructType_t>(*right_type) &&
+                                ASR::is_a<ASR::StructType_t>(*left_arg_type) &&
+                                ASR::is_a<ASR::StructType_t>(*right_arg_type)) {
+                                ASR::Struct_t *left_sym = ASR::down_cast<ASR::Struct_t>(
+                                        ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                        left_type)->m_derived_type));
+                                ASR::Struct_t *right_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                    right_type)->m_derived_type));
+                                ASR::Struct_t *left_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                        ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                        left_arg_type)->m_derived_type));
+                                ASR::Struct_t *right_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                    right_arg_type)->m_derived_type));
+                                if (left_sym != left_arg_sym || right_sym != right_arg_sym) {
+                                    break;
+                                }
+                            }
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
@@ -1719,6 +1773,14 @@ size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x) {
     return ASRUtils::get_fixed_size_of_array(x->m_type);
 }
 
+void get_sliced_indices(ASR::ArraySection_t* arr_sec, std::vector<size_t> &indices) {
+    for (size_t i = 0; i < arr_sec->n_args; i++) {
+        if (arr_sec->m_args[i].m_step != nullptr) {
+            indices.push_back(i + 1);
+        }
+    }
+}
+
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
     return make_ConstantWithType(make_IntegerConstant_t,
@@ -1735,9 +1797,7 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
     start = builder.i2i_t(start, ASRUtils::expr_type(end));
     if( d == nullptr ) {
-        implied_doloop_size = builder.Add(
-            builder.Sub(end, start),
-            make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+        implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
     } else {
         implied_doloop_size = builder.Add(builder.Div(
             builder.Sub(end, start), d),
@@ -2006,7 +2066,7 @@ ASR::asr_t* make_ArraySize_t_util(
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* d = array_section_t->m_args[i].m_step;
-                if( (start == nullptr || end == nullptr || d == nullptr) && 
+                if( (start == nullptr || end == nullptr || d == nullptr) &&
                     !ASRUtils::is_array(ASRUtils::expr_type(end))){
                     continue;
                 }
@@ -2015,12 +2075,12 @@ ASR::asr_t* make_ArraySize_t_util(
                 if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
                     ASR::ttype_t* arr_type = ASRUtils::expr_type(end);
                     bool is_func_with_unknown_return = (ASR::is_a<ASR::FunctionCall_t>(*end) &&
-                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);  
+                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);
                     if( ASRUtils::is_fixed_size_array(arr_type) ) {
                         int64_t arr_size = ASRUtils::get_fixed_size_of_array(arr_type);
                         plus1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc, arr_size, a_type));
                     } else {
-                        plus1 = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, end->base.loc, end, 
+                        plus1 = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, end->base.loc, end,
                             nullptr, a_type, ASRUtils::expr_value(end), !is_func_with_unknown_return));
                     }
                 } else {
@@ -2047,7 +2107,7 @@ ASR::asr_t* make_ArraySize_t_util(
             // Case: A(:, iact) where iact is an array and dim = 2
             if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
                 bool is_func_with_unknown_return = (ASR::is_a<ASR::FunctionCall_t>(*end) &&
-                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);  
+                        ASRUtils::is_allocatable(ASRUtils::expr_type(end))) || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*end);
                 ASR::ttype_t* arr_type = ASRUtils::expr_type(end);
                 if( ASRUtils::is_fixed_size_array(arr_type) ) {
                     int64_t arr_size = ASRUtils::get_fixed_size_of_array(arr_type);
@@ -2142,6 +2202,18 @@ ASR::asr_t* make_ArraySize_t_util(
     }
 
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+}
+
+ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*
+        ASRUtils::type_get_past_allocatable_pointer(array_type)));
+    int64_t array_size = ASRUtils::get_fixed_size_of_array(array_type);
+    if(array_size != -1){
+            return ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, array_type->base.loc, array_size,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, array_type->base.loc, 8))));
+    }
+    return nullptr;
 }
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance

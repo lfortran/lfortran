@@ -199,6 +199,7 @@
                                     arrblock
                                     []
                                     [myarr]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -227,6 +228,9 @@
                                             ColMajor
                                         ))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 arrblock
                                         )
                                     )
@@ -244,11 +248,17 @@
                                             ColMajor
                                         ))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 arrblock
                                         )
                                     )
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 arrblock
                                     )
                                     ()
@@ -316,6 +326,7 @@
                                     []
                                     [myint
                                     myzero]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -335,6 +346,9 @@
                                         [((IntegerConstant 44 (Integer 4) Decimal))
                                         (())]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 myblock
                                         )
                                     )
@@ -343,11 +357,17 @@
                                         [((IntegerConstant 44 (Integer 4) Decimal))
                                         (())]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 myblock
                                         )
                                     )
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         4 myblock
                                     )
                                     ()

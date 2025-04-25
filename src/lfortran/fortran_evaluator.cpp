@@ -38,7 +38,7 @@ namespace LCompilers {
 /* ------------------------------------------------------------------------- */
 // FortranEvaluator
 
-FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
+FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
     :
     compiler_options{compiler_options},
     al{1024*1024},
@@ -368,6 +368,10 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     eval_count++;
     run_fn = "__lfortran_evaluate_" + std::to_string(eval_count);
 
+    if (compiler_options.separate_compilation) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+    }
+
     if (compiler_options.emit_debug_info) {
         if (!compiler_options.emit_debug_line_column) {
             diagnostics.add(LCompilers::diag::Diagnostic(
@@ -386,7 +390,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options, run_fn, infile);
+            compiler_options, run_fn, "", infile);
     if (res.ok) {
         m = std::move(res.result);
         return m;

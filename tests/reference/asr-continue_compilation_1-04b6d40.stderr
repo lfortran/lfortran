@@ -26,6 +26,27 @@ warning: The volatile attribute is not implemented yet (https://github.com/lfort
 71 |     integer, volatile :: volatile_var
    |              ^^^^^^^^ 
 
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/continue_compilation_1.f90:74:31
+   |
+74 |     integer , dimension(3) :: array
+   |                               ^^^^^ redeclaration
+   |
+73 |     double precision array
+   |                      ~~~~~ original declaration
+
+semantic error: Array members must me of the same type as the struct
+  --> tests/errors/continue_compilation_1.f90:78:53
+   |
+78 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+   |                                                     ^ 
+
+semantic error: Initialization of `myclass_array2` must reduce to a compile time constant.
+  --> tests/errors/continue_compilation_1.f90:79:66
+   |
+79 |     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
+   |                                                                  ^^^^^^^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
     |
@@ -581,8 +602,86 @@ semantic error: Character variable 'c1' only has %len and %kind members, not 'my
 285 |     print *, c1%mymember
     |              ^^^^^^^^^^^ 
 
-semantic error: `exit` statements cannot be outside of loops or blocks
-   --> tests/errors/continue_compilation_1.f90:287:5
+semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
+   --> tests/errors/continue_compilation_1.f90:287:14
     |
-287 |     exit
+287 |     print *, present(x,x)
+    |              ^^^^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
+   --> tests/errors/continue_compilation_1.f90:288:14
+    |
+288 |     print *, present()
+    |              ^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It accepts exactly 2 arguments.
+   --> tests/errors/continue_compilation_1.f90:289:14
+    |
+289 |     print *, ieor(x)
+    |              ^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It accepts exactly 2 arguments.
+   --> tests/errors/continue_compilation_1.f90:290:14
+    |
+290 |     print *, ieor()
+    |              ^^^^^^ 
+
+semantic error: `exit` statements cannot be outside of loops or blocks
+   --> tests/errors/continue_compilation_1.f90:292:5
+    |
+292 |     exit
     |     ^^^^ 
+
+semantic error: Required argument `y` at position 2 is missing in function call
+   --> tests/errors/continue_compilation_1.f90:295:18
+    |
+295 |     call my_func(10)
+    |                  ^^ 
+
+semantic error: Required argument `x` is missing in function call
+   --> tests/errors/continue_compilation_1.f90:296:5
+    |
+296 |     call my_func()
+    |     ^^^^^^^^^^^^^^ 
+
+semantic error: Required argument `extra_arg` is missing in function call
+   --> tests/errors/continue_compilation_1.f90:300:5
+    |
+300 |     call obj%display()
+    |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Shape mismatch in `allocate` statement.
+   --> tests/errors/continue_compilation_1.f90:302:14
+    |
+302 |     allocate(arr4(5), source=[1, 2, 3])
+    |              ^^^^^^^         ^^^^^^^^^ shape mismatch in dimension 1
+
+semantic error: Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.Expected type: integer[:] allocatable, but got: real.
+   --> tests/errors/continue_compilation_1.f90:303:14
+    |
+303 |     allocate(arr4(5), source=v)
+    |              ^^^^^^^         ^ incompatible types in `allocate` statement
+
+semantic error: Dimension mismatch in `allocate` statement.
+   --> tests/errors/continue_compilation_1.f90:304:14
+    |
+304 |     allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
+    |              ^^^^^^^         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mismatch in dimensions between allocated variable and `source`
+
+semantic error: Cannot allocate an array from a scalar source.
+   --> tests/errors/continue_compilation_1.f90:305:14
+    |
+305 |     allocate(arr4, source=7)
+    |              ^^^^ allocated variable is an array, but `source` is a scalar
+
+semantic error: Argument was not specified
+   --> tests/errors/continue_compilation_1.f90:307:5
+    |
+307 |     call logger % add_log_file(filename=filename)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 1-th argument not specified for add_log_file
+
+semantic error: Required argument `unit` is missing in function call
+   --> tests/errors/continue_compilation_1.f90:308:5
+    |
+308 |     call logger % add_log_file()
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

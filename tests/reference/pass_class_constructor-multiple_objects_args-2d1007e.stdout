@@ -50,6 +50,7 @@
                                     circle
                                     []
                                     [radius]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -83,6 +84,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 circle
                                                     )
                                                     ()
@@ -103,6 +107,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 circle
                                                     )
                                                     ()
@@ -117,9 +124,15 @@
                                     print_radius
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 circle
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 circle
                                         )]
                                         ()
@@ -181,6 +194,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 circle
                                     )
                                     ()
@@ -201,6 +217,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 circle
                                     )
                                     ()

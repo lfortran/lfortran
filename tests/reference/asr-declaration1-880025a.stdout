@@ -1,0 +1,110 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            declaration1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            arr:
+                                (Variable
+                                    2
+                                    arr
+                                    []
+                                    Local
+                                    (ArrayReshape
+                                        (ArrayConstant
+                                            8
+                                            [1, 1]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        (ArrayPhysicalCast
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(ArrayPhysicalCast
+                                                    (Var 2 arr)
+                                                    FixedSizeArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                )
+                                                (ArrayConstant
+                                                    8
+                                                    [1, 1]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ColMajor
+                                                )
+                                            )
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
+                                    ()
+                                    Parameter
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    declaration1
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

@@ -27,6 +27,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -47,6 +50,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -67,6 +73,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -87,6 +96,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         11 int_matrix
                                     )
                                     ()
@@ -150,6 +162,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -170,6 +185,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -190,6 +208,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -204,12 +225,21 @@
                                     int_add_matrix
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             11 int_matrix
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 int_matrix
                                         )]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 int_matrix
                                         )
                                         Source
@@ -322,6 +352,7 @@
                                     int_matrix
                                     []
                                     [elements]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -355,6 +386,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -375,6 +409,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -472,6 +509,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -504,12 +544,21 @@
                                     int_mul_matrix
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             11 int_matrix
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 int_matrix
                                         )]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 int_matrix
                                         )
                                         Source
@@ -675,8 +724,62 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (IntegerConstant 1 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        (IntegerBinOp
+                                                            (IntegerBinOp
+                                                                (IntegerBinOp
+                                                                    (ArrayBound
+                                                                        (StructInstanceMember
+                                                                            (Var 16 a)
+                                                                            16 1_int_matrix_elements
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))
+                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))]
+                                                                                FixedSizeArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        UBound
+                                                                        ()
+                                                                    )
+                                                                    Sub
+                                                                    (ArrayBound
+                                                                        (StructInstanceMember
+                                                                            (Var 16 a)
+                                                                            16 1_int_matrix_elements
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))
+                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 11 n))]
+                                                                                FixedSizeArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        LBound
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    )
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Div
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     ()
@@ -1098,6 +1201,9 @@
                             [((Var 11 am))
                             ((Var 11 bm))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 11 int_matrix
                             )
                             ()
@@ -1113,6 +1219,9 @@
                             [((Var 11 am))
                             ((Var 11 bm))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 11 int_matrix
                             )
                             ()
@@ -1519,6 +1628,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1539,6 +1651,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1559,6 +1674,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1573,12 +1691,21 @@
                                                     add_matrix
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 matrix
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 matrix
                                                         )]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 matrix
                                                         )
                                                         Source
@@ -1701,6 +1828,7 @@
                                                     matrix
                                                     []
                                                     [elements]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -1734,6 +1862,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1754,6 +1885,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1853,6 +1987,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1887,12 +2024,21 @@
                                                     mul_matrix
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 matrix
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 matrix
                                                         )]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 matrix
                                                         )
                                                         Source
@@ -2076,7 +2222,65 @@
                                                                             t
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                                        (IntegerBinOp
+                                                                            (IntegerBinOp
+                                                                                (IntegerBinOp
+                                                                                    (ArrayBound
+                                                                                        (StructInstanceMember
+                                                                                            (Var 10 a)
+                                                                                            10 1_matrix_elements
+                                                                                            (Array
+                                                                                                (TypeParameter
+                                                                                                    t
+                                                                                                )
+                                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))
+                                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))]
+                                                                                                PointerToDataArray
+                                                                                            )
+                                                                                            ()
+                                                                                        )
+                                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                                        (Integer 4)
+                                                                                        UBound
+                                                                                        ()
+                                                                                    )
+                                                                                    Sub
+                                                                                    (ArrayBound
+                                                                                        (StructInstanceMember
+                                                                                            (Var 10 a)
+                                                                                            10 1_matrix_elements
+                                                                                            (Array
+                                                                                                (TypeParameter
+                                                                                                    t
+                                                                                                )
+                                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))
+                                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                                (Var 5 n))]
+                                                                                                PointerToDataArray
+                                                                                            )
+                                                                                            ()
+                                                                                        )
+                                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                                        (Integer 4)
+                                                                                        LBound
+                                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                                    )
+                                                                                    (Integer 4)
+                                                                                    ()
+                                                                                )
+                                                                                Div
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Integer 4)
+                                                                                ()
+                                                                            )
+                                                                            Add
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))]
                                                                         DescriptorArray
                                                                     )
                                                                     ()

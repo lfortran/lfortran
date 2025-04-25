@@ -66,6 +66,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_key
                                                     )
                                                     ()
@@ -86,6 +89,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_key
                                                     )
                                                     ()
@@ -100,9 +106,15 @@
                                     compare_keys_less
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 toml_key
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 toml_key
                                         )]
                                         (Logical 4)
@@ -200,6 +212,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_key
                                                     )
                                                     ()
@@ -220,6 +235,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_key
                                                     )
                                                     ()
@@ -234,9 +252,15 @@
                                     compare_less
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 toml_key
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 toml_key
                                         )]
                                         (Logical 4)
@@ -354,9 +378,15 @@
                                                     Default
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )]
                                                         (Logical 4)
@@ -390,6 +420,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )
                                                         [(()
@@ -445,6 +478,9 @@
                                     (FunctionType
                                         [(Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 toml_key
                                             )
                                             [(()
@@ -461,9 +497,15 @@
                                         (Integer 4)
                                         (FunctionType
                                             [(StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 toml_key
                                             )
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 toml_key
                                             )]
                                             (Logical 4)
@@ -575,6 +617,9 @@
                                                         )
                                                         ())]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )
                                                         ColMajor
@@ -594,6 +639,9 @@
                                                         )
                                                         ())]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )
                                                         ColMajor
@@ -678,6 +726,9 @@
                                                 DescriptorArray
                                                 (Array
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_key
                                                     )
                                                     [(()
@@ -718,6 +769,9 @@
                                                 DescriptorArray
                                                 (Array
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_key
                                                     )
                                                     [(()
@@ -780,9 +834,15 @@
                                                     Default
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )]
                                                         (Logical 4)
@@ -900,6 +960,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_key
                                                         )
                                                         [(()
@@ -944,6 +1007,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 toml_key
                                                             )
                                                             [(()
@@ -964,6 +1030,9 @@
                                     (FunctionType
                                         [(Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 toml_key
                                             )
                                             [(()
@@ -978,9 +1047,15 @@
                                         )
                                         (FunctionType
                                             [(StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 toml_key
                                             )
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 toml_key
                                             )]
                                             (Logical 4)
@@ -1059,6 +1134,29 @@
                                             ColMajor
                                         )
                                     )
+                                    (Assignment
+                                        (Var 5 indexarray)
+                                        (ArrayConstructor
+                                            [(ImpliedDoLoop
+                                                [(Var 5 i)]
+                                                (Var 5 i)
+                                                (Var 5 low)
+                                                (Var 5 high)
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
                                     (If
                                         (IntrinsicElementalFunction
                                             Present
@@ -1101,6 +1199,9 @@
                                                 (Var 5 i)
                                                 ())]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 toml_key
                                                 )
                                                 ColMajor
@@ -1120,6 +1221,9 @@
                                                 )
                                                 ())]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 toml_key
                                                 )
                                                 ColMajor
@@ -1279,6 +1383,7 @@
                                     toml_key
                                     []
                                     [key]
+                                    []
                                     Source
                                     Public
                                     .false.

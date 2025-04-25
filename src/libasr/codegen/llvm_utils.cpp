@@ -118,8 +118,8 @@ namespace LCompilers {
                 llvm::Type::getInt64Ty(context),  // size
                 llvm::Type::getInt64Ty(context)  // capacity
             };
-            complex_type_4 = llvm::StructType::create(context, els_4, "complex_4");
-            complex_type_8 = llvm::StructType::create(context, els_8, "complex_8");
+            complex_type_4 = llvm::StructType::create(context, els_4, "complex_4", true);
+            complex_type_8 = llvm::StructType::create(context, els_8, "complex_8", true);
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
@@ -244,7 +244,7 @@ namespace LCompilers {
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
-            (*der_type_llvm)->setBody(member_types);
+            (*der_type_llvm)->setBody(member_types, true);
             name2dertype[der_type_name] = *der_type_llvm;
         }
         struct_type_stack.pop_back();
@@ -474,6 +474,10 @@ namespace LCompilers {
             }
             case ASR::ttypeType::Logical: {
                 el_type = llvm::Type::getInt1Ty(context);
+                break;
+            }
+            case ASR::ttypeType::CPtr: {
+                el_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
             case ASR::ttypeType::StructType: {
@@ -1676,7 +1680,7 @@ namespace LCompilers {
         if ( llvm::GetElementPtrInst *
                 gep = llvm::dyn_cast<llvm::GetElementPtrInst>(x) ) {
             // GetElementPtrInst
-            llvm::Type *src_type = gep->getSourceElementType();
+            [[maybe_unused]] llvm::Type *src_type = gep->getSourceElementType();
             LCOMPILERS_ASSERT(llvm::isa<llvm::StructType>(src_type));
             std::string s_name = std::string(llvm::dyn_cast<llvm::StructType>(
                 gep->getSourceElementType())->getName());
@@ -1854,6 +1858,36 @@ namespace LCompilers {
         LLVM::CreateStore(*builder, right_arg, pright_arg);
         std::vector<llvm::Value*> args = {pleft_arg, pright_arg};
         return builder->CreateCall(fn, args);
+    }
+
+    void LLVMUtils::string_init(llvm::Value* arg_size, llvm::Value* arg_string) {
+        std::string func_name = "_lfortran_string_init";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt8Ty(context)->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, module);
+        }
+        std::vector<llvm::Value*> args = {convert_kind(arg_size,
+                                                llvm::Type::getInt64Ty(context)),
+                                        arg_string};
+        builder->CreateCall(fn, args);
+    }
+
+    void LLVMUtils::initialize_string_heap(llvm::Value* str, llvm::Value* len){
+        llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, len);
+        string_init(len, s_malloc);
+        builder->CreateStore(s_malloc, str);
+    }
+
+    void LLVMUtils::initialize_string_heap(llvm::Value* str, int64_t len){
+        llvm::Value* len_llvm = llvm::ConstantInt::get(context,
+            llvm::APInt(32,len+1));
+        initialize_string_heap(str, len_llvm);
     }
 
     llvm::Value* LLVMUtils::is_equal_by_value(llvm::Value* left, llvm::Value* right,
@@ -2160,24 +2194,31 @@ namespace LCompilers {
             }
             case ASR::ttypeType::StructType: {
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(asr_type);
-                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
-                std::string der_type_name = std::string(struct_type_t->m_name);
-                while( struct_type_t != nullptr ) {
-                    for( auto item: struct_type_t->m_symtab->get_scope() ) {
+                std::string der_type_name = std::string(struct_sym->m_name);
+                while( struct_sym != nullptr ) {
+                    for( auto item: struct_sym->m_symtab->get_scope() ) {
                         if( ASR::is_a<ASR::ClassProcedure_t>(*item.second) ||
+                            ASR::is_a<ASR::GenericProcedure_t>(*item.second) ||
                             ASR::is_a<ASR::CustomOperator_t>(*item.second) ) {
                             continue ;
                         }
                         std::string mem_name = item.first;
                         int mem_idx = name2memidx[der_type_name][mem_name];
-                        llvm::Value* src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
+                        llvm::Value* src_member = nullptr;
+                        if (llvm::isa<llvm::ConstantStruct>(src)) {
+                            src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
+                        } else {
+                            src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
+                        }
                         llvm::Type *mem_type = get_type_from_ttype_t_util(
                             ASRUtils::symbol_type(item.second), module);
                         ASR::ttype_t* member_type = ASRUtils::symbol_type(item.second);
                         if( !LLVM::is_llvm_struct(member_type) &&
-                            !ASRUtils::is_array(member_type) && 
-                            !ASRUtils::is_descriptorString(member_type)) {
+                            !ASRUtils::is_array(member_type) &&
+                            !ASRUtils::is_descriptorString(member_type) &&
+                            !llvm::isa<llvm::ConstantStruct>(src)) {
                             src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
                         }
                         llvm::Value* dest_member = create_gep2(name2dertype[der_type_name], dest, mem_idx);
@@ -2185,12 +2226,18 @@ namespace LCompilers {
                             ASRUtils::symbol_type(item.second),
                             module, name2memidx);
                     }
-                    if( struct_type_t->m_parent != nullptr ) {
+                    if( struct_sym->m_parent != nullptr ) {
+                        // gep the parent struct, which is the 0th member of the child struct
+                        src = create_gep2(name2dertype[struct_sym->m_name], src, 0);
+                        dest = create_gep2(name2dertype[struct_sym->m_name], dest, 0);
+
                         ASR::Struct_t* parent_struct_type_t =
-                            ASR::down_cast<ASR::Struct_t>(struct_type_t->m_parent);
-                        struct_type_t = parent_struct_type_t;
+                            ASR::down_cast<ASR::Struct_t>(struct_sym->m_parent);
+
+                        der_type_name = parent_struct_type_t->m_name;
+                        struct_sym = parent_struct_type_t;
                     } else {
-                        struct_type_t = nullptr;
+                        struct_sym = nullptr;
                     }
                 }
                 break ;
@@ -2203,13 +2250,13 @@ namespace LCompilers {
     }
     llvm::Value* LLVMUtils::convert_kind(llvm::Value* val, llvm::Type* target_type){
         LCOMPILERS_ASSERT(
-            (val->getType()->isIntegerTy() && target_type->isIntegerTy()) || 
+            (val->getType()->isIntegerTy() && target_type->isIntegerTy()) ||
             (val->getType()->isFloatingPointTy() && target_type->isFloatingPointTy()));
 
         if(val->getType()->getPrimitiveSizeInBits() == target_type->getPrimitiveSizeInBits()){
             return val;
         } else if(val->getType()->getPrimitiveSizeInBits() > target_type->getPrimitiveSizeInBits()){
-            return val->getType()->isIntegerTy() ? 
+            return val->getType()->isIntegerTy() ?
                 builder->CreateTrunc(val, target_type) : builder->CreateFPTrunc(val, target_type);
         } else {
             return val->getType()->isIntegerTy() ?

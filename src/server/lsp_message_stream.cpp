@@ -1,5 +1,7 @@
 #include <cctype>
 #include <cstddef>
+#include <mutex>
+#include <regex>
 #include <stdexcept>
 #include <string_view>
 
@@ -9,31 +11,24 @@
 namespace LCompilers::LanguageServerProtocol {
 
     LspMessageStream::LspMessageStream(std::istream &istream, lsl::Logger &logger)
-        : istream(istream)
-        , logger(logger)
+        : RE_IS_CONTENT_LENGTH("^Content-Length$", std::regex_constants::icase)
+        , RE_IS_EXIT(
+            "^\\{\\s*(?:"
+                "\"method\"\\s*:\\s*\"exit\"\\s*,\\s*\"jsonrpc\"\\s*:\\s*\"2\\.0\""
+                "|"
+                "\"jsonrpc\"\\s*:\\s*\"2\\.0\"\\s*,\\s*\"method\"\\s*:\\s*\"exit\""
+            ")\\s*\\}$"
+        )
+        , istream(istream)
+        , logger(logger.having("LspMessageStream"))
     {
         message.reserve(16384);
         position = 0;
     }
 
-    auto LspMessageStream::nextUpper() -> char {
-        char c;
-        istream.get(c);
-        if (c == '\0') {
-            throw std::runtime_error("Terminated while reading from stdin.");
-        }
-        c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-        message.push_back(c);
-        ++position;
-        return c;
-    }
-
     auto LspMessageStream::nextChar() -> char {
         char c;
         istream.get(c);
-        if (c == '\0') {
-            throw std::runtime_error("Terminated while reading from stdin.");
-        }
         message.push_back(c);
         ++position;
         return c;
@@ -67,7 +62,13 @@ namespace LCompilers::LanguageServerProtocol {
         }
     }
 
-    auto LspMessageStream::next() -> std::string {
+    auto LspMessageStream::logEscapedMessage() -> void {
+        for (char c : message) {
+            logEscaped(c);
+        }
+    }
+
+    auto LspMessageStream::next(bool &exit) -> std::string {
         std::size_t numBytes = 0;
         bool hasContentLength = false;
         std::size_t start = 0;
@@ -77,38 +78,58 @@ namespace LCompilers::LanguageServerProtocol {
     parse_header_name:
         start = position;
         do {
-            switch (nextUpper()) {
+            switch (nextChar()) {
             case '\r': {
                 length = (position - start) - 1;
                 view = std::string_view(message.data() + start, length);
-                c = nextUpper();
+                c = nextChar();
                 if (c != '\n') {
-                    std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-                    logger.warn() << "Expected \\r to be followed by \\n, not '";
-                    logEscaped(c);
-                    logger << "\'" << std::endl;
+                    if (logger.isWarnEnabled()) {
+                        std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+                        if (logger.isWarnEnabled()) {
+                            logger.warn() << "Expected \\r to be followed by \\n, not '";
+                            logEscaped(c);
+                            logger << "\':" << std::endl;
+                            logEscapedMessage();
+                            logger << std::endl;
+                        }
+                    }
                     goto parse_header_name;
                 }
                 if ((view.length() == 0) && hasContentLength) {
                     goto parse_body;
                 }
-                logger.warn()
-                    << "Reached out-of-sequence newline while parsing header name."
-                    << std::endl;
+                if (logger.isWarnEnabled()) {
+                    std::unique_lock<std::recursive_mutex> lock(logger.mutex());
+                    if (logger.isWarnEnabled()) {
+                        logger.warn() << "Reached out-of-sequence newline while parsing header name:" << std::endl;
+                        logEscapedMessage();
+                        logger << std::endl;
+                    }
+                }
                 goto parse_header_name;
             }
             case '\n': {
                 length = (position - start) - 1;
                 view = std::string_view(message.data() + start, length);
-                logger.warn()
-                    << "Reached out-of-sequence newline while parsing header name."
-                    << std::endl;
+                if (logger.isWarnEnabled()) {
+                    std::unique_lock<std::recursive_mutex> lock(logger.mutex());
+                    if (logger.isWarnEnabled()) {
+                        logger.warn() << "Reached out-of-sequence newline while parsing header name:" << std::endl;
+                        logEscapedMessage();
+                        logger << std::endl;
+                    }
+                }
                 goto parse_header_name;
             }
             case ':': {
                 length = (position - start) - 1;
                 view = std::string_view(message.data() + start, length);
-                hasContentLength = (view == "CONTENT-LENGTH");
+                hasContentLength = std::regex_match(
+                    view.begin(),
+                    view.end(),
+                    RE_IS_CONTENT_LENGTH
+                );
                 goto parse_header_value;
             }
             default: {
@@ -132,11 +153,15 @@ namespace LCompilers::LanguageServerProtocol {
                 view = std::string_view(message.data() + start, length);
                 c = nextChar();
                 if (c != '\n') {
-                    {
-                        std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
-                        logger.warn() << "Expected \\r to be followed by \\n, not '";
-                        logEscaped(c);
-                        logger << "\': " << view << std::endl;
+                    if (logger.isWarnEnabled()) {
+                        std::unique_lock<std::recursive_mutex> lock(logger.mutex());
+                        if (logger.isWarnEnabled()) {
+                            logger.warn() << "Expected \\r to be followed by \\n, not '";
+                            logEscaped(c);
+                            logger << "\': " << view << ":\n";
+                            logEscapedMessage();
+                            logger << std::endl;
+                        }
                     }
                     goto parse_header_name;
                 }
@@ -148,9 +173,16 @@ namespace LCompilers::LanguageServerProtocol {
             case '\n': {
                 length = (position - start) - 1;
                 view = std::string_view(message.data() + start, length);
-                logger.warn()
-                    << "Reached out-of-sequence newline while parsing header value."
-                    << std::endl;
+                if (logger.isWarnEnabled()) {
+                    std::unique_lock<std::recursive_mutex> lock(logger.mutex());
+                    if (logger.isWarnEnabled()) {
+                        logger.warn()
+                            << "Reached out-of-sequence newline while parsing header value:"
+                            << std::endl;
+                        logEscapedMessage();
+                        logger << std::endl;
+                    }
+                }
                 goto parse_header_name;
             }
             default: {
@@ -166,11 +198,10 @@ namespace LCompilers::LanguageServerProtocol {
         }
         length = (position - start);
         std::string body = message.substr(start, length);
-        logger.trace()
-            << "Receiving:" << std::endl
-            << message << std::endl;
+        logger.trace() << "Receiving:" << std::endl << message << std::endl;
         message.clear();
         position = 0;
+        exit = std::regex_match(body, RE_IS_EXIT);
         return body;
     }
 

@@ -1,10 +1,12 @@
 #pragma once
 
+#include <atomic>
+#include <condition_variable>
 #include <cstddef>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <regex>
-#include <stdexcept>
 #include <string>
 
 #ifndef CLI11_HAS_FILESYSTEM
@@ -82,6 +84,17 @@ namespace LCompilers::LLanguageServer::Interface {
 
     auto serverProtocolByValue(const std::string &value) -> ServerProtocol;
 
+    enum class ExecutionStrategy {
+        PARALLEL,
+        CONCURRENT,
+    };
+
+    extern const std::map<ExecutionStrategy, std::string> ExecutionStrategyNames;
+
+    extern const std::map<ExecutionStrategy, std::string> ExecutionStrategyValues;
+
+    auto executionStrategyByValue(const std::string &value) -> ExecutionStrategy;
+
     template <typename T, typename U>
     auto transpose(const std::map<T, U> &map) -> std::map<U, T> {
         std::map<U, T> transposed;
@@ -99,6 +112,7 @@ namespace LCompilers::LLanguageServer::Interface {
         DataFormat dataFormat;
         CommunicationProtocol communicationProtocol;
         ServerProtocol serverProtocol;
+        ExecutionStrategy executionStrategy;
         std::size_t numRequestThreads;
         std::size_t numWorkerThreads;
         std::string configSection;
@@ -122,7 +136,10 @@ namespace LCompilers::LLanguageServer::Interface {
         auto buildLanguageServer(
             ls::MessageQueue &incomingMessages,
             ls::MessageQueue &outgoingMessages,
-            lsl::Logger &logger
+            lsl::Logger &logger,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         ) -> std::unique_ptr<ls::LanguageServer>;
 
         auto buildCommunicationProtocol(
@@ -130,12 +147,11 @@ namespace LCompilers::LLanguageServer::Interface {
             ls::MessageStream &messageStream,
             ls::MessageQueue &incomingMessages,
             ls::MessageQueue &outgoingMessages,
-            lsl::Logger &logger
+            lsl::Logger &logger,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
         ) -> std::unique_ptr<ls::CommunicationProtocol>;
-
-        auto buildMessageQueue(
-            lsl::Logger &logger
-        ) -> std::unique_ptr<ls::MessageQueue>;
     };
 
 } // namespace LCompilers::LLanguageServer::Interface

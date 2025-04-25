@@ -2,6 +2,7 @@
 source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"R4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_dflt_intent_foo(float* %c, float* %d) {
@@ -24,18 +25,16 @@ define float @__module_dflt_intent_f(float* %x) {
   %0 = load float, float* %x, align 4
   %1 = fmul float 2.000000e+00, %0
   store float %1, float* %f, align 4
-  %2 = load float, float* %f, align 4
-  %3 = fpext float %2 to double
-  %4 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 6, double %3)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %2 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, float* %f)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry
-  %5 = load float, float* %f, align 4
-  ret float %5
+  %3 = load float, float* %f, align 4
+  ret float %3
 }
 
-declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

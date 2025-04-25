@@ -2,8 +2,8 @@
 source_filename = "LFortran"
 
 %fpm_run_settings_polymorphic = type { i64, %fpm_run_settings* }
-%fpm_run_settings = type { %fpm_build_settings, [2 x i8*], i8*, i8*, i1 }
-%fpm_build_settings = type { i1 }
+%fpm_run_settings = type <{ %fpm_build_settings, [2 x i8*], i8*, i8*, i1 }>
+%fpm_build_settings = type <{ i1 }>
 %__vtab_fpm_run_settings = type { i64 }
 
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
@@ -194,18 +194,27 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %call_arg_value = alloca i1, align 1
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %2 = alloca %__vtab_fpm_run_settings, align 8
+  %3 = getelementptr %__vtab_fpm_run_settings, %__vtab_fpm_run_settings* %2, i32 0, i32 0
+  store i64 0, i64* %3, align 4
   %settings = alloca %fpm_run_settings, align 8
-  %2 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 2
-  %3 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 4
-  %4 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 1
-  %5 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 3
-  %6 = alloca %fpm_run_settings_polymorphic, align 8
-  %7 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %6, i32 0, i32 0
-  store i64 0, i64* %7, align 4
-  %8 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %6, i32 0, i32 1
-  store %fpm_run_settings* %settings, %fpm_run_settings** %8, align 8
+  %4 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 2
+  %5 = call i8* @_lfortran_malloc(i32 5)
+  call void @_lfortran_string_init(i64 5, i8* %5)
+  store i8* %5, i8** %4, align 8
+  %6 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 4
+  %7 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 1
+  %8 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 3
+  %9 = call i8* @_lfortran_malloc(i32 7)
+  call void @_lfortran_string_init(i64 7, i8* %9)
+  store i8* %9, i8** %8, align 8
+  %10 = alloca %fpm_run_settings_polymorphic, align 8
+  %11 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %10, i32 0, i32 0
+  store i64 0, i64* %11, align 4
+  %12 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %10, i32 0, i32 1
+  store %fpm_run_settings* %settings, %fpm_run_settings** %12, align 8
   store i1 true, i1* %call_arg_value, align 1
-  call void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %6, i1* %call_arg_value)
+  call void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %10, i1* %call_arg_value)
   call void @_lpython_free_argv()
   br label %return
 
@@ -214,5 +223,9 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_malloc(i32)
+
+declare void @_lfortran_string_init(i64, i8*)
 
 declare void @_lpython_free_argv()

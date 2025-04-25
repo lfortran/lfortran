@@ -964,7 +964,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
-        insert_realloc_for_target(xx.m_target, xx.m_value, vars);
+        if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
+            insert_realloc_for_target(xx.m_target, xx.m_value, vars);
+        }
 
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 2);

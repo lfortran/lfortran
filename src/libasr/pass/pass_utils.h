@@ -119,6 +119,10 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
+        ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc, 
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array_var, 
+            ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx);
+
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res,
             int curr_idx);
@@ -402,6 +406,7 @@ namespace LCompilers {
                 bool fill_variable_dependencies;
                 bool _return_var_or_intent_out = false;
                 SymbolTable* current_scope;
+                std::string current_name;
 
             public:
 
@@ -456,6 +461,8 @@ namespace LCompilers {
                 }
 
                 void visit_Variable(const ASR::Variable_t& x) {
+                    std::string current_name_copy = current_name;
+                    current_name = x.m_name;
                     ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
                     variable_dependencies.n = 0;
                     variable_dependencies.reserve(al, 1);
@@ -469,10 +476,11 @@ namespace LCompilers {
                     xx.n_dependencies = variable_dependencies.size();
                     xx.m_dependencies = variable_dependencies.p;
                     fill_variable_dependencies = fill_variable_dependencies_copy;
+                    current_name = current_name_copy;
                 }
 
                 void visit_Var(const ASR::Var_t& x) {
-                    if( fill_variable_dependencies ) {
+                    if( fill_variable_dependencies && ASRUtils::symbol_name(x.m_v) != current_name ) {
                         variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
                     }
                 }

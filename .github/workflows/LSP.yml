@@ -1,0 +1,68 @@
+name: LSP (can fail)
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  MACOSX_DEPLOYMENT_TARGET: 14.0
+
+jobs:
+  Build:
+    name: LSP Tests (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+
+      - name: Install Linux / macOS Packages
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install bison=3.4
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Setup Platform
+        shell: bash -e -l {0}
+        run: |
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
+
+      - name: Build (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            xonsh ci/build_tmp.xsh
+
+      - name: Test (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!'
+            shell ci/test_lsp.sh

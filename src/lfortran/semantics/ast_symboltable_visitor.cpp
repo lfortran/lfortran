@@ -137,7 +137,11 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
             if (t != AST::astType::expr && t != AST::astType::stmt) {
-                visit_ast(*x.m_items[i]);
+                try {
+                    visit_ast(*x.m_items[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
             }
         }
         global_scope = nullptr;
@@ -462,7 +466,7 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm
+                                                    throw SemanticAbort();}, lm, compiler_options.generate_object_code
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -1006,6 +1010,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
         if (x.n_temp_args > 0) {
@@ -1310,7 +1315,14 @@ public:
             size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
-        if (n == 0 && compiler_options.implicit_typing && !return_var_sym) {
+        bool are_all_attributes_simple = true;
+        for (size_t i=0; i < n; i++) {
+            if (!ASR::is_a<AST::SimpleAttribute_t>(*attributes[i])) {
+                are_all_attributes_simple = false;
+                break;
+            }
+        }
+        if ((n == 0 || are_all_attributes_simple) && compiler_options.implicit_typing && !return_var_sym) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
@@ -1407,6 +1419,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
         std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
@@ -1624,7 +1637,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
+                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                     break;
                 }
                 default :
@@ -1688,7 +1701,9 @@ public:
                 parent_scope->erase_symbol(sym_name);
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
-                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                    // TODO: Throw error when interface definition and implementation signatures are different
+                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
@@ -1982,7 +1997,7 @@ public:
         }
         tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
-            data_member_names.p, data_member_names.size(),
+            data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -2165,6 +2180,95 @@ public:
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
+        }
+    }
+
+    void visit_BlockData(const AST::BlockData_t& x) {
+        std::string base_module_name = "file_common_block_";
+        std::string base_struct_instance_name = "struct_instance_";
+
+        SymbolTable* global_scope = current_scope->get_global_scope();
+
+        if (x.m_name) {
+            ASR::symbol_t* gs = global_scope->get_symbol(x.m_name);
+            if (gs) {
+                diag.add(Diagnostic(
+                    "Global name is already being used",
+                    Level::Error, Stage::Semantic, {
+                        Label("'" + std::string(x.m_name) + "' defined here", {gs->base.loc}),
+                        Label("'" + std::string(x.m_name) + "' defined here again", {x.base.base.loc}),
+                    }));
+                throw SemanticAbort();
+            }
+        }
+
+        for (size_t i = 0; i < x.n_decl; i++) {
+            this->visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        SymbolTable* old_scope = current_scope;
+        Vec<ASR::stmt_t*> block_data_body;
+        block_data_body.reserve(al, x.n_body);
+        current_body = &block_data_body;
+        // Visit DataStmt and set the constant values in the Struct_t symbol
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        current_scope = old_scope;
+
+        // Copy the constant values from Struct_t symbol to the instance, use StructConstant as the value of the instance variable
+        // Loop through all declarations again, find all the common blocks's names and update the instance variable
+        for (size_t i = 0; i < x.n_decl; i++) {
+            if (AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                for (size_t j = 0; j < decl->n_attributes; j++) {
+                    if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
+                        AST::AttrCommon_t* attr_common = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
+                        for (size_t k = 0; k < attr_common->n_blks; k++) {
+                            std::string common_block_name{attr_common->m_blks[k].m_name};
+                            std::string module_name = base_module_name + common_block_name;
+
+                            ASR::Module_t* mod_s = ASR::down_cast<ASR::Module_t>(global_scope->get_symbol(module_name));
+
+                            std::string struct_var_name = base_struct_instance_name + common_block_name;
+                            ASR::Variable_t* var_s = ASR::down_cast<ASR::Variable_t>(mod_s->m_symtab->get_symbol(struct_var_name));
+
+                            ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
+                            ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
+                            ASR::ttype_t* type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym));
+
+                            Vec<ASR::call_arg_t> vals;
+                            auto member2sym = struct_s->m_symtab->get_scope();
+                            vals.reserve(al, struct_s->n_members);
+                            for (size_t i = 0; i < struct_s->n_members; i++) {
+                                ASR::symbol_t* s = member2sym[struct_s->m_members[i]];
+                                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>( * s));
+                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(s);
+                                if (var->m_value) {
+                                    ASR::expr_t* expr = var->m_value;
+                                    ASR::call_arg_t call_arg;
+                                    call_arg.loc = expr->base.loc;
+                                    call_arg.m_value = expr;
+                                    vals.push_back(al, call_arg);
+                                } else {
+                                    // If no compile time value in DataStmt initialize to zero when visiting StructConstant in backend
+                                    ASR::call_arg_t call_arg{};
+                                    vals.push_back(al, call_arg);
+                                }
+                            }
+                            ASR::expr_t* structc = ASRUtils::EXPR(
+                                ASR::make_StructConstant_t(al, var_s->base.base.loc, struct_as_sym, vals.p, vals.size(), type));
+                            var_s->m_symbolic_value = structc;
+                            var_s->m_value = structc;
+
+                            // Mark the common block as declared
+                            common_block_dictionary[common_block_name].first = false;
+                        }
+                        // We processed the common attribute, no need to check any more attributes
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -2857,6 +2961,11 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if( ASR::is_a<ASR::Struct_t>(*t) ) {
+            // Check for any interface overriding a constructor for the struct
+            ASR::symbol_t *interface_override_s = m->m_symtab->resolve_symbol("~" + remote_sym);
+            if (interface_override_s) {
+                to_be_imported_later.push(std::make_pair("~" + remote_sym, "~" + local_sym));
+            }
             ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
             ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(t);
             if (imported_struct_type != nullptr) {
@@ -2956,7 +3065,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm));
+            }, lm, compiler_options.generate_object_code));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
@@ -3536,7 +3645,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.m_args[i]->base.loc, arg_sym0));
+                            arg_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0));
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }

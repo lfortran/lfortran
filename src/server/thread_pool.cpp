@@ -1,7 +1,8 @@
 #include <iostream>
 #include <exception>
-
 #include <memory>
+#include <mutex>
+
 #include <server/thread_pool.h>
 
 namespace LCompilers::LLanguageServer::Threading {
@@ -12,18 +13,73 @@ namespace LCompilers::LLanguageServer::Threading {
         std::size_t numThreads,
         lsl::Logger &logger
     ) : _name(name)
-      , _numThreads(numThreads)
-      , logger(logger)
-      , tasks(logger)
+      , logger(logger.having("ThreadPool", {name}))
+      , tasks(this->logger, name + "-queue")
     {
-        for (std::size_t threadId = 0; threadId < numThreads; ++threadId) {
+        grow(numThreads);
+    }
+
+    auto ThreadPool::name() const -> const std::string & {
+        return _name;
+    }
+
+    auto ThreadPool::numThreads() -> std::size_t {
+        std::unique_lock<std::recursive_mutex> lock(workerMutex);
+        return workers.size();
+    }
+
+    auto ThreadPool::numActive() const -> std::size_t {
+        return activeCount;
+    }
+
+    auto ThreadPool::numPending() const -> std::size_t {
+        return tasks.size();
+    }
+
+    auto ThreadPool::numExecuted() const -> std::size_t {
+        return m_executed;
+    }
+
+    auto ThreadPool::isRunning() const -> bool {
+        return running;
+    }
+
+    auto ThreadPool::ensureCapacity() -> void {
+        // Doubles the number of threads allocated each successive time this
+        // method is called while the capacity remains insufficient. Once a
+        // sufficient capacity is obtained the momentum parameter `nextGrowSize`
+        // is reset to 1.
+        if (!hasCapacity()) {
+            std::unique_lock<std::recursive_mutex> lock(workerMutex);
+            if (!hasCapacity()) {
+                logger.debug()
+                    << "Growing by " << nextGrowSize << " thread(s)."
+                    << std::endl;
+                grow(nextGrowSize);
+                nextGrowSize = (nextGrowSize << 1);
+            }
+        } else {
+            nextGrowSize = 1;
+        }
+    }
+
+    auto ThreadPool::hasCapacity() -> bool {
+        return activeCount < numThreads();
+    }
+
+    auto ThreadPool::grow(std::size_t size) -> std::size_t {
+        std::unique_lock<std::recursive_mutex> lock(workerMutex);
+        workers.reserve(workers.size() + size);
+        for (std::size_t i = 0; i < size; ++i) {
+            std::size_t threadId = workers.size();
             logger.debug()
-                << "Starting thread " << name << "_" << threadId
+                << "Starting thread " << _name << "_" << threadId
                 << std::endl;
             workers.emplace_back([this, threadId]() {
                 run(threadId);
             });
         }
+        return size;
     }
 
     auto ThreadPool::execute(Task task) -> std::shared_ptr<std::atomic_bool> {
@@ -40,7 +96,7 @@ namespace LCompilers::LLanguageServer::Threading {
 
     auto ThreadPool::stop() -> void {
         logger.debug()
-            << "Thread pool [" << _name << "] will no longer accept new tasks and "
+            << "Thread pool will no longer accept new tasks and "
                "will shut down once those pending have returned."
             << std::endl;
         stopRunning = true;
@@ -49,7 +105,7 @@ namespace LCompilers::LLanguageServer::Threading {
 
     auto ThreadPool::stopNow() -> void {
         logger.debug()
-            << "Stopping thread pool [" << _name << "] as quickly as possible."
+            << "Stopping thread pool as quickly as possible."
             << std::endl;
         stopRunning = true;
         stopRunningNow = true;
@@ -57,8 +113,8 @@ namespace LCompilers::LLanguageServer::Threading {
     }
 
     auto ThreadPool::join() -> void {
-        for (std::size_t threadId = 0; threadId < _numThreads; ++threadId) {
-            std::thread &worker = workers[threadId];
+        std::unique_lock<std::recursive_mutex> lock(workerMutex);
+        for (std::thread &worker : workers) {
             if (worker.joinable()) {
                 worker.join();
                 logger.debug() << "Terminated thread." << std::endl;
@@ -75,11 +131,14 @@ namespace LCompilers::LLanguageServer::Threading {
                 Task &task = elem.first;
                 std::shared_ptr<std::atomic_bool> taskIsRunning = elem.second;
                 if (!stopRunningNow && *taskIsRunning) {
+                    ++activeCount;
                     try {
                         task(std::move(taskIsRunning));
                     } catch (std::exception &e) {
                         logger.error() << "Failed to execute task: " << e.what() << std::endl;
                     }
+                    --activeCount;
+                    ++m_executed;
                 }
             }
             logger.trace() << "Terminated successfully." << std::endl;
@@ -93,6 +152,10 @@ namespace LCompilers::LLanguageServer::Threading {
                     << "Interrupted while dequeuing messages: " << e.what()
                     << std::endl;
             }
+        } catch (...) {
+            logger.error()
+                << "Unhandled exception caught: unknown"
+                << std::endl;
         }
     }
 

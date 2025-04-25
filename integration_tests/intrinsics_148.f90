@@ -4,7 +4,7 @@ logical :: mask(3, 4)
 integer :: vector(13)
 integer :: res(13)
 integer :: out
-
+real :: output(2)
 real :: array_3(3, 4, 5)
 logical :: mask_3(3, 4, 5)
 real :: vector_3(60)
@@ -39,4 +39,7 @@ print *, pack(array_3, mask_3, vector_3)
 print *, sum(pack(array_3, mask_3, vector_3))
 if (abs(sum(pack(array_3, mask_3, vector_3)) + 704.177734) > 1e-6) error stop
 
+output = pack([1, 2], .true.) 
+print*, output
+if (any(abs(output - [1.00000000, 2.00000000]) > 1e-7)) error stop
 end program
