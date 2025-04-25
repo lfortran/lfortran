@@ -1195,7 +1195,7 @@ int compile_src_to_object_file(const std::string &infile,
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile, &time_opt);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
