@@ -1204,7 +1204,6 @@ int compile_src_to_object_file(const std::string &infile,
         return 5;
     }
 
-    // time_opt evaluation needs to be done
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
         e.save_asm_file(*(m->m_m), outfile);
