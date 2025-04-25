@@ -297,7 +297,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
-                            LCompilers::LocationManager &lm) {
+                            LCompilers::LocationManager &lm,
+                            bool generate_object_code) {
     LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -327,6 +328,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
+    if ( generate_object_code ) {
+        mod2->m_symtab->mark_all_variables_external(al);
+    }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 
     // Create a temporary TranslationUnit just for fixing the symbols
@@ -370,6 +374,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
                 mod2->m_loaded_from_mod = true;
+                if ( generate_object_code ) {
+                    mod2->m_symtab->mark_all_variables_external(al);
+                }
                 rerun = true;
             }
         }
@@ -1790,9 +1797,7 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
     start = builder.i2i_t(start, ASRUtils::expr_type(end));
     if( d == nullptr ) {
-        implied_doloop_size = builder.Add(
-            builder.Sub(end, start),
-            make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+        implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
     } else {
         implied_doloop_size = builder.Add(builder.Div(
             builder.Sub(end, start), d),

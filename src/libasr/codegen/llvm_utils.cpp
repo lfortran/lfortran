@@ -2216,7 +2216,7 @@ namespace LCompilers {
                             ASRUtils::symbol_type(item.second), module);
                         ASR::ttype_t* member_type = ASRUtils::symbol_type(item.second);
                         if( !LLVM::is_llvm_struct(member_type) &&
-                            !ASRUtils::is_array(member_type) && 
+                            !ASRUtils::is_array(member_type) &&
                             !ASRUtils::is_descriptorString(member_type) &&
                             !llvm::isa<llvm::ConstantStruct>(src)) {
                             src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
@@ -2250,13 +2250,13 @@ namespace LCompilers {
     }
     llvm::Value* LLVMUtils::convert_kind(llvm::Value* val, llvm::Type* target_type){
         LCOMPILERS_ASSERT(
-            (val->getType()->isIntegerTy() && target_type->isIntegerTy()) || 
+            (val->getType()->isIntegerTy() && target_type->isIntegerTy()) ||
             (val->getType()->isFloatingPointTy() && target_type->isFloatingPointTy()));
 
         if(val->getType()->getPrimitiveSizeInBits() == target_type->getPrimitiveSizeInBits()){
             return val;
         } else if(val->getType()->getPrimitiveSizeInBits() > target_type->getPrimitiveSizeInBits()){
-            return val->getType()->isIntegerTy() ? 
+            return val->getType()->isIntegerTy() ?
                 builder->CreateTrunc(val, target_type) : builder->CreateFPTrunc(val, target_type);
         } else {
             return val->getType()->isIntegerTy() ?
