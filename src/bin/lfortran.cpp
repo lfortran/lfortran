@@ -1204,13 +1204,7 @@ int compile_src_to_object_file(const std::string &infile,
         return 5;
     }
 
-    if (compiler_options.po.fast) {
-        t1 = std::chrono::high_resolution_clock::now();
-        e.opt(*m->m_m);
-        t2 = std::chrono::high_resolution_clock::now();
-        time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-    }
-
+    // time_opt evaluation needs to be done
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
         e.save_asm_file(*(m->m_m), outfile);
