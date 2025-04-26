@@ -2156,14 +2156,12 @@ public:
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
         switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_impure_intrinsic_id)) {
             case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
-                // TODO: Fix this once the iostat is implemented in file handling;
-                // until then, this returns `False`
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                this->visit_expr(*x.m_args[0]);
+                tmp = builder->CreateICmpEQ(tmp, llvm::ConstantInt::get(context, llvm::APInt(32, -1, true)));
                 break ;
             } case ASRUtils::IntrinsicImpureFunctions::IsIostatEor : {
-                // TODO: Fix this once the iostat is implemented in file handling;
-                // until then, this returns `False`
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                this->visit_expr(*x.m_args[0]);
+                tmp = builder->CreateICmpEQ(tmp, llvm::ConstantInt::get(context, llvm::APInt(32, -2, true)));
                 break ;
             } case ASRUtils::IntrinsicImpureFunctions::Allocated : {
                 handle_allocated(x.m_args[0]);
