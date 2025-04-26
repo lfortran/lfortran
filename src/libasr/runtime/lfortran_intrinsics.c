@@ -3997,7 +3997,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             strcpy(*arg, buffer);
             va_end(args);
             free(buffer);
+            return;
         }
+
     }
 
     bool unit_file_bin;
