@@ -140,24 +140,22 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_goc")
             # empty list to store object files
-            set(extra_files_o "")
-            list(APPEND extra_args "--generate-object-code")
-            foreach (file ${extra_files})
-                get_filename_component(file_name_ ${file} NAME_WE)
-                add_custom_command(
-                    OUTPUT ${file_name_}.o
-                    COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file} -c ${extra_args}
-                    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${file}
-                    )
-                list(APPEND extra_files_o ${file_name_}.o)
+            set(object_files "")
+            # step 1: compile all extra files to object files
+            foreach(extra_file ${extra_files})
+                get_filename_component(obj_name ${extra_file} NAME_WE)
+                add_library(${obj_name} OBJECT ${extra_file})
+                target_compile_options(${obj_name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
+                list(APPEND object_files $<TARGET_OBJECTS:${obj_name}>)  # append all object targets
             endforeach()
 
-            message(STATUS "extra_files_o: ${extra_files_o}")
-
-            add_executable(${name} ${file_name}.f90 ${extra_files_o})
+            # step 2: link all object files to the main executable
+            add_executable(${name} ${file_name}.f90 ${object_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
 
+
+            # Step 3: Add a test
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
 
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
