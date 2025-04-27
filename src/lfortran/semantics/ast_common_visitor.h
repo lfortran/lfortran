@@ -6141,13 +6141,6 @@ public:
             ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter() &&
             !ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
-            // // Add call args
-            // LCOMPILERS_ASSERT(ASR::is_a<ASR::Functinocall>(*v))
-            // ASR::FunctionCall_t* func = ASR::down_cast<ASR::FunctionCall_t;
-            // for(int i = 0; i<func->n_args; i++){
-            //     if(ASR::is_a<ASR::Var_t>(ASR::func->m_args[i].m_value)){}
-            //     current_function_dependencies.push_back(al, ASRUtils::EXPR2VAR(func->m_args[i].m_value)->m_name);
-            // }
         }
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
         if( v_module ) {
