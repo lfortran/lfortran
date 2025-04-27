@@ -1195,20 +1195,13 @@ int compile_src_to_object_file(const std::string &infile,
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile, &time_opt);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 5;
-    }
-
-    if (compiler_options.po.fast) {
-        t1 = std::chrono::high_resolution_clock::now();
-        e.opt(*m->m_m);
-        t2 = std::chrono::high_resolution_clock::now();
-        time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     // LLVM -> Machine code (saves to an object file)
