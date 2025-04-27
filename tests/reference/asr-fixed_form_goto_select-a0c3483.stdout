@@ -68,6 +68,7 @@
                         (Var 2 k)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (GoToTarget
                         100
@@ -93,16 +94,19 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 m)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 n)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Select
                         (Var 2 m)

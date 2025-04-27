@@ -71,6 +71,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 v)
@@ -87,6 +88,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -95,6 +97,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

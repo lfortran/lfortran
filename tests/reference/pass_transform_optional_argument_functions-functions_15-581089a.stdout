@@ -216,6 +216,7 @@
                                         (Var 5 f)
                                         (Var 5 is_x_present_)
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 f)
                                     Public
@@ -240,6 +241,7 @@
                         (Var 4 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 4 b)
@@ -253,6 +255,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         4 sub_1
@@ -641,6 +644,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (If
                                             (Var 3 is_e_present_)
@@ -665,6 +669,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 3 b)
@@ -676,6 +681,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                         [(Assignment
@@ -693,6 +699,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (If
                                             (Var 3 is_e_present_)
@@ -717,6 +724,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 3 b)
@@ -728,6 +736,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                     )]

@@ -239,6 +239,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 d)
                                     Public
@@ -684,6 +685,7 @@
                                         ()
                                     )
                                     ()
+                                    .false.
                                 )
                                 (Assignment
                                     (ArrayItem
@@ -744,6 +746,7 @@
                                         ()
                                     )
                                     ()
+                                    .false.
                                 )
                                 (Assignment
                                     (ArrayItem
@@ -771,6 +774,7 @@
                                         )
                                     )
                                     ()
+                                    .false.
                                 )]
                                 []
                             )]
@@ -845,6 +849,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         2 check

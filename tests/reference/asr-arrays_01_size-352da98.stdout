@@ -119,6 +119,7 @@
                             (IntegerConstant 3 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b)
@@ -129,6 +130,7 @@
                             (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -180,6 +182,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -276,6 +279,7 @@
                             )
                             (Var 2 i)
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -395,6 +399,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -523,6 +528,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -565,6 +571,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

@@ -49,6 +49,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                 ),
             nested_04_a:
@@ -169,6 +170,7 @@
                                                         (Var 4 c)
                                                         (Var 4 z)
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 4 c)
                                                     Public
@@ -255,11 +257,13 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringConstant
@@ -278,6 +282,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 b)
                                     Public

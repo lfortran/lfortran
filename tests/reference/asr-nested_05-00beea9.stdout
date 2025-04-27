@@ -83,6 +83,7 @@
                                                         (Var 3 x)
                                                         (IntegerConstant 4 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 3 y)
@@ -91,6 +92,7 @@
                                                             (Real 4)
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Public
@@ -156,6 +158,7 @@
                                         (Var 3 x)
                                         (IntegerConstant 6 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 y)
@@ -164,6 +167,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat

@@ -195,6 +195,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         9 1_intvector_resize
@@ -226,6 +227,7 @@
                                                         )
                                                         (Var 9 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -236,6 +238,7 @@
                                                         )
                                                         (Var 9 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -494,6 +497,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -552,6 +556,7 @@
                                                         )
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -866,6 +871,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         5 1_resize
@@ -901,6 +907,7 @@
                                                         )
                                                         (Var 5 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -911,6 +918,7 @@
                                                         )
                                                         (Var 5 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1181,6 +1189,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -1245,6 +1254,7 @@
                                                         )
                                                         (Var 6 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private

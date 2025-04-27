@@ -220,6 +220,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -356,6 +357,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Public
@@ -434,6 +436,7 @@
                                         (Var 5 foo)
                                         (Var 5 res)
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 foo)
                                     Public
@@ -523,6 +526,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                 )
         })

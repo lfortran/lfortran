@@ -85,6 +85,7 @@
                                                             )
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 4 c)
@@ -102,6 +103,7 @@
                                                             )
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 2 d)
@@ -124,6 +126,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                 ),
                                             n:
@@ -200,11 +203,13 @@
                         (Var 2 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (AssociateBlockCall
                         2 associate_block

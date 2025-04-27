@@ -121,6 +121,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -138,6 +139,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare
@@ -330,6 +332,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 r2)
@@ -345,6 +348,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare

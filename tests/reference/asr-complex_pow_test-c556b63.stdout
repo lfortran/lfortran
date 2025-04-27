@@ -83,6 +83,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -103,6 +104,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -114,6 +116,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

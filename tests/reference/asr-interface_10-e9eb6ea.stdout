@@ -83,6 +83,7 @@
                             (String 1 1 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         4 chars@identity
@@ -172,6 +173,7 @@
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public

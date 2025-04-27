@@ -136,6 +136,7 @@
                             (String 1 8 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 string)
@@ -155,6 +156,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (StringCompare
@@ -187,6 +189,7 @@
                             (String 1 16 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 message)
@@ -273,6 +276,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

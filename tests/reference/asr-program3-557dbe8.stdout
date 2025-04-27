@@ -96,6 +96,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 c)
@@ -109,6 +110,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 c)
                                     Public
@@ -205,6 +207,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 c)
                                     Public
@@ -276,6 +279,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -284,6 +288,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -295,6 +300,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -321,6 +327,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -347,6 +354,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

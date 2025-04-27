@@ -71,6 +71,7 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f2)
@@ -79,6 +80,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )]
                     (Var 2 f2)
                     Public

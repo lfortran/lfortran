@@ -200,6 +200,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -210,6 +211,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -255,11 +257,13 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -288,6 +292,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
@@ -309,6 +314,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -330,6 +336,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -375,6 +382,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         [(If
                             (IntegerCompare
@@ -422,6 +430,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )]
                             []
                         )]
@@ -455,6 +464,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )]
                             .false.
                         )
@@ -480,6 +490,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )]
                             .false.
                         )]
@@ -503,6 +514,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         .false.
                     )
@@ -545,6 +557,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (Assignment
                             (StructInstanceMember
@@ -566,6 +579,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -618,6 +632,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )

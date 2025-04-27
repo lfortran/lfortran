@@ -172,6 +172,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 7 z)
                                                     Public
@@ -284,6 +285,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 8 z)
                                                     Private
@@ -508,6 +510,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 9 z)
                                     Private
@@ -740,6 +743,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 13 z)
                                                     Public
@@ -856,6 +860,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 11 z)
                                                     Private
@@ -942,6 +947,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 10 y)
@@ -950,6 +956,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat

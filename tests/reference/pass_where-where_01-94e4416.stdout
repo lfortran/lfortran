@@ -112,6 +112,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -125,6 +126,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -138,6 +140,7 @@
                         )
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -177,6 +180,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -225,6 +229,7 @@
                                 )
                             )
                             ()
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 b)
@@ -260,90 +265,7 @@
                                 )
                             )
                             ()
-                        )]
-                    )
-                    (If
-                        (IntegerCompare
-                            (Var 2 a)
-                            GtE
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (Array
-                                (Logical 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 10 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
-                            ()
-                        )
-                        [(Assignment
-                            (Var 2 b)
-                            (ArrayBroadcast
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (ArrayConstant
-                                    4
-                                    [10]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 1 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 10 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                )
-                                (ArrayConstant
-                                    40
-                                    [1, 1, 1, ...., 1, 1, 1]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                            )
-                            ()
-                        )]
-                        [(Assignment
-                            (Var 2 b)
-                            (ArrayBroadcast
-                                (IntegerConstant 0 (Integer 4) Decimal)
-                                (ArrayConstant
-                                    4
-                                    [10]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 1 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 10 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                )
-                                (ArrayConstant
-                                    40
-                                    [0, 0, 0, ...., 0, 0, 0]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                            )
-                            ()
+                            .false.
                         )]
                     )
                     (If
@@ -393,6 +315,7 @@
                                 )
                             )
                             ()
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 b)
@@ -428,6 +351,93 @@
                                 )
                             )
                             ()
+                            .false.
+                        )]
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 a)
+                            GtE
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Array
+                                (Logical 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 b)
+                            (ArrayBroadcast
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (ArrayConstant
+                                    4
+                                    [10]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    40
+                                    [1, 1, 1, ...., 1, 1, 1]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            ()
+                            .false.
+                        )]
+                        [(Assignment
+                            (Var 2 b)
+                            (ArrayBroadcast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (ArrayConstant
+                                    4
+                                    [10]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    40
+                                    [0, 0, 0, ...., 0, 0, 0]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            ()
+                            .false.
                         )]
                     )
                     (If

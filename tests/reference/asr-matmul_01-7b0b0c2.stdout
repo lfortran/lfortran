@@ -385,11 +385,13 @@
                         (Var 6 n)
                         (IntegerConstant 96 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 iter)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -555,6 +557,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -584,6 +587,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 ghz)
@@ -592,6 +596,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 fma_clock)
@@ -600,6 +605,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 freq)
@@ -614,6 +620,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 measured)
@@ -642,6 +649,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 percent_peak)
@@ -667,6 +675,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -815,6 +824,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -850,6 +860,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 ghz)
@@ -858,6 +869,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 fma_clock)
@@ -866,6 +878,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 freq)
@@ -880,6 +893,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 measured)
@@ -908,6 +922,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 percent_peak)
@@ -933,6 +948,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -1097,6 +1113,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -1132,6 +1149,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 ghz)
@@ -1140,6 +1158,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 fma_clock)
@@ -1148,6 +1167,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 freq)
@@ -1162,6 +1182,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 measured)
@@ -1190,6 +1211,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 percent_peak)
@@ -1215,6 +1237,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -1974,6 +1997,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u01)
@@ -2012,6 +2036,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u10)
@@ -2044,6 +2069,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u11)
@@ -2082,6 +2108,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u20)
@@ -2114,6 +2141,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u21)
@@ -2152,6 +2180,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u30)
@@ -2184,6 +2213,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u31)
@@ -2222,6 +2252,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u40)
@@ -2254,6 +2285,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u41)
@@ -2292,6 +2324,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u50)
@@ -2324,6 +2357,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 u51)
@@ -2362,6 +2396,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -2433,6 +2468,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u00)
@@ -2481,6 +2517,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u01)
@@ -2535,6 +2572,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 a1)
@@ -2588,6 +2626,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u10)
@@ -2636,6 +2675,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u11)
@@ -2690,6 +2730,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 a2)
@@ -2743,6 +2784,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u20)
@@ -2791,6 +2833,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u21)
@@ -2845,6 +2888,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 a3)
@@ -2898,6 +2942,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u30)
@@ -2946,6 +2991,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u31)
@@ -3000,6 +3046,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 a4)
@@ -3053,6 +3100,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u40)
@@ -3101,6 +3149,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u41)
@@ -3155,6 +3204,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 a5)
@@ -3208,6 +3258,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u50)
@@ -3256,6 +3307,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 u51)
@@ -3310,6 +3362,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -3344,6 +3397,7 @@
                                         )
                                         (Var 4 u00)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3382,6 +3436,7 @@
                                         )
                                         (Var 4 u01)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3414,6 +3469,7 @@
                                         )
                                         (Var 4 u10)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3452,6 +3508,7 @@
                                         )
                                         (Var 4 u11)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3484,6 +3541,7 @@
                                         )
                                         (Var 4 u20)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3522,6 +3580,7 @@
                                         )
                                         (Var 4 u21)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3554,6 +3613,7 @@
                                         )
                                         (Var 4 u30)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3592,6 +3652,7 @@
                                         )
                                         (Var 4 u31)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3624,6 +3685,7 @@
                                         )
                                         (Var 4 u40)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3662,6 +3724,7 @@
                                         )
                                         (Var 4 u41)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3694,6 +3757,7 @@
                                         )
                                         (Var 4 u50)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3732,6 +3796,7 @@
                                         )
                                         (Var 4 u51)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -3943,6 +4008,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 c)
@@ -3979,6 +4045,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -4058,6 +4125,7 @@
                                                         ()
                                                     )
                                                     ()
+                                                    .false.
                                                 )]
                                                 []
                                             )]
@@ -4365,21 +4433,25 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 s3)
                                         (IntegerConstant 48 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 s2)
                                         (IntegerConstant 12 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 s1)
                                         (IntegerConstant 24 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 c)
@@ -4416,6 +4488,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()

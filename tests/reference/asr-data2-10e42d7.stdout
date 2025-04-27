@@ -80,6 +80,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 zero)
@@ -88,6 +89,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

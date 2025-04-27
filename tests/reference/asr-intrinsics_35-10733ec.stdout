@@ -132,6 +132,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
@@ -167,6 +168,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -183,6 +185,7 @@
                                         )
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -321,6 +324,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

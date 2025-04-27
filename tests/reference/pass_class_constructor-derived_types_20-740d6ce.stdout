@@ -489,6 +489,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -504,6 +505,7 @@
                                                 (String 1 3 () PointerString)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -517,6 +519,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -530,6 +533,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -543,6 +547,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -556,6 +561,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -569,6 +575,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -582,6 +589,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -595,6 +603,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -691,6 +700,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 10 specified)
                                     Public

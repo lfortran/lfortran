@@ -235,6 +235,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr_index_0_2)
@@ -246,6 +247,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -275,6 +277,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (Assignment
                             (Var 2 __libasr_index_1_2)
@@ -286,6 +289,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (DoLoop
                             ()
@@ -354,6 +358,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )
                             (Assignment
                                 (Var 2 __libasr_index_1_1)
@@ -365,6 +370,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )
                             (Assignment
                                 (Var 2 __libasr_index_1_2)
@@ -376,6 +382,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )]
                             []
                         )
@@ -389,6 +396,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (Assignment
                             (Var 2 __libasr_index_0_2)
@@ -400,6 +408,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )]

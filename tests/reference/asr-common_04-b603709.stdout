@@ -200,6 +200,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -210,6 +211,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
@@ -220,6 +222,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -265,6 +268,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -288,6 +292,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -316,6 +321,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

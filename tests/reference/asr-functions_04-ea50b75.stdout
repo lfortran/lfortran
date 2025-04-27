@@ -90,6 +90,7 @@
                             (IntegerConstant -4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -203,11 +204,13 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 3 neg_int)
                                             (Var 3 int)
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 3 neg_int)
