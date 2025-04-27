@@ -1,0 +1,5 @@
+semantic error: Print statement is not allowed within `pure` procedure
+ --> tests/errors/pure_01.f90:7:5
+  |
+7 |     print "(A,I0)",'b = ',b
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ 

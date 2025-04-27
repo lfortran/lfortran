@@ -1,0 +1,13 @@
+{
+    "basename": "run-pure_01-900c6a3",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/pure_01.f90",
+    "infile_hash": "0067d82b469d13a822ec2106fd7e4e8e4b3fa47c8dbd004eb6835418",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-pure_01-900c6a3.stderr",
+    "stderr_hash": "42d6443d69524eba51b908c9aa6690fe69de980ee2a235dcb90ecb8a",
+    "returncode": 1
+}

@@ -695,6 +695,15 @@ public:
         return contains_entry_function;
     }
 
+    bool subroutine_contains_print_statement(AST::stmt_t** body, size_t n_body) {
+        for (size_t i=0; i<n_body; i++) {
+            if (AST::is_a<AST::Print_t>(*body[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void update_duplicated_nodes(Allocator &al, SymbolTable *current_scope) {
         class UpdateDuplicatedNodes : public PassUtils::PassVisitor<UpdateDuplicatedNodes>
         {
@@ -1147,7 +1156,7 @@ public:
         if (is_interface){
             deftype = ASR::deftypeType::Interface;
         }
-        bool is_pure = false, is_module = false, is_elemental = false;
+        bool is_pure = false, is_module = false, is_elemental = false, is_impure = false;
         for( size_t i = 0; i < x.n_attributes; i++ ) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -1158,6 +1167,8 @@ public:
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
                         is_elemental = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrImpure ) {
+                        is_impure = true;
                     }
                     break;
                 }
@@ -1281,6 +1292,15 @@ public:
             std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
 
             create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, false, sym_name);
+        }
+        if (is_pure || (is_elemental && !is_impure)) {
+            if (subroutine_contains_print_statement(x.m_body, x.n_body)) {
+                diag.add(diag::Diagnostic(
+                    "Print statement is not allowed within `pure` procedure",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_body[0]->base.loc})}));
+                throw SemanticAbort();
+            }
         }
         entry_function_args.clear();
         if (x.n_temp_args > 0) {

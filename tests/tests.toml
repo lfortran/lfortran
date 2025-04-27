@@ -4576,3 +4576,7 @@ run = true
 [[test]]
 filename = "errors/integerStringInput_64.f90"
 run = true
+
+[[test]]
+filename = "errors/pure_01.f90"
+run = true
