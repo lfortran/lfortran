@@ -768,6 +768,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'd' :
             case 'f' :
             case 'l' :
+            case 'b' :
                 start = index++;
                 bool dot = false;
                 if(tolower(format[index]) == 's') index++;
@@ -913,9 +914,9 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
     }
 
 }
+
 bool is_format_match(char format_value, Primitive_Types current_arg_type){
-    char current_arg_correct_format = 
-        primitive_enum_to_format_specifier(current_arg_type); 
+    char current_arg_correct_format = primitive_enum_to_format_specifier(current_arg_type);
 
     char lowered_format_value = tolower(format_value);
     if(lowered_format_value == 'd' || lowered_format_value == 'e'){
@@ -923,14 +924,16 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     }
     // Special conditions that are allowed by gfortran.
     bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
-                              (lowered_format_value == 'a' && current_arg_correct_format == 'l');
-    if(lowered_format_value != current_arg_correct_format && !special_conditions){
+                               (lowered_format_value == 'a' && current_arg_correct_format == 'l');
+
+    bool b_format_for_integer = (lowered_format_value == 'b' && current_arg_correct_format == 'i');
+
+    if(lowered_format_value != current_arg_correct_format && !special_conditions && !b_format_for_integer){
         return false;
     } else {
         return true;
     }
 }
-
 
 typedef struct stack {
     int64_t* p;
@@ -1501,6 +1504,51 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
                     handle_integer(value, integer_val, &result, is_SP_specifier);
+                } else if (tolower(value[0]) == 'b') {
+                    int width = 0;
+                    if (strlen(value) > 1) {
+                        width = atoi(value + 1); // Get width after 'B'
+                    }
+
+                    int bit_size = 32; // default INTEGER*4 in Fortran
+                    uint64_t mask = (1ULL << bit_size) - 1;
+                    uint64_t uval = ((uint64_t)integer_val) & mask; // Mask to bit_size bits
+
+                    char binary_str[65]; // max 64 bits + '\0'
+                    int idx = 0;
+                    bool started = false;
+
+                    for (int bit = bit_size - 1; bit >= 0; bit--) {
+                        if ((uval >> bit) & 1) {
+                            started = true;
+                        }
+                        if (started) {
+                            binary_str[idx++] = ((uval >> bit) & 1) ? '1' : '0';
+                        }
+                    }
+
+                    if (idx == 0) {
+                        binary_str[idx++] = '0'; // If number is 0
+                    }
+                    binary_str[idx] = '\0';
+
+                    int bin_len = strlen(binary_str);
+
+                    if (width == 0) {
+                        result = append_to_string(result, binary_str);
+                    } else if (bin_len > width) {
+                        for (int i = 0; i < width; i++) {
+                            result = append_to_string(result, "*");
+                        }
+                    } else {
+                        int spaces_needed = width - bin_len;
+                        char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
+                        memset(spaces, ' ', spaces_needed);
+                        spaces[spaces_needed] = '\0';
+                        result = append_to_string(result, spaces);
+                        free(spaces);
+                        result = append_to_string(result, binary_str);
+                    }
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     double val = *(double*)s_info.current_arg_info.current_arg;
