@@ -1126,6 +1126,7 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
+        variable_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         ASR::symbol_t* asr_owner_sym = nullptr;
         if(current_symtab->asr_owner &&  ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ) {
             asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
