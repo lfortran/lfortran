@@ -1,0 +1,13 @@
+{
+    "basename": "run-formatted_read_1-b66cab6",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/formatted_read_1.f90",
+    "infile_hash": "962b194bd429066df6c4617e461348ff2fc6bf7b0f08a26f1b46f7a8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-formatted_read_1-b66cab6.stdout",
+    "stdout_hash": "96864bfcf9184771494e1a833f42019e595eb6ae2d05825773fc9633",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
