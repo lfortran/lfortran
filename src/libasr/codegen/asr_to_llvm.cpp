@@ -2156,14 +2156,12 @@ public:
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
         switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_impure_intrinsic_id)) {
             case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
-                // TODO: Fix this once the iostat is implemented in file handling;
-                // until then, this returns `False`
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                this->visit_expr(*x.m_args[0]);
+                tmp = builder->CreateICmpEQ(tmp, llvm::ConstantInt::get(context, llvm::APInt(32, -1, true)));
                 break ;
             } case ASRUtils::IntrinsicImpureFunctions::IsIostatEor : {
-                // TODO: Fix this once the iostat is implemented in file handling;
-                // until then, this returns `False`
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                this->visit_expr(*x.m_args[0]);
+                tmp = builder->CreateICmpEQ(tmp, llvm::ConstantInt::get(context, llvm::APInt(32, -2, true)));
                 break ;
             } case ASRUtils::IntrinsicImpureFunctions::Allocated : {
                 handle_allocated(x.m_args[0]);
@@ -8947,6 +8945,14 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     args.push_back(builder->CreateMul(kind_val, tmp));
                 } else {
                     args.push_back(kind_val);
+                    if (ASRUtils::is_value_constant(m_values[i])) {
+                        this->visit_expr_wrapper(m_values[i], true);
+                        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_values[i]), module.get());
+                        llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, type);
+                        builder->CreateStore(tmp, llvm_arg);
+                        args.push_back(llvm_arg);
+                        continue;
+                    }
                 }
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
