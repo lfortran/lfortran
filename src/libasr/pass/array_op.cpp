@@ -269,7 +269,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                 result_expr, array_index_args.p, array_index_args.size(),
                 result_element_type, ASR::arraystorageType::ColMajor, nullptr));
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc, y_i, x_i, nullptr)));
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, y_i, x_i, nullptr)));
         }
     }
 
@@ -346,7 +346,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                 result_expr, array_index_args.p, array_index_args.size(),
                 result_element_type, ASR::arraystorageType::ColMajor, nullptr));
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc, y_i, x_i, nullptr)));
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, y_i, x_i, nullptr)));
         }
     }
 
@@ -450,7 +450,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
             ASR::expr_t* plus_one = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, index_var,
                 ASR::binopType::Add, step, ASRUtils::expr_type(index_var), nullptr));
-            ASR::stmt_t* increment = ASRUtils::STMT(ASR::make_Assignment_t(
+            ASR::stmt_t* increment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, index_var, plus_one, nullptr));
             do_loop_body.push_back(al, increment);
         }
@@ -469,7 +469,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
             ASR::expr_t* lbound = PassUtils::get_bound(vars_expr[i],
                 loop_depth + max_rank + 1, "lbound", al);
-            ASR::stmt_t* set_index_var = ASRUtils::STMT(ASR::make_Assignment_t(
+            ASR::stmt_t* set_index_var = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, index_var, lbound, nullptr));
             dest_vec.push_back(al, set_index_var);
         }
@@ -502,7 +502,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 lbound = PassUtils::get_bound(
                     index2var[index_var].first, bound_dim, "lbound", al);
             }
-            ASR::stmt_t* set_index_var = ASRUtils::STMT(ASR::make_Assignment_t(
+            ASR::stmt_t* set_index_var = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, index_var, lbound, nullptr));
             dest_vec.push_back(al, set_index_var);
         }

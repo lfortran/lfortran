@@ -961,7 +961,7 @@ namespace LCompilers {
                 throw LCompilersException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
             }
             ASR::expr_t* var = ASRUtils::EXPR(ASR::make_Var_t(al, expr->base.loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
-            assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, var->base.loc, var, expr, nullptr));
+            assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, var->base.loc, var, expr, nullptr));
             return var;
         }
 
@@ -1058,7 +1058,7 @@ namespace LCompilers {
             loop_body.reserve(al, 1);
             ASR::expr_t* target = create_array_ref(arg_exprs[0], idx_vars, al);
             ASR::expr_t* value = create_array_ref(arg_exprs[1], idx_vars, al);
-            ASR::stmt_t* copy_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, target->base.loc,
+            ASR::stmt_t* copy_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, target->base.loc,
                                         target, value, nullptr));
             loop_body.push_back(al, copy_stmt);
             ASR::stmt_t* fallback_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, do_loop_head.loc,
@@ -1230,7 +1230,7 @@ namespace LCompilers {
             ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
 
             ASR::stmt_t* decrement_stmt = ASRUtils::STMT(
-                                            ASR::make_Assignment_t(
+                                            ASRUtils::make_Assignment_t_util(
                                                 al,
                                                 loc,
                                                 target,
@@ -1371,16 +1371,16 @@ namespace LCompilers {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
 
-                loop_init_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                loop_init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
                             ASR::binopType::Sub, c, type, nullptr)), nullptr));
                 if (use_loop_variable_after_loop) {
-                    stmt_add_c_after_loop = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                    stmt_add_c_after_loop = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
                         ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                                 ASR::binopType::Add, c, type, nullptr)), nullptr));
                 }
 
-                inc_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                inc_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                                 ASR::binopType::Add, c, type, nullptr)), nullptr));
                 if (cond == nullptr) {

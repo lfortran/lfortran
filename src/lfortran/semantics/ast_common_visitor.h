@@ -2097,8 +2097,8 @@ public:
             ASR::expr_t* expression_value = ASRUtils::expr_value(value);
             if (expression_value) {
                 ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-                ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                                            object, expression_value, nullptr));
+                ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                                            object, expression_value, nullptr, compiler_options.po.realloc_lhs));
                 current_body->push_back(al, assignment_stmt);
             } else {
                 diag.add(Diagnostic(
@@ -2250,8 +2250,8 @@ public:
                 this->visit_expr(*data_stmt_set->m_value[value_index++]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
                 ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
-                ASR::stmt_t* assignStatement = ASRUtils::STMT(ASR::make_Assignment_t(al, data_stmt.base.base.loc,
-                                                                                    target, value, nullptr)
+                ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
+                                                                                    target, value, nullptr, compiler_options.po.realloc_lhs)
                                                              );
                 LCOMPILERS_ASSERT(current_body != nullptr)
                 current_body->push_back(al, assignStatement);
@@ -2291,8 +2291,8 @@ public:
             v2->m_dependencies = var_deps_vec.p;
             v2->n_dependencies = var_deps_vec.size();
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                        object->base.loc, object, expression_value, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else if (ASR::is_a<ASR::Var_t>(*object)) {
@@ -2309,8 +2309,8 @@ public:
             v2->m_dependencies = var_deps_vec.p;
             v2->n_dependencies = var_deps_vec.size();
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                        object->base.loc, object, expression_value, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
@@ -2324,8 +2324,8 @@ public:
             // To fix that, we would have to iterate over data statements first
             // but we can fix that later.
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                        object->base.loc, object, expression_value, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else {
@@ -9371,8 +9371,8 @@ public:
                     ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
                     ASRUtils::make_ArrayBroadcast_t_util(al, loc, target, value);
-                    ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                        target, value, nullptr));
+                    ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                        target, value, nullptr, compiler_options.po.realloc_lhs));
                     body.push_back(al, assignment);
 
                     ASR::asr_t *op_function = ASRUtils::make_Function_t_util(

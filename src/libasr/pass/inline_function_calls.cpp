@@ -369,7 +369,7 @@ public:
             }
             ASR::symbol_t* variable = exprs_to_be_visited[i].second;
             ASR::expr_t* var = ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable));
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, var->base.loc, var, value, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, var->base.loc, var, value, nullptr));
             pass_result_local.push_back(al, assign_stmt);
         }
 
