@@ -51,8 +51,8 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
     public:
 
         StructConstructorVisitor(Allocator& al_, bool realloc_lhs_) :
-        al(al_), remove_original_statement(false), realloc_lhs(realloc_lhs_),
-        replacer(al_, pass_result, remove_original_statement) {
+        al(al_), remove_original_statement(false),
+        replacer(al_, pass_result, remove_original_statement), realloc_lhs(realloc_lhs_) {
             pass_result.n = 0;
             pass_result.reserve(al, 0);
         }
