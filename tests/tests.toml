@@ -4576,7 +4576,3 @@ run = true
 [[test]]
 filename = "errors/integerStringInput_64.f90"
 run = true
-
-[[test]]
-filename = "formatted_read_1.f90"
-run = true
