@@ -120,6 +120,9 @@ program format_04
     print 36, real_hundred
     36 FORMAT (F10.3)
 
+    ! test for issue: https://github.com/lfortran/lfortran/issues/6348
+    print '(A,F0.0,A)', '"',0.0 ,'"' 
+
     ! test for issue: https://github.com/lfortran/lfortran/issues/4040
     print "(2 (I3))", i, j
     print 37, i, j

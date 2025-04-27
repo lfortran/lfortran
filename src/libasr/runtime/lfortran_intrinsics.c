@@ -341,13 +341,15 @@ void handle_float(char* format, double val, char** result, bool use_sing_plus) {
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0 && format[1] == '0') {
+    if (integer_part == 0 && decimal_part!= 0 && format[1] == '0') {
         strcat(formatted_value, "");
     } else {
         strcat(formatted_value, int_str);
     }
     strcat(formatted_value, ".");
-    strcat(formatted_value, dec_str);
+    if (decimal_digits != 0){
+        strcat(formatted_value, dec_str);
+    }
 
     // checking for overflow
     if (strlen(formatted_value) > width) {
