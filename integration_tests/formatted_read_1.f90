@@ -15,7 +15,7 @@ program test_stdin
     istty = isatty(0_c_int)
 
     if (istty == 1) then
-        call execute_command_line("./src/bin/lfortran ./integration_tests/formatted_read_1.f90 < ./tesintegration_teststs/formatted_read_1.f90")
+        call execute_command_line("./src/bin/lfortran /formatted_read_1.f90 < /formatted_read_1.f90")
     else
         ! If not interactive, just read from stdin as usual
         read(*, '(a)') a
