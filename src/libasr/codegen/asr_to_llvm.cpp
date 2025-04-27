@@ -7901,6 +7901,10 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
         if (ASR::is_a<ASR::String_t>(*x.m_type)) {
             tmp = builder->CreateBitCast(source_ptr, target_base_type);
+        } else if (ASR::is_a<ASR::Array_t>(*x.m_type)) {
+            target_base_type = llvm_utils->get_type_from_ttype_t_util(ASR::down_cast<ASR::Array_t>(x.m_type)->m_type, module.get());
+            llvm::Type* target_llvm_type = target_base_type->getPointerTo();
+            tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
         } else {
             llvm::Type* target_llvm_type = target_base_type->getPointerTo();
             tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
