@@ -2824,7 +2824,7 @@ public:
         }
         /*
             Check for generic procedure call in the symbol dimension
-            e.g. : `integer :: arr(func_generic(),20)
+            e.g. : `integer :: arr(func_generic(),20)`
         */
         for(size_t i = 0; i < x.n_syms; i++){
             AST::var_sym_t &s = x.m_syms[i];

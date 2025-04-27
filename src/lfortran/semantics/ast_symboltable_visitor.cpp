@@ -495,7 +495,7 @@ public:
         }
         current_module_sym = nullptr;
         add_generic_procedures();
-        Evaluate_delayed_generic_procedure_calls();
+        evaluate_delayed_generic_procedure_calls();
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
@@ -651,7 +651,7 @@ public:
         handle_save();
         // Build : Functions --> GenericProcedure(Interface) -> variable_decl calling GenericProcedure.
         add_generic_procedures();
-        Evaluate_delayed_generic_procedure_calls();
+        evaluate_delayed_generic_procedure_calls();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -2403,7 +2403,7 @@ public:
         Evaluate call expressions to genericProcedures that's used in variable declaration.
         e.g : `integer :: arr(generic_proc(),10)`
     */
-    void Evaluate_delayed_generic_procedure_calls(){
+    void evaluate_delayed_generic_procedure_calls(){
         if(!generic_procedures.empty()){
             throw LCompilersException("generic_procedures should be resolved"
                 "before evaluating calls to genericProcedure");
