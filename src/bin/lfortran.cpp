@@ -589,7 +589,11 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
             return visualize_json(r.result, compiler_options.platform);
         }
         std::cout << r.result << std::endl;
-        return 0;
+        if (diagnostics.has_error()) {
+            return 1;
+        } else {
+            return 0;
+        }
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
