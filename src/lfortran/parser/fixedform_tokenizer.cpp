@@ -1585,8 +1585,11 @@ struct FixedFormRecursiveDescent {
             next_line(cur); // Does not generate any code?
             while(lex_procedure(cur));
         } else if (next_is(cur, "subroutine") || next_is(cur, "function")) {
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = cur - string_start;
             if (continue_compilation) {
-                diagnostics.add(LFortran::parser_local::TokenizerError("Expecting contains keyword before procedure definition").d);
+                diagnostics.add(LFortran::parser_local::TokenizerError("Expecting contains keyword before procedure definition", loc).d);
                 if (next_is(cur, "subroutine")) {
                     while (!next_is(cur, "endprogram")) {
                         next_line(cur);
@@ -1597,7 +1600,7 @@ struct FixedFormRecursiveDescent {
                     }
                 }
             } else {
-                error(cur, "Expecting contains keyword before procedure definition");
+                throw parser_local::TokenizerError("Expecting contains keyword before procedure definition", loc);
             }
         }
         if (next_is(cur, "endprogram")) {
