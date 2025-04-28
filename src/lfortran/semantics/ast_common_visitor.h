@@ -1402,6 +1402,16 @@ public:
     std::vector<ASR::stmt_t*> &data_structure;
     LCompilers::LocationManager &lm;
 
+    std::map<std::string, std::vector<std::string>> generic_procedures;
+    /*
+        Preserves AST::declaration node + its scope that should be evaluated in.
+        Used to evaluate the `AST::Declaration_t` nodes after resolving `ASR::GenericProcedure_t` node,
+        as these declaration nodes depends on calls to GenericProcedure node.
+        Evalution Flow (of building symbolTables) :
+            Functions -> GenericProcedure(Interface) -> Calls to GenericProcedure.
+    */
+    std::vector<std::pair<SymbolTable*, const AST::Declaration_t*>> delayed_generic_procedure_calls;
+
     // global save variable
     bool is_global_save_enabled = false;
 
@@ -2790,7 +2800,54 @@ public:
             al, loc, adjusted_str, value_type));
     }
 
+    bool is_declaration_depending_on_unresolved_genericProcedure_call(const AST::Declaration_t &x){
+       if(generic_procedures.empty()) return false;
+        /*  
+            Check for generic procedure call in the dimension attribute 
+            e.g. : `integer, DIMENSION(func_generic(),20) :: arr` 
+        */
+        for(size_t i = 0; i < x.n_attributes; i++){
+            if(AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])){
+                AST::AttrDimension_t* attr_dim = AST::down_cast<AST::AttrDimension_t>(x.m_attributes[i]);
+                for(size_t j = 0; j< attr_dim->n_dim; j++){
+                    for(AST::expr_t* dim_expr : {attr_dim->m_dim[j].m_start, attr_dim->m_dim[j].m_end}){
+                        if( dim_expr && 
+                            dim_expr->type == AST::exprType::FuncCallOrArray && 
+                            generic_procedures.find(
+                                (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
+                            != generic_procedures.end()){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        /*
+            Check for generic procedure call in the symbol dimension
+            e.g. : `integer :: arr(func_generic(),20)`
+        */
+        for(size_t i = 0; i < x.n_syms; i++){
+            AST::var_sym_t &s = x.m_syms[i];
+            for(size_t j = 0 ; j < s.n_dim; j++){
+                for(AST::expr_t* dim_expr : {s.m_dim[j].m_start, s.m_dim[j].m_end}){
+                    if( dim_expr &&
+                        dim_expr->type == AST::exprType::FuncCallOrArray && 
+                        generic_procedures.find(
+                            (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
+                        != generic_procedures.end()){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false; // Default if no genericProcedureCall found.
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
+        if(is_declaration_depending_on_unresolved_genericProcedure_call(x)){
+            delayed_generic_procedure_calls.emplace_back(current_scope, &x);
+            return;
+        }
         _declaring_variable = true;
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
