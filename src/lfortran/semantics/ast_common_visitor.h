@@ -8449,6 +8449,12 @@ public:
                 // Currently using real*8 as the return type.
                 ASR::ttype_t* type = external_sym ? ASRUtils::symbol_type(external_sym) :
                                     ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                std::string var_name_first_letter = to_lower(std::string(1, var_name[0]));
+                implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                if ( compiler_options.implicit_typing &&
+                     implicit_dictionary.find(var_name_first_letter) != implicit_dictionary.end() ) {
+                    type = implicit_dictionary[var_name_first_letter];
+                }
                 create_implicit_interface_function(x, var_name, true, type);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
