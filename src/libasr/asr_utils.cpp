@@ -1622,6 +1622,17 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
     }
 }
 
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
+{
+    Allocator al(4*1024);
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
+            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            m->m_symtab->mark_all_variables_external(al);
+        }
+    }
+}
+
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2, ASR::dimension_t* expr1_mdims,
     size_t expr1_ndims) {
