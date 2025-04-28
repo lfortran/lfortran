@@ -1365,7 +1365,7 @@ public:
         }
         llvm::Type* const_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
         llvm::Value* const_list = llvm_utils->CreateAlloca(*builder, const_list_type, nullptr, "const_list");
-        list_api->list_init(type_code, const_list, *module, x.n_args, x.n_args);
+        list_api->list_init(type_code, const_list, module.get(), x.n_args, x.n_args);
         int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_args; i++ ) {
             if (is_argument_of_type_CPtr(x.m_args[i])) {
@@ -1611,7 +1611,7 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Value *pos = tmp;
 
-        tmp = list_api->read_item(plist, pos, compiler_options.enable_bounds_checking, *module,
+        tmp = list_api->read_item(plist, pos, compiler_options.enable_bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -1635,11 +1635,11 @@ public:
             ptr_loads = ptr_loads_copy;
             builder->CreateStore(tmp, def_value_ptr);
             llvm_utils->set_dict_api(dict_type);
-            tmp = llvm_utils->dict_api->get_item(pdict, key, *module, dict_type, def_value_ptr,
+            tmp = llvm_utils->dict_api->get_item(pdict, key, module.get(), dict_type, def_value_ptr,
                                   LLVM::is_llvm_struct(dict_type->m_value_type));
         } else {
             llvm_utils->set_dict_api(dict_type);
-            tmp = llvm_utils->dict_api->read_item(pdict, key, *module, dict_type,
+            tmp = llvm_utils->dict_api->read_item(pdict, key, module.get(), dict_type,
                                     compiler_options.enable_bounds_checking,
                                     LLVM::is_llvm_struct(dict_type->m_value_type));
         }
@@ -1659,7 +1659,7 @@ public:
         llvm::Value *key = tmp;
 
         llvm_utils->set_dict_api(dict_type);
-        tmp = llvm_utils->dict_api->pop_item(pdict, key, *module, dict_type,
+        tmp = llvm_utils->dict_api->pop_item(pdict, key, module.get(), dict_type,
                                  LLVM::is_llvm_struct(dict_type->m_value_type));
     }
 
@@ -1688,26 +1688,26 @@ public:
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
 
         if(x.m_op == ASR::cmpopType::Eq || x.m_op == ASR::cmpopType::NotEq) {
-            tmp = llvm_utils->is_equal_by_value(left, right, *module,
+            tmp = llvm_utils->is_equal_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left));
             if (x.m_op == ASR::cmpopType::NotEq) {
                 tmp = builder->CreateNot(tmp);
             }
         }
         else if(x.m_op == ASR::cmpopType::Lt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 0, int32_type);
         }
         else if(x.m_op == ASR::cmpopType::LtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 1, int32_type);
         }
         else if(x.m_op == ASR::cmpopType::Gt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 2, int32_type);
         }
         else if(x.m_op == ASR::cmpopType::GtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3, int32_type);
         }
     }
@@ -1801,7 +1801,7 @@ public:
         this->visit_expr_wrapper(x.m_ele, true);
         ptr_loads = ptr_loads_copy;
         llvm::Value *item = tmp;
-        list_api->remove(plist, item, asr_el_type, *module);
+        list_api->remove(plist, item, asr_el_type, module.get());
     }
 
     void visit_ListCount(const ASR::ListCount_t& x) {
@@ -1815,7 +1815,7 @@ public:
         this->visit_expr_wrapper(x.m_ele, true);
         ptr_loads = ptr_loads_copy;
         llvm::Value *item = tmp;
-        tmp = list_api->count(plist, item, asr_el_type, *module);
+        tmp = list_api->count(plist, item, asr_el_type, module.get());
     }
 
     void generate_ListIndex(ASR::expr_t* m_arg, ASR::expr_t* m_ele,
@@ -1844,7 +1844,7 @@ public:
         }
 
         ptr_loads = ptr_loads_copy;
-        tmp = list_api->index(plist, item, start, end, asr_el_type, *module);
+        tmp = list_api->index(plist, item, start, end, asr_el_type, module.get());
     }
 
     void generate_Exp(ASR::expr_t* m_arg) {
@@ -1876,7 +1876,7 @@ public:
 
         ptr_loads = !LLVM::is_llvm_struct(asr_el_type);
         ptr_loads = ptr_loads_copy;
-        list_api->reverse(plist, *module);
+        list_api->reverse(plist, module.get());
     }
 
     void generate_ListPop_0(ASR::expr_t* m_arg) {
@@ -1888,7 +1888,7 @@ public:
 
         ptr_loads = !LLVM::is_llvm_struct(asr_el_type);
         ptr_loads = ptr_loads_copy;
-        tmp = list_api->pop_last(plist, asr_el_type, *module);
+        tmp = list_api->pop_last(plist, asr_el_type, module.get());
     }
 
     void generate_ListPop_1(ASR::expr_t* m_arg, ASR::expr_t* m_ele) {
@@ -1954,11 +1954,11 @@ public:
         llvm::Type* el_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
         llvm::Value* el_list = llvm_utils->CreateAlloca(*builder, el_list_type, nullptr, key_or_value == 0 ?
                                                     "keys_list" : "values_list");
-        list_api->list_init(type_code, el_list, *module, 0, 0);
+        list_api->list_init(type_code, el_list, module.get(), 0, 0);
 
         llvm_utils->set_dict_api(dict_type);
         llvm_utils->dict_api->get_elements_list(pdict, el_list, dict_type->m_key_type,
-                                                dict_type->m_value_type, *module,
+                                                dict_type->m_value_type, module.get(),
                                                 name2memidx, key_or_value);
         tmp = el_list;
     }
@@ -1994,7 +1994,7 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Value *el = tmp;
         llvm_utils->set_set_api(set_type);
-        llvm_utils->set_api->remove_item(pset, el, *module, asr_el_type);
+        llvm_utils->set_api->remove_item(pset, el, module.get(), asr_el_type);
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
@@ -2217,8 +2217,7 @@ public:
         llvm::Value* repeat_list = llvm_utils->CreateAlloca(*builder, repeat_list_type, nullptr, "repeat_list");
         llvm::Value* left_len = list_api->len(left);
         llvm::Value* capacity = builder->CreateMul(left_len, right);
-        list_api->list_init(type_code, repeat_list, *module,
-                            capacity, capacity);
+        list_api->list_init(type_code, repeat_list, module.get(), capacity, capacity);
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1;
         list_api->list_repeat_copy(repeat_list, left, right, left_len, module.get());
@@ -2235,26 +2234,26 @@ public:
         llvm::Value* right = tmp;
         ptr_loads = ptr_loads_copy;
         if(x.m_op == ASR::cmpopType::Eq || x.m_op == ASR::cmpopType::NotEq) {
-            tmp = llvm_utils->is_equal_by_value(left, right, *module,
+            tmp = llvm_utils->is_equal_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left));
             if (x.m_op == ASR::cmpopType::NotEq) {
                 tmp = builder->CreateNot(tmp);
             }
         }
         else if(x.m_op == ASR::cmpopType::Lt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 0);
         }
         else if(x.m_op == ASR::cmpopType::LtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 1);
         }
         else if(x.m_op == ASR::cmpopType::Gt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 2);
         }
         else if(x.m_op == ASR::cmpopType::GtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, *module,
+            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3);
         }
     }
@@ -2322,7 +2321,7 @@ public:
         ASR::Tuple_t* tuple_type = (ASR::Tuple_t*)(ASR::make_Tuple_t(
                                     al, x.base.base.loc, v_type.p, v_type.n));
         tuple_api->concat(left, right, tuple_type_left, tuple_type_right, concat_tuple,
-                          tuple_type, *module, name2memidx);
+                          tuple_type, module.get(), name2memidx);
         tmp = concat_tuple;
     }
 
@@ -4130,7 +4129,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 } else if (is_list) {
                     ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(v->m_type);
                     std::string type_code = ASRUtils::get_type_code(asr_list->m_type);
-                    list_api->list_init(type_code, ptr, *module);
+                    list_api->list_init(type_code, ptr, module.get());
                 }
             }
         }
@@ -4821,7 +4820,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::extract_physical_type(p_type) ==
             ASR::array_physical_typeType::DescriptorArray) {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*p_type));
-            ptr = arr_descr->get_pointer_to_data(ptr);
+            ptr = arr_descr->get_pointer_to_data(
+                ASRUtils::type_get_past_allocatable_pointer(p_type), ptr, module.get());
             llvm::Type* array_inner_type = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::extract_type(p_type), module.get());
             ptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), ptr);
@@ -5445,7 +5445,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 llvm::Value* pos = tmp;
 
                 target = list_api->read_item(list, pos, compiler_options.enable_bounds_checking,
-                                             *module, true);
+                                             module.get(), true);
             }
         } else {
             ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
