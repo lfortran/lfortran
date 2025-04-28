@@ -1742,33 +1742,68 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
-    bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
-        if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
-            ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
-            ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
-            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
-            if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
-                ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
+	bool var_dimension_error_check(ASR::Var_t* dim_expr_var) {
+        ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
+        SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
 
-                if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
-                    return true;
-                } else {
+        if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
+            ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
 
-                    if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
-                        return true;
-                    }
-                }
-            }
-        } else {
-
-            ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
-
-            if (dim_expr_type->type != ASR::ttypeType::Integer) {
+            if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
                 return true;
             }
+		}
+
+		return false;
+	}
+
+	template<typename T>
+	bool iterable_dimension_error_check(T* dim_expr_node) {
+		for (size_t i = 0; i < dim_expr_node->n_args; i++) {
+			if (eval_expr(dim_expr_node->m_args[i]))
+				return true;
+		}
+
+		return false;
+	}
+
+	bool binary_operation_dimension_error_check(ASR::IntegerBinOp_t* dim_expr_node) {
+		return eval_expr(dim_expr_node->m_left) || eval_expr(dim_expr_node->m_right);
+	}
+
+	bool eval_expr(ASR::expr_t* dim_expr) {
+		switch (dim_expr->type) {
+			case ASR::exprType::Var:
+				return var_dimension_error_check(ASR::down_cast<ASR::Var_t>(dim_expr));
+			case ASR::exprType::IntrinsicArrayFunction:
+				return iterable_dimension_error_check(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(dim_expr));
+			case ASR::exprType::IntrinsicElementalFunction:
+				return iterable_dimension_error_check(ASR::down_cast<ASR::IntrinsicElementalFunction_t>(dim_expr));
+			case ASR::exprType::ArrayConstructor:
+				return iterable_dimension_error_check(ASR::down_cast<ASR::ArrayConstructor_t>(dim_expr));
+			case ASR::exprType::ArrayPhysicalCast:
+				return eval_expr(ASR::down_cast<ASR::ArrayPhysicalCast_t>(dim_expr)->m_arg);
+			case ASR::exprType::IntegerUnaryMinus:
+				return eval_expr(ASR::down_cast<ASR::IntegerUnaryMinus_t>(dim_expr)->m_arg);
+			case ASR::exprType::IntegerBinOp:
+				return binary_operation_dimension_error_check(ASR::down_cast<ASR::IntegerBinOp_t>(dim_expr));
+			case ASR::exprType::ArrayConstant:
+			case ASR::exprType::IntegerConstant:
+				return false;
+			default:
+				return false;
+		}
+	}
+
+    bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
+        ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
+
+		// If any expression doesn't evaluate to integer, return true
+        if (dim_expr_type->type != ASR::ttypeType::Integer) {
+            return true;
         }
 
-        return false;
+		return eval_expr(dim_expr);
     }
 
 
