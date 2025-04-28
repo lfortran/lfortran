@@ -83,7 +83,7 @@ namespace LCompilers {
         if (!fn_printf) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    {llvm::Type::getInt8Ty(context)->getPointerTo(), 
+                    {llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt32Ty(context)}, true);
             fn_printf = llvm::Function::Create(function_type,
@@ -94,14 +94,14 @@ namespace LCompilers {
 
     static inline llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable,
         llvm::Module &module, llvm::IRBuilder<> &builder, llvm::LLVMContext &context, llvm::Type* string_descriptor ) {
-        if(!is_allocatable){ 
+        if(!is_allocatable){
             std::string runtime_func_name = "_lfortran_strcpy_pointer_string";
             llvm::Function *fn = module.getFunction(runtime_func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context),
                         {
-                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
                             llvm::Type::getInt8Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
@@ -127,7 +127,7 @@ namespace LCompilers {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context),
                         {
-                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
                             llvm::Type::getInt8Ty(context)->getPointerTo(),
                             llvm::Type::getInt64Ty(context)->getPointerTo(),
                             llvm::Type::getInt64Ty(context)->getPointerTo()
@@ -137,7 +137,7 @@ namespace LCompilers {
             }
             return builder.CreateCall(fn, {dest_char_ptr, src_char_ptr, string_size, string_capacity});
         }
-        
+
     }
 
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
