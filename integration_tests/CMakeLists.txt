@@ -1296,6 +1296,8 @@ RUN(NAME implicit_interface_15 LABELS gfortran llvm2 llvm_goc EXTRA_ARGS --impli
 RUN(NAME implicit_interface_16 LABELS gfortran llvm2 llvm_goc EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_16b)
 RUN(NAME implicit_interface_17 LABELS gfortran llvm2 llvm_goc EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_17b)
 RUN(NAME implicit_interface_18 LABELS gfortran llvmImplicit EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_19 LABELS gfortran llvm llvm_goc EXTRA_ARGS --implicit-typing --implicit-interface EXTRAFILES implicit_interface_19b)
+
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
