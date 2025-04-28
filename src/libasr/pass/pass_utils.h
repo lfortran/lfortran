@@ -442,6 +442,13 @@ namespace LCompilers {
                     current_scope = current_scope_copy;
                 }
 
+                void visit_Program(const ASR::Program_t& x){
+                    SymbolTable* current_scope_copy = current_scope;
+                    current_scope = x.m_symtab;
+                    BaseWalkVisitor::visit_Program(x);
+                    current_scope = current_scope_copy;
+                } 
+
                 void visit_Module(const ASR::Module_t& x) {
                     SymbolTable *parent_symtab = current_scope;
                     current_scope = x.m_symtab;
@@ -486,6 +493,9 @@ namespace LCompilers {
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                    if(fill_variable_dependencies){
+                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    }
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {

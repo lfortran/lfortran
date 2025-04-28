@@ -5369,22 +5369,28 @@ static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
 }
 
 class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression> {
-    private:
+private:
 
         Allocator& al;
         SetChar& identifiers;
         std::string current_name;
 
-    public:
+public:
 
+// Constructors
         CollectIdentifiersFromASRExpression(Allocator& al_, SetChar& identifiers_, std::string current_name_ = "") :
         al(al_), identifiers(identifiers_), current_name(current_name_)
         {}
 
+// Visitors
         void visit_Var(const ASR::Var_t& x) {
             if (ASRUtils::symbol_name(x.m_v) != this->current_name) {
                 identifiers.push_back(al, ASRUtils::symbol_name(x.m_v));
             }
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x){
+            identifiers.push_back(al, ASRUtils::symbol_name(x.m_name));
+            ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression>::visit_FunctionCall(x);
         }
 };
 

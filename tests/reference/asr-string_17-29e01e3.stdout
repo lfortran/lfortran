@@ -163,7 +163,8 @@
                                                 (Variable
                                                     5
                                                     maybe_string
-                                                    [string]
+                                                    [len_string
+                                                    string]
                                                     ReturnVar
                                                     ()
                                                     ()
