@@ -9705,11 +9705,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
             // To avoid segmentation faults when original argument
             // is not a ASR::Variable_t like callbacks.
-            if( orig_arg && !ASR::is_a<ASR::ClassType_t>(
+            if( orig_arg && !(ASR::is_a<ASR::Pointer_t>(*expr_type(x.m_args[i].m_value)) && ASR::is_a<ASR::ClassType_t>(
                 *ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(
-                            ASRUtils::expr_type(x.m_args[i].m_value))))) ) {
+                            ASRUtils::expr_type(x.m_args[i].m_value)))))) ) {
                 tmp = convert_to_polymorphic_arg(tmp,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
@@ -9856,6 +9856,39 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             builder->CreateStore(hash, hash_ptr);
             llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
             builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(s_m_args0_type, module.get(), true)), class_ptr);
+            return dt_polymorphic;
+        } else if( ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_array(arg_type)) ) {
+            // No need to convert if types are same
+            if (llvm_utils->getClassType(s_m_args0_type, true) == llvm_utils->getClassType(arg_type, true)) {
+                return dt;
+            }
+            ASR::ClassType_t* class_t = ASR::down_cast<ASR::ClassType_t>(ASRUtils::type_get_past_array(arg_type));
+            ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(class_t->m_class_type);
+            if( type2vtab.find(struct_sym) == type2vtab.end() &&
+                type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
+                create_vtab_for_struct_type(struct_sym, current_scope);
+            }
+
+            llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
+                llvm_utils->getClassType(s_m_args0_type, true));
+            llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0_type, module.get());
+            llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
+            llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
+            builder->CreateStore(hash, hash_ptr);
+
+            llvm::Type* dt_base_type = llvm_utils->get_type_from_ttype_t_util(arg_type, module.get());
+            // Convert input arg from polymorphic to normal
+            dt = llvm_utils->create_gep2(dt_base_type, dt, 1);
+            dt = llvm_utils->CreateLoad2(dt_base_type->getPointerTo(),dt);
+
+            ASR::ClassType_t* dest_class = ASR::down_cast<ASR::ClassType_t>(ASRUtils::type_get_past_array(s_m_args0_type));
+            ASR::symbol_t* dest_struct_sym = ASRUtils::symbol_get_past_external(dest_class->m_class_type);
+            llvm::Type* dest_ty = name2dertype[ASRUtils::symbol_name(dest_struct_sym)]->getPointerTo();
+            dt = builder->CreateBitCast(dt, dest_ty);
+
+            llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
+            builder->CreateStore(dt, class_ptr);
+
             return dt_polymorphic;
         }
         return dt;
