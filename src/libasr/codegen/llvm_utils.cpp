@@ -708,7 +708,7 @@ namespace LCompilers {
                                 type = type_fx2;
                             } else if (compiler_options.platform == Platform::macOS_ARM) {
                                 // type_fx2 is [2 x float]
-                                llvm::Type* type_fx2 = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2);
+                                llvm::Type* type_fx2 = complex_type_4;
                                 type = type_fx2;
                             } else {
                                 // type_fx2 is <2 x float>
