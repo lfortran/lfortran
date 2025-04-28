@@ -1,0 +1,11 @@
+.true.
+.false.
+true
+false
+1
+0
+True
+False
+TRUE
+FALSE
+wrongTestcase

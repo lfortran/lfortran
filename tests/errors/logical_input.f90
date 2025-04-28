@@ -3,7 +3,7 @@ program logicalInput
     logical :: x
     integer :: ios
 
-    open(unit=10, file="/home/devesh/Documents/PROGRAMMING/FORTRAN/lfortran/tests/logicalTest.txt", status="old")
+    open(unit=10, file="logicalTest.txt", status="old")
 
     do
         read(10, *, iostat=ios) x
