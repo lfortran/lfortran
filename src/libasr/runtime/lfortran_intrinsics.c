@@ -9,6 +9,7 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
+#include <errno.h>  
 
 #define PI 3.14159265358979323846
 #if defined(_WIN32)
@@ -3504,75 +3505,31 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
     }
 }
 
+// Improved input validation for integer reading
+// - Prevents auto-casting of invalid inputs to integers
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%d", p);
-        return;
-    }
-
-    bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
-    if (!filep) {
-        printf("No file found with given unit\n");
-        exit(1);
-    }
-
-    if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
-    } else {
-        (void)!fscanf(filep, "%d", p);
-    }
-}
-
-LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
-{
-    if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%" PRId64, p);
-        return;
-    }
-
-    bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
-    if (!filep) {
-        printf("No file found with given unit\n");
-        exit(1);
-    }
-
-    if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
-    } else {
-        (void)!fscanf(filep, "%" PRId64, p);
-    }
-}
-
-// boolean read implementation is in process
-// Implementing a Logical read API (starting with the basic input of just logical-further, logicalArray also needed)
-// changes for the same are in: asr_to_llvm.cpp (line 8210 onwards)
-LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
-{
-    if (unit_num == -1) {
-        char buffer[100];   // Long enough buffer
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
         }
 
+        // Use strtok() to extract only the first token before any whitespace
         char *token = strtok(buffer, " \t\n");
         if (token == NULL) {
-            fprintf(stderr, "Error: Invalid input for logical.\n");
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
             exit(1);
         }
-        
-        //using strcmp over casecmp to avoid POSIX use
-        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || strcmp(token, "1") == 0 || strcmp(token, "True") == 0) {
-            *p = true;
-        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || strcmp(token, "0") == 0 || strcmp(token, "False") == 0) {
-            *p = false;
-        } else {
-            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., 1 or 0.\n", token);
+
+        char *endptr;
+        *p = (int32_t)strtol(token, &endptr, 10);
+
+        // If any junk remains in the token, reject the input
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
             exit(1);
         }
         return;
@@ -3587,20 +3544,133 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
 
     if (unit_file_bin) {
         if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
+            exit(1);
+        }
+    } else {
+        if (fscanf(filep, "%d", p) != 1) {
+            fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
+            exit(1);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
+        }
+
+        char *endptr;
+        *p = (int64_t)strtoll(token, &endptr, 10);
+
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
+            exit(1);
+        }
+    } else {
+        if (fscanf(filep, "%" PRId64, p) != 1) {
+            fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
+            exit(1);
+        }
+    }
+}
+
+// boolean read implementation is in process
+// Implementing a Logical read API (starting with the basic input of just logical-further, logicalArray also needed)
+// changes for the same are in: asr_to_llvm.cpp (line 8210 onwards)
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Reading from standard input (console)
+        char buffer[100];   // Long enough buffer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Tokenize input (by whitespace)
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for logical.\n");
+            exit(1);
+        }
+
+        // Check for logical values
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || 
+            strcmp(token, "1") == 0 || strcmp(token, "True") == 0) {
+            *p = true;
+        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || 
+                   strcmp(token, "0") == 0 || strcmp(token, "False") == 0) {
+            *p = false;
+        } else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., 1 or 0.\n", token);
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        // Read logical from binary file
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
             fprintf(stderr, "Error: Failed to read logical from binary file.\n");
             exit(1);
         }
     } else {
-        char token[10];
-        if (fscanf(filep, "%9s", token) != 1) {
-            fprintf(stderr, "Error: Invalid logical input from file.\n");
-            exit(1);
+        // Read logical from text file (fscanf handles the logical format)
+        char token[100] = {0};    // Initialize token to avoid garbage values
+        if (fscanf(filep, "%99s", token) != 1) {
+        fprintf(stderr, "Error: Invalid logical input from file.\n");
+        // debug step: printing the token to see what was read before failure
+        printf("Read token: '%s'\n", token);  // This will print what's in token
+
+        exit(1);
+    }
+
+        // Sanitize the token (removes trailing \r or \n characters)
+        int len = strlen(token);
+        while (len > 0 && (token[len-1] == '\r' || token[len-1] == '\n')) {
+            token[len-1] = '\0';
+            len--;
         }
-        
-        //using strcmp over casecmp to avoid POSIX use
-        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || strcmp(token, "1") == 0 || strcmp(token, "True") == 0) {
+
+        // Check for logical values
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || 
+            strcmp(token, "1") == 0 || strcmp(token, "True") == 0 || strcmp(token, "TRUE") == 0) {
             *p = true;
-        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || strcmp(token, "0") == 0 || strcmp(token, "False") == 0) {
+        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || 
+                   strcmp(token, "0") == 0 || strcmp(token, "False") == 0 || strcmp(token, "FALSE") == 0) {
             *p = false;
         } else {
             fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., 1 or 0.\n", token);
@@ -3608,6 +3678,7 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
         }
     }
 }
+
 
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num)
 {
@@ -3759,11 +3830,32 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
     }
 }
 
+
+// Improved input validation for float reading
+// - Prevents auto-casting of invalid inputs to float/real
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%f", p);
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for float.\n");
+            exit(1);
+        }
+
+        char *endptr;
+        *p = strtof(token, &endptr);
+
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for float.\n");
+            exit(1);
+        }
         return;
     }
 
@@ -3775,9 +3867,15 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read float from binary file.\n");
+            exit(1);
+        }
     } else {
-        (void)!fscanf(filep, "%f", p);
+        if (fscanf(filep, "%f", p) != 1) {
+            fprintf(stderr, "Error: Invalid input for float from file.\n");
+            exit(1);
+        }
     }
 }
 

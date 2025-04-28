@@ -1315,6 +1315,7 @@ RUN(NAME operator_overloading_04 LABELS gfortran llvm)
 RUN(NAME operator_overloading_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME operator_overloading_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME operator_overloading_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
@@ -1414,6 +1415,10 @@ RUN(NAME derived_types_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_AR
 RUN(NAME derived_types_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
