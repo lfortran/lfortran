@@ -877,7 +877,7 @@ struct FixedFormRecursiveDescent {
                     cur += io_str.size();
                     unsigned char *start;
                     Location loc;
-                    lex_format(cur, loc, start, diag, false);
+                    lex_format(cur, loc, start, diag, false, this->string_start);
                     locations.push_back(loc);
                     YYSTYPE yylval;
                     yylval.string.p = (char*) start;

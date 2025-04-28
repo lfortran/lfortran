@@ -3744,6 +3744,37 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num) {
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%" SCNd64, &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_id != 1) {
+            // Read record marker first
+            int32_t record_marker_start;
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
+        }
+        (void)!fread(p, sizeof(int64_t), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            (void)!fscanf(filep, "%" SCNd64, &p[i]);
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
 {
     const char SPACE = ' ';

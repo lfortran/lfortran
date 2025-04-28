@@ -1,4 +1,4 @@
-program implied_do_loops9 
+program implied_do_loops9
     integer, parameter :: n = 3
     complex :: b(n,n)
     complex, parameter :: i_ = cmplx(0,1)
