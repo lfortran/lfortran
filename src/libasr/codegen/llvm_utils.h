@@ -268,30 +268,38 @@ namespace LCompilers {
                 std::map<llvm::Value *, llvm::Type *> &ptr_type_);
 
             llvm::Value* create_gep(llvm::Value* ds, int idx);
-
-            llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
-
             llvm::Value* create_gep(llvm::Value* ds, llvm::Value* idx);
 
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
+            llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
+            llvm::Value* create_gep2(ASR::ttype_t *t, llvm::Value* ds, int idx);
+            llvm::Value* create_gep2(ASR::ttype_t *t, llvm::Value* ds, llvm::Value* idx);
 
             llvm::Value* create_ptr_gep(llvm::Value* ptr, int idx);
-
-            llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx);
-
             llvm::Value* create_ptr_gep(llvm::Value* ptr, llvm::Value* idx);
 
+            llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx);
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
+            llvm::Value* create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, int idx);
+            llvm::Value* create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, llvm::Value* idx);
 
             llvm::Value* CreateLoad(llvm::Value *x);
+
             llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x);
             llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x);
+
             llvm::Value* CreateGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
             llvm::Value* CreateGEP2(llvm::Type *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
+            llvm::Value* CreateGEP2(llvm::Type *type, llvm::Value *x, int idx);
             llvm::Value* CreateGEP2(ASR::ttype_t *type, llvm::Value *x, int idx);
+            llvm::Value* CreateGEP2(ASR::ttype_t *t, llvm::Value *x,
+                std::vector<llvm::Value *> &idx);
+
             llvm::Value* CreateInBoundsGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
             llvm::Value* CreateInBoundsGEP2(llvm::Type *t, llvm::Value *x,
+                std::vector<llvm::Value *> &idx);
+            llvm::Value* CreateInBoundsGEP2(ASR::ttype_t *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
 
             llvm::AllocaInst* CreateAlloca(llvm::Type* type,
