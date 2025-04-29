@@ -3060,7 +3060,7 @@ fixed_form_cc = true
 
 [[test]]
 filename = "errors/continue_compilation_ff_2.f"
-fixed_form_cc_ast = true
+fixed_form_cc = true
 
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"

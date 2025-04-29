@@ -56,8 +56,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_disable_style_and_warnings = is_included("asr_disable_style_and_warnings")
     continue_compilation = is_included("continue_compilation")
     fixed_form_cc = is_included("fixed_form_cc")
-    fixed_form_cc_asr = is_included("fixed_form_cc_asr")
-    fixed_form_cc_ast = is_included("fixed_form_cc_ast")
     semantics_only_cc = is_included("semantics_only_cc")
     show_errors = is_included("show_errors")
     document_symbols = is_included("document_symbols")
@@ -430,26 +428,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 filename,
                 "asr",
                 "lfortran --fixed-form --semantics-only --continue-compilation --no-color {infile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
-        
-    if fixed_form_cc_asr:
-        run_test(
-                filename,
-                "asr",
-                "lfortran --fixed-form --show-asr --continue-compilation --no-color {infile} -o {outfile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
-    
-    if fixed_form_cc_ast:
-        run_test(
-                filename,
-                "ast",
-                "lfortran --fixed-form --show-ast --continue-compilation --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 verify_hash,
