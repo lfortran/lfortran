@@ -59,9 +59,15 @@ jobs:
             export CFLAGS="-Werror"
             xonsh ci/build_tmp.xsh
 
+      - name: Install Timeout (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: brew install coreutils
+
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        timeout-minutes: 5
         run: |
             case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
             export LFORTRAN_TEST_ENV_VAR='STATUS OK!'
