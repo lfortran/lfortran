@@ -600,6 +600,18 @@ namespace LCompilers {
                     }
                     current_scope = parent_symtab;
                 }
+
+                void visit_Assignment(const ASR::Assignment_t& x) {
+                    ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+                    ASR::expr_t* a_target = xx.m_target;
+                    bool is_allocatable = ASRUtils::is_allocatable(a_target);
+                    if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
+                        ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
+                        is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
+                    }
+                    xx.m_realloc_lhs &= is_allocatable;
+                    BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Assignment(x);
+                }
             // TODO: Uncomment the following in LFortran
             /*
                 template <typename T>
