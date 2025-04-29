@@ -59,6 +59,11 @@ jobs:
             export CFLAGS="-Werror"
             xonsh ci/build_tmp.xsh
 
+      - name: Install Timeout (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: brew install coreutils
+
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
