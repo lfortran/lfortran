@@ -315,6 +315,9 @@ namespace LCompilers {
                 arr_first = llvm_utils->CreateAlloca(*builder,
                     llvm_data_type, llvm_utils->CreateLoad(llvm_size));
             }
+#if LLVM_VERSION_MAJOR > 16
+            llvm_utils->ptr_type[arr_first] = llvm_data_type;
+#endif
             builder->CreateStore(arr_first, first_ptr);
         }
 
@@ -350,7 +353,9 @@ namespace LCompilers {
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
             llvm::Module* module, bool realloc) {
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
+#if LLVM_VERSION_MAJOR > 16
             llvm_utils->ptr_type[arr] = arr_type;
+#endif
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                     offset_val);
@@ -387,6 +392,9 @@ namespace LCompilers {
                     *builder, llvm_utils->CreateLoad(arg_size));
             }
             llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
+#if LLVM_VERSION_MAJOR > 16
+            llvm_utils->ptr_type[first_ptr] = ptr_type;
+#endif
             builder->CreateStore(first_ptr, ptr2firstptr);
         }
 
@@ -557,7 +565,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* const array_desc_type = llvm_utils->arr_api->
-                get_array_type(ASRUtils::type_get_past_allocatable_pointer(arr_type), 
+                get_array_type(ASRUtils::type_get_past_allocatable_pointer(arr_type),
                     llvm_utils->get_el_type(ASRUtils::extract_type(arr_type), module), false);
             return llvm_utils->create_gep2(array_desc_type, arr, 0);
         }
@@ -862,7 +870,7 @@ namespace LCompilers {
             llvm::Value* r_val = llvm_utils->CreateLoad(r);
             llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
             llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
-            builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(), 
+            builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
                                     src_dim_val, llvm::MaybeAlign(),
                                     llvm::ConstantInt::get(
                                     context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));

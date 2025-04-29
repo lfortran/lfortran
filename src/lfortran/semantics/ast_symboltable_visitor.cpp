@@ -85,7 +85,6 @@ public:
         Location loc;
     };
     SymbolTable *global_scope;
-    std::map<std::string, std::vector<std::string>> generic_procedures;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
@@ -466,7 +465,7 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm
+                                                    throw SemanticAbort();}, lm, compiler_options.generate_object_code
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -496,6 +495,7 @@ public:
         }
         current_module_sym = nullptr;
         add_generic_procedures();
+        evaluate_delayed_generic_procedure_calls();
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
@@ -649,7 +649,9 @@ public:
             throw SemanticAbort();
         }
         handle_save();
+        // Build : Functions --> GenericProcedure(Interface) -> variable_decl calling GenericProcedure.
         add_generic_procedures();
+        evaluate_delayed_generic_procedure_calls();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -1010,6 +1012,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
         if (x.n_temp_args > 0) {
@@ -1314,7 +1317,14 @@ public:
             size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
-        if (n == 0 && compiler_options.implicit_typing && !return_var_sym) {
+        bool are_all_attributes_simple = true;
+        for (size_t i=0; i < n; i++) {
+            if (!ASR::is_a<AST::SimpleAttribute_t>(*attributes[i])) {
+                are_all_attributes_simple = false;
+                break;
+            }
+        }
+        if ((n == 0 || are_all_attributes_simple) && compiler_options.implicit_typing && !return_var_sym) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
@@ -1411,6 +1421,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
         std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
@@ -1692,7 +1703,9 @@ public:
                 parent_scope->erase_symbol(sym_name);
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
-                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                    // TODO: Throw error when interface definition and implementation signatures are different
+                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
@@ -2383,6 +2396,62 @@ public:
                 symbols.p, symbols.size(), ASR::Public);
             current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
+        generic_procedures.clear();
+    }
+
+    /* 
+        Evaluate call expressions to genericProcedures that's used in variable declaration.
+        e.g : `integer :: arr(generic_proc(),10)`
+    */
+    void evaluate_delayed_generic_procedure_calls(){
+        if(!generic_procedures.empty()){
+            throw LCompilersException("generic_procedures should be resolved"
+                "before evaluating calls to genericProcedure");
+        }
+
+        for(auto &[symtable, decl] : delayed_generic_procedure_calls){
+            // Set current scope
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = symtable;
+            visit_Declaration(*decl);
+
+            // Raise warning for user if variable declaration is calling its function scope recursively.
+            // + Add dependencies of variable to the function (owning the variable)
+            for(size_t i = 0; i< decl->n_syms; i++){ //loop on all symbols per `ASR::Declaration` node .
+                const char* symbol_name = decl->m_syms[i].m_name;
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(
+                    *symtable->resolve_symbol(symbol_name)))
+                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(
+                    symtable->resolve_symbol(symbol_name));
+                for(size_t dep_idx = 0 ;dep_idx < variable->n_dependencies; dep_idx++){
+                    if( ASR::is_a<ASR::symbol_t>(*symtable->asr_owner) &&
+                        ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)symtable->asr_owner)){
+                        ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(symtable->asr_owner);
+                        // Check for recursive call
+                        if(func->m_name == variable->m_dependencies[dep_idx]){
+                            diag.add(diag::Diagnostic(
+                                "Variable declaration is calling its function scope recursively",
+                                diag::Level::Warning, diag::Stage::Semantic, {
+                                    diag::Label("", {decl->base.base.loc})}));
+                        } 
+                        // Add function call to scoping function dependencies.
+                        if(ASR::is_a<ASR::Function_t>(*symtable->resolve_symbol(variable->m_dependencies[dep_idx]))){
+                            Vec<char*> v_dependencies;v_dependencies.reserve(al, 0);
+                            v_dependencies.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
+                            v_dependencies.push_back(al, variable->m_dependencies[dep_idx]);
+                            func->m_dependencies = v_dependencies.p;
+                            func->n_dependencies = v_dependencies.n;
+                        }
+                    }
+                }
+            }
+
+            // Revert current scope
+            current_scope = current_scope_copy;
+        }
+
+        // Clear the delayed generic procedure calls
+        delayed_generic_procedure_calls.clear();
     }
 
     void add_generic_class_procedures() {
@@ -3054,7 +3123,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm));
+            }, lm, compiler_options.generate_object_code));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(

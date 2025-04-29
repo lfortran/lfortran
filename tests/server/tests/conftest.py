@@ -1,8 +1,6 @@
 import os
 import shutil
-import signal
 import sys
-import time
 from pathlib import Path
 from typing import Iterator, Optional
 
@@ -22,7 +20,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 @pytest.fixture
-def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
+def client(request: pytest.FixtureRequest, capfd: pytest.CaptureFixture) -> Iterator[LFortranLspTestClient]:
     execution_strategy = request.config.getoption("--execution-strategy")
 
     server_path = None
@@ -30,7 +28,7 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         server_path = os.environ['LFORTRAN_PATH']
     if server_path is None or not os.path.exists(server_path):
         server_path = Path(__file__).absolute().parent.parent.parent.parent / "src" / "bin" / "lfortran"
-    if server_path is None:
+    if server_path is None or not os.path.exists(server_path):
         server_path = shutil.which('lfortran')
     if server_path is None:
         raise RuntimeError('cannot determine location of lfortran')
@@ -72,6 +70,10 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
                 "minSleepTimeMs": 10,
                 "maxSleepTimeMs": 300,
             },
+            "telemetry": {
+                "enabled": True,
+                "frequencyMs": 1000,
+            },
         }
     }
 
@@ -83,10 +85,10 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
     # lldb_path = shutil.which('lldb')
     lldb_path = None  #<- FIXME: When LLDB is enabled, remove this line.
 
-    # NOTE: If you have GDB on your system and would like to run the tests with,
-    # uncomment the following line so it may be found and disable the line that
-    # assigns `None` to it:
-    # --------------------------------------------------------------------------
+    # NOTE: If you have GDB on your system and would like to run the tests with
+    # it, uncomment the following line so GDB may be found and disable the line
+    # that assigns `None` to it:
+    # -------------------------------------------------------------------------
     # gdb_path = shutil.which('gdb')
     gdb_path = None
 
@@ -198,3 +200,6 @@ def client(request: pytest.FixtureRequest) -> Iterator[LFortranLspTestClient]:
         finally:
             if not logs_printed:
                 print_logs()
+
+    # Consuming stderr should prevent leaks
+    capfd.readouterr()

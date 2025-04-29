@@ -1158,7 +1158,7 @@ public:
         {"dim", IntrinsicSignature({"X", "Y"}, 2, 2)},
         {"selected_real_kind", IntrinsicSignature({"p", "r", "radix"}, 0, 3)},
         {"nearest", IntrinsicSignature({"x", "s"}, 2, 2)},
-        {"compiler_version", IntrinsicSignature({}, 0, 0)},
+        {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
@@ -1402,6 +1402,16 @@ public:
     std::vector<ASR::stmt_t*> &data_structure;
     LCompilers::LocationManager &lm;
 
+    std::map<std::string, std::vector<std::string>> generic_procedures;
+    /*
+        Preserves AST::declaration node + its scope that should be evaluated in.
+        Used to evaluate the `AST::Declaration_t` nodes after resolving `ASR::GenericProcedure_t` node,
+        as these declaration nodes depends on calls to GenericProcedure node.
+        Evalution Flow (of building symbolTables) :
+            Functions -> GenericProcedure(Interface) -> Calls to GenericProcedure.
+    */
+    std::vector<std::pair<SymbolTable*, const AST::Declaration_t*>> delayed_generic_procedure_calls;
+
     // global save variable
     bool is_global_save_enabled = false;
 
@@ -1514,7 +1524,7 @@ public:
             }
         }
 
-        if (var_name == "c_null_ptr") {
+        if (var_name == "c_null_ptr" || var_name == "c_null_funptr") {
             // Check if c_null_ptr is imported from iso_c_binding (intrinsic module)
             if (v && ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
                 std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
@@ -1523,7 +1533,6 @@ public:
                     tmp = ASR::make_PointerNullConstant_t(al, loc, type_);
                     return tmp;
                 }
-
             }
         }
         if (!v) {
@@ -2791,7 +2800,54 @@ public:
             al, loc, adjusted_str, value_type));
     }
 
+    bool is_declaration_depending_on_unresolved_genericProcedure_call(const AST::Declaration_t &x){
+       if(generic_procedures.empty()) return false;
+        /*  
+            Check for generic procedure call in the dimension attribute 
+            e.g. : `integer, DIMENSION(func_generic(),20) :: arr` 
+        */
+        for(size_t i = 0; i < x.n_attributes; i++){
+            if(AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])){
+                AST::AttrDimension_t* attr_dim = AST::down_cast<AST::AttrDimension_t>(x.m_attributes[i]);
+                for(size_t j = 0; j< attr_dim->n_dim; j++){
+                    for(AST::expr_t* dim_expr : {attr_dim->m_dim[j].m_start, attr_dim->m_dim[j].m_end}){
+                        if( dim_expr && 
+                            dim_expr->type == AST::exprType::FuncCallOrArray && 
+                            generic_procedures.find(
+                                (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
+                            != generic_procedures.end()){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        /*
+            Check for generic procedure call in the symbol dimension
+            e.g. : `integer :: arr(func_generic(),20)`
+        */
+        for(size_t i = 0; i < x.n_syms; i++){
+            AST::var_sym_t &s = x.m_syms[i];
+            for(size_t j = 0 ; j < s.n_dim; j++){
+                for(AST::expr_t* dim_expr : {s.m_dim[j].m_start, s.m_dim[j].m_end}){
+                    if( dim_expr &&
+                        dim_expr->type == AST::exprType::FuncCallOrArray && 
+                        generic_procedures.find(
+                            (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
+                        != generic_procedures.end()){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false; // Default if no genericProcedureCall found.
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
+        if(is_declaration_depending_on_unresolved_genericProcedure_call(x)){
+            delayed_generic_procedure_calls.emplace_back(current_scope, &x);
+            return;
+        }
         _declaring_variable = true;
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -5251,7 +5307,7 @@ public:
         bool is_type_spec_ommitted { type == nullptr };
         check_if_type_spec_has_asterisk(type);
 
-        bool is_compile_time_implied_do_loop = true;
+        bool is_fixed_size_implied_do_loop = true;
         bool use_descriptorArray = false; // Set to true if any argument has no fixed size (array arguments).
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         size_t n_elements = 0;
@@ -5264,9 +5320,8 @@ public:
                 if (idl->m_value && ASR::is_a<ASR::ArrayConstant_t>(*idl->m_value)) {
                     ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(idl->m_value);
                     idl->m_type = array_constant->m_type;
-                }
-                std::vector<ASR::symbol_t*> loop_vars; fetch_implied_do_loop_variables(idl, loop_vars);
-                is_compile_time_implied_do_loop = is_compiletime_implied_do_loop(idl,loop_vars);
+                };
+                is_fixed_size_implied_do_loop = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(expr));
             }
 
             ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
@@ -5318,7 +5373,7 @@ public:
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         dim.m_start = one;
-        if( !is_compile_time_implied_do_loop || use_descriptorArray) {
+        if( !is_fixed_size_implied_do_loop || use_descriptorArray) {
             dim.m_length = nullptr;
         } else {
             ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, n_elements, int_type));
@@ -6444,7 +6499,7 @@ public:
             if( ASRUtils::is_descriptorString(ASRUtils::expr_type(args.p[i])) ) {
                 // Any compile-time intrinsic function doesn't need a cast from
                 // descriptorString to pointerString. Only runtime ones need a cast.
-                if(intrinsic_name != "present" && intrinsic_name != "len"){
+                if(intrinsic_name != "present" && intrinsic_name != "len" && intrinsic_name != "move_alloc"){
                     args.p[i] = ASRUtils::cast_string_descriptor_to_pointer(al, args.p[i]);
                 }
             }
@@ -8394,6 +8449,12 @@ public:
                 // Currently using real*8 as the return type.
                 ASR::ttype_t* type = external_sym ? ASRUtils::symbol_type(external_sym) :
                                     ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                std::string var_name_first_letter = to_lower(std::string(1, var_name[0]));
+                implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                if ( !external_sym && compiler_options.implicit_typing &&
+                     implicit_dictionary.find(var_name_first_letter) != implicit_dictionary.end() ) {
+                    type = implicit_dictionary[var_name_first_letter];
+                }
                 create_implicit_interface_function(x, var_name, true, type);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
@@ -8710,6 +8771,16 @@ public:
         }
     }
 
+    void check_global_procedure_and_enable_separate_compilation(SymbolTable *parent_scope) {
+        if ( parent_scope->parent != nullptr ) {
+            return;
+        }
+        compiler_options.separate_compilation = true;
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        return;
+    }
+
+
     ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym) {
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             if (compiler_options.implicit_interface) {
@@ -8731,7 +8802,7 @@ public:
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
-                    }, lm
+                    }, lm, compiler_options.generate_object_code
                 );
 
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
@@ -9676,7 +9747,8 @@ public:
             throw SemanticAbort();
         }
         std::string boz_str = s.substr(2, s.size() - 2);
-        int64_t boz_int = std::stoll(boz_str, nullptr, base);
+        uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
+        int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
                 int_type, boz_type);

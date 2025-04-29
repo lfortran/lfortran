@@ -32,6 +32,10 @@ namespace LCompilers::LLanguageServer::Logging {
 
     class Logger;
 
+    auto formatTimePoint(
+        const std::chrono::system_clock::time_point& tp
+    ) -> std::string;
+
     class Formatter {
     public:
         Formatter(Logger &logger, Level level, const std::string &prompt);
@@ -111,8 +115,8 @@ namespace LCompilers::LLanguageServer::Logging {
         auto debug() -> Formatter;
         auto trace() -> Formatter;
 
-        auto threadName(const std::string &threadName) -> void;
-        auto threadName() const -> const std::string &;
+        static auto threadName(const std::string &threadName) -> void;
+        static auto threadName() -> const std::string &;
 
         auto typeName() const -> const std::string &;
         auto attributes() const -> const std::vector<std::string> &;

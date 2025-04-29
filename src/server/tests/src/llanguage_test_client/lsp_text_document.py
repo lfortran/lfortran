@@ -3,8 +3,11 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from lsprotocol.types import (DocumentHighlight, Position, Range,
-                              TextDocumentSaveReason, TextEdit)
+from lsprotocol.types import (CompletionItem, CompletionList,
+                              DocumentHighlight, DocumentSymbol, Hover,
+                              Position, Range, SemanticTokens,
+                              SymbolInformation, TextDocumentSaveReason,
+                              TextEdit)
 
 from llanguage_test_client.lsp_client import LspClient
 
@@ -50,6 +53,9 @@ def requires_path(fn: Callable) -> Callable:
     return wrapper
 
 
+ChangeListener = Callable[[int, Optional[str]], None]
+
+
 class LspTextDocument:
     client: LspClient
     document_id: int
@@ -62,8 +68,14 @@ class LspTextDocument:
     pos_by_line: List[int]
     len_by_line: List[int]
 
+    change_listeners: List[ChangeListener]
+
     selection: Optional[Range]
-    highlights: Optional[List[DocumentHighlight]]
+    symbol_highlights: Optional[List[DocumentHighlight]]
+    preview: Optional[Hover]
+    symbols: Union[List[SymbolInformation], List[DocumentSymbol], None]
+    semantic_highlights: Union[SemanticTokens, None]
+    completions: Union[List[CompletionItem], CompletionList, None]
 
     def __init__(
             self,
@@ -85,7 +97,20 @@ class LspTextDocument:
         self.len_by_line = [1]
         self.is_new = (path is None)
         self.selection = None
-        self.highlights = None
+        self.symbol_highlights = None
+        self.preview = None
+        self.symbols = None
+        self.change_listeners = []
+        self.semantic_highlights = None
+        self.completions = None
+
+    def on_change(self, listener: ChangeListener) -> None:
+        self.change_listeners.append(listener)
+
+    def signal_change(self) -> None:
+        uri = self.uri if self._path is not None else None
+        for change_fn in self.change_listeners:
+            change_fn(self.document_id, uri)
 
     @property
     def path(self) -> Path:
@@ -133,7 +158,15 @@ class LspTextDocument:
     @cursor.setter
     def cursor(self, line_and_col: Tuple[int, int]) -> None:
         line, col = line_and_col
-        self.seek(line - 1, col - 1)
+        if line < 0:
+            line = len(self.pos_by_line) + line
+        else:
+            line -= 1
+        if col < 0:
+            col = self.len_by_line[line] + col
+        else:
+            col -= 1
+        self.seek(line, col)
 
     @property
     def position(self) -> int:
@@ -185,6 +218,7 @@ class LspTextDocument:
                 self.bump_version(),
                 self.text
             )
+            self.signal_change()
         else:
             raise RuntimeError('`path` must be set before calling `load()`')
 
@@ -294,8 +328,8 @@ class LspTextDocument:
             end_line: int,
             end_column: int
     ) -> None:
-        start = Position(start_line, start_column)
-        end = Position(end_line, end_column)
+        start = Position(start_line - 1, start_column - 1)
+        end = Position(end_line - 1, end_column - 1)
         self.selection = Range(start, end)
         if (start_line < end_line) \
            or ((start_line == end_line) and (start_column <= end_column)):
@@ -325,6 +359,7 @@ class LspTextDocument:
                 self.text, ""
             )
         self.recompute_indices()
+        self.signal_change()
 
     def backspace(self, length: int = 1) -> None:
         """
@@ -355,6 +390,7 @@ class LspTextDocument:
                 self.text, text
             )
         self.recompute_indices()
+        self.signal_change()
 
     def newline(self) -> None:
         """
@@ -379,6 +415,7 @@ class LspTextDocument:
                 self.text, text
             )
         self.recompute_indices()
+        self.signal_change()
 
     def apply(self, edits: List[TextEdit]) -> None:
         origin = self.position
@@ -410,6 +447,29 @@ class LspTextDocument:
         self.client.rename(self.uri, line, column, new_name)
 
     @requires_path
-    def highlight(self) -> None:
+    def highlight_symbol(self) -> None:
         line, column = self.pos_to_linecol(self.position)
-        self.client.highlight(self.uri, line, column)
+        self.client.highlight_symbol(self.uri, line, column)
+
+    @requires_path
+    def hover(self) -> None:
+        line, column = self.pos_to_linecol(self.position)
+        self.client.hover(self.uri, line, column)
+
+    @requires_path
+    def semantic_highlight(self) -> None:
+        self.client.semantic_highlight(self.uri)
+
+    @requires_path
+    def complete(self) -> None:
+        line, column = self.pos_to_linecol(self.position)
+        self.client.complete(self.uri, line, column)
+
+    @requires_path
+    def format(self) -> None:
+        self.client.format(self.uri)
+
+    @requires_path
+    def format_range(self) -> None:
+        if self.selection is not None:
+            self.client.format_range(self.uri, self.selection)

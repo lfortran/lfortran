@@ -19,6 +19,8 @@ namespace LCompilers::LLanguageServer::Threading {
     public:
         Queue(lsl::Logger &logger, const std::string &name);
         auto size() const -> std::size_t;
+        auto seen() const -> std::size_t;
+        auto name() const -> const std::string &;
         auto isRunning() const -> bool;
         auto isStopped() const -> bool;
         auto enqueue(T value) -> T *;
@@ -27,13 +29,14 @@ namespace LCompilers::LLanguageServer::Threading {
         auto stopNow() -> void;
     private:
         lsl::Logger logger;
-        const std::string name;
+        const std::string m_name;
         T buffer[N];
         std::atomic_bool sending = true;
         std::atomic_bool receiving = true;
         std::atomic_size_t head = 0;
         std::atomic_size_t tail = 0;
         std::atomic_size_t _size = 0;
+        std::atomic_size_t m_seen = 0;
         std::mutex mutex;
         std::condition_variable enqueued;
         std::condition_variable dequeued;
@@ -42,7 +45,7 @@ namespace LCompilers::LLanguageServer::Threading {
     template <typename T, std::size_t N>
     Queue<T,N>::Queue(lsl::Logger &logger, const std::string &name)
         : logger(logger.having("Queue", {name}))
-        , name(name)
+        , m_name(name)
     {
         // empty
     }
@@ -50,6 +53,16 @@ namespace LCompilers::LLanguageServer::Threading {
     template <typename T, std::size_t N>
     auto Queue<T,N>::size() const -> std::size_t {
         return _size;
+    }
+
+    template <typename T, std::size_t N>
+    auto Queue<T,N>::seen() const -> std::size_t {
+        return m_seen;
+    }
+
+    template <typename T, std::size_t N>
+    auto Queue<T,N>::name() const -> const std::string & {
+        return m_name;
     }
 
     template <typename T, std::size_t N>
@@ -74,6 +87,7 @@ namespace LCompilers::LLanguageServer::Threading {
                 (*elem) = value;
                 tail = (tail + 1) % N;
                 ++_size;
+                ++m_seen;
                 lock.unlock();
                 enqueued.notify_one();
                 return elem;

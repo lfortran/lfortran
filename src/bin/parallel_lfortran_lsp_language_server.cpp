@@ -1,7 +1,7 @@
+#include "bin/semantic_highlighter.h"
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <shared_mutex>
 #include <string>
 
 #include <server/lsp_exception.h>
@@ -87,9 +87,9 @@ namespace LCompilers::LanguageServerProtocol {
     auto ParallelLFortranLspLanguageServer::validate(
         std::shared_ptr<LspTextDocument> document
     ) -> void {
-        std::shared_lock<std::shared_mutex> readLock(document->mutex());
+        auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
         const std::string &uri = document->uri();
-        std::unique_lock<std::shared_mutex> writeLock(validationMutex);
+        auto writeLock = LSP_WRITE_LOCK(validationMutex, "validation");
         auto iter = validationsByUri.find(uri);
         if (iter != validationsByUri.end()) {
             // If an older version of the document is being validated, cancel it
@@ -100,16 +100,65 @@ namespace LCompilers::LanguageServerProtocol {
             workerPool.execute([this, document = std::move(document)](
                 std::shared_ptr<std::atomic_bool> taskIsRunning
             ) {
-                std::shared_lock<std::shared_mutex> readLock(document->mutex());
+                auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
                 const std::string &uri = document->uri();
+                readLock.unlock();
                 LFortranLspLanguageServer::validate(*document, *taskIsRunning);
-                std::unique_lock<std::shared_mutex> writeLock(validationMutex);
+                readLock.lock();
+                auto writeLock = LSP_WRITE_LOCK(validationMutex, "validation");
                 auto iter = validationsByUri.find(uri);
                 if (iter != validationsByUri.end()) {
                     validationsByUri.erase(iter);
                 }
             });
         validationsByUri.insert_or_assign(iter, uri, taskIsRunning);
+    }
+
+    auto ParallelLFortranLspLanguageServer::updateHighlights(
+        std::shared_ptr<LspTextDocument> document
+    ) -> void {
+        std::shared_ptr<std::atomic_bool> taskIsRunning =
+            workerPool.execute([this, document = std::move(document)](
+                std::shared_ptr<std::atomic_bool> taskIsRunning
+            ) {
+                if (!*taskIsRunning) {
+                    return;
+                }
+                auto documentLock = LSP_READ_LOCK(
+                    document->mutex(),
+                    "document:" + document->uri()
+                );
+                if (!*taskIsRunning) {
+                    return;
+                }
+                int version = document->version();
+                auto highlightsLock = LSP_WRITE_LOCK(highlightsMutex, "highlights");
+                if (!*taskIsRunning) {
+                    return;
+                }
+                auto iter = highlightsByDocumentId.find(document->id());
+                if (iter != highlightsByDocumentId.end()) {
+                    if (iter->second->second < version) {
+                        iter->second = std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                            std::make_pair(
+                                semantic_tokenize(document->text()),
+                                version
+                            )
+                        );
+                    }
+                } else {
+                    highlightsByDocumentId.emplace_hint(
+                        iter,
+                        document->id(),
+                        std::make_unique<std::pair<std::vector<FortranToken>, int>>(
+                            std::make_pair(
+                                semantic_tokenize(document->text()),
+                                version
+                            )
+                        )
+                    );
+                }
+            });
     }
 
 } // namespace LCompilers::LanguageServerProtocol

@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <libasr/exception.h>
@@ -19,25 +20,31 @@ namespace LCompilers::LLanguageServer {
         auto showErrors(
             const std::string &filename,
             const std::string &text,
-            const CompilerOptions &compiler_options
+            CompilerOptions &compiler_options
         ) -> std::vector<LCompilers::error_highlight>;
 
         auto lookupName(
             const std::string &filename,
             const std::string &text,
-            const CompilerOptions &compiler_options
+            CompilerOptions &compiler_options
         ) -> std::vector<LCompilers::document_symbols>;
+
+        auto previewSymbol(
+            const std::string &filename,
+            const std::string &text,
+            CompilerOptions &compiler_options
+        ) -> std::vector<std::pair<LCompilers::document_symbols, std::string>>;
 
         auto getAllOccurrences(
             const std::string &filename,
             const std::string &text,
-            const CompilerOptions &compiler_options
+            CompilerOptions &compiler_options
         ) -> std::vector<LCompilers::document_symbols>;
 
         auto getSymbols(
             const std::string &filename,
             const std::string &text,
-            const CompilerOptions &compiler_options
+            CompilerOptions &compiler_options
         ) -> std::vector<LCompilers::document_symbols>;
 
         template <typename T>
@@ -81,7 +88,7 @@ namespace LCompilers::LLanguageServer {
         auto format(
             const std::string &filename,
             const std::string &text,
-            const CompilerOptions &compiler_options,
+            CompilerOptions &compiler_options,
             bool color,
             int indent,
             bool indent_unit

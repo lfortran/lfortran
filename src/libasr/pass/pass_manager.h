@@ -129,7 +129,7 @@ namespace LCompilers {
 
         public:
         // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
-        std::vector<std::string> passes_to_skip_with_llvm; 
+        std::vector<std::string> passes_to_skip_with_llvm;
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
@@ -249,8 +249,8 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "array_struct_temporary",
-                "nested_vars",
                 "transform_optional_argument_functions",
+                "nested_vars",
                 "forall",
                 "class_constructor",
                 "pass_list_expr",
@@ -284,7 +284,7 @@ namespace LCompilers {
                 "div_to_mul",
                 "fma",
                 // "inline_function_calls",
-                // "promote_allocatable_to_nonallocatable"
+                "promote_allocatable_to_nonallocatable"
             };
 
             // These are re-write passes which are already handled

@@ -120,6 +120,9 @@ program format_04
     print 36, real_hundred
     36 FORMAT (F10.3)
 
+    ! test for issue: https://github.com/lfortran/lfortran/issues/6348
+    print '(A,F0.0,A)', '"',0.0 ,'"' 
+
     ! test for issue: https://github.com/lfortran/lfortran/issues/4040
     print "(2 (I3))", i, j
     print 37, i, j
@@ -127,6 +130,10 @@ program format_04
     print "(2 (I 3))", i, j
     print 38, i, j
     38 FORMAT (2 (I3))
+
+    ! test for issue: https://github.com/lfortran/lfortran/issues/6761
+    print "(2((I0), 1x))", i, j
+
     ! the below test also ensures that blank character
     ! isn't removed from ' Dates: '
     print 39, i, i + 1, j + 1, i + 2, j + 2

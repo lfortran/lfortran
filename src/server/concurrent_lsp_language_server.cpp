@@ -67,7 +67,10 @@ namespace LCompilers::LanguageServerProtocol {
         } catch (std::exception &e) {
             if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                 logger.error()
-                    << "Unhandled exception caught: " << e.what()
+                    << formatException(
+                        "Unhandled exception caught",
+                        std::current_exception()
+                    )
                     << std::endl;
             } else {
                 logger.trace()
@@ -76,7 +79,10 @@ namespace LCompilers::LanguageServerProtocol {
             }
         } catch (...) {
             logger.error()
-                << "Unhandled exception caught: unknown"
+                << formatException(
+                    "Unhandled exception caught",
+                    std::current_exception()
+                )
                 << std::endl;
         }
     }
@@ -92,12 +98,15 @@ namespace LCompilers::LanguageServerProtocol {
                     sendId,
                     std::make_shared<std::atomic_bool>(true)
                 );
-            } catch (std::exception &e) {
+            } catch (...) {
                 logger.error()
                     << "Failed to handle message: " << message
                     << std::endl;
                 logger.error()
-                    << "Caught unhandled exception: " << e.what()
+                    << formatException(
+                        "Caught unhandled exception",
+                        std::current_exception()
+                    )
                     << std::endl;
             }
             if (pendingSendId <= sendId) {
@@ -184,7 +193,10 @@ namespace LCompilers::LanguageServerProtocol {
             } catch (std::exception &e) {
                 if (e.what() != lst::DEQUEUE_FAILED_MESSAGE) {
                     logger.error()
-                        << "Unhandled exception caught: " << e.what()
+                        << formatException(
+                            "Unhandled exception caught",
+                            std::current_exception()
+                        )
                         << std::endl;
                 } else {
                     logger.trace()
@@ -234,8 +246,8 @@ namespace LCompilers::LanguageServerProtocol {
             {
                 auto &pairs = pendingConfigsById.emplace(
                     std::piecewise_construct,
-                    std::make_tuple(requestId),
-                    std::make_tuple()
+                    std::forward_as_tuple(requestId),
+                    std::forward_as_tuple()
                 ).first->second;
                 auto &pair = pairs.emplace_back();
                 pair.first = uri;
@@ -243,8 +255,8 @@ namespace LCompilers::LanguageServerProtocol {
             }
             pendingConfigsByUri.emplace(
                 std::piecewise_construct,
-                std::make_tuple(uri),
-                std::make_tuple(requestId, future)
+                std::forward_as_tuple(uri),
+                std::forward_as_tuple(requestId, future)
             );
         }
 

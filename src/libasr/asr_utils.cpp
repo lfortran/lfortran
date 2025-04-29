@@ -297,7 +297,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
-                            LCompilers::LocationManager &lm) {
+                            LCompilers::LocationManager &lm,
+                            bool generate_object_code) {
     LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -327,6 +328,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
+    if ( generate_object_code ) {
+        mod2->m_symtab->mark_all_variables_external(al);
+    }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 
     // Create a temporary TranslationUnit just for fixing the symbols
@@ -370,6 +374,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
                 mod2->m_loaded_from_mod = true;
+                if ( generate_object_code ) {
+                    mod2->m_symtab->mark_all_variables_external(al);
+                }
                 rerun = true;
             }
         }
@@ -1193,6 +1200,27 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASR::is_a<ASR::StructType_t>(*left_type))
                         || (ASR::is_a<ASR::ClassType_t>(*right_arg_type) &&
                             ASR::is_a<ASR::StructType_t>(*right_type))) {
+                            // If all are StructTypes then the Struct symbols should match
+                            if (ASR::is_a<ASR::StructType_t>(*left_type) &&
+                                ASR::is_a<ASR::StructType_t>(*right_type) &&
+                                ASR::is_a<ASR::StructType_t>(*left_arg_type) &&
+                                ASR::is_a<ASR::StructType_t>(*right_arg_type)) {
+                                ASR::Struct_t *left_sym = ASR::down_cast<ASR::Struct_t>(
+                                        ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                        left_type)->m_derived_type));
+                                ASR::Struct_t *right_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                    right_type)->m_derived_type));
+                                ASR::Struct_t *left_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                        ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                        left_arg_type)->m_derived_type));
+                                ASR::Struct_t *right_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
+                                    right_arg_type)->m_derived_type));
+                                if (left_sym != left_arg_sym || right_sym != right_arg_sym) {
+                                    break;
+                                }
+                            }
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
@@ -1594,6 +1622,17 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
     }
 }
 
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
+{
+    Allocator al(4*1024);
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
+            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            m->m_symtab->mark_all_variables_external(al);
+        }
+    }
+}
+
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2, ASR::dimension_t* expr1_mdims,
     size_t expr1_ndims) {
@@ -1769,9 +1808,7 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
     start = builder.i2i_t(start, ASRUtils::expr_type(end));
     if( d == nullptr ) {
-        implied_doloop_size = builder.Add(
-            builder.Sub(end, start),
-            make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+        implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
     } else {
         implied_doloop_size = builder.Add(builder.Div(
             builder.Sub(end, start), d),

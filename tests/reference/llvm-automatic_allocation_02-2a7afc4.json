@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-automatic_allocation_02-2a7afc4",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/automatic_allocation_02.f90",
+    "infile_hash": "1646e150432feecdb083d01f8f11d5f17ae691764bb12ada80610c85",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-automatic_allocation_02-2a7afc4.stdout",
+    "stdout_hash": "3e9e7ec2e89c44d021e62ee5bd27b1582a283f78dabe8a7676a95dfe",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

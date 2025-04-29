@@ -113,15 +113,12 @@ git clean -dfx  # reset repository to a clean state by removing artifacts genera
 ./build1.sh
 ```
 
-Run tests:
-```bash
-ctest
-./run_tests.py
-```
 Run an interactive prompt:
 ```bash
 ./src/bin/lfortran
 ```
+
+See [how to run tests](#Tests) to make sure all tests pass
 
 ## Build from Git on Windows with Visual Studio
 
@@ -226,11 +223,7 @@ make -j8
 ./src/bin/lfortran
 ```
 
-* Run tests
-```bash
-ctest
-./run_tests.py
-```
+See [how to run tests](#Tests) to make sure all tests pass
 
 ## Enabling the Jupyter Kernel
 
@@ -372,3 +365,33 @@ and compile LFortran with the
 `-DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX"` cmake option.
 The `$CONDA_PREFIX` is there if you install some other dependencies (such as
 `llvm`) using Conda, otherwise you can remove it.
+
+
+## Tests
+
+#### Run tests:
+
+```bash
+ctest
+./run_tests.py
+```
+
+#### Update test references:
+
+```bash
+./run_tests.py -u
+```
+
+#### Run integration tests
+
+```bash
+cd integration_tests
+./run_tests.py
+```
+
+#### Speed up integration tests on macOS
+
+Integration tests run slowly because Apple checks the hash of each executable online before running.
+
+You can turn off that feature in the Privacy tab of the Security and Privacy item of System Preferences > Developer Tools > Terminal.app > "allow the apps below to run software locally that does not meet the system's security
+policy."

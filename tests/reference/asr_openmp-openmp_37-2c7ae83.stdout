@@ -219,6 +219,16 @@
                                     c_null_char
                                     Public
                                 ),
+                            c_null_funptr:
+                                (ExternalSymbol
+                                    4
+                                    c_null_funptr
+                                    17 c_null_funptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_funptr
+                                    Public
+                                ),
                             c_null_ptr:
                                 (ExternalSymbol
                                     4
@@ -981,6 +991,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_null_char
+                                    Public
+                                ),
+                            c_null_funptr:
+                                (ExternalSymbol
+                                    2
+                                    c_null_funptr
+                                    17 c_null_funptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_funptr
                                     Public
                                 ),
                             c_null_ptr:

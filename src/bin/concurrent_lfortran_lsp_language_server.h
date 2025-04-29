@@ -45,6 +45,10 @@ namespace LCompilers::LanguageServerProtocol {
         auto validate(
             std::shared_ptr<LspTextDocument> document
         ) -> void override;
+
+        auto updateHighlights(
+            std::shared_ptr<LspTextDocument> document
+        ) -> void override;
     }; // class ConcurrentLFortranLspLanguageServer
 
 } // namespace LCompilers::LanguageServerProtocol
