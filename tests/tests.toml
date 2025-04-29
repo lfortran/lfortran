@@ -1965,6 +1965,10 @@ filename = "complex3.f90"
 ast = true
 
 [[test]]
+filename = "complex4.f90"
+llvm = true
+
+[[test]]
 filename = "../integration_tests/logical1.f90"
 asr = true
 llvm = true
