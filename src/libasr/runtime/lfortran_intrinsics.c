@@ -926,6 +926,7 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
                                (lowered_format_value == 'a' && current_arg_correct_format == 'l');
 
+    // TODO: support other types such as real, string later
     bool b_format_for_integer = (lowered_format_value == 'b' && current_arg_correct_format == 'i');
 
     if(lowered_format_value != current_arg_correct_format && !special_conditions && !b_format_for_integer){
@@ -1510,7 +1511,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                         width = atoi(value + 1); // Get width after 'B'
                     }
 
-                    int bit_size = 32; // default INTEGER*4 in Fortran
+                    int bit_size = 32; // default INTEGER*4 in Fortran (support other types later)
                     uint64_t mask = (1ULL << bit_size) - 1;
                     uint64_t uval = ((uint64_t)integer_val) & mask; // Mask to bit_size bits
 
