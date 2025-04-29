@@ -1313,8 +1313,8 @@ public:
         is_global_save_enabled = is_global_save_enabled_copy;
     }
 
-    AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
-            size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
+    AST::AttrType_t* get_return_type_or_implict_type(AST::decl_attribute_t** attributes,
+            size_t n, const Location &loc, std::string &return_var_name, bool return_var_symbol_exist_in_function_scope) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
         bool are_all_attributes_simple = true;
@@ -1324,7 +1324,7 @@ public:
                 break;
             }
         }
-        if ((n == 0 || are_all_attributes_simple) && compiler_options.implicit_typing && !return_var_sym) {
+        if ((n == 0 || are_all_attributes_simple) && compiler_options.implicit_typing && !return_var_symbol_exist_in_function_scope) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
@@ -1539,13 +1539,23 @@ public:
                 var)));
         }
 
-        // Handle the return variable and type
-        // First determine the name of the variable: either the function name
-        // or result(...)
+        /* HANDLE THE RETURN VARIABLE AND ITS TYPE */
+
+        /*
+            FIRST determine the name of the variable: 
+            either the function name or result(...)
+        */  
         std::string return_var_name;
-        if (x.m_return_var) {
+        if (x.m_return_var) { // Case -> `function foo() result(ret)`
             if (x.m_return_var->type == AST::exprType::Name) {
                 return_var_name = to_lower(((AST::Name_t*)(x.m_return_var))->m_id);
+                if(current_scope->get_symbol(to_lower(x.m_name))){
+                    diag.add(diag::Diagnostic(
+                        "Function already have result variable set",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_return_var->base.loc})}));
+                    throw SemanticAbort();
+                }
             } else {
                 diag.add(diag::Diagnostic(
                     "Return variable must be an identifier",
@@ -1553,135 +1563,76 @@ public:
                         diag::Label("", {x.m_return_var->base.loc})}));
                 throw SemanticAbort();
             }
-        } else {
+        } else { // Case -> `integer :: foo` (variable with same name as function)
             return_var_name = to_lower(x.m_name);
         }
 
-        // Determine the type of the variable, the type is either specified as
-        //     integer function f()
-        // or in local variables as
-        //     integer :: f
-        ASR::asr_t *return_var;
-        ASR::symbol_t* return_var_sym = current_scope->get_symbol(return_var_name);
-        AST::AttrType_t *return_type = find_return_type(x.m_attributes,
-            x.n_attributes, x.base.base.loc, return_var_name, return_var_sym);
-        if (current_scope->get_symbol(return_var_name) == nullptr) {
-            // The variable is not defined among local variables, extract the
-            // type from "integer function f()" and add the variable.
-            if (!return_type) {
-                diag.add(diag::Diagnostic(
-                    "Return type not specified",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-            ASR::ttype_t *type;
-            int i_kind = compiler_options.po.default_integer_kind;
-            int a_kind = 4;
-            int a_len = -10;
-            if (return_type->m_kind != nullptr) {
-                if (return_type->n_kind == 1) {
-                    visit_expr(*return_type->m_kind->m_value);
-                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                    if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
-                        a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
-                    } else {
-                        a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
-                        i_kind = a_kind;
-                    }
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "Only one kind item supported for now",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
-            switch (return_type->m_type) {
-                case (AST::decl_typeType::TypeInteger) : {
-                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
-                    break;
-                }
-                case (AST::decl_typeType::TypeReal) : {
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
-                    break;
-                }
-                case (AST::decl_typeType::TypeDoublePrecision) : {
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                    break;
-                }
-                case (AST::decl_typeType::TypeComplex) : {
-                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
-                    break;
-                }
-                case (AST::decl_typeType::TypeDoubleComplex) : {
-                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 8));
-                    break;
-                }
-                case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-                    break;
-                }
-                case (AST::decl_typeType::TypeCharacter) : {
-                    type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
-                    break;
-                }
-                case (AST::decl_typeType::TypeType) : {
-                    LCOMPILERS_ASSERT(return_type->m_name);
-                    std::string derived_type_name = to_lower(return_type->m_name);
-                    ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-                    if (!v) {
+        /*
+            Check if `return_var_name` exist as AST::Declaration_t node
+            - True -> Fine. Declared inside function scope
+            - False -> either implicit typing is applied OR (`INTEGER foo() result(ret)`, `INTEGER foo()`)
+        */
+        bool return_var_name_exist_as_declaration = 
+            (current_scope->get_symbol(return_var_name) != nullptr);
+        
+        ASR::asr_t* return_var{};
+        if(return_var_name_exist_as_declaration){
+            bool found=false; size_t attr_type_idx{};
+            for (size_t i=0; i<x.n_attributes; i++) {
+                if (AST::is_a<AST::AttrType_t>(*x.m_attributes[i])) {
+                    if (found) {
                         diag.add(diag::Diagnostic(
-                            "Derived type '"
-                            + derived_type_name + "' not declared",
+                            "Return type declared twice",
                             diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {x.base.base.loc})}));
+                                diag::Label("",{x.m_attributes[i]->base.loc,
+                                    x.m_attributes[attr_type_idx]->base.loc})}));
                         throw SemanticAbort();
-
+                    } else {
+                        found = true;
+                        attr_type_idx = i;
                     }
-                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
-                    break;
                 }
-                default :
-                    diag.add(diag::Diagnostic(
-                        "Return type not supported",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
             }
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-            // Add it as a local variable:
-            return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
-                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
-                false);
-            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-        } else {
-            if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
+            if(found){
                 diag.add(diag::Diagnostic(
                     "Cannot specify the return type twice",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
+                        diag::Label("", {current_scope->get_symbol(return_var_name)->base.loc, 
+                            x.m_attributes[attr_type_idx]->base.loc})}));
                 throw SemanticAbort();
             }
-            // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
-                                                    return_variable->m_symbolic_value, return_variable->m_value);
-            return_variable->m_dependencies = variable_dependencies_vec.p;
-            return_variable->n_dependencies = variable_dependencies_vec.size();
+        } else { 
+            AST::AttrType_t *return_type = get_return_type_or_implict_type(x.m_attributes,
+                    x.n_attributes, x.base.base.loc, return_var_name, return_var_name_exist_as_declaration);
+            if(!return_type){
+                diag.add(diag::Diagnostic(
+                    "Return type of the function not specified",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            } else {
+                // make `AST::Declaration_t` node + Evaluate it.
+                AST::var_sym_t* sym = al.make_new<AST::var_sym_t>();sym->m_name = s2c(al, return_var_name); 
+                sym->loc = x.base.base.loc;sym->m_codim=nullptr;sym->m_dim=nullptr;sym->m_initializer=nullptr;
+                sym->m_length=nullptr;sym->m_spec=nullptr;sym->m_sym=AST::symbolType::None;sym->n_codim=0;sym->n_dim=0;
+            
+                AST::ast_t* decl_node =  AST::make_Declaration_t(al, x.base.base.loc, 
+                    (AST::decl_attribute_t*) return_type, nullptr, 0, sym, 1, nullptr);
+                this->visit_Declaration(*AST::down_cast2<AST::Declaration_t>(decl_node));
+                return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
+                LCOMPILERS_ASSERT(return_var)
+                ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
+                return_variable->m_intent = ASRUtils::intent_return_var;
+            }
+            
         }
 
-        ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
-            ASR::down_cast<ASR::symbol_t>(return_var));
+
+        ASR::expr_t *return_var_ref = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+            ASR::down_cast<ASR::symbol_t>(return_var)));
 
         // Create and register the function
         if (assgnd_access.count(sym_name)) {
@@ -1762,7 +1713,7 @@ public:
             /* n_args */ args.size(),
             /* a_body */ nullptr,
             /* n_body */ 0,
-            /* a_return_var */ ASRUtils::EXPR(return_var_ref),
+            /* a_return_var */ return_var_ref,
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, is_pure, false, false, false,
             nullptr, 0, is_requirement, false, false, nullptr, x.m_start_name ? x.m_start_name : nullptr,
