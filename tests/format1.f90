@@ -130,6 +130,10 @@ program format_04
     print "(2 (I 3))", i, j
     print 38, i, j
     38 FORMAT (2 (I3))
+
+    ! test for issue: https://github.com/lfortran/lfortran/issues/6761
+    print "(2((I0), 1x))", i, j
+
     ! the below test also ensures that blank character
     ! isn't removed from ' Dates: '
     print 39, i, i + 1, j + 1, i + 2, j + 2
