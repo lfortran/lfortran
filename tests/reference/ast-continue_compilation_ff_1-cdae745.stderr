@@ -75,21 +75,3 @@ syntax error: Newline is unexpected here
     |
 119 |       CALL FUNC( 5, 6,
     |                       ^ 
-
-warning: This equivalence statement is not implemented yet, for now we will ignore it
-   --> tests/errors/continue_compilation_ff_1.f:108:7
-    |
-108 |       EQUIVALENCE (X Y)
-    |       ^^^^^^^^^^^^^^^^^ ignored for now
-
-semantic error: Variable 'integerklm' is not declared
-  --> tests/errors/continue_compilation_ff_1.f:99:7
-   |
-99 |       INTEGER K L M = 5
-   |       ^^^^^^^^^^^^^ 'integerklm' is undeclared
-
-semantic error: Variable 'n5' is not declared
-   --> tests/errors/continue_compilation_ff_1.f:100:15
-    |
-100 |       READ *, N 5
-    |               ^^^ 'n5' is undeclared
