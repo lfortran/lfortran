@@ -1282,6 +1282,14 @@ public:
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
             }
         }
+
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                require(x.m_args[i].n_dims > 0,
+                    "Allocate for arrays should have dimensions specified, "
+                    "found only array variable with no dimensions");
+            }
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
