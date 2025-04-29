@@ -926,10 +926,10 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
                                (lowered_format_value == 'a' && current_arg_correct_format == 'l');
 
-    // TODO: support other types such as real, string later
-    bool b_format_for_integer = (lowered_format_value == 'b' && current_arg_correct_format == 'i');
+    bool b_format_for_bitwise_types = (lowered_format_value == 'b' &&
+    (current_arg_correct_format == 'i' || current_arg_correct_format == 'f'));
 
-    if(lowered_format_value != current_arg_correct_format && !special_conditions && !b_format_for_integer){
+    if(lowered_format_value != current_arg_correct_format && !special_conditions && !b_format_for_bitwise_types){
         return false;
     } else {
         return true;
@@ -1511,9 +1511,37 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                         width = atoi(value + 1); // Get width after 'B'
                     }
 
-                    int bit_size = 32; // default INTEGER*4 in Fortran (support other types later)
-                    uint64_t mask = (1ULL << bit_size) - 1;
-                    uint64_t uval = ((uint64_t)integer_val) & mask; // Mask to bit_size bits
+                    int bit_size = 0;
+                    uint64_t uval = 0;
+                    char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
+                    if (fmt_type == 'i') {
+                        if (s_info.current_element_type == INTEGER_8_TYPE) {
+                            bit_size = 8;
+                        } else if (s_info.current_element_type == INTEGER_16_TYPE) {
+                            bit_size = 16;
+                        } else if (s_info.current_element_type == INTEGER_32_TYPE) {
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == INTEGER_64_TYPE) {
+                            bit_size = 64;
+                        }
+                        uint64_t mask = (bit_size == 64) ? UINT64_MAX : ((1ULL << bit_size) - 1);
+                        uval = ((uint64_t)integer_val) & mask;
+                    } else if (fmt_type == 'f') {
+                        if (s_info.current_element_type == FLOAT_32_TYPE) {
+                            float f = (float)double_val;
+                            uint32_t bits;
+                            memcpy(&bits, &f, sizeof(float));
+                            uval = (uint64_t)bits;
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == FLOAT_64_TYPE) {
+                            double d = double_val;
+                            memcpy(&uval, &d, sizeof(double));
+                            bit_size = 64;
+                        }
+                    } else {
+                        result = append_to_string(result, "<unsupported>");
+                        break;
+                    }
 
                     char binary_str[65]; // max 64 bits + '\0'
                     int idx = 0;
@@ -1542,12 +1570,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             result = append_to_string(result, "*");
                         }
                     } else {
-                        int spaces_needed = width - bin_len;
-                        char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
-                        memset(spaces, ' ', spaces_needed);
-                        spaces[spaces_needed] = '\0';
-                        result = append_to_string(result, spaces);
-                        free(spaces);
+                        int padding_needed = width - bin_len;
+                        char pad_char = (fmt_type == 'i') ? ' ' : '0';
+                        if (padding_needed > 0) {
+                            char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
+                            memset(pad, pad_char, padding_needed);
+                            pad[padding_needed] = '\0';
+                            result = append_to_string(result, pad);
+                            free(pad);
+                        }
                         result = append_to_string(result, binary_str);
                     }
                 } else if (tolower(value[0]) == 'd') {
