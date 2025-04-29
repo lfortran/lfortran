@@ -1576,18 +1576,6 @@ public:
             throw SemanticAbort();
         }
 
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            if( ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
-                alloc_args_vec.p[i].n_dims == 0 ) {
-                diag.add(Diagnostic(
-                    "Allocate for arrays should have dimensions specified, "
-                    "found only array variable with no dimensions",
-                    Level::Error, Stage::Semantic, {
-                        Label("Array specification required in allocate statement", {alloc_args_vec.p[i].m_a->base.loc})
-                    }));
-                throw SemanticAbort();
-            }
-        }
         tmp = ASR::make_Allocate_t(al, x.base.base.loc,
                                     alloc_args_vec.p, alloc_args_vec.size(),
                                     stat, errmsg, source);
@@ -1662,6 +1650,19 @@ public:
                 current_body->push_back(al, assign);
             }
             tmp = nullptr;   // Doing it nullptr as we have already pushed allocate
+        } else {
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                if( ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
+                    alloc_args_vec.p[i].n_dims == 0 ) {
+                    diag.add(Diagnostic(
+                        "Allocate for arrays should have dimensions specified, "
+                        "found only array variable with no dimensions",
+                        Level::Error, Stage::Semantic, {
+                            Label("Array specification required in allocate statement", {alloc_args_vec.p[i].m_a->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
         }
     }
 
