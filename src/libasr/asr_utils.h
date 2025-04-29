@@ -2157,6 +2157,8 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
     return nullptr;
 }
 
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
+
 static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
     asr_type = ASRUtils::type_get_past_array(asr_type);
     int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);

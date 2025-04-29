@@ -664,6 +664,25 @@ char* remove_spaces_except_quotes(const char* format) {
     return cleaned_format;
 }
 
+int find_matching_parentheses(const char* format, int index){
+    int parenCount = 0;
+    while (format[index] != '\0') {
+        if (format[index] == '(') {
+            parenCount++;
+        } else if (format[index] == ')'){
+            parenCount--;
+        }
+        index++;
+        if (parenCount == 0)
+            break;
+    }
+    if (parenCount != 0) {
+        fprintf(stderr, "Error: Unbalanced paranthesis in format string\n");
+        exit(1);
+    }
+    return index;
+}
+
 /**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
@@ -679,7 +698,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
-    while (format[index] != '\0') {
+    while (index < strlen(format) && format[index] != '\0') {
         char** ptr = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
         if (ptr == NULL) {
             perror("Memory allocation failed.\n");
@@ -779,9 +798,9 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                 }
                 break;
             case '(' :
-                start = index++;
-                while (format[index] != ')') index++;
-                format_values_2[format_values_count++] = substring(format, start, index+1);
+                start = index;
+                index = find_matching_parentheses(format, index);
+                format_values_2[format_values_count++] = substring(format, start, index);
                 *item_start = format_values_count;
                 break;
             case 't' :
@@ -819,11 +838,11 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                     free(repeat_str);
                     format_values_2 = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
                     if (format[index] == '(') {
-                        start = index++;
-                        while (format[index] != ')') index++;
+                        start = index;
+                        index = find_matching_parentheses(format, index);
                         *item_start = format_values_count+1;
                         for (int i = 0; i < repeat; i++) {
-                            format_values_2[format_values_count++] = substring(format, start, index+1);
+                            format_values_2[format_values_count++] = substring(format, start, index);
                         }
                     } else {
                         start = index++;

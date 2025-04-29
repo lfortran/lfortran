@@ -931,27 +931,6 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     return 0;
 }
 
-bool is_program_present(const LCompilers::ASR::TranslationUnit_t &u)
-{
-    for (auto &item : u.m_symtab->get_scope()) {
-        if (LCompilers::ASR::is_a<LCompilers::ASR::Program_t>(*item.second)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
-{
-    Allocator al(4*1024);
-    for (auto &item : u.m_symtab->get_scope()) {
-        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
-            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
-            m->m_symtab->mark_all_variables_external(al);
-        }
-    }
-}
-
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options,
     LCompilers::LocationManager lm)
@@ -1179,8 +1158,8 @@ int compile_src_to_object_file(const std::string &infile,
 
     // if compiler_options.separate_compilation is true, then mark all modules as external
     // so that they are not compiled again
-    if (!is_program_present(*asr) && arg_c && compiler_options.separate_compilation && !compiler_options.generate_object_code) {
-        mark_modules_as_external(*asr);
+    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.separate_compilation && !compiler_options.generate_object_code) {
+        LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
     std::unique_ptr<LCompilers::LLVMModule> m;
