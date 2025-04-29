@@ -1626,6 +1626,7 @@ public:
                 LCOMPILERS_ASSERT(return_var)
                 ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
                 return_variable->m_intent = ASRUtils::intent_return_var;
+                return_variable->m_abi = current_procedure_abi_type;
             }
             
         }
