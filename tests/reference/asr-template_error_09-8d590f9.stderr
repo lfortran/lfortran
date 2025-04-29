@@ -1,5 +1,5 @@
-semantic error: Operator `==` undefined for the types in the expression `t == t`
-  --> tests/errors/template_error_09.f90:21:20
-   |
-21 |             prop = bin(x,y) == bin(y,x)
-   |                    ^^^^^^^^^^^^^^^^^^^^ 
+semantic error: Function already have result variable set
+ --> tests/errors/template_error_09.f90:7:50
+  |
+7 |         pure elemental function bin(x, y) result(bin)
+  |                                                  ^^^ 

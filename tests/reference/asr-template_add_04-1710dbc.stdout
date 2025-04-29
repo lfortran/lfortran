@@ -446,7 +446,7 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Public
+                                                    Private
                                                     Required
                                                     .false.
                                                     .false.
@@ -542,7 +542,7 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Public
+                                                    Private
                                                     Required
                                                     .false.
                                                     .false.

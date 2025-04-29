@@ -4,7 +4,7 @@ program template_03
         type, deferred :: T
         type, deferred :: U
         type, deferred :: V
-        elemental function op(a, b) result(op)
+        elemental function op(a, b)
             type(T), intent(in) :: a
             type(U), intent(in) :: b
             type(V) :: op
