@@ -4809,7 +4809,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         llvm::Value *ptr, *nptr;
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
-        visit_expr_wrapper(x.m_ptr, true);
+        visit_expr_wrapper(x.m_ptr, false);
         ptr = tmp;
 #if LLVM_VERSION_MAJOR > 16
         llvm::Type *ptr_arr_type = llvm_utils->get_type_from_ttype_t_util(
