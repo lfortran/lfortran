@@ -100,7 +100,7 @@ public:
             ASR::expr_t* flip_sign_result = PassUtils::get_flipsign(flip_sign_signal_variable,
                                             flip_sign_variable, al, unit, x.base.base.loc, pass_options);
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
-                    flip_sign_variable, flip_sign_result, nullptr)));
+                    flip_sign_variable, flip_sign_result, nullptr, false)));
         }
     }
 

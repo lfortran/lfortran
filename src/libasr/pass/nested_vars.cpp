@@ -708,12 +708,12 @@ public:
                             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
                         } else {
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
-                                                        target, val, nullptr));
+                                                        target, val, nullptr, false));
                             body.push_back(al, assignment);
                             if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
                                     ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In) {
                                 assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
-                                                val, target, nullptr));
+                                                val, target, nullptr, false));
                                 assigns_at_end.push_back(assignment);
                             }
                         }

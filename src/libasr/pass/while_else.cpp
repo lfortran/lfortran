@@ -44,7 +44,7 @@ public:
         ASR::expr_t *false_expr = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, bool_type));
         ASR::expr_t *flag_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, flag_map.at(loop_stack.top())));
         ASR::stmt_t *assign_stmt = ASRUtils::STMT(
-                ASRUtils::make_Assignment_t_util(al, loc, flag_expr, false_expr, nullptr));
+                ASRUtils::make_Assignment_t_util(al, loc, flag_expr, false_expr, nullptr, false));
         result.push_back(al, assign_stmt);
         result.push_back(al, ASRUtils::STMT(ASR::make_Exit_t(al, loc, nullptr)));
 
@@ -94,7 +94,7 @@ public:
             ASR::expr_t* flag_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, flag_symbol));
 
             ASR::stmt_t *assign_stmt = ASRUtils::STMT(
-                    ASRUtils::make_Assignment_t_util(al, loc, flag_expr, true_expr, nullptr));
+                    ASRUtils::make_Assignment_t_util(al, loc, flag_expr, true_expr, nullptr, false));
 
             ASR::stmt_t *while_stmt = (ASR::stmt_t*)(&x);
             flag_map[while_stmt] = flag_symbol;

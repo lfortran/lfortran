@@ -3882,7 +3882,7 @@ public:
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
                     ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
                     ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
-                        target, value, nullptr));
+                        target, value, nullptr, false));
                     body.push_back(al, assignment);
 
                     ASR::FunctionType_t *req_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);

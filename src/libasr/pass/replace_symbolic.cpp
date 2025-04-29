@@ -396,9 +396,9 @@ public:
                     CPtr_type, nullptr));
 
                 // defining the assignment statement
-                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target1, value1, nullptr));
-                ASR::stmt_t* stmt2 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target2, value2, nullptr));
-                ASR::stmt_t* stmt3 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target2, value3, nullptr));
+                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target1, value1, nullptr, false));
+                ASR::stmt_t* stmt2 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target2, value2, nullptr, false));
+                ASR::stmt_t* stmt3 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target2, value3, nullptr, false));
                 // statement 4
                 ASR::stmt_t* stmt4 = basic_new_stack(x.base.base.loc, target2);
 
@@ -469,7 +469,7 @@ public:
                 // Statement 1
                 ASR::expr_t* args = ASRUtils::EXPR(ASR::make_Var_t(al, loc, args_sym));
                 ASR::expr_t* function_call1 = vecbasic_new(loc);
-                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, args, function_call1, nullptr));
+                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, args, function_call1, nullptr, false));
                 pass_result.push_back(al, stmt1);
 
                 // Statement 2
@@ -540,7 +540,7 @@ public:
             } else if (intrinsic_func->m_type->type == ASR::ttypeType::Logical) {
                 if (is_logical_intrinsic_symbolic(x.m_value)) {
                     ASR::expr_t* function_call = process_attributes(x.base.base.loc, x.m_value);
-                    ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, function_call, nullptr));
+                    ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, function_call, nullptr, false));
                     pass_result.push_back(al, stmt);
                 }
             }
@@ -618,13 +618,13 @@ public:
 
                             ASR::expr_t* temp_list_const1 = ASRUtils::EXPR(ASR::make_ListConstant_t(al, x.base.base.loc, temp_list1.p,
                                             temp_list1.size(), list_type));
-                            ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, placeholder_target, temp_list_const1, nullptr));
+                            ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, placeholder_target, temp_list_const1, nullptr, false));
                             pass_result.push_back(al, stmt1);
 
                             // Step2: Add the empty list variable
                             ASR::expr_t* temp_list_const2 = ASRUtils::EXPR(ASR::make_ListConstant_t(al, x.base.base.loc, temp_list2.p,
                                             temp_list2.size(), list_type));
-                            ASR::stmt_t* stmt2 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, temp_list_const2, nullptr));
+                            ASR::stmt_t* stmt2 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, temp_list_const2, nullptr, false));
                             pass_result.push_back(al, stmt2);
 
                             // Step3: Add the list index to the function scope
@@ -637,7 +637,7 @@ public:
                             current_scope->add_symbol(symbolic_list_index, index_sym);
                             ASR::expr_t* index = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, index_sym));
                             ASR::stmt_t* stmt3 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, index,
-                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, int32_type)), nullptr));
+                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, int32_type)), nullptr, false));
                             pass_result.push_back(al, stmt3);
 
                             // Step4: Add the DoLoop for appending elements into the list
@@ -648,7 +648,7 @@ public:
                                 ASR::intentType::Local, ASR::abiType::Source, false);
                             Vec<ASR::stmt_t*> block_body; block_body.reserve(al, 1);
                             ASR::stmt_t* block_stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, tmp_var,
-                                basic_new_heap(x.base.base.loc), nullptr));
+                                basic_new_heap(x.base.base.loc), nullptr, false));
                             block_body.push_back(al, block_stmt1);
                             ASR::stmt_t* block_stmt2 = ASRUtils::STMT(ASR::make_ListAppend_t(al, x.base.base.loc, x.m_target, tmp_var));
                             block_body.push_back(al, block_stmt2);
@@ -689,7 +689,7 @@ public:
                 } else {
                     function_call = basic_compare(x.base.base.loc, "basic_neq", s->m_left, s->m_right);
                 }
-                ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, function_call, nullptr));
+                ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, function_call, nullptr, false));
                 pass_result.push_back(al, stmt);
             }
         }
