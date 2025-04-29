@@ -184,6 +184,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 circle_area)
                                     Private
@@ -285,6 +286,7 @@
                                             (Var 5 this)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -398,6 +400,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -411,6 +414,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (SubroutineCall
                                         6 1_circle_print

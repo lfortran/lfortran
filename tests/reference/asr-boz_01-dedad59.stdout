@@ -74,6 +74,7 @@
                             (IntegerConstant 93 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 boz_2)
@@ -85,6 +86,7 @@
                             (IntegerConstant 1255 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 boz_3)
@@ -96,6 +98,7 @@
                             (IntegerConstant 2748 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

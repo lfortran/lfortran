@@ -86,21 +86,25 @@
                         (Var 2 from)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 from8)
                         (IntegerConstant 10 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to8)
                         (IntegerConstant 4 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to)
@@ -116,6 +120,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -157,6 +162,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -203,6 +209,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -244,6 +251,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -284,11 +292,13 @@
                             (IntegerConstant -20 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 from8)
@@ -298,11 +308,13 @@
                             (IntegerConstant -20 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to8)
                         (IntegerConstant 4 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to)
@@ -318,6 +330,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -363,6 +376,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -413,6 +427,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -458,6 +473,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

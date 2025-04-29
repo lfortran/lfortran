@@ -5375,7 +5375,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
         // Check if the underlying struct instance is allocated, if not allocate
-        if (compiler_options.po.realloc_lhs &&
+        if (x.m_realloc_lhs &&
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
             if (ASRUtils::is_allocatable(ASRUtils::expr_type(sim->m_v))) {
@@ -5718,7 +5718,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                                 dict_type->m_key_type,
                                 dict_type->m_value_type, name2memidx);
         } else if (ASRUtils::is_allocatable(target_type)) {
-            if (compiler_options.po.realloc_lhs) {
+            if (x.m_realloc_lhs) {
                 ASR::ttype_t* asr_type = ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(
                     ASRUtils::expr_type(x.m_target)));

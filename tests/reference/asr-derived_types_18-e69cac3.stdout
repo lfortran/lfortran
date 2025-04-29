@@ -115,6 +115,7 @@
                         )
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -130,6 +131,7 @@
                         )
                         (Var 5 type_1)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -143,6 +145,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

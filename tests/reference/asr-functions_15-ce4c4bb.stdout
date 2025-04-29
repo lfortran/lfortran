@@ -112,6 +112,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 f)
                                     Public
@@ -136,6 +137,7 @@
                         (Var 4 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 4 b)
@@ -149,6 +151,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         4 sub_1
@@ -463,6 +466,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (If
                                             (IntrinsicElementalFunction
@@ -493,6 +497,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 3 b)
@@ -504,6 +509,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                         [(Assignment
@@ -521,6 +527,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (If
                                             (IntrinsicElementalFunction
@@ -551,6 +558,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 3 b)
@@ -562,6 +570,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                     )]

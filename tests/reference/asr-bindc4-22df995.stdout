@@ -275,6 +275,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -288,6 +289,7 @@
                         )
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Associate
                         (Var 2 x)
@@ -676,6 +678,7 @@
                             (CPtr)
                         )
                         ()
+                        .false.
                     )]
                 ),
             iso_c_binding:

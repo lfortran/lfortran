@@ -258,6 +258,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -284,6 +285,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -452,6 +454,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -473,6 +476,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -715,6 +719,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 fptwo)
@@ -723,6 +728,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 fpzero)
@@ -731,16 +737,19 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 ione)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 izero)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 negfpone)
@@ -756,6 +765,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 6 c)
@@ -772,6 +782,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         6 1_integer_add_subrout

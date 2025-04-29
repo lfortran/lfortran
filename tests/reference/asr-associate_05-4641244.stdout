@@ -218,6 +218,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Associate
                                         (Var 3 v)
@@ -238,6 +239,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -268,6 +270,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -320,6 +323,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -396,6 +400,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                 ),
                             myreal:
@@ -542,6 +547,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -580,6 +586,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 myreal)
@@ -611,6 +618,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 theta)
@@ -649,6 +657,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -687,6 +696,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (AssociateBlockCall
                         2 associate_block

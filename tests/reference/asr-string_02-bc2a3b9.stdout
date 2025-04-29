@@ -89,6 +89,7 @@
                             (String 1 4 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 firstname)
@@ -97,6 +98,7 @@
                             (String 1 6 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 surname)
@@ -105,6 +107,7 @@
                             (String 1 8 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 greetings)
@@ -113,6 +116,7 @@
                             (String 1 25 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

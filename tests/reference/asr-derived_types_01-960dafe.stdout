@@ -226,6 +226,7 @@
                         )
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -239,6 +240,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -318,6 +320,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -348,6 +351,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -373,6 +377,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -618,6 +623,7 @@
                                         )
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -631,6 +637,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public

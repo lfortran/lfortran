@@ -65,7 +65,7 @@ static inline ASR::asr_t* make_Assignment_t_util(
     a_value = expr_duplicator.duplicate_expr(a_value);
 
     exprs_with_target[a_value] = std::make_pair(a_target, targetType::GeneratedTarget);
-    return ASR::make_Assignment_t(al, a_loc, a_target, a_value, a_overloaded);
+    return ASRUtils::make_Assignment_t_util(al, a_loc, a_target, a_value, a_overloaded, false);
 }
 
 /*
@@ -1801,8 +1801,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
             array_expr_ptr = create_temporary_variable_for_array(
                 al, loc, current_scope, "_array_section_copy_", simd_type);
-            current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, loc, array_expr_ptr, *current_expr, nullptr)));
+            current_body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, array_expr_ptr, *current_expr, nullptr, false)));
             *current_expr = array_expr_ptr;
             return ;
         }

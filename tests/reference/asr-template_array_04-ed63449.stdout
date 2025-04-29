@@ -216,6 +216,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             4 swap
@@ -345,16 +346,19 @@
                                                         (Var 5 tmp)
                                                         (Var 5 x)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 5 x)
                                                         (Var 5 y)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 5 y)
                                                         (Var 5 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -478,16 +482,19 @@
                                                         (Var 10 tmp)
                                                         (Var 10 x)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 x)
                                                         (Var 10 y)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 y)
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -643,6 +650,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             7 __asr_swap
@@ -707,6 +715,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                     )
                                     (SubroutineCall
                                         7 ireverse

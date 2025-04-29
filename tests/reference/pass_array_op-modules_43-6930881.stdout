@@ -303,6 +303,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 __1__libasr_index_)
@@ -314,6 +315,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (DoLoop
                                             ()
@@ -363,6 +365,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )
                                             (Assignment
                                                 (Var 4 __1__libasr_index_)
@@ -374,6 +377,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             []
                                         )
@@ -502,6 +506,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 __1__libasr_index_)
@@ -559,6 +564,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     ()

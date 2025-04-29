@@ -162,6 +162,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 7 z)
                                                     Public
@@ -542,6 +543,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 10 z)
                                                     Public
@@ -681,6 +683,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 9 ret)
                                                     Public
@@ -713,6 +716,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 8 y)
@@ -721,6 +725,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat

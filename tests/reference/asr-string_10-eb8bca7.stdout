@@ -128,6 +128,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -145,6 +146,7 @@
                             (String 1 2 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 is_alpha)
@@ -204,6 +206,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -221,6 +224,7 @@
                             (String 1 2 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 is_alpha)
@@ -280,6 +284,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -322,6 +327,7 @@
                             (String 1 3 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (StringCompare

@@ -1304,21 +1304,25 @@
                         (Var 2 ny)
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 nx)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 nz)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 nk)
                         (IntegerConstant 6 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (DoConcurrentLoop
                         [((Var 2 ix)

@@ -49,6 +49,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                 ),
             nested_01_a:
@@ -130,6 +131,7 @@
                                                         (Var 4 d)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 4 d)
                                                     Public
@@ -190,11 +192,13 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 b)
                                     Public

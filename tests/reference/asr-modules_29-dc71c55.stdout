@@ -135,6 +135,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -155,6 +156,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 17 self)
                                     Public
@@ -677,6 +679,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public

@@ -264,6 +264,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 27 avg)
                                                     Public
@@ -420,6 +421,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 25 avg)
                                                     Private
@@ -489,6 +491,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -631,6 +634,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 total)
                                     Public
@@ -727,6 +731,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 total)
                                     Public
@@ -1414,6 +1419,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 17 avg)
                                                     Private
@@ -1596,6 +1602,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 16 avg)
                                                     Public
@@ -2256,6 +2263,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 21 avg)
                                                     Private
@@ -2437,6 +2445,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 22 avg)
                                                     Public

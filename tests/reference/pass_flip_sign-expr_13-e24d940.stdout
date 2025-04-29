@@ -242,6 +242,7 @@
                         (Var 2 number)
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -250,6 +251,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -274,6 +276,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -316,6 +319,7 @@
                         (Var 2 number)
                         (IntegerConstant 124 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -324,6 +328,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -348,6 +353,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )

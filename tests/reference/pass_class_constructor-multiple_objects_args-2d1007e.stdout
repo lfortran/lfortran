@@ -177,6 +177,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -269,6 +270,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -282,6 +284,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         2 print_radius

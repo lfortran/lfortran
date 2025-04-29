@@ -66,6 +66,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -82,6 +83,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -98,6 +100,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -114,6 +117,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -130,6 +134,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

@@ -35,6 +35,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         1 x
@@ -49,6 +50,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         1 y
@@ -255,6 +257,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

@@ -356,11 +356,13 @@
                             (String 1 7 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 i1)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

@@ -239,11 +239,13 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 8 target)
                                                         (Var 5 i)
                                                         ()
+                                                        .false.
                                                     )]
                                                 ),
                                             i:
@@ -418,6 +420,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -458,6 +461,7 @@
                                                         )
                                                         (IntegerConstant 345 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
                                                     )]
                                                 ),
                                             progress:
