@@ -1,0 +1,5 @@
+style suggestion: Use 'end do' instead of 'enddo'
+  --> tests/../integration_tests/format_23.f90:16:4
+   |
+16 |    enddo INFINITE
+   |    ^^^^^ help: write this as 'end do'

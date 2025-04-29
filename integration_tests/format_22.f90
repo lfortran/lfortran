@@ -4,10 +4,18 @@ program format_22
   integer(8) :: x8, y8, z8
   integer(1) :: x1, y1, z1
   integer(2) :: x2, y2, z2
-  x = 21, y = 100, z = 0
-  x8 = 31, y8 = 10, z8 = 0
-  x1 = 11, y1 = 10, z1 = 0
-  x2 = 9, y2 = 42, z2 = 0
+  x = 21
+  y = 100
+  z = 0
+  x8 = 31
+  y8 = 10
+  z8 = 0
+  x1 = 11
+  y1 = 10
+  z1 = 0
+  x2 = 9
+  y2 = 42
+  z2 = 0
   print *, "b format for integer(4)"
   print '(B0)', x
   print '(B1)', x
