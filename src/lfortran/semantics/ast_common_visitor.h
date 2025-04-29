@@ -2802,17 +2802,17 @@ public:
 
     bool is_declaration_depending_on_unresolved_genericProcedure_call(const AST::Declaration_t &x){
        if(generic_procedures.empty()) return false;
-        /*  
-            Check for generic procedure call in the dimension attribute 
-            e.g. : `integer, DIMENSION(func_generic(),20) :: arr` 
+        /*
+            Check for generic procedure call in the dimension attribute
+            e.g. : `integer, DIMENSION(func_generic(),20) :: arr`
         */
         for(size_t i = 0; i < x.n_attributes; i++){
             if(AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])){
                 AST::AttrDimension_t* attr_dim = AST::down_cast<AST::AttrDimension_t>(x.m_attributes[i]);
                 for(size_t j = 0; j< attr_dim->n_dim; j++){
                     for(AST::expr_t* dim_expr : {attr_dim->m_dim[j].m_start, attr_dim->m_dim[j].m_end}){
-                        if( dim_expr && 
-                            dim_expr->type == AST::exprType::FuncCallOrArray && 
+                        if( dim_expr &&
+                            dim_expr->type == AST::exprType::FuncCallOrArray &&
                             generic_procedures.find(
                                 (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
                             != generic_procedures.end()){
@@ -2831,7 +2831,7 @@ public:
             for(size_t j = 0 ; j < s.n_dim; j++){
                 for(AST::expr_t* dim_expr : {s.m_dim[j].m_start, s.m_dim[j].m_end}){
                     if( dim_expr &&
-                        dim_expr->type == AST::exprType::FuncCallOrArray && 
+                        dim_expr->type == AST::exprType::FuncCallOrArray &&
                         generic_procedures.find(
                             (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
                         != generic_procedures.end()){

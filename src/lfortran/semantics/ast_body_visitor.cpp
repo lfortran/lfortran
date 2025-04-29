@@ -426,7 +426,7 @@ public:
                             Label("",{x.base.base.loc})
                         }));
                     throw SemanticAbort();
-                } 
+                }
             } else if (m_arg_str == std::string("iomsg")) {
                 if( a_iomsg != nullptr ) {
                     diag.add(Diagnostic(
@@ -457,7 +457,7 @@ public:
                 }
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_iomsg))) {
                     a_iomsg = ASRUtils::cast_string_descriptor_to_pointer(al, a_iomsg);
-                } 
+                }
             } else {
                 const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "action", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
@@ -3249,7 +3249,7 @@ public:
                         ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(value);
                         if (ASR::is_a<ASR::ArrayConstructor_t>(*array_reshape->m_array) && ASR::is_a<ASR::ImpliedDoLoop_t>(**ASR::down_cast<ASR::ArrayConstructor_t>(array_reshape->m_array)->m_args)) {
                             ASR::Array_t* array_reshape_array_type = ASR::down_cast<ASR::Array_t>(array_reshape->m_type);
-                            Vec<ASR::dimension_t> array_reshape_dims; 
+                            Vec<ASR::dimension_t> array_reshape_dims;
                             array_reshape_dims.reserve(al, array_reshape_array_type->n_dims);
                             for (size_t i=0;i<array_reshape_array_type->n_dims;i++) {
                                 array_reshape_dims.push_back(al, array_reshape_array_type->m_dims[i]);
