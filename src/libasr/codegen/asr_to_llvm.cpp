@@ -9862,7 +9862,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             if (llvm_utils->getClassType(s_m_args0_type, true) == llvm_utils->getClassType(arg_type, true)) {
                 return dt;
             }
-            ASR::ClassType_t* class_t = ASR::down_cast<ASR::ClassType_t>(ASRUtils::type_get_past_array(arg_type));
+            ASR::ClassType_t* class_t = ASR::down_cast<ASR::ClassType_t>(ASRUtils::extract_type(arg_type));
             ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(class_t->m_class_type);
             if( type2vtab.find(struct_sym) == type2vtab.end() &&
                 type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
@@ -9881,7 +9881,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             dt = llvm_utils->create_gep2(dt_base_type, dt, 1);
             dt = llvm_utils->CreateLoad2(dt_base_type->getPointerTo(),dt);
 
-            ASR::ClassType_t* dest_class = ASR::down_cast<ASR::ClassType_t>(ASRUtils::type_get_past_array(s_m_args0_type));
+            ASR::ClassType_t* dest_class = ASR::down_cast<ASR::ClassType_t>(ASRUtils::extract_type(s_m_args0_type));
             ASR::symbol_t* dest_struct_sym = ASRUtils::symbol_get_past_external(dest_class->m_class_type);
             llvm::Type* dest_ty = name2dertype[ASRUtils::symbol_name(dest_struct_sym)]->getPointerTo();
             dt = builder->CreateBitCast(dt, dest_ty);
