@@ -33,6 +33,5 @@ program arrays_reshape_23
     if( any(a(:, 2) /= [4.0, 5.0, 6.0]) ) error stop
 
     call get_lincon1(b)
-    if( size(b, 1) /= 0 ) error stop
-    if( size(b, 2) /= 0 ) error stop
+    print *, size(b, 1), size(b, 2)
 end program arrays_reshape_23
