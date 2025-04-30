@@ -1571,7 +1571,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                         }
                     } else {
                         int padding_needed = width - bin_len;
-                        char pad_char = (fmt_type == 'i') ? ' ' : '0';
+                        char pad_char = ' ';
                         if (padding_needed > 0) {
                             char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
                             memset(pad, pad_char, padding_needed);
