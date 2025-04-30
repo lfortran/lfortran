@@ -54,6 +54,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             newshape:
                                 (Variable
@@ -77,6 +78,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             queries:
                                 (Variable
@@ -95,6 +97,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -122,6 +125,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             xv:
                                 (Variable
@@ -147,6 +151,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 )
                         })
                     bindc2

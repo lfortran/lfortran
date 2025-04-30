@@ -35,6 +35,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             message:
                                 (Variable
@@ -55,6 +56,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             num:
                                 (Variable
@@ -73,6 +75,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string:
                                 (Variable
@@ -93,6 +96,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     allocate_04

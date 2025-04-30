@@ -54,6 +54,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             queries:
                                 (Variable
@@ -72,6 +73,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -92,6 +94,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -110,6 +113,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 )
                         })
                     bindc3
