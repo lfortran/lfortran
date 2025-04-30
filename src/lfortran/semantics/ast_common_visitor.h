@@ -3430,7 +3430,7 @@ public:
                 bool target_attr = false;
                 bool contig_attr = false;
                 bool value_attr = false;
-                char *bindc_name=nullptr;
+                char *bindc_name = nullptr;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
