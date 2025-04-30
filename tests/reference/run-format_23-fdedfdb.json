@@ -2,12 +2,12 @@
     "basename": "run-format_23-fdedfdb",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/../integration_tests/format_23.f90",
-    "infile_hash": "f4bcb4d8eb240c21bf57a6916c458f3631e29398ba72f8a710e8b3c5",
+    "infile_hash": "ed10c322714afdc86cceeb03cfb60fce8c15d3b5e9c03df061e2ca56",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-format_23-fdedfdb.stdout",
-    "stdout_hash": "ca7188f8addad91635adda650e1adb92a75ad8de049a6ed0bd425b2d",
-    "stderr": "run-format_23-fdedfdb.stderr",
-    "stderr_hash": "d39bb00019df7e96043f9e51c4d0b3736f4909e42bfe71eef38a4ff4",
+    "stdout_hash": "4a8f73290e4f60373242bec2b4360d8b5406de116f313eae712b6a57",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }
