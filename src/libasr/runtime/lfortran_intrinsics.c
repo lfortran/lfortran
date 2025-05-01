@@ -3620,15 +3620,14 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
             exit(1);
         }
 
+        // converting token to lowecase
+        for (int i = 0; token[i]; ++i) token[i] = tolower((unsigned char) token[i]);
+
         // Check for logical values
-        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || 
-            strcmp(token, "1") == 0 || strcmp(token, "True") == 0) {
-            *p = true;
-        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || 
-                   strcmp(token, "0") == 0 || strcmp(token, "False") == 0) {
-            *p = false;
-        } else {
-            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., 1 or 0.\n", token);
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
             exit(1);
         }
         return;
@@ -3647,16 +3646,15 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
             fprintf(stderr, "Error: Failed to read logical from binary file.\n");
             exit(1);
         }
-    } else {
+    } 
+    else {
         // Read logical from text file (fscanf handles the logical format)
         char token[100] = {0};    // Initialize token to avoid garbage values
         if (fscanf(filep, "%99s", token) != 1) {
-        fprintf(stderr, "Error: Invalid logical input from file.\n");
-        // debug step: printing the token to see what was read before failure
-        printf("Read token: '%s'\n", token);  // This will print what's in token
-
-        exit(1);
-    }
+            fprintf(stderr, "Error: Invalid logical input from file.\n");
+            printf("Read token: '%s'\n", token);  // debugging purpose
+            exit(1);
+        }
 
         // Sanitize the token (removes trailing \r or \n characters)
         int len = strlen(token);
@@ -3665,15 +3663,16 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
             len--;
         }
 
-        // Check for logical values
-        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0 || 
-            strcmp(token, "1") == 0 || strcmp(token, "True") == 0 || strcmp(token, "TRUE") == 0) {
-            *p = true;
-        } else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0 || 
-                   strcmp(token, "0") == 0 || strcmp(token, "False") == 0 || strcmp(token, "FALSE") == 0) {
-            *p = false;
-        } else {
-            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., 1 or 0.\n", token);
+        // updated fix: Convert to lowercase for consistent comparison
+        for (int i = 0; token[i]; ++i) {
+            token[i] = tolower((unsigned char) token[i]);
+        }
+
+        // comparing once
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
             exit(1);
         }
     }
