@@ -26,6 +26,64 @@ using LCompilers::diag::Diagnostic;
 
 namespace LCompilers::LFortran {
 
+template <typename T>
+void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
+    if (x.m_bind) {
+        AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(x.m_bind);
+        if (bind->n_args == 1) {
+            if (AST::is_a<AST::Name_t>(*bind->m_args[0])) {
+                AST::Name_t *name = AST::down_cast<AST::Name_t>(
+                    bind->m_args[0]);
+                if (to_lower(std::string(name->m_id)) == "c") {
+                    abi_type=ASR::abiType::BindC;
+                } else if (to_lower(std::string(name->m_id)) == "js") {
+                    abi_type=ASR::abiType::BindJS;
+                } else {
+                    diag.add(diag::Diagnostic(
+                        "Unsupported language in bind()",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            } else {
+                    diag.add(diag::Diagnostic(
+                        "Language name must be specified in bind() as plain text",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+            }
+        } else {
+            diag.add(diag::Diagnostic(
+                "At least one argument needed in bind()",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (bind->n_kwargs == 1) {
+            char *arg = bind->m_kwargs[0].m_arg;
+            AST::expr_t *value = bind->m_kwargs[0].m_value;
+            if (to_lower(std::string(arg)) == "name") {
+                if (AST::is_a<AST::String_t>(*value)) {
+                    AST::String_t *name = AST::down_cast<AST::String_t>(value);
+                    bindc_name = name->m_s;
+                } else {
+                    diag.add(diag::Diagnostic(
+                        "The value of the 'name' keyword argument in bind(c) must be a string",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            } else {
+                diag.add(diag::Diagnostic(
+                    "Unsupported keyword argument in bind()",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+}
+
 uint64_t static inline get_hash(ASR::asr_t *node)
 {
     return (uint64_t)node;
@@ -3372,6 +3430,7 @@ public:
                 bool target_attr = false;
                 bool contig_attr = false;
                 bool value_attr = false;
+                char *bindc_name = nullptr;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
@@ -3541,6 +3600,9 @@ public:
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                                 s_intent == ASRUtils::intent_inout) || is_argument);
+                        } else if (AST::is_a<AST::AttrBind_t>(*a)) {
+                            AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
+                            extract_bind(attr_bd, s_abi, bindc_name, diag);
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute type not implemented yet",
@@ -3674,7 +3736,8 @@ public:
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
-                                value_attr, target_attr, contig_attr);
+                                value_attr, target_attr, contig_attr, bindc_name
+                            );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
                         }

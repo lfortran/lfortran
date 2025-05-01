@@ -31,6 +31,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             str:
                                 (Variable
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             user_data:
                                 (Variable
@@ -76,6 +78,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     string_04

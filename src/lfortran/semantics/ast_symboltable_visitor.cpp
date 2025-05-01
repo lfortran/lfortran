@@ -20,64 +20,6 @@
 
 namespace LCompilers::LFortran {
 
-template <typename T>
-void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
-    if (x.m_bind) {
-        AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(x.m_bind);
-        if (bind->n_args == 1) {
-            if (AST::is_a<AST::Name_t>(*bind->m_args[0])) {
-                AST::Name_t *name = AST::down_cast<AST::Name_t>(
-                    bind->m_args[0]);
-                if (to_lower(std::string(name->m_id)) == "c") {
-                    abi_type=ASR::abiType::BindC;
-                } else if (to_lower(std::string(name->m_id)) == "js") {
-                    abi_type=ASR::abiType::BindJS;
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "Unsupported language in bind()",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            } else {
-                    diag.add(diag::Diagnostic(
-                        "Language name must be specified in bind() as plain text",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-            }
-        } else {
-            diag.add(diag::Diagnostic(
-                "At least one argument needed in bind()",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-        if (bind->n_kwargs == 1) {
-            char *arg = bind->m_kwargs[0].m_arg;
-            AST::expr_t *value = bind->m_kwargs[0].m_value;
-            if (to_lower(std::string(arg)) == "name") {
-                if (AST::is_a<AST::String_t>(*value)) {
-                    AST::String_t *name = AST::down_cast<AST::String_t>(value);
-                    bindc_name = name->m_s;
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "The value of the 'name' keyword argument in bind(c) must be a string",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            } else {
-                diag.add(diag::Diagnostic(
-                    "Unsupported keyword argument in bind()",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-        }
-    }
-}
-
 class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
     struct ClassProcInfo {

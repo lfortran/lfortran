@@ -1,0 +1,67 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            bindc_06:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
+                                    Public
+                                ),
+                            p:
+                                (Variable
+                                    2
+                                    p
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    "x"
+                                ),
+                            q:
+                                (Variable
+                                    2
+                                    q
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (CPtr)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    "y"
+                                )
+                        })
+                    bindc_06
+                    [iso_c_binding]
+                    []
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
+        })
+    []
+)

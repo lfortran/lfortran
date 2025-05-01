@@ -41,6 +41,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             c_associated:
                                 (ExternalSymbol
@@ -324,6 +325,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r_ptr:
                                 (Variable
@@ -349,6 +351,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             temp_ptr:
                                 (Variable
@@ -367,6 +370,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             test_obj:
                                 (Struct
@@ -394,6 +398,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     test_obj
