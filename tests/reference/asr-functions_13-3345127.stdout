@@ -182,6 +182,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     test_verify_intrinsic
@@ -378,6 +379,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 r)
                                     Public

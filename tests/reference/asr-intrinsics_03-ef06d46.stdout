@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             dp:
                                 (ExternalSymbol
@@ -56,6 +57,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r1:
                                 (Variable
@@ -74,6 +76,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r2:
                                 (Variable
@@ -92,6 +95,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -110,6 +114,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     intrinsics_03
@@ -121,6 +126,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -138,6 +144,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare
@@ -330,6 +337,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 r2)
@@ -345,6 +353,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare

@@ -69,6 +69,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             cpath:
                                                 (Variable
@@ -94,6 +95,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -114,6 +116,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             tmp:
                                                 (Variable
@@ -132,6 +135,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     get_current_directory
@@ -175,6 +179,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (PointerAssociated
@@ -226,6 +231,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             bufsize:
                                                 (Variable
@@ -244,6 +250,7 @@
                                                     .true.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -262,6 +269,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     getcwd

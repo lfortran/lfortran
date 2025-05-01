@@ -2157,6 +2157,8 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
     return nullptr;
 }
 
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
+
 static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
     asr_type = ASRUtils::type_get_past_array(asr_type);
     int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
@@ -2815,6 +2817,10 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
 
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
 
+ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
+    ASR::expr_t* a_target, ASR::expr_t* a_value,
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs);
+
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
@@ -2824,9 +2830,14 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
-    bool a_value_attr, bool a_target_attr = false, bool contiguous_attr = false) {
-    return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies, n_dependencies, a_intent,
-    a_symbolic_value,  a_value,  a_storage,  a_type,  a_type_declaration,  a_abi, a_access, a_presence, a_value_attr, a_target_attr, contiguous_attr);
+    bool a_value_attr, bool a_target_attr = false, bool contiguous_attr = false,
+    char* a_bindc_name=nullptr
+) {
+    return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
+        n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage,  a_type,
+        a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
+        a_target_attr,contiguous_attr, a_bindc_name
+    );
 }
 
 inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
@@ -5369,22 +5380,28 @@ static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
 }
 
 class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression> {
-    private:
+private:
 
         Allocator& al;
         SetChar& identifiers;
         std::string current_name;
 
-    public:
+public:
 
+// Constructors
         CollectIdentifiersFromASRExpression(Allocator& al_, SetChar& identifiers_, std::string current_name_ = "") :
         al(al_), identifiers(identifiers_), current_name(current_name_)
         {}
 
+// Visitors
         void visit_Var(const ASR::Var_t& x) {
             if (ASRUtils::symbol_name(x.m_v) != this->current_name) {
                 identifiers.push_back(al, ASRUtils::symbol_name(x.m_v));
             }
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x){
+            identifiers.push_back(al, ASRUtils::symbol_name(x.m_name));
+            ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression>::visit_FunctionCall(x);
         }
 };
 

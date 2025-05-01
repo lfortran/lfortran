@@ -119,6 +119,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -137,6 +138,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -157,6 +159,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_push_back
@@ -195,6 +198,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         9 1_intvector_resize
@@ -226,6 +230,7 @@
                                                         )
                                                         (Var 9 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -236,6 +241,7 @@
                                                         )
                                                         (Var 9 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -285,6 +291,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -303,6 +310,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -323,6 +331,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -348,6 +357,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_resize
@@ -494,6 +504,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -552,6 +563,7 @@
                                                         )
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -588,6 +600,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (ClassProcedure
@@ -628,6 +641,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     intvector
@@ -665,6 +679,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     main
@@ -788,6 +803,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -806,6 +822,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -826,6 +843,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     push_back
@@ -866,6 +884,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         5 1_resize
@@ -901,6 +920,7 @@
                                                         )
                                                         (Var 5 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -911,6 +931,7 @@
                                                         )
                                                         (Var 5 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -960,6 +981,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -978,6 +1000,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -998,6 +1021,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1025,6 +1049,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     resize
@@ -1181,6 +1206,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -1245,6 +1271,7 @@
                                                         )
                                                         (Var 6 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1271,6 +1298,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             vector:
                                                 (Struct
@@ -1303,6 +1331,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (ClassProcedure
@@ -1343,6 +1372,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     vector
