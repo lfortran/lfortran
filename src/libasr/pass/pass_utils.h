@@ -261,6 +261,42 @@ namespace LCompilers {
             return arg;
         }
 
+
+        static inline ASR::symbol_t* get_struct_member(Allocator& al, ASR::symbol_t* struct_type_sym, std::string &call_name,
+                const Location &loc, SymbolTable* current_scope) {
+            ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(struct_type_sym);
+            std::string struct_var_name = struct_type->m_name;
+            std::string struct_member_name = call_name;
+            ASR::symbol_t* struct_member = struct_type->m_symtab->resolve_symbol(struct_member_name);
+            ASR::symbol_t* struct_mem_asr_owner = ASRUtils::get_asr_owner(struct_member);
+            if( !struct_member || !struct_mem_asr_owner ||
+                !ASR::is_a<ASR::Struct_t>(*struct_mem_asr_owner) ) {
+                throw LCompilersException(struct_member_name + " not present in " +
+                                    struct_var_name + " dataclass");
+            }
+            std::string import_name = struct_var_name + "_" + struct_member_name;
+            ASR::symbol_t* import_struct_member = current_scope->resolve_symbol(import_name);
+            bool import_from_struct = true;
+            if( import_struct_member ) {
+                if( ASR::is_a<ASR::ExternalSymbol_t>(*import_struct_member) ) {
+                    ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(import_struct_member);
+                    if( ext_sym->m_external == struct_member &&
+                        std::string(ext_sym->m_module_name) == struct_var_name ) {
+                        import_from_struct = false;
+                    }
+                }
+            }
+            if( import_from_struct ) {
+                import_name = current_scope->get_unique_name(import_name, false);
+                import_struct_member = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                            loc, current_scope, s2c(al, import_name),
+                                            struct_member, s2c(al, struct_var_name), nullptr, 0,
+                                            s2c(al, struct_member_name), ASR::accessType::Public));
+                current_scope->add_symbol(import_name, import_struct_member);
+            }
+            return import_struct_member;
+        }
+
         template <class StructType>
         class PassVisitor: public ASR::ASRPassBaseWalkVisitor<StructType> {
 
@@ -624,87 +660,124 @@ namespace LCompilers {
             Vec<ASR::stmt_t*>* result_vec,
             bool perform_cast=false,
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-            ASR::ttype_t* casted_type=nullptr) {
-            if( x->n_args == 0 ) {
-                if( !inside_symtab ) {
-                    remove_original_statement = true;
-                }
-                return ;
-            }
-            if( replacer->result_var == nullptr ) {
-                std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
-                replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
-                                    result_var_name, replacer->al, replacer->current_scope, x->m_type);
-                *replacer->current_expr = replacer->result_var;
-            } else {
-                if( inside_symtab ) {
-                    *replacer->current_expr = nullptr;
-                } else {
-                    remove_original_statement = true;
-                }
-            }
+            ASR::ttype_t* casted_type=nullptr{
 
-            std::deque<ASR::symbol_t*> constructor_arg_syms;
             ASR::StructType_t* dt_der = ASR::down_cast<ASR::StructType_t>(x->m_type);
             ASR::Struct_t* dt_dertype = ASR::down_cast<ASR::Struct_t>(
-                                            ASRUtils::symbol_get_past_external(dt_der->m_derived_type));
-            while( dt_dertype ) {
-                for( int i = (int) dt_dertype->n_members - 1; i >= 0; i-- ) {
-                    constructor_arg_syms.push_front(
-                        dt_dertype->m_symtab->get_symbol(
-                            dt_dertype->m_members[i]));
-                }
-                if( dt_dertype->m_parent != nullptr ) {
-                    ASR::symbol_t* dt_der_sym = ASRUtils::symbol_get_past_external(
-                                            dt_dertype->m_parent);
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*dt_der_sym));
-                    dt_dertype = ASR::down_cast<ASR::Struct_t>(dt_der_sym);
-                } else {
-                    dt_dertype = nullptr;
-                }
-            }
-            LCOMPILERS_ASSERT(constructor_arg_syms.size() == x->n_args);
+                                                ASRUtils::symbol_get_past_external(dt_der->m_derived_type));
 
-            for( size_t i = 0; i < x->n_args; i++ ) {
-                if( x->m_args[i].m_value == nullptr ) {
-                    continue ;
-                }
-                ASR::symbol_t* member = constructor_arg_syms[i];
-                if( ASR::is_a<ASR::StructConstructor_t>(*x->m_args[i].m_value) ) {
-                    ASR::expr_t* result_var_copy = replacer->result_var;
-                    ASR::symbol_t *v = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*result_var_copy)) {
-                        v = ASR::down_cast<ASR::Var_t>(result_var_copy)->m_v;
-                    }
-                    replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
-                                                x->base.base.loc, (ASR::asr_t*) result_var_copy, v,
-                                                member, replacer->current_scope));
-                    ASR::expr_t** current_expr_copy = replacer->current_expr;
-                    replacer->current_expr = &(x->m_args[i].m_value);
-                    replacer->replace_expr(x->m_args[i].m_value);
-                    replacer->current_expr = current_expr_copy;
-                    replacer->result_var = result_var_copy;
+            if (dt_dertype->n_member_functions > 0) {
+                if( replacer->result_var == nullptr ) {
+                    std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
+                    replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
+                                        result_var_name, replacer->al, replacer->current_scope, x->m_type);
+                    *replacer->current_expr = replacer->result_var;
                 } else {
-                    ASR::symbol_t *v = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*replacer->result_var)) {
-                        v = ASR::down_cast<ASR::Var_t>(replacer->result_var)->m_v;
+                    if( inside_symtab ) {
+                        *replacer->current_expr = nullptr;
+                    } else {
+                        remove_original_statement = true;
                     }
-                    ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
-                                                    x->base.base.loc, (ASR::asr_t*) replacer->result_var, v,
-                                                    member, replacer->current_scope));
-                    ASR::expr_t* x_m_args_i = x->m_args[i].m_value;
-                    if( perform_cast ) {
-                        LCOMPILERS_ASSERT(casted_type != nullptr);
-                        x_m_args_i = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, x->base.base.loc,
-                            x_m_args_i, cast_kind, casted_type, nullptr));
-                    }
-                    ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
-                                                x->base.base.loc, derived_ref,
-                                                x_m_args_i, nullptr));
-                    result_vec->push_back(replacer->al, assign);
                 }
+
+                std::string call_name = "__init__";
+                ASR::symbol_t* init_func_sym = get_struct_member(replacer->al, dt_der->m_derived_type, call_name,
+                                            x->base.base.loc, replacer->current_scope);
+                size_t f_args = x->n_args + 1; 
+                Vec<ASR::call_arg_t> s_args;
+                s_args.reserve(replacer->al, f_args);
+
+                ASR::call_arg_t result_arg;
+                result_arg.loc = replacer->result_var->base.loc;
+                result_arg.m_value = replacer->result_var;
+                s_args.push_back(replacer->al, result_arg);
+                for( size_t i = 0; i < x->n_args; i++ ) {
+                    s_args.push_back(replacer->al, x->m_args[i]);
+                }
+                result_vec->push_back(replacer->al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(replacer->al, 
+                                    x->base.base.loc, init_func_sym, nullptr, s_args.p, f_args, nullptr, nullptr, false, false)));
+
+                    return;
+                remove_original_statement = true;
+            } else {
+                if( x->n_args == 0 ) {
+                    if( !inside_symtab ) {
+                        remove_original_statement = true;
+                    }
+                    return ;
+                }
+                if( replacer->result_var == nullptr ) {
+                    std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
+                    replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
+                                        result_var_name, replacer->al, replacer->current_scope, x->m_type);
+                    *replacer->current_expr = replacer->result_var;
+                } else {
+                    if( inside_symtab ) {
+                        *replacer->current_expr = nullptr;
+                    } else {
+                        remove_original_statement = true;
+                    }
+                }
+
+                std::deque<ASR::symbol_t*> constructor_arg_syms;
+                while( dt_dertype ) {
+                    for( int i = (int) dt_dertype->n_members - 1; i >= 0; i-- ) {
+                        constructor_arg_syms.push_front(
+                            dt_dertype->m_symtab->get_symbol(
+                                dt_dertype->m_members[i]));
+                    }
+                    if( dt_dertype->m_parent != nullptr ) {
+                        ASR::symbol_t* dt_der_sym = ASRUtils::symbol_get_past_external(
+                                                dt_dertype->m_parent);
+                        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*dt_der_sym));
+                        dt_dertype = ASR::down_cast<ASR::Struct_t>(dt_der_sym);
+                    } else {
+                        dt_dertype = nullptr;
+                    }
+                }
+                LCOMPILERS_ASSERT(constructor_arg_syms.size() == x->n_args);
+
+                for( size_t i = 0; i < x->n_args; i++ ) {
+                    if( x->m_args[i].m_value == nullptr ) {
+                        continue ;
+                    }
+                    ASR::symbol_t* member = constructor_arg_syms[i];
+                    if( ASR::is_a<ASR::StructConstructor_t>(*x->m_args[i].m_value) ) {
+                        ASR::expr_t* result_var_copy = replacer->result_var;
+                        ASR::symbol_t *v = nullptr;
+                        if (ASR::is_a<ASR::Var_t>(*result_var_copy)) {
+                            v = ASR::down_cast<ASR::Var_t>(result_var_copy)->m_v;
+                        }
+                        replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
+                                                    x->base.base.loc, (ASR::asr_t*) result_var_copy, v,
+                                                    member, replacer->current_scope));
+                        ASR::expr_t** current_expr_copy = replacer->current_expr;
+                        replacer->current_expr = &(x->m_args[i].m_value);
+                        replacer->replace_expr(x->m_args[i].m_value);
+                        replacer->current_expr = current_expr_copy;
+                        replacer->result_var = result_var_copy;
+                    } else {
+                        ASR::symbol_t *v = nullptr;
+                        if (ASR::is_a<ASR::Var_t>(*replacer->result_var)) {
+                            v = ASR::down_cast<ASR::Var_t>(replacer->result_var)->m_v;
+                        }
+                        ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
+                                                        x->base.base.loc, (ASR::asr_t*) replacer->result_var, v,
+                                                        member, replacer->current_scope));
+                        ASR::expr_t* x_m_args_i = x->m_args[i].m_value;
+                        if( perform_cast ) {
+                            LCOMPILERS_ASSERT(casted_type != nullptr);
+                            x_m_args_i = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, x->base.base.loc,
+                                x_m_args_i, cast_kind, casted_type, nullptr));
+                        }
+                        ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
+                                                    x->base.base.loc, derived_ref,
+                                                    x_m_args_i, nullptr));
+                        result_vec->push_back(replacer->al, assign);
+                    }
+                }
+                replacer->result_var = nullptr;
             }
-            replacer->result_var = nullptr;
         }
 
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
