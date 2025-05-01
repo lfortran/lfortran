@@ -134,6 +134,9 @@ program format_04
     ! test for issue: https://github.com/lfortran/lfortran/issues/6761
     print "(2((I0), 1x))", i, j
 
+    ! test for issue: https://github.com/lfortran/lfortran/issues/6748 
+    print "((A))))", ' foobar'
+
     ! the below test also ensures that blank character
     ! isn't removed from ' Dates: '
     print 39, i, i + 1, j + 1, i + 2, j + 2
