@@ -26,6 +26,64 @@ using LCompilers::diag::Diagnostic;
 
 namespace LCompilers::LFortran {
 
+template <typename T>
+void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
+    if (x.m_bind) {
+        AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(x.m_bind);
+        if (bind->n_args == 1) {
+            if (AST::is_a<AST::Name_t>(*bind->m_args[0])) {
+                AST::Name_t *name = AST::down_cast<AST::Name_t>(
+                    bind->m_args[0]);
+                if (to_lower(std::string(name->m_id)) == "c") {
+                    abi_type=ASR::abiType::BindC;
+                } else if (to_lower(std::string(name->m_id)) == "js") {
+                    abi_type=ASR::abiType::BindJS;
+                } else {
+                    diag.add(diag::Diagnostic(
+                        "Unsupported language in bind()",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            } else {
+                    diag.add(diag::Diagnostic(
+                        "Language name must be specified in bind() as plain text",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+            }
+        } else {
+            diag.add(diag::Diagnostic(
+                "At least one argument needed in bind()",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (bind->n_kwargs == 1) {
+            char *arg = bind->m_kwargs[0].m_arg;
+            AST::expr_t *value = bind->m_kwargs[0].m_value;
+            if (to_lower(std::string(arg)) == "name") {
+                if (AST::is_a<AST::String_t>(*value)) {
+                    AST::String_t *name = AST::down_cast<AST::String_t>(value);
+                    bindc_name = name->m_s;
+                } else {
+                    diag.add(diag::Diagnostic(
+                        "The value of the 'name' keyword argument in bind(c) must be a string",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            } else {
+                diag.add(diag::Diagnostic(
+                    "Unsupported keyword argument in bind()",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+}
+
 uint64_t static inline get_hash(ASR::asr_t *node)
 {
     return (uint64_t)node;
@@ -1402,6 +1460,16 @@ public:
     std::vector<ASR::stmt_t*> &data_structure;
     LCompilers::LocationManager &lm;
 
+    std::map<std::string, std::vector<std::string>> generic_procedures;
+    /*
+        Preserves AST::declaration node + its scope that should be evaluated in.
+        Used to evaluate the `AST::Declaration_t` nodes after resolving `ASR::GenericProcedure_t` node,
+        as these declaration nodes depends on calls to GenericProcedure node.
+        Evalution Flow (of building symbolTables) :
+            Functions -> GenericProcedure(Interface) -> Calls to GenericProcedure.
+    */
+    std::vector<std::pair<SymbolTable*, const AST::Declaration_t*>> delayed_generic_procedure_calls;
+
     // global save variable
     bool is_global_save_enabled = false;
 
@@ -2087,8 +2155,8 @@ public:
             ASR::expr_t* expression_value = ASRUtils::expr_value(value);
             if (expression_value) {
                 ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-                ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                                            object, expression_value, nullptr));
+                ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                                            object, expression_value, nullptr, compiler_options.po.realloc_lhs));
                 current_body->push_back(al, assignment_stmt);
             } else {
                 diag.add(Diagnostic(
@@ -2240,8 +2308,8 @@ public:
                 this->visit_expr(*data_stmt_set->m_value[value_index++]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
                 ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
-                ASR::stmt_t* assignStatement = ASRUtils::STMT(ASR::make_Assignment_t(al, data_stmt.base.base.loc,
-                                                                                    target, value, nullptr)
+                ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
+                                                                                    target, value, nullptr, compiler_options.po.realloc_lhs)
                                                              );
                 LCOMPILERS_ASSERT(current_body != nullptr)
                 current_body->push_back(al, assignStatement);
@@ -2281,8 +2349,8 @@ public:
             v2->m_dependencies = var_deps_vec.p;
             v2->n_dependencies = var_deps_vec.size();
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                        object->base.loc, object, expression_value, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else if (ASR::is_a<ASR::Var_t>(*object)) {
@@ -2299,8 +2367,8 @@ public:
             v2->m_dependencies = var_deps_vec.p;
             v2->n_dependencies = var_deps_vec.size();
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                        object->base.loc, object, expression_value, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
@@ -2314,8 +2382,8 @@ public:
             // To fix that, we would have to iterate over data statements first
             // but we can fix that later.
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                        object->base.loc, object, expression_value, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else {
@@ -2790,7 +2858,54 @@ public:
             al, loc, adjusted_str, value_type));
     }
 
+    bool is_declaration_depending_on_unresolved_genericProcedure_call(const AST::Declaration_t &x){
+       if(generic_procedures.empty()) return false;
+        /*
+            Check for generic procedure call in the dimension attribute
+            e.g. : `integer, DIMENSION(func_generic(),20) :: arr`
+        */
+        for(size_t i = 0; i < x.n_attributes; i++){
+            if(AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])){
+                AST::AttrDimension_t* attr_dim = AST::down_cast<AST::AttrDimension_t>(x.m_attributes[i]);
+                for(size_t j = 0; j< attr_dim->n_dim; j++){
+                    for(AST::expr_t* dim_expr : {attr_dim->m_dim[j].m_start, attr_dim->m_dim[j].m_end}){
+                        if( dim_expr &&
+                            dim_expr->type == AST::exprType::FuncCallOrArray &&
+                            generic_procedures.find(
+                                (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
+                            != generic_procedures.end()){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        /*
+            Check for generic procedure call in the symbol dimension
+            e.g. : `integer :: arr(func_generic(),20)`
+        */
+        for(size_t i = 0; i < x.n_syms; i++){
+            AST::var_sym_t &s = x.m_syms[i];
+            for(size_t j = 0 ; j < s.n_dim; j++){
+                for(AST::expr_t* dim_expr : {s.m_dim[j].m_start, s.m_dim[j].m_end}){
+                    if( dim_expr &&
+                        dim_expr->type == AST::exprType::FuncCallOrArray &&
+                        generic_procedures.find(
+                            (AST::down_cast<AST::FuncCallOrArray_t>(dim_expr)->m_func))
+                        != generic_procedures.end()){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false; // Default if no genericProcedureCall found.
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
+        if(is_declaration_depending_on_unresolved_genericProcedure_call(x)){
+            delayed_generic_procedure_calls.emplace_back(current_scope, &x);
+            return;
+        }
         _declaring_variable = true;
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -3315,6 +3430,7 @@ public:
                 bool target_attr = false;
                 bool contig_attr = false;
                 bool value_attr = false;
+                char *bindc_name = nullptr;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
@@ -3484,6 +3600,9 @@ public:
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                                 s_intent == ASRUtils::intent_inout) || is_argument);
+                        } else if (AST::is_a<AST::AttrBind_t>(*a)) {
+                            AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
+                            extract_bind(attr_bd, s_abi, bindc_name, diag);
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute type not implemented yet",
@@ -3617,7 +3736,8 @@ public:
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
-                                value_attr, target_attr, contig_attr);
+                                value_attr, target_attr, contig_attr, bindc_name
+                            );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
                         }
@@ -7026,7 +7146,7 @@ public:
                 new_dims.push_back(al, size_dim);
             }
         }
-        ASR::ttype_t* type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims);
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
         ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source),
             *mold_value = ASRUtils::expr_value(mold), *size_value = nullptr;
         if(size) size_value = ASRUtils::expr_value(size);
@@ -8392,6 +8512,12 @@ public:
                 // Currently using real*8 as the return type.
                 ASR::ttype_t* type = external_sym ? ASRUtils::symbol_type(external_sym) :
                                     ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                std::string var_name_first_letter = to_lower(std::string(1, var_name[0]));
+                implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                if ( !external_sym && compiler_options.implicit_typing &&
+                     implicit_dictionary.find(var_name_first_letter) != implicit_dictionary.end() ) {
+                    type = implicit_dictionary[var_name_first_letter];
+                }
                 create_implicit_interface_function(x, var_name, true, type);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
@@ -8739,7 +8865,7 @@ public:
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
-                    }, lm
+                    }, lm, compiler_options.generate_object_code
                 );
 
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
@@ -9308,8 +9434,8 @@ public:
                     ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
                     ASRUtils::make_ArrayBroadcast_t_util(al, loc, target, value);
-                    ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                        target, value, nullptr));
+                    ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                        target, value, nullptr, compiler_options.po.realloc_lhs));
                     body.push_back(al, assignment);
 
                     ASR::asr_t *op_function = ASRUtils::make_Function_t_util(

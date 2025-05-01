@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -42,6 +43,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     logical2
@@ -53,6 +55,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -61,6 +64,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (LogicalBinOp

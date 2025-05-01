@@ -341,13 +341,15 @@ void handle_float(char* format, double val, char** result, bool use_sing_plus) {
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0 && format[1] == '0') {
+    if (integer_part == 0 && decimal_part!= 0 && format[1] == '0') {
         strcat(formatted_value, "");
     } else {
         strcat(formatted_value, int_str);
     }
     strcat(formatted_value, ".");
-    strcat(formatted_value, dec_str);
+    if (decimal_digits != 0){
+        strcat(formatted_value, dec_str);
+    }
 
     // checking for overflow
     if (strlen(formatted_value) > width) {
@@ -662,6 +664,25 @@ char* remove_spaces_except_quotes(const char* format) {
     return cleaned_format;
 }
 
+int find_matching_parentheses(const char* format, int index){
+    int parenCount = 0;
+    while (format[index] != '\0') {
+        if (format[index] == '(') {
+            parenCount++;
+        } else if (format[index] == ')'){
+            parenCount--;
+        }
+        index++;
+        if (parenCount == 0)
+            break;
+    }
+    if (parenCount != 0) {
+        fprintf(stderr, "Error: Unbalanced paranthesis in format string\n");
+        exit(1);
+    }
+    return index;
+}
+
 /**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
@@ -677,7 +698,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
-    while (format[index] != '\0') {
+    while (index < strlen(format) && format[index] != '\0') {
         char** ptr = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
         if (ptr == NULL) {
             perror("Memory allocation failed.\n");
@@ -747,6 +768,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'd' :
             case 'f' :
             case 'l' :
+            case 'b' :
                 start = index++;
                 bool dot = false;
                 if(tolower(format[index]) == 's') index++;
@@ -777,9 +799,9 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                 }
                 break;
             case '(' :
-                start = index++;
-                while (format[index] != ')') index++;
-                format_values_2[format_values_count++] = substring(format, start, index+1);
+                start = index;
+                index = find_matching_parentheses(format, index);
+                format_values_2[format_values_count++] = substring(format, start, index);
                 *item_start = format_values_count;
                 break;
             case 't' :
@@ -817,11 +839,11 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                     free(repeat_str);
                     format_values_2 = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
                     if (format[index] == '(') {
-                        start = index++;
-                        while (format[index] != ')') index++;
+                        start = index;
+                        index = find_matching_parentheses(format, index);
                         *item_start = format_values_count+1;
                         for (int i = 0; i < repeat; i++) {
-                            format_values_2[format_values_count++] = substring(format, start, index+1);
+                            format_values_2[format_values_count++] = substring(format, start, index);
                         }
                     } else {
                         start = index++;
@@ -892,9 +914,9 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
     }
 
 }
+
 bool is_format_match(char format_value, Primitive_Types current_arg_type){
-    char current_arg_correct_format = 
-        primitive_enum_to_format_specifier(current_arg_type); 
+    char current_arg_correct_format = primitive_enum_to_format_specifier(current_arg_type);
 
     char lowered_format_value = tolower(format_value);
     if(lowered_format_value == 'd' || lowered_format_value == 'e'){
@@ -902,14 +924,17 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     }
     // Special conditions that are allowed by gfortran.
     bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
-                              (lowered_format_value == 'a' && current_arg_correct_format == 'l');
-    if(lowered_format_value != current_arg_correct_format && !special_conditions){
+                               (lowered_format_value == 'a' && current_arg_correct_format == 'l');
+
+    bool b_format_for_bitwise_types = (lowered_format_value == 'b' &&
+    (current_arg_correct_format == 'i' || current_arg_correct_format == 'f'));
+
+    if(lowered_format_value != current_arg_correct_format && !special_conditions && !b_format_for_bitwise_types){
         return false;
     } else {
         return true;
     }
 }
-
 
 typedef struct stack {
     int64_t* p;
@@ -1480,6 +1505,82 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
                     handle_integer(value, integer_val, &result, is_SP_specifier);
+                } else if (tolower(value[0]) == 'b') {
+                    int width = 0;
+                    if (strlen(value) > 1) {
+                        width = atoi(value + 1); // Get width after 'B'
+                    }
+
+                    int bit_size = 0;
+                    uint64_t uval = 0;
+                    char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
+                    if (fmt_type == 'i') {
+                        if (s_info.current_element_type == INTEGER_8_TYPE) {
+                            bit_size = 8;
+                        } else if (s_info.current_element_type == INTEGER_16_TYPE) {
+                            bit_size = 16;
+                        } else if (s_info.current_element_type == INTEGER_32_TYPE) {
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == INTEGER_64_TYPE) {
+                            bit_size = 64;
+                        }
+                        uint64_t mask = (bit_size == 64) ? UINT64_MAX : ((1ULL << bit_size) - 1);
+                        uval = ((uint64_t)integer_val) & mask;
+                    } else if (fmt_type == 'f') {
+                        if (s_info.current_element_type == FLOAT_32_TYPE) {
+                            float f = (float)double_val;
+                            uint32_t bits;
+                            memcpy(&bits, &f, sizeof(float));
+                            uval = (uint64_t)bits;
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == FLOAT_64_TYPE) {
+                            double d = double_val;
+                            memcpy(&uval, &d, sizeof(double));
+                            bit_size = 64;
+                        }
+                    } else {
+                        result = append_to_string(result, "<unsupported>");
+                        break;
+                    }
+
+                    char binary_str[65]; // max 64 bits + '\0'
+                    int idx = 0;
+                    bool started = false;
+
+                    for (int bit = bit_size - 1; bit >= 0; bit--) {
+                        if ((uval >> bit) & 1) {
+                            started = true;
+                        }
+                        if (started) {
+                            binary_str[idx++] = ((uval >> bit) & 1) ? '1' : '0';
+                        }
+                    }
+
+                    if (idx == 0) {
+                        binary_str[idx++] = '0'; // If number is 0
+                    }
+                    binary_str[idx] = '\0';
+
+                    int bin_len = strlen(binary_str);
+
+                    if (width == 0) {
+                        result = append_to_string(result, binary_str);
+                    } else if (bin_len > width) {
+                        for (int i = 0; i < width; i++) {
+                            result = append_to_string(result, "*");
+                        }
+                    } else {
+                        int padding_needed = width - bin_len;
+                        char pad_char = ' ';
+                        if (padding_needed > 0) {
+                            char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
+                            memset(pad, pad_char, padding_needed);
+                            pad[padding_needed] = '\0';
+                            result = append_to_string(result, pad);
+                            free(pad);
+                        }
+                        result = append_to_string(result, binary_str);
+                    }
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     double val = *(double*)s_info.current_arg_info.current_arg;
@@ -3660,6 +3761,37 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     } else {
         for (int i = 0; i < array_size; i++) {
             (void)!fscanf(filep, "%d", &p[i]);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num) {
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%" SCNd64, &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_id != 1) {
+            // Read record marker first
+            int32_t record_marker_start;
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
+        }
+        (void)!fread(p, sizeof(int64_t), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            (void)!fscanf(filep, "%" SCNd64, &p[i]);
         }
     }
 }

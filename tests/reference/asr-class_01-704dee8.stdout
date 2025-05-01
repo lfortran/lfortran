@@ -49,6 +49,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             circle:
                                 (ExternalSymbol
@@ -80,6 +81,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         6 1_print
@@ -99,6 +101,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         6 1_print
@@ -156,6 +159,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle
@@ -202,6 +206,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -222,6 +227,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle_area
@@ -264,6 +270,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 area)
                                     Private
@@ -313,6 +320,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -333,6 +341,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle_print
@@ -365,6 +374,7 @@
                                             (Var 5 this)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -426,6 +436,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     class_circle1

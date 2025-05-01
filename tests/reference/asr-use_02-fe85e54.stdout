@@ -36,6 +36,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     use_02
@@ -44,6 +45,7 @@
                         (Var 6 i)
                         (IntegerConstant 1234567890123456789 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

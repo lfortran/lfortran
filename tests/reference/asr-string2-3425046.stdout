@@ -96,6 +96,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f_string@f_string~genericprocedure:
                                                 (ExternalSymbol
@@ -126,6 +127,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     get_temp_filename
@@ -160,6 +162,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 19 tempfile)
                                     Public
@@ -189,6 +192,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dir_handle:
                                                 (Variable
@@ -207,6 +211,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f_string@f_string_cptr:
                                                 (ExternalSymbol
@@ -237,6 +242,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     list_files
@@ -289,6 +295,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                         []
@@ -387,6 +394,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -405,6 +413,7 @@
                                                                     .true.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     c_strlen
@@ -448,6 +457,7 @@
                                                     .true.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             s:
                                                 (Variable
@@ -468,6 +478,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     f_string_cptr
@@ -530,6 +541,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 6 s)
                                     Public
@@ -559,6 +571,7 @@
                                                     .true.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             n:
                                                 (Variable
@@ -577,6 +590,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             s:
                                                 (Variable
@@ -595,6 +609,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     f_string_cptr_n
@@ -654,6 +669,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f_string:
                                                 (Variable
@@ -674,6 +690,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     f_string~genericprocedure
@@ -731,6 +748,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_t

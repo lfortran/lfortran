@@ -102,7 +102,6 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation");
         app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors");
         app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
-        app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generates object code for modules in separate files");
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
         app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");

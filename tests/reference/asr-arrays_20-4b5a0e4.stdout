@@ -31,6 +31,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             list_integer:
                                 (Variable
@@ -56,6 +57,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             list_logical:
                                 (Variable
@@ -81,6 +83,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     arrays_20
@@ -99,6 +102,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 list_logical)
@@ -114,6 +118,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 list_character)
@@ -129,6 +134,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )]
                 )
         })

@@ -589,7 +589,11 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
             return visualize_json(r.result, compiler_options.platform);
         }
         std::cout << r.result << std::endl;
-        return 0;
+        if (diagnostics.has_error()) {
+            return 1;
+        } else {
+            return 0;
+        }
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
@@ -927,27 +931,6 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     return 0;
 }
 
-bool is_program_present(const LCompilers::ASR::TranslationUnit_t &u)
-{
-    for (auto &item : u.m_symtab->get_scope()) {
-        if (LCompilers::ASR::is_a<LCompilers::ASR::Program_t>(*item.second)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
-{
-    Allocator al(4*1024);
-    for (auto &item : u.m_symtab->get_scope()) {
-        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
-            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
-            m->m_symtab->mark_all_variables_external(al);
-        }
-    }
-}
-
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options,
     LCompilers::LocationManager lm)
@@ -1175,8 +1158,8 @@ int compile_src_to_object_file(const std::string &infile,
 
     // if compiler_options.separate_compilation is true, then mark all modules as external
     // so that they are not compiled again
-    if (!is_program_present(*asr) && arg_c && compiler_options.separate_compilation && !compiler_options.generate_object_code) {
-        mark_modules_as_external(*asr);
+    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.separate_compilation && !compiler_options.generate_object_code) {
+        LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
     std::unique_ptr<LCompilers::LLVMModule> m;
@@ -1195,20 +1178,13 @@ int compile_src_to_object_file(const std::string &infile,
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile, &time_opt);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 5;
-    }
-
-    if (compiler_options.po.fast) {
-        t1 = std::chrono::high_resolution_clock::now();
-        e.opt(*m->m_m);
-        t2 = std::chrono::high_resolution_clock::now();
-        time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     // LLVM -> Machine code (saves to an object file)
@@ -2354,6 +2330,9 @@ int main_app(int argc, char *argv[]) {
     }
 
     lcompilers_unique_ID = ( parser.opts.compiler_options.generate_object_code || compiler_options.separate_compilation ) ? get_unique_ID() : "";
+    if (parser.opts.compiler_options.generate_object_code) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+    }
 
     if (opts.arg_version) {
         std::string version = LFORTRAN_VERSION;

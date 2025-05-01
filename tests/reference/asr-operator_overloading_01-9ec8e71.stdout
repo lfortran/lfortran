@@ -40,6 +40,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -74,6 +75,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~add:
                                 (ExternalSymbol
@@ -350,6 +352,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             log1:
                                                 (Variable
@@ -368,6 +371,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             log2:
                                                 (Variable
@@ -386,6 +390,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     bin_add
@@ -419,6 +424,7 @@
                                             (Var 4 bin_add)
                                             (IntegerConstant 2 (Integer 4) Decimal)
                                             ()
+                                            .false.
                                         )]
                                         [(If
                                             (LogicalBinOp
@@ -440,11 +446,13 @@
                                                 (Var 4 bin_add)
                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 4 bin_add)
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                     )]
@@ -476,6 +484,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             log2:
                                                 (Variable
@@ -494,6 +503,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -512,6 +522,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     logical_and
@@ -543,6 +554,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 logical_and)
                                     Public

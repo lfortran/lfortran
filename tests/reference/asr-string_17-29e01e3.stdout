@@ -46,6 +46,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -69,6 +70,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     len_string
@@ -131,11 +133,13 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 length)
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 4 length)
@@ -163,7 +167,8 @@
                                                 (Variable
                                                     5
                                                     maybe_string
-                                                    [string]
+                                                    [len_string
+                                                    string]
                                                     ReturnVar
                                                     ()
                                                     ()
@@ -183,6 +188,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -206,6 +212,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     maybe
@@ -288,6 +295,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 maybe_string)
@@ -296,6 +304,7 @@
                                                 (String 1 0 () PointerString)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 5 maybe_string)
@@ -328,6 +337,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_type

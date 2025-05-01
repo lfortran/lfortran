@@ -29,6 +29,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -70,6 +72,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -88,6 +91,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     a1
@@ -191,6 +195,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                     )]
                     ()
@@ -226,6 +231,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -244,6 +250,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -262,6 +269,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             partial_sum:
                                 (Variable
@@ -280,6 +288,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             total_sum:
                                 (Variable
@@ -298,6 +307,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     parallel_sum
@@ -328,11 +338,13 @@
                         (Var 3 partial_sum)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 total_sum)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (DoConcurrentLoop
                         [((Var 3 i)
@@ -360,6 +372,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                     )]
                     ()

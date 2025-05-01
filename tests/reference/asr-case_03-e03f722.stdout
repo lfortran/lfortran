@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -42,6 +43,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             marks:
                                 (Variable
@@ -60,6 +62,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     case03
@@ -68,6 +71,7 @@
                         (Var 2 marks)
                         (IntegerConstant 94 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Select
                         (Var 2 marks)
@@ -132,6 +136,7 @@
                             (IntegerConstant -1 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Select
                         (Var 2 marks)
