@@ -1,0 +1,767 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            continue_compilation_1_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            f:
+                                                (Variable
+                                                    3
+                                                    f
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 x)]
+                                    [(Assignment
+                                        (Var 3 f)
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 x)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 3 f)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    continue_compilation_1_mod
+                    []
+                    .false.
+                    .false.
+                ),
+            continue_compilation_ff:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            a:
+                                (Variable
+                                    4
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            a_2:
+                                (Variable
+                                    4
+                                    a_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            a_3:
+                                (Variable
+                                    4
+                                    a_3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            a_4:
+                                (Variable
+                                    4
+                                    a_4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            a_5:
+                                (Variable
+                                    4
+                                    a_5
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            circlearea:
+                                (Variable
+                                    4
+                                    circlearea
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            i:
+                                (Variable
+                                    4
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            i_1:
+                                (Variable
+                                    4
+                                    i_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            i_2:
+                                (Variable
+                                    4
+                                    i_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            i_3:
+                                (Variable
+                                    4
+                                    i_3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            ij:
+                                (Variable
+                                    4
+                                    ij
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            image:
+                                (Variable
+                                    4
+                                    image
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 600 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 450 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            init_x:
+                                (Variable
+                                    4
+                                    init_x
+                                    []
+                                    Local
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            j:
+                                (Variable
+                                    4
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            j_1:
+                                (Variable
+                                    4
+                                    j_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            kindvar:
+                                (Variable
+                                    4
+                                    kindvar
+                                    []
+                                    Local
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            nx:
+                                (Variable
+                                    4
+                                    nx
+                                    []
+                                    Local
+                                    (IntegerConstant 600 (Integer 4) Decimal)
+                                    (IntegerConstant 600 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            ny:
+                                (Variable
+                                    4
+                                    ny
+                                    []
+                                    Local
+                                    (IntegerConstant 450 (Integer 4) Decimal)
+                                    (IntegerConstant 450 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            shape:
+                                (Variable
+                                    4
+                                    shape
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            size_a:
+                                (Variable
+                                    4
+                                    size_a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            size_a_2:
+                                (Variable
+                                    4
+                                    size_a_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            str:
+                                (Variable
+                                    4
+                                    str
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "Hello  "
+                                        (String 1 7 () PointerString)
+                                    )
+                                    (StringConstant
+                                        "Hello  "
+                                        (String 1 7 () PointerString)
+                                    )
+                                    Save
+                                    (String 1 10 () PointerString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            val:
+                                (Variable
+                                    4
+                                    val
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    4
+                                    x
+                                    []
+                                    Local
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            x_2:
+                                (Variable
+                                    4
+                                    x_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 1 () PointerString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            x_3:
+                                (Variable
+                                    4
+                                    x_3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            y_1:
+                                (Variable
+                                    4
+                                    y_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            y_2:
+                                (Variable
+                                    4
+                                    y_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Integer 2)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            y_3:
+                                (Variable
+                                    4
+                                    y_3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                ),
+                            y_4:
+                                (Variable
+                                    4
+                                    y_4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    continue_compilation_ff
+                    []
+                    [(FileClose
+                        0
+                        (IntegerConstant 200 (Integer 4) Decimal)
+                        ()
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 4 x_2)
+                        (StringConstant
+                            "u"
+                            (String 1 1 () PointerString)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 4 i)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 4 i)
+                            Gt
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(Var 4 x_2)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        []
+                        []
+                    )
+                    (Assignment
+                        (Var 4 size_a)
+                        (ArraySize
+                            (Var 4 a_2)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 4 a_5)
+                        (ComplexConstructor
+                            (Cast
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                            )
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Complex 4)
+                            (ComplexConstant
+                                1.000000
+                                0.000000
+                                (Complex 4)
+                            )
+                        )
+                        ()
+                        .false.
+                    )]
+                )
+        })
+    []
+)
