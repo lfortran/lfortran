@@ -35,6 +35,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f:
                                 (Function
@@ -69,6 +70,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     f
@@ -131,6 +133,7 @@
                                         )
                                         (IntegerConstant 99 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -160,6 +163,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -189,6 +193,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     g
@@ -346,11 +351,13 @@
                                         )
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 r)
                                     Public
@@ -391,6 +398,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     h
@@ -511,6 +519,7 @@
                                         )
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -535,6 +544,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             stat:
                                 (Variable
@@ -553,6 +563,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     allocate_03
@@ -561,6 +572,7 @@
                         (Var 2 stat)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Allocate
                         [((Var 2 c)
@@ -607,6 +619,7 @@
                         )
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (ImplicitDeallocate
                         [(Var 2 c)]
@@ -628,6 +641,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

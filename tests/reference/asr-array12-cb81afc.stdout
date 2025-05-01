@@ -69,6 +69,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             cpath:
                                                 (Variable
@@ -94,6 +95,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -114,6 +116,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             tmp:
                                                 (Variable
@@ -132,6 +135,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     get_current_directory
@@ -168,13 +172,25 @@
                                         (FunctionCall
                                             2 getcwd
                                             ()
-                                            [((Var 12 cpath))
+                                            [((ArrayPhysicalCast
+                                                (Var 12 cpath)
+                                                DescriptorArray
+                                                StringArraySinglePointer
+                                                (Array
+                                                    (String 1 1 () PointerString)
+                                                    [(()
+                                                    ())]
+                                                    StringArraySinglePointer
+                                                )
+                                                ()
+                                            ))
                                             ((Var 12 buffersize))]
                                             (CPtr)
                                             ()
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (PointerAssociated
@@ -218,7 +234,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (Array
+                                                        (String 1 1 () PointerString)
+                                                        [(()
+                                                        ())]
+                                                        StringArraySinglePointer
+                                                    )
                                                     ()
                                                     BindC
                                                     Public
@@ -226,6 +247,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             bufsize:
                                                 (Variable
@@ -244,6 +266,7 @@
                                                     .true.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -262,11 +285,17 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     getcwd
                                     (FunctionType
-                                        [(String 1 1 () PointerString)
+                                        [(Array
+                                            (String 1 1 () PointerString)
+                                            [(()
+                                            ())]
+                                            StringArraySinglePointer
+                                        )
                                         (Integer 4)]
                                         (CPtr)
                                         BindC

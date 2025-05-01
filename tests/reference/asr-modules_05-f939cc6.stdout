@@ -29,6 +29,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -47,6 +48,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             print_vars:
                                                 (Variable
@@ -65,6 +67,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     print_vars
@@ -116,6 +119,7 @@
                                         (Var 3 print_vars)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 print_vars)
                                     Private
@@ -146,6 +150,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             publ:
                                 (Variable
@@ -170,6 +175,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     access_vars

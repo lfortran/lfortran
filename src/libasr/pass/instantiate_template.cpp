@@ -510,7 +510,7 @@ public:
         ASR::expr_t *target = duplicate_expr(x->m_target);
         ASR::expr_t *value = duplicate_expr(x->m_value);
         ASR::stmt_t *overloaded = duplicate_stmt(x->m_overloaded);
-        return ASR::make_Assignment_t(al, x->base.base.loc, target, value, overloaded);
+        return ASRUtils::make_Assignment_t_util(al, x->base.base.loc, target, value, overloaded, false);
     }
 
     ASR::asr_t* duplicate_DoLoop(ASR::DoLoop_t *x) {
@@ -1756,7 +1756,7 @@ public:
         ASR::expr_t *target = duplicate_expr(x->m_target);
         ASR::expr_t *value = duplicate_expr(x->m_value);
         ASR::stmt_t *overloaded = duplicate_stmt(x->m_overloaded);
-        return ASR::make_Assignment_t(al, x->base.base.loc, target, value, overloaded);
+        return ASRUtils::make_Assignment_t_util(al, x->base.base.loc, target, value, overloaded, false);
     }
 
     /* array_index */

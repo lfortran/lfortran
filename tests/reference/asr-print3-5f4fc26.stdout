@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     print_03
@@ -32,6 +33,7 @@
                         (Var 2 x)
                         (IntegerConstant 24 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (FileWrite
                         0

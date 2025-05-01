@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             teststring:
                                 (Variable
@@ -42,6 +43,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     string_11
@@ -53,6 +55,7 @@
                             (String 1 14 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 teststring)
@@ -61,6 +64,7 @@
                             (String 1 4 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             intro:
                                 (ExternalSymbol
@@ -52,6 +53,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             posit:
                                 (Variable
@@ -70,6 +72,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             title:
                                 (Variable
@@ -88,6 +91,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             verb:
                                 (Variable
@@ -106,6 +110,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     string_03
@@ -117,6 +122,7 @@
                             (String 1 8 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 posit)
@@ -125,6 +131,7 @@
                             (String 1 5 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 title)
@@ -133,6 +140,7 @@
                             (String 1 4 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 last_name)
@@ -141,6 +149,7 @@
                             (String 1 4 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 combined)
@@ -174,6 +183,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (Var 3 combined)
@@ -207,6 +217,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     string_03_mod

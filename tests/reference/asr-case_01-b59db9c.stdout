@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             out:
                                 (Variable
@@ -34,7 +35,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -42,14 +43,21 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     case_01
                     []
                     [(Assignment
                         (Var 2 i)
-                        (IntegerConstant 4 (Integer 4) Decimal)
+                        (Cast
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            IntegerToInteger
+                            (Integer 8)
+                            (IntegerConstant 4 (Integer 8) Decimal)
+                        )
                         ()
+                        .false.
                     )
                     (Select
                         (Var 2 i)
@@ -57,8 +65,14 @@
                             [(IntegerConstant 1 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 10 (Integer 4) Decimal)
+                                (Cast
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 10 (Integer 8) Decimal)
+                                )
                                 ()
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -72,8 +86,14 @@
                             [(IntegerConstant 2 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 20 (Integer 4) Decimal)
+                                (Cast
+                                    (IntegerConstant 20 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 20 (Integer 8) Decimal)
+                                )
                                 ()
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -87,8 +107,14 @@
                             [(IntegerConstant 3 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 30 (Integer 4) Decimal)
+                                (Cast
+                                    (IntegerConstant 30 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 30 (Integer 8) Decimal)
+                                )
                                 ()
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -102,8 +128,14 @@
                             [(IntegerConstant 4 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 40 (Integer 4) Decimal)
+                                (Cast
+                                    (IntegerConstant 40 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 40 (Integer 8) Decimal)
+                                )
                                 ()
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -120,7 +152,12 @@
                         (IntegerCompare
                             (Var 2 out)
                             NotEq
-                            (IntegerConstant 40 (Integer 4) Decimal)
+                            (Cast
+                                (IntegerConstant 40 (Integer 4) Decimal)
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 40 (Integer 8) Decimal)
+                            )
                             (Logical 4)
                             ()
                         )
@@ -135,8 +172,14 @@
                             [(IntegerConstant 1 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 11 (Integer 4) Decimal)
+                                (Cast
+                                    (IntegerConstant 11 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 11 (Integer 8) Decimal)
+                                )
                                 ()
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -152,8 +195,14 @@
                             (IntegerConstant 4 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 22 (Integer 4) Decimal)
+                                (Cast
+                                    (IntegerConstant 22 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 22 (Integer 8) Decimal)
+                                )
                                 ()
+                                .false.
                             )
                             (Print
                                 (StringConstant
@@ -170,7 +219,12 @@
                         (IntegerCompare
                             (Var 2 out)
                             NotEq
-                            (IntegerConstant 22 (Integer 4) Decimal)
+                            (Cast
+                                (IntegerConstant 22 (Integer 4) Decimal)
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 22 (Integer 8) Decimal)
+                            )
                             (Logical 4)
                             ()
                         )

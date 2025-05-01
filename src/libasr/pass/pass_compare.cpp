@@ -194,8 +194,8 @@ public:
         ASR::expr_t* value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
                         loc, true, bool_type));
         // Initialize `result` with `True`
-        ASR::stmt_t* init_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                        result, value, nullptr));
+        ASR::stmt_t* init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                        result, value, nullptr, false));
         body.push_back(al, init_stmt);
 
         for (size_t i=0; i<tuple_type->n_type; i++) {
@@ -207,8 +207,8 @@ public:
             ASR::expr_t *cmp_i = compare_helper(loc, global_scope, a_i, b_i, tuple_type->m_type[i]);
             ASR::expr_t *cmp_and = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
                     result, ASR::logicalbinopType::And, cmp_i, bool_type, nullptr));
-            ASR::stmt_t *t = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                        result, cmp_and, nullptr));
+            ASR::stmt_t *t = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                        result, cmp_and, nullptr, false));
             body.push_back(al, t);
         }
 
@@ -282,8 +282,8 @@ public:
                         al, loc, 0, int_type));
         ASR::expr_t *const_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, loc, 1, int_type));
-        ASR::stmt_t* _tmp = ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, idx_vars[0], const_zero, nullptr));
+        ASR::stmt_t* _tmp = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, loc, idx_vars[0], const_zero, nullptr, false));
         body.push_back(al, _tmp);
 
 
@@ -300,14 +300,14 @@ public:
         ASR::expr_t *cmp_i = compare_helper(loc, symtab, a_i, b_i, item_type);
         ASR::expr_t *cmp_and = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
                 result, ASR::logicalbinopType::And, cmp_i, bool_type, nullptr));
-        _tmp = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                    result, cmp_and, nullptr));
+        _tmp = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                    result, cmp_and, nullptr, false));
         loop_body.push_back(al, _tmp);
 
-        _tmp = ASRUtils::STMT(ASR::make_Assignment_t(
+        _tmp = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
             al, loc, idx_vars[0], ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                 al, loc, idx_vars[0], ASR::binopType::Add, const_one,
-                int_type, nullptr)), nullptr));
+                int_type, nullptr)), nullptr, false));
         loop_body.push_back(al, _tmp);
 
         _tmp = ASRUtils::STMT(ASR::make_WhileLoop_t(
@@ -366,8 +366,8 @@ public:
                         loc, true, bool_type));
 
         // Initialize `result` with `True`
-        ASR::stmt_t* _tmp = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                        result, value, nullptr));
+        ASR::stmt_t* _tmp = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                        result, value, nullptr, false));
         body.push_back(al, _tmp);
 
         {
@@ -379,8 +379,8 @@ public:
             if_body.reserve(al, 2);
             value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
                         loc, false, bool_type));
-            ASR::stmt_t* if_body_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
-                al, loc, result, value, nullptr));
+            ASR::stmt_t* if_body_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, result, value, nullptr, false));
             if_body.push_back(al, if_body_stmt);
 
             // Return

@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -90,6 +91,7 @@
                             (IntegerConstant -4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -150,6 +152,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -168,6 +171,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     to_negative~genericprocedure
@@ -203,11 +207,13 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 3 neg_int)
                                             (Var 3 int)
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 3 neg_int)

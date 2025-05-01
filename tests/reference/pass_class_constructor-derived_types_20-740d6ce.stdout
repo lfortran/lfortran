@@ -35,6 +35,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             working_dir:
                                                 (Variable
@@ -55,6 +56,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -98,6 +100,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -118,6 +121,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_bare:
                                                 (Variable
@@ -142,6 +146,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_example:
                                                 (Variable
@@ -166,6 +171,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_executable:
                                                 (Variable
@@ -190,6 +196,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_full:
                                                 (Variable
@@ -214,6 +221,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_lib:
                                                 (Variable
@@ -238,6 +246,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_test:
                                                 (Variable
@@ -262,6 +271,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fpm_new_settings
@@ -399,6 +409,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     get_command_line_settings
@@ -489,6 +500,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -504,6 +516,7 @@
                                                 (String 1 3 () PointerString)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -517,6 +530,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -530,6 +544,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -543,6 +558,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -556,6 +572,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -569,6 +586,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -582,6 +600,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
@@ -595,6 +614,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -647,6 +667,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             specified:
                                                 (Variable
@@ -665,6 +686,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     specified
@@ -691,6 +713,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 10 specified)
                                     Public
@@ -730,6 +753,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             fpm_cmd_settings:
                                 (ExternalSymbol

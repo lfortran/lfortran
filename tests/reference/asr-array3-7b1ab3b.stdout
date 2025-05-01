@@ -29,6 +29,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     array3
@@ -70,6 +72,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -85,6 +88,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )]
                 )
         })

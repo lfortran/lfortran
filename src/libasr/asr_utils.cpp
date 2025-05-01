@@ -409,6 +409,19 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     return mod2;
 }
 
+ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
+    ASR::expr_t* a_target, ASR::expr_t* a_value,
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs) {
+    bool is_allocatable = ASRUtils::is_allocatable(a_target);
+    if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
+        ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
+        is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
+    }
+    a_realloc_lhs = a_realloc_lhs && is_allocatable;
+    return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
+        a_overloaded, a_realloc_lhs);
+}
+
 void set_intrinsic(ASR::symbol_t* sym) {
     switch( sym->type ) {
         case ASR::symbolType::Module: {
@@ -1619,6 +1632,17 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
         }
         default:
             throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(ttype));
+    }
+}
+
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
+{
+    Allocator al(4*1024);
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
+            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            m->m_symtab->mark_all_variables_external(al);
+        }
     }
 }
 

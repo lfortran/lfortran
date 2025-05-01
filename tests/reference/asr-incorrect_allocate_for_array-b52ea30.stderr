@@ -1,0 +1,5 @@
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+ --> tests/errors/incorrect_allocate_for_array.f90:3:14
+  |
+3 |     allocate(a)
+  |              ^ Array specification required in allocate statement

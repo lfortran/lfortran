@@ -1,0 +1,5 @@
+tokenizer error: Expecting contains keyword before procedure definition
+ --> tests/errors/continue_compilation_ff_2.f:3:7
+  |
+3 |       SUBROUTINE faulty_subroutine(a, b, c)
+  |       ^ 

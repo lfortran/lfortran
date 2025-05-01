@@ -30,6 +30,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             i_value:
                                 (Variable
@@ -48,6 +49,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             l_value:
                                 (Variable
@@ -72,6 +74,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r_value:
                                 (Variable
@@ -101,6 +104,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             str:
                                 (GenericProcedure
@@ -133,6 +137,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             str_scalar:
                                                 (Variable
@@ -151,6 +156,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ~abstract_type:
                                                 (Struct
@@ -195,6 +201,7 @@
                                         (Var 3 str_scalar)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 str_scalar)
                                     Public
