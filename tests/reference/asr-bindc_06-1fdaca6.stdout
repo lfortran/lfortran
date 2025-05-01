@@ -7,6 +7,26 @@
                     (SymbolTable
                         11
                         {
+                            c_f_pointer:
+                                (ExternalSymbol
+                                    11
+                                    c_f_pointer
+                                    4 c_f_pointer
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_f_pointer
+                                    Public
+                                ),
+                            c_int:
+                                (ExternalSymbol
+                                    11
+                                    c_int
+                                    4 c_int
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int
+                                    Public
+                                ),
                             c_ptr:
                                 (ExternalSymbol
                                     11
@@ -15,6 +35,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
+                                    Public
+                                ),
+                            f_logical:
+                                (ExternalSymbol
+                                    11
+                                    f_logical
+                                    2 f_logical
+                                    bindc_06_mod
+                                    []
+                                    f_logical
                                     Public
                                 ),
                             p:
@@ -27,19 +57,41 @@
                                     p
                                     Public
                                 ),
-                            r:
+                            ptr_q:
+                                (Variable
+                                    11
+                                    ptr_q
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            q:
                                 (ExternalSymbol
                                     11
-                                    r
-                                    2 r
+                                    q
+                                    2 q
                                     bindc_06_mod
                                     []
-                                    r
+                                    q
                                     Public
                                 )
                         })
                     bindc_06
-                    [bindc_06_mod]
+                    [bindc_06_mod
+                    iso_c_binding]
                     [(Print
                         (StringFormat
                             ()
@@ -70,10 +122,45 @@
                         (StringFormat
                             ()
                             [(StringConstant
-                                "r: "
-                                (String 1 3 () PointerString)
+                                "f_logical: "
+                                (String 1 11 () PointerString)
                             )
-                            (Var 11 r)]
+                            (Var 11 f_logical)]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )
+                    (If
+                        (LogicalCompare
+                            (Var 11 f_logical)
+                            NotEq
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (CPtrToPointer
+                        (Var 11 q)
+                        (Var 11 ptr_q)
+                        ()
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "ptr_q: "
+                                (String 1 7 () PointerString)
+                            )
+                            (Var 11 ptr_q)]
                             FormatFortran
                             (String -1 0 () PointerString)
                             ()
@@ -81,14 +168,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (Var 11 r)
+                            (Var 11 ptr_q)
                             NotEq
-                            (Cast
-                                (IntegerConstant 2 (Integer 4) Decimal)
-                                IntegerToInteger
-                                (Integer 8)
-                                (IntegerConstant 2 (Integer 8) Decimal)
-                            )
+                            (IntegerConstant 12 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -113,6 +195,25 @@
                                     c_ptr
                                     Public
                                 ),
+                            f_logical:
+                                (Variable
+                                    2
+                                    f_logical
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    "c_logical"
+                                ),
                             p:
                                 (Variable
                                     2
@@ -132,16 +233,16 @@
                                     .false.
                                     "x"
                                 ),
-                            r:
+                            q:
                                 (Variable
                                     2
-                                    r
+                                    q
                                     []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Integer 8)
+                                    (CPtr)
                                     ()
                                     BindC
                                     Public
@@ -149,7 +250,7 @@
                                     .false.
                                     .false.
                                     .false.
-                                    "z"
+                                    "y"
                                 )
                         })
                     bindc_06_mod
