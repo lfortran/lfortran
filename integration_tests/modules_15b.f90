@@ -241,7 +241,7 @@ interface
     ! int f_string(char *s)
     integer(c_int) function f_string0(s) result(r) bind(c, name="f_string")
     import :: c_int, c_char
-    character(len=1, kind=c_char), intent(in) :: s(*)
+    character(len=1, kind=c_char), intent(in) :: s
     end function
 
     integer(c_int) function call_fortran_i32(i) result(r) bind(c)
