@@ -303,8 +303,9 @@ void set_allocation_size_elemental_function(
 
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
+    ASR::expr_t* temporary_var,
     Vec<ASR::dimension_t>& allocate_dims,
-    size_t target_n_dims
+    size_t target_n_dims, bool& add_allocated_check
 ) {
     if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -704,6 +705,18 @@ bool set_allocation_size(
         }
         case ASR::exprType::ArrayReshape: {
             ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(value);
+            Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
+            ArrayVarCollector array_var_collector(al, array_vars);
+            array_var_collector.visit_expr(*array_reshape_t->m_shape);
+            bool set_length_to_zero = false;
+            for( size_t i = 0; i < array_vars.size(); i++ ) {
+                if( ASR::down_cast<ASR::Var_t>(array_vars.p[i])->m_v ==
+                    ASR::down_cast<ASR::Var_t>(temporary_var)->m_v ) {
+                    add_allocated_check = true;
+                    set_length_to_zero = true;
+                    break;
+                }
+            }
             size_t n_dims = ASRUtils::get_fixed_size_of_array(
                 ASRUtils::expr_type(array_reshape_t->m_shape));
             allocate_dims.reserve(al, n_dims);
@@ -712,7 +725,11 @@ bool set_allocation_size(
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = int32_one;
-                allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {b.i32(i + 1)});
+                if( set_length_to_zero ) {
+                    allocate_dim.m_length = b.i32(0);
+                } else {
+                    allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {b.i32(i + 1)});
+                }
                 allocate_dims.push_back(al, allocate_dim);
             }
             break;
@@ -752,7 +769,9 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     }
     Vec<ASR::dimension_t> allocate_dims;
     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var));
-    if( !set_allocation_size(al, value, allocate_dims, target_n_dims) ) {
+    bool add_allocated_check = false;
+    if( !set_allocation_size(al, value, temporary_var, allocate_dims,
+                             target_n_dims, add_allocated_check) ) {
         return ;
     }
     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
@@ -768,11 +787,29 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
 
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
     dealloc_args.push_back(al, temporary_var);
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-        temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
-        temporary_var->base.loc, alloc_args.p, alloc_args.size(),
-        nullptr, nullptr, nullptr)));
+    if( !add_allocated_check ) {
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+            temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
+            temporary_var->base.loc, alloc_args.p, alloc_args.size(),
+            nullptr, nullptr, nullptr)));
+    } else {
+        ASRUtils::ASRBuilder b(al, value->base.loc);
+        Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, temporary_var);
+        current_body->push_back(al,
+            b.If(b.Not(ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, value->base.loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.size(), 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, value->base.loc, 4)), nullptr))),
+            {ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+                temporary_var->base.loc, dealloc_args.p, dealloc_args.size())),
+             ASRUtils::STMT(ASR::make_Allocate_t(al,
+                temporary_var->base.loc, alloc_args.p, alloc_args.size(),
+                nullptr, nullptr, nullptr))},
+            {})
+        );
+    }
 }
 
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
