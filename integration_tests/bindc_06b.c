@@ -1,7 +1,8 @@
 #include <stdbool.h>
+#include <stdint.h>
 
-int x = 1;
-int z = 2;
+int c_int4 = 1;
+int64_t c_int8 = 2;
 int tmp_value = 12;
 bool c_logical = false;
-void *y = &tmp_value;
+void *c_type_c_ptr = &tmp_value;
