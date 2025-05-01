@@ -1645,8 +1645,23 @@ public:
                     ASRUtils::make_ArrayBroadcast_t_util(
                         al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
                 }
-                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr, compiler_options.po.realloc_lhs));
+                
+                int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(source));
+                std::vector<ASR::expr_t*> do_loop_variables;
+                for (int i=0; i<n_dims; i++) {
+                    std::string var_name = "i_" + std::to_string(i);
+                    ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, var_name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, ASR::abiType::Source,
+                        ASR::Public, ASR::presenceType::Required, false));
+                    current_scope->add_symbol(var_name, sym);
+                    do_loop_variables.push_back(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym)));
+                }
+
+                ASR::stmt_t* assign = PassUtils::create_do_loop_helper_allocate(al, x.base.base.loc,
+                    do_loop_variables, source, alloc_args_vec.p[i].m_a, n_dims);
+                
                 current_body->push_back(al, assign);
             }
             tmp = nullptr;   // Doing it nullptr as we have already pushed allocate

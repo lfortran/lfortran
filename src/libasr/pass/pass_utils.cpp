@@ -580,6 +580,23 @@ namespace LCompilers {
                 a_overloaded, a_realloc_lhs);
         }
 
+        ASR::stmt_t* create_do_loop_helper_allocate(Allocator& al, const Location& loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* source, ASR::expr_t* res, int curr_idx){
+            ASRUtils::ASRBuilder b(al, loc);
+            
+            if (curr_idx == 1) {
+                std::vector<ASR::expr_t*> vars;
+                for (size_t i = 0; i < do_loop_variables.size(); i++) {
+                    vars.push_back(do_loop_variables[i]);
+                }
+                return b.DoLoop(do_loop_variables[curr_idx - 1], b.Min(LBound(source, curr_idx), LBound(res, curr_idx)), b.Min(UBound(source, curr_idx), UBound(res, curr_idx)), {
+                    b.Assignment(b.ArrayItem_01(res, vars), b.ArrayItem_01(source, vars))
+                }, nullptr);
+            }
+            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(source, curr_idx), UBound(source, curr_idx), {
+                create_do_loop_helper_allocate(al, loc, do_loop_variables, source, res, curr_idx - 1)
+            }, nullptr);
+        }
+
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx) {
             ASRUtils::ASRBuilder b(al, loc);
 
