@@ -22,7 +22,7 @@ program bindc_06
    if (f_int8 /= 2) error stop
 
    print *, "f_logical: ", f_logical
-   if (f_logical /= .false.) error stop
+   if (f_logical .neqv. .false.) error stop
 
    call c_f_pointer(f_type_c_ptr, ptr_f_type_c_ptr)
    print *, "ptr_f_type_c_ptr: ", ptr_f_type_c_ptr

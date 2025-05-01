@@ -173,9 +173,9 @@
                         )
                     )
                     (If
-                        (LogicalCompare
+                        (LogicalBinOp
                             (Var 11 f_logical)
-                            NotEq
+                            NEqv
                             (LogicalConstant
                                 .false.
                                 (Logical 4)
