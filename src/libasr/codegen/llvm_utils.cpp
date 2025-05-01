@@ -707,7 +707,9 @@ namespace LCompilers {
                                 llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
                                 type = type_fx2;
                             } else if (compiler_options.platform == Platform::macOS_ARM) {
-                                type = getComplexType(a_kind, false);
+                                // type_fx2 is [2 x float]
+                                llvm::Type* type_fx2 = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2);
+                                type = type_fx2;
                             } else {
                                 // type_fx2 is <2 x float>
                                 llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
