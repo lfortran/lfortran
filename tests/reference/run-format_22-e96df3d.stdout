@@ -1,3 +1,4 @@
+b format for integer(4)
 10101
 *
 **
@@ -19,3 +20,24 @@
    1100100
 0
    0
+b format for integer(8)
+11111
+  11111
+1010
+ 1010
+         0
+0
+b format for integer(1)
+1011
+ 1011
+      1010
+1010
+   0
+    0
+b format for integer(2)
+      1001
+1001
+****
+*****
+         0
+0
