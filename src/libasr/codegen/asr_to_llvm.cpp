@@ -2870,23 +2870,32 @@ public:
             this->visit_expr_wrapper(x.m_symbolic_value, true);
             init_value = llvm::dyn_cast<llvm::Constant>(tmp);
         }
+
+        // variable name to use in declaration
+        std::string llvm_var_name = "";
+        if (x.m_abi == ASR::abiType::BindC && x.m_bindc_name) {
+            // for external global variable with bindc, use the C name
+            llvm_var_name = x.m_bindc_name;
+        } else {
+            llvm_var_name = x.m_name;
+        }
         if (x.m_type->type == ASR::ttypeType::Integer
             || x.m_type->type == ASR::ttypeType::UnsignedInteger) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
             llvm::Type *type;
             int init_value_bits = 8*a_kind;
             type = llvm_utils->getIntType(a_kind);
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                 type);
             if (!external) {
                 if (ASRUtils::is_array(x.m_type)) {
                     throw CodeGenError("Arrays are not supported by visit_Variable");
                 }
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
                                 llvm::APInt(init_value_bits, 0)));
                 }
@@ -2897,18 +2906,18 @@ public:
             llvm::Type *type;
             int init_value_bits = 8*a_kind;
             type = llvm_utils->getFPType(a_kind);
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, type);
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
                     if( init_value_bits == 32 ) {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::ConstantFP::get(context,
                                     llvm::APFloat((float)0)));
                     } else if( init_value_bits == 64 ) {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::ConstantFP::get(context,
                                     llvm::APFloat((double)0)));
                     }
