@@ -1,6 +1,6 @@
 program case_01
 implicit none
-integer :: i, out
+integer(8) :: i, out
 i = 4
 
 select case(i)

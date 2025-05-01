@@ -823,10 +823,22 @@ namespace LCompilers {
             ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
             // TODO: compute `value`:
             if (ASRUtils::is_integer(*type)) {
+                if (ASRUtils::extract_kind_from_ttype_t(type) != 
+                        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(right))) {
+                    right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, right, ASR::cast_kindType::IntegerToInteger, type, nullptr));
+                }
                 return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, left, op, right, cmp_type, nullptr));
             } else if (ASRUtils::is_real(*type)) {
+                if (ASRUtils::extract_kind_from_ttype_t(type) != 
+                        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(right))) {
+                    right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, right, ASR::cast_kindType::RealToReal, type, nullptr));
+                }
                 return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, left, op, right, cmp_type, nullptr));
             } else if (ASRUtils::is_complex(*type)) {
+                if (ASRUtils::extract_kind_from_ttype_t(type) != 
+                        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(right))) {
+                    right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, right, ASR::cast_kindType::ComplexToComplex, type, nullptr));
+                }
                 return ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, loc, left, op, right, cmp_type, nullptr));
             } else if (ASRUtils::is_logical(*type)) {
                 return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, left, op, right, cmp_type, nullptr));
