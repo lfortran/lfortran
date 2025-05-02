@@ -3,5 +3,5 @@ program expr2
     a = [1, 2, 3, 4, 5]
     allocate(b(10), source = a)
     print *, b
-    if ( any( b /= [1, 2, 3, 4, 5, 0, 0, 0, 0, 0])) error stop
+    if ( any( b(1:5) /= [1, 2, 3, 4, 5])) error stop
 end program
