@@ -28,7 +28,6 @@
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/replace_where.h>
 #include <libasr/pass/replace_print_list_tuple.h>
-#include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
 #include <libasr/pass/replace_symbolic.h>
@@ -92,7 +91,6 @@ namespace LCompilers {
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
             {"intrinsic_subroutine", &pass_replace_intrinsic_subroutine},
-            {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
             {"print_list_tuple", &pass_replace_print_list_tuple},
             {"class_constructor", &pass_replace_class_constructor},
