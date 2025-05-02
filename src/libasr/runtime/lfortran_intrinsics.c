@@ -3700,7 +3700,86 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
         }
     }
 }
+
 // boolean read implementation is in process
+// Implementing a Logical read API (starting with the basic input of just logical-further, logicalArray also needed)
+// changes for the same are in: asr_to_llvm.cpp (line 8210 onwards)
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Reading from standard input (console)
+        char buffer[100];   // Long enough buffer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Tokenize input (by whitespace)
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for logical.\n");
+            exit(1);
+        }
+
+        // converting token to lowecase
+        for (int i = 0; token[i]; ++i) token[i] = tolower((unsigned char) token[i]);
+
+        // Check for logical values
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        // Read logical from binary file
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read logical from binary file.\n");
+            exit(1);
+        }
+    } 
+    else {
+        // Read logical from text file (fscanf handles the logical format)
+        char token[100] = {0};    // Initialize token to avoid garbage values
+        if (fscanf(filep, "%99s", token) != 1) {
+            fprintf(stderr, "Error: Invalid logical input from file.\n");
+            printf("Read token: '%s'\n", token);  // debugging purpose
+            exit(1);
+        }
+
+        // Sanitize the token (removes trailing \r or \n characters)
+        int len = strlen(token);
+        while (len > 0 && (token[len-1] == '\r' || token[len-1] == '\n')) {
+            token[len-1] = '\0';
+            len--;
+        }
+
+        // updated fix: Convert to lowercase for consistent comparison
+        for (int i = 0; token[i]; ++i) {
+            token[i] = tolower((unsigned char) token[i]);
+        }
+
+        // comparing once
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            exit(1);
+        }
+    }
+}
+
+
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
