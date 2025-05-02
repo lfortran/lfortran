@@ -2448,9 +2448,9 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (CLI::NonexistentPath(opts.arg_file).empty()) {
-        throw LCompilers::LCompilersException(
-            "error: no such file or directory: '" + opts.arg_file + "'"
-        );
+        std::cerr << "error: '" + opts.arg_file + "': linker input file not found: " +
+            "No such file or directory" << std::endl;
+        return 1;
     }
 
     std::string outfile;
