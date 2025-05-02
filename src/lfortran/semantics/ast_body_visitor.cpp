@@ -426,7 +426,7 @@ public:
                             Label("",{x.base.base.loc})
                         }));
                     throw SemanticAbort();
-                } 
+                }
             } else if (m_arg_str == std::string("iomsg")) {
                 if( a_iomsg != nullptr ) {
                     diag.add(Diagnostic(
@@ -457,7 +457,7 @@ public:
                 }
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_iomsg))) {
                     a_iomsg = ASRUtils::cast_string_descriptor_to_pointer(al, a_iomsg);
-                } 
+                }
             } else {
                 const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "action", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
@@ -1383,7 +1383,7 @@ public:
                 body.push_back(al, associate_stmt);
             } else {
                 ASRUtils::make_ArrayBroadcast_t_util(al, tmp_expr->base.loc, target_var, tmp_expr);
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs));
                 body.push_back(al, assign_stmt);
             }
         }
@@ -1645,11 +1645,24 @@ public:
                     ASRUtils::make_ArrayBroadcast_t_util(
                         al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
                 }
-                ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr));
+                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr, compiler_options.po.realloc_lhs));
                 current_body->push_back(al, assign);
             }
             tmp = nullptr;   // Doing it nullptr as we have already pushed allocate
+        } else {
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                if( ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
+                    alloc_args_vec.p[i].n_dims == 0 ) {
+                    diag.add(Diagnostic(
+                        "Allocate for arrays should have dimensions specified, "
+                        "found only array variable with no dimensions",
+                        Level::Error, Stage::Semantic, {
+                            Label("Array specification required in allocate statement", {alloc_args_vec.p[i].m_a->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
         }
     }
 
@@ -2361,7 +2374,7 @@ public:
             ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, master_function_sym,
                                 master_function_sym, args.p, args.n, ASRUtils::expr_type(lhs), nullptr, nullptr));
 
-            stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
+            stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs));
 
         } else {
             stmt = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,loc, master_function_sym,
@@ -2443,7 +2456,7 @@ public:
                             // make an assignment to return variable of master function
                             if (return_var != nullptr) {
                                 ASR::expr_t* lhs = return_var; ASR::expr_t* rhs = assignment->m_value;
-                                ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, tmp_stmt->base.loc, lhs, rhs, nullptr));
+                                ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_stmt->base.loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs));
                                 tmp_stmt = stmt;
                             }
                         }
@@ -2757,7 +2770,7 @@ public:
         ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
         ASR::expr_t* tmp_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int_type));
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target_var, tmp_expr);
-        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, tmp_expr, nullptr));
+        tmp = (ASR::asr_t*)ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs));
     }
 
     /* Returns true if `x` is a statement function, false otherwise.
@@ -2932,7 +2945,7 @@ public:
             throw SemanticAbort();
         }
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, to_return, value);
-        body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASR::make_Assignment_t(al, x.base.base.loc, to_return, value, nullptr)));
+        body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, to_return, value, nullptr, compiler_options.po.realloc_lhs)));
 
         tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
@@ -3237,7 +3250,7 @@ public:
                         ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(value);
                         if (ASR::is_a<ASR::ArrayConstructor_t>(*array_reshape->m_array) && ASR::is_a<ASR::ImpliedDoLoop_t>(**ASR::down_cast<ASR::ArrayConstructor_t>(array_reshape->m_array)->m_args)) {
                             ASR::Array_t* array_reshape_array_type = ASR::down_cast<ASR::Array_t>(array_reshape->m_type);
-                            Vec<ASR::dimension_t> array_reshape_dims; 
+                            Vec<ASR::dimension_t> array_reshape_dims;
                             array_reshape_dims.reserve(al, array_reshape_array_type->n_dims);
                             for (size_t i=0;i<array_reshape_array_type->n_dims;i++) {
                                 array_reshape_dims.push_back(al, array_reshape_array_type->m_dims[i]);
@@ -3308,8 +3321,8 @@ public:
         }
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
-        tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
-                            overloaded_stmt);
+        tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
+                            overloaded_stmt, compiler_options.po.realloc_lhs);
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
@@ -3468,7 +3481,7 @@ public:
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
-                    tmp = ASR::make_Assignment_t(al, x.base.base.loc, args[3], ASRUtils::EXPR(func_call), nullptr);
+                    tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[3], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
                     return tmp;
                 }
             }
@@ -3508,7 +3521,7 @@ public:
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
-                    tmp = ASR::make_Assignment_t(al, x.base.base.loc, args[1], ASRUtils::EXPR(func_call), nullptr);
+                    tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[1], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
                     return tmp;
                 }
             }

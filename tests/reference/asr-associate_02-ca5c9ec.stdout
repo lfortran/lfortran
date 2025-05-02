@@ -26,6 +26,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             p2:
                                 (Variable
@@ -46,6 +47,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             p3:
                                 (Variable
@@ -66,6 +68,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t1:
                                 (Variable
@@ -84,6 +87,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             t2:
                                 (Variable
@@ -108,6 +112,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             t3:
                                 (Variable
@@ -145,6 +150,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 )
                         })
                     associate_02
@@ -165,6 +171,7 @@
                         (Var 2 p1)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 p2)
@@ -181,6 +188,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -222,6 +230,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -245,6 +254,7 @@
                         (Var 2 t1)
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -285,6 +295,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

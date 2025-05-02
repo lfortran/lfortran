@@ -383,6 +383,16 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
+        if ( x.m_realloc_lhs ) {
+            ASR::expr_t* a_target = x.m_target;
+            bool is_allocatable = ASRUtils::is_allocatable(a_target);
+            if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
+                ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
+                is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
+            }
+            require(is_allocatable,
+                "Reallocation of non allocatable variable is not allowed");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
@@ -1281,7 +1291,18 @@ public:
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
             }
+
+            if( x.m_source == nullptr ) {
+                for( size_t i = 0; i < x.n_args; i++ ) {
+                    if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                        require(x.m_args[i].n_dims > 0,
+                            "Allocate for arrays should have dimensions specified, "
+                            "found only array variable with no dimensions");
+                    }
+                }
+            }
         }
+
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 

@@ -30,6 +30,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char2:
                                 (Variable
@@ -48,6 +49,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char_param:
                                 (Variable
@@ -72,6 +74,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     character2
@@ -83,6 +86,7 @@
                             (String 1 5 () PointerString)
                         )
                         ()
+                        .false.
                     )]
                 )
         })

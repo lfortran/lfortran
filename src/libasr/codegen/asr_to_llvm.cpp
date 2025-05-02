@@ -2870,23 +2870,32 @@ public:
             this->visit_expr_wrapper(x.m_symbolic_value, true);
             init_value = llvm::dyn_cast<llvm::Constant>(tmp);
         }
+
+        // variable name to use in declaration
+        std::string llvm_var_name = "";
+        if (x.m_abi == ASR::abiType::BindC && x.m_bindc_name) {
+            // for external global variable with bindc, use the C name
+            llvm_var_name = x.m_bindc_name;
+        } else {
+            llvm_var_name = x.m_name;
+        }
         if (x.m_type->type == ASR::ttypeType::Integer
             || x.m_type->type == ASR::ttypeType::UnsignedInteger) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
             llvm::Type *type;
             int init_value_bits = 8*a_kind;
             type = llvm_utils->getIntType(a_kind);
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                 type);
             if (!external) {
                 if (ASRUtils::is_array(x.m_type)) {
                     throw CodeGenError("Arrays are not supported by visit_Variable");
                 }
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
                                 llvm::APInt(init_value_bits, 0)));
                 }
@@ -2897,18 +2906,18 @@ public:
             llvm::Type *type;
             int init_value_bits = 8*a_kind;
             type = llvm_utils->getFPType(a_kind);
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, type);
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
                     if( init_value_bits == 32 ) {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::ConstantFP::get(context,
                                     llvm::APFloat((float)0)));
                     } else if( init_value_bits == 64 ) {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::ConstantFP::get(context,
                                     llvm::APFloat((double)0)));
                     }
@@ -2917,7 +2926,7 @@ public:
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Array) {
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, type);
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
             if (!external) {
                 ASR::expr_t* value = nullptr;
                 if( x.m_value ) {
@@ -2928,35 +2937,35 @@ public:
                 }
                 if (value) {
                     llvm::Constant* initializer = get_const_array(value, type);
-                    module->getNamedGlobal(x.m_name)->setInitializer(initializer);
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                 }
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                 llvm::Type::getInt1Ty(context));
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
                                 llvm::APInt(1, 0)));
                 }
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::String) {
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                     character_type);
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::Constant::getNullValue(character_type)
                         );
                     ASR::String_t *t = down_cast<ASR::String_t>(x.m_type);
@@ -2969,14 +2978,14 @@ public:
             llvm_symtab[h] = ptr;
         } else if( x.m_type->type == ASR::ttypeType::CPtr ) {
             llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                 void_ptr);
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(void_ptr))
                             );
@@ -2987,14 +2996,14 @@ public:
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
             if( ASRUtils::is_c_ptr(struct_t->m_derived_type) ) {
                 llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
-                llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                     void_ptr);
                 if (!external) {
                     if (init_value) {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
                     } else {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::ConstantPointerNull::get(
                                     static_cast<llvm::PointerType*>(void_ptr))
                                 );
@@ -3003,14 +3012,14 @@ public:
                 llvm_symtab[h] = ptr;
             } else {
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
-                llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                     type);
                 if (!external) {
                     if (init_value) {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
                     } else {
-                        module->getNamedGlobal(x.m_name)->setInitializer(
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::Constant::getNullValue(type)
                             );
                     }
@@ -3019,14 +3028,14 @@ public:
             }
         } else if ( x.m_type->type == ASR::ttypeType::ClassType) {
             llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                 void_ptr);
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(void_ptr))
                             );
@@ -3042,7 +3051,7 @@ public:
                 x.m_type, nullptr, x.m_storage, is_array_type,
                 is_malloc_array_type, is_list,
                 m_dims, n_dims, a_kind, module.get());
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                 x_ptr);
             llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::type_get_past_pointer(
@@ -3069,10 +3078,10 @@ public:
             }
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(x_ptr))
                             );
@@ -3082,32 +3091,32 @@ public:
         } else if (x.m_type->type == ASR::ttypeType::List) {
             llvm::StructType* list_type = static_cast<llvm::StructType*>(
                 llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, list_type);
-            module->getNamedGlobal(x.m_name)->setInitializer(
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, list_type);
+            module->getNamedGlobal(llvm_var_name)->setInitializer(
                 llvm::ConstantStruct::get(list_type,
                 llvm::Constant::getNullValue(list_type)));
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Tuple) {
             llvm::StructType* tuple_type = static_cast<llvm::StructType*>(
                 llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, tuple_type);
-            module->getNamedGlobal(x.m_name)->setInitializer(
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, tuple_type);
+            module->getNamedGlobal(llvm_var_name)->setInitializer(
                 llvm::ConstantStruct::get(tuple_type,
                 llvm::Constant::getNullValue(tuple_type)));
             llvm_symtab[h] = ptr;
         } else if(x.m_type->type == ASR::ttypeType::Dict) {
             llvm::StructType* dict_type = static_cast<llvm::StructType*>(
                 llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, dict_type);
-            module->getNamedGlobal(x.m_name)->setInitializer(
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, dict_type);
+            module->getNamedGlobal(llvm_var_name)->setInitializer(
                 llvm::ConstantStruct::get(dict_type,
                 llvm::Constant::getNullValue(dict_type)));
             llvm_symtab[h] = ptr;
         } else if(x.m_type->type == ASR::ttypeType::Set) {
             llvm::StructType* set_type = static_cast<llvm::StructType*>(
                 llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, set_type);
-            module->getNamedGlobal(x.m_name)->setInitializer(
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, set_type);
+            module->getNamedGlobal(llvm_var_name)->setInitializer(
                 llvm::ConstantStruct::get(set_type,
                 llvm::Constant::getNullValue(set_type)));
             llvm_symtab[h] = ptr;
@@ -3117,7 +3126,7 @@ public:
             llvm::Constant* re;
             llvm::Constant* im;
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());;
-            llvm::Constant* ptr = module->getOrInsertGlobal(x.m_name, type);
+            llvm::Constant* ptr = module->getOrInsertGlobal(llvm_var_name, type);
 
             if (!external) {
                 double x_re = 0.0, x_im = 0.0;
@@ -3127,7 +3136,7 @@ public:
                     x_re = x_cc->m_re; x_im = x_cc->m_im;
                 }
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(init_value);
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(init_value);
                 } else {
                     switch (a_kind) {
                         case 4: {
@@ -3149,7 +3158,7 @@ public:
                     // Create a constant structure to represent the complex number
                     std::vector<llvm::Constant*> elements = { re, im };
                     llvm::Constant* complex_init = llvm::ConstantStruct::get(static_cast<llvm::StructType*>(type), elements);
-                    module->getNamedGlobal(x.m_name)->setInitializer(complex_init);
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(complex_init);
                 }
             }
             llvm_symtab[h] = ptr;
@@ -3157,13 +3166,13 @@ public:
             // Ignore type variables
         } else if (x.m_type->type == ASR::ttypeType::FunctionType) {
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, type);
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
             if (!external) {
                 if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::Constant::getNullValue(type)
                         );
                 }
@@ -5375,7 +5384,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
         // Check if the underlying struct instance is allocated, if not allocate
-        if (compiler_options.po.realloc_lhs &&
+        if (x.m_realloc_lhs &&
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
             if (ASRUtils::is_allocatable(ASRUtils::expr_type(sim->m_v))) {
@@ -5718,7 +5727,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                                 dict_type->m_key_type,
                                 dict_type->m_value_type, name2memidx);
         } else if (ASRUtils::is_allocatable(target_type)) {
-            if (compiler_options.po.realloc_lhs) {
+            if (x.m_realloc_lhs) {
                 ASR::ttype_t* asr_type = ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(
                     ASRUtils::expr_type(x.m_target)));
@@ -8317,6 +8326,32 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 }
                 break;
             }
+            
+            // adding case of boolean type input (TO DO:- boolean array)
+            case (ASR::ttypeType::Logical):{
+                std::string runtime_func_name;
+                llvm::Type *type_arg;
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+
+                if (a_kind == 4) {
+                    runtime_func_name = "_lfortran_read_logical";
+                    type_arg = llvm::Type::getInt1Ty(context); // LLVM boolean type (1 bit)
+                } else {
+                    throw CodeGenError("Read Logical function not implemented for kind: " + std::to_string(a_kind));
+                }
+
+                fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                type_arg->getPointerTo(),
+                                llvm::Type::getInt32Ty(context)
+                            }, false);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                }
+                break;
+            }
             case (ASR::ttypeType::Real): {
                 std::string runtime_func_name;
                 llvm::Type *type_arg;
@@ -9398,7 +9433,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                                                     // tmp is {float, float}*
                                                     // type_fx2 is [2 x float]
                                                     llvm::Type* type_fx2 = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2);
-                                                    tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
+                                                    // we bitcast complex_type_4 to [2 x float]*
+                                                    llvm::Value *complex_as_array_ptr = builder->CreateBitCast(tmp, type_fx2->getPointerTo());
+                                                    tmp = llvm_utils->CreateLoad2(type_fx2, complex_as_array_ptr);
                                                 } else {
                                                     // tmp is {float, float}*
                                                     // type_fx2 is <2 x float>
@@ -9711,11 +9748,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
             // To avoid segmentation faults when original argument
             // is not a ASR::Variable_t like callbacks.
-            if( orig_arg && !ASR::is_a<ASR::ClassType_t>(
+            if( orig_arg && !(ASR::is_a<ASR::Pointer_t>(*expr_type(x.m_args[i].m_value)) && ASR::is_a<ASR::ClassType_t>(
                 *ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(
-                            ASRUtils::expr_type(x.m_args[i].m_value))))) ) {
+                            ASRUtils::expr_type(x.m_args[i].m_value)))))) ) {
                 tmp = convert_to_polymorphic_arg(tmp,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
@@ -9862,6 +9899,39 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             builder->CreateStore(hash, hash_ptr);
             llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
             builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(s_m_args0_type, module.get(), true)), class_ptr);
+            return dt_polymorphic;
+        } else if( ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_array(arg_type)) ) {
+            // No need to convert if types are same
+            if (llvm_utils->getClassType(s_m_args0_type, true) == llvm_utils->getClassType(arg_type, true)) {
+                return dt;
+            }
+            ASR::ClassType_t* class_t = ASR::down_cast<ASR::ClassType_t>(ASRUtils::extract_type(arg_type));
+            ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(class_t->m_class_type);
+            if( type2vtab.find(struct_sym) == type2vtab.end() &&
+                type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
+                create_vtab_for_struct_type(struct_sym, current_scope);
+            }
+
+            llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
+                llvm_utils->getClassType(s_m_args0_type, true));
+            llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0_type, module.get());
+            llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
+            llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
+            builder->CreateStore(hash, hash_ptr);
+
+            llvm::Type* dt_base_type = llvm_utils->get_type_from_ttype_t_util(arg_type, module.get());
+            // Convert input arg from polymorphic to normal
+            dt = llvm_utils->create_gep2(dt_base_type, dt, 1);
+            dt = llvm_utils->CreateLoad2(dt_base_type->getPointerTo(),dt);
+
+            ASR::ClassType_t* dest_class = ASR::down_cast<ASR::ClassType_t>(ASRUtils::extract_type(s_m_args0_type));
+            ASR::symbol_t* dest_struct_sym = ASRUtils::symbol_get_past_external(dest_class->m_class_type);
+            llvm::Type* dest_ty = name2dertype[ASRUtils::symbol_name(dest_struct_sym)]->getPointerTo();
+            dt = builder->CreateBitCast(dt, dest_ty);
+
+            llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
+            builder->CreateStore(dt, class_ptr);
+
             return dt_polymorphic;
         }
         return dt;

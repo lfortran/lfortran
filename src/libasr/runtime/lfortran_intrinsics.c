@@ -768,6 +768,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'd' :
             case 'f' :
             case 'l' :
+            case 'b' :
                 start = index++;
                 bool dot = false;
                 if(tolower(format[index]) == 's') index++;
@@ -913,9 +914,9 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
     }
 
 }
+
 bool is_format_match(char format_value, Primitive_Types current_arg_type){
-    char current_arg_correct_format = 
-        primitive_enum_to_format_specifier(current_arg_type); 
+    char current_arg_correct_format = primitive_enum_to_format_specifier(current_arg_type);
 
     char lowered_format_value = tolower(format_value);
     if(lowered_format_value == 'd' || lowered_format_value == 'e'){
@@ -923,14 +924,17 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     }
     // Special conditions that are allowed by gfortran.
     bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
-                              (lowered_format_value == 'a' && current_arg_correct_format == 'l');
-    if(lowered_format_value != current_arg_correct_format && !special_conditions){
+                               (lowered_format_value == 'a' && current_arg_correct_format == 'l');
+
+    bool b_format_for_bitwise_types = (lowered_format_value == 'b' &&
+    (current_arg_correct_format == 'i' || current_arg_correct_format == 'f'));
+
+    if(lowered_format_value != current_arg_correct_format && !special_conditions && !b_format_for_bitwise_types){
         return false;
     } else {
         return true;
     }
 }
-
 
 typedef struct stack {
     int64_t* p;
@@ -1501,6 +1505,82 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
                     handle_integer(value, integer_val, &result, is_SP_specifier);
+                } else if (tolower(value[0]) == 'b') {
+                    int width = 0;
+                    if (strlen(value) > 1) {
+                        width = atoi(value + 1); // Get width after 'B'
+                    }
+
+                    int bit_size = 0;
+                    uint64_t uval = 0;
+                    char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
+                    if (fmt_type == 'i') {
+                        if (s_info.current_element_type == INTEGER_8_TYPE) {
+                            bit_size = 8;
+                        } else if (s_info.current_element_type == INTEGER_16_TYPE) {
+                            bit_size = 16;
+                        } else if (s_info.current_element_type == INTEGER_32_TYPE) {
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == INTEGER_64_TYPE) {
+                            bit_size = 64;
+                        }
+                        uint64_t mask = (bit_size == 64) ? UINT64_MAX : ((1ULL << bit_size) - 1);
+                        uval = ((uint64_t)integer_val) & mask;
+                    } else if (fmt_type == 'f') {
+                        if (s_info.current_element_type == FLOAT_32_TYPE) {
+                            float f = (float)double_val;
+                            uint32_t bits;
+                            memcpy(&bits, &f, sizeof(float));
+                            uval = (uint64_t)bits;
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == FLOAT_64_TYPE) {
+                            double d = double_val;
+                            memcpy(&uval, &d, sizeof(double));
+                            bit_size = 64;
+                        }
+                    } else {
+                        result = append_to_string(result, "<unsupported>");
+                        break;
+                    }
+
+                    char binary_str[65]; // max 64 bits + '\0'
+                    int idx = 0;
+                    bool started = false;
+
+                    for (int bit = bit_size - 1; bit >= 0; bit--) {
+                        if ((uval >> bit) & 1) {
+                            started = true;
+                        }
+                        if (started) {
+                            binary_str[idx++] = ((uval >> bit) & 1) ? '1' : '0';
+                        }
+                    }
+
+                    if (idx == 0) {
+                        binary_str[idx++] = '0'; // If number is 0
+                    }
+                    binary_str[idx] = '\0';
+
+                    int bin_len = strlen(binary_str);
+
+                    if (width == 0) {
+                        result = append_to_string(result, binary_str);
+                    } else if (bin_len > width) {
+                        for (int i = 0; i < width; i++) {
+                            result = append_to_string(result, "*");
+                        }
+                    } else {
+                        int padding_needed = width - bin_len;
+                        char pad_char = ' ';
+                        if (padding_needed > 0) {
+                            char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
+                            memset(pad, pad_char, padding_needed);
+                            pad[padding_needed] = '\0';
+                            result = append_to_string(result, pad);
+                            free(pad);
+                        }
+                        result = append_to_string(result, binary_str);
+                    }
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     double val = *(double*)s_info.current_arg_info.current_arg;
@@ -3620,7 +3700,86 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
         }
     }
 }
+
 // boolean read implementation is in process
+// Implementing a Logical read API (starting with the basic input of just logical-further, logicalArray also needed)
+// changes for the same are in: asr_to_llvm.cpp (line 8210 onwards)
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Reading from standard input (console)
+        char buffer[100];   // Long enough buffer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Tokenize input (by whitespace)
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for logical.\n");
+            exit(1);
+        }
+
+        // converting token to lowecase
+        for (int i = 0; token[i]; ++i) token[i] = tolower((unsigned char) token[i]);
+
+        // Check for logical values
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        // Read logical from binary file
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read logical from binary file.\n");
+            exit(1);
+        }
+    } 
+    else {
+        // Read logical from text file (fscanf handles the logical format)
+        char token[100] = {0};    // Initialize token to avoid garbage values
+        if (fscanf(filep, "%99s", token) != 1) {
+            fprintf(stderr, "Error: Invalid logical input from file.\n");
+            printf("Read token: '%s'\n", token);  // debugging purpose
+            exit(1);
+        }
+
+        // Sanitize the token (removes trailing \r or \n characters)
+        int len = strlen(token);
+        while (len > 0 && (token[len-1] == '\r' || token[len-1] == '\n')) {
+            token[len-1] = '\0';
+            len--;
+        }
+
+        // updated fix: Convert to lowercase for consistent comparison
+        for (int i = 0; token[i]; ++i) {
+            token[i] = tolower((unsigned char) token[i]);
+        }
+
+        // comparing once
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            exit(1);
+        }
+    }
+}
+
+
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {

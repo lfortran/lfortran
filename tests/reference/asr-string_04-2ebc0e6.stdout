@@ -31,6 +31,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             str:
                                 (Variable
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             user_data:
                                 (Variable
@@ -76,6 +78,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     string_04
@@ -105,6 +108,7 @@
                             (String 1 4 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -121,6 +125,7 @@
                             (String 1 6 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -137,6 +142,7 @@
                             (String 1 8 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Allocate
                         [((Var 2 greetings)
@@ -163,6 +169,7 @@
                             (String 1 1 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -179,6 +186,7 @@
                             (String 1 1 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -195,6 +203,7 @@
                             (String 1 1 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -211,6 +220,7 @@
                             (String 1 1 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -227,6 +237,7 @@
                             (String 1 1 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -300,6 +311,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

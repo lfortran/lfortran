@@ -26,6 +26,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             p2:
                                 (Variable
@@ -46,6 +47,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t1:
                                 (Variable
@@ -64,6 +66,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             t2:
                                 (Variable
@@ -82,6 +85,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 )
                         })
                     nullify_02
@@ -102,6 +106,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Associate
                         (Var 2 p2)
@@ -119,6 +124,7 @@
                             (IntegerConstant 2 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Nullify
                         [(Var 2 p1)

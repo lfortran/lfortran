@@ -19,12 +19,14 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     [(Assignment
         (Var 1 x)
         (IntegerConstant 6 (Integer 4) Decimal)
         ()
+        .false.
     )
     (IntegerBinOp
         (IntegerConstant 2 (Integer 4) Decimal)
@@ -43,6 +45,7 @@
             ()
         )
         ()
+        .false.
     )
     (IntegerBinOp
         (IntegerConstant 3 (Integer 4) Decimal)

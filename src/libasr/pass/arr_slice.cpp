@@ -137,13 +137,13 @@ class ReplaceArraySection: public ASR::BaseExprReplacer<ReplaceArraySection> {
             if( doloop == nullptr ) {
                 ASR::expr_t* target_ref = PassUtils::create_array_ref(slice_sym, idx_vars_target, al, x->base.base.loc, x->m_type, current_scope);
                 ASR::expr_t* value_ref = PassUtils::create_array_ref(x->m_v, idx_vars_value, al, current_scope);
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x->base.base.loc, target_ref, value_ref, nullptr));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x->base.base.loc, target_ref, value_ref, nullptr, false));
                 doloop_body.push_back(al, assign_stmt);
             } else {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(idx_vars_target[i+1]));
                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, a_kind));
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc, 1, int_type));
-                ASR::stmt_t* set_to_one = ASRUtils::STMT(ASR::make_Assignment_t(al, x->base.base.loc, idx_vars_target[i+1], const_1, nullptr));
+                ASR::stmt_t* set_to_one = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x->base.base.loc, idx_vars_target[i+1], const_1, nullptr, false));
                 doloop_body.push_back(al, set_to_one);
                 doloop_body.push_back(al, doloop);
             }
@@ -152,14 +152,14 @@ class ReplaceArraySection: public ASR::BaseExprReplacer<ReplaceArraySection> {
             ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc, 1, int_type));
             ASR::expr_t* inc_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc, idx_vars_target[i], ASR::binopType::Add,
                                         const_1, int_type, nullptr));
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x->base.base.loc, idx_vars_target[i], inc_expr, nullptr));
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x->base.base.loc, idx_vars_target[i], inc_expr, nullptr, false));
             doloop_body.push_back(al, assign_stmt);
             doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
         }
         int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(idx_vars_target[0]));
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, a_kind));
         ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc, 1, int_type));
-        ASR::stmt_t* set_to_one = ASRUtils::STMT(ASR::make_Assignment_t(al, x->base.base.loc, idx_vars_target[0], const_1, nullptr));
+        ASR::stmt_t* set_to_one = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x->base.base.loc, idx_vars_target[0], const_1, nullptr, false));
         pass_result.push_back(al, set_to_one);
         pass_result.push_back(al, doloop);
     }

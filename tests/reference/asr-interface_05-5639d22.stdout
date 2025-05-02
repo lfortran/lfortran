@@ -74,6 +74,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -92,6 +93,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     interface_05
@@ -100,6 +102,7 @@
                         (Var 5 i)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 5 i)
@@ -112,6 +115,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -138,6 +142,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 5 r)
@@ -150,6 +155,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare
@@ -176,6 +182,7 @@
                         (Var 5 i)
                         (IntegerConstant 7 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 5 i)
@@ -188,6 +195,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -238,6 +246,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             a1:
                                                 (Variable
@@ -256,6 +265,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     a1
@@ -285,6 +295,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 a1)
                                     Public
@@ -314,6 +325,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             a2:
                                                 (Variable
@@ -332,6 +344,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     a2
@@ -369,6 +382,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 a2)
                                     Public

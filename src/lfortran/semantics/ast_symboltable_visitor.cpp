@@ -20,64 +20,6 @@
 
 namespace LCompilers::LFortran {
 
-template <typename T>
-void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
-    if (x.m_bind) {
-        AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(x.m_bind);
-        if (bind->n_args == 1) {
-            if (AST::is_a<AST::Name_t>(*bind->m_args[0])) {
-                AST::Name_t *name = AST::down_cast<AST::Name_t>(
-                    bind->m_args[0]);
-                if (to_lower(std::string(name->m_id)) == "c") {
-                    abi_type=ASR::abiType::BindC;
-                } else if (to_lower(std::string(name->m_id)) == "js") {
-                    abi_type=ASR::abiType::BindJS;
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "Unsupported language in bind()",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            } else {
-                    diag.add(diag::Diagnostic(
-                        "Language name must be specified in bind() as plain text",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-            }
-        } else {
-            diag.add(diag::Diagnostic(
-                "At least one argument needed in bind()",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-        if (bind->n_kwargs == 1) {
-            char *arg = bind->m_kwargs[0].m_arg;
-            AST::expr_t *value = bind->m_kwargs[0].m_value;
-            if (to_lower(std::string(arg)) == "name") {
-                if (AST::is_a<AST::String_t>(*value)) {
-                    AST::String_t *name = AST::down_cast<AST::String_t>(value);
-                    bindc_name = name->m_s;
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "The value of the 'name' keyword argument in bind(c) must be a string",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            } else {
-                diag.add(diag::Diagnostic(
-                    "Unsupported keyword argument in bind()",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-        }
-    }
-}
-
 class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
     struct ClassProcInfo {
@@ -495,7 +437,7 @@ public:
         }
         current_module_sym = nullptr;
         add_generic_procedures();
-        evaluate_delayed_generic_procedure_calls();
+        evaluate_postponed_calls_to_genericProcedure();
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
@@ -649,9 +591,9 @@ public:
             throw SemanticAbort();
         }
         handle_save();
-        // Build : Functions --> GenericProcedure(Interface) -> variable_decl calling GenericProcedure.
+        // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
-        evaluate_delayed_generic_procedure_calls();
+        evaluate_postponed_calls_to_genericProcedure();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -2403,55 +2345,60 @@ public:
         Evaluate call expressions to genericProcedures that's used in variable declaration.
         e.g : `integer :: arr(generic_proc(),10)`
     */
-    void evaluate_delayed_generic_procedure_calls(){
+    void evaluate_postponed_calls_to_genericProcedure(){
         if(!generic_procedures.empty()){
             throw LCompilersException("generic_procedures should be resolved"
                 "before evaluating calls to genericProcedure");
         }
-
-        for(auto &[symtable, decl] : delayed_generic_procedure_calls){
+        for(auto &[expr_holder, symtable, funcCall, var_name, CheckFunc] :postponed_genericProcedure_calls_vec){
             // Set current scope
             SymbolTable* current_scope_copy = current_scope;
             current_scope = symtable;
-            visit_Declaration(*decl);
 
+            // Resolve AST node + set it in the holder.
+            bool in_subroutine_or_function_copy{in_Subroutine}; in_Subroutine = true;
+            visit_expr(*funcCall);
+            *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
+            // Invoke the call to the CheckFunc
+            if( CheckFunc ) CheckFunc(*expr_holder);
+            in_Subroutine = in_subroutine_or_function_copy;
+
+            // Do some assertions
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionCall_t>(**expr_holder))
+            LCOMPILERS_ASSERT(
+                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_scope->asr_owner))
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
             // Raise warning for user if variable declaration is calling its function scope recursively.
-            // + Add dependencies of variable to the function (owning the variable)
-            for(size_t i = 0; i< decl->n_syms; i++){ //loop on all symbols per `ASR::Declaration` node .
-                const char* symbol_name = decl->m_syms[i].m_name;
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(
-                    *symtable->resolve_symbol(symbol_name)))
-                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(
-                    symtable->resolve_symbol(symbol_name));
-                for(size_t dep_idx = 0 ;dep_idx < variable->n_dependencies; dep_idx++){
-                    if( ASR::is_a<ASR::symbol_t>(*symtable->asr_owner) &&
-                        ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)symtable->asr_owner)){
-                        ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(symtable->asr_owner);
-                        // Check for recursive call
-                        if(func->m_name == variable->m_dependencies[dep_idx]){
-                            diag.add(diag::Diagnostic(
-                                "Variable declaration is calling its function scope recursively",
-                                diag::Level::Warning, diag::Stage::Semantic, {
-                                    diag::Label("", {decl->base.base.loc})}));
-                        } 
-                        // Add function call to scoping function dependencies.
-                        if(ASR::is_a<ASR::Function_t>(*symtable->resolve_symbol(variable->m_dependencies[dep_idx]))){
-                            Vec<char*> v_dependencies;v_dependencies.reserve(al, 0);
-                            v_dependencies.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
-                            v_dependencies.push_back(al, variable->m_dependencies[dep_idx]);
-                            func->m_dependencies = v_dependencies.p;
-                            func->n_dependencies = v_dependencies.n;
-                        }
-                    }
-                }
+            if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
+                diag.add(diag::Diagnostic(
+                    "Variable declaration is calling its function scope recursively",
+                    diag::Level::Warning, diag::Stage::Semantic, {
+                        diag::Label("", {func_call->base.base.loc})}));                
             }
+
+            // Add called function as dependency to Variable node.
+            ASR::symbol_t* sym_to_variable = current_scope->get_symbol(to_lower(std::string(var_name)));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym_to_variable))
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym_to_variable);
+            SetChar var_dep;var_dep.reserve(al,0);
+            ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
+            variable->m_dependencies = var_dep.p;
+            variable->n_dependencies = var_dep.n;
+
+            // Add called function as dependency to the owning-function's scope
+            ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+            SetChar func_dep;
+            func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
+            func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+            func->m_dependencies = func_dep.p;
+            func->n_dependencies = func_dep.n;
 
             // Revert current scope
             current_scope = current_scope_copy;
         }
-
         // Clear the delayed generic procedure calls
-        delayed_generic_procedure_calls.clear();
+        postponed_genericProcedure_calls_vec.clear();
     }
 
     void add_generic_class_procedures() {
@@ -3881,8 +3828,8 @@ public:
                     ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
                     ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
-                    ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                        target, value, nullptr));
+                    ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                        target, value, nullptr, false));
                     body.push_back(al, assignment);
 
                     ASR::FunctionType_t *req_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);

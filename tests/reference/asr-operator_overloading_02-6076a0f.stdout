@@ -34,6 +34,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~assign:
                                 (ExternalSymbol
@@ -58,6 +59,7 @@
                             ((IntegerConstant 0 (Integer 4) Decimal))]
                             ()
                         )
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -82,6 +84,7 @@
                             ((IntegerConstant 1 (Integer 4) Decimal))]
                             ()
                         )
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -124,6 +127,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             tf:
                                                 (Variable
@@ -142,6 +146,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     logical_gets_integer
@@ -173,6 +178,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Private
@@ -202,6 +208,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             tf:
                                                 (Variable
@@ -220,6 +227,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     logical_gets_integer_use
@@ -251,6 +259,7 @@
                                             ((Var 4 i))]
                                             ()
                                         )
+                                        .false.
                                     )]
                                     ()
                                     Private

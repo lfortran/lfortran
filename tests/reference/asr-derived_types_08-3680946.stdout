@@ -109,6 +109,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             rectangle:
                                 (ExternalSymbol
@@ -152,6 +153,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     derived_types_08
@@ -253,6 +255,7 @@
                         )
                         (IntegerConstant 100 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -263,6 +266,7 @@
                         )
                         (IntegerConstant 200 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -352,6 +356,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             filled:
                                                 (Variable
@@ -370,6 +375,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             sh:
                                                 (Variable
@@ -390,6 +396,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -408,6 +415,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -426,6 +434,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     initialize_subrout
@@ -464,6 +473,7 @@
                                         )
                                         (Var 5 color)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -474,6 +484,7 @@
                                         )
                                         (Var 5 filled)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -484,6 +495,7 @@
                                         )
                                         (Var 5 x)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -494,6 +506,7 @@
                                         )
                                         (Var 5 y)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -523,6 +536,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             width:
                                                 (Variable
@@ -541,6 +555,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     rectangle
@@ -578,6 +593,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             filled:
                                                 (Variable
@@ -596,6 +612,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             initialize:
                                                 (ClassProcedure
@@ -625,6 +642,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -643,6 +661,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     shape

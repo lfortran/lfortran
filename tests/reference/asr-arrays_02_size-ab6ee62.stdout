@@ -29,6 +29,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -70,6 +72,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             size_a4:
                                 (Variable
@@ -88,6 +91,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             size_a8:
                                 (Variable
@@ -106,6 +110,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             size_b4:
                                 (Variable
@@ -124,6 +129,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             size_b8:
                                 (Variable
@@ -142,6 +148,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     arrays_01
@@ -155,6 +162,7 @@
                             (IntegerConstant 3 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b4)
@@ -165,6 +173,7 @@
                             (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_a8)
@@ -175,6 +184,7 @@
                             (IntegerConstant 3 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b8)
@@ -185,6 +195,7 @@
                             (IntegerConstant 4 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
