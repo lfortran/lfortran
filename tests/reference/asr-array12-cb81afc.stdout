@@ -172,7 +172,18 @@
                                         (FunctionCall
                                             2 getcwd
                                             ()
-                                            [((Var 12 cpath))
+                                            [((ArrayPhysicalCast
+                                                (Var 12 cpath)
+                                                DescriptorArray
+                                                StringArraySinglePointer
+                                                (Array
+                                                    (String 1 1 () PointerString)
+                                                    [(()
+                                                    ())]
+                                                    StringArraySinglePointer
+                                                )
+                                                ()
+                                            ))
                                             ((Var 12 buffersize))]
                                             (CPtr)
                                             ()
@@ -223,7 +234,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (Array
+                                                        (String 1 1 () PointerString)
+                                                        [(()
+                                                        ())]
+                                                        StringArraySinglePointer
+                                                    )
                                                     ()
                                                     BindC
                                                     Public
@@ -274,7 +290,12 @@
                                         })
                                     getcwd
                                     (FunctionType
-                                        [(String 1 1 () PointerString)
+                                        [(Array
+                                            (String 1 1 () PointerString)
+                                            [(()
+                                            ())]
+                                            StringArraySinglePointer
+                                        )
                                         (Integer 4)]
                                         (CPtr)
                                         BindC

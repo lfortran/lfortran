@@ -473,6 +473,7 @@ RUN(NAME functions_33 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME functions_34 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME functions_35 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME functions_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME functions_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 
 RUN(NAME common_01 LABELS gfortran)
@@ -1223,6 +1224,7 @@ RUN(NAME bindc_02 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_02b.f90 bindc_0
 RUN(NAME bindc_03 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_03c.c)
 RUN(NAME bindc_04 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_04c.c)
 RUN(NAME bindc_05 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_05c.c)
+RUN(NAME bindc_06 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_06b.c)
 
 RUN(NAME case_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
