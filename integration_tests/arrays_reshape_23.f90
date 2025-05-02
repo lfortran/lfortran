@@ -19,7 +19,7 @@ module lincoa_mod
         integer :: m, n
         m = 3
         n = 2
-        amat = reshape([1., 2., 3., 4., 5., 6.], shape(amat))
+        amat = reshape([1., 2., 3., 4., 5., 6.], [m, n])
     end subroutine get_lincon1
 end module lincoa_mod
 
@@ -29,9 +29,16 @@ program arrays_reshape_23
     real, allocatable :: a(:, :), b(:, :)
     call get_lincon(a)
     print *, a
+    if (size(a, 1) /= 3) error stop
+    if (size(a, 2) /= 2) error stop
     if( any(a(:, 1) /= [1.0, 2.0, 3.0]) ) error stop
     if( any(a(:, 2) /= [4.0, 5.0, 6.0]) ) error stop
 
     call get_lincon1(b)
+    print *, b
     print *, size(b, 1), size(b, 2)
+    if (size(b, 1) /= 3) error stop
+    if (size(b, 2) /= 2) error stop
+    if( any(b(:, 1) /= [1.0, 2.0, 3.0]) ) error stop
+    if( any(b(:, 2) /= [4.0, 5.0, 6.0]) ) error stop
 end program arrays_reshape_23
