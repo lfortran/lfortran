@@ -1554,7 +1554,13 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
     if( original_sym && (ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ||
         (ASR::is_a<ASR::Variable_t>(*original_sym) &&
          ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym)))) ) {
-        std::string class_proc_name = ASRUtils::symbol_name(original_sym);
+        std::string class_proc_name;
+        // ClassProcedure name might be same if the procedure is overridden, use proc_name instead
+        if (ASR::is_a<ASR::ClassProcedure_t>(*original_sym)) {
+            class_proc_name = std::string(ASR::down_cast<ASR::ClassProcedure_t>(original_sym)->m_proc_name);
+        } else {
+            class_proc_name = ASRUtils::symbol_name(original_sym);
+        }
         if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
             std::string imported_proc_name = "1_" + class_proc_name;
             if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
