@@ -31,7 +31,6 @@
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_class_constructor.h>
-#include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/replace_where.h>
 #include <libasr/pass/unused_functions.h>
@@ -155,7 +154,7 @@ void print_one_component(std::string component) {
                   << std::left << component_name << RESET << '\n';
     } else {
         float time_float = std::stof(time_value);
-        int time_width = 10; 
+        int time_width = 10;
 
         std::cout << std::string(indent_width, ' ')  // Print indentation
                   << std::left << std::setw(name_width) << component_name << RESET
@@ -2448,9 +2447,9 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (CLI::NonexistentPath(opts.arg_file).empty()) {
-        throw LCompilers::LCompilersException(
-            "error: no such file or directory: '" + opts.arg_file + "'"
-        );
+        std::cerr << "error: '" + opts.arg_file + "': linker input file not found: " +
+            "No such file or directory" << std::endl;
+        return 1;
     }
 
     std::string outfile;

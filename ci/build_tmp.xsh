@@ -64,7 +64,7 @@ cd test-bld
 # Note: we have to build in Release mode on Windows, because `llvmdev` is
 # compiled in Release mode and we get link failures if we mix and match build
 # modes:
-if $IS_LINUX:
+if $IS_LINUX or $IS_MAC:
     BUILD_TYPE = "Debug"
 else:
     BUILD_TYPE = "Release"
