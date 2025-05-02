@@ -922,6 +922,25 @@
                                                     .false.
                                                     ()
                                                 ),
+                                            i_0:
+                                                (Variable
+                                                    5
+                                                    i_0
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             idx:
                                                 (Variable
                                                     5
@@ -1163,29 +1182,197 @@
                                             ColMajor
                                         )
                                     )
-                                    (Assignment
-                                        (Var 5 indexarray)
-                                        (ArrayConstructor
-                                            [(ImpliedDoLoop
-                                                [(Var 5 i)]
-                                                (Var 5 i)
-                                                (Var 5 low)
-                                                (Var 5 high)
+                                    (DoLoop
+                                        ()
+                                        ((Var 5 i_0)
+                                        (IfExp
+                                            (IntegerCompare
+                                                (ArrayBound
+                                                    (ArrayConstructor
+                                                        [(ImpliedDoLoop
+                                                            [(Var 5 i)]
+                                                            (Var 5 i)
+                                                            (Var 5 low)
+                                                            (Var 5 high)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        )]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        ()
+                                                        ColMajor
+                                                    )
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    LBound
+                                                    ()
+                                                )
+                                                Lt
+                                                (ArrayBound
+                                                    (Var 5 indexarray)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    LBound
+                                                    ()
+                                                )
+                                                (Logical 4)
                                                 ()
+                                            )
+                                            (ArrayBound
+                                                (ArrayConstructor
+                                                    [(ImpliedDoLoop
+                                                        [(Var 5 i)]
+                                                        (Var 5 i)
+                                                        (Var 5 low)
+                                                        (Var 5 high)
+                                                        ()
+                                                        (Integer 4)
+                                                        ()
+                                                    )]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    ColMajor
+                                                )
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
+                                                LBound
                                                 ()
-                                            )]
-                                            (Array
+                                            )
+                                            (ArrayBound
+                                                (Var 5 indexarray)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                LBound
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (IfExp
+                                            (IntegerCompare
+                                                (ArrayBound
+                                                    (ArrayConstructor
+                                                        [(ImpliedDoLoop
+                                                            [(Var 5 i)]
+                                                            (Var 5 i)
+                                                            (Var 5 low)
+                                                            (Var 5 high)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        )]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        ()
+                                                        ColMajor
+                                                    )
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    UBound
+                                                    ()
+                                                )
+                                                Lt
+                                                (ArrayBound
+                                                    (Var 5 indexarray)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    UBound
+                                                    ()
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (ArrayBound
+                                                (ArrayConstructor
+                                                    [(ImpliedDoLoop
+                                                        [(Var 5 i)]
+                                                        (Var 5 i)
+                                                        (Var 5 low)
+                                                        (Var 5 high)
+                                                        ()
+                                                        (Integer 4)
+                                                        ()
+                                                    )]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    ColMajor
+                                                )
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                UBound
+                                                ()
+                                            )
+                                            (ArrayBound
+                                                (Var 5 indexarray)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                UBound
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 5 indexarray)
+                                                [(()
+                                                (Var 5 i_0)
                                                 ())]
-                                                DescriptorArray
+                                                (Integer 4)
+                                                RowMajor
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (ArrayConstructor
+                                                    [(ImpliedDoLoop
+                                                        [(Var 5 i)]
+                                                        (Var 5 i)
+                                                        (Var 5 low)
+                                                        (Var 5 high)
+                                                        ()
+                                                        (Integer 4)
+                                                        ()
+                                                    )]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    ColMajor
+                                                )
+                                                [(()
+                                                (Var 5 i_0)
+                                                ())]
+                                                (Integer 4)
+                                                RowMajor
+                                                ()
                                             )
                                             ()
-                                            ColMajor
-                                        )
-                                        ()
-                                        .false.
+                                            .false.
+                                        )]
+                                        []
                                     )
                                     (If
                                         (IntrinsicElementalFunction
