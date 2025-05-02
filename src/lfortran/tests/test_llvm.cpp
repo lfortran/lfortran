@@ -19,7 +19,6 @@ using LCompilers::TRY;
 using LCompilers::FortranEvaluator;
 using LCompilers::CompilerOptions;
 
-
 TEST_CASE("llvm 1") {
     //std::cout << "LLVM Version:" << std::endl;
     //LFortran::LLVMEvaluator::print_version_message();
@@ -1316,8 +1315,12 @@ end function sub
 
 TEST_CASE("llvm ir 1") {
     LCompilers::LLVMEvaluator e;
-    CHECK_THROWS_AS(e.parse_module2("", "src/lfortran/tests/ir.ll"), LCompilers::LCompilersException);
-    CHECK_THROWS_WITH(e.parse_module2("", "src/lfortran/tests/ir.ll"), "parse_module(): Invalid LLVM IR");
+    std::string file_name = std::string(PROJECT_SOURCE_DIR) + "/src/lfortran/tests/ir.ll";
+    // `file_name` evaluates to something like:
+    // "/Users/gxyd/OpenSource/lfortran/lfortran-${version}/src/lfortran/tests/ir.ll",
+    // where `version` isn't a local variable
+    CHECK_THROWS_AS(e.parse_module2("", file_name), LCompilers::LCompilersException);
+    CHECK_THROWS_WITH(e.parse_module2("", file_name), "parse_module(): Invalid LLVM IR");
 }
 
 // This test does not work on Windows yet

@@ -46,6 +46,7 @@ endif()
 # Add one main test suite for LFortran, composed of many individual cpp files:
 add_executable(test_lfortran ${SRC})
 target_link_libraries(test_lfortran lfortran_lib p::doctest)
+target_compile_definitions(test_lfortran PRIVATE PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 if (HAVE_BUILD_TO_WASM)
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
     set(WASM_LINK_FLAGS
