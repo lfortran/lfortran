@@ -40,7 +40,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
 
     InlineFunctionCalls(Allocator& al_): al(al_) {}
 
-    bool check_inline_possibility(ASR::symbol_t* func) {
+    bool check_inline_possibility(ASR::symbol_t* func, ASR::FunctionCall_t* func_call) {
         // Symbol should be a ASR::Function_t
         func = ASRUtils::symbol_get_past_external(func);
         if( !ASR::is_a<ASR::Function_t>(*func) ) {
@@ -48,6 +48,13 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         }
 
         ASR::Function_t* function = ASR::down_cast<ASR::Function_t>(func);
+
+        // Number of arguments in function call
+        // must match the number of arguments
+        // in function definition.
+        if( function->n_args != func_call->n_args ) {
+            return false;
+        }
 
         // ⁠Function should have only Variable symbols in its symtab.
         // The type of those Variable symbols shouldn’t be FunctionType.
@@ -90,7 +97,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        if( !check_inline_possibility(x->m_name) ) {
+        if( !check_inline_possibility(x->m_name, x) ) {
             return ;
         }
 
@@ -102,7 +109,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         // into the current scope
         typedef std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> SymbolToSymbol;
         SymbolToSymbol function2currentscope, currentscope2function;
-        std::unordered_map<ASR::symbol_t*, uint64_t> function2argidx;
+        std::unordered_map<uint64_t, ASR::symbol_t*> argidx2function;
         std::unordered_map<ASR::symbol_t*, ASR::expr_t*> function_locals2init_expr;
 
         const Location& loc = x->base.base.loc;
@@ -118,7 +125,6 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 nullptr, 0, variable->m_intent, nullptr, nullptr, variable->m_storage,
                 local_ttype_copy, variable->m_type_declaration, variable->m_abi, variable->m_access,
                 variable->m_presence, variable->m_value_attr, variable->m_target_attr, variable->m_contiguous_attr));
-            ASR::Variable_t* local_variable = ASR::down_cast<ASR::Variable_t>(local_sym);
             if( variable->m_intent == ASRUtils::intent_local ||
                 variable->m_intent == ASRUtils::intent_unspecified ) {
                 function_locals2init_expr[local_sym] = variable->m_symbolic_value;
@@ -129,11 +135,21 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         }
 
         for( size_t i = 0; i < function->n_args; i++ ) {
-            function2argidx[ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v] = i;
+            argidx2function[i] = ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v;
         }
 
         // Step 2
         // Initialise local copies of argument variables.
+        LCOMPILERS_ASSERT(x->n_args == function->n_args);
+        for( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::symbol_t* original_symbol = argidx2function.at(i);
+            ASR::symbol_t* local_symbol = function2currentscope[original_symbol];
+            ASR::stmt_t* init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
+                x->m_args[i].m_value, nullptr, false
+            ));
+            current_body->push_back(al, init_stmt);
+        }
 
         // Initialise local copies of variables declared after
         // arguments in the function
