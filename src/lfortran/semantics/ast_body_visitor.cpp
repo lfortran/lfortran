@@ -1644,11 +1644,15 @@ public:
                 if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
                     ASRUtils::make_ArrayBroadcast_t_util(
                         al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
-                }
-                
+                } 
                 int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(source));
                 std::vector<ASR::expr_t*> do_loop_variables;
                 for (int i=0; i<n_dims; i++) {
+                    if (current_scope->get_symbol("i_" + std::to_string(i))) {
+                        ASR::symbol_t* sym = current_scope->get_symbol("i_" + std::to_string(i));
+                        do_loop_variables.push_back(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym)));
+                        continue;
+                    }
                     std::string var_name = "i_" + std::to_string(i);
                     ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                     ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
