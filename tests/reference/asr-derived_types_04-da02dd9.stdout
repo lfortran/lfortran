@@ -166,12 +166,22 @@
                                     (SymbolTable
                                         8
                                         {
-                                            1_to_string:
+                                            1_date_to_string:
                                                 (ExternalSymbol
                                                     8
-                                                    1_to_string
+                                                    1_date_to_string
                                                     4 to_string
                                                     toml_date
+                                                    []
+                                                    to_string
+                                                    Public
+                                                ),
+                                            1_time_to_string:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_time_to_string
+                                                    3 to_string
+                                                    toml_time
                                                     []
                                                     to_string
                                                     Public
@@ -304,7 +314,7 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            8 1_to_string
+                                            8 1_date_to_string
                                             ()
                                             [((Var 8 lhs))]
                                             (StructInstanceMember
@@ -342,7 +352,7 @@
                                                 ()
                                             )
                                             [(SubroutineCall
-                                                8 1_to_string
+                                                8 1_time_to_string
                                                 ()
                                                 [((Var 8 temporary))]
                                                 (StructInstanceMember
