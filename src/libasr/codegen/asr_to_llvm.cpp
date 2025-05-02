@@ -9407,7 +9407,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                                                     // tmp is {float, float}*
                                                     // type_fx2 is [2 x float]
                                                     llvm::Type* type_fx2 = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2);
-                                                    tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
+                                                    // we bitcast complex_type_4 to [2 x float]*
+                                                    llvm::Value *complex_as_array_ptr = builder->CreateBitCast(tmp, type_fx2->getPointerTo());
+                                                    tmp = llvm_utils->CreateLoad2(type_fx2, complex_as_array_ptr);
                                                 } else {
                                                     // tmp is {float, float}*
                                                     // type_fx2 is <2 x float>
