@@ -23,9 +23,9 @@ program test_stdin
     if (istty == 1) then
         if (is_gfortran) then
             call execute_command_line("gfortran -cpp formatted_read_1.f90 -o formatted_read_1 && " // &
-    "../codes/formatted_read_1 < ../codes/input.txt")
+    "formatted_read_1 < formatted_read_1")
         else
-            call execute_command_line("../src/bin/lfortran --cpp formatted_read_1.f90 < input.txt")
+            call execute_command_line("../src/bin/lfortran --cpp formatted_read_1.f90 < formatted_read_1.f90")
         end if
     else
         read(*, '(a)') a
