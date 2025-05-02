@@ -29,6 +29,20 @@ class VarCollector: public ASR::BaseWalkVisitor<VarCollector> {
     }
 };
 
+void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
+    Vec<ASR::stmt_t*>*& current_body, std::function<void(const ASR::stmt_t&)> visit_stmt) {
+    Vec<ASR::stmt_t*>* current_body_copy = current_body;
+    Vec<ASR::stmt_t*> current_body_vec; current_body_vec.reserve(al, 1);
+    current_body_vec.reserve(al, n_body);
+    current_body = &current_body_vec;
+    for (size_t i = 0; i < n_body; i++) {
+        visit_stmt(*m_body[i]);
+        current_body->push_back(al, m_body[i]);
+    }
+    m_body = current_body_vec.p; n_body = current_body_vec.size();
+    current_body = current_body_copy;
+}
+
 class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
 
     public:
@@ -168,16 +182,23 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
     private:
 
     Allocator& al;
-    Vec<ASR::stmt_t*>* current_body;
+    Vec<ASR::stmt_t*>* current_body = nullptr;
     InlineFunctionCalls replacer;
 
     public:
+
+    InlineFunctionCallsVisitor(Allocator& al_): al(al_), replacer(al) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.current_body = current_body;
         replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
+    }
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        transform_stmts_impl(al, m_body, n_body, current_body,
+            [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
@@ -199,6 +220,8 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
                 case ASR::symbolType::Program: {
                     programme.push_back(al, sym.second);
                     break;
+                }
+                default: {
                 }
             }
         }
