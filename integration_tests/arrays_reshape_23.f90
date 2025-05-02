@@ -19,6 +19,10 @@ module lincoa_mod
         integer :: m, n
         m = 3
         n = 2
+        ! TODO: remove the allocate and change `shape(amat)` to `[m, n]`
+        ! after this issue is fixed:
+        ! https://github.com/lfortran/lfortran/pull/7147
+        allocate(amat(m, n))
         amat = reshape([1., 2., 3., 4., 5., 6.], shape(amat))
     end subroutine get_lincon1
 end module lincoa_mod
