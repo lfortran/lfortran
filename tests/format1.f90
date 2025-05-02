@@ -136,6 +136,8 @@ program format_04
 
     ! test for issue: https://github.com/lfortran/lfortran/issues/6748 
     print "((A))))", ' foobar'
+    print "((A))x", ' foobar'
+    print "(a)xx)", ' foobar'
 
     ! the below test also ensures that blank character
     ! isn't removed from ' Dates: '
