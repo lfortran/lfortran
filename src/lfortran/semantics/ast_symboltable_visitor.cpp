@@ -2557,14 +2557,16 @@ public:
                     }
                 }
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
-                if (!is_deferred &&
-                    ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
-                    diag.add(diag::Diagnostic(
-                        "PROCEDURE(interface) should be declared DEFERRED",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {loc})}));
-                    throw SemanticAbort();
-                }
+                // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
+                //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
+                // if (!is_deferred &&
+                //     ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
+                //     diag.add(diag::Diagnostic(
+                //         "PROCEDURE(interface) should be declared DEFERRED",
+                //         diag::Level::Error, diag::Stage::Semantic, {
+                //             diag::Label("", {loc})}));
+                //     throw SemanticAbort();
+                // }
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
