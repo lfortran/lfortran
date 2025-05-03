@@ -271,8 +271,8 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
-void handle_float(char* format, double val, char** result, bool use_sing_plus) {
-    if (strcmp(format,"f-64") == 0){ //use c formatting.
+void handle_float(char* format, double val, char** result, bool use_sign_plus) {
+    if (strcmp(format,"f-64") == 0) { //use c formatting.
         char* float_str = (char*)malloc(50 * sizeof(char));
         sprintf(float_str,"%23.17e",val);
         *result = append_to_string(*result,float_str);
@@ -290,7 +290,7 @@ void handle_float(char* format, double val, char** result, bool use_sing_plus) {
     double decimal_part = fabs(val) - integer_part;
 
     int sign_width = (val < 0) ? 1 : 0; // Negative sign
-    bool sign_plus_exist = (use_sing_plus && val>=0); // Positive sign
+    bool sign_plus_exist = (use_sign_plus && val>=0); // Positive sign
     int integer_length = (integer_part == 0) ? 1 : (int)log10(integer_part) + 1;
 
     // parsing the format
@@ -424,7 +424,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     *result = append_to_string(*result, final_result);
 }
 
-void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
+void parse_decimal_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
     *width_digits = -1;
     *decimal_digits = -1;
     *exp_digits = -1;
@@ -435,7 +435,7 @@ void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, i
     }
     *width_digits = atoi(width_digits_pos);
 
-    // dot_pos exists, we previous checked for it in `parse_fortran_format`
+    // dot_pos exists, we previously checked for it in `parse_fortran_format`
     char *dot_pos = strchr(format, '.');
     *decimal_digits = atoi(++dot_pos);
 
@@ -451,7 +451,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
 
     int width_digits, decimal_digits, exp_digits;
-    parse_deciml_format(format, &width_digits, &decimal_digits, &exp_digits);
+    parse_decimal_format(format, &width_digits, &decimal_digits, &exp_digits);
 
     int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
@@ -769,6 +769,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'f' :
             case 'l' :
             case 'b' :
+            case 'g' :
                 start = index++;
                 bool dot = false;
                 if(tolower(format[index]) == 's') index++;
@@ -919,17 +920,16 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     char current_arg_correct_format = primitive_enum_to_format_specifier(current_arg_type);
 
     char lowered_format_value = tolower(format_value);
+    if (lowered_format_value == 'g') return true;
     if(lowered_format_value == 'd' || lowered_format_value == 'e'){
         lowered_format_value = 'f';
     }
     // Special conditions that are allowed by gfortran.
     bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
-                               (lowered_format_value == 'a' && current_arg_correct_format == 'l');
+                               (lowered_format_value == 'a' && current_arg_correct_format == 'l') ||
+                               (lowered_format_value == 'b' && (current_arg_correct_format == 'i' || current_arg_correct_format == 'f'));
 
-    bool b_format_for_bitwise_types = (lowered_format_value == 'b' &&
-    (current_arg_correct_format == 'i' || current_arg_correct_format == 'f'));
-
-    if(lowered_format_value != current_arg_correct_format && !special_conditions && !b_format_for_bitwise_types){
+    if(lowered_format_value != current_arg_correct_format && !special_conditions){
         return false;
     } else {
         return true;
@@ -1293,7 +1293,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
         s_info.serialization_string[s_info.current_stop] !='\0')
     {fprintf(stderr,"Internal Error : default formatting error\n");exit(1);}
 
-
     if(format == NULL){
         default_formatting(&result, &s_info);
         free_serialization_info(&s_info);
@@ -1316,7 +1315,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
         memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
         modified_input_string[len-2] = '\0';
     }
-    format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
+    format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
     is_SP_specifier = true  --> 'SP'
@@ -1446,7 +1445,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     }
                     free(result);
                     result = (char*)malloc(150 * sizeof(char));
-                    sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,value[0]);
+                    sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n", type, value[0]);
                     // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
                     result[0] = '\b';
                     BreakWhileLoop = true;
@@ -1457,6 +1456,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                 // We have to cast the pointers to int64 or double to avoid accessing beyond bounds.
                 int64_t integer_val = 0;
                 double double_val = 0;
+                char* char_val = NULL;
+                bool bool_val = false;
                 switch(s_info.current_element_type ){
                     case  INTEGER_64_TYPE:
                         integer_val = *(int64_t*)s_info.current_arg_info.current_arg; 
@@ -1475,6 +1476,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                         break;
                     case  FLOAT_32_TYPE:
                         double_val = (double)*(float*)s_info.current_arg_info.current_arg; 
+                        break;
+                    case CHARACTER_TYPE:
+                        char_val = *(char**)s_info.current_arg_info.current_arg;
+                        break;
+                    case LOGICAL_TYPE:
+                        bool_val = *(bool*)s_info.current_arg_info.current_arg;
                         break;
                     default:
                         break;
@@ -1580,6 +1587,33 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             free(pad);
                         }
                         result = append_to_string(result, binary_str);
+                    }
+                } else if (tolower(value[0]) == 'g') {
+                    int width = 0;
+                    int precision = 0;
+                    if (strlen(value) > 1) {
+                        width = atoi(value + 1); // Get width after 'g'
+                    } 
+                    if (strlen(value) > 2 && value[2] == '.') {
+                        precision = atoi(value + 3); // Get precision after 'g.'
+                    }
+                    char buffer[100];
+                    if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
+                        char format_spec[20];
+                        snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
+                        snprintf(buffer, sizeof(buffer), format_spec, double_val);
+                        result = append_to_string(result, buffer);
+                    } else if (s_info.current_element_type == INTEGER_8_TYPE ||
+                               s_info.current_element_type == INTEGER_16_TYPE ||
+                               s_info.current_element_type == INTEGER_32_TYPE ||
+                               s_info.current_element_type == INTEGER_64_TYPE) {
+                        snprintf(result, sizeof(buffer), "%lld", integer_val);
+                    } else if (s_info.current_element_type == CHARACTER_TYPE) {
+                        result = append_to_string(result, char_val);
+                    } else if (s_info.current_element_type == LOGICAL_TYPE) {
+                        result = append_to_string(result, bool_val ? "T" : "F");
+                    } else {
+                        result = append_to_string(result, "<unsupported>");
                     }
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
