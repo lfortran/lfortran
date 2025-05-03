@@ -120,6 +120,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--module-mangling", compiler_options.po.module_name_mangling, "Mangles the module name");
+        app.add_flag("--intrinsic-module-mangling", compiler_options.po.intrinsic_module_name_mangling, "Mangles only intrinsic module name");
         app.add_flag("--global-mangling", compiler_options.po.global_symbols_mangling, "Mangles all the global symbols");
         app.add_flag("--intrinsic-mangling", compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
         app.add_flag("--all-mangling", compiler_options.po.all_symbols_mangling, "Mangles all possible symbols");
