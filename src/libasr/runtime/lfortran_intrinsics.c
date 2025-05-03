@@ -1607,7 +1607,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                                s_info.current_element_type == INTEGER_16_TYPE ||
                                s_info.current_element_type == INTEGER_32_TYPE ||
                                s_info.current_element_type == INTEGER_64_TYPE) {
-                        snprintf(result, sizeof(buffer), "%lld", integer_val);
+                        snprintf(result, sizeof(buffer), "%"PRId64, integer_val);
                     } else if (s_info.current_element_type == CHARACTER_TYPE) {
                         result = append_to_string(result, char_val);
                     } else if (s_info.current_element_type == LOGICAL_TYPE) {
