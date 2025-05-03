@@ -2,9 +2,13 @@ program format_24
   implicit none
   complex(8) :: z
   real(8) :: rvals(3)
+  character(len=*), parameter :: FMT = '(*(g0.5,1x))'
+  integer, parameter :: WP = selected_real_kind(15,307)
+  real(WP) :: g = 1
   rvals = [1.1d0, 2.2d0, 3.3d0]
   z = (1.23d0, -4.56d0)
 
+  write(*,FMT) 'test: ', g
   print "(G0.17)", 1d0/3d0                       ! Real division with repeating decimal
   print "(G0.5)", 12345.6789d0                   ! Wide number, smaller precision
   print "(G0.17)", 0.00000001234567d0           ! Small magnitude number
