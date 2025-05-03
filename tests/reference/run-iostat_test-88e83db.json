@@ -2,12 +2,12 @@
     "basename": "run-iostat_test-88e83db",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/iostat_test.f90",
-    "infile_hash": "09f23dc2889644b9d34126a31253913b27c9be1f90a6af5e52f6b74f",
+    "infile_hash": "845a1d8ec0e9e8d236cf40b703e1ce6c771307af80b7581b45e4b040",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-iostat_test-88e83db.stdout",
-    "stdout_hash": "26e68f32a9736c670c35933bb5df355867cb8599b3342725be2dffc0",
-    "stderr": "run-iostat_test-88e83db.stderr",
-    "stderr_hash": "9c63ade47f347b4c61353d2af6e780092daa84d287747e19ac89fdf9",
+    "stdout_hash": "85f329b323c7a43588e3c24968042473b67dad36a4636920978130c2",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }
