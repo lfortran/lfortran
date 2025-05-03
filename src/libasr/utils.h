@@ -46,6 +46,7 @@ struct PassOptions {
     bool realloc_lhs = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
+    bool intrinsic_module_name_mangling = false;
     bool global_symbols_mangling = false;
     bool intrinsic_symbols_mangling = false;
     bool all_symbols_mangling = false;
