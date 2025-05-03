@@ -4480,7 +4480,8 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
     }
     // TODO: Support other `status` specifiers
     char * file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
-    bool is_temp_file = strcmp(file_name, "_lfortran_generated_file.txt") == 0;
+    char* scratch_file = "_lfortran_generated_file";
+    bool is_temp_file = strncmp(file_name, scratch_file, strlen(scratch_file)) == 0;
     if ((status && strcmp(status, "delete") == 0) || is_temp_file) {
         if (remove(file_name) != 0) {
             printf("Error in deleting file!\n");
