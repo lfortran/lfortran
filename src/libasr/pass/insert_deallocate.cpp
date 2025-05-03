@@ -117,6 +117,10 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
         InsertDeallocate(Allocator& al_) : al(al_) {}
 
         void visit_Function(const ASR::Function_t& x) {
+            if (ASRUtils::get_FunctionType(&x)->m_abi == ASR::abiType::Interactive) {
+                ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Function(x);
+                return;
+            }
             ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
             push_implicitDeallocate_into_stack(xx.m_symtab, xx.base.base.loc);
             for (auto &a : x.m_symtab->get_scope()) {
