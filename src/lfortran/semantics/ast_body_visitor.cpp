@@ -1642,11 +1642,11 @@ public:
                     }
                 } 
                 ASR::stmt_t* assign = nullptr;
-                if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
+                int n_dims = alloc_args_vec.p[i].n_dims;
+                if (n_dims == 0 || (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type))) {
                     assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, alloc_args_vec.p[i].m_a->base.loc,
                         alloc_args_vec.p[i].m_a, source, nullptr, compiler_options.po.realloc_lhs));
                 } else {
-                    int n_dims = ASRUtils::extract_n_dims_from_ttype(var_type);
                     Vec<ASR::array_index_t> result_indices; result_indices.reserve(al, n_dims);
                     for (int i=0; i<n_dims; i++) {
                         ASR::array_index_t result_index;
