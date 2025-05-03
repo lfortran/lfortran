@@ -9981,8 +9981,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
             ASR::ClassProcedure_t* class_proc =
                 ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
-            is_runtime_polymorphism = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt))) ||
-                class_proc->m_is_deferred;
+            is_runtime_polymorphism = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)));
             proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
         }

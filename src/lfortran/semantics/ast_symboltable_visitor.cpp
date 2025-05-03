@@ -2511,17 +2511,9 @@ public:
 
     bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
-        while( true ) {
-            std::string proc = clss->m_name;
-            if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
-                return true;
-            }
-            ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(clss->m_parent);
-            if( !clss_sym ) {
-                break;
-            }
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*clss_sym));
-            clss = ASR::down_cast<ASR::Struct_t>(clss_sym);
+        std::string proc = clss->m_name;
+        if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
+            return true;
         }
         return false;
     }
