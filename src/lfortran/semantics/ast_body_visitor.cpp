@@ -3842,6 +3842,37 @@ public:
                         s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
                     current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 }
+
+                // If GenericProcedure resolves to a parent struct symbol, resolve the procedure names again with the original struct symbol
+                if (v_expr &&
+                    x.n_member >= 1 &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(v_expr)) &&
+                    (ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(ASRUtils::expr_type(v_expr))->m_derived_type)) !=
+                        ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(original_sym))) {
+                    for (size_t i = 0; i < p->n_procs; i++) {
+                        final_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(p->m_procs[i]),
+                                        to_lower(x.m_member[x.n_member - 1].m_name),
+                                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+                        final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
+                            final_sym, current_scope);
+                        ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(final_sym));
+                        Location l = x.base.base.loc;
+                        // TODO: Add error message here
+                        if (ASRUtils::select_func_subrout(cp->m_proc, args_with_mdt, l,
+                            [&](const std::string &msg, const Location &loc) {
+                                diag.add(Diagnostic(
+                                    msg,
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{loc})
+                                    }));
+                                throw SemanticAbort();
+                                })) {
+                                    break;
+                                }
+                    }
+                    break;
+                }
+
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
