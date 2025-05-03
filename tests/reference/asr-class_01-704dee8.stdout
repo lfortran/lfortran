@@ -7,6 +7,16 @@
                     (SymbolTable
                         6
                         {
+                            1_circle_print:
+                                (ExternalSymbol
+                                    6
+                                    1_circle_print
+                                    3 print
+                                    circle
+                                    []
+                                    print
+                                    Public
+                                ),
                             1_circle_radius:
                                 (ExternalSymbol
                                     6
@@ -15,16 +25,6 @@
                                     circle
                                     []
                                     radius
-                                    Public
-                                ),
-                            1_print:
-                                (ExternalSymbol
-                                    6
-                                    1_print
-                                    3 print
-                                    circle
-                                    []
-                                    print
                                     Public
                                 ),
                             c:
@@ -84,7 +84,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_print
+                        6 1_circle_print
                         ()
                         []
                         (Var 6 c)
@@ -104,7 +104,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_print
+                        6 1_circle_print
                         ()
                         []
                         (Var 6 c)
@@ -283,10 +283,10 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_area:
+                                            1_circle_area:
                                                 (ExternalSymbol
                                                     5
-                                                    1_area
+                                                    1_circle_area
                                                     3 area
                                                     circle
                                                     []
@@ -366,7 +366,7 @@
                                     [(Assignment
                                         (Var 5 area)
                                         (FunctionCall
-                                            5 1_area
+                                            5 1_circle_area
                                             ()
                                             []
                                             (Real 4)

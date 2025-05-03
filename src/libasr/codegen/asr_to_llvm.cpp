@@ -9140,6 +9140,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         }
 
         load_non_array_non_character_pointers(v, ASRUtils::expr_type(v), tmp);
+        if (ASRUtils::is_array(t) && ASRUtils::is_allocatable(t)) {
+            llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::extract_type(t), module.get());
+            tmp = llvm_utils->CreateLoad2(llvm_type->getPointerTo(), tmp);
+        }
         t = ASRUtils::extract_type(t);
         int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 

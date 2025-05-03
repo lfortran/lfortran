@@ -1529,6 +1529,20 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
+        if( !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(x.m_shape)) ) {
+            replace_expr_with_temporary_variable(xx.m_shape, x.m_shape, "_array_reshape_shape", true);
+            ASR::ttype_t* shape_ttype = ASRUtils::expr_type(xx.m_shape);
+            ASR::array_physical_typeType shape_ptype = ASRUtils::extract_physical_type(shape_ttype);
+            if( shape_ptype != ASR::array_physical_typeType::DescriptorArray ) {
+                xx.m_shape = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(
+                    al, xx.m_shape->base.loc, xx.m_shape, shape_ptype,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, shape_ttype, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true),
+                    nullptr)
+                );
+            }
+        }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
             ASRUtils::extract_physical_type(xx.m_type) !=
