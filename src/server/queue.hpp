@@ -92,6 +92,7 @@ namespace LCompilers::LLanguageServer::Threading {
                 enqueued.notify_one();
                 return elem;
             }
+            lock.unlock();
             logger.warn()
                 << "Failed to add element to queue of size=" << _size
                 << ", capacity=" << N << std::endl;
@@ -116,6 +117,7 @@ namespace LCompilers::LLanguageServer::Threading {
                 dequeued.notify_one();
                 return value;
             }
+            lock.unlock();
             logger.warn()
                 << "Failed to return element from queue of size=" << _size
                 << ", capacity=" << N << std::endl;
