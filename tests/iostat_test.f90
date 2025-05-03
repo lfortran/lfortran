@@ -4,7 +4,7 @@ program read_from_file
     integer :: ios
     character(len=100) ::sa
 
-    open(unit=10, file="../codes/input.txt", status="old", iostat=ios)
+    open(unit=10, file="iostat_test.txt", status="old", iostat=ios)
     if (ios /= 0) then
         print *, "Error opening the file."
         stop
