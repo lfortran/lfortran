@@ -241,6 +241,20 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
 
   print_subsection "Running CTest"
   ctest
+
+  print_subsection "Testing with separate compilation"
+  cd ../
+  git clean -dfx
+  mkdir lf && cd lf
+  FC="$FC --intrinsic-mangling --generate-object-code" cmake ..
+  make
+  run_test examples/example_hybrd
+  run_test examples/example_hybrd1
+  run_test examples/example_lmder1
+  run_test examples/example_lmdif1
+  run_test examples/example_primes
+  print_subsection "Running CTest"
+  ctest
 '
 
 ##########################
@@ -256,6 +270,14 @@ time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
   $FC ./examples/example_hybrd1.f90 --legacy-array-sections
   $FC ./examples/example_lmdif1.f90 --legacy-array-sections
   $FC ./examples/example_lmder1.f90 --legacy-array-sections
+
+  print_subsection "Testing with separate compilation"
+  git clean -dfx
+  $FC ./src/minpack.f90 -c --legacy-array-sections --generate-object-code
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --generate-object-code minpack.o
 '
 
 time_section "🧪 Testing Modern Minpack (Result Check)" '
@@ -269,6 +291,14 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
   $FC ./examples/example_hybrd1.f90 --legacy-array-sections
   $FC ./examples/example_lmdif1.f90 --legacy-array-sections
   $FC ./examples/example_lmder1.f90 --legacy-array-sections
+
+  print_subsection "Testing with separate compilation"
+  git clean -dfx
+  $FC ./src/minpack.f90 -c --legacy-array-sections --generate-object-code
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --generate-object-code minpack.o
 '
 
 ##########################
@@ -284,6 +314,14 @@ time_section "🧪 Testing dftatom" '
 
   git clean -dfx
   make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --fast"
+  make -f Makefile.manual quicktest
+
+  git clean -dfx
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --skip-pass=pass_array_by_data"
+  make -f Makefile.manual quicktest
+
+  git clean -dfx
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --skip-pass=pass_array_by_data --fast"
   make -f Makefile.manual quicktest
 '
 
