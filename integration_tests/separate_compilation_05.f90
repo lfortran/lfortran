@@ -1,5 +1,5 @@
-program separate_compilation_04
-use separate_compilation_04b_module
+program separate_compilation_05
+use separate_compilation_05b_module
 use ieee_arithmetic, only: ieee_is_nan
 
 
