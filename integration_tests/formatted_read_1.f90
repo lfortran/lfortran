@@ -4,6 +4,7 @@ program test_stdin
     character(len=100) :: a
     integer :: istty
     logical :: is_gfortran = .false.
+    integer :: iostat_value
 
     interface
         function isatty(fd) bind(C)
@@ -28,7 +29,8 @@ program test_stdin
             call execute_command_line("../src/bin/lfortran --cpp formatted_read_1.f90 < formatted_read_1.f90")
         end if
     else
-        rread(*, '(a)', iostat=iostat_value) a
+
+        read(*, '(a)', iostat=iostat_value) a
         if (iostat_value /= 0) then
             print *, "Error reading from stdin. IOSTAT =", iostat_value
             a = ""  
