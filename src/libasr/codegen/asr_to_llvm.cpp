@@ -9976,12 +9976,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         std::string proc_sym_name = "";
-        bool is_deferred = false;
+        bool is_runtime_polymorphism = false;
         bool is_nopass = false;
         if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
             ASR::ClassProcedure_t* class_proc =
                 ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
-            is_deferred = class_proc->m_is_deferred;
+            is_runtime_polymorphism = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt))) ||
+                class_proc->m_is_deferred;
             proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
         }
@@ -10087,7 +10088,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 throw CodeGenError("SubroutineCall: StructType symbol type not supported");
             }
         }
-        if (is_deferred) {
+        if (is_runtime_polymorphism) {
             if (is_nopass || args.empty()) {
                 visit_RuntimePolymorphicSubroutineCall(x, proc_sym_name, nullptr);
             } else {
