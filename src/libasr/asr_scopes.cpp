@@ -52,7 +52,9 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
             }
             case (ASR::symbolType::Module) : {
                 ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(a.second);
-                v->m_symtab->mark_all_variables_external(al);
+                if ( !startswith(v->m_name, "lfortran_intrinsic") ) {
+                    v->m_symtab->mark_all_variables_external(al);
+                }
             }
             default : {};
         }
