@@ -118,7 +118,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clean -dfx
   print_subsection "Building Numerical Methods Fortran with separate compilation"
 
-  FC="$FC --generate-object-code" make
+  FC="$FC --generate-object-code --skip-pass=pass_array_by_data" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
