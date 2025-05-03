@@ -28,7 +28,12 @@ program test_stdin
             call execute_command_line("../src/bin/lfortran --cpp formatted_read_1.f90 < formatted_read_1.f90")
         end if
     else
-        read(*, '(a)') a
-        print *, "From stdin:", trim(a)
+        rread(*, '(a)', iostat=iostat_value) a
+        if (iostat_value /= 0) then
+            print *, "Error reading from stdin. IOSTAT =", iostat_value
+            a = ""  
+        else
+            print *, "From stdin:", trim(a)
+        end if
     end if
 end program
