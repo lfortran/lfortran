@@ -8594,7 +8594,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::type_get_past_allocatable_pointer(type),
                         module.get());
 #endif
-                    tmp = arr_descr->get_pointer_to_data(tmp);
+                    ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(type));
+                    if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerToDataArray) {
+                        tmp = arr_descr->get_pointer_to_data(tmp);
+                    }
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
                         tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), tmp);
