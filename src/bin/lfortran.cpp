@@ -2318,6 +2318,7 @@ int main_app(int argc, char *argv[]) {
     if (parser.opts.compiler_options.generate_object_code) {
         compiler_options.po.intrinsic_symbols_mangling = true;
         compiler_options.po.intrinsic_module_name_mangling = true;
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
     }
 
     if (opts.arg_version) {
