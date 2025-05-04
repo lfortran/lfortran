@@ -1067,7 +1067,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 };
 
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
+                        const LCompilers::PassOptions& pass_options) {
     PassArrayByDataProcedureVisitor v(al);
     v.visit_TranslationUnit(unit);
     EditProcedureVisitor e(v);
@@ -1076,7 +1076,9 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     EditProcedureCallsVisitor u(al, v, not_to_be_erased);
     u.visit_TranslationUnit(unit);
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
-    x.visit_TranslationUnit(unit);
+    if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {
+        x.visit_TranslationUnit(unit);
+    }
     PassUtils::UpdateDependenciesVisitor y(al);
     y.visit_TranslationUnit(unit);
 }
