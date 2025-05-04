@@ -3660,33 +3660,18 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
             exit(1);
         }
     } else {
-        char buffer[100];
-        if (!fgets(buffer, sizeof(buffer), filep)) {
-            fprintf(stderr, "Error: Failed to read line from file.\n");
-            exit(1);
-        }
-
-        char *token = strtok(buffer, " \t\n");
-        if (token == NULL) {
+        long temp;
+        if (fscanf(filep, "%ld", &temp) != 1) {
             fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
             exit(1);
         }
 
-        errno = 0;
-        char *endptr = NULL;
-        long long_val = strtol(token, &endptr, 10);
-
-        if (endptr == token || *endptr != '\0') {
-            fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
+        if (temp < INT32_MIN || temp > INT32_MAX) {
+            fprintf(stderr, "Error: Value %ld is out of int32_t range (file).\n", temp);
             exit(1);
         }
 
-        if (errno == ERANGE || long_val < INT32_MIN || long_val > INT32_MAX) {
-            fprintf(stderr, "Error: Value %ld is out of int32_t range (file).\n", long_val);
-            exit(1);
-        }
-
-        *p = (int32_t)long_val;
+        *p = (int32_t)temp;
     }
 }
 
@@ -3737,33 +3722,18 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
             exit(1);
         }
     } else {
-        char buffer[100];
-        if (!fgets(buffer, sizeof(buffer), filep)) {
-            fprintf(stderr, "Error: Failed to read line from file.\n");
-            exit(1);
-        }
-
-        char *token = strtok(buffer, " \t\n");
-        if (token == NULL) {
+        long long temp;
+        if (fscanf(filep, "%lld", &temp) != 1) {
             fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
             exit(1);
         }
 
-        errno = 0;
-        char *endptr = NULL;
-        long long long_val = strtoll(token, &endptr, 10);
-
-        if (endptr == token || *endptr != '\0') {
-            fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
+        if (temp < INT64_MIN || temp > INT64_MAX) {
+            fprintf(stderr, "Error: Value %lld is out of int64_t range (file).\n", temp);
             exit(1);
         }
 
-        if (errno == ERANGE || long_val < INT64_MIN || long_val > INT64_MAX) {
-            fprintf(stderr, "Error: Value %lld is out of int64_t range (file).\n", long_val);
-            exit(1);
-        }
-
-        *p = (int64_t)long_val;
+        *p = (int64_t)temp;
     }
 }
 
