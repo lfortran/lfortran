@@ -40,6 +40,7 @@ uint64_t static inline get_hash(ASR::asr_t *node)
 class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     public:
     std::unordered_map<ASR::symbol_t*, std::string> sym_to_renamed;
+    bool intrinsic_module_name_mangling;
     bool module_name_mangling;
     bool global_symbols_mangling;
     bool intrinsic_symbols_mangling;
@@ -52,8 +53,8 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     std::string module_name = "";
     SymbolTable* current_scope = nullptr;
 
-    SymbolRenameVisitor(bool mm, bool gm, bool im, bool am, bool bcm, bool fm, bool cm) :
-    module_name_mangling(mm), global_symbols_mangling(gm), intrinsic_symbols_mangling(im),
+    SymbolRenameVisitor(bool imm, bool mm, bool gm, bool im, bool am, bool bcm, bool fm, bool cm) :
+    intrinsic_module_name_mangling(imm), module_name_mangling(mm), global_symbols_mangling(gm), intrinsic_symbols_mangling(im),
     all_symbols_mangling(am), bindc_mangling(bcm), fortran_mangling(fm), c_mangling(cm) {}
 
 
@@ -118,6 +119,8 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         std::string mod_name_copy = module_name;
         module_name = std::string(x.m_name) + "_";
         if (all_symbols_mangling || module_name_mangling || should_mangle) {
+            sym_to_renamed[sym] = update_name(x.m_name);
+        } else if ( intrinsic_module_name_mangling && startswith(x.m_name, "lfortran_intrinsic") ) {
             sym_to_renamed[sym] = update_name(x.m_name);
         }
         if ((global_symbols_mangling && startswith(x.m_name, "_global_symbols"))) {
@@ -555,7 +558,7 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
      *    `$MANGLING_OPTIONS --mangle-underscore [$COMPILER_SPECIFIC_OPTION]`
      *    * `--apply-fortran-mangling [$MANGLING_OPTION] [$COMPILER_SPECIFIC_OPTION]`
      */
-    bool any_present = (pass_options.module_name_mangling || pass_options.global_symbols_mangling ||
+    bool any_present = (pass_options.intrinsic_module_name_mangling || pass_options.module_name_mangling || pass_options.global_symbols_mangling ||
                     pass_options.intrinsic_symbols_mangling || pass_options.all_symbols_mangling ||
                     pass_options.bindc_mangling || pass_options.fortran_mangling);
     if (pass_options.mangle_underscore) {
@@ -568,7 +571,8 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
         // `lcompilers_unique_ID` is not mandatory for `--apply-fortran-mangling`
         return;
     }
-    SymbolRenameVisitor v(pass_options.module_name_mangling,
+    SymbolRenameVisitor v(pass_options.intrinsic_module_name_mangling,
+                pass_options.module_name_mangling,
                 pass_options.global_symbols_mangling,
                 pass_options.intrinsic_symbols_mangling,
                 pass_options.all_symbols_mangling,
