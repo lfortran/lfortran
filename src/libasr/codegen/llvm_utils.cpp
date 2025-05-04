@@ -2996,7 +2996,7 @@ namespace LCompilers {
         llvm::Type* t_ = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::extract_type(asr_type), module);
         llvm::Value* list_data = llvm_utils->CreateLoad2(t_->getPointerTo(), get_pointer_to_list_data(list));
-        llvm::Value* element_ptr = llvm_utils->create_ptr_gep2(t_->getPointerTo(), list_data, pos);
+        llvm::Value* element_ptr = llvm_utils->create_ptr_gep2(t_, list_data, pos);
         llvm_utils->deepcopy(item, element_ptr, asr_type, module, name2memidx);
     }
 
