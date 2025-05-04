@@ -54,8 +54,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-4
-  git checkout 084ef5ca1a2afe1b158668f7a392b2cda83fd692
+  git checkout n-lf-5
+  git checkout 00a68c42ecf731c5b7b3d656203d6c20caae0dfa
   micromamba install -c conda-forge fypp
 
   git clean -fdx
@@ -114,7 +114,31 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   run_test plot_pendulum.exe
   run_test plot_transes_iso.exe
 
+
+  git clean -dfx
+  print_subsection "Building Numerical Methods Fortran with separate compilation"
+
+  FC="$FC --generate-object-code" make
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
+
   print_success "Done with Numerical Methods Fortran"
+
   cd ..
 '
 
@@ -317,11 +341,11 @@ time_section "🧪 Testing dftatom" '
   make -f Makefile.manual quicktest
 
   git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --skip-pass=pass_array_by_data"
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code"
   make -f Makefile.manual quicktest
 
   git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --skip-pass=pass_array_by_data --fast"
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --fast"
   make -f Makefile.manual quicktest
 '
 

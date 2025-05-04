@@ -100,7 +100,7 @@ namespace LCompilers {
 
     int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
     {
-        std::string input = read_file(infile);
+        std::string input = read_file_ok(infile);
         LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
         std::vector<LCompilers::document_symbols> symbol_lists =
             lfortran_accessor.getSymbols(infile, input, compiler_options);
@@ -152,7 +152,7 @@ namespace LCompilers {
 
     int get_errors(const std::string &infile, CompilerOptions &compiler_options)
     {
-        std::string input = read_file(infile);
+        std::string input = read_file_ok(infile);
         LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
         std::vector<LCompilers::error_highlight> diag_lists =
             lfortran_accessor.showErrors(infile, input, compiler_options);
@@ -205,7 +205,7 @@ namespace LCompilers {
 
     int get_definitions(const std::string &infile, LCompilers::CompilerOptions &compiler_options)
     {
-        std::string input = read_file(infile);
+        std::string input = read_file_ok(infile);
         LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
         std::vector<LCompilers::document_symbols> symbol_lists =
             lfortran_accessor.lookupName(infile, input, compiler_options);
@@ -258,7 +258,7 @@ namespace LCompilers {
 
     int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &compiler_options)
     {
-        std::string input = read_file(infile);
+        std::string input = read_file_ok(infile);
         LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
         std::vector<LCompilers::document_symbols> symbol_lists =
             lfortran_accessor.getAllOccurrences(infile, input, compiler_options);
@@ -309,4 +309,3 @@ namespace LCompilers {
     }
 
 } // namespace LCompilers
-

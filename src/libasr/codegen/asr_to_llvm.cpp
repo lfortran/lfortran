@@ -350,7 +350,10 @@ public:
         LocationManager::FileLocations fl;
         fl.in_filename = infile;
         lm.files.push_back(fl);
-        std::string input = read_file(infile);
+        std::string input;
+        if (!read_file(infile, input)) {
+            throw CodeGenError("File '" + infile + "' cannot be opened.");
+        }
         lm.init_simple(input);
         lm.file_ends.push_back(input.size());
         lm.pos_to_linecol(lm.output_to_input_pos(loc_first, false),
@@ -8594,7 +8597,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::type_get_past_allocatable_pointer(type),
                         module.get());
 #endif
-                    tmp = arr_descr->get_pointer_to_data(tmp);
+                    ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(type));
+                    if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerToDataArray) {
+                        tmp = arr_descr->get_pointer_to_data(tmp);
+                    }
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
                         tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), tmp);
@@ -9972,12 +9979,12 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         std::string proc_sym_name = "";
-        bool is_deferred = false;
+        bool is_runtime_polymorphism = false;
         bool is_nopass = false;
         if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
             ASR::ClassProcedure_t* class_proc =
                 ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
-            is_deferred = class_proc->m_is_deferred;
+            is_runtime_polymorphism = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)));
             proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
         }
@@ -10083,7 +10090,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 throw CodeGenError("SubroutineCall: StructType symbol type not supported");
             }
         }
-        if (is_deferred) {
+        if (is_runtime_polymorphism) {
             if (is_nopass || args.empty()) {
                 visit_RuntimePolymorphicSubroutineCall(x, proc_sym_name, nullptr);
             } else {

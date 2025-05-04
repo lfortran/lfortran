@@ -73,4 +73,20 @@ program file_26
   print *, data_in_real
   if (any(data_out_alloc_real /= data_in_real)) error stop
 
+  call test_sub(data_out)
+  if(any(data_out /= [10, 20, 30, 40, 50])) error stop
+contains
+
+subroutine test_sub(res2)
+    integer :: lun
+    integer, parameter :: res(5) = [10, 20, 30, 40, 50]
+    integer, intent(out) :: res2(:)
+
+    open(newunit=lun, file="data.dat", status="replace", form="unformatted", access="stream")
+    write(lun) res
+    rewind(lun)
+    read(lun) res2
+    close(lun)
+    
+end subroutine test_sub
 end program
