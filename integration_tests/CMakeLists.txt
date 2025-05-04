@@ -704,6 +704,7 @@ RUN(NAME format_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME format_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
@@ -1431,6 +1432,8 @@ RUN(NAME derived_types_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2208,6 +2211,7 @@ RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME separate_compilation_01 LABELS gfortran llvm llvm_goc EXTRAFILES separate_compilation_01b.f90)
 RUN(NAME separate_compilation_02 LABELS gfortran llvm llvm_goc EXTRAFILES separate_compilation_02b.f90)
 RUN(NAME separate_compilation_03 LABELS gfortran llvm llvm_goc EXTRAFILES separate_compilation_03a.f90 separate_compilation_03b.f90 EXTRA_ARGS --skip-pass=pass_array_by_data)
+RUN(NAME separate_compilation_04 LABELS gfortran llvm llvm_goc EXTRAFILES separate_compilation_04a.f90 separate_compilation_04b.f90)
 
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
