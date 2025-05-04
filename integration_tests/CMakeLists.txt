@@ -145,14 +145,13 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             foreach(extra_file ${extra_files})
                 get_filename_component(obj_name ${extra_file} NAME_WE)
                 add_library(${obj_name} OBJECT ${extra_file})
-                target_compile_options(${obj_name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
+                target_compile_options(${obj_name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args} --generate-object-code>)
                 list(APPEND object_files $<TARGET_OBJECTS:${obj_name}>)  # append all object targets
             endforeach()
 
             # step 2: link all object files to the main executable
             add_executable(${name} ${file_name}.f90 ${object_files})
-            target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
-
+            target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args} --generate-object-code>)
 
             # Step 3: Add a test
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
