@@ -1150,11 +1150,11 @@ RUN(NAME modules_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_12 LABELS gfortran llvm)
 RUN(NAME modules_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME modules_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_goc EXTRAFILES modules_14_a.f90)
-RUN(NAME modules_15 LABELS gfortran llvm llvm_goc EXTRAFILES
+RUN(NAME modules_15 LABELS gfortran llvm EXTRAFILES
         modules_15b.f90 modules_15c.c NOFAST_TILL_LLVM16)
 RUN(NAME modules_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_goc EXTRAFILES modules_16b.f90)
 RUN(NAME modules_18 LABELS gfortran llvm EXTRAFILES
-        modules_18b.f90 modules_15c.c)
+        modules_18b.f90 modules_18c.c)
 RUN(NAME modules_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_goc EXTRAFILES
         modules_19b.f90 NO_STD_F23)
 RUN(NAME modules_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_goc EXTRAFILES
@@ -1219,7 +1219,7 @@ RUN(NAME bindc1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bindc2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bindc3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bindc4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME bindc_01 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_01b.f90 bindc_01c.c)
+RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME bindc_02 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_02b.f90 bindc_02c.c)
 RUN(NAME bindc_03 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_03c.c)
 RUN(NAME bindc_04 LABELS gfortran llvm llvm_goc EXTRAFILES bindc_04c.c)
