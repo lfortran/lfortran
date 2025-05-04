@@ -350,7 +350,10 @@ public:
         LocationManager::FileLocations fl;
         fl.in_filename = infile;
         lm.files.push_back(fl);
-        std::string input = read_file(infile);
+        std::string input;
+        if (!read_file(infile, input)) {
+            throw CodeGenError("File '" + infile + "' cannot be opened.");
+        }
         lm.init_simple(input);
         lm.file_ends.push_back(input.size());
         lm.pos_to_linecol(lm.output_to_input_pos(loc_first, false),

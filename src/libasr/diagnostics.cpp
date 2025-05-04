@@ -5,6 +5,7 @@
 #include <libasr/assert.h>
 #include <libasr/exception.h>
 #include <libasr/utils.h>
+#include <libasr/string_utils.h>
 
 namespace LCompilers::diag {
 
@@ -138,9 +139,12 @@ void populate_span(diag::Span &s, const LocationManager &lm) {
     lm.pos_to_linecol(lm.output_to_input_pos(s.loc.last, true),
         s.last_line, s.last_column, s.filename);
     std::string input;
-    read_file(s.filename, input);
-    for (uint32_t i = s.first_line; i <= s.last_line; i++) {
-        s.source_code.push_back(get_line(input, i));
+    if (read_file(s.filename, input)) {
+        for (uint32_t i = s.first_line; i <= s.last_line; i++) {
+            s.source_code.push_back(get_line(input, i));
+        }
+    } else {
+        s.source_code.push_back("File not found.\n");
     }
     LCOMPILERS_ASSERT(s.source_code.size() > 0)
 }
