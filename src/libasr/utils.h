@@ -64,6 +64,7 @@ struct PassOptions {
     bool openmp = false;
     bool enable_gpu_offloading = false;
     bool time_report = false;
+    bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     std::vector<std::string> vector_of_time_report;
 };
 
