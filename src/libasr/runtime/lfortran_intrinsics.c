@@ -1601,9 +1601,22 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     }
                     char buffer[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        char format_spec[20];
-                        snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
-                        snprintf(buffer, sizeof(buffer), format_spec, double_val);
+                        if (double_val == 0.0 || fabs(double_val) >= 0.1) {
+                            char format_spec[20];
+                            snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
+                            snprintf(buffer, sizeof(buffer), format_spec, double_val);
+                        } else {
+                            int exp = 0;
+                            double shifted = double_val;
+                            while (fabs(shifted) < 0.1) {
+                                shifted *= 10.0;
+                                exp--;
+                            }
+                            char mantissa[64], exponent[16];
+                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, shifted);
+                            snprintf(exponent, sizeof(exponent), "E%d", exp);
+                            snprintf(buffer, sizeof(buffer), "%s%s", mantissa, exponent);
+                        }
                         result = append_to_string(result, buffer);
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
                                s_info.current_element_type == INTEGER_16_TYPE ||
