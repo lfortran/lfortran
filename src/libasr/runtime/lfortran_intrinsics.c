@@ -3311,16 +3311,15 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
-char* generate_unique_filename(const char *prefix, const char *format) {
-    time_t seconds = time(NULL);
-    long pseudo_nsec = rand();  // Adds randomness
-
-    size_t max_len = strlen(prefix) + 40;
-    char *buffer = (char *)malloc(max_len);
-
-    snprintf(buffer, max_len, "%s_%ld_%ld.%s",
-             prefix, (long)seconds, pseudo_nsec, format);
-
+char* get_unique_ID() {
+    const char v[36] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    int id_len = 25;
+    char *buffer = (char *)malloc(id_len + 1);
+    for (int i = 0; i < id_len; i++) {
+        int index = rand() % 62;
+        buffer[i] = v[index];
+    }
+    buffer[id_len] = '\0';
     return buffer;
 }
 
@@ -3330,9 +3329,12 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         *iostat = 0;
     }
     if (f_name == NULL) {
-        f_name = generate_unique_filename("_lfortran_generated_file", "txt");
-        printf("File name: %s\n", f_name);
-        fflush(stdout);
+        char *prefix = "_lfortran_generated_file", *format = "txt";
+        char *unique_id = get_unique_ID();
+        int length = strlen(unique_id) + strlen(prefix) + strlen(format) + 3;
+        f_name = (char *)malloc(length);
+        snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
+        free(unique_id);
     }
 
     if (status == NULL) {
