@@ -85,6 +85,55 @@
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            faulty_subroutine:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            sub_a:
+                                                (Variable
+                                                    4
+                                                    sub_a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    faulty_subroutine
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     continue_compilation_1_mod
@@ -95,11 +144,11 @@
             continue_compilation_ff:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             a:
                                 (Variable
-                                    4
+                                    5
                                     a
                                     []
                                     Local
@@ -118,7 +167,7 @@
                                 ),
                             a_2:
                                 (Variable
-                                    4
+                                    5
                                     a_2
                                     []
                                     Local
@@ -142,7 +191,7 @@
                                 ),
                             a_3:
                                 (Variable
-                                    4
+                                    5
                                     a_3
                                     []
                                     Local
@@ -166,7 +215,7 @@
                                 ),
                             a_4:
                                 (Variable
-                                    4
+                                    5
                                     a_4
                                     []
                                     Local
@@ -185,7 +234,7 @@
                                 ),
                             a_5:
                                 (Variable
-                                    4
+                                    5
                                     a_5
                                     []
                                     Local
@@ -204,7 +253,7 @@
                                 ),
                             circlearea:
                                 (Variable
-                                    4
+                                    5
                                     circlearea
                                     []
                                     Local
@@ -223,7 +272,7 @@
                                 ),
                             i:
                                 (Variable
-                                    4
+                                    5
                                     i
                                     []
                                     Local
@@ -242,7 +291,7 @@
                                 ),
                             i_1:
                                 (Variable
-                                    4
+                                    5
                                     i_1
                                     []
                                     Local
@@ -261,7 +310,7 @@
                                 ),
                             i_2:
                                 (Variable
-                                    4
+                                    5
                                     i_2
                                     []
                                     Local
@@ -280,7 +329,7 @@
                                 ),
                             i_3:
                                 (Variable
-                                    4
+                                    5
                                     i_3
                                     []
                                     Local
@@ -299,7 +348,7 @@
                                 ),
                             ij:
                                 (Variable
-                                    4
+                                    5
                                     ij
                                     []
                                     Local
@@ -318,7 +367,7 @@
                                 ),
                             image:
                                 (Variable
-                                    4
+                                    5
                                     image
                                     []
                                     Local
@@ -344,7 +393,7 @@
                                 ),
                             init_x:
                                 (Variable
-                                    4
+                                    5
                                     init_x
                                     []
                                     Local
@@ -363,7 +412,7 @@
                                 ),
                             j:
                                 (Variable
-                                    4
+                                    5
                                     j
                                     []
                                     Local
@@ -382,7 +431,7 @@
                                 ),
                             j_1:
                                 (Variable
-                                    4
+                                    5
                                     j_1
                                     []
                                     Local
@@ -401,7 +450,7 @@
                                 ),
                             kindvar:
                                 (Variable
-                                    4
+                                    5
                                     kindvar
                                     []
                                     Local
@@ -420,7 +469,7 @@
                                 ),
                             nx:
                                 (Variable
-                                    4
+                                    5
                                     nx
                                     []
                                     Local
@@ -439,7 +488,7 @@
                                 ),
                             ny:
                                 (Variable
-                                    4
+                                    5
                                     ny
                                     []
                                     Local
@@ -458,7 +507,7 @@
                                 ),
                             shape:
                                 (Variable
-                                    4
+                                    5
                                     shape
                                     []
                                     Local
@@ -484,7 +533,7 @@
                                 ),
                             size_a:
                                 (Variable
-                                    4
+                                    5
                                     size_a
                                     []
                                     Local
@@ -503,7 +552,7 @@
                                 ),
                             size_a_2:
                                 (Variable
-                                    4
+                                    5
                                     size_a_2
                                     []
                                     Local
@@ -522,7 +571,7 @@
                                 ),
                             str:
                                 (Variable
-                                    4
+                                    5
                                     str
                                     []
                                     Local
@@ -547,7 +596,7 @@
                                 ),
                             val:
                                 (Variable
-                                    4
+                                    5
                                     val
                                     []
                                     Local
@@ -566,7 +615,7 @@
                                 ),
                             x:
                                 (Variable
-                                    4
+                                    5
                                     x
                                     []
                                     Local
@@ -585,7 +634,7 @@
                                 ),
                             x_2:
                                 (Variable
-                                    4
+                                    5
                                     x_2
                                     []
                                     Local
@@ -604,7 +653,7 @@
                                 ),
                             x_3:
                                 (Variable
-                                    4
+                                    5
                                     x_3
                                     []
                                     Local
@@ -630,7 +679,7 @@
                                 ),
                             y_1:
                                 (Variable
-                                    4
+                                    5
                                     y_1
                                     []
                                     Local
@@ -651,7 +700,7 @@
                                 ),
                             y_2:
                                 (Variable
-                                    4
+                                    5
                                     y_2
                                     []
                                     Local
@@ -677,7 +726,7 @@
                                 ),
                             y_3:
                                 (Variable
-                                    4
+                                    5
                                     y_3
                                     []
                                     Local
@@ -696,7 +745,7 @@
                                 ),
                             y_4:
                                 (Variable
-                                    4
+                                    5
                                     y_4
                                     []
                                     Local
@@ -725,7 +774,7 @@
                         ()
                     )
                     (Assignment
-                        (Var 4 x_2)
+                        (Var 5 x_2)
                         (StringConstant
                             "u"
                             (String 1 1 () PointerString)
@@ -734,18 +783,18 @@
                         .false.
                     )
                     (Assignment
-                        (Var 4 i)
+                        (Var 5 i)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                         .false.
                     )
                     (If
                         (IntegerCompare
-                            (Var 4 i)
+                            (Var 5 i)
                             Gt
                             (IntrinsicElementalFunction
                                 Ichar
-                                [(Var 4 x_2)]
+                                [(Var 5 x_2)]
                                 0
                                 (Integer 4)
                                 ()
@@ -757,9 +806,9 @@
                         []
                     )
                     (Assignment
-                        (Var 4 size_a)
+                        (Var 5 size_a)
                         (ArraySize
-                            (Var 4 a_2)
+                            (Var 5 a_2)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             (IntegerConstant 3 (Integer 4) Decimal)
@@ -768,7 +817,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 4 a_5)
+                        (Var 5 a_5)
                         (ComplexConstructor
                             (Cast
                                 (IntegerConstant 1 (Integer 4) Decimal)

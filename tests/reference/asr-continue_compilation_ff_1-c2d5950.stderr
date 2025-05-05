@@ -76,6 +76,36 @@ syntax error: Newline is unexpected here
 119 |       CALL FUNC( 5, 6,
     |                       ^ 
 
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_ff_1.f:11:7 - 13:38
+   |
+11 |          SUBROUTINE faulty_subroutine(a, b, c)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |          END SUBROUTINE faulty_subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'b' not defined
+  --> tests/errors/continue_compilation_ff_1.f:11:7 - 13:38
+   |
+11 |          SUBROUTINE faulty_subroutine(a, b, c)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |          END SUBROUTINE faulty_subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'c' not defined
+  --> tests/errors/continue_compilation_ff_1.f:11:7 - 13:38
+   |
+11 |          SUBROUTINE faulty_subroutine(a, b, c)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |          END SUBROUTINE faulty_subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 warning: This equivalence statement is not implemented yet, for now we will ignore it
    --> tests/errors/continue_compilation_ff_1.f:108:7
     |
