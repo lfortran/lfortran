@@ -395,8 +395,10 @@ time_section "🧪 Testing fastGPT" '
         git clean -dfx
         git checkout -t origin/lf36run
         git checkout c915a244354df2e23b0dc613e302893b496549e2
+        # NOTE: the release file link below wouldn't necessarily
+        # need to be updated if the commit hash above is updated
         curl -f -L -o model.dat \
-                https://github.com/gxyd/gpt/releases/download/v2.0/model_fastgpt_124M_v1.dat
+            https://github.com/certik/fastGPT/releases/download/v1.0-model-github-release/model_fastgpt_124M_v1.dat
         echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
         mkdir lf
