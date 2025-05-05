@@ -14,6 +14,8 @@
 
 namespace LCompilers {
 
+typedef std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> SymbolToSymbol;
+
 class VarCollector: public ASR::BaseWalkVisitor<VarCollector> {
     private:
 
@@ -26,6 +28,22 @@ class VarCollector: public ASR::BaseWalkVisitor<VarCollector> {
 
     void visit_Var(const ASR::Var_t& x) {
         vars.push_back(al, const_cast<ASR::symbol_t*>(x.m_v));
+    }
+};
+
+class FixSymbols: public ASR::BaseWalkVisitor<FixSymbols> {
+    private:
+
+    SymbolToSymbol& function2currentscope;
+
+    public:
+
+    FixSymbols(SymbolToSymbol& function2currentscope_):
+        function2currentscope(function2currentscope_) {}
+
+    void visit_Var(const ASR::Var_t& x) {
+        ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
+        xx.m_v = function2currentscope[xx.m_v];
     }
 };
 
@@ -94,7 +112,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         }
 
         // Function should only have local variables and no external dependencies (nested variables, etc).
-        Vec<ASR::symbol_t*> vars;
+        Vec<ASR::symbol_t*> vars; vars.reserve(al, 1);
         VarCollector var_collector(al, vars);
         for( size_t i = 0; i < function->n_body; i++ ) {
             var_collector.visit_stmt(*function->m_body[i]);
@@ -121,10 +139,10 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         // Step 1
         // Duplicate entire symbol table of function
         // into the current scope
-        typedef std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> SymbolToSymbol;
         SymbolToSymbol function2currentscope, currentscope2function;
         std::unordered_map<uint64_t, ASR::symbol_t*> argidx2function;
         std::unordered_map<ASR::symbol_t*, ASR::expr_t*> function_locals2init_expr;
+        ASR::symbol_t* return_variable = nullptr;
 
         const Location& loc = x->base.base.loc;
 
@@ -139,9 +157,14 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 nullptr, 0, variable->m_intent, nullptr, nullptr, variable->m_storage,
                 local_ttype_copy, variable->m_type_declaration, variable->m_abi, variable->m_access,
                 variable->m_presence, variable->m_value_attr, variable->m_target_attr, variable->m_contiguous_attr));
+            current_scope->add_symbol(local_sym_unique_name, local_sym);
             if( variable->m_intent == ASRUtils::intent_local ||
                 variable->m_intent == ASRUtils::intent_unspecified ) {
-                function_locals2init_expr[local_sym] = variable->m_symbolic_value;
+                if( variable->m_symbolic_value ) {
+                    function_locals2init_expr[local_sym] = variable->m_symbolic_value;
+                }
+            } else if( variable->m_intent == ASRUtils::intent_return_var ) {
+                return_variable = local_sym;
             }
 
             function2currentscope[sym.second] = local_sym;
@@ -167,12 +190,30 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
 
         // Initialise local copies of variables declared after
         // arguments in the function
+        for( auto sym: currentscope2function ) {
+            if( function_locals2init_expr.find(sym.first)
+                != function_locals2init_expr.end() ) {
+                ASR::stmt_t* init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym.first)),
+                    function_locals2init_expr[sym.first], nullptr, false
+                ));
+                current_body->push_back(al, init_stmt);
+            }
+        }
+
         // Duplicate entire body of function
         // into the current body
-
         // Step 3 - Replace symbols in the duplicated body
         // with their local copies
+        ASRUtils::ExprStmtDuplicator stmt_duplicator(al);
+        FixSymbols fix_symbols(function2currentscope);
+        for( size_t i = 0; i < function->n_body; i++ ) {
+            ASR::stmt_t* stmt_copy = stmt_duplicator.duplicate_stmt(function->m_body[i]);
+            fix_symbols.visit_stmt(*stmt_copy);
+            current_body->push_back(al, stmt_copy);
+        }
 
+        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_variable));
     }
 
 };
@@ -268,8 +309,11 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
 };
 
 void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const LCompilers::PassOptions& pass_options) {
-
+                                const LCompilers::PassOptions& /*pass_options*/) {
+    InlineFunctionCallsVisitor inline_functions(al);
+    inline_functions.visit_TranslationUnit(unit);
+    PassUtils::UpdateDependenciesVisitor update_dependencies(al);
+    update_dependencies.visit_TranslationUnit(unit);
 }
 
 
