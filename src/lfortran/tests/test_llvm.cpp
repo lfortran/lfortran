@@ -1,6 +1,7 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
@@ -1315,7 +1316,12 @@ end function sub
 
 TEST_CASE("llvm ir 1") {
     LCompilers::LLVMEvaluator e;
-    std::string file_name = std::string(PROJECT_SOURCE_DIR) + "/src/lfortran/tests/ir.ll";
+    std::string file_name = std::string(LFORTRAN_PROJECT_SOURCE_DIR) + "/src/lfortran/tests/ir.ll";
+    std::ifstream infile(file_name);
+    if (!infile.good()) {
+        std::string error_msg = "File '" + file_name + "' doesn't exist or isn't readable";
+        FAIL(error_msg);
+    }
     // `file_name` evaluates to something like:
     // "/Users/gxyd/OpenSource/lfortran/lfortran-${version}/src/lfortran/tests/ir.ll",
     // where `version` isn't a local variable

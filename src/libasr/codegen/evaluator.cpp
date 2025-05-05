@@ -260,13 +260,6 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
     llvm::SMDiagnostic err;
     std::unique_ptr<llvm::Module> module;
     if (!filename.empty()) {
-        // we throw std::cerr if the file doesn't exist,
-        // not an LCompilersException (i.e. ICE)
-        std::ifstream infile(filename);
-        if (!infile.good()) {
-            std::cerr << "parse_module(): File '" + filename + "' doesn't exist or isn't readable\n";
-            return nullptr;
-        }
         module = llvm::parseAssemblyFile(filename, err, *context);
     } else {
         module = llvm::parseAssemblyString(source, err, *context);
