@@ -3345,13 +3345,30 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
+// Note: The length 25 was chosen to be at least as good as UUID
+//       which has 32 hex digits (36^24 < 16^32 < 36^25).
+#define ID_LEN 25
+void get_unique_ID(char buffer[ID_LEN + 1]) {
+    const char v[36] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for (int i = 0; i < ID_LEN; i++) {
+        int index = rand() % 36;
+        buffer[i] = v[index];
+    }
+    buffer[ID_LEN] = '\0';
+}
+
 LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form, char *access, int32_t *iostat, char **iomsg)
 {
     if (iostat != NULL) {
         *iostat = 0;
     }
     if (f_name == NULL) {
-        f_name = "_lfortran_generated_file.txt";
+        char *prefix = "_lfortran_generated_file", *format = "txt";
+        char unique_id[ID_LEN + 1];
+        get_unique_ID(unique_id);
+        int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
+        f_name = (char *)malloc(length);
+        snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
     }
 
     if (status == NULL) {
@@ -4515,13 +4532,15 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
     }
     // TODO: Support other `status` specifiers
     char * file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
-    bool is_temp_file = strcmp(file_name, "_lfortran_generated_file.txt") == 0;
+    char* scratch_file = "_lfortran_generated_file";
+    bool is_temp_file = strncmp(file_name, scratch_file, strlen(scratch_file)) == 0;
     if ((status && strcmp(status, "delete") == 0) || is_temp_file) {
         if (remove(file_name) != 0) {
             printf("Error in deleting file!\n");
             exit(1);
         }
     }
+    if (is_temp_file) free(file_name);
     remove_from_unit_to_file(unit_num);
 }
 
