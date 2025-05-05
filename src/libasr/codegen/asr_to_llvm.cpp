@@ -8924,6 +8924,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         llvm::Value* string_size, *string_capacity;
         if(!is_string){
             unit = tmp;
+            if (unit->getType()->isPointerTy()) {
+                unit = llvm_utils->CreateLoad(unit);
+            }
         } else {
             if (ASRUtils::is_descriptorString(expr_type(x.m_unit))){
                 unit = llvm_utils->create_gep2(string_descriptor, tmp, 0); //fetch char*
