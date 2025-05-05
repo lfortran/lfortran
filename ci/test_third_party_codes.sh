@@ -361,7 +361,7 @@ time_section "🧪 Testing fastGPT" '
         git clean -dfx
         git checkout -t origin/namelist
         git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-        # NOTE: the release file link below wouldn't necessarily
+        # NOTE: the release file link below would not necessarily
         # need to be updated if the commit hash above is updated
         curl -f -L -o model.dat \
             https://github.com/certik/fastGPT/releases/download/v1.0-model-github-release/model_fastgpt_124M_v1.dat
@@ -395,7 +395,7 @@ time_section "🧪 Testing fastGPT" '
         git clean -dfx
         git checkout -t origin/lf36run
         git checkout c915a244354df2e23b0dc613e302893b496549e2
-        # NOTE: the release file link below wouldn't necessarily
+        # NOTE: the release file link below would not necessarily
         # need to be updated if the commit hash above is updated
         curl -f -L -o model.dat \
             https://github.com/certik/fastGPT/releases/download/v1.0-model-github-release/model_fastgpt_124M_v1.dat
