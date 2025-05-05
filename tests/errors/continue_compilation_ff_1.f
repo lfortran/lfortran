@@ -8,10 +8,10 @@ c     intact.
       INTEGER, INTENT(IN), OPTIONAL :: x
       f = PRESENT(x)
       END FUNCTION f
+      SUBROUTINE faulty_subroutine(a, b, c)
+      INTEGER, INTENT(IN) :: sub_a
+      END SUBROUTINE faulty_subroutine
       end module
-
-
-
 
 
 
