@@ -3311,16 +3311,16 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
-char* get_unique_ID() {
+// Note: The length 25 was chosen to be at least as good as UUID
+//       which has 32 hex digits (36^24 < 16^32 < 36^25).
+#define ID_LEN 25
+void get_unique_ID(char buffer[ID_LEN + 1]) {
     const char v[36] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    int id_len = 25;
-    char *buffer = (char *)malloc(id_len + 1);
-    for (int i = 0; i < id_len; i++) {
-        int index = rand() % 62;
+    for (int i = 0; i < ID_LEN; i++) {
+        int index = rand() % 36;
         buffer[i] = v[index];
     }
-    buffer[id_len] = '\0';
-    return buffer;
+    buffer[ID_LEN] = '\0';
 }
 
 LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form, char *access, int32_t *iostat, char **iomsg)
@@ -3330,11 +3330,11 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     }
     if (f_name == NULL) {
         char *prefix = "_lfortran_generated_file", *format = "txt";
-        char *unique_id = get_unique_ID();
-        int length = strlen(unique_id) + strlen(prefix) + strlen(format) + 3;
+        char unique_id[ID_LEN + 1];
+        get_unique_ID(unique_id);
+        int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
         f_name = (char *)malloc(length);
         snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
-        free(unique_id);
     }
 
     if (status == NULL) {
