@@ -3282,6 +3282,17 @@ public:
         }
     }
 
+    void visit_GenericWrite(const AST::GenericWrite_t &x) {
+        // this can only either be "~write_formatted" or "~write_unformatted"
+        std::string generic_name = "~write_" + to_lower(std::string(x.m_id));
+        for (size_t i = 0; i < x.n_names; i++) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(
+                to_lower(x_m_name)
+            );
+        }
+    }
+
     void visit_GenericDefinedOperator(const AST::GenericDefinedOperator_t &x) {
         std::string generic_name = "~def_op~" + std::string(x.m_optype);
         for( size_t i = 0; i < x.n_names; i++ ) {
