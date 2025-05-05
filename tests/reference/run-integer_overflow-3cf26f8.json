@@ -1,0 +1,13 @@
+{
+    "basename": "run-integer_overflow-3cf26f8",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/integer_overflow.f90",
+    "infile_hash": "159b08f3563b21382121de7e3b8f28017f8c26c1ab9461277f15e70c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-integer_overflow-3cf26f8.stdout",
+    "stdout_hash": "56b2836625c158bb5c511dfd3eed9bb97d5d24ddee022230e338dd46",
+    "stderr": "run-integer_overflow-3cf26f8.stderr",
+    "stderr_hash": "8f63068a374d4876453389dc945475e14c5879bf6eaeff03802fcdb6",
+    "returncode": 1
+}

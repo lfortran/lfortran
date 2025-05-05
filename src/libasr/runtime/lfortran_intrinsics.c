@@ -3614,7 +3614,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        char buffer[100];   // long enough buffer
+        char buffer[100];   // Long enough buffer to fit any 32 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
@@ -3636,13 +3636,13 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
             exit(1);
         }
 
-        // patch fix: check for overflow
+        // check for overflow (when input value is more than the int32 limit)
         if (errno == ERANGE || long_val < INT32_MIN || long_val > INT32_MAX) {
             fprintf(stderr, "Error: Value %ld is out of int32_t range.\n", long_val);
             exit(1);
         }
 
-        // once we checked its a proper integer, and that, its within range, we convert it to int32
+        // once we checked its a proper integer, and that, it's within range, we convert it to int32
         *p = (int32_t)long_val;
         return;
     }
@@ -3675,11 +3675,10 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
     }
 }
 
-// patch fix: overflow check even in int_64
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        char buffer[100];   // long enough buffer
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
