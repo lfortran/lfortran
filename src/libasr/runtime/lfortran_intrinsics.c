@@ -3311,13 +3311,28 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
+char* generate_unique_filename(const char *prefix, const char *format) {
+    time_t seconds = time(NULL);
+    long pseudo_nsec = rand();  // Adds randomness
+
+    size_t max_len = strlen(prefix) + 40;
+    char *buffer = (char *)malloc(max_len);
+
+    snprintf(buffer, max_len, "%s_%ld_%ld.%s",
+             prefix, (long)seconds, pseudo_nsec, format);
+
+    return buffer;
+}
+
 LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form, char *access, int32_t *iostat, char **iomsg)
 {
     if (iostat != NULL) {
         *iostat = 0;
     }
     if (f_name == NULL) {
-        f_name = "_lfortran_generated_file.txt";
+        f_name = generate_unique_filename("_lfortran_generated_file", "txt");
+        printf("File name: %s\n", f_name);
+        fflush(stdout);
     }
 
     if (status == NULL) {
@@ -4488,6 +4503,7 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
             exit(1);
         }
     }
+    if (is_temp_file) free(file_name);
     remove_from_unit_to_file(unit_num);
 }
 

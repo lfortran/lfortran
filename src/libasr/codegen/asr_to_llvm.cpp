@@ -8653,8 +8653,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             this->visit_expr_wrapper(x.m_filename);
             f_name = tmp;
         } else {
-            std::string scratch_file_name = "_lfortran_generated_file" + get_unique_ID() + ".txt";
-            f_name = builder->CreateGlobalStringPtr(scratch_file_name);
+            f_name = llvm::Constant::getNullValue(character_type);
         }
         if (x.m_status) {
             ptr_loads = 1;
