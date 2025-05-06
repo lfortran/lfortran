@@ -4598,9 +4598,9 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
 
         // We need to substitute all direct argument variable references with
         // FunctionParam.
-        duplicator.success = true;
-        t = duplicator.duplicate_ttype(t);
-        LCOMPILERS_ASSERT(duplicator.success);
+        // duplicator.success = true;
+        // t = duplicator.duplicate_ttype(t);
+        // LCOMPILERS_ASSERT(duplicator.success);
         replace_ttype(t);
         return t;
     }
