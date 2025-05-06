@@ -1,1 +1,1 @@
-Error: Value 2147483648 is out of int32_t range (file).
+Error: Value 2147483648 is out of integer(4) range (file).

@@ -3638,7 +3638,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 
         // check for overflow (when input value is more than the int32 limit)
         if (errno == ERANGE || long_val < INT32_MIN || long_val > INT32_MAX) {
-            fprintf(stderr, "Error: Value %ld is out of int32_t range.\n", long_val);
+            fprintf(stderr, "Error: Value %ld is out of integer(4) range.\n", long_val);
             exit(1);
         }
 
@@ -3667,7 +3667,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
         }
 
         if (temp < INT32_MIN || temp > INT32_MAX) {
-            fprintf(stderr, "Error: Value %ld is out of int32_t range (file).\n", temp);
+            fprintf(stderr, "Error: Value %ld is out of integer(4) range (file).\n", temp);
             exit(1);
         }
 
@@ -3700,7 +3700,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
         }
 
         if (errno == ERANGE || long_val < INT64_MIN || long_val > INT64_MAX) {
-            fprintf(stderr, "Error: Value %lld is out of int64_t range.\n", long_val);
+            fprintf(stderr, "Error: Value %lld is out of integer(8) range.\n", long_val);
             exit(1);
         }
 
@@ -3721,6 +3721,10 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
             exit(1);
         }
     } else {
+        if (fscanf(filep, "%" PRId64, p) != 1) {
+            fprintf(stderr, "Error: Invalid input for integer(8) from file.\n");
+            exit(1);
+        }
         long long temp;
         if (fscanf(filep, "%lld", &temp) != 1) {
             fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
@@ -3728,7 +3732,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
         }
 
         if (temp < INT64_MIN || temp > INT64_MAX) {
-            fprintf(stderr, "Error: Value %lld is out of int64_t range (file).\n", temp);
+            fprintf(stderr, "Error: Value %lld is out of integer(8) range (file).\n", temp);
             exit(1);
         }
 

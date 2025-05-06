@@ -1,25 +1,23 @@
-program integer_overflow
+program read_from_file
     implicit none
-    integer :: x, unit_no
+    integer :: x, ios, unit_no
     character(len=100) :: filename
 
-    open(newunit=unit_no, status='scratch', iostat=x)
-    if (x /= 0) then
-        print *, "Failed to open scratch file."
+    filename = './tests/overflow_test.txt'
+
+    ! Open the file for reading
+    open(newunit=unit_no, file=filename, status='unknown', iostat=ios)
+    if (ios /= 0) then
+        print *, "Failed to open file:", trim(filename)
         stop
     end if
 
-    ! writing in file
-    write(unit_no, *) 1729
-    write(unit_no, *) 2147483648_8  ! using _8 (for int64) because, when writing in int32 mode, while writing, it is parsed wrong
-
-    rewind(unit_no)
-
-   do
-        read(unit_no, *, end=100) x
+    ! Attempt to read integers from the file
+    do
+        read(unit_no, *, iostat=ios) x
+        if (ios /= 0) exit
         print *, "Read integer:", x
     end do
 
-100 continue
     close(unit_no)
-end program integer_overflow
+end program read_from_file
