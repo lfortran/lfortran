@@ -5298,6 +5298,56 @@ public:
                     empty_dim.m_length = nullptr;
                     array_section_dims.push_back(al, empty_dim);
                 }
+                int max_kind = -1;
+                int left_kind = -1;
+                int right_kind = -1;
+                int step_kind = -1;
+                if (args.p[i].m_left) {
+                    left_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_left));
+                    max_kind = std::max(max_kind, left_kind);
+                } 
+                if (args.p[i].m_right) {
+                    right_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_right));
+                    max_kind = std::max(max_kind, right_kind);
+                }
+                if (args.p[i].m_step) {
+                    step_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_step));
+                    max_kind = std::max(max_kind, step_kind);
+                }
+
+                if (left_kind != -1 && left_kind != max_kind) {
+                    if (ASRUtils::is_value_constant(args.p[i].m_left)) {
+                        args.p[i].m_left = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_left))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_left = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_left, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
+                }
+                if (right_kind != -1 && right_kind != max_kind) {
+                    if (ASRUtils::is_value_constant(args.p[i].m_right)) {
+                        args.p[i].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_right))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_right, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
+                }
+                if (step_kind != -1 && step_kind != max_kind) {
+                    if (ASRUtils::is_value_constant(args.p[i].m_step)) {
+                        args.p[i].m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_step))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_step = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_step, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
+                }
             }
             type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
                     &array_section_dims);
