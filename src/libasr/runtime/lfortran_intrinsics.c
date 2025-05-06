@@ -3722,7 +3722,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
         }
     } else {
         if (fscanf(filep, "%" PRId64, p) != 1) {
-            fprintf(stderr, "Error: Invalid input for integer(8) from file.\n");
+            fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
             exit(1);
         }
         long long temp;
