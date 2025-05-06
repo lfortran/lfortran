@@ -313,6 +313,8 @@ bool set_allocation_size(
     const Location& loc = value->base.loc;
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    ASR::expr_t* int64_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))));
     if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -477,8 +479,14 @@ bool set_allocation_size(
                     ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                         end_minus_start, ASR::binopType::Div, step, ASRUtils::expr_type(end_minus_start),
                         nullptr));
+                    ASR::expr_t* int_one;
+                    if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) == 8) {
+                        int_one = int64_one;
+                    } else {
+                        int_one = int32_one;
+                    }
                     ASR::expr_t* length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        by_step, ASR::binopType::Add, int32_one, ASRUtils::expr_type(by_step), nullptr));
+                        by_step, ASR::binopType::Add, int_one, ASRUtils::expr_type(by_step), nullptr));
                     allocate_dim.m_length = length;
                     allocate_dims.push_back(al, allocate_dim);
                 }
