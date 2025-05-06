@@ -3721,18 +3721,13 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
             exit(1);
         }
     } else {
-        // if (fscanf(filep, "%" PRId64, p) != 1) {
-        //     fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
-        //     exit(1);
-        // }
-        long long temp;
-        if (fscanf(filep, "%lld", &temp) != 1) {
+        int64_t temp;
+        if (fscanf(filep, "%" PRId64, &temp) != 1) {
             fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
             exit(1);
         }
-
         if (temp < INT64_MIN || temp > INT64_MAX) {
-            fprintf(stderr, "Error: Value %lld is out of integer(8) range (file).\n", temp);
+            fprintf(stderr, "Error: Value %" PRId64 " is out of integer(8) range (file).\n", temp);
             exit(1);
         }
 
