@@ -3702,6 +3702,7 @@ public:
         }
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);
+        bool nopass=false;
         if (x.n_keywords > 0) {
             ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
             if ( ASR::is_a<ASR::Variable_t>(*f2) ) {
@@ -3744,7 +3745,7 @@ public:
                 }
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
                 bool is_ClassProcedure = false;
-                bool is_ClassProcedure_With_Self_Argument = false;
+                bool is_nopass=false;
                 ASR::GenericProcedure_t* f3 = ASR::down_cast<ASR::GenericProcedure_t>(f2);
                 bool function_found = false;
                 for( size_t i = 0; i < f3->n_procs && !function_found; i++ ) {
@@ -3762,13 +3763,8 @@ public:
                         is_ClassProcedure = true;
                         ASR::ClassProcedure_t* f5 = ASR::down_cast<ASR::ClassProcedure_t>(f4);
                         f4 = f5->m_proc;
-                        if (x.n_member >= 1) {
-                            ASR::call_arg_t this_arg;
-                            this_arg.loc = x.m_member[0].loc; // Location of the first member (object)
-                            this_arg.m_value = v_expr;        // The object expression (`this`)
-                            args.push_front(al, this_arg);     // Prepend `this` to the args vector
-                            is_ClassProcedure_With_Self_Argument = true;
-                        }
+                        is_nopass = f5->m_is_nopass;
+                        nopass = is_nopass;
                     }
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
                     diag::Diagnostics diags;
@@ -3776,7 +3772,13 @@ public:
                     args_.from_pointer_n_copy(al, args.p, args.size());
                     visit_kwargs(args_, x.m_keywords, x.n_keywords,
                         f->m_args, f->n_args, x.base.base.loc, f,
-                        diags, x.n_member, is_ClassProcedure_With_Self_Argument);
+                        diags, x.n_member, is_nopass);
+                    if (x.n_member >= 1 && is_ClassProcedure && !is_nopass) {
+                        ASR::call_arg_t this_arg;
+                        this_arg.loc = x.m_member[0].loc;
+                        this_arg.m_value = v_expr;
+                        args_.push_front(al, this_arg);
+                    }
                     if( !diags.has_error() ) {
                         if( ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) {
@@ -3790,7 +3792,7 @@ public:
                             false) != -1 ) {
                             function_found = true;
                             args.n = 0;
-                            if (is_ClassProcedure) {
+                            if (is_ClassProcedure && !is_nopass) {
                                 args.from_pointer_n_copy(al, args_.p+1, args_.size()-1);
                             } else {
                                 args.from_pointer_n_copy(al, args_.p, args_.size());
@@ -3817,17 +3819,17 @@ public:
             }
         }
         Vec<ASR::call_arg_t> args_with_mdt;
-        if( x.n_member >= 1 ) {
+        args_with_mdt.reserve(al, 1);
+        if( x.n_member >= 1 && !nopass) {
             args_with_mdt.reserve(al, x.n_args + 1);
             ASR::call_arg_t v_expr_call_arg;
             v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
             args_with_mdt.push_back(al, v_expr_call_arg);
-            for( size_t i = 0; i < args.size(); i++ ) {
-                args_with_mdt.push_back(al, args[i]);
-            }
+        }
+        for( size_t i = 0; i < args.size(); i++ ) {
+            args_with_mdt.push_back(al, args[i]);
         }
         ASR::symbol_t *final_sym=nullptr;
-        bool nopass = false;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
