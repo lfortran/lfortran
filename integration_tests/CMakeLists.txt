@@ -1318,6 +1318,7 @@ RUN(NAME implicit_typing_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortra
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME generic_procedure_1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME operator_overloading_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
