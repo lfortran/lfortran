@@ -38,200 +38,10 @@
                                     .false.
                                     ()
                                 ),
-                            a_f:
-                                (Variable
-                                    3
-                                    a_f
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            a_f_f_real:
-                                (Variable
-                                    3
-                                    a_f_f_real
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            a_f_real:
-                                (Variable
-                                    3
-                                    a_f_real
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            a_f_real_f:
-                                (Variable
-                                    3
-                                    a_f_real_f
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            a_f_real_f_f_real:
-                                (Variable
-                                    3
-                                    a_f_real_f_f_real
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             b:
                                 (Variable
                                     3
                                     b
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            b_f:
-                                (Variable
-                                    3
-                                    b_f
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            b_f_f_real:
-                                (Variable
-                                    3
-                                    b_f_f_real
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            b_f_real:
-                                (Variable
-                                    3
-                                    b_f_real
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            b_f_real_f:
-                                (Variable
-                                    3
-                                    b_f_real_f
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            b_f_real_f_f_real:
-                                (Variable
-                                    3
-                                    b_f_real_f_f_real
                                     []
                                     Local
                                     ()
@@ -290,50 +100,12 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            a_f_real:
-                                                (Variable
-                                                    4
-                                                    a_f_real
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
                                             b:
                                                 (Variable
                                                     4
                                                     b
                                                     []
                                                     ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            b_f_real:
-                                                (Variable
-                                                    4
-                                                    b_f_real
-                                                    []
-                                                    Local
                                                     ()
                                                     ()
                                                     Default
@@ -382,7 +154,7 @@
                                         []
                                         .false.
                                     )
-                                    [f]
+                                    [f_real]
                                     [(Var 4 a)]
                                     [(Assignment
                                         (Var 4 x)
@@ -399,63 +171,21 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 4 a_f_real)
-                                        (RealConstant
-                                            0.000000
-                                            (Real 4)
-                                        )
-                                        ()
-                                        .false.
-                                    )
-                                    (If
-                                        (RealCompare
-                                            (Var 4 a_f_real)
-                                            Eq
-                                            (RealConstant
-                                                0.000000
-                                                (Real 4)
-                                            )
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        [(Assignment
-                                            (Var 4 b_f_real)
-                                            (RealConstant
-                                                2.000000
-                                                (Real 4)
-                                            )
-                                            ()
-                                            .false.
-                                        )]
-                                        [(Assignment
-                                            (Var 4 b_f_real)
-                                            (RealBinOp
-                                                (Var 4 a_f_real)
-                                                Add
-                                                (FunctionCall
-                                                    3 f
-                                                    ()
-                                                    [((RealConstant
-                                                        1.000000
-                                                        (Real 4)
-                                                    ))]
-                                                    (Real 4)
-                                                    ()
-                                                    ()
-                                                )
-                                                (Real 4)
-                                                ()
-                                            )
-                                            ()
-                                            .false.
-                                        )]
-                                    )
-                                    (Assignment
                                         (Var 4 b)
                                         (RealBinOp
                                             (Var 4 a)
                                             Add
-                                            (Var 4 b_f_real)
+                                            (FunctionCall
+                                                3 f_real
+                                                ()
+                                                [((RealConstant
+                                                    0.000000
+                                                    (Real 4)
+                                                ))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )
                                             (Real 4)
                                             ()
                                         )
@@ -492,107 +222,12 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            a_f:
-                                                (Variable
-                                                    5
-                                                    a_f
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            a_f_real_f:
-                                                (Variable
-                                                    5
-                                                    a_f_real_f
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
                                             b:
                                                 (Variable
                                                     5
                                                     b
                                                     []
                                                     ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            b_f:
-                                                (Variable
-                                                    5
-                                                    b_f
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            b_f_real_f:
-                                                (Variable
-                                                    5
-                                                    b_f_real_f
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            x_f:
-                                                (Variable
-                                                    5
-                                                    x_f
-                                                    []
-                                                    Local
                                                     ()
                                                     ()
                                                     Default
@@ -645,98 +280,21 @@
                                             .false.
                                         )]
                                         [(Assignment
-                                            (Var 5 a_f)
-                                            (RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )
-                                            ()
-                                            .false.
-                                        )
-                                        (Assignment
-                                            (Var 5 x_f)
-                                            (Cast
-                                                (IntegerConstant 2 (Integer 4) Decimal)
-                                                IntegerToReal
-                                                (Real 4)
-                                                (RealConstant
-                                                    2.000000
-                                                    (Real 4)
-                                                )
-                                            )
-                                            ()
-                                            .false.
-                                        )
-                                        (Assignment
-                                            (Var 5 a_f_real_f)
-                                            (RealConstant
-                                                0.000000
-                                                (Real 4)
-                                            )
-                                            ()
-                                            .false.
-                                        )
-                                        (If
-                                            (RealCompare
-                                                (Var 5 a_f_real_f)
-                                                Eq
-                                                (RealConstant
-                                                    0.000000
-                                                    (Real 4)
-                                                )
-                                                (Logical 4)
-                                                ()
-                                            )
-                                            [(Assignment
-                                                (Var 5 b_f_real_f)
-                                                (RealConstant
-                                                    2.000000
-                                                    (Real 4)
-                                                )
-                                                ()
-                                                .false.
-                                            )]
-                                            [(Assignment
-                                                (Var 5 b_f_real_f)
-                                                (RealBinOp
-                                                    (Var 5 a_f_real_f)
-                                                    Add
-                                                    (FunctionCall
-                                                        3 f
-                                                        ()
-                                                        [((RealConstant
-                                                            1.000000
-                                                            (Real 4)
-                                                        ))]
-                                                        (Real 4)
-                                                        ()
-                                                        ()
-                                                    )
-                                                    (Real 4)
-                                                    ()
-                                                )
-                                                ()
-                                                .false.
-                                            )]
-                                        )
-                                        (Assignment
-                                            (Var 5 b_f)
-                                            (RealBinOp
-                                                (Var 5 a_f)
-                                                Add
-                                                (Var 5 b_f_real_f)
-                                                (Real 4)
-                                                ()
-                                            )
-                                            ()
-                                            .false.
-                                        )
-                                        (Assignment
                                             (Var 5 b)
                                             (RealBinOp
                                                 (Var 5 a)
                                                 Add
-                                                (Var 5 b_f)
+                                                (FunctionCall
+                                                    3 f
+                                                    ()
+                                                    [((RealConstant
+                                                        1.000000
+                                                        (Real 4)
+                                                    ))]
+                                                    (Real 4)
+                                                    ()
+                                                    ()
+                                                )
                                                 (Real 4)
                                                 ()
                                             )
@@ -829,44 +387,6 @@
                                     .false.
                                     ()
                                 ),
-                            x_f:
-                                (Variable
-                                    3
-                                    x_f
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            x_f_f_real:
-                                (Variable
-                                    3
-                                    x_f_f_real
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             y:
                                 (Variable
                                     3
@@ -890,92 +410,15 @@
                     functions_08
                     []
                     [(Assignment
-                        (Var 3 a_f)
-                        (Var 3 x)
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 3 x_f)
-                        (Cast
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            IntegerToReal
-                            (Real 4)
-                            (RealConstant
-                                2.000000
-                                (Real 4)
-                            )
-                        )
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 3 a_f_real_f)
-                        (RealConstant
-                            0.000000
-                            (Real 4)
-                        )
-                        ()
-                        .false.
-                    )
-                    (If
-                        (RealCompare
-                            (Var 3 a_f_real_f)
-                            Eq
-                            (RealConstant
-                                0.000000
-                                (Real 4)
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(Assignment
-                            (Var 3 b_f_real_f)
-                            (RealConstant
-                                2.000000
-                                (Real 4)
-                            )
-                            ()
-                            .false.
-                        )]
-                        [(Assignment
-                            (Var 3 b_f_real_f)
-                            (RealBinOp
-                                (Var 3 a_f_real_f)
-                                Add
-                                (FunctionCall
-                                    3 f
-                                    ()
-                                    [((RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    ))]
-                                    (Real 4)
-                                    ()
-                                    ()
-                                )
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                        )]
-                    )
-                    (Assignment
-                        (Var 3 b_f)
-                        (RealBinOp
-                            (Var 3 a_f)
-                            Add
-                            (Var 3 b_f_real_f)
-                            (Real 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                    )
-                    (Assignment
                         (Var 3 y)
-                        (Var 3 b_f)
+                        (FunctionCall
+                            3 f
+                            ()
+                            [((Var 3 x))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
                         ()
                         .false.
                     )
@@ -989,134 +432,15 @@
                         )
                     )
                     (Assignment
-                        (Var 3 a_f_real)
-                        (Var 3 p)
-                        ()
-                        .false.
-                    )
-                    (If
-                        (RealCompare
-                            (Var 3 a_f_real)
-                            Eq
-                            (RealConstant
-                                0.000000
-                                (Real 4)
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(Assignment
-                            (Var 3 b_f_real)
-                            (RealConstant
-                                2.000000
-                                (Real 4)
-                            )
-                            ()
-                            .false.
-                        )]
-                        [(Assignment
-                            (Var 3 a_f_f_real)
-                            (RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            ()
-                            .false.
-                        )
-                        (Assignment
-                            (Var 3 x_f_f_real)
-                            (Cast
-                                (IntegerConstant 2 (Integer 4) Decimal)
-                                IntegerToReal
-                                (Real 4)
-                                (RealConstant
-                                    2.000000
-                                    (Real 4)
-                                )
-                            )
-                            ()
-                            .false.
-                        )
-                        (Assignment
-                            (Var 3 a_f_real_f_f_real)
-                            (RealConstant
-                                0.000000
-                                (Real 4)
-                            )
-                            ()
-                            .false.
-                        )
-                        (If
-                            (RealCompare
-                                (Var 3 a_f_real_f_f_real)
-                                Eq
-                                (RealConstant
-                                    0.000000
-                                    (Real 4)
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            [(Assignment
-                                (Var 3 b_f_real_f_f_real)
-                                (RealConstant
-                                    2.000000
-                                    (Real 4)
-                                )
-                                ()
-                                .false.
-                            )]
-                            [(Assignment
-                                (Var 3 b_f_real_f_f_real)
-                                (RealBinOp
-                                    (Var 3 a_f_real_f_f_real)
-                                    Add
-                                    (FunctionCall
-                                        3 f
-                                        ()
-                                        [((RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        ))]
-                                        (Real 4)
-                                        ()
-                                        ()
-                                    )
-                                    (Real 4)
-                                    ()
-                                )
-                                ()
-                                .false.
-                            )]
-                        )
-                        (Assignment
-                            (Var 3 b_f_f_real)
-                            (RealBinOp
-                                (Var 3 a_f_f_real)
-                                Add
-                                (Var 3 b_f_real_f_f_real)
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                        )
-                        (Assignment
-                            (Var 3 b_f_real)
-                            (RealBinOp
-                                (Var 3 a_f_real)
-                                Add
-                                (Var 3 b_f_f_real)
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                        )]
-                    )
-                    (Assignment
                         (Var 3 q)
-                        (Var 3 b_f_real)
+                        (FunctionCall
+                            3 f_real
+                            ()
+                            [((Var 3 p))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
                         ()
                         .false.
                     )
