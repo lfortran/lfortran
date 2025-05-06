@@ -5316,19 +5316,37 @@ public:
                 }
 
                 if (left_kind != -1 && left_kind != max_kind) {
-                    args.p[i].m_left = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
-                        args.p[i].m_left, ASR::cast_kindType::IntegerToInteger, 
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    if (ASRUtils::is_value_constant(args.p[i].m_left)) {
+                        args.p[i].m_left = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_left))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_left = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_left, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
                 }
                 if (right_kind != -1 && right_kind != max_kind) {
-                    args.p[i].m_right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
-                        args.p[i].m_right, ASR::cast_kindType::IntegerToInteger, 
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    if (ASRUtils::is_value_constant(args.p[i].m_right)) {
+                        args.p[i].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_right))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_right, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
                 }
                 if (step_kind != -1 && step_kind != max_kind) {
-                    args.p[i].m_step = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
-                        args.p[i].m_step, ASR::cast_kindType::IntegerToInteger, 
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    if (ASRUtils::is_value_constant(args.p[i].m_step)) {
+                        args.p[i].m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_step))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_step = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_step, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
                 }
             }
             type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
