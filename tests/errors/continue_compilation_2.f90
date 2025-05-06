@@ -54,9 +54,9 @@ module continue_compilation_2_mod
         print *, "Inside subroutine"
     end subroutine different_name 
 
-
-
-
+    SUBROUTINE faulty_subroutine(a, b, c)
+        INTEGER, INTENT(IN) :: sub_a
+    END SUBROUTINE faulty_subroutine
 
 
 

@@ -1078,7 +1078,11 @@ public:
                         "Dummy argument '" + arg_s + "' not defined",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
+                    if (compiler_options.continue_compilation) {
+                        continue;
+                    } else {
+                        throw SemanticAbort();
+                    }
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
