@@ -1607,14 +1607,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             snprintf(buffer, sizeof(buffer), format_spec, double_val);
                         } else {
                             int exp = 0;
-                            double shifted = double_val;
-                            while (fabs(shifted) < 0.1) {
-                                shifted *= 10.0;
-                                exp--;
+                            double abs_val = fabs(double_val);
+                            if (abs_val > 0.0) {
+                                exp = (int)floor(log10(abs_val)) + 1;
                             }
+                            double scale = pow(10.0, -exp);
+                            double final_val = double_val * scale;
                             char mantissa[64], exponent[16];
-                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, shifted);
-                            snprintf(exponent, sizeof(exponent), "E%d", exp);
+                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
+                            snprintf(exponent, sizeof(exponent), "E%+d", exp);  // Force sign
                             snprintf(buffer, sizeof(buffer), "%s%s", mantissa, exponent);
                         }
                         result = append_to_string(result, buffer);
