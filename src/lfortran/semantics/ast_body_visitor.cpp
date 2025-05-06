@@ -3743,11 +3743,13 @@ public:
                     throw SemanticAbort();
                 }
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+                bool is_ClassProcedure = false;
+                bool is_ClassProcedure_With_Self_Argument = false;
                 ASR::GenericProcedure_t* f3 = ASR::down_cast<ASR::GenericProcedure_t>(f2);
                 bool function_found = false;
                 for( size_t i = 0; i < f3->n_procs && !function_found; i++ ) {
                     ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(f3->m_procs[i]);
-                    if( !ASR::is_a<ASR::Function_t>(*f4) ) {
+                    if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::ClassProcedure_t>(*f4) ) {
                         diag.add(Diagnostic(
                             std::string(ASRUtils::symbol_name(f4)) +
                                     " is not a function/subroutine.",
@@ -3756,13 +3758,25 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                    if( ASR::is_a<ASR::ClassProcedure_t>(*f4) ) {
+                        is_ClassProcedure = true;
+                        ASR::ClassProcedure_t* f5 = ASR::down_cast<ASR::ClassProcedure_t>(f4);
+                        f4 = f5->m_proc;
+                        if (x.n_member >= 1) {
+                            ASR::call_arg_t this_arg;
+                            this_arg.loc = x.m_member[0].loc; // Location of the first member (object)
+                            this_arg.m_value = v_expr;        // The object expression (`this`)
+                            args.push_front(al, this_arg);     // Prepend `this` to the args vector
+                            is_ClassProcedure_With_Self_Argument = true;
+                        }
+                    }
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
                     diag::Diagnostics diags;
                     Vec<ASR::call_arg_t> args_;
                     args_.from_pointer_n_copy(al, args.p, args.size());
                     visit_kwargs(args_, x.m_keywords, x.n_keywords,
                         f->m_args, f->n_args, x.base.base.loc, f,
-                        diags, x.n_member);
+                        diags, x.n_member, is_ClassProcedure_With_Self_Argument);
                     if( !diags.has_error() ) {
                         if( ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) {
@@ -3776,7 +3790,11 @@ public:
                             false) != -1 ) {
                             function_found = true;
                             args.n = 0;
-                            args.from_pointer_n_copy(al, args_.p, args_.size());
+                            if (is_ClassProcedure) {
+                                args.from_pointer_n_copy(al, args_.p+1, args_.size()-1);
+                            } else {
+                                args.from_pointer_n_copy(al, args_.p, args_.size());
+                            }
                         }
                     }
                 }

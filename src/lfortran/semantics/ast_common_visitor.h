@@ -10030,14 +10030,18 @@ public:
     template <typename T>
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
                 ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn,
-                diag::Diagnostics& diag, size_t type_bound=0, bool is_nopass = false) {
+                diag::Diagnostics& diag, size_t type_bound=0, bool is_nopass = false, bool is_ClassProcedure_With_Self_Argument = false) {
         int n_args = args.size();
         std::string fn_name = fn->m_name;
         if (is_nopass) {
             type_bound = 0;
         }
         bool is_method = (type_bound > 0);
-        if (n_args + (int)n > (int)fn_n_args) {
+        int func_args_size = fn_n_args;
+        if (is_ClassProcedure_With_Self_Argument) {
+            func_args_size = fn_n_args + 1;
+        }
+        if (n_args + (int)n > (int)func_args_size) {
             diag.semantic_error_label(
                 "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
