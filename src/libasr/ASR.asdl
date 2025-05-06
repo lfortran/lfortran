@@ -25,6 +25,12 @@ symbol
     | Block(symbol_table symtab, identifier name, stmt* body)
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
+    -- (Refer J3/24-007 pg 131): A NAMELIST statement specifies a group of named data objects, which can be referred to by a
+    -- single name for the purpose of data transfer. E.g.;
+    -- Namelists can be declared with 'access' as
+    -- PUBLIC :: group
+    -- NAMELIST a, b, c
+    | Namelist(symbol_table symtab, identifier group_name, identifier* variables, access access)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
