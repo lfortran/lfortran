@@ -1545,7 +1545,10 @@ public:
                         if (ASRUtils::is_array(mold_type)) {
                             ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
                             ASR::alloc_arg_t new_arg;
-                            new_arg.m_a = alloc_args_vec[0].m_a;
+                            new_arg.loc = alloc_args_vec[i].loc;
+                            new_arg.m_a = alloc_args_vec[i].m_a;
+                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_type = nullptr;
                             new_arg.m_dims = mold_array_type->m_dims;
                             new_arg.n_dims = mold_array_type->n_dims;
                             new_alloc_args_vec.push_back(al, new_arg);
