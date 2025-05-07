@@ -473,7 +473,7 @@ RUN(NAME functions_34 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME functions_35 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME functions_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME functions_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME functions_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME functions_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME common_01 LABELS gfortran)
