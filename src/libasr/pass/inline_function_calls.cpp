@@ -61,6 +61,29 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     current_body = current_body_copy;
 }
 
+class CollectCalls: public ASR::BaseWalkVisitor<CollectCalls> {
+
+    public:
+
+    Allocator& al;
+    Vec<ASR::symbol_t*>& called_syms;
+
+    CollectCalls(Allocator& al_, Vec<ASR::symbol_t*>& called_syms_):
+        al(al_), called_syms(called_syms_) {
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        called_syms.push_back(al, ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::BaseWalkVisitor<CollectCalls>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        called_syms.push_back(al, ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::BaseWalkVisitor<CollectCalls>::visit_FunctionCall(x);
+    }
+
+};
+
 class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
 
     public:
@@ -71,6 +94,22 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
     SymbolTable* global_scope = nullptr;
 
     InlineFunctionCalls(Allocator& al_): al(al_) {}
+
+    bool check_non_global_function_calls(ASR::Function_t* function) {
+        Vec<ASR::symbol_t*> called_syms; called_syms.reserve(al, 1);
+        for( size_t i = 0; i < function->n_body; i++ ) {
+            called_syms.n = 0;
+            CollectCalls call_collector(al, called_syms);
+            call_collector.visit_stmt(*function->m_body[i]);
+            for( size_t j = 0; j < called_syms.size(); j++ ) {
+                if( ASRUtils::symbol_parent_symtab(called_syms[j])->parent != nullptr ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 
     bool check_inline_possibility(ASR::symbol_t* func, ASR::FunctionCall_t* func_call) {
         if( current_body == nullptr ) {
@@ -141,6 +180,10 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 function->m_symtab->get_counter() ) {
                 return false;
             }
+        }
+
+        if( check_non_global_function_calls(function) ) {
+            return false;
         }
 
         return true;
