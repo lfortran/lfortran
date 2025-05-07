@@ -328,7 +328,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
-    if ( generate_object_code ) {
+    if ( generate_object_code && !startswith(mod2->m_name, "lfortran_intrinsic") ) {
         mod2->m_symtab->mark_all_variables_external(al);
     }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
@@ -374,7 +374,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
                 mod2->m_loaded_from_mod = true;
-                if ( generate_object_code ) {
+                if ( generate_object_code && !startswith(mod2->m_name, "lfortran_intrinsic") ) {
                     mod2->m_symtab->mark_all_variables_external(al);
                 }
                 rerun = true;

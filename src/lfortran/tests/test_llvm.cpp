@@ -1,6 +1,7 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
@@ -18,7 +19,6 @@
 using LCompilers::TRY;
 using LCompilers::FortranEvaluator;
 using LCompilers::CompilerOptions;
-
 
 TEST_CASE("llvm 1") {
     //std::cout << "LLVM Version:" << std::endl;
@@ -1316,8 +1316,17 @@ end function sub
 
 TEST_CASE("llvm ir 1") {
     LCompilers::LLVMEvaluator e;
-    CHECK_THROWS_AS(e.parse_module2("", "src/lfortran/tests/ir.ll"), LCompilers::LCompilersException);
-    CHECK_THROWS_WITH(e.parse_module2("", "src/lfortran/tests/ir.ll"), "parse_module(): Invalid LLVM IR");
+    std::string file_name = std::string(LFORTRAN_PROJECT_SOURCE_DIR) + "/src/lfortran/tests/ir.ll";
+    std::ifstream infile(file_name);
+    if (!infile.good()) {
+        std::string error_msg = "File '" + file_name + "' doesn't exist or isn't readable";
+        FAIL(error_msg);
+    }
+    // `file_name` evaluates to something like:
+    // "/Users/gxyd/OpenSource/lfortran/lfortran-${version}/src/lfortran/tests/ir.ll",
+    // where `version` isn't a local variable
+    CHECK_THROWS_AS(e.parse_module2("", file_name), LCompilers::LCompilersException);
+    CHECK_THROWS_WITH(e.parse_module2("", file_name), "parse_module(): Invalid LLVM IR");
 }
 
 // This test does not work on Windows yet

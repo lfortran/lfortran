@@ -3199,6 +3199,9 @@ public:
     }
 
     void visit_Enum(const ASR::Enum_t& x) {
+        if ( x.m_abi == ASR::abiType::Interactive ) {
+            return;
+        }
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
             x.m_abi == ASR::abiType::BindC ) {
             throw CodeGenError("C-interoperation support for non-consecutive but uniquely "
@@ -8924,6 +8927,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         llvm::Value* string_size, *string_capacity;
         if(!is_string){
             unit = tmp;
+            if (unit->getType()->isPointerTy()) {
+                unit = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), unit);
+            }
         } else {
             if (ASRUtils::is_descriptorString(expr_type(x.m_unit))){
                 unit = llvm_utils->create_gep2(string_descriptor, tmp, 0); //fetch char*
@@ -8950,7 +8956,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         llvm::Type::getInt32Ty(context)->getPointerTo());
             builder->CreateStore(llvm::ConstantInt::getNullValue(
                 llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
-            iostat = llvm_utils->CreateLoad(iostat);
+            iostat = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context)->getPointerTo(), iostat);
         }
 
         if (x.m_separator) {

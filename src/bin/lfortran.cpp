@@ -1102,6 +1102,7 @@ int compile_src_to_object_file(const std::string &infile,
     }
     if (compiler_options.separate_compilation) {
         compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
     }
     LCompilers::diag::Diagnostics diagnostics;
     t1 = std::chrono::high_resolution_clock::now();
@@ -2316,6 +2317,8 @@ int main_app(int argc, char *argv[]) {
     lcompilers_unique_ID = ( parser.opts.compiler_options.generate_object_code || compiler_options.separate_compilation ) ? get_unique_ID() : "";
     if (parser.opts.compiler_options.generate_object_code) {
         compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
     }
 
     if (opts.arg_version) {
@@ -2432,8 +2435,7 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (CLI::NonexistentPath(opts.arg_file).empty()) {
-        std::cerr << "error: '" + opts.arg_file + "': linker input file not found: " +
-            "No such file or directory" << std::endl;
+        std::cerr << "error: no such file or directory: '" + opts.arg_file + "'" << std::endl;
         return 1;
     }
 

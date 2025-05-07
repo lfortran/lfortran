@@ -114,7 +114,31 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   run_test plot_pendulum.exe
   run_test plot_transes_iso.exe
 
+
+  git clean -dfx
+  print_subsection "Building Numerical Methods Fortran with separate compilation"
+
+  FC="$FC --generate-object-code" make
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
+
   print_success "Done with Numerical Methods Fortran"
+
   cd ..
 '
 
@@ -317,11 +341,11 @@ time_section "🧪 Testing dftatom" '
   make -f Makefile.manual quicktest
 
   git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --skip-pass=pass_array_by_data"
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code"
   make -f Makefile.manual quicktest
 
   git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --skip-pass=pass_array_by_data --fast"
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --fast"
   make -f Makefile.manual quicktest
 '
 
@@ -337,8 +361,10 @@ time_section "🧪 Testing fastGPT" '
         git clean -dfx
         git checkout -t origin/namelist
         git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+        # NOTE: the release file link below would not necessarily
+        # need to be updated if the commit hash above is updated
         curl -f -L -o model.dat \
-                https://github.com/gxyd/gpt/releases/download/v2.0/model_fastgpt_124M_v1.dat
+            https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
         echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
         mkdir lf
@@ -369,8 +395,10 @@ time_section "🧪 Testing fastGPT" '
         git clean -dfx
         git checkout -t origin/lf36run
         git checkout c915a244354df2e23b0dc613e302893b496549e2
+        # NOTE: the release file link below would not necessarily
+        # need to be updated if the commit hash above is updated
         curl -f -L -o model.dat \
-                https://github.com/gxyd/gpt/releases/download/v2.0/model_fastgpt_124M_v1.dat
+            https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
         echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
         mkdir lf

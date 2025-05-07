@@ -1067,7 +1067,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 };
 
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
+                        const LCompilers::PassOptions& pass_options) {
     PassArrayByDataProcedureVisitor v(al);
     v.visit_TranslationUnit(unit);
     EditProcedureVisitor e(v);
@@ -1076,7 +1076,23 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     EditProcedureCallsVisitor u(al, v, not_to_be_erased);
     u.visit_TranslationUnit(unit);
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
-    x.visit_TranslationUnit(unit);
+    if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {
+        /*
+            If separate compilation is enabled using `--generate-object-code`, then we don't
+            drop the original ( unused ) procedures. This is for the module procedures where when
+            loaded from other file transformation may or maynot take place and then while linking
+            it shows missing symbol. There can be multiple reasons:
+
+            1. Module procedure is transformed in current file but not in the other file. -- this approach fixes it.
+                a. Function `get_midpoints(A, B)` where A(:) and B(:) are arrays, get transformed in current file, but
+                   in other file, it got called as `print *, get_midpoints(A(1:3), b(1:3))`, LFortran treats these as
+                   pointers and hence doesn't transform it.
+            2. Module procedure is not transformed in current file but is done in other file -- very less prone to happen.
+                a. For the functions where reshape is used over Function arguments, it is not transformed in current file but
+                   in other file it is transformed as these routines are marked as external ( meaning n_body = 0 ).
+        */
+        x.visit_TranslationUnit(unit);
+    }
     PassUtils::UpdateDependenciesVisitor y(al);
     y.visit_TranslationUnit(unit);
 }

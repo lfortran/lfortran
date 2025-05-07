@@ -46,6 +46,7 @@ struct PassOptions {
     bool realloc_lhs = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
+    bool intrinsic_module_name_mangling = false;
     bool global_symbols_mangling = false;
     bool intrinsic_symbols_mangling = false;
     bool all_symbols_mangling = false;
@@ -63,6 +64,7 @@ struct PassOptions {
     bool openmp = false;
     bool enable_gpu_offloading = false;
     bool time_report = false;
+    bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     std::vector<std::string> vector_of_time_report;
 };
 
