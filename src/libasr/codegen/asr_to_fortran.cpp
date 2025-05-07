@@ -1226,7 +1226,7 @@ public:
             r += src;
             if (i < x.n_args-1) r += ", ";
         }
-        
+
         r += ")";
         handle_line_truncation(r, 2);
         r += "\n";
@@ -1467,7 +1467,7 @@ public:
             } else if(ASR::is_a<ASR::ArrayConstructor_t>(*arr_physical->m_arg)){
                 ASR::ArrayConstructor_t *arr_const = ASR::down_cast<ASR::ArrayConstructor_t>(arr_physical->m_arg);
                 x.m_args[0] = arr_const->m_args[0];
-            }           
+            }
         }
         visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
@@ -1510,28 +1510,28 @@ public:
     // void visit_UnionConstructor(const ASR::UnionConstructor_t &x) {}
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
-        std::string r = "("; 
+        std::string r = "(";
         for (size_t i = 0; i < x.n_values; i++) {
             visit_expr(*x.m_values[i]);
             r += src;
-            if (i != x.n_values - 1) r += ", "; 
+            if (i != x.n_values - 1) r += ", ";
         }
         r += ", ";
-        visit_expr(*x.m_var);   
+        visit_expr(*x.m_var);
         r += src;
         r += " = ";
         visit_expr(*x.m_start);
         r += src;
         r += ", ";
-        visit_expr(*x.m_end); 
+        visit_expr(*x.m_end);
         r += src;
-        if (x.m_increment) {   
+        if (x.m_increment) {
             r += ", ";
             visit_expr(*x.m_increment);
             r += src;
             }
-        r += ")"; 
-        src = r;  
+        r += ")";
+        src = r;
         return;
     }
 
