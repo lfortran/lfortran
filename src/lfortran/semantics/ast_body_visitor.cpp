@@ -3700,11 +3700,13 @@ public:
                 }
             }
         }
+
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);
 
-        // extract "nopass" of the associated subroutine when it's a ClassProcedure
-        // and also call `visit_kwargs`, when atleast one kwarg is present
+        // extract "nopass" (default=false) of the associated subroutine
+        // when it's a ClassProcedure and also call `visit_kwargs`,
+        // when atleast one kwarg is present
         bool nopass = false;
         ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
         if ( ASR::is_a<ASR::Variable_t>(*f2) ) {
