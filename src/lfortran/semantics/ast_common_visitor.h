@@ -5298,6 +5298,56 @@ public:
                     empty_dim.m_length = nullptr;
                     array_section_dims.push_back(al, empty_dim);
                 }
+                int max_kind = -1;
+                int left_kind = -1;
+                int right_kind = -1;
+                int step_kind = -1;
+                if (args.p[i].m_left) {
+                    left_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_left));
+                    max_kind = std::max(max_kind, left_kind);
+                } 
+                if (args.p[i].m_right) {
+                    right_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_right));
+                    max_kind = std::max(max_kind, right_kind);
+                }
+                if (args.p[i].m_step) {
+                    step_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_step));
+                    max_kind = std::max(max_kind, step_kind);
+                }
+
+                if (left_kind != -1 && left_kind != max_kind) {
+                    if (ASRUtils::is_value_constant(args.p[i].m_left)) {
+                        args.p[i].m_left = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_left))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_left = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_left, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
+                }
+                if (right_kind != -1 && right_kind != max_kind) {
+                    if (ASRUtils::is_value_constant(args.p[i].m_right)) {
+                        args.p[i].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_right))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_right, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
+                }
+                if (step_kind != -1 && step_kind != max_kind) {
+                    if (ASRUtils::is_value_constant(args.p[i].m_step)) {
+                        args.p[i].m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args.p[i].m_step))->m_n,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind))));
+                    } else {
+                        args.p[i].m_step = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+                            args.p[i].m_step, ASR::cast_kindType::IntegerToInteger, 
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, max_kind)), nullptr));
+                    }
+                }
             }
             type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
                     &array_section_dims);
@@ -7144,6 +7194,45 @@ public:
                     double val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                }
+            } else if (ASRUtils::is_array(ASRUtils::expr_type(source)) && ASRUtils::is_value_constant(source_value)) {
+                ASR::ArrayConstant_t* const_source = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(source_value));
+                ASR::ttype_t* source_type = ASRUtils::expr_type(source_value);
+                int kind = ASRUtils::extract_kind_from_ttype_t(source_type);
+                size_t n_elements = ASRUtils::get_fixed_size_of_array(source_type);
+
+                if (ASRUtils::is_integer(*source_type)) {
+                    if (kind == 4) {
+                        for (size_t i=0; i < n_elements; i++) {
+                            int32_t val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_n;
+                            source_bits.insert(source_bits.end(),
+                                reinterpret_cast<uint8_t*>(&val),
+                                reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                        }
+                    } else {
+                        for (size_t i=0; i < n_elements; i++) {
+                            int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_n;
+                            source_bits.insert(source_bits.end(),
+                                reinterpret_cast<uint8_t*>(&val),
+                                reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                        }
+                    }
+                } else if (ASRUtils::is_real(*source_type)) {
+                    if (kind == 4) {
+                        for (size_t i=0; i < n_elements; i++) {
+                            float val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_r;
+                            source_bits.insert(source_bits.end(),
+                                reinterpret_cast<uint8_t*>(&val),
+                                reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                        }
+                    } else {
+                        for (size_t i=0; i < n_elements; i++) {
+                            double val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_r;
+                            source_bits.insert(source_bits.end(),
+                                reinterpret_cast<uint8_t*>(&val),
+                                reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                        }
+                    }
                 }
             } else {
                 return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);

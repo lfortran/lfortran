@@ -1078,7 +1078,11 @@ public:
                         "Dummy argument '" + arg_s + "' not defined",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
+                    if (compiler_options.continue_compilation) {
+                        continue;
+                    } else {
+                        throw SemanticAbort();
+                    }
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
@@ -3279,6 +3283,17 @@ public:
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(
                 to_lower(x_m_name));
+        }
+    }
+
+    void visit_GenericWrite(const AST::GenericWrite_t &x) {
+        // this can only either be "~write_formatted" or "~write_unformatted"
+        std::string generic_name = "~write_" + to_lower(std::string(x.m_id));
+        for (size_t i = 0; i < x.n_names; i++) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(
+                to_lower(x_m_name)
+            );
         }
     }
 

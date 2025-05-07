@@ -85,6 +85,36 @@ semantic error: Duplicate DIMENSION attribute specified
 35 |         common /rowns/ rowns(209)
    |                        ^^^^^^^^^^ 
 
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
+   |
+57 |        SUBROUTINE faulty_subroutine(a, b, c)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+59 |        END SUBROUTINE faulty_subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'b' not defined
+  --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
+   |
+57 |        SUBROUTINE faulty_subroutine(a, b, c)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+59 |        END SUBROUTINE faulty_subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'c' not defined
+  --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
+   |
+57 |        SUBROUTINE faulty_subroutine(a, b, c)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+59 |        END SUBROUTINE faulty_subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
   --> tests/errors/continue_compilation_2.f90:97:5 - 99:49
    |
