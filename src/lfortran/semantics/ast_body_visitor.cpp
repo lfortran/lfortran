@@ -1511,65 +1511,74 @@ public:
         }
 
         bool cond = x.n_keywords == 0;
-        bool stat_cond = false, errmsg_cond = false, source_cond = false;
-        ASR::expr_t *stat = nullptr, *errmsg = nullptr, *source = nullptr;
-        if( x.n_keywords >= 1 ) {
-            stat_cond = !stat_cond && (to_lower(x.m_keywords[0].m_arg) == "stat");
-            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[0].m_arg) == "errmsg");
-            source_cond = !source_cond && (to_lower(x.m_keywords[0].m_arg) == "source");
-            cond = cond || (stat_cond || errmsg_cond || source_cond);
+        bool stat_cond = false, errmsg_cond = false, source_cond = false, mold_cond = false;
+        ASR::expr_t *stat = nullptr, *errmsg = nullptr, *source = nullptr, *mold = nullptr;
+        for ( size_t i=0; i<x.n_keywords; i++ ) {
+            stat_cond = !stat_cond && (to_lower(x.m_keywords[i].m_arg) == "stat");
+            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[i].m_arg) == "errmsg");
+            source_cond = !source_cond && (to_lower(x.m_keywords[i].m_arg) == "source");
+            mold_cond = !mold_cond && (to_lower(x.m_keywords[i].m_arg) == "mold");
+            cond = cond || (stat_cond || errmsg_cond || source_cond || mold_cond);
             if( stat_cond ) {
-                this->visit_expr(*(x.m_keywords[0].m_value));
+                this->visit_expr(*(x.m_keywords[i].m_value));
                 stat = ASRUtils::EXPR(tmp);
             } else if( errmsg_cond ) {
-                this->visit_expr(*(x.m_keywords[0].m_value));
+                this->visit_expr(*(x.m_keywords[i].m_value));
                 errmsg = ASRUtils::EXPR(tmp);
             } else if( source_cond ) {
-                this->visit_expr(*(x.m_keywords[0].m_value));
+                this->visit_expr(*(x.m_keywords[i].m_value));
                 source = ASRUtils::EXPR(tmp);
+            } else if ( mold_cond ) {
+                this->visit_expr(*(x.m_keywords[i].m_value));
+                mold = ASRUtils::EXPR(tmp);
             }
         }
 
-        if( x.n_keywords >= 2 ) {
-            stat_cond = !stat_cond && (to_lower(x.m_keywords[1].m_arg) == "stat");
-            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[1].m_arg) == "errmsg");
-            source_cond = !source_cond && (to_lower(x.m_keywords[1].m_arg) == "source");
-            cond = cond && (stat_cond || errmsg_cond || source_cond);
-            if( stat_cond ) {
-                this->visit_expr(*(x.m_keywords[1].m_value));
-                stat = ASRUtils::EXPR(tmp);
-            } else if( errmsg_cond ) {
-                this->visit_expr(*(x.m_keywords[1].m_value));
-                errmsg = ASRUtils::EXPR(tmp);
-            } else if( source_cond ) {
-                this->visit_expr(*(x.m_keywords[1].m_value));
-                source = ASRUtils::EXPR(tmp);
+        if ( mold_cond && !source_cond) {
+            Vec<ASR::alloc_arg_t> new_alloc_args_vec;
+            new_alloc_args_vec.reserve(al, alloc_args_vec.size());
+            ASR::ttype_t* mold_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(mold));
+            for (size_t i = 0; i < alloc_args_vec.size(); i++) {
+                if ( alloc_args_vec[i].n_dims == 0 ) {
+                    ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                    if ( ASRUtils::check_equal_type(mold_type, a_type) ) {
+                        if (ASRUtils::is_array(mold_type)) {
+                            ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
+                            ASR::alloc_arg_t new_arg;
+                            new_arg.loc = alloc_args_vec[i].loc;
+                            new_arg.m_a = alloc_args_vec[i].m_a;
+                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_type = nullptr;
+                            new_arg.m_dims = mold_array_type->m_dims;
+                            new_arg.n_dims = mold_array_type->n_dims;
+                            new_alloc_args_vec.push_back(al, new_arg);
+                            alloc_args_vec = new_alloc_args_vec;
+                        } else {
+                            diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.base.base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    } else {
+                        diag.add(Diagnostic(
+                            "The type of the variable to be allocated does not match the type of the mold.",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                } else {
+                    new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
+                }
             }
         }
-
-        if( x.n_keywords >= 3 ) {
-            stat_cond = !stat_cond && (to_lower(x.m_keywords[2].m_arg) == "stat");
-            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[2].m_arg) == "errmsg");
-            source_cond = !source_cond && (to_lower(x.m_keywords[2].m_arg) == "source");
-            cond = cond && (stat_cond || errmsg_cond || source_cond);
-            if( stat_cond ) {
-                this->visit_expr(*(x.m_keywords[2].m_value));
-                stat = ASRUtils::EXPR(tmp);
-            } else if( errmsg_cond ) {
-                this->visit_expr(*(x.m_keywords[2].m_value));
-                errmsg = ASRUtils::EXPR(tmp);
-            } else if( source_cond ) {
-                this->visit_expr(*(x.m_keywords[2].m_value));
-                source = ASRUtils::EXPR(tmp);
-            }
-        }
-
 
         if( !cond ) {
             diag.add(Diagnostic(
                 "`allocate` statement only "
-                "accepts three keyword arguments,"
-                "`stat`, `errmsg` and `source`",
+                "accepts four keyword arguments,"
+                "`stat`, `errmsg`, `source` and `mold`",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
                 }));
