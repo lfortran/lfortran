@@ -11,6 +11,7 @@ set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the g
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(NOFAST_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast when llvm < 17")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
+set(LLVM_GOC no CACHE BOOL "Run tests with --generate-object-code")
 
 enable_testing()
 
@@ -28,6 +29,7 @@ message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
 message("FAST: ${FAST}")
 message("NOFAST_LLVM16: ${NOFAST_LLVM16}")
 message("STD_F23: ${STD_F23}")
+message("LLVM_GOC: ${LLVM_GOC}")
 
 macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     set(fail ${${RUN_FAIL}})
@@ -210,7 +212,7 @@ macro(RUN)
         set(RUN_NAME "${RUN_NAME}_STD_F23")
     endif()
 
-    if ((NOT RUN_NO_LLVM_GOC) AND (NOT LFORTRAN_BACKEND STREQUAL "fortran"))
+    if ((LLVM_GOC) AND (NOT RUN_NO_LLVM_GOC) AND (NOT LFORTRAN_BACKEND STREQUAL "fortran"))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --generate-object-code)
         set(RUN_NAME "${RUN_NAME}_LLVM_GOC")
     endif()
