@@ -139,23 +139,9 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_goc")
-            # empty list to store object files
-            set(object_files "")
-            # step 1: compile all extra files to object files
-            foreach(extra_file ${extra_files})
-                get_filename_component(obj_name ${extra_file} NAME_WE)
-                add_library(${obj_name} OBJECT ${extra_file})
-                target_compile_options(${obj_name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args} --generate-object-code>)
-                list(APPEND object_files $<TARGET_OBJECTS:${obj_name}>)  # append all object targets
-            endforeach()
-
-            # step 2: link all object files to the main executable
-            add_executable(${name} ${file_name}.f90 ${object_files})
+            add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args} --generate-object-code>)
-
-            # Step 3: Add a test
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib ${extra_args})
