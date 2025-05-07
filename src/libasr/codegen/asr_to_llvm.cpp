@@ -7905,11 +7905,24 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             return;
         }
 
+        int loads = ptr_loads;
+        ptr_loads = 1;
         this->visit_expr_wrapper(x.m_source, true);
+        ptr_loads = loads;
         llvm::Value* source = tmp;
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_source), module.get());
-        llvm::Value* source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
-        builder->CreateStore(source, source_ptr);
+        llvm::Value* source_ptr;
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_source))) {
+            llvm::Type* source_type_ = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), module.get());
+            source_ptr = llvm_utils->create_gep(source, 0);
+            if (!source_type->isArrayTy()) {    // don't create load for [8 × i8]* type
+                source_ptr = builder->CreateLoad(source_type_->getPointerTo(), source);
+            }
+        } else {
+            source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
+            builder->CreateStore(source, source_ptr);
+        }
         llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(x.m_type), module.get());
         if (ASR::is_a<ASR::String_t>(*x.m_type)) {
             tmp = builder->CreateBitCast(source_ptr, target_base_type);
