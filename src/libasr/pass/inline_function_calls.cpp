@@ -182,6 +182,17 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             }
         }
 
+        // Functions/Subroutines which are being called
+        // from non-global scope (like the ones defined in external module)
+        // and are also not present in the dependencies of a function,
+        // are detected via the following `check_non_global_function_calls`.
+        // A function (say X, defined in module A) doesn't contain functions
+        // from other modules (say Y, defined in module B) in
+        // its dependencies because module A contains module B in its
+        // dependencies there by ensuring the dependency of X on Y.
+        // Changing this dependency design is a separate issue,
+        // for now the following call performs the check according
+        // to current dependency design.
         if( check_non_global_function_calls(function) ) {
             return false;
         }
