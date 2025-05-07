@@ -3199,9 +3199,6 @@ public:
     }
 
     void visit_Enum(const ASR::Enum_t& x) {
-        if ( x.m_abi == ASR::abiType::Interactive ) {
-            return;
-        }
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
             x.m_abi == ASR::abiType::BindC ) {
             throw CodeGenError("C-interoperation support for non-consecutive but uniquely "
