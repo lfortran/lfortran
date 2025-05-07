@@ -278,12 +278,15 @@ public:
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Module_t>(*item.second)) {
-                visit_symbol(*item.second);
-                r += src;
-                r += "\n";
-            }
+        std::vector<std::string> build_order
+            = ASRUtils::determine_module_dependencies(x);
+        for (auto &item : build_order) {
+            LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item)
+                != nullptr);
+            ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
+            visit_symbol(*mod);
+            r += src;
+            r += "\n";
         }
 
         tu_functions = "";
