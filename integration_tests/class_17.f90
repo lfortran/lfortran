@@ -46,9 +46,16 @@ program class_17
 
     obj_pass%value = 42
 
+    ! below tests show different calls to the same
+    ! GenericProcedure (actually the same ClassProcedure)
+    ! case 1. passed as argument
     call obj_pass%set_value(45)
     print *, "obj_pass%value: ", obj_pass%value
     if (obj_pass%value /= 90) error stop
+    ! case 2. passed as kwarg
+    call obj_pass%set_value(value=50)
+    print *, "obj_pass%value: ", obj_pass%value
+    if (obj_pass%value /= 100) error stop
 
 
     obj_no_pass%value = 42

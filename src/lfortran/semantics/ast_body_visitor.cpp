@@ -3754,12 +3754,14 @@ public:
             ASR::GenericProcedure_t* f3 = ASR::down_cast<ASR::GenericProcedure_t>(f2);
             bool function_found = false;
             bool is_nopass = false;
+            bool is_class_procedure = false;
             for( size_t i = 0; i < f3->n_procs && !function_found; i++ ) {
                 ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(f3->m_procs[i]);
                 if (ASR::is_a<ASR::ClassProcedure_t>(*f4)) {
                     ASR::ClassProcedure_t* f5 = ASR::down_cast<ASR::ClassProcedure_t>(f4);
                     f4 = f5->m_proc;
                     is_nopass = f5->m_is_nopass;
+                    is_class_procedure = true;
                 }
                 if( !ASR::is_a<ASR::Function_t>(*f4) ) {
                     diag.add(Diagnostic(
@@ -3778,6 +3780,12 @@ public:
                     visit_kwargs(args_, x.m_keywords, x.n_keywords,
                         f->m_args, f->n_args, x.base.base.loc, f,
                         diags, x.n_member, is_nopass);
+                    if (is_class_procedure && !is_nopass) {
+                        ASR::call_arg_t this_arg;
+                        this_arg.loc = x.m_member[0].loc;
+                        this_arg.m_value = v_expr;
+                        args_.push_front(al, this_arg);
+                    }
                     if( !diags.has_error() ) {
                         if( ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) {
@@ -3791,7 +3799,11 @@ public:
                             false) != -1 ) {
                             function_found = true;
                             args.n = 0;
-                            args.from_pointer_n_copy(al, args_.p, args_.size());
+                            if (is_class_procedure && !is_nopass) {
+                                args.from_pointer_n_copy(al, args_.p+1, args_.size()-1);
+                            } else {
+                                args.from_pointer_n_copy(al, args_.p, args_.size());
+                            }
                         }
                     }
                 }
