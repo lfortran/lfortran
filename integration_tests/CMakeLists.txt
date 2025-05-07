@@ -210,7 +210,7 @@ macro(RUN)
         set(RUN_NAME "${RUN_NAME}_STD_F23")
     endif()
 
-    if (NOT RUN_NO_LLVM_GOC)
+    if ((NOT RUN_NO_LLVM_GOC) AND (NOT LFORTRAN_BACKEND STREQUAL "fortran"))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --generate-object-code)
         set(RUN_NAME "${RUN_NAME}_LLVM_GOC")
     endif()
