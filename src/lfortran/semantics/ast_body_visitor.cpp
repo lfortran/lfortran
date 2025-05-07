@@ -3703,41 +3703,36 @@ public:
 
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);
-
-        // extract "nopass" (default=false) of the associated subroutine
-        // when it's a ClassProcedure and also call `visit_kwargs`,
-        // when atleast one kwarg is present
-        bool nopass = false;
         ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
-        if ( ASR::is_a<ASR::Variable_t>(*f2) && x.n_keywords > 0) {
-            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f2);
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
-            f2 = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-        }
-        if (ASR::is_a<ASR::Function_t>(*f2) && x.n_keywords > 0) {
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
-            diag::Diagnostics diags;
-            visit_kwargs(args, x.m_keywords, x.n_keywords,
-                f->m_args, f->n_args, x.base.base.loc, f,
-                diags, x.n_member);
-            if( diags.has_error() ) {
-                diag.diagnostics.insert(diag.diagnostics.end(),
-                        diags.diagnostics.begin(), diags.diagnostics.end());
-                throw SemanticAbort();
+        if (x.n_keywords > 0) {
+            if ( ASR::is_a<ASR::Variable_t>(*f2) ) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f2);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
+                f2 = ASRUtils::symbol_get_past_external(v->m_type_declaration);
             }
-        } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
-            ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
-            ASR::symbol_t* f4 = f3->m_proc;
-            bool is_nopass = f3->m_is_nopass;
-            if( !ASR::is_a<ASR::Function_t>(*f4) ) {
-                diag.add(Diagnostic(
-                    std::string(f3->m_proc_name) + " is not a subroutine.",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{x.base.base.loc})
-                    }));
-                throw SemanticAbort();
-            }
-            if (x.n_keywords > 0) {
+            if (ASR::is_a<ASR::Function_t>(*f2)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+                diag::Diagnostics diags;
+                visit_kwargs(args, x.m_keywords, x.n_keywords,
+                    f->m_args, f->n_args, x.base.base.loc, f,
+                    diags, x.n_member);
+                if( diags.has_error() ) {
+                    diag.diagnostics.insert(diag.diagnostics.end(),
+                            diags.diagnostics.begin(), diags.diagnostics.end());
+                    throw SemanticAbort();
+                }
+            } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
+                ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
+                ASR::symbol_t* f4 = f3->m_proc;
+                bool is_nopass = f3->m_is_nopass;
+                if( !ASR::is_a<ASR::Function_t>(*f4) ) {
+                    diag.add(Diagnostic(
+                        std::string(f3->m_proc_name) + " is not a subroutine.",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
@@ -3748,9 +3743,20 @@ public:
                             diags.diagnostics.begin(), diags.diagnostics.end());
                     throw SemanticAbort();
                 }
+            } else if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+                // pass
+            } else {
+                diag.add(Diagnostic(
+                    "Keyword arguments are not implemented for generic subroutines yet, symbol type: " + std::to_string(f2->type),
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
             }
-            nopass = is_nopass;
-        } else if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+        }
+
+        bool nopass = false;
+        if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
             ASR::GenericProcedure_t* f3 = ASR::down_cast<ASR::GenericProcedure_t>(f2);
             bool function_found = false;
             bool is_nopass = false;
@@ -3772,6 +3778,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+
                 if (x.n_keywords > 0) {
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
                     diag::Diagnostics diags;
@@ -3818,33 +3825,6 @@ public:
                 throw SemanticAbort();
             }
             nopass = is_nopass;
-        } else if (x.n_keywords > 0) {
-            diag.add(Diagnostic(
-                "Keyword arguments are not implemented for generic subroutines yet, symbol type: " + std::to_string(f2->type),
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-
-        Vec<ASR::call_arg_t> args_with_mdt;
-        if( x.n_member >= 1 ) {
-            // we append "this/self" (i.e. ClassObject) as first argument
-            // only when nopass is not used in the associated subroutine
-            if (!nopass) {
-                // this assigns n_args + 1
-                args_with_mdt.reserve(al, x.n_args + 1);
-                ASR::call_arg_t v_expr_call_arg;
-                v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
-                args_with_mdt.push_back(al, v_expr_call_arg);
-            } else {
-                // we *don't* append "this/self", hence assign
-                // size as `n_args`
-                args_with_mdt.reserve(al, x.n_args);
-            }
-            for( size_t i = 0; i < args.size(); i++ ) {
-                args_with_mdt.push_back(al, args[i]);
-            }
         }
 
         ASR::symbol_t *final_sym=nullptr;
@@ -3858,6 +3838,25 @@ public:
             case (ASR::symbolType::GenericProcedure) : {
                 ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(original_sym);
                 ASR::symbol_t* original_sym_owner = ASRUtils::get_asr_owner(original_sym);
+                Vec<ASR::call_arg_t> args_with_mdt;
+                if( x.n_member >= 1 ) {
+                    // we append "this/self" (i.e. ClassObject) as first argument
+                    // only when nopass is not used in the associated subroutine
+                    if (!nopass) {
+                        // this assigns n_args + 1
+                        args_with_mdt.reserve(al, x.n_args + 1);
+                        ASR::call_arg_t v_expr_call_arg;
+                        v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
+                        args_with_mdt.push_back(al, v_expr_call_arg);
+                    } else {
+                        // we *don't* append "this/self", hence assign
+                        // size as `n_args`
+                        args_with_mdt.reserve(al, x.n_args);
+                    }
+                    for( size_t i = 0; i < args.size(); i++ ) {
+                        args_with_mdt.push_back(al, args[i]);
+                    }
+                }
                 if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) &&
                     !ASR::is_a<ASR::Program_t>(*original_sym_owner) ) {
                     std::string s_name = "1_" + std::string(p->m_name);
