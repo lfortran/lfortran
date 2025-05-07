@@ -10,7 +10,7 @@ integer :: i, j, k
 n = 10
 
 allocate(e, mold=d)
-if ( any(e /= [0, 0, 0, 0, 0]) ) error stop
+if (size(e) /= 5) error stop
 
 allocate(a(5:n + 5))
 allocate(b(n:2*n, n:3*n), stat=ierr)

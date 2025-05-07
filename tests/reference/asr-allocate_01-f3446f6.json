@@ -2,11 +2,11 @@
     "basename": "asr-allocate_01-f3446f6",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/allocate_01.f90",
-    "infile_hash": "273bd84ae926adf5a587af202a25df9030345a7ae33661fbc3e9b077",
+    "infile_hash": "07c3e3a9b3ba4d7852f720073c75222f98aadb2292f512d41dde14da",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-allocate_01-f3446f6.stdout",
-    "stdout_hash": "d98823334fda5f73d4d86e09ccc4d7fb6ba9abb300b55e5349e27cfa",
+    "stdout_hash": "e432ae0b96f940175bdb6fe8910a203f63e6e309b95eaf07032c62f4",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

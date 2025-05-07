@@ -1150,31 +1150,15 @@
                         ()
                     )
                     (If
-                        (IntrinsicArrayFunction
-                            Any
-                            [(IntegerCompare
+                        (IntegerCompare
+                            (ArraySize
                                 (Var 2 e)
-                                NotEq
-                                (ArrayConstant
-                                    20
-                                    [0, 0, 0, 0, 0]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                                (Array
-                                    (Logical 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                )
                                 ()
-                            )]
-                            0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
