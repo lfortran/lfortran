@@ -3709,7 +3709,7 @@ public:
         // when atleast one kwarg is present
         bool nopass = false;
         ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
-        if ( ASR::is_a<ASR::Variable_t>(*f2) ) {
+        if ( ASR::is_a<ASR::Variable_t>(*f2) && x.n_keywords > 0) {
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f2);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
             f2 = ASRUtils::symbol_get_past_external(v->m_type_declaration);
