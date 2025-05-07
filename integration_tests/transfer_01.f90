@@ -1,7 +1,8 @@
 program transfer_01
     implicit none
     integer :: i, integer_result, y(3, 2)
-    real :: r, result, x(5, 4)
+    real :: r, result, x2, x(5, 4)
+    real, parameter :: x1 = transfer(666,1.0)
     character(len=*), parameter :: chr = 'A'
     character(len=*), parameter :: chr2 = transfer(65, 'A')
     character(len=2), parameter :: chr3 = transfer(16961, 'AB')
@@ -26,6 +27,9 @@ program transfer_01
     print *, result
     if (abs(result - 5.60519386E-45) > 1e-6) error stop
 
+    if (transfer(x1, 1) /= 666) error stop
+    x2 = transfer(666,1.0)
+    if (transfer(x2, 1) /= 666) error stop
     print *, transfer(65, chr)
     if (transfer(65, chr) /= 'A') error stop
     print *, transfer(90, 'A')

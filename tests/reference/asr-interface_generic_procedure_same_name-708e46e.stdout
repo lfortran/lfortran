@@ -36,6 +36,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -54,6 +55,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -72,6 +74,7 @@
                                                     .true.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     frexp~genericprocedure

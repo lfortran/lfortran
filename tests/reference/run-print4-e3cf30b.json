@@ -1,0 +1,13 @@
+{
+    "basename": "run-print4-e3cf30b",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/print4.f90",
+    "infile_hash": "0235f98a0db81de70f604eae7df934c9cd8b7818f613d6c807d5cc45",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-print4-e3cf30b.stdout",
+    "stdout_hash": "cf73f207cad750dcef3a6ba4e4e601068b92400e4bf23ff3d9350539",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

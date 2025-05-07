@@ -77,6 +77,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         7 t_2
                                     )
                                     ()
@@ -86,6 +89,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     associate2
@@ -108,6 +112,9 @@
                                         (Pointer
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     7 t_1
                                                 )
                                                 [(()
@@ -121,6 +128,9 @@
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     ())]
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         7 t_1
                                     )
                                     ColMajor
@@ -188,6 +198,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     associate_block
@@ -201,6 +212,9 @@
                                                                     (Pointer
                                                                         (Array
                                                                             (StructType
+                                                                                []
+                                                                                []
+                                                                                .true.
                                                                                 2 t_1
                                                                             )
                                                                             [(()
@@ -214,6 +228,9 @@
                                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 t_1
                                                                 )
                                                                 ColMajor
@@ -224,11 +241,13 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 8 target)
                                                         (Var 5 i)
                                                         ()
+                                                        .false.
                                                     )]
                                                 ),
                                             i:
@@ -248,6 +267,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             type_1:
                                                 (Variable
@@ -268,6 +288,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     sub_1
@@ -298,6 +319,9 @@
                                             (Pointer
                                                 (Array
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 t_1
                                                     )
                                                     [(()
@@ -383,6 +407,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     associate_block
@@ -400,6 +425,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -410,6 +436,9 @@
                                                                     (Pointer
                                                                         (Array
                                                                             (StructType
+                                                                                []
+                                                                                []
+                                                                                .true.
                                                                                 2 t_1
                                                                             )
                                                                             [(()
@@ -423,6 +452,9 @@
                                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 t_1
                                                                 )
                                                                 ColMajor
@@ -434,6 +466,7 @@
                                                         )
                                                         (IntegerConstant 345 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
                                                     )]
                                                 ),
                                             progress:
@@ -462,6 +495,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     sub_2
@@ -507,6 +541,9 @@
                                             (Pointer
                                                 (Array
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 t_1
                                                     )
                                                     [(()
@@ -555,11 +592,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     t_1
                                     []
                                     [i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -585,6 +624,9 @@
                                                     (Pointer
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 t_1
                                                             )
                                                             [(()
@@ -599,11 +641,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     t_2
                                     []
                                     [type_2]
+                                    []
                                     Source
                                     Public
                                     .false.

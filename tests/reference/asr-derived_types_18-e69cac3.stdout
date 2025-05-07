@@ -67,6 +67,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 t_1
                                     )
                                     ()
@@ -76,6 +79,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             type_2:
                                 (Variable
@@ -87,6 +91,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 t_2
                                     )
                                     ()
@@ -96,6 +103,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     derived_types_10
@@ -109,18 +117,23 @@
                         )
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
                             (Var 5 type_2)
                             5 1_t_1
                             (StructType
+                                []
+                                []
+                                .true.
                                 5 1_t_1
                             )
                             ()
                         )
                         (Var 5 type_1)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -134,6 +147,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -202,11 +216,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     t_1
                                     []
                                     [i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -237,11 +253,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     t_2
                                     []
                                     [r]
+                                    []
                                     Source
                                     Public
                                     .false.

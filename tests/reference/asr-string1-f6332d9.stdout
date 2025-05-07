@@ -73,6 +73,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -91,6 +92,7 @@
                                                                     .true.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     c_strlen
@@ -134,6 +136,7 @@
                                                     .true.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             s:
                                                 (Variable
@@ -154,6 +157,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     f_string_cptr
@@ -216,6 +220,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 13 s)
                                     Public
@@ -245,6 +250,7 @@
                                                     .true.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             n:
                                                 (Variable
@@ -263,6 +269,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             s:
                                                 (Variable
@@ -281,6 +288,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     f_string_cptr_n
@@ -340,6 +348,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f_string:
                                                 (Variable
@@ -360,6 +369,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     f_string~genericprocedure
@@ -417,11 +427,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_t
                                     []
                                     [s]
+                                    []
                                     Source
                                     Public
                                     .false.

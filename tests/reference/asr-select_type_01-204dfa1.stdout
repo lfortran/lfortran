@@ -49,11 +49,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     base
                                     []
                                     [i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -72,6 +74,9 @@
                                         2 base
                                         [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 base
                                         )
                                         ()
@@ -79,6 +84,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 base
                                     )
                                     ()
@@ -88,6 +96,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             bptr:
                                 (Variable
@@ -110,6 +119,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             child:
                                 (Struct
@@ -133,11 +143,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     child
                                     []
                                     [j]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -156,6 +168,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 child
                                     )
                                     ()
@@ -165,6 +180,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             perform_select_type:
                                 (Function
@@ -192,6 +208,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -391,11 +408,15 @@
                             [((IntegerConstant 20 (Integer 4) Decimal))
                             ((IntegerConstant 30 (Integer 4) Decimal))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 2 child
                             )
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

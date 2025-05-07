@@ -29,6 +29,11 @@ namespace LCompilers::LanguageServerProtocol::Config {
         unsigned int maxSleepTimeMs;
     };
 
+    struct LspConfig_telemetry {
+        bool enabled;
+        unsigned int frequencyMs;
+    };
+
     struct LspConfig {
         virtual ~LspConfig() = default;
         bool openIssueReporterOnError;
@@ -37,6 +42,7 @@ namespace LCompilers::LanguageServerProtocol::Config {
         LspConfig_trace trace;
         LspConfig_log log;
         LspConfig_retry retry;
+        LspConfig_telemetry telemetry;
     };
 
     class LspConfigTransformer {
@@ -66,6 +72,14 @@ namespace LCompilers::LanguageServerProtocol::Config {
 
         auto lspConfig_retryToAny(
             const LspConfig_retry &retry
+        ) const -> LSPAny;
+
+        auto anyToLspConfig_telemetry(
+            const lsp::LSPAny &any
+        ) const -> LspConfig_telemetry;
+
+        auto lspConfig_telemetryToAny(
+            const LspConfig_telemetry &telemetry
         ) const -> LSPAny;
 
         virtual auto anyToLspConfig(

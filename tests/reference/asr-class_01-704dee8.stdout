@@ -7,6 +7,16 @@
                     (SymbolTable
                         6
                         {
+                            1_circle_print:
+                                (ExternalSymbol
+                                    6
+                                    1_circle_print
+                                    3 print
+                                    circle
+                                    []
+                                    print
+                                    Public
+                                ),
                             1_circle_radius:
                                 (ExternalSymbol
                                     6
@@ -15,16 +25,6 @@
                                     circle
                                     []
                                     radius
-                                    Public
-                                ),
-                            1_print:
-                                (ExternalSymbol
-                                    6
-                                    1_print
-                                    3 print
-                                    circle
-                                    []
-                                    print
                                     Public
                                 ),
                             c:
@@ -37,6 +37,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 circle
                                     )
                                     ()
@@ -46,6 +49,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             circle:
                                 (ExternalSymbol
@@ -69,14 +73,18 @@
                                 (Real 4)
                             ))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 6 circle
                             )
                             ()
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
-                        6 1_print
+                        6 1_circle_print
                         ()
                         []
                         (Var 6 c)
@@ -93,9 +101,10 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
-                        6 1_print
+                        6 1_circle_print
                         ()
                         []
                         (Var 6 c)
@@ -150,11 +159,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle
                                     []
                                     [radius]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -195,6 +206,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -215,6 +227,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle_area
@@ -257,6 +270,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 area)
                                     Private
@@ -269,10 +283,10 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_area:
+                                            1_circle_area:
                                                 (ExternalSymbol
                                                     5
-                                                    1_area
+                                                    1_circle_area
                                                     3 area
                                                     circle
                                                     []
@@ -306,6 +320,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -326,6 +341,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle_print
@@ -350,7 +366,7 @@
                                     [(Assignment
                                         (Var 5 area)
                                         (FunctionCall
-                                            5 1_area
+                                            5 1_circle_area
                                             ()
                                             []
                                             (Real 4)
@@ -358,6 +374,7 @@
                                             (Var 5 this)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -419,6 +436,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     class_circle1

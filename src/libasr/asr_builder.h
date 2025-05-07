@@ -295,7 +295,7 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* ArraySize(ASR::expr_t* x, ASR::expr_t* dim, ASR::ttype_t* t) {
-        return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr));
+        return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr, false));
     }
 
     inline ASR::expr_t* Ichar(std::string s, ASR::ttype_t* type, ASR::ttype_t* t) {
@@ -867,6 +867,8 @@ class ASRBuilder {
     }
 
     ASR::expr_t *ArrayItem_01(ASR::expr_t *arr, std::vector<ASR::expr_t*> idx) {
+        // LCOMPILERS_ASSERT(
+        //     ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(arr)) == idx.size());
         Vec<ASR::expr_t*> idx_vars; idx_vars.reserve(al, 1);
         for (auto &x: idx) idx_vars.push_back(al, x);
         return PassUtils::create_array_ref(arr, idx_vars, al);
@@ -913,7 +915,7 @@ class ASRBuilder {
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
         LCOMPILERS_ASSERT_MSG(check_equal_type(expr_type(lhs), expr_type(rhs)),
             type_to_str_python(expr_type(lhs)) + ", " + type_to_str_python(expr_type(rhs)));
-        return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
+        return STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, false));
     }
 
     ASR::stmt_t* CPtrToPointer(ASR::expr_t* cptr, ASR::expr_t* ptr, ASR::expr_t* shape = nullptr, ASR::expr_t* lower_bounds = nullptr) {

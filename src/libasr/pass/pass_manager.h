@@ -28,7 +28,6 @@
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/replace_where.h>
 #include <libasr/pass/replace_print_list_tuple.h>
-#include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
 #include <libasr/pass/replace_symbolic.h>
@@ -92,7 +91,6 @@ namespace LCompilers {
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
             {"intrinsic_subroutine", &pass_replace_intrinsic_subroutine},
-            {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
             {"print_list_tuple", &pass_replace_print_list_tuple},
             {"class_constructor", &pass_replace_class_constructor},
@@ -128,10 +126,13 @@ namespace LCompilers {
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
 
         public:
+        // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
+        std::vector<std::string> passes_to_skip_with_llvm;
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics) {
+                           [[maybe_unused]] diag::Diagnostics &diagnostics,
+                           double &cummulative_time_taken_by_passes_in_microseconds) {
             if (pass_options.pass_cumulative) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(
@@ -184,6 +185,7 @@ namespace LCompilers {
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
+                auto t1 = std::chrono::high_resolution_clock::now();
                 _passes_db[passes[i]](al, *asr, pass_options);
 #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
@@ -192,6 +194,19 @@ namespace LCompilers {
                         + passes[i]);
                 };
 #endif
+                auto t2 = std::chrono::high_resolution_clock::now();
+                if (pass_options.time_report) {
+                    int time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                    double time_in_milliseconds = (double) time_taken_by_current_pass / 1000.0;
+                    std::string message = "";
+                    if ( time_in_milliseconds >= 1.0 ) {
+                        message = "[PASS]" + passes[i] + ": " + std::to_string(time_taken_by_current_pass / 1000) + "." + std::to_string(time_taken_by_current_pass % 1000) + " ms";
+                    } else {
+                        message = "[PASS]" + passes[i] + ": " + std::to_string(time_in_milliseconds) + " ms";
+                    }
+                    pass_options.vector_of_time_report.push_back(message);
+                    cummulative_time_taken_by_passes_in_microseconds += (double) std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                }
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
@@ -232,8 +247,8 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "array_struct_temporary",
-                "nested_vars",
                 "transform_optional_argument_functions",
+                "nested_vars",
                 "forall",
                 "class_constructor",
                 "pass_list_expr",
@@ -267,7 +282,7 @@ namespace LCompilers {
                 "div_to_mul",
                 "fma",
                 // "inline_function_calls",
-                // "promote_allocatable_to_nonallocatable"
+                "promote_allocatable_to_nonallocatable"
             };
 
             // These are re-write passes which are already handled
@@ -286,6 +301,7 @@ namespace LCompilers {
         void parse_pass_arg(std::string& arg_pass, std::string& skip_pass) {
             _user_defined_passes.clear();
             _skip_passes.clear();
+            _skip_passes.insert(_skip_passes.end(),passes_to_skip_with_llvm.begin(), passes_to_skip_with_llvm.end());
             _parse_pass_arg(arg_pass, _user_defined_passes);
             _parse_pass_arg(skip_pass, _skip_passes);
         }
@@ -293,14 +309,29 @@ namespace LCompilers {
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                           PassOptions& pass_options,
                           diag::Diagnostics &diagnostics) {
+            double cummulative_time_taken_by_passes_in_microseconds = 0.0;
+            auto t1 = std::chrono::high_resolution_clock::now();
             if( !_user_defined_passes.empty() ) {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
-                    diagnostics);
+                    diagnostics, cummulative_time_taken_by_passes_in_microseconds);
             } else if( apply_default_passes ) {
-                apply_passes(al, asr, _passes, pass_options, diagnostics);
+                apply_passes(al, asr, _passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
                 if (pass_options.fast ){
-                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics);
+                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
                 }
+            }
+            auto t2 = std::chrono::high_resolution_clock::now();
+            if (pass_options.time_report) {
+                int overall_time_in_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                overall_time_in_passes = overall_time_in_passes - cummulative_time_taken_by_passes_in_microseconds;
+                double time_in_milliseconds = (double) overall_time_in_passes / 1000.0;
+                std::string message = "";
+                if ( time_in_milliseconds >= 1.0 ) {
+                    message = "[PASS]other processing time: " + std::to_string(overall_time_in_passes / 1000) + "." + std::to_string(overall_time_in_passes % 1000) + " ms";
+                } else {
+                    message = "[PASS]other processing time: " + std::to_string(time_in_milliseconds) + " ms";
+                }
+                pass_options.vector_of_time_report.push_back(message);
             }
         }
 
@@ -318,19 +349,22 @@ namespace LCompilers {
             } else {
                 passes = _passes;
             }
+            size_t pass_cnt_asr_dump = 0, pass_cnt_fortran_dump = 0;
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
                 // ahead of time (not at the last minute), and remove this much
                 // earlier
                 // Note: this is not enough for rtlib, we also need to include
                 // it
+                if( std::find(_skip_passes.begin(), _skip_passes.end(), passes[i]) != _skip_passes.end()) continue;
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
                 _passes_db[passes[i]](al, *asr, pass_options);
                 if (pass_options.dump_all_passes) {
-                    std::string str_i = std::to_string(i+1);
-                    if ( i < 9 )  str_i = "0" + str_i;
+                    std::string str_i = std::to_string(pass_cnt_asr_dump+1);
+                    if ( pass_cnt_asr_dump < 9 )  str_i = "0" + str_i;
+                    ++pass_cnt_asr_dump;
                     if (pass_options.json) {
                         std::ofstream outfile ("pass_json_" + str_i + "_" + passes[i] + ".json");
                         outfile << pickle_json(*asr, lm, pass_options.no_loc, pass_options.with_intrinsic_mods) << "\n";
@@ -359,8 +393,9 @@ namespace LCompilers {
                         throw LCompilersException("Fortran code could not be generated after pass: "
                         + passes[i]);
                     }
-                    std::string str_i = std::to_string(i+1);
-                    if ( i < 9 )  str_i = "0" + str_i;
+                    std::string str_i = std::to_string(pass_cnt_fortran_dump+1);
+                    if ( pass_cnt_fortran_dump < 9 )  str_i = "0" + str_i;
+                    ++pass_cnt_fortran_dump;
                     std::ofstream outfile ("pass_fortran_" + str_i + "_" + passes[i] + ".f90");
                     outfile << "! Fortran code after applying the pass: " << passes[i]
                         << "\n" << fortran_code.result << "\n";

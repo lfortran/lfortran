@@ -36,6 +36,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -48,6 +49,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             3 toml_table
                                                         )
                                                     )
@@ -58,6 +62,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             toml_parse:
                                                 (ExternalSymbol
@@ -221,6 +226,7 @@
                                                     .false.
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             error:
                                                 (Variable
@@ -233,6 +239,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_error
                                                         )
                                                     )
@@ -243,6 +252,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -255,6 +265,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_table
                                                         )
                                                     )
@@ -265,12 +278,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_parse_string
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_table
                                             )
                                         )
@@ -282,6 +299,9 @@
                                         )
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_error
                                             )
                                         )]
@@ -324,6 +344,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_error
                                                         )
                                                     )
@@ -334,6 +357,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -346,6 +370,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_table
                                                         )
                                                     )
@@ -356,6 +383,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -374,18 +402,25 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_parse_unit
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_table
                                             )
                                         )
                                         (Integer 4)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_error
                                             )
                                         )]
@@ -458,6 +493,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             stat:
                                                 (Variable
@@ -476,12 +512,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_error
                                     []
                                     [stat
                                     message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -529,6 +567,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             inline:
                                                 (Variable
@@ -553,12 +592,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_table
                                     []
                                     [implicit
                                     inline]
+                                    []
                                     Source
                                     Public
                                     .false.

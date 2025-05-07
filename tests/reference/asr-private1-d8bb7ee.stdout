@@ -50,6 +50,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -85,6 +86,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     foo2

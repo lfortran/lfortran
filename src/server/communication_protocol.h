@@ -1,6 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <thread>
 
 #include <server/language_server.h>
@@ -17,19 +19,25 @@ namespace LCompilers::LLanguageServer {
             MessageStream &messageStream,
             MessageQueue &incomingMessages,
             MessageQueue &outgoingMessages,
-            lsl::Logger &logger);
+            lsl::Logger &logger,
+            std::atomic_bool &start,
+            std::condition_variable &startChanged,
+            std::mutex &startMutex
+        );
         ~CommunicationProtocol();
         auto serve() -> void;
     private:
-        std::streambuf* cout_sbuf;
-        int stdout_fd;
         LanguageServer &languageServer;
         MessageStream &messageStream;
         MessageQueue &incomingMessages;
         MessageQueue &outgoingMessages;
-        lsl::Logger &logger;
-        std::thread listener;
+        lsl::Logger logger;
         std::atomic_bool running = true;
+
+        // NOTE: By convention and to encourage proper initialization order,
+        // move all std::thread declarations to the bottom of the members!
+        // See: https://github.com/lfortran/lfortran/issues/6756
+        std::thread listener;
 
         auto listen() -> void;
     };

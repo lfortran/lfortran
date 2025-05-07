@@ -436,7 +436,7 @@ std::string read_line_from_file(std::string filename, unsigned int line_number)
    File "/home/ondrej/repos/rcp/src/Teuchos_RCP.hpp", line 428, in Teuchos::RCP<A>::assert_not_null() const
    throw_null_ptr_error(typeName(*this));
 */
-std::string addr2str(const StacktraceItem &i)
+std::string addr2str(const StacktraceItem &i, bool colorize)
 {
   std::ostringstream s;
   // Do the printing --- print as much information as we were able to
@@ -444,27 +444,27 @@ std::string addr2str(const StacktraceItem &i)
   if (i.function_name == "") {
     // If we didn't find the line, at least print the address itself
     if (i.local_pc == 0) {
-        s << color(style::dim);
+        s << color(style::dim, colorize);
         s << "  File unknown, absolute address: " << (void*) i.pc;
-        s << color(style::reset);
+        s << color(style::reset, colorize);
     } else {
         if (i.source_filename == "") {
-            s << color(style::dim);
+            s << color(style::dim, colorize);
             s << "  Binary file \"";
-            s << color(style::reset);
-            s << color(style::bold) << color(fg::magenta);
+            s << color(style::reset, colorize);
+            s << color(style::bold, colorize) << color(fg::magenta, colorize);
             s << i.binary_filename;
-            s << color(fg::reset) << color(style::reset);
-            s << color(style::dim);
+            s << color(fg::reset, colorize) << color(style::reset, colorize);
+            s << color(style::dim, colorize);
             s << "\", local address: " << (void*) i.local_pc;
-            s << color(style::reset);
+            s << color(style::reset, colorize);
         } else {
           // Nicely format the filename + line
-          s << color(style::dim) << "  File \"" << color(style::reset)
-            << color(style::bold) << color(fg::magenta) << i.source_filename
-            << color(fg::reset) << color(style::reset)
-            << color(style::dim) << "\", line " << i.line_number
-            << color(style::reset);
+          s << color(style::dim, colorize) << "  File \"" << color(style::reset, colorize)
+            << color(style::bold, colorize) << color(fg::magenta, colorize) << i.source_filename
+            << color(fg::reset, colorize) << color(style::reset, colorize)
+            << color(style::dim, colorize) << "\", line " << i.line_number
+            << color(style::reset, colorize);
           const std::string line_text = remove_leading_whitespace(
             read_line_from_file(i.source_filename, i.line_number));
           if (line_text != "") {
@@ -475,18 +475,18 @@ std::string addr2str(const StacktraceItem &i)
   } else if (i.source_filename == "") {
       // The file is unknown (and data.line == 0 in this case), so the
       // only meaningful thing to print is the function name:
-      s << color(style::dim) << "  Binary file \"" + color(style::reset)
-        << color(style::bold) << color(fg::magenta) << i.binary_filename
-        << color(fg::reset) << color(style::reset)
-        << color(style::dim) << "\", in " << i.function_name
-        << color(style::reset);
+      s << color(style::dim, colorize) << "  Binary file \"" + color(style::reset, colorize)
+        << color(style::bold, colorize) << color(fg::magenta, colorize) << i.binary_filename
+        << color(fg::reset, colorize) << color(style::reset, colorize)
+        << color(style::dim, colorize) << "\", in " << i.function_name
+        << color(style::reset, colorize);
   } else {
       // Nicely format the filename + function name + line
-      s << color(style::dim) << "  File \"" << color(style::reset)
-        << color(style::bold) << color(fg::magenta) << i.source_filename
-        << color(fg::reset) << color(style::reset)
-        << color(style::dim) << "\", line " << i.line_number
-        << ", in " << i.function_name << color(style::reset);
+      s << color(style::dim, colorize) << "  File \"" << color(style::reset, colorize)
+        << color(style::bold, colorize) << color(fg::magenta, colorize) << i.source_filename
+        << color(fg::reset, colorize) << color(style::reset, colorize)
+        << color(style::dim, colorize) << "\", line " << i.line_number
+        << ", in " << i.function_name << color(style::reset, colorize);
       const std::string line_text = remove_leading_whitespace(
         read_line_from_file(i.source_filename, i.line_number));
       if (line_text != "") {
@@ -559,13 +559,13 @@ void get_llvm_info(std::vector<StacktraceItem> &d)
   Returns a std::string with the stacktrace corresponding to the
   list of addresses (of functions on the stack) in `d`.
 */
-std::string stacktrace2str(const std::vector<StacktraceItem> &d, int skip)
+std::string stacktrace2str(const std::vector<StacktraceItem> &d, int skip, bool colorize)
 {
   std::string full_stacktrace_str("Traceback (most recent call last):\n");
 
   // Loop over the stack
   for (int i=d.size()-1; i >= skip; i--) {
-    full_stacktrace_str += addr2str(d[i]);
+    full_stacktrace_str += addr2str(d[i], colorize);
   }
 
   return full_stacktrace_str;

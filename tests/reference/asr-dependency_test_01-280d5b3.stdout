@@ -32,6 +32,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 dependency_config_t
                                                     )
                                                     ()
@@ -41,6 +44,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             id:
                                                 (Variable
@@ -59,6 +63,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -79,6 +84,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add_dependency
@@ -87,6 +93,9 @@
                                             2 dependency_tree_t
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 dependency_config_t
                                         )]
                                         ()
@@ -116,6 +125,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Private
@@ -147,6 +157,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -167,12 +178,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     dependency_config_t
                                     []
                                     [name
                                     path]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -209,6 +222,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             proj_dir:
                                                 (Variable
@@ -229,6 +243,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             revision:
                                                 (Variable
@@ -249,6 +264,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             update:
                                                 (Variable
@@ -273,6 +289,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     dependency_node_t
@@ -281,6 +298,7 @@
                                     revision
                                     done
                                     update]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -331,6 +349,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dep:
                                                 (Variable
@@ -344,6 +363,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 dependency_node_t
                                                             )
                                                             [(()
@@ -358,6 +380,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dep_dir:
                                                 (Variable
@@ -378,6 +401,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             find:
                                                 (GenericProcedure
@@ -414,6 +438,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -432,6 +457,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             verbosity:
                                                 (Variable
@@ -450,6 +476,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     dependency_tree_t
@@ -460,6 +487,7 @@
                                     ndep
                                     dep
                                     cache]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -492,6 +520,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             pos:
                                                 (Variable
@@ -510,6 +539,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -530,6 +560,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     find_dependency

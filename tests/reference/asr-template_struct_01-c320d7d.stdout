@@ -76,6 +76,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     r
@@ -112,6 +113,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -121,6 +125,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -141,11 +146,15 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     get_fst
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -175,6 +184,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 6 r)
                                                     Private
@@ -207,6 +217,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -216,6 +229,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -236,11 +250,15 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     get_snd
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -270,6 +288,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 7 r)
                                                     Private
@@ -296,6 +315,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             tuple:
                                                 (Struct
@@ -321,6 +341,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -341,12 +362,14 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     tuple
                                                     []
                                                     [fst
                                                     snd]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -433,6 +456,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -442,6 +468,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -460,11 +487,15 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     get_int_fst
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -490,6 +521,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 10 r)
                                                     Private
@@ -522,6 +554,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -531,6 +566,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -549,11 +585,15 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     get_int_snd
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -579,6 +619,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 11 r)
                                                     Private
@@ -611,6 +652,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -620,6 +664,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -638,11 +683,15 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     get_real_fst
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -668,6 +717,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 13 r)
                                                     Private
@@ -700,6 +750,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -709,6 +762,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -727,11 +781,15 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     get_real_snd
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -757,6 +815,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 14 r)
                                                     Private
@@ -786,6 +845,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -804,12 +864,14 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     int_tuple
                                                     []
                                                     [fst
                                                     snd]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -840,6 +902,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -858,12 +921,14 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     real_tuple
                                                     []
                                                     [fst
                                                     snd]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -882,6 +947,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 int_tuple
                                                     )
                                                     ()
@@ -891,6 +959,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             tr:
                                                 (Variable
@@ -902,6 +971,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 real_tuple
                                                     )
                                                     ()
@@ -911,6 +983,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     test_template
@@ -939,6 +1012,7 @@
                                         )
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -969,6 +1043,7 @@
                                         )
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -1002,6 +1077,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -1035,6 +1111,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat

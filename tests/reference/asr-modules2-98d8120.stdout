@@ -52,6 +52,7 @@
                                                     .false.
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
@@ -100,6 +101,7 @@
                                     toml_ordered
                                     []
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -126,6 +128,7 @@
                                                 )
                                         })
                                     toml_structure
+                                    []
                                     []
                                     []
                                     Source
@@ -211,6 +214,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     destroy
@@ -341,6 +345,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_array
                                                     )
                                                     ()
@@ -350,11 +357,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_array
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 toml_array
                                         )]
                                         ()
@@ -415,11 +426,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_array
                                     []
                                     [list]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -485,6 +498,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     destroy
@@ -548,11 +562,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_value
                                     []
                                     [key]
+                                    []
                                     Source
                                     Private
                                     .false.

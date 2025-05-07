@@ -20,64 +20,6 @@
 
 namespace LCompilers::LFortran {
 
-template <typename T>
-void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
-    if (x.m_bind) {
-        AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(x.m_bind);
-        if (bind->n_args == 1) {
-            if (AST::is_a<AST::Name_t>(*bind->m_args[0])) {
-                AST::Name_t *name = AST::down_cast<AST::Name_t>(
-                    bind->m_args[0]);
-                if (to_lower(std::string(name->m_id)) == "c") {
-                    abi_type=ASR::abiType::BindC;
-                } else if (to_lower(std::string(name->m_id)) == "js") {
-                    abi_type=ASR::abiType::BindJS;
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "Unsupported language in bind()",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            } else {
-                    diag.add(diag::Diagnostic(
-                        "Language name must be specified in bind() as plain text",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-            }
-        } else {
-            diag.add(diag::Diagnostic(
-                "At least one argument needed in bind()",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-        if (bind->n_kwargs == 1) {
-            char *arg = bind->m_kwargs[0].m_arg;
-            AST::expr_t *value = bind->m_kwargs[0].m_value;
-            if (to_lower(std::string(arg)) == "name") {
-                if (AST::is_a<AST::String_t>(*value)) {
-                    AST::String_t *name = AST::down_cast<AST::String_t>(value);
-                    bindc_name = name->m_s;
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "The value of the 'name' keyword argument in bind(c) must be a string",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            } else {
-                diag.add(diag::Diagnostic(
-                    "Unsupported keyword argument in bind()",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-        }
-    }
-}
-
 class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
     struct ClassProcInfo {
@@ -85,7 +27,6 @@ public:
         Location loc;
     };
     SymbolTable *global_scope;
-    std::map<std::string, std::vector<std::string>> generic_procedures;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
@@ -137,7 +78,11 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
             if (t != AST::astType::expr && t != AST::astType::stmt) {
-                visit_ast(*x.m_items[i]);
+                try {
+                    visit_ast(*x.m_items[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
             }
         }
         global_scope = nullptr;
@@ -462,7 +407,7 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm
+                                                    throw SemanticAbort();}, lm, compiler_options.generate_object_code
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -492,6 +437,7 @@ public:
         }
         current_module_sym = nullptr;
         add_generic_procedures();
+        evaluate_postponed_calls_to_genericProcedure();
         add_overloaded_procedures();
         add_class_procedures();
         add_generic_class_procedures();
@@ -645,7 +591,9 @@ public:
             throw SemanticAbort();
         }
         handle_save();
+        // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
+        evaluate_postponed_calls_to_genericProcedure();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -1006,6 +954,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
         if (x.n_temp_args > 0) {
@@ -1129,7 +1078,11 @@ public:
                         "Dummy argument '" + arg_s + "' not defined",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
+                    if (compiler_options.continue_compilation) {
+                        continue;
+                    } else {
+                        throw SemanticAbort();
+                    }
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
@@ -1310,7 +1263,14 @@ public:
             size_t n, const Location &loc, std::string &return_var_name, ASR::symbol_t* return_var_sym) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
-        if (n == 0 && compiler_options.implicit_typing && !return_var_sym) {
+        bool are_all_attributes_simple = true;
+        for (size_t i=0; i < n; i++) {
+            if (!ASR::is_a<AST::SimpleAttribute_t>(*attributes[i])) {
+                are_all_attributes_simple = false;
+                break;
+            }
+        }
+        if ((n == 0 || are_all_attributes_simple) && compiler_options.implicit_typing && !return_var_sym) {
             std::string first_letter = to_lower(std::string(1,return_var_name[0]));
             ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
@@ -1407,6 +1367,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
         std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
@@ -1624,7 +1585,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
+                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                     break;
                 }
                 default :
@@ -1688,7 +1649,9 @@ public:
                 parent_scope->erase_symbol(sym_name);
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
-                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                    // TODO: Throw error when interface definition and implementation signatures are different
+                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
@@ -1982,7 +1945,7 @@ public:
         }
         tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
-            data_member_names.p, data_member_names.size(),
+            data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -2168,6 +2131,95 @@ public:
         }
     }
 
+    void visit_BlockData(const AST::BlockData_t& x) {
+        std::string base_module_name = "file_common_block_";
+        std::string base_struct_instance_name = "struct_instance_";
+
+        SymbolTable* global_scope = current_scope->get_global_scope();
+
+        if (x.m_name) {
+            ASR::symbol_t* gs = global_scope->get_symbol(x.m_name);
+            if (gs) {
+                diag.add(Diagnostic(
+                    "Global name is already being used",
+                    Level::Error, Stage::Semantic, {
+                        Label("'" + std::string(x.m_name) + "' defined here", {gs->base.loc}),
+                        Label("'" + std::string(x.m_name) + "' defined here again", {x.base.base.loc}),
+                    }));
+                throw SemanticAbort();
+            }
+        }
+
+        for (size_t i = 0; i < x.n_decl; i++) {
+            this->visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        SymbolTable* old_scope = current_scope;
+        Vec<ASR::stmt_t*> block_data_body;
+        block_data_body.reserve(al, x.n_body);
+        current_body = &block_data_body;
+        // Visit DataStmt and set the constant values in the Struct_t symbol
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        current_scope = old_scope;
+
+        // Copy the constant values from Struct_t symbol to the instance, use StructConstant as the value of the instance variable
+        // Loop through all declarations again, find all the common blocks's names and update the instance variable
+        for (size_t i = 0; i < x.n_decl; i++) {
+            if (AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                for (size_t j = 0; j < decl->n_attributes; j++) {
+                    if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
+                        AST::AttrCommon_t* attr_common = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
+                        for (size_t k = 0; k < attr_common->n_blks; k++) {
+                            std::string common_block_name{attr_common->m_blks[k].m_name};
+                            std::string module_name = base_module_name + common_block_name;
+
+                            ASR::Module_t* mod_s = ASR::down_cast<ASR::Module_t>(global_scope->get_symbol(module_name));
+
+                            std::string struct_var_name = base_struct_instance_name + common_block_name;
+                            ASR::Variable_t* var_s = ASR::down_cast<ASR::Variable_t>(mod_s->m_symtab->get_symbol(struct_var_name));
+
+                            ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
+                            ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
+                            ASR::ttype_t* type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym));
+
+                            Vec<ASR::call_arg_t> vals;
+                            auto member2sym = struct_s->m_symtab->get_scope();
+                            vals.reserve(al, struct_s->n_members);
+                            for (size_t i = 0; i < struct_s->n_members; i++) {
+                                ASR::symbol_t* s = member2sym[struct_s->m_members[i]];
+                                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>( * s));
+                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(s);
+                                if (var->m_value) {
+                                    ASR::expr_t* expr = var->m_value;
+                                    ASR::call_arg_t call_arg;
+                                    call_arg.loc = expr->base.loc;
+                                    call_arg.m_value = expr;
+                                    vals.push_back(al, call_arg);
+                                } else {
+                                    // If no compile time value in DataStmt initialize to zero when visiting StructConstant in backend
+                                    ASR::call_arg_t call_arg{};
+                                    vals.push_back(al, call_arg);
+                                }
+                            }
+                            ASR::expr_t* structc = ASRUtils::EXPR(
+                                ASR::make_StructConstant_t(al, var_s->base.base.loc, struct_as_sym, vals.p, vals.size(), type));
+                            var_s->m_symbolic_value = structc;
+                            var_s->m_value = structc;
+
+                            // Mark the common block as declared
+                            common_block_dictionary[common_block_name].first = false;
+                        }
+                        // We processed the common attribute, no need to check any more attributes
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     void add_custom_operator(
             std::pair<const std::string, std::vector<std::string>> &proc,
             ASR::accessType access) {
@@ -2290,6 +2342,67 @@ public:
                 symbols.p, symbols.size(), ASR::Public);
             current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
+        generic_procedures.clear();
+    }
+
+    /* 
+        Evaluate call expressions to genericProcedures that's used in variable declaration.
+        e.g : `integer :: arr(generic_proc(),10)`
+    */
+    void evaluate_postponed_calls_to_genericProcedure(){
+        if(!generic_procedures.empty()){
+            throw LCompilersException("generic_procedures should be resolved"
+                "before evaluating calls to genericProcedure");
+        }
+        for(auto &[expr_holder, symtable, funcCall, var_name, CheckFunc] :postponed_genericProcedure_calls_vec){
+            // Set current scope
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = symtable;
+
+            // Resolve AST node + set it in the holder.
+            bool in_subroutine_or_function_copy{in_Subroutine}; in_Subroutine = true;
+            visit_expr(*funcCall);
+            *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
+            // Invoke the call to the CheckFunc
+            if( CheckFunc ) CheckFunc(*expr_holder);
+            in_Subroutine = in_subroutine_or_function_copy;
+
+            // Do some assertions
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionCall_t>(**expr_holder))
+            LCOMPILERS_ASSERT(
+                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_scope->asr_owner))
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
+            // Raise warning for user if variable declaration is calling its function scope recursively.
+            if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
+                diag.add(diag::Diagnostic(
+                    "Variable declaration is calling its function scope recursively",
+                    diag::Level::Warning, diag::Stage::Semantic, {
+                        diag::Label("", {func_call->base.base.loc})}));                
+            }
+
+            // Add called function as dependency to Variable node.
+            ASR::symbol_t* sym_to_variable = current_scope->get_symbol(to_lower(std::string(var_name)));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym_to_variable))
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym_to_variable);
+            SetChar var_dep;var_dep.reserve(al,0);
+            ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
+            variable->m_dependencies = var_dep.p;
+            variable->n_dependencies = var_dep.n;
+
+            // Add called function as dependency to the owning-function's scope
+            ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+            SetChar func_dep;
+            func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
+            func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+            func->m_dependencies = func_dep.p;
+            func->n_dependencies = func_dep.n;
+
+            // Revert current scope
+            current_scope = current_scope_copy;
+        }
+        // Clear the delayed generic procedure calls
+        postponed_genericProcedure_calls_vec.clear();
     }
 
     void add_generic_class_procedures() {
@@ -2402,17 +2515,9 @@ public:
 
     bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
-        while( true ) {
-            std::string proc = clss->m_name;
-            if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
-                return true;
-            }
-            ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(clss->m_parent);
-            if( !clss_sym ) {
-                break;
-            }
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*clss_sym));
-            clss = ASR::down_cast<ASR::Struct_t>(clss_sym);
+        std::string proc = clss->m_name;
+        if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
+            return true;
         }
         return false;
     }
@@ -2456,14 +2561,16 @@ public:
                     }
                 }
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
-                if (!is_deferred &&
-                    ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
-                    diag.add(diag::Diagnostic(
-                        "PROCEDURE(interface) should be declared DEFERRED",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {loc})}));
-                    throw SemanticAbort();
-                }
+                // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
+                //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
+                // if (!is_deferred &&
+                //     ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
+                //     diag.add(diag::Diagnostic(
+                //         "PROCEDURE(interface) should be declared DEFERRED",
+                //         diag::Level::Error, diag::Stage::Semantic, {
+                //             diag::Label("", {loc})}));
+                //     throw SemanticAbort();
+                // }
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
@@ -2857,6 +2964,11 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if( ASR::is_a<ASR::Struct_t>(*t) ) {
+            // Check for any interface overriding a constructor for the struct
+            ASR::symbol_t *interface_override_s = m->m_symtab->resolve_symbol("~" + remote_sym);
+            if (interface_override_s) {
+                to_be_imported_later.push(std::make_pair("~" + remote_sym, "~" + local_sym));
+            }
             ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
             ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(t);
             if (imported_struct_type != nullptr) {
@@ -2956,7 +3068,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm));
+            }, lm, compiler_options.generate_object_code));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
@@ -3171,6 +3283,17 @@ public:
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(
                 to_lower(x_m_name));
+        }
+    }
+
+    void visit_GenericWrite(const AST::GenericWrite_t &x) {
+        // this can only either be "~write_formatted" or "~write_unformatted"
+        std::string generic_name = "~write_" + to_lower(std::string(x.m_id));
+        for (size_t i = 0; i < x.n_names; i++) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(
+                to_lower(x_m_name)
+            );
         }
     }
 
@@ -3536,7 +3659,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.m_args[i]->base.loc, arg_sym0));
+                            arg_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0));
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }
@@ -3714,8 +3837,8 @@ public:
                     ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
                     ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
-                    ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                        target, value, nullptr));
+                    ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                        target, value, nullptr, false));
                     body.push_back(al, assignment);
 
                     ASR::FunctionType_t *req_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);

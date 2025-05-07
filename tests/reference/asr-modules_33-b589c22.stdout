@@ -44,6 +44,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 error_t
                                                         )
                                                     )
@@ -54,6 +57,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             package:
                                                 (Variable
@@ -65,6 +69,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 package_config_t
                                                     )
                                                     ()
@@ -74,6 +81,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -94,6 +102,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add_project
@@ -102,10 +111,16 @@
                                             7 dependency_tree_t
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             7 package_config_t
                                         )
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 error_t
                                             )
                                         )]
@@ -148,6 +163,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 error_t
                                                         )
                                                     )
@@ -158,6 +176,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             main:
                                                 (Variable
@@ -176,6 +195,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             root:
                                                 (Variable
@@ -194,6 +214,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -214,6 +235,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add_project_dependencies
@@ -225,6 +247,9 @@
                                         (Logical 4)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 error_t
                                             )
                                         )]
@@ -276,6 +301,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -296,12 +322,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     dependency_config_t
                                     []
                                     [name
                                     path]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -338,6 +366,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             proj_dir:
                                                 (Variable
@@ -358,6 +387,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             revision:
                                                 (Variable
@@ -378,6 +408,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             update:
                                                 (Variable
@@ -402,6 +433,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     dependency_node_t
@@ -410,6 +442,7 @@
                                     revision
                                     done
                                     update]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -472,6 +505,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dep:
                                                 (Variable
@@ -485,6 +519,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 7 dependency_node_t
                                                             )
                                                             [(()
@@ -499,6 +536,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dep_dir:
                                                 (Variable
@@ -519,6 +557,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ndep:
                                                 (Variable
@@ -537,6 +576,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -555,6 +595,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             update:
                                                 (GenericProcedure
@@ -591,6 +632,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     dependency_tree_t
@@ -601,6 +643,7 @@
                                     ndep
                                     dep
                                     cache]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -633,11 +676,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -670,11 +715,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     package_config_t
                                     []
                                     [name]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -699,6 +746,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 error_t
                                                         )
                                                     )
@@ -709,6 +759,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -727,6 +778,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -747,6 +799,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     update_dependency
@@ -757,6 +810,9 @@
                                         (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 error_t
                                             )
                                         )]
@@ -828,6 +884,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             c_compile_flags:
                                                 (Variable
@@ -848,6 +905,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             cxx_compile_flags:
                                                 (Variable
@@ -868,6 +926,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             deps:
                                                 (Variable
@@ -879,6 +938,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         17 dependency_tree_t
                                                     )
                                                     ()
@@ -888,6 +950,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             fortran_compile_flags:
                                                 (Variable
@@ -908,6 +971,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             include_tests:
                                                 (Variable
@@ -932,6 +996,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             link_flags:
                                                 (Variable
@@ -952,6 +1017,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             package_name:
                                                 (Variable
@@ -972,6 +1038,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fpm_model_t
@@ -984,6 +1051,7 @@
                                     build_prefix
                                     deps
                                     include_tests]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -1059,6 +1127,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -1069,6 +1140,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             fpm_dependency_modules_33_dependency_tree_t:
                                                 (ExternalSymbol
@@ -1090,6 +1162,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 fpm_model_t
                                                     )
                                                     ()
@@ -1099,6 +1174,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             package:
                                                 (Variable
@@ -1110,6 +1186,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 package_config_t
                                                     )
                                                     ()
@@ -1119,18 +1198,28 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     build_model
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 fpm_model_t
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 package_config_t
                                         )
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 error_t
                                             )
                                         )]
@@ -1159,6 +1248,9 @@
                                             (Var 5 model)
                                             5 1_fpm_model_t_deps
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 fpm_dependency_modules_33_dependency_tree_t
                                             )
                                             ()

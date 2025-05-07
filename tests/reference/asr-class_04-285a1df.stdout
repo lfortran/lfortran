@@ -89,11 +89,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     bar_a
                                     []
                                     [a]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -124,11 +126,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     bar_b
                                     []
                                     [b]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -159,11 +163,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     bar_c
                                     []
                                     [c]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -182,6 +188,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 foo_c
                                     )
                                     ()
@@ -191,6 +200,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             foo_a:
                                 (Struct
@@ -207,6 +217,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 bar_a
                                                     )
                                                     ()
@@ -216,11 +229,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     foo_a
                                     [bar_a]
                                     [m_bar_a]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -244,6 +259,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 bar_b
                                                     )
                                                     ()
@@ -253,11 +271,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     foo_b
                                     [bar_b]
                                     [m_bar_b]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -281,6 +301,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 bar_c
                                                     )
                                                     ()
@@ -290,11 +313,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     foo_c
                                     [bar_c]
                                     [m_bar_c]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -312,6 +337,9 @@
                                 (Var 2 foo)
                                 2 1_foo_a_m_bar_a
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     2 bar_a
                                 )
                                 ()
@@ -326,6 +354,7 @@
                             (IntegerConstant -20 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -333,6 +362,9 @@
                                 (Var 2 foo)
                                 2 1_foo_b_m_bar_b
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     2 bar_b
                                 )
                                 ()
@@ -343,6 +375,7 @@
                         )
                         (IntegerConstant 9 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -350,6 +383,9 @@
                                 (Var 2 foo)
                                 2 1_foo_c_m_bar_c
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     2 bar_c
                                 )
                                 ()
@@ -360,6 +396,7 @@
                         )
                         (IntegerConstant 11 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -369,6 +406,9 @@
                                     (Var 2 foo)
                                     2 1_foo_a_m_bar_a
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 bar_a
                                     )
                                     ()
@@ -390,6 +430,9 @@
                                     (Var 2 foo)
                                     2 1_foo_b_m_bar_b
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 bar_b
                                     )
                                     ()
@@ -411,6 +454,9 @@
                                     (Var 2 foo)
                                     2 1_foo_c_m_bar_c
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 bar_c
                                     )
                                     ()
@@ -433,6 +479,9 @@
                                             (Var 2 foo)
                                             2 1_foo_a_m_bar_a
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 bar_a
                                             )
                                             ()
@@ -447,6 +496,9 @@
                                             (Var 2 foo)
                                             2 1_foo_b_m_bar_b
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 bar_b
                                             )
                                             ()
@@ -464,6 +516,9 @@
                                         (Var 2 foo)
                                         2 1_foo_c_m_bar_c
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 bar_c
                                         )
                                         ()

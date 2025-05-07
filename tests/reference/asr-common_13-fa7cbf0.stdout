@@ -194,11 +194,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     arrblock
                                     []
                                     [myarr]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -227,6 +229,9 @@
                                             ColMajor
                                         ))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 arrblock
                                         )
                                     )
@@ -244,11 +249,17 @@
                                             ColMajor
                                         ))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 arrblock
                                         )
                                     )
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 arrblock
                                     )
                                     ()
@@ -258,6 +269,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     file_common_block_arrblock
@@ -292,6 +304,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             myzero:
                                                 (Variable
@@ -310,12 +323,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     myblock
                                     []
                                     [myint
                                     myzero]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -335,6 +350,9 @@
                                         [((IntegerConstant 44 (Integer 4) Decimal))
                                         (())]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 myblock
                                         )
                                     )
@@ -343,11 +361,17 @@
                                         [((IntegerConstant 44 (Integer 4) Decimal))
                                         (())]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 myblock
                                         )
                                     )
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         4 myblock
                                     )
                                     ()
@@ -357,6 +381,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     file_common_block_myblock
@@ -386,6 +411,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             myblock:
                 (ExternalSymbol
@@ -414,6 +440,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             myzero:
                 (Variable
@@ -432,6 +459,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             struct_instance_arrblock:
                 (ExternalSymbol

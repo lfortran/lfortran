@@ -47,6 +47,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         9 fpm_new_settings
                                     )
                                     ()
@@ -56,6 +59,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     modules_44
@@ -111,6 +115,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             settings:
                                                 (Variable
@@ -122,6 +127,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 fpm_new_settings
                                                     )
                                                     ()
@@ -131,11 +139,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     cmd_new
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 fpm_new_settings
                                         )]
                                         ()
@@ -166,6 +178,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                     )
                                     (SubroutineCall
                                         2 warnwrite_string____1
@@ -245,11 +258,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fpm_cmd_settings
                                     []
                                     [working_dir]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -282,11 +297,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fpm_new_settings
                                     []
                                     [name]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -338,6 +355,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             __2data:
                                                 (Variable
@@ -356,6 +374,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             data:
                                                 (Variable
@@ -380,6 +399,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             fname:
                                                 (Variable
@@ -398,6 +418,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     warnwrite_string____1

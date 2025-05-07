@@ -35,6 +35,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             working_dir:
                                                 (Variable
@@ -55,12 +56,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fpm_cmd_settings
                                     []
                                     [working_dir
                                     verbose]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -97,6 +100,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -117,6 +121,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_bare:
                                                 (Variable
@@ -141,6 +146,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_example:
                                                 (Variable
@@ -165,6 +171,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_executable:
                                                 (Variable
@@ -189,6 +196,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_full:
                                                 (Variable
@@ -213,6 +221,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_lib:
                                                 (Variable
@@ -237,6 +246,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             with_test:
                                                 (Variable
@@ -261,6 +271,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fpm_new_settings
@@ -273,6 +284,7 @@
                                     with_full
                                     with_bare
                                     backfill]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -307,6 +319,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     get_command_line_settings
@@ -335,6 +348,9 @@
                                         []
                                         ()
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 fpm_new_settings
                                         ))]
                                         ()
@@ -424,11 +440,15 @@
                                                     (Logical 4)
                                                 ))]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     4 fpm_new_settings
                                                 )
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -481,6 +501,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             specified:
                                                 (Variable
@@ -499,6 +520,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     specified
@@ -525,6 +547,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 10 specified)
                                     Public
@@ -564,6 +587,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             fpm_cmd_settings:
                                 (ExternalSymbol

@@ -33,6 +33,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             value2:
                                                 (Variable
@@ -55,6 +56,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ~abstract_type:
                                                 (Struct
@@ -64,6 +66,7 @@
                                                             
                                                         })
                                                     ~abstract_type
+                                                    []
                                                     []
                                                     []
                                                     Source
@@ -79,6 +82,7 @@
                                     []
                                     [value
                                     value2]
+                                    []
                                     Source
                                     Public
                                     .false.

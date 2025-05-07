@@ -45,11 +45,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle
                                     []
                                     [radius]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -83,6 +85,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 circle
                                                     )
                                                     ()
@@ -92,6 +97,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             n:
                                                 (Variable
@@ -103,6 +109,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 circle
                                                     )
                                                     ()
@@ -112,14 +121,21 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     print_radius
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 circle
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 circle
                                         )]
                                         ()
@@ -164,6 +180,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -181,6 +198,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 circle
                                     )
                                     ()
@@ -190,6 +210,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             temp_struct_var__1:
                                 (Variable
@@ -201,6 +222,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 circle
                                     )
                                     ()
@@ -210,6 +234,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             was_called:
                                 (Variable
@@ -234,6 +259,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     main
@@ -250,6 +276,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -263,6 +290,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         2 print_radius

@@ -40,6 +40,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             message:
                                                 (Variable
@@ -58,6 +59,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -69,6 +71,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 logger_type
                                                     )
                                                     ()
@@ -78,6 +83,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -96,11 +102,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     final_logger
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 logger_type
                                         )]
                                         ()
@@ -152,6 +162,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             log_units:
                                                 (Variable
@@ -177,6 +188,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             max_width:
                                                 (Variable
@@ -195,6 +207,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     logger_type
@@ -202,6 +215,7 @@
                                     [add_blank_line
                                     log_units
                                     max_width]
+                                    []
                                     Source
                                     Private
                                     .false.

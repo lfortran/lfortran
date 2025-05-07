@@ -47,6 +47,16 @@
                                     (SymbolTable
                                         7
                                         {
+                                            1___asr_push_back:
+                                                (ExternalSymbol
+                                                    7
+                                                    1___asr_push_back
+                                                    8 push_back
+                                                    intvector
+                                                    []
+                                                    push_back
+                                                    Public
+                                                ),
                                             1_intvector_elements:
                                                 (ExternalSymbol
                                                     7
@@ -55,16 +65,6 @@
                                                     intvector
                                                     []
                                                     elements
-                                                    Public
-                                                ),
-                                            1_push_back:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_push_back
-                                                    8 push_back
-                                                    intvector
-                                                    []
-                                                    push_back
                                                     Public
                                                 ),
                                             __asr_push_back:
@@ -119,6 +119,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -137,6 +138,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -157,6 +159,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_push_back
@@ -195,6 +198,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         9 1_intvector_resize
@@ -226,6 +230,7 @@
                                                         )
                                                         (Var 9 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -236,6 +241,7 @@
                                                         )
                                                         (Var 9 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -285,6 +291,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -303,6 +310,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -323,6 +331,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -348,6 +357,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_resize
@@ -494,6 +504,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -552,6 +563,7 @@
                                                         )
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -588,6 +600,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (ClassProcedure
@@ -628,12 +641,14 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     intvector
                                                     []
                                                     [elements
                                                     sz]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -652,6 +667,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 intvector
                                                     )
                                                     ()
@@ -661,6 +679,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     main
@@ -681,7 +700,7 @@
                                     []
                                     []
                                     [(SubroutineCall
-                                        7 1_push_back
+                                        7 1___asr_push_back
                                         ()
                                         [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (Var 7 v)
@@ -784,6 +803,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -802,6 +822,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -822,6 +843,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     push_back
@@ -862,6 +884,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         5 1_resize
@@ -897,6 +920,7 @@
                                                         )
                                                         (Var 5 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -907,6 +931,7 @@
                                                         )
                                                         (Var 5 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -956,6 +981,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -974,6 +1000,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -994,6 +1021,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1021,6 +1049,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     resize
@@ -1177,6 +1206,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -1241,6 +1271,7 @@
                                                         )
                                                         (Var 6 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1267,6 +1298,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             vector:
                                                 (Struct
@@ -1299,6 +1331,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (ClassProcedure
@@ -1339,12 +1372,14 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     vector
                                                     []
                                                     [elements
                                                     sz]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.

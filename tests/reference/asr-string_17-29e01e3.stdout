@@ -46,6 +46,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -57,6 +58,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -66,11 +70,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     len_string
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (Integer 4)
@@ -125,11 +133,13 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 length)
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 4 length)
@@ -157,7 +167,8 @@
                                                 (Variable
                                                     5
                                                     maybe_string
-                                                    [string]
+                                                    [len_string
+                                                    string]
                                                     ReturnVar
                                                     ()
                                                     ()
@@ -177,6 +188,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -188,6 +200,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -197,11 +212,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     maybe
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (String 1 -3 (FunctionCall
@@ -210,6 +229,9 @@
                                             [((FunctionParam
                                                 0
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 string_type
                                                 )
                                                 ()
@@ -273,6 +295,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 maybe_string)
@@ -281,6 +304,7 @@
                                                 (String 1 0 () PointerString)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 5 maybe_string)
@@ -313,11 +337,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_type
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Private
                                     .false.

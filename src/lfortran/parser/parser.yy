@@ -1413,6 +1413,8 @@ data_object
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
+    | struct_member_star id "(" fnarray_arg_list_opt ")" {
+        $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }
     | "(" data_object_list "," id "=" expr "," expr ")" {
             $$ = DATA_IMPLIED_DO1($2, nullptr, $4, $6, $8, @$); }
     | "(" data_object_list "," integer_type_spec "::" id "=" expr "," expr ")" {

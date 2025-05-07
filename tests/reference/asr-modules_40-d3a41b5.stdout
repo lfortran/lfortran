@@ -47,6 +47,7 @@
                                                     .false.
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -72,6 +73,7 @@
                                                                     .false.
                                                                     .true.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -85,6 +87,9 @@
                                                                     (Allocatable
                                                                         (Array
                                                                             (StructType
+                                                                                []
+                                                                                []
+                                                                                .true.
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -99,6 +104,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -117,6 +123,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     fill_stack
@@ -128,6 +135,9 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -209,6 +219,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -222,6 +233,9 @@
                                                                     (Allocatable
                                                                         (Array
                                                                             (StructType
+                                                                                []
+                                                                                []
+                                                                                .true.
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -236,6 +250,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     resize
@@ -243,6 +258,9 @@
                                                         [(Allocatable
                                                             (Array
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -317,6 +335,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_key:
                                 (Struct
@@ -342,11 +361,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_key
                                     []
                                     [key]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -373,6 +394,7 @@
                                                 )
                                         })
                                     toml_tokenizer
+                                    []
                                     []
                                     []
                                     Source

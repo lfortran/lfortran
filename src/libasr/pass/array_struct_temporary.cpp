@@ -65,7 +65,7 @@ static inline ASR::asr_t* make_Assignment_t_util(
     a_value = expr_duplicator.duplicate_expr(a_value);
 
     exprs_with_target[a_value] = std::make_pair(a_target, targetType::GeneratedTarget);
-    return ASR::make_Assignment_t(al, a_loc, a_target, a_value, a_overloaded);
+    return ASRUtils::make_Assignment_t_util(al, a_loc, a_target, a_value, a_overloaded, false);
 }
 
 /*
@@ -121,7 +121,7 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
-    bool is_pointer_required=false) {
+    bool is_pointer_required=false, bool override_physical_type=false) {
     ASR::ttype_t* value_type = ASRUtils::expr_type(value);
     LCOMPILERS_ASSERT(ASRUtils::is_array(value_type));
 
@@ -177,9 +177,14 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     bool is_size_only_dependent_on_arguments = ASRUtils::is_dimension_dependent_only_on_arguments(
         value_m_dims, value_n_dims);
     bool is_allocatable = ASRUtils::is_allocatable(value_type);
+    bool is_compile_time = ASRUtils::is_value_constant(ASRUtils::expr_value(value));
     ASR::ttype_t* var_type = nullptr;
     if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable) &&
         !is_pointer_required ) {
+        if( is_fixed_sized_array && override_physical_type ) {
+            value_type = ASRUtils::duplicate_type(al, value_type, nullptr,
+                ASR::array_physical_typeType::FixedSizeArray, true);
+        }
         var_type = value_type;
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
@@ -196,6 +201,15 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     }
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+    if (is_compile_time) {
+        ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+            ASRUtils::expr_value(value), ASRUtils::expr_value(value), ASR::storage_typeType::Parameter,
+            ASRUtils::expr_type(ASRUtils::expr_value(value)), nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::presenceType::Required, false));
+        scope->add_symbol(var_name, temporary_variable);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
+    }
     ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
         nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
@@ -289,8 +303,9 @@ void set_allocation_size_elemental_function(
 
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
+    ASR::expr_t* temporary_var,
     Vec<ASR::dimension_t>& allocate_dims,
-    size_t target_n_dims
+    size_t target_n_dims, bool& add_allocated_check
 ) {
     if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -298,6 +313,8 @@ bool set_allocation_size(
     const Location& loc = value->base.loc;
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    ASR::expr_t* int64_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))));
     if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -443,13 +460,19 @@ bool set_allocation_size(
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(value);
             allocate_dims.reserve(al, array_section_t->n_args);
+            ASR::expr_t* int_one;
             for( size_t i = 0; i < array_section_t->n_args; i++ ) {
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* step = array_section_t->m_args[i].m_step;
+                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) == 8) {
+                    int_one = int64_one;
+                } else {
+                    int_one = int32_one;
+                }
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
-                allocate_dim.m_start = int32_one;
+                allocate_dim.m_start = int_one;
                 if( start == nullptr && step == nullptr && end != nullptr ) {
                     if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
                         allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
@@ -463,7 +486,7 @@ bool set_allocation_size(
                         end_minus_start, ASR::binopType::Div, step, ASRUtils::expr_type(end_minus_start),
                         nullptr));
                     ASR::expr_t* length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        by_step, ASR::binopType::Add, int32_one, ASRUtils::expr_type(by_step), nullptr));
+                        by_step, ASR::binopType::Add, int_one, ASRUtils::expr_type(by_step), nullptr));
                     allocate_dim.m_length = length;
                     allocate_dims.push_back(al, allocate_dim);
                 }
@@ -690,6 +713,18 @@ bool set_allocation_size(
         }
         case ASR::exprType::ArrayReshape: {
             ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(value);
+            Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
+            ArrayVarCollector array_var_collector(al, array_vars);
+            array_var_collector.visit_expr(*array_reshape_t->m_shape);
+            bool set_length_to_zero = false;
+            for( size_t i = 0; i < array_vars.size(); i++ ) {
+                if( ASR::down_cast<ASR::Var_t>(array_vars.p[i])->m_v ==
+                    ASR::down_cast<ASR::Var_t>(temporary_var)->m_v ) {
+                    add_allocated_check = true;
+                    set_length_to_zero = true;
+                    break;
+                }
+            }
             size_t n_dims = ASRUtils::get_fixed_size_of_array(
                 ASRUtils::expr_type(array_reshape_t->m_shape));
             allocate_dims.reserve(al, n_dims);
@@ -698,7 +733,11 @@ bool set_allocation_size(
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = int32_one;
-                allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {b.i32(i + 1)});
+                if( set_length_to_zero ) {
+                    allocate_dim.m_length = b.i32(0);
+                } else {
+                    allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {b.i32(i + 1)});
+                }
                 allocate_dims.push_back(al, allocate_dim);
             }
             break;
@@ -738,7 +777,9 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     }
     Vec<ASR::dimension_t> allocate_dims;
     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var));
-    if( !set_allocation_size(al, value, allocate_dims, target_n_dims) ) {
+    bool add_allocated_check = false;
+    if( !set_allocation_size(al, value, temporary_var, allocate_dims,
+                             target_n_dims, add_allocated_check) ) {
         return ;
     }
     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
@@ -754,36 +795,29 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
 
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
     dealloc_args.push_back(al, temporary_var);
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-        temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
-        temporary_var->base.loc, alloc_args.p, alloc_args.size(),
-        nullptr, nullptr, nullptr)));
-}
-
-void insert_allocate_stmt_for_struct(Allocator& al, ASR::expr_t* temporary_var,
-    ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body) {
-    if( !ASRUtils::is_allocatable(temporary_var) ) {
-        return ;
+    if( !add_allocated_check ) {
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+            temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
+            temporary_var->base.loc, alloc_args.p, alloc_args.size(),
+            nullptr, nullptr, nullptr)));
+    } else {
+        ASRUtils::ASRBuilder b(al, value->base.loc);
+        Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, temporary_var);
+        current_body->push_back(al,
+            b.If(b.Not(ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, value->base.loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.size(), 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, value->base.loc, 4)), nullptr))),
+            {ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+                temporary_var->base.loc, dealloc_args.p, dealloc_args.size())),
+             ASRUtils::STMT(ASR::make_Allocate_t(al,
+                temporary_var->base.loc, alloc_args.p, alloc_args.size(),
+                nullptr, nullptr, nullptr))},
+            {})
+        );
     }
-
-    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
-    ASR::alloc_arg_t alloc_arg;
-    alloc_arg.loc = value->base.loc;
-    alloc_arg.m_a = temporary_var;
-    alloc_arg.m_dims = nullptr;
-    alloc_arg.n_dims = 0;
-    alloc_arg.m_len_expr = nullptr;
-    alloc_arg.m_type = nullptr;
-    alloc_args.push_back(al, alloc_arg);
-
-    Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
-    dealloc_args.push_back(al, temporary_var);
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-        temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
-        temporary_var->base.loc, alloc_args.p, alloc_args.size(),
-        nullptr, nullptr, nullptr)));
 }
 
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
@@ -823,13 +857,17 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false,
-    ASR::expr_t* allocate_size_reference=nullptr) {
+    ASR::expr_t* allocate_size_reference=nullptr, bool override_physical_type=false) {
     const Location& loc = array_expr->base.loc;
     if( allocate_size_reference == nullptr ) {
         allocate_size_reference = array_expr;
     }
     ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-        al, allocate_size_reference, current_scope, name_hint, is_pointer_required);
+        al, allocate_size_reference, current_scope, name_hint,
+        is_pointer_required, override_physical_type);
+    if (ASRUtils::is_value_constant(ASRUtils::expr_value(allocate_size_reference))) {
+        return array_var_temporary;
+    }
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
         exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTargetPointerForArraySection);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
@@ -874,8 +912,6 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, struct_var_temporary, struct_expr)));
     } else {
-        insert_allocate_stmt_for_struct(al, struct_var_temporary, struct_expr, current_body);
-        struct_expr = ASRUtils::get_past_array_physical_cast(struct_expr);
         current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
             al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
     }
@@ -1429,14 +1465,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
-        visit_IntrinsicCall(x, "_intrinsic_elemental_function_" +
-            ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
-        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_IntrinsicElementalFunction(x);
+        if (!ASRUtils::is_value_constant(x.m_value)) {   // Only simplify runtime function's args
+            visit_IntrinsicCall(x, "_intrinsic_elemental_function_" +
+                ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
+            ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_IntrinsicElementalFunction(x);
+        }
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
-        visit_IntrinsicCall(x, "_intrinsic_array_function_" +
-            ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
+        if (!ASRUtils::is_value_constant(x.m_value)) {   // Only simplify runtime function's args
+            visit_IntrinsicCall(x, "_intrinsic_array_function_" +
+                ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
+        }
         ASR::IntrinsicArrayFunction_t& xx = const_cast<ASR::IntrinsicArrayFunction_t&>(x);
         if( ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_index(
                 static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id)) == 1 &&
@@ -1481,20 +1521,43 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
     }
 
-    void replace_expr_with_temporary_variable(ASR::expr_t* &xx_member, ASR::expr_t* x_member, const std::string& name_hint) {
+    void replace_expr_with_temporary_variable(ASR::expr_t* &xx_member,
+        ASR::expr_t* x_member, const std::string& name_hint,
+        bool override_physical_type=false) {
         if( var_check(x_member)) {
             visit_expr(*x_member);
             bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_member) &&
                 name_hint.find("_array_is_contiguous_array") != std::string::npos &&
                 !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_member));
             xx_member = create_and_allocate_temporary_variable_for_array(x_member,
-                name_hint, al, current_body, current_scope, exprs_with_target, is_pointer_required);
+                name_hint, al, current_body, current_scope, exprs_with_target,
+                is_pointer_required, nullptr, override_physical_type);
         }
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
-        replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array");
+        if( !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(x.m_shape)) ) {
+            replace_expr_with_temporary_variable(xx.m_shape, x.m_shape, "_array_reshape_shape", true);
+            ASR::ttype_t* shape_ttype = ASRUtils::expr_type(xx.m_shape);
+            ASR::array_physical_typeType shape_ptype = ASRUtils::extract_physical_type(shape_ttype);
+            if( shape_ptype != ASR::array_physical_typeType::DescriptorArray ) {
+                xx.m_shape = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(
+                    al, xx.m_shape->base.loc, xx.m_shape, shape_ptype,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, shape_ttype, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true),
+                    nullptr)
+                );
+            }
+        }
+        replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
+        if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
+            ASRUtils::extract_physical_type(xx.m_type) !=
+            ASR::array_physical_typeType::FixedSizeArray ) {
+            xx.m_type = ASRUtils::duplicate_type(al, xx.m_type, nullptr,
+                ASR::array_physical_typeType::FixedSizeArray, true);
+        }
     }
 
     void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t& x) {
@@ -1797,8 +1860,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
             array_expr_ptr = create_temporary_variable_for_array(
                 al, loc, current_scope, "_array_section_copy_", simd_type);
-            current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, loc, array_expr_ptr, *current_expr, nullptr)));
+            current_body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, array_expr_ptr, *current_expr, nullptr, false)));
             *current_expr = array_expr_ptr;
             return ;
         }
@@ -2219,12 +2282,15 @@ class TransformVariableInitialiser:
             }
 
             exprs_with_target[value] = std::make_pair(target, targetType::OriginalTarget);
-            if (ASRUtils::is_pointer(x.m_type)) {
-                result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                    al, loc, target, value)));
-            } else {
-                result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-                    al, loc, target, value, nullptr, exprs_with_target)));
+            // Transform local variables, but not dummy arguments
+            if (xx.m_intent == ASR::intentType::Local) {
+                if (ASRUtils::is_pointer(x.m_type)) {
+                    result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+                        al, loc, target, value)));
+                } else {
+                    result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                            al, loc, target, value, nullptr, exprs_with_target)));
+                }
             }
             xx.m_symbolic_value = nullptr;
             xx.m_value = nullptr;
@@ -2420,11 +2486,15 @@ class VerifySimplifierASROutput:
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
-        visit_IntrinsicCall(x);
+        if (!ASRUtils::is_value_constant(x.m_value)) {   // Only verify args for runtime functions
+            visit_IntrinsicCall(x);
+        }
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
-        visit_IntrinsicCall(x);
+        if (!ASRUtils::is_value_constant(x.m_value)) {   // Only verify args for runtime functions
+            visit_IntrinsicCall(x);
+        }
         check_if_linked_to_target(x.base, x.m_type);
     }
 

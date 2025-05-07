@@ -61,6 +61,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             rhs:
                                                 (Variable
@@ -81,6 +82,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     date_to_string
@@ -151,6 +153,7 @@
                                         ()
                                         ()
                                         ()
+                                        .true.
                                     )]
                                     ()
                                     Private
@@ -163,12 +166,22 @@
                                     (SymbolTable
                                         12
                                         {
-                                            1_to_string:
+                                            1_date_to_string:
                                                 (ExternalSymbol
                                                     12
-                                                    1_to_string
+                                                    1_date_to_string
                                                     8 to_string
                                                     toml_date
+                                                    []
+                                                    to_string
+                                                    Public
+                                                ),
+                                            1_time_to_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_time_to_string
+                                                    10 to_string
+                                                    toml_time
                                                     []
                                                     to_string
                                                     Public
@@ -212,6 +225,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             rhs:
                                                 (Variable
@@ -232,6 +246,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             temporary:
                                                 (Variable
@@ -252,6 +267,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     datetime_to_string
@@ -285,6 +301,9 @@
                                                 12 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 toml_date
                                                     )
                                                 )
@@ -295,7 +314,7 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            12 1_to_string
+                                            12 1_date_to_string
                                             ()
                                             [((Var 12 lhs))]
                                             (StructInstanceMember
@@ -303,6 +322,9 @@
                                                 12 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 toml_date
                                                     )
                                                 )
@@ -317,6 +339,9 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 toml_time
                                                         )
                                                     )
@@ -327,7 +352,7 @@
                                                 ()
                                             )
                                             [(SubroutineCall
-                                                12 1_to_string
+                                                12 1_time_to_string
                                                 ()
                                                 [((Var 12 temporary))]
                                                 (StructInstanceMember
@@ -335,6 +360,9 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 toml_time
                                                         )
                                                     )
@@ -374,6 +402,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             []
                                         )]
@@ -385,6 +414,9 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 toml_time
                                                         )
                                                     )
@@ -401,6 +433,9 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 toml_time
                                                         )
                                                     )
@@ -415,6 +450,9 @@
                                                         12 1_toml_datetime_time
                                                         (Allocatable
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 7 toml_time
                                                             )
                                                         )
@@ -422,6 +460,7 @@
                                                     ))]
                                                     ()
                                                 )
+                                                .false.
                                             )]
                                             []
                                         )]
@@ -504,6 +543,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             millisec:
                                                 (Variable
@@ -522,6 +562,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             minute:
                                                 (Variable
@@ -540,6 +581,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             second:
                                                 (Variable
@@ -558,6 +600,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -569,6 +612,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 toml_time
                                                     )
                                                     ()
@@ -578,6 +624,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             zone:
                                                 (Variable
@@ -596,6 +643,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_toml_time
@@ -606,6 +654,9 @@
                                         (Integer 4)
                                         (String 1 -1 () PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             7 toml_time
                                         )
                                         Source
@@ -642,6 +693,7 @@
                                             )
                                             (Var 13 hour)
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -662,6 +714,7 @@
                                             )
                                             (Var 13 minute)
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -682,6 +735,7 @@
                                             )
                                             (Var 13 second)
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -704,6 +758,7 @@
                                             )
                                             (Var 13 millisec)
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -734,6 +789,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -817,6 +873,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             rhs:
                                                 (Variable
@@ -837,6 +894,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     time_to_string
@@ -930,6 +988,7 @@
                                             ()
                                             ()
                                             ()
+                                            .true.
                                         )]
                                         [(Allocate
                                             [((Var 14 lhs)
@@ -976,6 +1035,7 @@
                                             ()
                                             ()
                                             ()
+                                            .true.
                                         )]
                                     )
                                     (If
@@ -1047,6 +1107,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -1078,6 +1139,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             month:
                                                 (Variable
@@ -1096,6 +1158,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             to_string:
                                                 (ClassProcedure
@@ -1125,6 +1188,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -1139,6 +1203,7 @@
                                     [year
                                     month
                                     day]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -1163,6 +1228,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 toml_date
                                                         )
                                                     )
@@ -1173,6 +1241,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             time:
                                                 (Variable
@@ -1185,6 +1254,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             7 toml_time
                                                         )
                                                     )
@@ -1195,6 +1267,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             to_string:
                                                 (ClassProcedure
@@ -1219,6 +1292,7 @@
                                     []
                                     [date
                                     time]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -1249,6 +1323,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             millisec:
                                                 (Variable
@@ -1269,6 +1344,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             minute:
                                                 (Variable
@@ -1287,6 +1363,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             second:
                                                 (Variable
@@ -1305,6 +1382,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             to_string:
                                                 (ClassProcedure
@@ -1336,6 +1414,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -1352,6 +1431,7 @@
                                     second
                                     millisec
                                     zone]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -1386,6 +1466,16 @@
                                     tomlf_utils_convert
                                     []
                                     convert_raw
+                                    Public
+                                ),
+                            new_toml_time@~toml_time:
+                                (ExternalSymbol
+                                    2
+                                    new_toml_time@~toml_time
+                                    7 new_toml_time
+                                    tomlf_datetime
+                                    []
+                                    new_toml_time
                                     Public
                                 ),
                             toml_date:
@@ -1427,6 +1517,16 @@
                                     []
                                     toml_time
                                     Public
+                                ),
+                            ~toml_time:
+                                (ExternalSymbol
+                                    2
+                                    ~toml_time
+                                    7 ~toml_time
+                                    tomlf_datetime
+                                    []
+                                    ~toml_time
+                                    Public
                                 )
                         })
                     tomlf_utils
@@ -1444,6 +1544,16 @@
                                     4
                                     convert_raw
                                     [4 toml_raw_to_timestamp]
+                                    Public
+                                ),
+                            new_toml_time@~toml_time:
+                                (ExternalSymbol
+                                    4
+                                    new_toml_time@~toml_time
+                                    7 new_toml_time
+                                    tomlf_datetime
+                                    []
+                                    new_toml_time
                                     Public
                                 ),
                             toml_date:
@@ -1498,6 +1608,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             err:
                                                 (Variable
@@ -1516,6 +1627,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             first:
                                                 (Variable
@@ -1534,6 +1646,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             raw:
                                                 (Variable
@@ -1552,6 +1665,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             stat:
                                                 (Variable
@@ -1570,6 +1684,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             timestamp:
                                                 (Variable
@@ -1581,6 +1696,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 toml_datetime
                                                     )
                                                     ()
@@ -1590,12 +1708,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_raw_to_timestamp
                                     (FunctionType
                                         [(String 1 -1 () PointerString)
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 toml_datetime
                                         )]
                                         (Logical 4)
@@ -1617,6 +1739,7 @@
                                         (Var 5 first)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -1624,6 +1747,9 @@
                                             5 1_toml_datetime_date
                                             (Allocatable
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     4 toml_date
                                                 )
                                             )
@@ -1635,11 +1761,15 @@
                                             ((IntegerConstant 0 (Integer 4) Decimal))
                                             ((IntegerConstant 0 (Integer 4) Decimal))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 toml_date
                                             )
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 stat)
@@ -1651,6 +1781,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 stat)
                                     Public
@@ -1666,6 +1797,16 @@
                                     tomlf_datetime
                                     []
                                     toml_time
+                                    Public
+                                ),
+                            ~toml_time:
+                                (ExternalSymbol
+                                    4
+                                    ~toml_time
+                                    7 ~toml_time
+                                    tomlf_datetime
+                                    []
+                                    ~toml_time
                                     Public
                                 )
                         })

@@ -42,6 +42,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 toml_context
                                                     )
                                                     ()
@@ -51,6 +54,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             line_break:
                                                 (Variable
@@ -69,6 +73,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             message:
                                                 (Variable
@@ -89,6 +94,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             num:
                                                 (Variable
@@ -107,6 +113,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add_context
@@ -115,6 +122,9 @@
                                             (String 1 -2 () DescriptorString)
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 toml_context
                                         )]
                                         ()
@@ -169,6 +179,7 @@
                                             ()
                                             ()
                                             ()
+                                            .true.
                                         )
                                         (Assignment
                                             (Var 4 message)
@@ -244,6 +255,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -320,6 +332,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -349,6 +362,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             pos:
                                                 (Variable
@@ -367,6 +381,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ptr:
                                                 (Variable
@@ -387,6 +402,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_context
@@ -394,6 +410,7 @@
                                     [pos
                                     num
                                     ptr]
+                                    []
                                     Source
                                     Public
                                     .false.

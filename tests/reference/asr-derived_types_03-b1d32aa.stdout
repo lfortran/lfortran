@@ -17,6 +17,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 x
                                     )
                                     ()
@@ -26,6 +29,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             x:
                                 (Struct
@@ -49,11 +53,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     x
                                     []
                                     [i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -89,11 +95,13 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     a
                                                     []
                                                     [i]
+                                                    []
                                                     Source
                                                     Public
                                                     .false.
@@ -112,6 +120,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 a
                                                     )
                                                     ()
@@ -121,6 +132,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     y
@@ -174,11 +186,13 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     a
                                                     []
                                                     [i]
+                                                    []
                                                     Source
                                                     Public
                                                     .false.
@@ -197,6 +211,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 a
                                                     )
                                                     ()
@@ -206,6 +223,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             z:
                                                 (Variable
@@ -224,6 +242,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     z
@@ -247,6 +266,7 @@
                                         (Var 6 z)
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     (Var 6 z)
                                     Public

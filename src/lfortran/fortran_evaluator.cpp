@@ -38,7 +38,7 @@ namespace LCompilers {
 /* ------------------------------------------------------------------------- */
 // FortranEvaluator
 
-FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
+FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
     :
     compiler_options{compiler_options},
     al{1024*1024},
@@ -111,7 +111,8 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        pass_manager, diagnostics, lm.files.back().in_filename);
+        pass_manager, diagnostics, lm.files.back().in_filename,
+        nullptr);
     std::unique_ptr<LCompilers::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -333,7 +334,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         return asr.error;
     }
     Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
-        diagnostics, lm.files.back().in_filename);
+        diagnostics, lm.files.back().in_filename, nullptr);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
@@ -347,6 +348,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     }
 }
 
+/*
+    time_opt: keeps track of time taken by using `--fast` flag
+        i.e. time taken by optimizations, and used when
+        `--time-report` flag is used
+*/
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
     ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
@@ -355,11 +361,16 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
-, [[maybe_unused]] const std::string &infile)
+, [[maybe_unused]] const std::string &infile,
+  [[maybe_unused]] int* time_opt=nullptr)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;
     run_fn = "__lfortran_evaluate_" + std::to_string(eval_count);
+
+    if (compiler_options.separate_compilation) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+    }
 
     if (compiler_options.emit_debug_info) {
         if (!compiler_options.emit_debug_line_column) {
@@ -379,7 +390,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options, run_fn, infile);
+            compiler_options, run_fn, "", infile);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -388,7 +399,12 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     }
 
     if (compiler_options.po.fast) {
+        auto t1 = std::chrono::high_resolution_clock::now();
         e->opt(*m->m_m);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        if (compiler_options.po.time_report && time_opt) {
+            *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        }
     }
 
     return m;

@@ -11,6 +11,7 @@ source_filename = "LFortran"
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [9 x i8] c"I4,I4,I4\00", align 1
 @10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
@@ -61,8 +62,14 @@ else8:                                            ; preds = %ifcont6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
-  %2 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 48, i32 2, i64 53, i32 2, i64 57)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  %2 = alloca i32, align 4
+  store i32 48, i32* %2, align 4
+  %3 = alloca i32, align 4
+  store i32 53, i32* %3, align 4
+  %4 = alloca i32, align 4
+  store i32 57, i32* %4, align 4
+  %5 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32* %2, i32* %3, i32* %4)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
 
@@ -76,7 +83,7 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 
-declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

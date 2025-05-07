@@ -21,6 +21,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 build_target_t
                                                             )
                                                         )
@@ -28,6 +31,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 build_target_t
                                                             )
                                                         )
@@ -35,6 +41,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 build_target_t
                                                         )
                                                     )
@@ -45,11 +54,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     build_target_ptr
                                     [build_target_t]
                                     [ptr]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -82,6 +93,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             version:
                                                 (Variable
@@ -102,12 +114,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     build_target_t
                                     []
                                     [output_file
                                     version]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -132,6 +146,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 build_target_t
                                                         )
                                                     )
@@ -142,6 +159,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     func
@@ -149,6 +167,9 @@
                                         []
                                         (Pointer
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 build_target_t
                                             )
                                         )
@@ -170,6 +191,9 @@
                                         (PointerNullConstant
                                             (Pointer
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 build_target_t
                                                 )
                                             )

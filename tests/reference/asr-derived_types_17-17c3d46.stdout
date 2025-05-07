@@ -57,6 +57,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 t_1
                                                     )
                                                     ()
@@ -66,12 +69,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add
                                     (FunctionType
                                         []
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 t_1
                                         )
                                         Source
@@ -112,6 +119,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 self)
                                     Public
@@ -144,6 +152,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 t_1
                                                     )
                                                     ()
@@ -153,12 +164,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     subtract
                                     (FunctionType
                                         []
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 t_1
                                         )
                                         Source
@@ -199,6 +214,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 self)
                                     Public
@@ -228,11 +244,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     t_1
                                     []
                                     [num]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -303,6 +321,9 @@
                                                 ()
                                                 []
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     7 1_t_1
                                                 )
                                                 ()
@@ -321,6 +342,9 @@
                                                 ()
                                                 []
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     7 1_t_1
                                                 )
                                                 ()

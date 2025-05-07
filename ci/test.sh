@@ -52,4 +52,11 @@ if [[ $WIN != "1" ]]; then
     ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma
     ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f
     ./run_tests.py -b llvm -f -nf16
+    cd ..
+
+    pip install src/server/tests tests/server
+    # NOTE: `--full-trace` tends to print excessively long stack traces. Please
+    # re-enable it if needed:
+    # pytest -vv --showlocals --full-trace --capture=no --timeout=5 tests/server
+#    pytest -vv --showlocals --capture=no --timeout=5 tests/server
 fi

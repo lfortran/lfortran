@@ -31,6 +31,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -49,6 +50,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             j:
                                 (Variable
@@ -67,6 +69,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     implied_do_loop2
@@ -96,7 +99,12 @@
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 3 (Integer 4) Decimal)
                                     ()
-                                    (Integer 4)
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 15 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
                                     (ArrayConstant
                                         60
                                         [1, 2, 3, ...., 5, 6, 7]
@@ -112,8 +120,8 @@
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                    ())]
-                                    DescriptorArray
+                                    (IntegerConstant 15 (Integer 4) Decimal))]
+                                    FixedSizeArray
                                 )
                                 (ArrayConstant
                                     60
@@ -122,7 +130,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 15 (Integer 4) Decimal))]
-                                        DescriptorArray
+                                        FixedSizeArray
                                     )
                                     ColMajor
                                 )
@@ -156,11 +164,12 @@
                                 (IntegerConstant 3 (Integer 4) Decimal))
                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
-                                DescriptorArray
+                                FixedSizeArray
                             )
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

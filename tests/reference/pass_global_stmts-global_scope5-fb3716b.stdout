@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f2:
                                 (Variable
@@ -42,6 +43,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     f
@@ -65,6 +67,7 @@
                         (Var 1 x)
                         (IntegerConstant 6 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f1)
@@ -76,6 +79,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 1 x)
@@ -87,6 +91,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f2)
@@ -98,6 +103,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                     (Var 2 f2)
                     Public
@@ -122,6 +128,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []

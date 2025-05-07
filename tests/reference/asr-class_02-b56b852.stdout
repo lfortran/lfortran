@@ -76,11 +76,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle
                                     []
                                     [radius]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -121,6 +123,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -141,6 +144,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle_area
@@ -183,6 +187,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 circle_area)
                                     Private
@@ -232,6 +237,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -252,6 +258,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     circle_print
@@ -284,6 +291,7 @@
                                             (Var 5 this)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -349,6 +357,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 circle
                                                     )
                                                     ()
@@ -358,6 +369,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     main
@@ -386,11 +398,15 @@
                                                 (Real 4)
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 circle
                                             )
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -404,6 +420,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (SubroutineCall
                                         6 1_circle_print
@@ -448,6 +465,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     class_circle2

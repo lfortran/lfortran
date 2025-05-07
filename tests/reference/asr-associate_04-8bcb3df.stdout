@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             associate_block:
                                 (AssociateBlock
@@ -49,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             z:
                                                 (Variable
@@ -67,6 +69,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     associate_block
@@ -124,6 +127,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Associate
                                         (Var 3 v)
@@ -167,6 +171,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                 ),
                             myreal:
@@ -186,6 +191,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             theta:
                                 (Variable
@@ -204,6 +210,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -222,6 +229,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -240,6 +248,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     associate_04
@@ -251,6 +260,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -259,6 +269,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 myreal)
@@ -267,6 +278,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 theta)
@@ -275,6 +287,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -283,6 +296,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (AssociateBlockCall
                         2 associate_block

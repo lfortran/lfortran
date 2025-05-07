@@ -33,6 +33,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -42,6 +45,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -60,12 +64,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string
                                     (FunctionType
                                         [(String 1 -1 () PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -103,6 +111,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -112,6 +123,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             val:
                                                 (Variable
@@ -130,12 +142,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string_from_integer_int32
                                     (FunctionType
                                         [(Integer 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -173,6 +189,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -182,6 +201,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             val:
                                                 (Variable
@@ -200,12 +220,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string_from_integer_int64
                                     (FunctionType
                                         [(Integer 8)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -243,6 +267,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -252,6 +279,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             val:
                                                 (Variable
@@ -270,12 +298,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string_from_logical_lk
                                     (FunctionType
                                         [(Logical 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -322,11 +354,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_type
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -371,6 +405,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
@@ -380,6 +417,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -398,12 +436,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string
                                     (FunctionType
                                         [(String 1 -1 () PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source
@@ -441,6 +483,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
@@ -450,6 +495,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             val:
                                                 (Variable
@@ -468,12 +514,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string_from_integer_int32
                                     (FunctionType
                                         [(Integer 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source
@@ -511,6 +561,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
@@ -520,6 +573,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             val:
                                                 (Variable
@@ -538,12 +592,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string_from_integer_int64
                                     (FunctionType
                                         [(Integer 8)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source
@@ -581,6 +639,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
@@ -590,6 +651,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             val:
                                                 (Variable
@@ -608,12 +670,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_string_from_logical_lk
                                     (FunctionType
                                         [(Logical 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source

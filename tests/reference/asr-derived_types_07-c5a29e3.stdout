@@ -69,6 +69,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             key:
                                                 (Variable
@@ -87,6 +88,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ptr:
                                                 (Variable
@@ -109,6 +111,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -129,6 +132,7 @@
                                                     .false.
                                                     .true.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     find
@@ -183,6 +187,9 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 toml_node
                                                                     )
                                                                     [(()
@@ -196,6 +203,9 @@
                                                         (Var 13 i)
                                                         ())]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 toml_node
                                                         )
                                                         ColMajor
@@ -228,6 +238,9 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -241,6 +254,9 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -265,6 +281,9 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -278,6 +297,9 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -349,6 +371,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -360,6 +383,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -369,11 +395,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_vector
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             9 toml_vector
                                         )
                                         (Integer 4)]
@@ -401,6 +431,7 @@
                                         )
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (IntrinsicElementalFunction
@@ -417,6 +448,9 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 toml_node
                                                         )
                                                         [(()
@@ -475,11 +509,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_node
                                     []
                                     [val]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -515,6 +551,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             [(()
@@ -529,6 +568,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             n:
                                                 (Variable
@@ -547,12 +587,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_vector
                                     []
                                     [n
                                     lst]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -616,6 +658,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     destroy
@@ -726,7 +769,7 @@
                                                     destroy
                                                     6 destroy
                                                     Source
-                                                    .true.
+                                                    .false.
                                                     .false.
                                                 ),
                                             raw:
@@ -748,11 +791,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_keyval
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -806,6 +851,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     destroy
@@ -866,6 +912,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             match:
                                                 (Variable
@@ -884,6 +931,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -904,6 +952,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     match_key
@@ -975,6 +1024,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 match)
@@ -983,6 +1033,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 5 match)
@@ -1026,6 +1077,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             match_key:
                                                 (ClassProcedure
@@ -1042,6 +1094,7 @@
                                     toml_value
                                     []
                                     [key]
+                                    []
                                     Source
                                     Public
                                     .false.

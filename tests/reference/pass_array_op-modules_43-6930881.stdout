@@ -29,6 +29,9 @@
                                     (Allocatable
                                         (Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 srcfile_t
                                             )
                                             [(()
@@ -43,6 +46,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -101,6 +105,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             __1_t:
                                                 (Variable
@@ -119,6 +124,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dir_sources:
                                                 (Variable
@@ -132,6 +138,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -146,6 +155,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -169,6 +179,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             sources:
                                                 (Variable
@@ -182,6 +193,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -196,6 +210,7 @@
                                                     .false.
                                                     .true.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add_sources_from_dir
@@ -203,6 +218,9 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 srcfile_t
                                                 )
                                                 [(()
@@ -277,6 +295,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -288,6 +309,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 __1__libasr_index_)
@@ -299,6 +321,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (DoLoop
                                             ()
@@ -325,6 +348,9 @@
                                                     (Var 4 __1__libasr_index_)
                                                     ())]
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 srcfile_t
                                                     )
                                                     RowMajor
@@ -336,12 +362,16 @@
                                                     (Var 4 __1_t)
                                                     ())]
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 srcfile_t
                                                     )
                                                     RowMajor
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )
                                             (Assignment
                                                 (Var 4 __1__libasr_index_)
@@ -353,6 +383,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             []
                                         )
@@ -394,6 +425,9 @@
                                                                     (Allocatable
                                                                         (Array
                                                                             (StructType
+                                                                                []
+                                                                                []
+                                                                                .true.
                                                                                 2 srcfile_t
                                                                             )
                                                                             [(()
@@ -419,6 +453,9 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 (Array
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 srcfile_t
                                                     )
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -461,6 +498,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -472,6 +512,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 __1__libasr_index_)
@@ -508,6 +549,9 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         2 srcfile_t
                                                                     )
                                                                     [(()
@@ -526,6 +570,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     ()
@@ -556,6 +601,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -576,6 +622,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             file_name:
                                                 (Variable
@@ -596,6 +643,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     srcfile_t
@@ -603,6 +651,7 @@
                                     [file_name
                                     exe_name
                                     digest]
+                                    []
                                     Source
                                     Public
                                     .false.

@@ -40,6 +40,7 @@ private:
     SymbolTable *current_symtab;
     bool check_external;
     diag::Diagnostics &diagnostics;
+    std::string current_name;
 
     // For checking that all symtabs have a unique ID.
     // We first walk all symtabs, and then we check that everything else
@@ -382,6 +383,16 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
+        if ( x.m_realloc_lhs ) {
+            ASR::expr_t* a_target = x.m_target;
+            bool is_allocatable = ASRUtils::is_allocatable(a_target);
+            if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
+                ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
+                is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
+            }
+            require(is_allocatable,
+                "Reallocation of non allocatable variable is not allowed");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
@@ -645,6 +656,8 @@ public:
     }
 
     void visit_Variable(const Variable_t &x) {
+        std::string current_name_copy = current_name;
+        current_name = x.m_name;
         variable_dependencies.clear();
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
@@ -676,11 +689,26 @@ public:
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
-            require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
-                    (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                    (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
-                    "Initialisation of " + std::string(x.m_name) +
-                    " must reduce to a compile time constant.");
+            ASR::ArrayConstructor_t *array_construct = nullptr;
+            if (x.m_symbolic_value && ASR::is_a<ASR::ArrayConstructor_t>(*x.m_symbolic_value)) {
+                array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(x.m_symbolic_value);
+            }
+
+            if (array_construct && array_construct->n_args > 0 && ASR::is_a<ASR::StructConstructor_t>(*array_construct->m_args[0])) {
+                for (size_t j = 0; j < array_construct->n_args; j++) {
+                    require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                            (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])),
+                            "Initialisation of " + std::string(x.m_name) +
+                            " must reduce to a compile time constant.");
+                }
+            } else {
+                require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                        (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        "Initialisation of " + std::string(x.m_name) +
+                        " must reduce to a compile time constant.");
+            }
         }
 
         if (x.m_symbolic_value)
@@ -712,6 +740,7 @@ public:
                 "Variable " + std::string(x.m_name) + " depends on " +
                 std::string(variable_dependencies[i]) + " but isn't found in its dependency list.");
         }
+        current_name = current_name_copy;
     }
 
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
@@ -806,7 +835,9 @@ public:
             "Function_t, or Enum_t (possibly behind ExternalSymbol_t)");
         require(symtab_in_scope(current_symtab, x.m_v),
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
-        variable_dependencies.push_back(x_mv_name);
+        if ( x_mv_name != current_name ) {
+            variable_dependencies.push_back(x_mv_name);
+        }
     }
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
@@ -1105,6 +1136,7 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
+        variable_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         ASR::symbol_t* asr_owner_sym = nullptr;
         if(current_symtab->asr_owner &&  ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ) {
             asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
@@ -1259,7 +1291,18 @@ public:
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
             }
+
+            if( x.m_source == nullptr ) {
+                for( size_t i = 0; i < x.n_args; i++ ) {
+                    if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                        require(x.m_args[i].n_dims > 0,
+                            "Allocate for arrays should have dimensions specified, "
+                            "found only array variable with no dimensions");
+                    }
+                }
+            }
         }
+
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 

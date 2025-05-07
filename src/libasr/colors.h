@@ -1,6 +1,8 @@
 #ifndef LFORTRAN_COLORS_H
 #define LFORTRAN_COLORS_H
 
+#include <string>
+
 namespace LCompilers {
 
 enum class style {
@@ -64,9 +66,12 @@ enum class bgB {
 
 
 template <typename T>
-std::string color(T const value)
+std::string color(T const value, bool colorize = true)
 {
-    return "\033[" + std::to_string(static_cast<int>(value)) + "m";
+    if (colorize) {
+        return "\033[" + std::to_string(static_cast<int>(value)) + "m";
+    }
+    return "";
 }
 
 

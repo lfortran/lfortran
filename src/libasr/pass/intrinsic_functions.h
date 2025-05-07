@@ -1651,10 +1651,23 @@ namespace Ishft {
         *   r = x << y
         * }
         */
-        body.push_back(al, b.If(b.LtE(args[1], b.i_t(0, arg_types[0])), {
-            b.Assignment(result, b.BitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), args[1]), arg_types[0]))
+        ASR::expr_t *arg_2, *if_shift, *else_shift;
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != ASRUtils::extract_kind_from_ttype_t(arg_types[1])) {
+            arg_2 = b.i2i_t(args[1], arg_types[0]);
+        } else {
+            arg_2 = args[1];
+        }
+        if (ASRUtils::extract_kind_from_ttype_t(return_type) != ASRUtils::extract_kind_from_ttype_t(arg_types[0])) {
+            if_shift = b.i2i_t(b.BitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]), return_type);
+            else_shift = b.i2i_t(b.BitLshift(args[0], arg_2, arg_types[0]), return_type);
+        } else {
+            if_shift = b.BitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]);
+            else_shift = b.BitLshift(args[0], arg_2, arg_types[0]);
+        }
+        body.push_back(al, b.If(b.LtE(arg_2, b.i_t(0, arg_types[0])), {
+            b.Assignment(result, if_shift)
         }, {
-            b.Assignment(result, b.BitLshift(args[0], args[1], arg_types[0]))
+            b.Assignment(result, else_shift)
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3344,7 +3357,7 @@ namespace FloorDiv {
             CastingUtil::perform_casting(args[1], real64, al, loc))));
         body.push_back(al, b.Assignment(tmp, b.r2i_t(r, int64)));
         body.push_back(al, b.If(b.And(b.Lt(r, b.f_t(0.0, real64)), b.NotEq(b.i2r_t(tmp, real64), r)), {
-                b.Assignment(tmp, b.Sub(tmp, b.i32(1)))
+                b.Assignment(tmp, b.Sub(tmp, b.i64(1)))
             }, {}));
         body.push_back(al, b.Assignment(result, CastingUtil::perform_casting(tmp, return_type, al, loc)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,

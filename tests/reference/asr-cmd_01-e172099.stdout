@@ -24,6 +24,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             count:
                                 (Variable
@@ -42,6 +43,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -60,6 +62,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     test_get_command_argument
@@ -74,6 +77,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

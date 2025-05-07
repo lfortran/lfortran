@@ -106,6 +106,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -124,6 +125,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     next_token
@@ -188,6 +190,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             next_token:
                                                 (ClassProcedure
@@ -204,6 +207,7 @@
                                     toml_character_tokenizer
                                     []
                                     [conf]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -277,6 +281,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -295,6 +300,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     next_token
@@ -359,6 +365,7 @@
                                                     .false.
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -371,6 +378,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 toml_table
                                                         )
                                                     )
@@ -381,6 +391,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     parse_select
@@ -411,6 +422,9 @@
                                             13 1_toml_tokenizer_current
                                             (Pointer
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     8 toml_table
                                                 )
                                             )
@@ -452,11 +466,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_table
                                     []
                                     [inline]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -479,6 +495,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 8 toml_table
                                                             )
                                                         )
@@ -486,6 +505,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 8 toml_table
                                                             )
                                                         )
@@ -493,6 +515,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             8 toml_table
                                                         )
                                                     )
@@ -503,6 +528,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             next_token:
                                                 (ClassProcedure
@@ -519,6 +545,7 @@
                                     toml_tokenizer
                                     [toml_table]
                                     [current]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -535,6 +562,7 @@
                                             
                                         })
                                     toml_tokenizer_
+                                    []
                                     []
                                     []
                                     Source

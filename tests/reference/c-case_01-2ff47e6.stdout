@@ -13,8 +13,8 @@
 int main(int argc, char* argv[])
 {
     _lpython_set_argv(argc, argv);
-    int32_t i;
-    int32_t out;
+    int64_t i;
+    int64_t out;
     i = 4;
     if (i == 1) {
         out = 10;

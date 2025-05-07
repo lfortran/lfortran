@@ -27,6 +27,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 custom_int
                                     )
                                     ()
@@ -36,6 +39,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             custom_div:
                                 (ExternalSymbol
@@ -79,6 +83,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -95,6 +100,9 @@
                                     [((Var 5 a))
                                     ((IntegerConstant 0 (Integer 4) Decimal))]
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 custom_int
                                     )
                                     ()
@@ -137,6 +145,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 custom_int
                                                     )
                                                     ()
@@ -146,6 +157,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -164,6 +176,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -175,6 +188,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 custom_int
                                                     )
                                                     ()
@@ -184,15 +200,22 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     custom_div
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 custom_int
                                         )
                                         (Integer 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 custom_int
                                         )
                                         Source
@@ -235,6 +258,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 res)
                                     Public
@@ -264,11 +288,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     custom_int
                                     []
                                     [value]
+                                    []
                                     Source
                                     Public
                                     .false.

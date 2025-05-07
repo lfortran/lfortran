@@ -36,11 +36,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     scaled_data_structure
                                     []
                                     [one_d_real_pointer]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -80,6 +82,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         4 scaled_data_structure
                                     )
                                     ()
@@ -89,6 +94,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             s2:
                                 (Variable
@@ -100,6 +106,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         4 scaled_data_structure
                                     )
                                     ()
@@ -109,6 +118,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             scaled_data_structure:
                                 (ExternalSymbol

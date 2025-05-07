@@ -9,6 +9,9 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
+#include <errno.h>  
+#include <limits.h>
+#include <stdint.h>
 
 #define PI 3.14159265358979323846
 #if defined(_WIN32)
@@ -193,11 +196,12 @@ char* append_to_string(char* str, const char* append) {
     return str;
 }
 
-void handle_integer(char* format, int64_t val, char** result) {
+void handle_integer(char* format, int64_t val, char** result, bool is_signed_plus) {
     int width = 0, min_width = 0;
     char* dot_pos = strchr(format, '.');
     int len;
     int sign_width = (val < 0) ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && val >= 0);
     if (val == 0) {
         len = 1;
     } else if (val == INT64_MIN) {
@@ -215,33 +219,32 @@ void handle_integer(char* format, int64_t val, char** result) {
     } else {
         width = atoi(format + 1);
         if (width == 0) {
-            width = len + sign_width;
+            width = len + sign_width + sign_plus_exist;
         }
     }
-    if (width >= len + sign_width || width == 0) {
+    if (width >= len + sign_width + sign_plus_exist || width == 0) {
         if (min_width > len) {
-            for (int i = 0; i < (width - min_width - sign_width); i++) {
+            for (int i = 0; i < (width - min_width - sign_width - sign_plus_exist); i++) {
                 *result = append_to_string(*result, " ");
             }
+            
             if (val < 0) {
                 *result = append_to_string(*result, "-");
+            } else if(sign_plus_exist){
+                *result = append_to_string(*result, "+");
             }
+
             for (int i = 0; i < (min_width - len); i++) {
                 *result = append_to_string(*result, "0");
             }
-        } else if (width == 0) {
-            if (val < 0) {
-                *result = append_to_string(*result, "-");
-            }
-            for (int i = 0; i < (min_width - len - sign_width); i++) {
-                *result = append_to_string(*result, "0");
-            }
         } else {
-            for (int i = 0; i < (width - len - sign_width); i++) {
+            for (int i = 0; i < (width - len - sign_width - sign_plus_exist); i++) {
                 *result = append_to_string(*result, " ");
             }
             if (val < 0) {
                 *result = append_to_string(*result, "-");
+            } else if (sign_plus_exist){
+                *result = append_to_string(*result, "+");
             }
         }
         char str[20];
@@ -270,8 +273,8 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
-void handle_float(char* format, double val, char** result) {
-    if (strcmp(format,"f-64") == 0){ //use c formatting.
+void handle_float(char* format, double val, char** result, bool use_sign_plus) {
+    if (strcmp(format,"f-64") == 0) { //use c formatting.
         char* float_str = (char*)malloc(50 * sizeof(char));
         sprintf(float_str,"%23.17e",val);
         *result = append_to_string(*result,float_str);
@@ -288,7 +291,8 @@ void handle_float(char* format, double val, char** result) {
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
 
-    int sign_width = (val < 0) ? 1 : 0;
+    int sign_width = (val < 0) ? 1 : 0; // Negative sign
+    bool sign_plus_exist = (use_sign_plus && val>=0); // Positive sign
     int integer_length = (integer_part == 0) ? 1 : (int)log10(integer_part) + 1;
 
     // parsing the format
@@ -317,26 +321,37 @@ void handle_float(char* format, double val, char** result) {
     memmove(dec_str, dec_str + 2, strlen(dec_str));
 
     // Determine total length needed
-    int total_length = sign_width + integer_length + 1 + decimal_digits;
+    int total_length =  sign_width      + 
+                        integer_length  +
+                        1 /*dot `.`*/   +
+                        decimal_digits  +
+                        sign_plus_exist ;
+    
     if (width == 0) {
         width = total_length;
     }
 
     char formatted_value[128] = "";
+
     int spaces = width - total_length;
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
     }
+    if(sign_plus_exist){
+        strcat(formatted_value, "+");
+    }
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0 && format[1] == '0') {
+    if (integer_part == 0 && decimal_part!= 0 && format[1] == '0') {
         strcat(formatted_value, "");
     } else {
         strcat(formatted_value, int_str);
     }
     strcat(formatted_value, ".");
-    strcat(formatted_value, dec_str);
+    if (decimal_digits != 0){
+        strcat(formatted_value, dec_str);
+    }
 
     // checking for overflow
     if (strlen(formatted_value) > width) {
@@ -355,13 +370,13 @@ NOTE: The function allocates memory for the formatted result, which is returned 
 the `result` parameter. It is the responsibility of the caller to free this memory
 using `free(*result)` after it is no longer needed.
 */
-void handle_en(char* format, double val, int scale, char** result, char* c) {
+void handle_en(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
     int width, decimal_digits;
     char *num_pos = format, *dot_pos = strchr(format, '.');
     decimal_digits = atoi(++dot_pos);
     while (!isdigit(*num_pos)) num_pos++;
     width = atoi(num_pos);
-
+    bool sign_plus_exist = (is_signed_plus && val >= 0); // `SP` specifier
     // Calculate exponent
     int exponent = 0;
     if (val != 0.0) {
@@ -396,20 +411,22 @@ void handle_en(char* format, double val, int scale, char** result, char* c) {
 
     // Handle width and padding
     char* final_result = malloc(width + 1);
-    int padding = width - strlen(formatted_value);
+    int padding = width - strlen(formatted_value) - sign_plus_exist;
     if (padding > 0) {
         memset(final_result, ' ', padding);
-        strcpy(final_result + padding, formatted_value);
+        if(sign_plus_exist){final_result[padding] = '+';}
+        strcpy(final_result + padding + sign_plus_exist, formatted_value);
     } else {
-        strncpy(final_result, formatted_value, width);
+        if(sign_plus_exist){final_result[0] = '+';}
+        strncpy(final_result + is_signed_plus /*Move on char*/, formatted_value, width);
         final_result[width] = '\0';
     }
 
     // Assign the result to the output parameter
-    *result = final_result;
+    *result = append_to_string(*result, final_result);
 }
 
-void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
+void parse_decimal_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
     *width_digits = -1;
     *decimal_digits = -1;
     *exp_digits = -1;
@@ -420,7 +437,7 @@ void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, i
     }
     *width_digits = atoi(width_digits_pos);
 
-    // dot_pos exists, we previous checked for it in `parse_fortran_format`
+    // dot_pos exists, we previously checked for it in `parse_fortran_format`
     char *dot_pos = strchr(format, '.');
     *decimal_digits = atoi(++dot_pos);
 
@@ -431,15 +448,16 @@ void parse_deciml_format(char* format, int* width_digits, int* decimal_digits, i
 }
 
 
-void handle_decimal(char* format, double val, int scale, char** result, char* c) {
+void handle_decimal(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
 
     int width_digits, decimal_digits, exp_digits;
-    parse_deciml_format(format, &width_digits, &decimal_digits, &exp_digits);
+    parse_decimal_format(format, &width_digits, &decimal_digits, &exp_digits);
 
     int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
@@ -519,7 +537,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     char formatted_value[64] = "";
-    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length);
+    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length + sign_plus_exist);
     // spaces = 2
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
@@ -532,6 +550,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     if (sign_width == 1) {
         // adds `-` (negative) sign
         strcat(formatted_value, "-");
+    } else if(sign_plus_exist){ // `SP specifier`
+        strcat(formatted_value, "+");
     }
 
     if (scale <= 0) {
@@ -601,7 +621,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         // result = "  1.12E+10"
     }
 }
-
+void handle_SP_specifier(char** result, bool is_positive_value){
+    char positive_sign_string[] = "+";
+    if(is_positive_value) append_to_string(*result, positive_sign_string);
+}
 /*
 Ignore blank space characters within format specification, except
 within character string edit descriptor
@@ -643,6 +666,25 @@ char* remove_spaces_except_quotes(const char* format) {
     return cleaned_format;
 }
 
+int find_matching_parentheses(const char* format, int index){
+    int parenCount = 0;
+    while (format[index] != '\0') {
+        if (format[index] == '(') {
+            parenCount++;
+        } else if (format[index] == ')'){
+            parenCount--;
+        }
+        index++;
+        if (parenCount == 0)
+            break;
+    }
+    if (parenCount != 0) {
+        fprintf(stderr, "Error: Unbalanced paranthesis in format string\n");
+        exit(1);
+    }
+    return index;
+}
+
 /**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
@@ -658,7 +700,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
-    while (format[index] != '\0') {
+    while (index < strlen(format) && format[index] != '\0') {
         char** ptr = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
         if (ptr == NULL) {
             perror("Memory allocation failed.\n");
@@ -670,6 +712,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case ',' :
                 break;
             case '/' :
+            case ':' :
                 format_values_2[format_values_count++] = substring(format, index, index+1);
                 break;
             case '*' :
@@ -727,6 +770,8 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'd' :
             case 'f' :
             case 'l' :
+            case 'b' :
+            case 'g' :
                 start = index++;
                 bool dot = false;
                 if(tolower(format[index]) == 's') index++;
@@ -743,10 +788,23 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
                 break;
-            case '(' :
+            case 's': 
                 start = index++;
-                while (format[index] != ')') index++;
-                format_values_2[format_values_count++] = substring(format, start, index+1);
+                if( format[index] == ','          || // 'S'  (default sign)
+                    tolower(format[index]) == 'p' || // 'SP' (sign plus)
+                    tolower(format[index]) == 's'    // 'SS' (sign suppress)
+                    ){
+                    if(format[index] == ',') --index; // Don't consume
+                    format_values_2[format_values_count++] = substring(format, start, index+1);
+                } else {
+                    fprintf(stderr, "Error: Invalid format specifier. After 's' specifier\n");
+                    exit(1);
+                }
+                break;
+            case '(' :
+                start = index;
+                index = find_matching_parentheses(format, index);
+                format_values_2[format_values_count++] = substring(format, start, index);
                 *item_start = format_values_count;
                 break;
             case 't' :
@@ -784,11 +842,11 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                     free(repeat_str);
                     format_values_2 = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
                     if (format[index] == '(') {
-                        start = index++;
-                        while (format[index] != ')') index++;
+                        start = index;
+                        index = find_matching_parentheses(format, index);
                         *item_start = format_values_count+1;
                         for (int i = 0; i < repeat; i++) {
-                            format_values_2[format_values_count++] = substring(format, start, index+1);
+                            format_values_2[format_values_count++] = substring(format, start, index);
                         }
                     } else {
                         start = index++;
@@ -813,235 +871,469 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     return format_values_2;
 }
 
+#define primitive_types_cnt  10
+typedef enum primitive_types{
+    INTEGER_64_TYPE = 0,
+    INTEGER_32_TYPE = 1,
+    INTEGER_16_TYPE = 2,
+    INTEGER_8_TYPE = 3,
+    FLOAT_64_TYPE = 4,
+    FLOAT_32_TYPE = 5,
+    CHARACTER_TYPE = 6,
+    LOGICAL_TYPE = 7,
+    CPTR_VOID_PTR_TYPE = 8,
+    NONE_TYPE = 9
+} Primitive_Types;
 
-struct array_iteration_state{
-    //Preserve array size and current element index
-    int64_t array_size;
-    int64_t current_arr_index;
-    //Hold array pointers for each type.
-    int64_t* arr_ptr_int64;
-    int32_t* arr_ptr_int32;
-    int16_t* arr_ptr_int16;
-    int8_t* arr_ptr_int8;
-    float* arr_ptr_float;
-    double* arr_ptr_double;
-    char** arr_ptr_charPtr;
-    bool* arr_ptr_bool;
-    //Hold current element (We support array of int64, double, char*, bool)
-    int64_t current_arr_element_int64;
-    double current_arr_element_double;
-    char* current_arr_element_char_ptr;
-    bool current_arr_element_bool;
-};
+const int primitive_type_sizes[primitive_types_cnt] = 
+                                        {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
+                                         sizeof(int8_t) , sizeof(double), sizeof(float), 
+                                         sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/};
 
-bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,struct array_iteration_state* state){
-    bool is_array = true;
-    switch (*current_arg_type_int){
-        case 9 : //arr[i64]
-            if(state->current_arr_index != state->array_size){
-                state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0; 
-                state->arr_ptr_int64 = va_arg(*args,int64_t*);
-                state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
-                *count+= state->array_size - 2;
-            }
+char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
+    switch(primitive_enum){
+        case INTEGER_8_TYPE:
+        case INTEGER_16_TYPE:
+        case INTEGER_32_TYPE:
+        case INTEGER_64_TYPE:
+            return 'i';
             break;
-        case 10 : //arr[i32]
-            if(state->current_arr_index != state->array_size){
-                int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
-                state->current_arr_element_int64 = (int64_t)temp_val;
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0;
-                state->arr_ptr_int32 = va_arg(*args,int32_t*);
-                int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
-                state->current_arr_element_int64 = (int64_t)temp_val;
-                *count+= state->array_size - 2;
-            }
+        case FLOAT_32_TYPE:
+        case FLOAT_64_TYPE:
+            return 'f';
             break;
-        case 11 : //arr[i16]
-            if(state->current_arr_index != state->array_size){
-                int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
-                state->current_arr_element_int64 = (int64_t)temp_val;
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0; 
-                state->arr_ptr_int16 = va_arg(*args,int16_t*);
-                int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
-                state->current_arr_element_int64 = (int64_t)temp_val;
-                *count+= state->array_size - 2;
-            }
+        case CHARACTER_TYPE:
+            return 'a';
             break;
-        case 12 : //arr[i8]
-            if(state->current_arr_index != state->array_size){
-                int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
-                state->current_arr_element_int64 = (int64_t)temp_val;
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0; 
-                state->arr_ptr_int8 = va_arg(*args,int8_t*);
-                int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
-                state->current_arr_element_int64 = (int64_t)temp_val;
-                *count+= state->array_size - 2;
-            }
+        case LOGICAL_TYPE:
+            return 'l';
             break;
-        case 13: // arr[f64]
-            if(state->current_arr_index != state->array_size){
-                state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0; 
-                state->arr_ptr_double = va_arg(*args,double*);
-                state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
-                *count+= state->array_size - 2;
-            }
+        case CPTR_VOID_PTR_TYPE:
+            return 'P'; // Not actual fortran specifier.
             break;
-        case 14: // arr[f32]
-            if(state->current_arr_index != state->array_size){
-                float temp_val = state->arr_ptr_float[state->current_arr_index++];
-                state->current_arr_element_double = (double)temp_val;
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0; 
-                state->arr_ptr_float = va_arg(*args,float*);
-                float temp_val = state->arr_ptr_float[state->current_arr_index++];
-                state->current_arr_element_double = (double)temp_val;
-                *count+= state->array_size - 2;
-            }
-            break;
-        case 15: //arr[character]
-            if(state->current_arr_index != state->array_size){
-                state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0; 
-                state->arr_ptr_charPtr = va_arg(*args,char**);
-                state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
-                *count+= state->array_size - 2;
-            }
-            break;
-        case 16: //arr[logical]
-            if(state->current_arr_index != state->array_size){
-                state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
-            } else {
-                state->array_size = va_arg(*args,int64_t);
-                state->current_arr_index = 0; 
-                state->arr_ptr_bool = va_arg(*args,bool*);
-                state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
-                *count+= state->array_size - 2;
-            }
-            break;
-        //To DO : handle --> arr[cptr], arr[enumType] 
         default:
-            is_array = false;
-            break;
-    }
-    return is_array;
-    
-}
-char* int_to_format_specifier(int32_t type_as_int){
-    switch(type_as_int){
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 19:
-            return "i0";
-        case 5:
-        case 13:
-            return "f-64"; //special handling in `handle_float`
-        case 6:
-        case 14:
-            return "f-32"; //special handling in `handle_float`
-        case 7:
-        case 15:
-            return "a";
-        case 8:
-        case 16:
-            return "l";
-        default:
-            fprintf(stderr,"Unidentified number %d\n",type_as_int);
+            fprintf(stderr,"Compiler Error : Unidentified Type %d\n", primitive_enum);
             exit(0);
     }
+
 }
 
-bool is_format_match(char format_value, int32_t current_arg_type_int){
-    char* current_arg_correct_format = int_to_format_specifier(current_arg_type_int);
+bool is_format_match(char format_value, Primitive_Types current_arg_type){
+    char current_arg_correct_format = primitive_enum_to_format_specifier(current_arg_type);
+
     char lowered_format_value = tolower(format_value);
+    if (lowered_format_value == 'g') return true;
     if(lowered_format_value == 'd' || lowered_format_value == 'e'){
         lowered_format_value = 'f';
     }
     // Special conditions that are allowed by gfortran.
-    bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format[0] == 'a') ||
-                              (lowered_format_value == 'a' && current_arg_correct_format[0] == 'l');
-    if(lowered_format_value != current_arg_correct_format[0] && !special_conditions){
+    bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format == 'a') ||
+                               (lowered_format_value == 'a' && current_arg_correct_format == 'l') ||
+                               (lowered_format_value == 'b' && (current_arg_correct_format == 'i' || current_arg_correct_format == 'f'));
+
+    if(lowered_format_value != current_arg_correct_format && !special_conditions){
         return false;
     } else {
         return true;
     }
 }
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
+typedef struct stack {
+    int64_t* p;
+    int32_t stack_size;
+    int32_t top_index;
+} Stack;  
+
+Stack* create_stack(){
+    Stack* s = (Stack*)malloc(sizeof(Stack));
+    s->stack_size = 10; // intial value
+    s->p = (int64_t*)malloc(s->stack_size * sizeof(int64_t));
+    s->top_index = -1;
+    return s;
+}
+
+void push_stack(Stack* x, int64_t val){
+    if(x->top_index == x->stack_size - 1){ // Check if extending is needed.
+        x->stack_size *= 2;
+        x->p = (int64_t*)realloc(x->p, x->stack_size * sizeof(int64_t));
+    }
+    x->p[++x->top_index] = val;
+}
+
+void pop_stack(Stack* x){
+    if(x->top_index == -1){
+        fprintf(stderr,"Compiler Internal Error.\n");
+        exit(1);
+    }
+    --x->top_index;
+}
+
+static inline int64_t get_stack_top(struct stack* s){
+    return s->p[s->top_index];
+}
+
+static inline bool stack_empty(Stack* s){
+    return s->top_index == -1;
+}
+void free_stack(Stack* x){
+    free(x->p);
+    free(x);
+}
+
+
+
+typedef struct serialization_info{
+    const char* serialization_string;
+    int32_t current_stop; // current stop index in the serialization_string.
+    Stack* array_sizes_stack; // Holds the sizes of the arrays (while nesting).
+    Stack* array_serialiation_start_index; // Holds the index of '[' char in serialization
+    Primitive_Types current_element_type;
+    struct current_arg_info{
+        va_list* args;
+        void* current_arg; // holds pointer to the arg being printed (Scalar or Vector) 
+        bool is_complex;
+    } current_arg_info;
+    struct array_sizes{ // Sizes of passed arrays
+        int64_t* ptr;
+        int32_t current_index;
+    } array_sizes;
+    bool just_peeked; // Flag to indicate if we just peeked the next element.
+} Serialization_Info;
+
+
+
+// Transforms serialized array size from string to int64 (characters into numbers).
+int64_t get_serialized_array_size(struct serialization_info* s_info){
+    int64_t array_size = 0;
+    while(isdigit(s_info->serialization_string[s_info->current_stop])){
+        array_size = array_size * 10 + (s_info->serialization_string[s_info->current_stop++] - '0');
+    }
+    return array_size;
+}
+
+/* Sets primitive type for the current argument
+ by parsing through the serialization string. */
+void set_current_PrimitiveType(Serialization_Info* s_info){
+    Primitive_Types *PrimitiveType = &s_info->current_element_type;
+    switch (s_info->serialization_string[s_info->current_stop++])
+    {
+    case 'I':
+        switch (s_info->serialization_string[s_info->current_stop++])
+        {
+        case '8':
+            *PrimitiveType = INTEGER_64_TYPE;
+            break;
+        case '4':
+            *PrimitiveType = INTEGER_32_TYPE;
+            break;
+        case '2':
+            *PrimitiveType = INTEGER_16_TYPE;
+            break;
+        case '1':
+            *PrimitiveType = INTEGER_8_TYPE;
+            break;
+        default:
+            fprintf(stderr, "RunTime - compiler internal error"
+                " : Unidentified Print Types Serialization --> %s\n",
+                    s_info->serialization_string);
+            exit(1);
+            break;
+        }
+        break;
+    case 'R':
+        switch (s_info->serialization_string[s_info->current_stop++])
+        {
+        case '8':
+            *PrimitiveType = FLOAT_64_TYPE;
+            break;
+        case '4':
+            *PrimitiveType = FLOAT_32_TYPE;
+            break;
+        default:
+            fprintf(stderr, "RunTime - compiler" 
+            "internal error : Unidentified Print Types Serialization --> %s\n",
+                    s_info->serialization_string);
+            exit(1);
+            break;
+        }
+        break;
+    case 'L':
+        *PrimitiveType = LOGICAL_TYPE;
+        break;
+    case 'S':
+        *PrimitiveType = CHARACTER_TYPE;
+        break;
+    case 'C':
+        ASSERT_MSG(s_info->serialization_string[s_info->current_stop++] == 'P' &&
+            s_info->serialization_string[s_info->current_stop++] == 't' &&
+            s_info->serialization_string[s_info->current_stop++] == 'r',
+            "%s\n",s_info->serialization_string);
+        *PrimitiveType = CPTR_VOID_PTR_TYPE;
+        break;
+    default:
+        fprintf(stderr, "RunTime - compiler internal error"
+            " : Unidentified Print Types Serialization --> %s\n",
+                s_info->serialization_string);
+        exit(1);
+        break;
+    }
+}
+
+/*
+    Fetches the type of next element that will get printed + 
+    sets the `current_arg` to the desired pointer.
+    Return `false` if no elements remaining.
+*/
+bool move_to_next_element(struct serialization_info* s_info, bool peek){
+    // Handle `peek` flag logic
+    if(s_info->just_peeked && peek ||
+        (s_info->just_peeked && !peek)){ // already `s_info` is set with current element.
+        s_info->just_peeked = peek;
+        return s_info->current_element_type != NONE_TYPE;
+    } else{ // Get next.
+        s_info->just_peeked = peek;
+    }
+
+    while(true){
+        char cur = s_info->serialization_string[s_info->current_stop];
+        // Zero-size array OR inside zero-size array --> e.g. (0[(I8,4[S])])
+        bool zero_size = (!stack_empty(s_info->array_sizes_stack) &&
+                            (get_stack_top(s_info->array_sizes_stack) == 0)); 
+        if(isdigit(cur)){ // ArraySize --> `50[I4]`
+            int64_t array_size = get_serialized_array_size(s_info);
+            ASSERT_MSG(s_info->serialization_string[s_info->current_stop] == '[',
+                "RunTime - Compiler Internal error "
+                ": Wrong serialization for print statement --> %s\n",
+                s_info->serialization_string);
+            zero_size ? push_stack(s_info->array_sizes_stack, 0):
+                        push_stack(s_info->array_sizes_stack, array_size);
+        } else if (cur == '['){ //ArrayStart
+            if(stack_empty(s_info->array_sizes_stack)){// Runtime-NonStringSerialized arraysize.
+                push_stack(s_info->array_sizes_stack,
+                    s_info->array_sizes.ptr[s_info->array_sizes.current_index++]); 
+            }
+            // Remeber where the array starts to handle this nested case --> `10[(10[I4]))]`
+            ++s_info->current_stop;
+            push_stack(s_info->array_serialiation_start_index, s_info->current_stop);
+        } else if (cur == ']'){ // ArrayEnd
+            if(!zero_size &&  (get_stack_top(s_info->array_sizes_stack) - 1 == 0) || 
+                (zero_size &&  (get_stack_top(s_info->array_sizes_stack) - 1 == -1))){ // Move to the next element.
+                pop_stack(s_info->array_sizes_stack);
+                pop_stack(s_info->array_serialiation_start_index);
+                ++s_info->current_stop;
+            } else { // Decrement Size + Move to the begining of the array.
+                ASSERT_MSG(!zero_size,
+                    "%s\n", "Zero-size vector shouldn't go back to the begining.");
+                int64_t arr_size_decremented = get_stack_top(s_info->array_sizes_stack) - 1;
+                pop_stack(s_info->array_sizes_stack);
+                push_stack(s_info->array_sizes_stack, arr_size_decremented);
+                s_info->current_stop = get_stack_top(s_info->array_serialiation_start_index);
+            }
+        } else if (cur == '(' || cur == '{') { // StructStart, complexStart
+            s_info->current_arg_info.is_complex = (cur == '{');
+            push_stack(s_info->array_sizes_stack, -1000000); // dummy size. needed to know when to move from arg* to another.
+            ++s_info->current_stop;
+        } else if (cur == ')' || cur == '}') { // StructEnd, ComplexEnd
+            s_info->current_arg_info.is_complex = false;
+            pop_stack(s_info->array_sizes_stack);
+            ++s_info->current_stop;
+        } else if (cur == ','){ // Separator between scalars or in compound type --> `I4,R8`, (I4,R8)`.
+            ++s_info->current_stop;
+            // Only move from passed arg to another in the `va_list` when we don't have struct or array in process.
+            if(stack_empty(s_info->array_sizes_stack)){ 
+                ASSERT(stack_empty(s_info->array_serialiation_start_index));
+                s_info->current_arg_info.current_arg = va_arg(*s_info->current_arg_info.args, void*);
+                s_info->current_element_type = NONE_TYPE; // Important to set type to none when moving from whole argument to another
+            } 
+        } else if(cur == '\0'){ // End of Serialization.
+            ASSERT( stack_empty(s_info->array_sizes_stack) && 
+                    stack_empty(s_info->array_serialiation_start_index));
+            s_info->current_arg_info.current_arg = NULL;
+            s_info->current_element_type = NONE_TYPE;
+            return false;
+        } else { // Type
+            if(zero_size) {
+                set_current_PrimitiveType(s_info);/*Keep deserializing*/
+                continue;
+            }
+            // move the current_arg by the size of current_arg.
+            s_info->current_arg_info.current_arg = (void*)
+                            ((char*)s_info->current_arg_info.current_arg +
+                                primitive_type_sizes[s_info->current_element_type]); // char* cast needed for windows MinGW.
+            set_current_PrimitiveType(s_info);
+            return true;
+        }
+    }
+}
+
+
+
+void print_into_string(Serialization_Info* s_info,  char* result){
+    void* arg = s_info->current_arg_info.current_arg;
+    switch (s_info->current_element_type){
+        case INTEGER_64_TYPE:
+            sprintf(result, "%"PRId64, *(int64_t*)arg);
+            break;
+        case INTEGER_32_TYPE:
+            sprintf(result, "%d", *(int32_t*)arg);
+            break;
+        case INTEGER_16_TYPE:
+            sprintf(result, "%hi", *(int16_t*)arg);
+            break;
+        case INTEGER_8_TYPE:
+            sprintf(result, "%hhi", *(int8_t*)arg);
+            break;
+        case FLOAT_64_TYPE:
+            if(s_info->current_arg_info.is_complex){
+                double real = *(double*)arg;
+                move_to_next_element(s_info, false);
+                double imag = *(double*)s_info->current_arg_info.current_arg;
+                sprintf(result, "(%23.17e, %23.17e)", real, imag);
+            } else {
+                sprintf(result, "%23.17e", *(double*)arg);
+            }
+            break;
+        case FLOAT_32_TYPE:
+            if(s_info->current_arg_info.is_complex){
+                float real = *(float*)arg;
+                move_to_next_element(s_info, false);
+                double imag = *(float*)s_info->current_arg_info.current_arg;
+                sprintf(result, "(%13.8e, %13.8e)", real, imag);
+            } else {
+                sprintf(result, "%13.8e", *(float*)arg);
+            }
+            break;
+        case LOGICAL_TYPE:
+            sprintf(result, "%c", (*(bool*)arg)? 'T' : 'F');
+            break;
+        case CHARACTER_TYPE:
+            if(*(char**)arg == NULL){
+                sprintf(result, "%s", " ");
+            } else {
+                sprintf(result, "%s",*(char**)arg);
+            }
+            break;
+        case CPTR_VOID_PTR_TYPE:
+            sprintf(result, "%p",*(void**)arg);
+            break;
+        default :
+            fprintf(stderr, "Unknown type");
+            exit(1);
+    }
+
+}
+
+void default_formatting(char** result, struct serialization_info* s_info){
+    int64_t result_capacity = 100;
+    int64_t result_size = 0;
+    const int default_spacing_len = 4;
+    const char* default_spacing = "    ";
+    ASSERT(default_spacing_len == strlen(default_spacing));
+    *result = realloc(*result, result_capacity + 1 /*Null Character*/ );
+
+    while(move_to_next_element(s_info, false)){
+        int size_to_allocate;
+        if(s_info->current_element_type == CHARACTER_TYPE && 
+            *(char**)s_info->current_arg_info.current_arg != NULL){
+            size_to_allocate = (strlen(*(char**)s_info->current_arg_info.current_arg)
+                                 + default_spacing_len + 1) * sizeof(char);
+        } else {
+            size_to_allocate = (60 + default_spacing_len) * sizeof(char);
+        }
+        int64_t old_capacity = result_capacity;
+        while(result_capacity <= size_to_allocate + result_size){ // Check if string extension is needed.
+            if(result_size + size_to_allocate > result_capacity*2){
+                result_capacity = size_to_allocate + result_size ;
+            } else {
+                result_capacity *=2;
+            }
+        }
+        if(result_capacity != old_capacity){*result = (char*)realloc(*result, result_capacity + 1);}
+        if(result_size > 0){
+            strcpy((*result)+result_size, default_spacing);
+            result_size+=default_spacing_len;
+        }
+        print_into_string(s_info,  (*result) + result_size);
+        int64_t printed_arg_size = strlen((*result) + result_size);
+        result_size += printed_arg_size;
+    }
+}
+void free_serialization_info(Serialization_Info* s_info){
+    free(s_info->array_sizes.ptr);
+    free_stack(s_info->array_sizes_stack);
+    free_stack(s_info->array_serialiation_start_index);
+    va_end(*s_info->current_arg_info.args);
+}
+
+LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const char* serialization_string, 
+    int32_t array_sizes_cnt, ...)
 {
     va_list args;
-    va_start(args, format);
-    bool default_formatting = (format == NULL);
-    char* default_spacing = "    ";
+    va_start(args, array_sizes_cnt);
+    char* result = (char*)malloc(sizeof(char)); //TODO : the consumer of this string needs to free it.
+    result[0] = '\0';
+
+    // Setup s_info
+    struct serialization_info s_info;
+    s_info.serialization_string = serialization_string;
+    s_info.array_serialiation_start_index = create_stack();
+    s_info.array_sizes_stack = create_stack();
+    s_info.current_stop = 0;
+    s_info.current_arg_info.args = &args;
+    s_info.current_element_type = NONE_TYPE;
+    s_info.current_arg_info.is_complex = false;
+    s_info.array_sizes.current_index = 0;
+    s_info.just_peeked = false;
+    int64_t* array_sizes = (int64_t*) malloc(array_sizes_cnt * sizeof(int64_t));
+    for(int i=0; i<array_sizes_cnt; i++){
+        array_sizes[i] = va_arg(args, int64_t);
+    }
+    s_info.array_sizes.ptr = array_sizes;
+    s_info.current_arg_info.current_arg = va_arg(args, void*);
+
+    if(!s_info.current_arg_info.current_arg && 
+        s_info.serialization_string[s_info.current_stop] !='\0')
+    {fprintf(stderr,"Internal Error : default formatting error\n");exit(1);}
+
+    if(format == NULL){
+        default_formatting(&result, &s_info);
+        free_serialization_info(&s_info);
+        return result;
+    }
+
     int64_t format_values_count = 0,item_start_idx=0;
     char** format_values;
     char* modified_input_string;
-    if (default_formatting){
-        format_values_count = INT64_MAX; // Termination would depend on count of args, so set to maximum looping.
-    } else {
-        char* cleaned_format = remove_spaces_except_quotes(format);
-        if (!cleaned_format) {
-            va_end(args);
-            return NULL;
-        }
-        int len = strlen(cleaned_format);
-        modified_input_string = (char*)malloc((len+1) * sizeof(char));
-        strncpy(modified_input_string, cleaned_format, len);
-        modified_input_string[len] = '\0';
-        if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
-            memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
-            modified_input_string[len-2] = '\0';
-        }
-        format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
+    char* cleaned_format = remove_spaces_except_quotes(format);
+    if (!cleaned_format) {
+        free_serialization_info(&s_info);
+        return NULL;
     }
-    char* result = (char*)malloc(sizeof(char));
-    result[0] = '\0';
+    int len = strlen(cleaned_format);
+    modified_input_string = (char*)malloc((len+1) * sizeof(char));
+    strncpy(modified_input_string, cleaned_format, len);
+    modified_input_string[len] = '\0';
+    if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
+        memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
+        modified_input_string[len-2] = '\0';
+    }
+    format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
+    /*
+    is_SP_specifier = false  --> 'S' OR 'SS'
+    is_SP_specifier = true  --> 'SP'
+    */
+    bool is_SP_specifier = false;
     int item_start = 0;
     bool array = false;
-    //initialize array_state to hold information about any passed array pointer arg.
-    struct array_iteration_state array_state;
-    array_state.array_size = -1;
-    array_state.current_arr_index = -1;
-    int32_t current_arg_type_int = -1; // holds int that represents type of argument.
+    bool BreakWhileLoop= false;
     while (1) {
         int scale = 0;
         bool is_array = false;
         bool array_looping = false;
         for (int i = item_start; i < format_values_count; i++) {
             char* value;
-            array_looping = (array_state.current_arr_index != array_state.array_size);
-            if(default_formatting && !array_looping){
-                if(count <=0) break;
-                current_arg_type_int =  va_arg(args,int32_t);
-                count--;
-                value = int_to_format_specifier(current_arg_type_int);
-            } else if (!default_formatting) {
-                if(format_values[i] == NULL) continue;
-                value = format_values[i];
-            } else {
-                // Array is being looped on.
-            }
-
+            if(format_values[i] == NULL) continue;
+            value = format_values[i];
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
                 value[strlen(value)-1] = '\0';
                 int64_t new_fmt_val_count = 0;
@@ -1067,7 +1359,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 continue;
             }
 
-            if (value[0] == '/') {
+            if (value[0] == ':') {
+                if (!move_to_next_element(&s_info, true)) break;
+                continue;
+            } else if (value[0] == '/') {
                 result = append_to_string(result, "\n");
             } else if (value[0] == '*') {
                 array = true;
@@ -1085,6 +1380,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 free(value);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
+            } else if (tolower(value[0]) == 's') {
+                is_SP_specifier = ( strlen(value) == 2 /*case 'S' speicifer*/ &&
+                                    tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
                     // handle "TL" format specifier
@@ -1108,7 +1406,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         free(spaces);
                     }
                 } else {
-                    if (count <= 0) break;
+                    if (!move_to_next_element(&s_info, true)) break;
                     int tab_position = atoi(value + 1);
                     int current_length = strlen(result);
                     int spaces_needed = tab_position - current_length - 1;
@@ -1128,49 +1426,75 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 }
             } else {
-                if (count <= 0) break;
-                if (!array_looping && !default_formatting) {
-                    // Fetch type integer when we don't have an array.
-                    current_arg_type_int =  va_arg(args,int32_t);
-                    count--;
+                if (!move_to_next_element(&s_info, false)) break;
+                if (!is_format_match(
+                        tolower(value[0]), s_info.current_element_type)){
+                    char* type; // For better error message.
+                    switch (primitive_enum_to_format_specifier(s_info.current_element_type))
+                    {
+                        case 'i':
+                            type = "INTEGER";
+                            break;
+                        case 'f':
+                            type = "REAL";
+                            break;
+                        case 'l':
+                            type = "LOGICAL";
+                            break;
+                        case 'a':
+                            type = "CHARACTER";
+                            break;
+                    }
+                    free(result);
+                    result = (char*)malloc(150 * sizeof(char));
+                    sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n", type, value[0]);
+                    // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
+                    result[0] = '\b';
+                    BreakWhileLoop = true;
+                    break;
                 }
-                if(!default_formatting){
-                    if (!is_format_match(value[0], current_arg_type_int)){
-                        char* type;
-                        switch (int_to_format_specifier(current_arg_type_int)[0])
-                        {
-                            case 'i':
-                                type = "INTEGER";
-                                break;
-                            case 'f':
-                                type = "REAL";
-                                break;
-                            case 'l':
-                                type = "LOGICAL";
-                                break;
-                            case 'a':
-                                type = "CHARACTER";
-                                break;
-                        }
-                        free(result);
-                        result = (char*)malloc(150 * sizeof(char));
-                        sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,value[0]);
-                        // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
-                        result[0] = '\b'; 
-                        count = 0; // Break while loop.
+            
+                // All formatting functions uses int64 and double.
+                // We have to cast the pointers to int64 or double to avoid accessing beyond bounds.
+                int64_t integer_val = 0;
+                double double_val = 0;
+                char* char_val = NULL;
+                bool bool_val = false;
+                switch(s_info.current_element_type ){
+                    case  INTEGER_64_TYPE:
+                        integer_val = *(int64_t*)s_info.current_arg_info.current_arg; 
                         break;
-                    }
+                    case  INTEGER_32_TYPE:
+                        integer_val = (int64_t)*(int32_t*)s_info.current_arg_info.current_arg; 
+                        break;
+                    case  INTEGER_16_TYPE:
+                        integer_val = (int64_t)*(int16_t*)s_info.current_arg_info.current_arg; 
+                        break;
+                    case  INTEGER_8_TYPE:
+                        integer_val = (int64_t)*(int8_t*)s_info.current_arg_info.current_arg; 
+                        break;
+                    case  FLOAT_64_TYPE:
+                        double_val = *(double*)s_info.current_arg_info.current_arg; 
+                        break;
+                    case  FLOAT_32_TYPE:
+                        double_val = (double)*(float*)s_info.current_arg_info.current_arg; 
+                        break;
+                    case CHARACTER_TYPE:
+                        char_val = *(char**)s_info.current_arg_info.current_arg;
+                        break;
+                    case LOGICAL_TYPE:
+                        bool_val = *(bool*)s_info.current_arg_info.current_arg;
+                        break;
+                    default:
+                        break;
                 }
-                is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
-                    // String Editing (A[n])
-                    count--;
-                    char* arg = NULL;
-                    if(is_array){
-                        arg = array_state.current_arr_element_char_ptr; 
-                    } else {
-                        arg = va_arg(args, char*);
+                    // Handle if argument is actually logical (allowed in Fortran).
+                    if(s_info.current_element_type==LOGICAL_TYPE){
+                        handle_logical("l",*(bool*)s_info.current_arg_info.current_arg, &result);
+                        continue;
                     }
+                    char* arg = *(char**)s_info.current_arg_info.current_arg;
                     if (arg == NULL) continue;
                     if (strlen(value) == 1) {
                         result = append_to_string(result, arg);
@@ -1189,69 +1513,149 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
-                    count--;
-                    if(is_array){
-                        handle_integer(value, array_state.current_arr_element_int64, &result);
+                    handle_integer(value, integer_val, &result, is_SP_specifier);
+                } else if (tolower(value[0]) == 'b') {
+                    int width = 0;
+                    if (strlen(value) > 1) {
+                        width = atoi(value + 1); // Get width after 'B'
+                    }
+
+                    int bit_size = 0;
+                    uint64_t uval = 0;
+                    char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
+                    if (fmt_type == 'i') {
+                        if (s_info.current_element_type == INTEGER_8_TYPE) {
+                            bit_size = 8;
+                        } else if (s_info.current_element_type == INTEGER_16_TYPE) {
+                            bit_size = 16;
+                        } else if (s_info.current_element_type == INTEGER_32_TYPE) {
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == INTEGER_64_TYPE) {
+                            bit_size = 64;
+                        }
+                        uint64_t mask = (bit_size == 64) ? UINT64_MAX : ((1ULL << bit_size) - 1);
+                        uval = ((uint64_t)integer_val) & mask;
+                    } else if (fmt_type == 'f') {
+                        if (s_info.current_element_type == FLOAT_32_TYPE) {
+                            float f = (float)double_val;
+                            uint32_t bits;
+                            memcpy(&bits, &f, sizeof(float));
+                            uval = (uint64_t)bits;
+                            bit_size = 32;
+                        } else if (s_info.current_element_type == FLOAT_64_TYPE) {
+                            double d = double_val;
+                            memcpy(&uval, &d, sizeof(double));
+                            bit_size = 64;
+                        }
                     } else {
-                        int64_t val = va_arg(args, int64_t);
-                        handle_integer(value, val, &result);
+                        result = append_to_string(result, "<unsupported>");
+                        break;
+                    }
+
+                    char binary_str[65]; // max 64 bits + '\0'
+                    int idx = 0;
+                    bool started = false;
+
+                    for (int bit = bit_size - 1; bit >= 0; bit--) {
+                        if ((uval >> bit) & 1) {
+                            started = true;
+                        }
+                        if (started) {
+                            binary_str[idx++] = ((uval >> bit) & 1) ? '1' : '0';
+                        }
+                    }
+
+                    if (idx == 0) {
+                        binary_str[idx++] = '0'; // If number is 0
+                    }
+                    binary_str[idx] = '\0';
+
+                    int bin_len = strlen(binary_str);
+
+                    if (width == 0) {
+                        result = append_to_string(result, binary_str);
+                    } else if (bin_len > width) {
+                        for (int i = 0; i < width; i++) {
+                            result = append_to_string(result, "*");
+                        }
+                    } else {
+                        int padding_needed = width - bin_len;
+                        char pad_char = ' ';
+                        if (padding_needed > 0) {
+                            char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
+                            memset(pad, pad_char, padding_needed);
+                            pad[padding_needed] = '\0';
+                            result = append_to_string(result, pad);
+                            free(pad);
+                        }
+                        result = append_to_string(result, binary_str);
+                    }
+                } else if (tolower(value[0]) == 'g') {
+                    int width = 0;
+                    int precision = 0;
+                    if (strlen(value) > 1) {
+                        width = atoi(value + 1); // Get width after 'g'
+                    } 
+                    if (strlen(value) > 2 && value[2] == '.') {
+                        precision = atoi(value + 3); // Get precision after 'g.'
+                    }
+                    char buffer[100];
+                    if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
+                        if (double_val == 0.0 || fabs(double_val) >= 0.1) {
+                            char format_spec[20];
+                            snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
+                            snprintf(buffer, sizeof(buffer), format_spec, double_val);
+                        } else {
+                            int exp = 0;
+                            double abs_val = fabs(double_val);
+                            if (abs_val > 0.0) {
+                                exp = (int)floor(log10(abs_val)) + 1;
+                            }
+                            double scale = pow(10.0, -exp);
+                            double final_val = double_val * scale;
+                            char mantissa[64], exponent[16];
+                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
+                            snprintf(exponent, sizeof(exponent), "E%+d", exp);  // Force sign
+                            snprintf(buffer, sizeof(buffer), "%s%s", mantissa, exponent);
+                        }
+                        result = append_to_string(result, buffer);
+                    } else if (s_info.current_element_type == INTEGER_8_TYPE ||
+                               s_info.current_element_type == INTEGER_16_TYPE ||
+                               s_info.current_element_type == INTEGER_32_TYPE ||
+                               s_info.current_element_type == INTEGER_64_TYPE) {
+                        snprintf(result, sizeof(buffer), "%"PRId64, integer_val);
+                    } else if (s_info.current_element_type == CHARACTER_TYPE) {
+                        result = append_to_string(result, char_val);
+                    } else if (s_info.current_element_type == LOGICAL_TYPE) {
+                        result = append_to_string(result, bool_val ? "T" : "F");
+                    } else {
+                        result = append_to_string(result, "<unsupported>");
                     }
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
-                    count--;
-                    if(is_array){
-                        handle_decimal(value, array_state.current_arr_element_double, scale, &result, "D");;
-                    } else {
-                        double val = va_arg(args, double);
-                        handle_decimal(value, val, scale, &result, "D");
-                    }
+                    double val = *(double*)s_info.current_arg_info.current_arg;
+                    handle_decimal(value, double_val, scale, &result, "D", is_SP_specifier);
                 } else if (tolower(value[0]) == 'e') {
                     // Check if the next character is 'N' for EN format
                     char format_type = tolower(value[1]);
-                    count--;
                     if (format_type == 'n') {
-                        if(is_array){
-                            handle_en(value, array_state.current_arr_element_double, scale, &result, "E");
-                        } else {
-                            double val = va_arg(args, double);
-                            handle_en(value, val, scale, &result, "E");
-                        }
+                        handle_en(value, double_val, scale, &result, "E", is_SP_specifier);
                     } else {
-                        if(is_array){
-                            handle_decimal(value, array_state.current_arr_element_double, scale, &result, "E");
-                        } else {
-                            double val = va_arg(args, double);
-                            handle_decimal(value, val, scale, &result, "E");
-                        }
+                        handle_decimal(value, double_val, scale, &result, "E", is_SP_specifier);
                     }
                 } else if (tolower(value[0]) == 'f') {
-                    count--;
-                    if(is_array){
-                        handle_float(value,array_state.current_arr_element_double, &result);
-                    } else {
-                        double val = va_arg(args, double);
-                        handle_float(value, val, &result);
-                    }
+                    handle_float(value, double_val, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'l') {
-                    count--;
-                    if(is_array){
-                        bool val = array_state.current_arr_element_bool;
-                        handle_logical(value, val, &result);
-                    } else {
-                        char* val_str = va_arg(args, char*);
-                        bool val = (strcmp(val_str, "True") == 0);
-                        handle_logical(value, val, &result);
-                    }
+                    bool val = *(bool*)s_info.current_arg_info.current_arg;
+                    handle_logical(value, val, &result);
                 } else if (strlen(value) != 0) {
-                    count--;
                     printf("Printing support is not available for %s format.\n",value);
                 }
-                if( default_formatting && (count > 0) ){ //append spacing after each element.
-                    result = append_to_string(result,default_spacing);
-                }
+
             }
         }
-        if ( count > 0 ) {
+        if(BreakWhileLoop) break;
+        if (move_to_next_element(&s_info, true)) {
             if (!array) {
                 result = append_to_string(result, "\n");
             }
@@ -1260,14 +1664,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
             break;
         }
     }
-    if(!default_formatting){
-        free(modified_input_string);
-        for (int i = 0;(i<format_values_count);i++) {
-                free(format_values[i]);
-        }
-        free(format_values);
+    free(modified_input_string);
+    for (int i = 0;(i<format_values_count);i++) {
+            free(format_values[i]);
     }
     va_end(args);
+    free(format_values);
+    free_serialization_info(&s_info);
     return result;
 }
 
@@ -1391,6 +1794,22 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         result->re = creal(cr);
         result->im = cimag(cr);
 
+}
+
+int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
+    int64_t res = 1;
+    int64_t temp = base;
+    if( exponent < 0 ) return 0;
+    while(exponent){
+        if(exponent%2){
+            exponent--;
+            res *= temp;
+        } else {
+            temp *= temp;
+            exponent/=2;
+        }
+    }
+    return res;
 }
 
 // sqrt ------------------------------------------------------------------------
@@ -2871,18 +3290,20 @@ struct UNIT_FILE {
     char* filename;
     FILE* filep;
     bool unit_file_bin;
+    int access_id;
 };
 
 int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
-void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin) {
+void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id) {
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             unit_to_file[i].unit = unit_num;
             unit_to_file[i].filep = filep;
             unit_to_file[i].unit_file_bin = unit_file_bin;
+            unit_to_file[i].access_id = access_id;
         }
     }
     last_index_used += 1;
@@ -2894,13 +3315,15 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].filename = filename;
     unit_to_file[last_index_used].filep = filep;
     unit_to_file[last_index_used].unit_file_bin = unit_file_bin;
+    unit_to_file[last_index_used].access_id = access_id;
 }
 
-FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin) {
-    *unit_file_bin = false;
+FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id) {
+    if (unit_file_bin) *unit_file_bin = false;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
-            *unit_file_bin = unit_to_file[i].unit_file_bin;
+            if (unit_file_bin) *unit_file_bin = unit_to_file[i].unit_file_bin;
+            if (access_id) *access_id = unit_to_file[i].access_id;
             return unit_to_file[i].filep;
         }
     }
@@ -2938,10 +3361,30 @@ void remove_from_unit_to_file(int32_t unit_num) {
     last_index_used -= 1;
 }
 
-LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form)
+// Note: The length 25 was chosen to be at least as good as UUID
+//       which has 32 hex digits (36^24 < 16^32 < 36^25).
+#define ID_LEN 25
+void get_unique_ID(char buffer[ID_LEN + 1]) {
+    const char v[36] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for (int i = 0; i < ID_LEN; i++) {
+        int index = rand() % 36;
+        buffer[i] = v[index];
+    }
+    buffer[ID_LEN] = '\0';
+}
+
+LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form, char *access, int32_t *iostat, char **iomsg)
 {
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
     if (f_name == NULL) {
-        f_name = "_lfortran_generated_file.txt";
+        char *prefix = "_lfortran_generated_file", *format = "txt";
+        char unique_id[ID_LEN + 1];
+        get_unique_ID(unique_id);
+        int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
+        f_name = (char *)malloc(length);
+        snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
     }
 
     if (status == NULL) {
@@ -2951,7 +3394,12 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     if (form == NULL) {
         form = "formatted";
     }
+
+    if (access == NULL) {
+        access = "sequential";
+    }
     bool file_exists[1] = {false};
+    FILE *already_open = get_file_pointer_from_unit(unit_num, NULL, NULL);
 
     size_t len = strlen(f_name);
     if (*(f_name + len - 1) == ' ') {
@@ -2963,7 +3411,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         *(end + 1) = '\0';
     }
 
-    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL);
+    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL, NULL);
     char *access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -2974,59 +3422,157 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
      * "replace" (file will be created, replacing any existing file)
      * "unknown" (it is not known whether the file exists)
      */
+    size_t iomsg_len;
+    if (iomsg && *iomsg) {
+        iomsg_len = strlen(*iomsg);
+    } else {
+        iomsg_len = 0;
+    }
     if (streql(status, "old")) {
         if (!*file_exists) {
-            printf("Runtime error: File `%s` does not exists!\nCannot open a "
-                "file with the `status=old`\n", f_name);
-            exit(1);
+            if (iostat != NULL) {
+                *iostat = 2;
+                if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                    char *temp = "File `%s` does not exists! Cannot open a file with the `status=old`";
+                    size_t err_len = strlen(temp) - 1 + strlen(f_name); 
+                    int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
+                    size += 1;   // endline char
+                    snprintf(*iomsg, size, temp, f_name);
+                    for (size_t i = size - 1; i < iomsg_len; i++) {
+                        (*iomsg)[i - 1] = ' ';
+                    }
+                    (*iomsg)[iomsg_len] = '\0';
+                }
+            } else {
+                printf("Runtime error: File `%s` does not exists!\nCannot open a "
+                    "file with the `status=old`\n", f_name);
+                exit(1);
+            }
         }
         access_mode = "r+";
     } else if (streql(status, "new")) {
         if (*file_exists) {
-            printf("Runtime error: File `%s` exists!\nCannot open a file with "
-                "the `status=new`\n", f_name);
-            exit(1);
+            if (iostat != NULL) {
+                *iostat = 17;
+                if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                    char *temp = "File `%s` exists! Cannot open a file with the `status=new`";
+                    size_t err_len = strlen(temp) - 1 + strlen(f_name); 
+                    int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
+                    size += 1;   // endline char
+                    snprintf(*iomsg, size, temp, f_name);
+                    for (size_t i = size - 1; i < iomsg_len; i++) {
+                        (*iomsg)[i - 1] = ' ';
+                    }
+                    (*iomsg)[iomsg_len] = '\0';
+                }
+            } else {
+                printf("Runtime error: File `%s` exists!\nCannot open a file with "
+                    "the `status=new`\n", f_name);
+                exit(1);
+            }
         }
         access_mode = "w+";
-    } else if (streql(status, "replace")) {
+    } else if (streql(status, "replace") || streql(status, "scratch")) {
         access_mode = "w+";
     } else if (streql(status, "unknown")) {
-        if (!*file_exists) {
+        if (!*file_exists && !already_open) {
             FILE *fd = fopen(f_name, "w");
             if (fd) {
                 fclose(fd);
             }
         }
         access_mode = "r+";
-    } else if (streql(status, "scratch")) {
-        printf("Runtime error: Unhandled type status=`scratch`\n");
-        exit(1);
     } else {
-        printf("Runtime error: STATUS specifier in OPEN statement has "
-            "invalid value '%s'\n", status);
-        exit(1);
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                char *temp = "STATUS specifier in OPEN statement has invalid value.";
+                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
+                size += 1;   // endline char
+                snprintf(*iomsg, size, "%s", temp);
+                for (size_t i = size; i < iomsg_len; i++) {
+                    (*iomsg)[i - 1] = ' ';
+                }
+                (*iomsg)[iomsg_len] = '\0';
+            }
+        } else {
+            printf("Runtime error: STATUS specifier in OPEN statement has "
+                "invalid value '%s'\n", status);
+            exit(1);
+        }
     }
 
     bool unit_file_bin;
+    int access_id;
     if (streql(form, "formatted")) {
         unit_file_bin = false;
     } else if (streql(form, "unformatted")) {
         unit_file_bin = true;
     } else {
-        printf("Runtime error: FORM specifier in OPEN statement has "
-            "invalid value '%s'\n", form);
-        exit(1);
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                char *temp = "FORM specifier in OPEN statement has invalid value.";
+                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
+                size += 1;   // endline char
+                snprintf(*iomsg, size, "%s", temp);
+                for (size_t i = size; i < iomsg_len; i++) {
+                    (*iomsg)[i - 1] = ' ';
+                }
+                (*iomsg)[iomsg_len] = '\0';
+            }
+        } else {
+            printf("Runtime error: FORM specifier in OPEN statement has "
+                "invalid value '%s'\n", form);
+            exit(1);
+        }
     }
 
-    FILE *fd = fopen(f_name, access_mode);
-    if (!fd)
-    {
-        printf("Runtime error: Error in opening the file!\n");
-        perror(f_name);
-        exit(1);
+    if (streql(access, "stream")) {
+        access_id = 1;
+    } else if (streql(access, "sequential")) {
+        access_id = 0;
+    } else if (streql(access, "direct")) { //TODO: Handle 'direct' as access while reading or writing
+        access_id = 2;
+    } else {
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                char *temp = "ACCESS specifier in OPEN statement has invalid value.";
+                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
+                size += 1;   // endline char
+                snprintf(*iomsg, size, "%s", temp);
+                for (size_t i = size; i < iomsg_len; i++) {
+                    (*iomsg)[i - 1] = ' ';
+                }
+                (*iomsg)[iomsg_len] = '\0';
+            }
+        } else {
+            printf("Runtime error: ACCESS specifier in OPEN statement has "
+                "invalid value '%s'\n", access);
+            exit(1);
+        }
     }
-    store_unit_file(unit_num, f_name, fd, unit_file_bin);
-    return (int64_t)fd;
+
+    if (access_mode == NULL && iostat != NULL) {     // Case: when iostat is present we don't want to terminate
+        access_mode = "r";
+    }
+
+    if (iostat == NULL || (*iostat == 0)) {
+        if (already_open) {
+            return (int64_t) already_open;
+        }
+        FILE *fd = fopen(f_name, access_mode);
+        if (!fd && iostat == NULL)
+        {
+            printf("Runtime error: Error in opening the file!\n");
+            perror(f_name);
+            exit(1);
+        }
+        store_unit_file(unit_num, f_name, fd, unit_file_bin, access_id);
+        return (int64_t)fd;
+    }
+    return 0;
 }
 
 LFORTRAN_API void _lfortran_flush(int32_t unit_num)
@@ -3040,7 +3586,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
         }
     } else {
         bool unit_file_bin;
-        FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+        FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
         if( filep == NULL ) {
             if ( unit_num == 6 ) {
                 // special case: flush OUTPUT_UNIT
@@ -3062,9 +3608,10 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened, int32_t *size) {
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num,
+                                    bool *opened, int32_t *size, int32_t *pos) {
     if (f_name && unit_num != -1) {
-        printf("File name and file unit number cannot be specifed together.\n");
+        printf("File name and file unit number cannot be specified together.\n");
         exit(1);
     }
     if (f_name != NULL) {
@@ -3082,10 +3629,11 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num
     }
     if (unit_num != -1) {
         bool unit_file_bin;
-        if (get_file_pointer_from_unit(unit_num, &unit_file_bin) != NULL) {
-            *opened = true;
-        } else {
-            *opened = false;
+        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+        *opened = (fp != NULL);
+        if (pos != NULL && fp != NULL) {
+            long p = ftell(fp);
+            *pos = (int32_t)p + 1;
         }
     }
 }
@@ -3093,7 +3641,7 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
 {
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if( filep == NULL ) {
         printf("Specified UNIT %d in REWIND is not created or connected.\n", unit_num);
         exit(1);
@@ -3104,7 +3652,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 {
     bool unit_file_bin;
-    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if( fd == NULL ) {
         printf("Specified UNIT %d in BACKSPACE is not created or connected.\n",
             unit_num);
@@ -3125,49 +3673,211 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
     }
 }
 
+// Improved input validation for integer reading
+// - Prevents auto-casting of invalid inputs to integers
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%d", p);
+        char buffer[100];   // Long enough buffer to fit any 32 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Use strtok() to extract only the first token before any whitespace
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+            exit(1);
+        }
+
+        char *endptr = NULL;
+        errno = 0;
+        long long_val = strtol(token, &endptr, 10);
+
+        if (endptr == token || *endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+            exit(1);
+        }
+
+        // check for overflow (when input value is more than the int32 limit)
+        if (errno == ERANGE || long_val < INT32_MIN || long_val > INT32_MAX) {
+            fprintf(stderr, "Error: Value %ld is out of integer(4) range.\n", long_val);
+            exit(1);
+        }
+
+        // once we checked its a proper integer, and that, it's within range, we convert it to int32
+        *p = (int32_t)long_val;
         return;
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
+            exit(1);
+        }
     } else {
-        (void)!fscanf(filep, "%d", p);
+        long temp;
+        if (fscanf(filep, "%ld", &temp) != 1) {
+            fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
+            exit(1);
+        }
+
+        if (temp < INT32_MIN || temp > INT32_MAX) {
+            fprintf(stderr, "Error: Value %ld is out of integer(4) range (file).\n", temp);
+            exit(1);
+        }
+
+        *p = (int32_t)temp;
     }
 }
 
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%" PRId64, p);
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
+        }
+
+        errno = 0;
+        char *endptr = NULL;
+        long long long_val = strtoll(token, &endptr, 10);
+
+        if (endptr == token || *endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int64_t.\n");
+            exit(1);
+        }
+
+        if (errno == ERANGE || long_val < INT64_MIN || long_val > INT64_MAX) {
+            fprintf(stderr, "Error: Value %lld is out of integer(8) range.\n", long_val);
+            exit(1);
+        }
+
+        *p = (int64_t)long_val;
         return;
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
+            exit(1);
+        }
     } else {
-        (void)!fscanf(filep, "%" PRId64, p);
+        int64_t temp;
+        if (fscanf(filep, "%" PRId64, &temp) != 1) {
+            fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
+            exit(1);
+        }
+        if (temp < INT64_MIN || temp > INT64_MAX) {
+            fprintf(stderr, "Error: Value %" PRId64 " is out of integer(8) range (file).\n", temp);
+            exit(1);
+        }
+
+        *p = (int64_t)temp;
     }
 }
+
+// boolean read implementation is in process
+// Implementing a Logical read API (starting with the basic input of just logical-further, logicalArray also needed)
+// changes for the same are in: asr_to_llvm.cpp (line 8210 onwards)
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Reading from standard input (console)
+        char buffer[100];   // Long enough buffer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Tokenize input (by whitespace)
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for logical.\n");
+            exit(1);
+        }
+
+        // converting token to lowecase
+        for (int i = 0; token[i]; ++i) token[i] = tolower((unsigned char) token[i]);
+
+        // Check for logical values
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        // Read logical from binary file
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read logical from binary file.\n");
+            exit(1);
+        }
+    } 
+    else {
+        // Read logical from text file (fscanf handles the logical format)
+        char token[100] = {0};    // Initialize token to avoid garbage values
+        if (fscanf(filep, "%99s", token) != 1) {
+            fprintf(stderr, "Error: Invalid logical input from file.\n");
+            printf("Read token: '%s'\n", token);  // debugging purpose
+            exit(1);
+        }
+
+        // Sanitize the token (removes trailing \r or \n characters)
+        int len = strlen(token);
+        while (len > 0 && (token[len-1] == '\r' || token[len-1] == '\n')) {
+            token[len-1] = '\0';
+            len--;
+        }
+
+        // updated fix: Convert to lowercase for consistent comparison
+        for (int i = 0; token[i]; ++i) {
+            token[i] = tolower((unsigned char) token[i]);
+        }
+
+        // comparing once
+        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        else {
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            exit(1);
+        }
+    }
+}
+
 
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num)
 {
@@ -3180,13 +3890,19 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
+        if (access_id != 1) {
+            // Read record marker first
+            int32_t record_marker_start;
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
+        }
         (void)!fread(p, sizeof(int8_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
@@ -3206,13 +3922,19 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
+        if (access_id != 1) {
+            // Read record marker first
+            int32_t record_marker_start;
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
+        }
         (void)!fread(p, sizeof(int32_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
@@ -3221,7 +3943,38 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 }
 
-LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
+LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num) {
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%" SCNd64, &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_id != 1) {
+            // Read record marker first
+            int32_t record_marker_start;
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
+        }
+        (void)!fread(p, sizeof(int64_t), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            (void)!fscanf(filep, "%" SCNd64, &p[i]);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
 {
     const char SPACE = ' ';
     int n = strlen(*p);
@@ -3240,7 +3993,8 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3248,18 +4002,37 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 
     if (unit_file_bin) {
         // read the record marker for data length
+        va_list args;
+        va_start(args, unit_num); 
+        int32_t var_len = va_arg(args, int32_t);
+
         int32_t data_length;
-        if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+        // Only read header if not access=stream and is at start of file
+        if (access_id != 1 && ftell(filep) == 0 &&               
+                fread(&data_length, sizeof(int32_t), 1, filep) != 1) {   
             printf("Error reading data length from file.\n");
             exit(1);
         }
 
+        long current_pos = ftell(filep);
+        fseek(filep, 0L, SEEK_END);
+        long end_pos = ftell(filep);
+        fseek(filep, current_pos, SEEK_SET);
+
+        if (access_id != 1) {
+            data_length = end_pos - current_pos - 4;  // leave last 4 bits as record marker
+        } else {
+            data_length = end_pos - current_pos;  // For access=stream read till last
+        }
+
         // allocate memory for the data based on data length
-        *p = (char*)malloc((data_length + 1) * sizeof(char));
+        *p = (char*)malloc((var_len + 1) * sizeof(char));
         if (*p == NULL) {
             printf("Memory allocation failed.\n");
             exit(1);
         }
+
+        data_length = data_length > var_len ? var_len : data_length;
 
         // read the actual data
         if (fread(*p, sizeof(char), data_length, filep) != data_length) {
@@ -3267,22 +4040,8 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
             free(*p);
             exit(1);
         }
-        (*p)[data_length] = '\0';
-
-        // read the record marker after data
-        int32_t check_length;
-        if (fread(&check_length, sizeof(int32_t), 1, filep) != 1) {
-            printf("Error reading end data length from file.\n");
-            free(*p);
-            exit(1);
-        }
-
-        // verify that the start and end markers match
-        if (check_length != data_length) {
-            printf("Data length mismatch between start and end markers.\n");
-            free(*p);
-            exit(1);
-        }
+        (*p)[var_len] = '\0';
+        va_end(args);
     } else {
         char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
         (void)!fscanf(filep, "%s", tmp_buffer);
@@ -3301,25 +4060,52 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     }
 }
 
+
+// Improved input validation for float reading
+// - Prevents auto-casting of invalid inputs to float/real
+// NOTE:- More changes need to be implemented for advanced error detection and check
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {
-        // Read from stdin
-        (void)!scanf("%f", p);
+        char buffer[100];   // Long enough buffer to fit any 64 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for float.\n");
+            exit(1);
+        }
+
+        char *endptr;
+        *p = strtof(token, &endptr);
+
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for float.\n");
+            exit(1);
+        }
         return;
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
-        (void)!fread(p, sizeof(*p), 1, filep);
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read float from binary file.\n");
+            exit(1);
+        }
     } else {
-        (void)!fscanf(filep, "%f", p);
+        if (fscanf(filep, "%f", p) != 1) {
+            fprintf(stderr, "Error: Invalid input for float from file.\n");
+            exit(1);
+        }
     }
 }
 
@@ -3334,7 +4120,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t u
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3360,7 +4146,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3399,7 +4185,7 @@ LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t un
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3434,7 +4220,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3447,7 +4233,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* fmt, int32_t no_of_args, ...)
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, char* fmt, int32_t no_of_args, ...)
 {
     if (!streql(fmt, "(a)")) {
         printf("Only (a) supported as fmt currently");
@@ -3490,11 +4276,12 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             strcpy(*arg, buffer);
             va_end(args);
             free(buffer);
+            return;
         }
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3506,7 +4293,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             free(buffer);
             return;
         } else {
-            if (streql(buffer, "\n")) {
+            // If we have advance="no" specified and we also have '\n' in buffer, iostat = -2 (end of record)
+            // (strcspn(buffer, "\n") != n) checks if '\n' is present in buffer or not
+            if (streql(buffer, "\n") || (streql(advance, "no") && strcspn(buffer, "\n") != n)) {
                 *iostat = -2;
             } else {
                 *iostat = 0;
@@ -3534,7 +4323,7 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     }
 
     bool unit_file_bin;
-    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!fp) {
         printf("No file found with given unit\n");
         exit(1);
@@ -3573,40 +4362,49 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char *format, ...)
 {
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
     if (!filep) {
         filep = stdout;
     }
-    va_list args;
-    va_start(args, format);
-    char* str = va_arg(args, char*);
-    // Detect "\b" to raise error
-    if(str[0] == '\b'){
-        if(iostat == NULL){
-            str = str+1;
-            fprintf(stderr, "%s",str);
-            exit(1);
-        } else { // Delegate error handling to the user.
-            *iostat = 11;
-            return;
-        }
-    }
     if (unit_file_bin) {
-        // size the size of `str_len` to bytes
-        size_t str_len = strlen(str);
+        fseek(filep, 0, SEEK_END);
+        va_list args;
+        va_start(args, format);
 
-        // calculate record marker size
-        int32_t record_marker = (int32_t)str_len;
+        size_t total_size = 0;
+        struct {
+            void *ptr;
+            int32_t len;
+        } data[100];  // support max 100 args
 
-        // write record marker before the data
-        fwrite(&record_marker, sizeof(record_marker), 1, filep);
+        int count = 0;
 
-        size_t written = fwrite(str, sizeof(char), str_len, filep); // write as binary data
+        // Read (size, ptr) until len == -1
+        while (1) {
+            int32_t len = va_arg(args, int32_t);
+            if (len == -1) break; // sentinel
+            void* ptr = va_arg(args, void*);
 
-        // write the record marker after the data
-        fwrite(&record_marker, sizeof(record_marker), 1, filep);
+            data[count].ptr = ptr;
+            data[count].len = len;
+            total_size += len;
+            count++;
+        }
+        va_end(args);
 
-        if (written != str_len) {
+        // Write record marker
+        int32_t record_marker = (int32_t)total_size;
+        if (access_id != 1) fwrite(&record_marker, sizeof(record_marker), 1, filep);
+        size_t written = 0;
+        // Write all data chunks
+        for (int i = 0; i < count; i++) {
+            written += fwrite(data[i].ptr, 1, data[i].len, filep);
+        }
+        // Write record marker again
+        if (access_id != 1) fwrite(&record_marker, sizeof(record_marker), 1, filep);
+
+        if (written != total_size) {
             printf("Error writing data to file.\n");
             // TODO: not sure what is the right value of "iostat" in this case
             // it should be a positive value unique from other predefined iostat values
@@ -3618,6 +4416,20 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             if(iostat != NULL) *iostat = 0;
         }
     } else {
+        va_list args;
+        va_start(args, format);
+        char* str = va_arg(args, char*);
+        // Detect "\b" to raise error
+        if(str[0] == '\b'){
+            if(iostat == NULL){
+                str = str+1;
+                fprintf(stderr, "%s",str);
+                exit(1);
+            } else { // Delegate error handling to the user.
+                *iostat = 11;
+                return;
+            }
+        }
         if(strcmp(format, "%s%s") == 0){
             char* end = va_arg(args, char*);
             fprintf(filep, format, str, end);
@@ -3625,8 +4437,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             fprintf(filep, format, str);
         }
         if(iostat != NULL) *iostat = 0;
+        va_end(args);
     }
-    va_end(args);
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
@@ -3758,22 +4570,25 @@ LFORTRAN_API void _lpython_close(int64_t fd)
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status)
 {
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
-        printf("No file found with given unit\n");
-        exit(1);
+        return;
     }
     if (fclose(filep) != 0) {
         printf("Error in closing the file!\n");
         exit(1);
     }
     // TODO: Support other `status` specifiers
-    if (status && strcmp(status, "delete") == 0) {
-        if (remove(get_file_name_from_unit(unit_num, &unit_file_bin)) != 0) {
+    char * file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
+    char* scratch_file = "_lfortran_generated_file";
+    bool is_temp_file = strncmp(file_name, scratch_file, strlen(scratch_file)) == 0;
+    if ((status && strcmp(status, "delete") == 0) || is_temp_file) {
+        if (remove(file_name) != 0) {
             printf("Error in deleting file!\n");
             exit(1);
         }
     }
+    if (is_temp_file) free(file_name);
     remove_from_unit_to_file(unit_num);
 }
 
@@ -4137,7 +4952,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_LFORTRAN_MACHO
                 DIM ", line %lld\n" S_RESET
 #else
-                DIM ", line %ld\n" S_RESET
+                DIM ", line %" PRIu64 "\n" S_RESET
 #endif
                 "    %s\n", source_filename, d.line_numbers[index],
                 remove_whitespace(read_line_from_file(source_filename,
@@ -4147,7 +4962,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_LFORTRAN_MACHO
                 "line %lld\n    %s\n",
 #else
-                "line %ld\n    %s\n",
+                "line %" PRIu64 "\n    %s\n",
 #endif
                 source_filename, d.line_numbers[index],
                 remove_whitespace(read_line_from_file(source_filename,

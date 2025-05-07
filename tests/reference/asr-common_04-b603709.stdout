@@ -29,6 +29,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -47,6 +48,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -70,6 +72,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     block_1
@@ -77,6 +80,7 @@
                                     [a
                                     b
                                     c]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -95,6 +99,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         3 block_1
                                     )
                                     ()
@@ -104,6 +111,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     file_common_block_block_1
@@ -173,6 +181,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             struct_instance_block_1:
                                 (ExternalSymbol
@@ -196,6 +205,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -206,6 +216,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
@@ -216,6 +227,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -261,6 +273,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -284,6 +297,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -312,6 +326,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

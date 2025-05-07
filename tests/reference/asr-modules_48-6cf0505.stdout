@@ -36,6 +36,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char_str:
                                 (Variable
@@ -54,6 +55,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char_str_alloc:
                                 (Variable
@@ -74,6 +76,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char_str_hash1:
                                 (Variable
@@ -92,6 +95,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char_str_hash2:
                                 (Variable
@@ -110,6 +114,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char_str_hash3:
                                 (Variable
@@ -128,6 +133,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char_str_hash4:
                                 (Variable
@@ -146,6 +152,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             fnv_1a:
                                 (ExternalSymbol
@@ -228,6 +235,9 @@
                                     Default
                                     (Array
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_t
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -241,6 +251,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     modules_48
@@ -269,6 +280,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -278,6 +290,9 @@
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     8 string_t
                                 )
                                 ColMajor
@@ -291,6 +306,7 @@
                         )
                         (Var 8 char_str_alloc)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 8 char_str)
@@ -299,6 +315,7 @@
                             (String 1 19 () PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -308,6 +325,9 @@
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (StructType
+                                    []
+                                    []
+                                    .true.
                                     8 string_t
                                 )
                                 ColMajor
@@ -329,6 +349,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 8 char_str_hash1)
@@ -342,6 +363,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 8 char_str_hash2)
@@ -355,6 +377,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -390,6 +413,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -404,6 +430,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 8 char_str_hash4)
@@ -416,6 +443,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -430,6 +460,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -465,6 +496,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -484,6 +518,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -575,6 +610,9 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -591,6 +629,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -711,6 +750,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             fnv_prime_32:
                                                 (Variable
@@ -729,6 +769,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             hash:
                                                 (Variable
@@ -747,6 +788,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -765,6 +807,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             input:
                                                 (Variable
@@ -783,6 +826,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             seed:
                                                 (Variable
@@ -801,6 +845,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fnv_1a_char
@@ -834,11 +879,13 @@
                                             (Var 4 hash)
                                             (Var 4 seed)
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 hash)
                                             (Var 4 fnv_offset_32)
                                             ()
+                                            .false.
                                         )]
                                     )
                                     (DoLoop
@@ -877,6 +924,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -918,6 +966,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -936,6 +985,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             input:
                                                 (Variable
@@ -948,6 +998,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 string_t
                                                         )
                                                         [(()
@@ -961,6 +1014,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             seed:
                                                 (Variable
@@ -979,12 +1033,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     fnv_1a_string_t
                                     (FunctionType
                                         [(Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 string_t
                                             )
                                             [(()
@@ -1020,6 +1078,9 @@
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 string_t
                                                         )
                                                         ColMajor
@@ -1044,6 +1105,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -1069,6 +1131,9 @@
                                                             (Var 5 i)
                                                             ())]
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 string_t
                                                             )
                                                             ColMajor
@@ -1093,6 +1158,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -1156,6 +1222,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             int:
                                                 (Variable
@@ -1180,6 +1247,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             line:
                                                 (Variable
@@ -1198,6 +1266,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             lout:
                                                 (Variable
@@ -1216,6 +1285,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             lower:
                                                 (Variable
@@ -1240,6 +1310,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -1260,6 +1331,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             upper:
                                                 (Variable
@@ -1284,6 +1356,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     is_fortran_name
@@ -1321,6 +1394,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (IntegerCompare
@@ -1454,6 +1528,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 6 lout)
@@ -1462,6 +1537,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 6 lout)
@@ -1504,6 +1580,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             delim:
                                                 (Variable
@@ -1522,6 +1599,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             delim_str:
                                                 (Variable
@@ -1542,6 +1620,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -1560,6 +1639,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             strings:
                                                 (Variable
@@ -1572,6 +1652,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 string_t
                                                         )
                                                         [(()
@@ -1585,12 +1668,16 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_cat
                                     (FunctionType
                                         [(Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 string_t
                                             )
                                             [(()
@@ -1643,6 +1730,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (Return)]
                                         []
@@ -1667,6 +1755,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 7 delim_str)
@@ -1683,6 +1772,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )
                                     (Assignment
@@ -1694,6 +1784,9 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 string_t
                                                 )
                                                 ColMajor
@@ -1706,6 +1799,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -1752,6 +1846,9 @@
                                                                 (Var 7 i)
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 string_t
                                                                 )
                                                                 ColMajor
@@ -1781,6 +1878,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -1814,11 +1912,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_t
                                     []
                                     [s]
+                                    []
                                     Source
                                     Public
                                     .false.

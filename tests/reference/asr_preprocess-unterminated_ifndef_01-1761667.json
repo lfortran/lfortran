@@ -1,0 +1,13 @@
+{
+    "basename": "asr_preprocess-unterminated_ifndef_01-1761667",
+    "cmd": "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/unterminated_ifndef_01.f90",
+    "infile_hash": "15182e05ae273d1a1ffd40280ce783bc0df2bf57f3ad7ed102fc71f0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr_preprocess-unterminated_ifndef_01-1761667.stderr",
+    "stderr_hash": "c2c3a02d83fdb5ea648eead71bf83e6460c22d1a43ece2fa084e3fc2",
+    "returncode": 2
+}

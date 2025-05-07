@@ -29,6 +29,9 @@
                                     (Allocatable
                                         (Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 srcfile_t
                                             )
                                             [(()
@@ -43,6 +46,7 @@
                                     .false.
                                     .true.
                                     .false.
+                                    ()
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -96,6 +100,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -110,6 +117,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -133,6 +141,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             sources:
                                                 (Variable
@@ -146,6 +155,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -160,6 +172,7 @@
                                                     .false.
                                                     .true.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add_sources_from_dir
@@ -167,6 +180,9 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 srcfile_t
                                                 )
                                                 [(()
@@ -241,6 +257,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -252,6 +271,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 sources)
@@ -286,6 +306,9 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 srcfile_t
                                                                 )
                                                                 [(()
@@ -299,6 +322,9 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 srcfile_t
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -310,6 +336,7 @@
                                                 ColMajor
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     ()
@@ -340,6 +367,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -360,6 +388,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             file_name:
                                                 (Variable
@@ -380,6 +409,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     srcfile_t
@@ -387,6 +417,7 @@
                                     [file_name
                                     exe_name
                                     digest]
+                                    []
                                     Source
                                     Public
                                     .false.

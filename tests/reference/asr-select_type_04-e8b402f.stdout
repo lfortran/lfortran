@@ -33,6 +33,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             success:
                                                 (Variable
@@ -51,12 +52,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     enum_stat
                                     []
                                     [success
                                     fatal]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -76,6 +79,9 @@
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 enum_stat
                                         )
                                     )
@@ -84,11 +90,17 @@
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 enum_stat
                                         )
                                     )
                                     Parameter
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         11 enum_stat
                                     )
                                     ()
@@ -98,6 +110,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     class_default_select_type
@@ -144,6 +157,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     check_table
@@ -203,6 +217,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 toml_table
                                                         )
                                                     )
@@ -213,6 +230,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             stat:
                                                 (Variable
@@ -231,6 +249,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -251,6 +270,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             tmp:
                                                 (Variable
@@ -273,6 +293,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -312,6 +333,7 @@
                                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )]
@@ -324,6 +346,9 @@
                                         )
                                         (Pointer
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 toml_table
                                             )
                                         )
@@ -380,6 +405,7 @@
                                                         (IntegerConstant -1 (Integer 4) Decimal)
                                                     )
                                                     ()
+                                                    .false.
                                                 )]
                                                 []
                                             )]
@@ -435,6 +461,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             inline:
                                                 (Variable
@@ -459,12 +486,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_table
                                     []
                                     [implicit
                                     inline]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -495,6 +524,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             int:
                                                 (Variable
@@ -513,12 +543,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_value
                                     []
                                     [int
                                     float]
+                                    []
                                     Source
                                     Public
                                     .false.

@@ -39,6 +39,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -57,6 +58,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -77,6 +79,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     multiply
@@ -115,6 +118,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 res)
                                     Private
@@ -154,6 +158,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -172,6 +177,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -192,6 +198,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     sqrt_subtract
@@ -244,6 +251,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 res)
                                     Private
@@ -281,6 +289,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             multiply:
                                                 (ClassProcedure
@@ -308,6 +317,7 @@
                                     t_1
                                     []
                                     [i]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -397,6 +407,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 t_1
                                     )
                                     ()
@@ -406,6 +419,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     name
@@ -422,6 +436,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare

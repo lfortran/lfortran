@@ -49,6 +49,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -60,6 +61,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 git_target_t
                                                     )
                                                     ()
@@ -69,6 +73,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             url:
                                                 (Variable
@@ -87,6 +92,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     git_target_branch
@@ -94,6 +100,9 @@
                                         [(String 1 -1 () PointerString)
                                         (String 1 -1 () PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 git_target_t
                                         )
                                         Source
@@ -129,6 +138,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -149,6 +159,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 13 self)
                                     Public
@@ -180,6 +191,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             url:
                                                 (Variable
@@ -200,12 +212,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     git_target_t
                                     []
                                     [url
                                     object]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -241,6 +255,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 git_target_t
                                                         )
                                                     )
@@ -251,6 +268,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -271,6 +289,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -291,6 +310,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     dependency_config_t
@@ -298,6 +318,7 @@
                                     [name
                                     path
                                     git]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -330,11 +351,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -380,6 +403,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 4 dependency_config_t
                                                             )
                                                             [(()
@@ -394,6 +420,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             error:
                                                 (Variable
@@ -406,6 +433,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -416,6 +446,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             root:
                                                 (Variable
@@ -434,6 +465,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -445,6 +477,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 toml_table
                                                     )
                                                     ()
@@ -454,6 +489,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_dependencies
@@ -461,6 +497,9 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     4 dependency_config_t
                                                 )
                                                 [(()
@@ -469,11 +508,17 @@
                                             )
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 toml_table
                                         )
                                         (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 error_t
                                             )
                                         )]
@@ -535,6 +580,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -546,6 +592,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 dependency_config_t
                                                     )
                                                     ()
@@ -555,6 +604,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             url:
                                                 (Variable
@@ -575,11 +625,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     new_dependency
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 dependency_config_t
                                         )]
                                         ()
@@ -602,6 +656,9 @@
                                             9 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     4 git_target_t
                                                 )
                                             )
@@ -629,12 +686,16 @@
                                                 ()
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 git_target_t
                                             )
                                             ()
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -670,11 +731,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_table
                                     []
                                     [inline]
+                                    []
                                     Source
                                     Public
                                     .false.

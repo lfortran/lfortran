@@ -8,7 +8,7 @@ namespace LCompilers::LLanguageServer {
     public:
         MessageStream();
         virtual ~MessageStream();
-        virtual std::string next() = 0;
+        virtual std::string next(bool &exit) = 0;
     };
 
 } // namespace LCompilers::LLanguageServer

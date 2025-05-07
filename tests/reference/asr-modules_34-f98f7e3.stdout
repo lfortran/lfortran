@@ -73,6 +73,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             version:
                                                 (Variable
@@ -84,6 +85,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         15 version_t
                                                     )
                                                     ()
@@ -93,12 +97,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     package_config_t
                                     [version_t]
                                     [name
                                     version]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -197,6 +203,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     associate_block
@@ -221,6 +228,9 @@
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 6 fpm_versioning_modules_34_version_t
                                                             )
                                                             ()
@@ -244,6 +254,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             package:
                                                 (Variable
@@ -255,6 +266,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 package_config_t
                                                     )
                                                     ()
@@ -264,6 +278,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             version:
                                                 (Variable
@@ -284,11 +299,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     build_model
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 package_config_t
                                         )]
                                         ()
@@ -370,6 +389,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -390,6 +410,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     as_string
@@ -456,6 +477,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -476,6 +498,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     to_string
@@ -537,6 +560,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             to_string:
                                                 (ClassProcedure
@@ -553,6 +577,7 @@
                                     version_t
                                     []
                                     [num]
+                                    []
                                     Source
                                     Public
                                     .false.

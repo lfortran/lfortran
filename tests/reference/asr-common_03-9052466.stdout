@@ -94,6 +94,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -107,6 +108,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -117,6 +119,7 @@
                         )
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         1 pass
@@ -152,6 +155,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             e:
                                                 (Variable
@@ -170,6 +174,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f:
                                                 (Variable
@@ -188,6 +193,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     b
@@ -195,6 +201,7 @@
                                     [d
                                     e
                                     f]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -213,6 +220,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 b
                                     )
                                     ()
@@ -222,6 +232,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     file_common_block_b
@@ -256,6 +267,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             z2:
                                                 (Variable
@@ -274,12 +286,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     blank#block
                                     []
                                     [z1
                                     z2]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -298,6 +312,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         8 blank#block
                                     )
                                     ()
@@ -307,6 +324,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     file_common_block_blank#block
@@ -341,6 +359,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             g:
                                                 (Variable
@@ -359,6 +378,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             h:
                                                 (Variable
@@ -377,6 +397,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -395,6 +416,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     c
@@ -403,6 +425,7 @@
                                     g
                                     h
                                     j]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -421,6 +444,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         10 c
                                     )
                                     ()
@@ -430,6 +456,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     file_common_block_c
@@ -469,6 +496,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -487,6 +515,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -510,6 +539,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     sample
@@ -517,6 +547,7 @@
                                     [a
                                     b
                                     i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -535,6 +566,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         3 sample
                                     )
                                     ()
@@ -544,6 +578,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     file_common_block_sample
@@ -593,6 +628,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             sample:
                                 (ExternalSymbol

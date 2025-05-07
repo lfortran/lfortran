@@ -2,7 +2,18 @@
 ! number of lines below the module to keep the rest of the lines in this file
 ! intact.
 module continue_compilation_1_mod
+    type :: MyClass
+        integer :: value
+    contains
+        procedure :: display
+    end type MyClass
 
+    type :: logger_type
+    contains
+        private
+        procedure, public, pass(self) :: add_log_file
+    
+    end type logger_type
 contains
 
     subroutine my_func(x, y)
@@ -10,32 +21,21 @@ contains
         print *, "hi"
     end subroutine
 
+    subroutine display(self, extra_arg)
+        class(MyClass), intent(in) :: self
+        integer, intent(in) :: extra_arg
+        print *, "Value in object:", self%value
+    end subroutine display
+
+    subroutine add_log_file(self, filename, unit)
+        class(logger_type), intent(inout) :: self
+        character(*), optional :: filename
+        integer :: unit
+        filename = "lfortran"
+        unit = 10
+    end subroutine add_log_file
+
 end module
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ! Only put declarations and statements here, no subroutines (those go above).
@@ -58,7 +58,7 @@ program continue_compilation_1
     character :: c1
     complex :: c = (1.0, 2.0)
     real a_real(0)
-    integer, allocatable ::  shape_(:)
+    integer, allocatable ::  shape_(:), arr4(:)
     integer, dimension(2, 3) :: matrix
     integer, dimension(4) :: source = [1, 2, 3, 4]
     allocate(shape_(2))
@@ -69,6 +69,14 @@ program continue_compilation_1
     integer :: x = 1
     real :: adwf = .true.
     integer, volatile :: volatile_var
+    dimension array(3)
+    double precision array
+    integer , dimension(3) :: array
+    type(logger_type) :: logger
+    integer :: unit
+    character(len=100) :: filename
+    type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+    type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
 
 
 
@@ -89,14 +97,6 @@ program continue_compilation_1
 
 
 
-
-
-
-
-
-
-
-    
 
 
     ! Use the space above to insert new declarations, and remove the line, so
@@ -284,5 +284,26 @@ program continue_compilation_1
     ! c1 is Character
     print *, c1%mymember
 
+    print *, present(x,x)
+    print *, present()
+    print *, ieor(x)
+    print *, ieor()
+
     exit
+
+    ! calling function with less arguments
+    call my_func(10)
+    call my_func()
+    ! checking for self argument too 
+    type(MyClass) :: obj
+    obj%value = 42
+    call obj%display()
+    ! checking source in allocate
+    allocate(arr4(5), source=[1, 2, 3])
+    allocate(arr4(5), source=v)
+    allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
+    allocate(arr4, source=7)
+
+    call logger % add_log_file(filename=filename)
+    call logger % add_log_file()
 end program

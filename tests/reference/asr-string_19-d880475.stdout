@@ -163,7 +163,8 @@
                                                 (Variable
                                                     5
                                                     character_string
-                                                    [string]
+                                                    [len_string
+                                                    string]
                                                     ReturnVar
                                                     ()
                                                     ()
@@ -183,6 +184,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -194,6 +196,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -203,11 +208,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     char_string
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (String 1 -3 (FunctionCall
@@ -216,6 +225,9 @@
                                             [((FunctionParam
                                                 0
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 string_type
                                                 )
                                                 ()
@@ -273,6 +285,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -284,6 +297,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -293,11 +309,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     len_string
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (Integer 4)
@@ -345,11 +365,13 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     string_type
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -420,6 +442,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -438,6 +461,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     compute_lps
@@ -499,6 +523,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -517,6 +542,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     compute_lps_use
@@ -599,6 +625,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             len_string:
                                                 (ExternalSymbol
@@ -620,6 +647,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -629,11 +659,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     compute_lps_use1
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )]
                                         (Integer 4)
@@ -723,6 +757,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -745,6 +780,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -763,6 +799,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     padl_char_default
@@ -811,6 +848,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 12 res)
                                     Public
@@ -840,6 +878,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             pad_with:
                                                 (Variable
@@ -858,6 +897,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -888,6 +928,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -906,6 +947,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string_length:
                                                 (Variable
@@ -924,6 +966,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     padl_char_pad_with
@@ -996,6 +1039,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -1007,6 +1051,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1016,6 +1063,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -1027,6 +1075,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1036,15 +1087,22 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     padl_string_default
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         (Integer 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         Source
@@ -1151,11 +1209,15 @@
                                                 ()
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 6 string_type
                                             )
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 10 res)
                                     Public
@@ -1205,6 +1267,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             pad_with:
                                                 (Variable
@@ -1223,6 +1286,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -1234,6 +1298,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1243,6 +1310,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -1254,6 +1322,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         6 string_type
                                                     )
                                                     ()
@@ -1263,16 +1334,23 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     padl_string_pad_with
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         (Integer 4)
                                         (String 1 1 () PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             6 string_type
                                         )
                                         Source
@@ -1377,11 +1455,15 @@
                                                 ()
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 6 string_type
                                             )
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 11 res)
                                     Public

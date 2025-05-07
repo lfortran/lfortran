@@ -10,7 +10,9 @@
         [(Declaration
             (AttrType
                 TypeInteger
-                []
+                [(()
+                8
+                Value)]
                 ()
                 ()
                 None

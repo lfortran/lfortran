@@ -31,7 +31,6 @@
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_class_constructor.h>
-#include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/replace_where.h>
 #include <libasr/pass/unused_functions.h>
@@ -51,6 +50,8 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
+#include <string>
+#include <sstream>
 
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
@@ -67,6 +68,15 @@
     #include <emscripten/emscripten.h>
 #endif
 
+// ANSI color codes
+#define RESET   "\033[0m"
+#define BLUE    "\033[34m"   // Blue for non-[PASS] entries
+#define GREEN   "\033[32m"   // Green for 'Total time'
+#define YELLOW  "\033[33m"   // Yellow for 'Allocator usage of last chunk (MB)'
+#define CYAN    "\033[36m"   // Cyan for 'Allocator chunks'
+#define MAGENTA "\033[35m"   // Magenta for 'File reading' and 'Src -> ASR'
+#define RED        "\033[31m"   // Red for 'Time taken by pass' and 'ASR -> ASR passes'
+
 extern std::string lcompilers_unique_ID;
 extern std::string lcompilers_commandline_options;
 
@@ -74,6 +84,7 @@ namespace {
 
 using LCompilers::endswith;
 using LCompilers::CompilerOptions;
+using LCompilers::read_file_ok;
 
 namespace lcli = LCompilers::CommandLineInterface;
 
@@ -98,20 +109,87 @@ std::string get_unique_ID() {
     return res;
 }
 
-std::string read_file(const std::string &filename)
-{
-    std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary
-            | std::ios::ate);
+void print_one_component(std::string component) {
+    std::istringstream ss(component);
+    std::string component_name;
+    std::string time_value;
 
-    std::ifstream::pos_type filesize = ifs.tellg();
-    if (filesize < 0) return std::string();
+    // Extract component name and time
+    std::getline(ss, component_name, ':');
+    ss >> time_value;
 
-    ifs.seekg(0, std::ios::beg);
+    // Trim whitespace
+    component_name.erase(component_name.find_last_not_of(" \t\n\r") + 1);
+    component_name.erase(0, component_name.find_first_not_of(" \t\n\r"));
 
-    std::vector<char> bytes(filesize);
-    ifs.read(&bytes[0], filesize);
+    bool is_pass = false;
 
-    return std::string(&bytes[0], filesize);
+    // Detect `[PASS]` and remove it
+    if (component_name.find("[PASS]") == 0) {
+        component_name = component_name.substr(6); // Remove '[PASS]'
+        is_pass = true;
+    }
+
+    // Apply colors for key entries
+    if (component_name == "Total time") {
+        std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
+        std::cout << GREEN;
+    } else if (component_name == "Allocator usage of last chunk (MB)") {
+        std::cout << YELLOW;
+    } else if (component_name == "Allocator chunks") {
+        std::cout << CYAN;
+    } else if (component_name == "File reading" || component_name == "Src -> ASR") {
+        std::cout << MAGENTA;
+    } else if (component_name == "Time taken by pass" || component_name == "ASR -> ASR passes") {
+        std::cout << RED;
+    } else if (!is_pass) {
+        std::cout << BLUE;  // Default blue for non-[PASS] entries
+    }
+
+    // Print in formatted table
+    int indent_width = is_pass ? 4 : 0;  // Indent `[PASS]` components
+    int name_width = 50 - indent_width;  // Adjust name column width
+
+    if (time_value.empty()) {
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << component_name << RESET << '\n';
+    } else {
+        float time_float = std::stof(time_value);
+        int time_width = 10;
+
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << std::setw(name_width) << component_name << RESET
+                  << std::right << std::setw(time_width)
+                  << std::fixed << std::setprecision(3) << time_float
+                  << '\n';
+    }
+}
+
+
+// Note: this function is case sensitive to the input string
+void print_time_report(const std::vector<std::string>& vector_of_time_report) {
+    for (const auto& entry : vector_of_time_report) {
+        // check if `Allocator usage of last chunk (MB)` or `Allocator chunks` is present
+        if (entry.find("Allocator usage of last chunk (MB)") != std::string::npos ||
+            entry.find("Allocator chunks") != std::string::npos) {
+            print_one_component(entry);
+        }
+    }
+
+    // Header
+    std::cout << std::string(60, '-') << '\n';
+    std::cout << std::left << std::setw(50) << "Component name"
+              << std::right << std::setw(10) << "Time (ms)" << '\n';
+    std::cout << std::string(60, '-') << '\n';
+
+    for (const auto& entry : vector_of_time_report) {
+        if (entry.find("Allocator usage of last chunk (MB)") == std::string::npos &&
+            entry.find("Allocator chunks") == std::string::npos) {
+            print_one_component(entry);
+        }
+    }
+
+    std::cout << std::string(60, '-') << '\n';
 }
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -409,7 +487,7 @@ int prompt(bool verbose, CompilerOptions &cu)
 
 int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::LocationManager lm;
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -431,7 +509,7 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 
 int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     // Src -> Tokens
     Allocator al(64*1024*1024);
     std::vector<int> toks;
@@ -477,7 +555,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
 
 int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -495,7 +573,11 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
             return visualize_json(r.result, compiler_options.platform);
         }
         std::cout << r.result << std::endl;
-        return 0;
+        if (diagnostics.has_error()) {
+            return 1;
+        } else {
+            return 0;
+        }
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
@@ -504,7 +586,7 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
 
 int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
@@ -530,7 +612,7 @@ int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
 int format(const std::string &infile, bool inplace, bool color, int indent,
     bool indent_unit, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
 
     if (inplace) color = false;
@@ -560,7 +642,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
     bool c_order = (0==array_order.compare("c"));
 
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -618,7 +700,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 [[maybe_unused]] int run_parser_and_semantics(const std::string &infile,
     CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -644,7 +726,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -699,7 +781,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
 int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -724,7 +806,7 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 int emit_c(const std::string &infile,
     LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -759,7 +841,7 @@ int emit_c(const std::string &infile,
 
 int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -782,7 +864,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 }
 
 int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -804,8 +886,9 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     }
 }
 
-int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options,
+                        LCompilers::PassManager &pass_manager) {
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -821,7 +904,6 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     std::cerr << diagnostics.render(lm, compiler_options);
     if (asr.ok) {
         Allocator al(64*1024*1024);
-        LCompilers::PassManager pass_manager;
         compiler_options.po.always_run = true;
         compiler_options.po.run_fun = "f";
         pass_manager.dump_all_passes(al, asr.result, compiler_options.po, diagnostics, lm);
@@ -883,7 +965,7 @@ int handle_mlir(const std::string &infile,
         const std::string &outfile,
         CompilerOptions &compiler_options,
         bool emit_mlir, bool emit_llvm) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -937,7 +1019,7 @@ int handle_mlir(const std::string &infile,
 int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
               CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -962,7 +1044,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
 
 int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -991,19 +1073,19 @@ int compile_src_to_object_file(const std::string &infile,
         bool time_report,
         bool assembly,
         CompilerOptions &compiler_options,
-        LCompilers::PassManager& lpm)
+        LCompilers::PassManager& lpm,
+        bool arg_c = false)
 {
     int time_file_read=0;
     int time_src_to_asr=0;
     int time_save_mod=0;
     int time_opt=0;
-    int time_asr_to_llvm=0;
     int time_llvm_to_bin=0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     auto t2 = std::chrono::high_resolution_clock::now();
-    time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -1018,12 +1100,17 @@ int compile_src_to_object_file(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    if (compiler_options.separate_compilation) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+    }
     LCompilers::diag::Diagnostics diagnostics;
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    t2 = std::chrono::high_resolution_clock::now();
-    time_src_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+
+    time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
@@ -1038,19 +1125,26 @@ int compile_src_to_object_file(const std::string &infile,
         t1 = std::chrono::high_resolution_clock::now();
         int err = save_mod_files(*asr, compiler_options, lm);
         t2 = std::chrono::high_resolution_clock::now();
-        time_save_mod = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_save_mod = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         if (err) return err;
     }
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
-    if (!compiler_options.generate_object_code && !LCompilers::ASRUtils::main_program_present(*asr)
+    if (!(compiler_options.generate_object_code || compiler_options.separate_compilation)
+        && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
         return 0;
+    }
+
+    // if compiler_options.separate_compilation is true, then mark all modules as external
+    // so that they are not compiled again
+    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.separate_compilation && !compiler_options.generate_object_code) {
+        LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
     std::unique_ptr<LCompilers::LLVMModule> m;
@@ -1068,24 +1162,14 @@ int compile_src_to_object_file(const std::string &infile,
         return 1;
 #endif
     }
-    t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
-    t2 = std::chrono::high_resolution_clock::now();
-    time_asr_to_llvm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile, &time_opt);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 5;
-    }
-
-    if (compiler_options.po.fast) {
-        t1 = std::chrono::high_resolution_clock::now();
-        e.opt(*m->m_m);
-        t2 = std::chrono::high_resolution_clock::now();
-        time_opt = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
 
     // LLVM -> Machine code (saves to an object file)
@@ -1095,7 +1179,7 @@ int compile_src_to_object_file(const std::string &infile,
         t1 = std::chrono::high_resolution_clock::now();
         e.save_object_file(*(m->m_m), outfile);
         t2 = std::chrono::high_resolution_clock::now();
-        time_llvm_to_bin = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_llvm_to_bin = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     if(compiler_options.po.enable_gpu_offloading) {
@@ -1125,19 +1209,27 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     if (time_report) {
-        std::cout << "Allocator usage of last chunk (MB): "
-            << fe.get_al().size_current() / (1024. * 1024) << std::endl;
-        std::cout << "Allocator chunks: " << fe.get_al().num_chunks() << std::endl;
-        std::cout << std::endl;
-        std::cout << "Time report:" << std::endl;
-        std::cout << "File reading:" << std::setw(5) << time_file_read << " ms" << std::endl;
-        std::cout << "Src -> ASR:  " << std::setw(5) << time_src_to_asr << " ms" << std::endl;
-        std::cout << "ASR -> mod:  " << std::setw(5) << time_save_mod << " ms" << std::endl;
-        std::cout << "ASR -> LLVM: " << std::setw(5) << time_asr_to_llvm << " ms" << std::endl;
-        std::cout << "LLVM opt:    " << std::setw(5) << time_opt << " ms" << std::endl;
-        std::cout << "LLVM -> BIN: " << std::setw(5) << time_llvm_to_bin << " ms" << std::endl;
-        int total = time_file_read + time_src_to_asr + time_save_mod + time_asr_to_llvm + time_opt + time_llvm_to_bin;
-        std::cout << "Total:       " << std::setw(5) << total << " ms" << std::endl;
+        std::string message = "";
+        message = "Allocator usage of last chunk (MB): " +
+            std::to_string(fe.get_al().size_current() / (1024. * 1024));
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Allocator chunks: " + std::to_string(fe.get_al().num_chunks());
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "File reading: " + std::to_string(time_file_read / 1000) + "." + std::to_string(time_file_read % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Src -> ASR:  " + std::to_string(time_src_to_asr / 1000) + "." + std::to_string(time_src_to_asr % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Time taken by pass: ";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        for (auto it: fe.compiler_options.po.vector_of_time_report) {
+            compiler_options.po.vector_of_time_report.push_back(it);
+        }
+        message = "ASR -> mod:  " + std::to_string(time_save_mod / 1000) + "." + std::to_string(time_save_mod % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM opt:    " + std::to_string(time_opt / 1000) + "." + std::to_string(time_opt % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM -> BIN: " + std::to_string(time_llvm_to_bin / 1000) + "." + std::to_string(time_llvm_to_bin % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
     }
 
     return has_error_w_cc;
@@ -1147,7 +1239,7 @@ int compile_llvm_to_object_file(const std::string& infile,
                                 const std::string& outfile,
                                 CompilerOptions& compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
     std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input, infile);
@@ -1167,7 +1259,7 @@ int compile_to_assembly_file(const std::string &infile,
 
 int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -1207,7 +1299,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        input = read_file(infile);
+        input = read_file_ok(infile);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
@@ -1308,9 +1400,9 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        input = read_file(infile);
+        input = read_file_ok(infile);
         auto t2 = std::chrono::high_resolution_clock::now();
-        time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     // Src -> AST
@@ -1397,7 +1489,7 @@ int compile_to_object_file_cpp(const std::string &infile,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
         CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -1510,7 +1602,7 @@ int compile_to_object_file_c(const std::string &infile,
         LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     // Src -> AST -> ASR
@@ -1610,7 +1702,7 @@ int compile_to_object_file_c(const std::string &infile,
 int compile_to_binary_fortran(const std::string &infile,
         const std::string &outfile,
         CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -2022,16 +2114,17 @@ int link_executable(const std::vector<std::string> &infiles,
     }
 
     auto t2 = std::chrono::high_resolution_clock::now();
-    int time_total = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    int time_total = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     if (time_report) {
-        std::cout << "Linking time:  " << std::setw(5) << time_total << " ms" << std::endl;
+        std::string message = "Linking time:  " + std::to_string(time_total / 1000) + "." + std::to_string(time_total % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
     }
     return 0;
 }
 
 int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::LFortran::CPreprocessor cpp(compiler_options);
     LCompilers::LocationManager lm;
@@ -2178,6 +2271,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 int main_app(int argc, char *argv[]) {
     int dirname_length;
+    auto start_time = std::chrono::high_resolution_clock::now();
     LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
     LCompilers::LFortran::set_exec_path_and_mode(LCompilers::binary_executable_path, dirname_length);
 
@@ -2186,7 +2280,6 @@ int main_app(int argc, char *argv[]) {
 
     std::string rtlib_header_dir = LCompilers::LFortran::get_runtime_library_header_dir();
     Backend backend;
-
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
     LCompilers::PassManager lfortran_pass_manager;
@@ -2221,7 +2314,12 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    lcompilers_unique_ID = parser.opts.compiler_options.generate_object_code ? get_unique_ID() : "";
+    lcompilers_unique_ID = ( parser.opts.compiler_options.generate_object_code || compiler_options.separate_compilation ) ? get_unique_ID() : "";
+    if (parser.opts.compiler_options.generate_object_code) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
+    }
 
     if (opts.arg_version) {
         std::string version = LFORTRAN_VERSION;
@@ -2233,6 +2331,7 @@ int main_app(int argc, char *argv[]) {
 #endif
         return 0;
     }
+    compiler_options.po.time_report = compiler_options.time_report;
 
     if (opts.print_targets) {
 #ifdef HAVE_LFORTRAN_LLVM
@@ -2286,6 +2385,8 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_backend == "llvm") {
         backend = Backend::llvm;
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
     } else if (opts.arg_backend == "c") {
         backend = Backend::c;
     } else if (opts.arg_backend == "cpp") {
@@ -2334,9 +2435,8 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (CLI::NonexistentPath(opts.arg_file).empty()) {
-        throw LCompilers::LCompilersException(
-            "error: no such file or directory: '" + opts.arg_file + "'"
-        );
+        std::cerr << "error: no such file or directory: '" + opts.arg_file + "'" << std::endl;
+        return 1;
     }
 
     std::string outfile;
@@ -2365,8 +2465,9 @@ int main_app(int argc, char *argv[]) {
         outfile = basename.replace_extension(".out").string();
     }
 
+    lfortran_pass_manager.parse_pass_arg(opts.arg_pass, opts.skip_pass);
     if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
-        dump_all_passes(opts.arg_file, compiler_options);
+        dump_all_passes(opts.arg_file, compiler_options, lfortran_pass_manager);
     }
 
     if (opts.arg_E) {
@@ -2452,7 +2553,7 @@ int main_app(int argc, char *argv[]) {
     if (opts.arg_S) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_assembly_file(opts.arg_file, outfile, opts.time_report, compiler_options, lfortran_pass_manager);
+            return compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
@@ -2467,8 +2568,8 @@ int main_app(int argc, char *argv[]) {
     if (opts.arg_c) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_src_to_object_file(opts.arg_file, outfile, opts.time_report, false,
-                compiler_options, lfortran_pass_manager);
+            return compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
+                compiler_options, lfortran_pass_manager, opts.arg_c);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
@@ -2480,9 +2581,9 @@ int main_app(int argc, char *argv[]) {
             return compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
                     true, rtlib_c_header_dir, compiler_options);
         } else if (backend == Backend::x86) {
-            return compile_to_binary_x86(opts.arg_file, outfile, opts.time_report, compiler_options);
+            return compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
-            return compile_to_binary_wasm(opts.arg_file, outfile, opts.time_report, compiler_options);
+            return compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::fortran) {
             return compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
         } else if (backend == Backend::mlir) {
@@ -2508,11 +2609,11 @@ int main_app(int argc, char *argv[]) {
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
-                        opts.time_report, compiler_options);
+                        compiler_options.time_report, compiler_options);
             }
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-                err = compile_src_to_object_file(arg_file, tmp_o, opts.time_report, false,
+                err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
                     compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2528,7 +2629,7 @@ int main_app(int argc, char *argv[]) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
             } else if (backend == Backend::wasm) {
                 err = compile_to_binary_wasm(arg_file, outfile,
-                        opts.time_report, compiler_options);
+                        compiler_options.time_report, compiler_options);
             } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
                 err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
@@ -2561,9 +2662,19 @@ int main_app(int argc, char *argv[]) {
     if (object_files.size() == 0) {
         return err_;
     } else {
-        return err_ + link_executable(object_files, outfile, opts.time_report, runtime_library_dir,
+        int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        if (compiler_options.time_report) {
+            int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
+            compiler_options.po.vector_of_time_report.push_back(message);
+
+            print_time_report(compiler_options.po.vector_of_time_report);
+        }
+
+        return status_code;
     }
 }
 

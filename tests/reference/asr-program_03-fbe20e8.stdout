@@ -29,6 +29,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -47,6 +48,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     add_z
@@ -76,6 +78,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 y)
                                     Public
@@ -110,6 +113,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -128,6 +132,7 @@
                                                                     .false.
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 )
                                                         })
                                                     fun
@@ -171,6 +176,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -189,6 +195,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     apply
@@ -234,6 +241,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 y)
                                     Public
@@ -258,6 +266,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     closuretest

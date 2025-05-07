@@ -39,6 +39,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             empty:
                                 (Variable
@@ -72,6 +73,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             simple:
                                 (Variable
@@ -105,6 +107,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             space_at_end:
                                 (Variable
@@ -138,6 +141,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             space_at_start:
                                 (Variable
@@ -171,6 +175,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             space_in_between:
                                 (Variable
@@ -204,6 +209,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             spaces_with_symbols:
                                 (Variable
@@ -237,6 +243,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     intrinsics_36

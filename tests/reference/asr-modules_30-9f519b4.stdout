@@ -59,6 +59,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -70,6 +71,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 executable_config
                                                     )
                                                     ()
@@ -79,11 +83,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     default_executable
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             7 executable_config
                                         )
                                         (String 1 -1 () PointerString)]
@@ -121,6 +129,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -144,6 +153,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -167,6 +177,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -198,6 +209,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -218,6 +230,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             source_dir:
                                                 (Variable
@@ -238,6 +251,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     executable_config
@@ -245,6 +259,7 @@
                                     [name
                                     source_dir
                                     main]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -329,6 +344,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 package_config_t
                                                     )
                                                     ()
@@ -338,6 +356,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             root:
                                                 (Variable
@@ -356,11 +375,15 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     package_defaults
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 package_config_t
                                         )
                                         (String 1 -1 () PointerString)]
@@ -386,6 +409,9 @@
                                             (Allocatable
                                                 (Array
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         10 1_executable_config
                                                     )
                                                     [(()
@@ -413,6 +439,9 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             10 1_executable_config
                                                         )
                                                         [(()
@@ -426,6 +455,9 @@
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 10 1_executable_config
                                             )
                                             ColMajor
@@ -494,6 +526,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 4 executable_config
                                                             )
                                                             [(()
@@ -508,6 +543,7 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             name:
                                                 (Variable
@@ -528,12 +564,14 @@
                                                     .false.
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     package_config_t
                                     []
                                     [name
                                     executable]
+                                    []
                                     Source
                                     Public
                                     .false.
