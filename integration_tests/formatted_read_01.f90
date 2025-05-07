@@ -7,20 +7,29 @@ program formatted_read_01
   open(unit=10, file="formatted_read_input_01.txt", status="old")
 
   read(unit=10, fmt='(a10)') str1
-  print *, str1
-  print *, len(str1)
+  if (trim(str1) /= "hello") then
+    print *, "Error: str1 should be 'hello'"
+    error stop 1
+  end if
 
   read(unit=10, fmt='(a10)') str2
-  print *, str2
-  print *, len(str2)
+  if (trim(str2) /= "world") then
+    print *, "Error: str2 should be 'world'"
+    error stop 2
+  end if
 
   read(unit=10, fmt='(a10)') str3
-  print *, str3
-  print *, len(str3)
+  if (trim(str3) /= "short") then
+    print *, "Error: str3 should be 'short'"
+    error stop 3
+  end if
 
-  read(unit=10, fmt='(a5)') str1
-  print *, str1
-  print *, len(str1)
+  read(unit=10, fmt='(a5)') str4
+  if (trim(str4) /= "longe     ") then
+    print *, "Error: str4 should be 'longe'"
+    error stop 4
+  end if
 
   close(10)
+  print *, "All tests passed!"
 end program formatted_read_01
