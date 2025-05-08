@@ -77,7 +77,7 @@ program continue_compilation_1
     character(len=100) :: filename
     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
-
+    integer, allocatable :: arr5(:)
 
 
 
@@ -306,4 +306,7 @@ program continue_compilation_1
 
     call logger % add_log_file(filename=filename)
     call logger % add_log_file()
+
+    allocate(arr5, status=q1)
+    allocate(arr5, mold = arr4)
 end program
