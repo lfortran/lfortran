@@ -381,7 +381,7 @@
                                             ()
                                             [(StringConstant
                                                 "Circle: r = "
-                                                (String 1 12 () PointerString)
+                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 5 this)
@@ -391,11 +391,11 @@
                                             )
                                             (StringConstant
                                                 " area = "
-                                                (String 1 8 () PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 5 area)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

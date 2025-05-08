@@ -14,7 +14,7 @@
                     [(Print
                         (StringConstant
                             "running modules_27 program"
-                            (String 1 26 () PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )]
                 ),

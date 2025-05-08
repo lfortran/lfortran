@@ -94,11 +94,11 @@
                                             ()
                                             [(StringConstant
                                                 "priv = "
-                                                (String 1 7 () PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 3 a)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )
@@ -107,11 +107,11 @@
                                             ()
                                             [(StringConstant
                                                 "publ = "
-                                                (String 1 7 () PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 3 b)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )

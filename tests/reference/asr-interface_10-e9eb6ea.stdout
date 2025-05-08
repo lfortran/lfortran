@@ -46,7 +46,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -65,7 +65,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -82,7 +82,7 @@
                         (Var 4 x)
                         (StringConstant
                             "A"
-                            (String 1 1 () PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -124,7 +124,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -143,7 +143,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -156,8 +156,8 @@
                                         })
                                     identity
                                     (FunctionType
-                                        [(String 1 1 () PointerString)
-                                        (String 1 -1 () PointerString)]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 () .false. .false. PointerString)]
                                         ()
                                         Source
                                         Implementation

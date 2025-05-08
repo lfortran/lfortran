@@ -1234,7 +1234,7 @@
                                             ()
                                             [(Var 9 y)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

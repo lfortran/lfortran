@@ -83,7 +83,7 @@
                                                     Default
                                                     (Pointer
                                                         (Array
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -118,7 +118,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -134,7 +134,7 @@
                                     (FunctionType
                                         []
                                         (Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () .false. .true. DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -156,7 +156,7 @@
                                             2 f_string
                                             [((Var 19 c_tempfile))]
                                             (Allocatable
-                                                (String 1 -2 () DescriptorString)
+                                                (String 1 () .false. .true. DescriptorString)
                                             )
                                             ()
                                             ()
@@ -233,7 +233,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -289,7 +289,7 @@
                                                     2 f_string
                                                     [((Var 18 dir_entry_c))]
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     ()
@@ -469,7 +469,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -485,7 +485,7 @@
                                     (FunctionType
                                         [(CPtr)]
                                         (Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () .false. .true. DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -515,28 +515,28 @@
                                                     ()
                                                     ()
                                                 ))]
-                                                (String 1 -3 (FunctionCall
+                                                (String 1 (FunctionCall
                                                     6 c_strlen
                                                     ()
                                                     [((Var 6 cptr))]
                                                     (Integer 8)
                                                     ()
                                                     ()
-                                                ) PointerString)
+                                                ) .false. .false. PointerString)
                                                 ()
                                                 ()
                                             )
                                             PointerString
                                             DescriptorString
                                             (Allocatable
-                                                (String 1 -3 (FunctionCall
+                                                (String 1 (FunctionCall
                                                     6 c_strlen
                                                     ()
                                                     [((Var 6 cptr))]
                                                     (Integer 8)
                                                     ()
                                                     ()
-                                                ) DescriptorString)
+                                                ) .false. .false. DescriptorString)
                                             )
                                             ()
                                         )
@@ -601,7 +601,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -3 (Var 8 n) PointerString)
+                                                    (String 1 (Var 8 n) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -616,11 +616,11 @@
                                     (FunctionType
                                         [(CPtr)
                                         (Integer 8)]
-                                        (String 1 -3 (FunctionParam
+                                        (String 1 (FunctionParam
                                             1
                                             (Integer 8)
                                             ()
-                                        ) PointerString)
+                                        ) .false. .false. PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -657,7 +657,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 1 () PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -681,7 +681,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -696,13 +696,13 @@
                                     f_string~genericprocedure
                                     (FunctionType
                                         [(Array
-                                            (String 1 1 () PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )]
                                         (Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () .false. .true. DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -739,7 +739,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source

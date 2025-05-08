@@ -236,7 +236,7 @@
                                     [(Print
                                         (StringConstant
                                             "Calling integer_add_subrout"
-                                            (String 1 27 () PointerString)
+                                            (String 1 (IntegerConstant 27 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )
                                     (Assignment
@@ -441,7 +441,7 @@
                                     [(Print
                                         (StringConstant
                                             "Calling real_add_subrout"
-                                            (String 1 24 () PointerString)
+                                            (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )
                                     (Assignment
@@ -826,7 +826,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -896,7 +896,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )

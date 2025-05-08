@@ -40,7 +40,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -59,7 +59,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -79,7 +79,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -3 (IntrinsicElementalFunction
+                                                    (String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(Var 3 length)
                                                         (StringLen
@@ -87,7 +87,7 @@
                                                                 StringTrim
                                                                 [(Var 3 line)]
                                                                 0
-                                                                (String 1 -1 () PointerString)
+                                                                (String 1 () .true. .false. PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -96,7 +96,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) PointerString)
+                                                    ) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -109,10 +109,35 @@
                                         })
                                     atleast
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)
+                                        [(String 1 () .true. .false. PointerString)
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)]
-                                        (String 1 1 () PointerString)
+                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 (IntrinsicElementalFunction
+                                            Max
+                                            [(FunctionParam
+                                                1
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (StringLen
+                                                (IntrinsicElementalFunction
+                                                    StringTrim
+                                                    [(FunctionParam
+                                                        0
+                                                        (String 1 () .true. .false. PointerString)
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (String 1 () .true. .false. PointerString)
+                                                    ()
+                                                )
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        ) .false. .false. PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -165,10 +190,10 @@
                                                         ()
                                                     )]
                                                     0
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                 )
-                                                (String 1 -1 () PointerString)
+                                                (String 1 () .false. .false. PointerString)
                                                 ()
                                             )
                                             ()
@@ -201,7 +226,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -241,7 +266,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 () .false. .true. PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -293,7 +318,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 () .false. .true. PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -338,7 +363,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 () .false. .true. PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -356,7 +381,7 @@
                                         })
                                     print_dictionary
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)
+                                        [(String 1 () .true. .false. PointerString)
                                         (Logical 4)]
                                         ()
                                         Source
@@ -382,14 +407,14 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(a,1x,a,1x,a,1x,a)"
-                                                (String 1 18 () PointerString)
+                                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             [(FunctionCall
                                                 2 atleast
                                                 ()
                                                 [((StringConstant
                                                     "KEYWORD"
-                                                    (String 1 7 () PointerString)
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                                 ))
                                                 ((IntrinsicElementalFunction
                                                     Max
@@ -405,20 +430,20 @@
                                                                 ()
                                                             )
                                                             ())]
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 () .false. .true. PointerString)
                                                             ColMajor
                                                             ()
                                                         )
                                                         (Integer 4)
-                                                        (IntegerConstant -2 (Integer 4) Decimal)
+                                                        ()
                                                     )
                                                     (IntegerConstant 8 (Integer 4) Decimal)]
                                                     0
                                                     (Integer 4)
-                                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                                    ()
                                                 ))
                                                 (())]
-                                                (String 1 -3 (IntrinsicElementalFunction
+                                                (String 1 (IntrinsicElementalFunction
                                                     Max
                                                     [(IntrinsicElementalFunction
                                                         Max
@@ -434,27 +459,27 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (String 1 -2 () PointerString)
+                                                                (String 1 () .false. .true. PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
                                                             (Integer 4)
-                                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
-                                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                                        ()
                                                     )
                                                     (StringLen
                                                         (IntrinsicElementalFunction
                                                             StringTrim
                                                             [(StringConstant
                                                                 "KEYWORD"
-                                                                (String 1 7 () PointerString)
+                                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                                             )]
                                                             0
-                                                            (String 1 -1 () PointerString)
+                                                            (String 1 () .true. .false. PointerString)
                                                             ()
                                                         )
                                                         (Integer 4)
@@ -463,24 +488,24 @@
                                                     0
                                                     (Integer 4)
                                                     ()
-                                                ) PointerString)
+                                                ) .false. .false. PointerString)
                                                 ()
                                                 ()
                                             )
                                             (StringConstant
                                                 "SHORT"
-                                                (String 1 5 () PointerString)
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (StringConstant
                                                 "PRESENT"
-                                                (String 1 7 () PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (StringConstant
                                                 "VALUE"
-                                                (String 1 5 () PointerString)
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                                             )]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )]
                                         ()
@@ -497,7 +522,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(*(a,1x,a5,1x,l1,8x,\"[\",a,\"]\",/))"
-                                                (String 1 33 () PointerString)
+                                                (String 1 (IntegerConstant 33 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             [(ImpliedDoLoop
                                                 [(FunctionCall
@@ -508,7 +533,7 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (String 1 -2 () PointerString)
+                                                        (String 1 () .false. .true. PointerString)
                                                         ColMajor
                                                         ()
                                                     ))
@@ -526,20 +551,20 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (String 1 -2 () PointerString)
+                                                                (String 1 () .false. .true. PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
                                                             (Integer 4)
-                                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
-                                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                                        ()
                                                     ))
                                                     (())]
-                                                    (String 1 -3 (IntrinsicElementalFunction
+                                                    (String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
@@ -555,17 +580,17 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (String 1 -2 () PointerString)
+                                                                    (String 1 () .false. .true. PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
                                                                 (Integer 4)
-                                                                (IntegerConstant -2 (Integer 4) Decimal)
+                                                                ()
                                                             )
                                                             (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
-                                                            (IntegerConstant 8 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (StringLen
                                                             (IntrinsicElementalFunction
@@ -575,12 +600,12 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (String 1 -2 () PointerString)
+                                                                    (String 1 () .false. .true. PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )]
                                                                 0
-                                                                (String 1 -1 () PointerString)
+                                                                (String 1 () .true. .false. PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -589,7 +614,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) PointerString)
+                                                    ) .false. .false. PointerString)
                                                     ()
                                                     ()
                                                 )
@@ -598,7 +623,7 @@
                                                     [(()
                                                     (Var 4 i)
                                                     ())]
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 () .false. .true. PointerString)
                                                     ColMajor
                                                     ()
                                                 )
@@ -617,14 +642,14 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (String 1 -2 () PointerString)
+                                                        (String 1 () .false. .true. PointerString)
                                                         ColMajor
                                                         ()
                                                     )
                                                     ()
                                                     ()
                                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 () .false. .true. PointerString)
                                                     ()
                                                 )]
                                                 (Var 4 i)
@@ -637,7 +662,7 @@
                                                 )
                                                 ()
                                                 (Tuple
-                                                    [(String 1 -3 (IntrinsicElementalFunction
+                                                    [(String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
@@ -653,17 +678,17 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (String 1 -2 () PointerString)
+                                                                    (String 1 () .false. .true. PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
                                                                 (Integer 4)
-                                                                (IntegerConstant -2 (Integer 4) Decimal)
+                                                                ()
                                                             )
                                                             (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
-                                                            (IntegerConstant 8 (Integer 4) Decimal)
+                                                            ()
                                                         )
                                                         (StringLen
                                                             (IntrinsicElementalFunction
@@ -673,12 +698,12 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (String 1 -2 () PointerString)
+                                                                    (String 1 () .false. .true. PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )]
                                                                 0
-                                                                (String 1 -1 () PointerString)
+                                                                (String 1 () .true. .false. PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -687,15 +712,15 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) PointerString)
-                                                    (String 1 -2 () PointerString)
+                                                    ) .false. .false. PointerString)
+                                                    (String 1 () .false. .true. PointerString)
                                                     (Logical 4)
-                                                    (String 1 -2 () PointerString)]
+                                                    (String 1 () .false. .true. PointerString)]
                                                 )
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )]
                                         ()

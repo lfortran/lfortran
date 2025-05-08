@@ -804,7 +804,7 @@
                             ()
                             [(Var 2 y)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -826,7 +826,7 @@
                             ()
                             [(Var 2 q)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -957,7 +957,7 @@
                             ()
                             [(Var 2 c)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]
