@@ -4235,7 +4235,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, char* fmt, int32_t no_of_args, ...)
 {
-    int width = -1; // default is -1 is length not mentioned
+    int width = -1; // default is -1, if length not mentioned
 
     // Supported format are (a) and (aw)
     if (streql(fmt, "(a)")) {
@@ -4297,19 +4297,38 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             *chunk = input_length;
 
             char *output = (char*)malloc(n + 1);
-            strncpy(output, buffer, (n < width) ? n : width);
-            // if input length is less than width
-            if (input_length < width) {
-                for (int i = input_length; i < n; ++i) {
-                    output[i] = SPACE;
+            memset(output, SPACE, n); // Initialize with spaces
+            output[n] = '\0';
+            
+            if (width > 0) {
+                char *padded_buffer = (char*)malloc(width + 1);
+                strncpy(padded_buffer, buffer, input_length);
+                for (size_t i = input_length; i < width; ++i) {
+                    padded_buffer[i] = SPACE;
                 }
-            } else if (n > width) {
-                // if string length is greater than width
-                for (int i = width; i < n; ++i) {
-                    output[i] = SPACE;
+                padded_buffer[width] = '\0';
+
+                if (width > n) {
+                    if (input_length >= width) {
+                        strncpy(output, padded_buffer + (width - n), n);
+                    } else if (input_length >= n) {
+                        strncpy(output, buffer + (input_length - n), n);
+                    } else {
+                        strncpy(output, buffer, input_length);
+                    }
+                } else { // width <= n
+                    strncpy(output, padded_buffer, width);
+                    for(size_t i = width; i < n; ++i) {
+                        output[i] = SPACE;
+                    }
+                    output[n] = '\0';
                 }
+                free(padded_buffer);
+            } else { // For (a) format (width == n)
+                strncpy(output, buffer, n);
             }
-            strncpy(*arg, output, n);
+
+            strncpy(*arg, output, n);         
 
             free(output);
             va_end(args);
@@ -4346,16 +4365,36 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             *chunk = input_length;
 
             char *output = (char*)malloc(n + 1);
-            strncpy(output, buffer, (n < width) ? n : width);
-            if (input_length < width) {
-                for (int i = input_length; i < n; ++i) {
-                    output[i] = SPACE;
+            memset(output, SPACE, n);
+            output[n] = '\0';
+
+            if (width > 0) { // For (aw) format
+                char padded_buffer[width + 1];
+                strncpy(padded_buffer, buffer, width);
+                for (size_t i = input_length; i < width; ++i) {
+                    padded_buffer[i] = SPACE;
                 }
-            } else if (n > width) {
-                for (int i = width; i < n; ++i) {
-                    output[i] = SPACE;
+                padded_buffer[width] = '\0';
+
+                if (width > n) {
+                    if (input_length >= width) {
+                        strncpy(output, padded_buffer + (width - n), n);
+                    } else if (input_length >= n) {
+                        strncpy(output, buffer + (input_length - n), n);
+                    } else {
+                        strncpy(output, buffer, input_length);
+                    }
+                } else { // width <= n
+                    strncpy(output, padded_buffer, width);
+                    for(size_t i = width; i < n; ++i) {
+                        output[i] = SPACE;
+                    }
+                    output[n] = '\0';
                 }
+            } else { // For (a) format
+                strncpy(output, buffer, n);
             }
+            
             strncpy(*arg, output, n);
 
             free(output);

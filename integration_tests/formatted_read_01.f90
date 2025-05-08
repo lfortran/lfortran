@@ -19,8 +19,8 @@ program formatted_read_01
   end if
 
   read(unit=10, fmt='(a10)') str3
-  if (trim(str3) /= "short") then
-    print *, "Error: str3 should be 'short'"
+  if (trim(str3) /= "horty") then
+    print *, "Error: str3 should be 'horty'"
     error stop 3
   end if
 
