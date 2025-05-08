@@ -255,7 +255,7 @@
                             (Var 2 i32)
                             (Var 2 i64)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

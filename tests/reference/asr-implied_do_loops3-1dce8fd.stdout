@@ -276,7 +276,7 @@
                     [(Print
                         (StringConstant
                             "Loop 1"
-                            (String 1 6 () PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -317,14 +317,14 @@
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop 2"
-                            (String 1 6 () PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -380,14 +380,14 @@
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop 3"
-                            (String 1 6 () PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -443,14 +443,14 @@
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop4"
-                            (String 1 5 () PointerString)
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -512,14 +512,14 @@
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop5"
-                            (String 1 5 () PointerString)
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -581,7 +581,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

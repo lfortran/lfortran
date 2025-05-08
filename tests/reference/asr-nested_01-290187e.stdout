@@ -127,7 +127,7 @@
                                                     [(Print
                                                         (StringConstant
                                                             "d()"
-                                                            (String 1 3 () PointerString)
+                                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                                         )
                                                     )
                                                     (Assignment
@@ -182,7 +182,7 @@
                                     [(Print
                                         (StringConstant
                                             "b()"
-                                            (String 1 3 () PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )
                                     (Assignment

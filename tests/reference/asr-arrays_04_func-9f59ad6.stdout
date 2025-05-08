@@ -95,7 +95,7 @@
                                     [(Print
                                         (StringConstant
                                             "abs"
-                                            (String 1 3 () PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )
                                     (If
@@ -249,7 +249,7 @@
                                     [(Print
                                         (StringConstant
                                             "sum"
-                                            (String 1 3 () PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )
                                     (Assignment

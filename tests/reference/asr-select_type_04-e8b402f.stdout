@@ -182,7 +182,7 @@
                                     [(Print
                                         (StringConstant
                                             "inside check_table"
-                                            (String 1 18 () PointerString)
+                                            (String 1 (IntegerConstant 18 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )]
                                     ()
@@ -648,7 +648,7 @@
                     [(Print
                         (StringConstant
                             "running select_type4 main program"
-                            (String 1 33 () PointerString)
+                            (String 1 (IntegerConstant 33 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )]
                 )

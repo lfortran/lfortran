@@ -583,7 +583,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (String 1 1 () PointerString)
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -602,7 +602,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (String 1 1 () PointerString)
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -615,8 +615,8 @@
                                                         })
                                                     gemm
                                                     (FunctionType
-                                                        [(String 1 1 () PointerString)
-                                                        (String 1 1 () PointerString)
+                                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         (Integer 4)
                                                         (Integer 4)
                                                         (Integer 4)
@@ -983,11 +983,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((Var 10 m))
                                                         ((Var 10 n))
@@ -1403,7 +1403,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (String 1 1 () PointerString)
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -1422,7 +1422,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (String 1 1 () PointerString)
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -1435,8 +1435,8 @@
                                                         })
                                                     gemm
                                                     (FunctionType
-                                                        [(String 1 1 () PointerString)
-                                                        (String 1 1 () PointerString)
+                                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         (Integer 4)
                                                         (Integer 4)
                                                         (Integer 4)
@@ -1993,11 +1993,11 @@
                                         ()
                                         [((StringConstant
                                             "n"
-                                            (String 1 1 () PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                         ))
                                         ((StringConstant
                                             "n"
-                                            (String 1 1 () PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                         ))
                                         ((Var 15 m))
                                         ((Var 15 n))
@@ -2359,7 +2359,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2378,7 +2378,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2391,8 +2391,8 @@
                                         })
                                     my_gemm_double
                                     (FunctionType
-                                        [(String 1 1 () PointerString)
-                                        (String 1 1 () PointerString)
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
@@ -2714,7 +2714,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2733,7 +2733,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2746,8 +2746,8 @@
                                         })
                                     my_gemm_real
                                     (FunctionType
-                                        [(String 1 1 () PointerString)
-                                        (String 1 1 () PointerString)
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
@@ -3156,7 +3156,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (String 1 1 () PointerString)
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -3175,7 +3175,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (String 1 1 () PointerString)
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -3188,8 +3188,8 @@
                                                         })
                                                     gemm
                                                     (FunctionType
-                                                        [(String 1 1 () PointerString)
-                                                        (String 1 1 () PointerString)
+                                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         (Integer 4)
                                                         (Integer 4)
                                                         (Integer 4)
@@ -3575,11 +3575,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((Var 19 m))
                                                         ((Var 19 n))
@@ -3985,11 +3985,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((Var 24 m))
                                                         ((Var 24 n))
@@ -4342,11 +4342,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((Var 25 m))
                                                         ((Var 25 n))
@@ -4883,11 +4883,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((Var 22 m))
                                                         ((Var 22 n))
@@ -5240,11 +5240,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (String 1 1 () PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         ))
                                                         ((Var 21 m))
                                                         ((Var 21 n))

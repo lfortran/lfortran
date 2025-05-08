@@ -105,7 +105,10 @@ class ASRBuilder {
     #define complex32    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4))
     #define complex64    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8))
     #define logical      ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))
-    #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
+    #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,\
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
+                            al, loc, x, int32)),false, false,\
+                            ASR::string_physical_typeType::PointerString))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {

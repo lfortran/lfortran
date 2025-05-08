@@ -121,7 +121,7 @@
                                     [(Print
                                         (StringConstant
                                             "Hello World"
-                                            (String 1 11 () PointerString)
+                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )]
                                     ()

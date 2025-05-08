@@ -232,7 +232,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "base type: component value: "
-                                                                (String 1 28 () PointerString)
+                                                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) .false. .false. PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -241,7 +241,7 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (String -1 0 () PointerString)
+                                                            (String 1 () .false. .false. CString)
                                                             ()
                                                         )
                                                     )
@@ -296,7 +296,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "child type: component values: "
-                                                                (String 1 30 () PointerString)
+                                                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) .false. .false. PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -311,7 +311,7 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (String -1 0 () PointerString)
+                                                            (String 1 () .false. .false. CString)
                                                             ()
                                                         )
                                                     )
@@ -428,7 +428,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -448,7 +448,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )

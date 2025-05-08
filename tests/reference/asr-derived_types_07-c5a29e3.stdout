@@ -80,7 +80,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -140,7 +140,7 @@
                                         [(ClassType
                                             9 toml_vector
                                         )
-                                        (String 1 -1 () PointerString)
+                                        (String 1 () .true. .false. PointerString)
                                         (Pointer
                                             (ClassType
                                                 9 toml_value
@@ -688,14 +688,25 @@
                                                     (Var 8 self)
                                                     8 1_toml_value_key
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 8 self)
+                                                            8 1_toml_value_key
+                                                            (Allocatable
+                                                                (String 1 () .false. .true. DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             )]
@@ -708,7 +719,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
-                                                    (String 1 -2 () DescriptorString)
+                                                    (String 1 () .false. .true. DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -723,14 +734,25 @@
                                                     (Var 8 self)
                                                     8 1_toml_keyval_raw
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 8 self)
+                                                            8 1_toml_keyval_raw
+                                                            (Allocatable
+                                                                (String 1 () .false. .true. DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             )]
@@ -743,7 +765,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
-                                                    (String 1 -2 () DescriptorString)
+                                                    (String 1 () .false. .true. DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -782,7 +804,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -904,7 +926,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -960,7 +982,7 @@
                                         [(ClassType
                                             2 toml_value
                                         )
-                                        (String 1 -1 () PointerString)]
+                                        (String 1 () .true. .false. PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -984,14 +1006,25 @@
                                                     (Var 5 self)
                                                     5 1_toml_value_key
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 self)
+                                                            5 1_toml_value_key
+                                                            (Allocatable
+                                                                (String 1 () .false. .true. DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             )]
@@ -1009,14 +1042,25 @@
                                                         (Var 5 self)
                                                         5 1_toml_value_key
                                                         (Allocatable
-                                                            (String 1 -2 () DescriptorString)
+                                                            (String 1 () .false. .true. DescriptorString)
                                                         )
                                                         ()
                                                     )
                                                     DescriptorString
                                                     PointerString
                                                     (Allocatable
-                                                        (String 1 -2 () PointerString)
+                                                        (String 1 (StringLen
+                                                            (StructInstanceMember
+                                                                (Var 5 self)
+                                                                5 1_toml_value_key
+                                                                (Allocatable
+                                                                    (String 1 () .false. .true. DescriptorString)
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        ) .false. .false. PointerString)
                                                     )
                                                     ()
                                                 )
@@ -1068,7 +1112,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source

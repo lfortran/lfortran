@@ -94,7 +94,7 @@
                             [(Var 2 t1)
                             (Var 2 t2)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -120,7 +120,7 @@
                             ()
                             [(Var 2 p1)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )

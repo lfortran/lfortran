@@ -3595,7 +3595,7 @@
                                             ()
                                             [(Var 15 xi)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )
@@ -3604,7 +3604,7 @@
                                             ()
                                             [(Var 15 xr)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )
@@ -3613,7 +3613,7 @@
                                             ()
                                             [(Var 15 xm)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

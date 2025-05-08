@@ -16,11 +16,11 @@
                         (IntegerConstant 10 (Integer 4) Decimal)
                         (StringConstant
                             "file_01_data.txt"
-                            (String 1 16 () PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         (StringConstant
                             "old"
-                            (String 1 3 () PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         ()

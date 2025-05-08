@@ -353,7 +353,7 @@
                                             ()
                                             [(StringConstant
                                                 "point: "
-                                                (String 1 7 () PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 7 an)
@@ -368,7 +368,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]
@@ -442,7 +442,7 @@
                                             ()
                                             [(StringConstant
                                                 "color_point: "
-                                                (String 1 13 () PointerString)
+                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 8 an)
@@ -463,7 +463,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

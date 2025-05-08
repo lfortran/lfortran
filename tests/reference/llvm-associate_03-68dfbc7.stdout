@@ -20,7 +20,7 @@ define i32 @main(i32 %0, i8** %1) {
   %i1 = alloca i32, align 4
   %p1 = alloca i32*, align 8
   store i32* null, i32** %p1, align 8
-  %2 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32* @associate_03.t1, i32* @associate_03.t2)
+  %2 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* @associate_03.t1, i32* @associate_03.t2)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   %3 = load i32, i32* @associate_03.t1, align 4
   %4 = load i32, i32* @associate_03.t2, align 4
@@ -37,7 +37,7 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %then
   %6 = load i32*, i32** %p1, align 8
-  %7 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32* %6)
+  %7 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i32* %6)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   %8 = load i32*, i32** %p1, align 8
   %9 = load i32, i32* %8, align 4
@@ -65,7 +65,7 @@ return:                                           ; preds = %ifcont4
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

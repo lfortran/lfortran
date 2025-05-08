@@ -333,10 +333,11 @@
                                                             "type": {
                                                                 "node": "String",
                                                                 "fields": {
-                                                                    "kind": -1,
-                                                                    "len": 0,
-                                                                    "len_expr": [],
-                                                                    "physical_type": "PointerString"
+                                                                    "kind": 1,
+                                                                    "len": [],
+                                                                    "is_assumed_length": false,
+                                                                    "is_deferred_length": false,
+                                                                    "physical_type": "CString"
                                                                 },
                                                                 "loc": {
                                                                     "first": 98,
