@@ -1164,7 +1164,43 @@
                                         )
                                     )
                                     (Assignment
-                                        (Var 5 indexarray)
+                                        (ArraySection
+                                            (Var 5 indexarray)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (ArrayBound
+                                                (ArrayConstructor
+                                                    [(ImpliedDoLoop
+                                                        [(Var 5 i)]
+                                                        (Var 5 i)
+                                                        (Var 5 low)
+                                                        (Var 5 high)
+                                                        ()
+                                                        (Integer 4)
+                                                        ()
+                                                    )]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    ColMajor
+                                                )
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                UBound
+                                                ()
+                                            )
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        )
                                         (ArrayConstructor
                                             [(ImpliedDoLoop
                                                 [(Var 5 i)]

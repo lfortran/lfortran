@@ -1657,13 +1657,31 @@ public:
                             }
                         }
                     }
+                } 
+                ASR::stmt_t* assign = nullptr;
+                int n_dims = alloc_args_vec.p[i].n_dims;
+                if (n_dims == 0 || (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type))) {
+                    assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, alloc_args_vec.p[i].m_a->base.loc,
+                        alloc_args_vec.p[i].m_a, source, nullptr, compiler_options.po.realloc_lhs));
+                } else {
+                    Vec<ASR::array_index_t> result_indices; result_indices.reserve(al, n_dims);
+                    for (int i=0; i<n_dims; i++) {
+                        ASR::array_index_t result_index;
+                        result_index.loc = alloc_args_vec.p[i].loc;
+                        result_index.m_left = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, alloc_args_vec.p[i].loc, 1, int_type));
+                        result_index.m_right = PassUtils::get_bound(source, i+1, "ubound", al);
+                        result_index.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, alloc_args_vec.p[i].loc, 1, int_type));
+                        result_indices.push_back(al, result_index);
+                    }
+                    ASR::expr_t* result_section = nullptr;
+                    ASR::ttype_t* result_section_type = ASRUtils::create_array_type_with_empty_dims(
+                        al, n_dims, ASRUtils::extract_type(var_type));
+                    result_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, alloc_args_vec.p[i].loc, alloc_args_vec.p[i].m_a,
+                            result_indices.p, result_indices.size(), result_section_type, nullptr));
+                    
+                    assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, alloc_args_vec.p[i].loc,
+                        result_section, source, nullptr, compiler_options.po.realloc_lhs));
                 }
-                if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
-                    ASRUtils::make_ArrayBroadcast_t_util(
-                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
-                }
-                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr, compiler_options.po.realloc_lhs));
                 current_body->push_back(al, assign);
             }
             tmp = nullptr;   // Doing it nullptr as we have already pushed allocate
