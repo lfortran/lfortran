@@ -40,7 +40,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -59,11 +59,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -3 (StringLen
+                                                    (String 1 (StringLen
                                                         (Var 3 string)
                                                         (Integer 4)
                                                         ()
-                                                    ) PointerString)
+                                                    ) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -113,7 +113,7 @@
                                         })
                                     decodebase
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)]
+                                        [(String 1 () .true. .false. PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation

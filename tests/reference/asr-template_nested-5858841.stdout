@@ -990,7 +990,7 @@
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (String 1 14 () PointerString)
+                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (FunctionCall
                                                 10 add_real
@@ -1002,7 +1002,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )

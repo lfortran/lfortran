@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -53,7 +53,7 @@
                                         })
                                     f90_assert
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)
+                                        [(String 1 () .true. .false. PointerString)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -77,22 +77,22 @@
                                                 (StringConcat
                                                     (StringConstant
                                                         "Assertion failed at "
-                                                        (String 1 20 () PointerString)
+                                                        (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                     (Var 4 file)
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .false. .false. PointerString)
                                                     ()
                                                 )
                                                 (StringConstant
                                                     ":"
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                 )
-                                                (String 1 -1 () PointerString)
+                                                (String 1 () .false. .false. PointerString)
                                                 ()
                                             )
                                             (Var 4 line)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )
@@ -225,7 +225,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (String 1 24 () PointerString)
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
                             ))
                             ((IntegerConstant 7 (Integer 4) Decimal))]
                             ()
@@ -255,7 +255,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (String 1 24 () PointerString)
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
                             ))
                             ((IntegerConstant 8 (Integer 4) Decimal))]
                             ()
@@ -297,7 +297,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (String 1 24 () PointerString)
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
                             ))
                             ((IntegerConstant 9 (Integer 4) Decimal))]
                             ()
@@ -323,7 +323,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (String 1 24 () PointerString)
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
                             ))
                             ((IntegerConstant 11 (Integer 4) Decimal))]
                             ()
@@ -353,7 +353,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (String 1 24 () PointerString)
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
                             ))
                             ((IntegerConstant 13 (Integer 4) Decimal))]
                             ()

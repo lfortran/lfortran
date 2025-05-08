@@ -189,7 +189,7 @@
                                             ()
                                             [(Var 3 res)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )
@@ -205,7 +205,7 @@
                                             ()
                                             [(Var 3 res)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )
@@ -232,7 +232,7 @@
                                             ()
                                             [(Var 3 res)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

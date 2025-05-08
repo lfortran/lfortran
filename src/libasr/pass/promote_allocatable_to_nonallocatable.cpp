@@ -137,10 +137,18 @@ class PromoteAllocatableToNonAllocatable:
                         scope2var[current_scope].end() ) {
                     ASR::Variable_t* alloc_variable = ASR::down_cast<ASR::Variable_t>(
                         ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);
-                    alloc_variable->m_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
+                    ASR::ttype_t* array_type /*Array's type*/  = ASRUtils::duplicate_type(al,
                         ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_allocatable(alloc_variable->m_type)),
-                        alloc_arg.m_dims, alloc_arg.n_dims);
+                            ASRUtils::type_get_past_allocatable(alloc_variable->m_type)));
+                        // Set length of String type -> e.g. `character(:), allocatable :: arr(:)`
+                        if(ASRUtils::is_character(*array_type) && 
+                            ASR::down_cast<ASR::String_t>(array_type)->m_is_deferred_length){
+                            ASR::String_t* str = ASR::down_cast<ASR::String_t>(array_type);
+                            str->m_is_deferred_length = false;
+                            str->m_len = alloc_arg.m_len_expr;
+                        }
+                    alloc_variable->m_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
+                    array_type, alloc_arg.m_dims, alloc_arg.n_dims);
                 } else if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ||
                            ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ) {
                     x_args.push_back(al, alloc_arg);

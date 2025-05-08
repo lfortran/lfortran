@@ -684,7 +684,7 @@ intrinsic_funcs_args = {
     "NewLine": [
         {
             "args": [("char",)],
-            "return": "character(-1)"
+            "return": "character(1)"
         }
     ],
     "Range": [

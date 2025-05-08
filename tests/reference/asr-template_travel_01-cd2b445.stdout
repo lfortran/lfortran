@@ -706,11 +706,11 @@
                                             ()
                                             [(StringConstant
                                                 "s1="
-                                                (String 1 3 () PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 19 s1)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )
@@ -719,11 +719,11 @@
                                             ()
                                             [(StringConstant
                                                 "s2="
-                                                (String 1 3 () PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 19 s2)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

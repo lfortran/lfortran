@@ -59,7 +59,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 6 () PointerString)
+                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     BindC
                                                     Public
@@ -91,7 +91,7 @@
                                         })
                                     prinf
                                     (FunctionType
-                                        [(String 1 6 () PointerString)
+                                        [(String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                                         (Integer 4)]
                                         ()
                                         BindC
@@ -144,7 +144,7 @@
                         ()
                         [((StringConstant
                             "lw = *"
-                            (String 1 6 () PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                         ))
                         ((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
@@ -154,7 +154,7 @@
                         ()
                         [((StringConstant
                             "16m+70 = *"
-                            (String 1 10 () PointerString)
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                         ))
                         ((IntegerConstant 1 (Integer 4) Decimal))]
                         ()

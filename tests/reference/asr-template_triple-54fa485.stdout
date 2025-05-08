@@ -2235,16 +2235,16 @@
                                             ()
                                             [(StringConstant
                                                 "tal = "
-                                                (String 1 6 () PointerString)
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 25 tal)
                                             (StringConstant
                                                 " tar = "
-                                                (String 1 7 () PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 25 tar)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]
@@ -2530,16 +2530,16 @@
                                             ()
                                             [(StringConstant
                                                 "tmaxl ="
-                                                (String 1 7 () PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 31 tmaxl)
                                             (StringConstant
                                                 " tmaxr ="
-                                                (String 1 8 () PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 31 tmaxr)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]
@@ -2825,16 +2825,16 @@
                                             ()
                                             [(StringConstant
                                                 "tml = "
-                                                (String 1 6 () PointerString)
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 28 tml)
                                             (StringConstant
                                                 " tmr = "
-                                                (String 1 7 () PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 28 tmr)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

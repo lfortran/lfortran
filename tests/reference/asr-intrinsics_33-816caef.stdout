@@ -16,35 +16,35 @@
                             (StringConcat
                                 (StringConstant
                                     "This is record 1."
-                                    (String 1 17 () PointerString)
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                                 (TypeInquiry
                                     NewLine
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     (StringConstant
                                         "A"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
-                                    (String 1 -1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     (StringConstant
                                         "\n"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                 )
-                                (String 1 -1 () PointerString)
+                                (String 1 (IntegerConstant 18 (Integer 8) Decimal) .false. .false. PointerString)
                                 (StringConstant
                                     "This is record 1.\n"
-                                    (String 1 18 () PointerString)
+                                    (String 1 (IntegerConstant 18 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )
                             (StringConstant
                                 "This is record 2."
-                                (String 1 17 () PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
                             )
-                            (String 1 -1 () PointerString)
+                            (String 1 (IntegerConstant 35 (Integer 8) Decimal) .false. .false. PointerString)
                             (StringConstant
                                 "This is record 1.\nThis is record 2."
-                                (String 1 35 () PointerString)
+                                (String 1 (IntegerConstant 35 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )
                     )]

@@ -410,13 +410,13 @@
                         [(Print
                             (StringConstant
                                 "ap == bp"
-                                (String 1 8 () PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "ap /= bp"
-                                (String 1 8 () PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                     )
@@ -434,13 +434,13 @@
                         [(Print
                             (StringConstant
                                 "cp == dp"
-                                (String 1 8 () PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "cp /= dp"
-                                (String 1 8 () PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                     )
@@ -455,7 +455,7 @@
                         [(Print
                             (StringConstant
                                 "a == b"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )
                         (If
@@ -472,13 +472,13 @@
                             [(Print
                                 (StringConstant
                                     "ap == bp"
-                                    (String 1 8 () PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             [(Print
                                 (StringConstant
                                     "ap /= bp"
-                                    (String 1 8 () PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                         )]
@@ -504,7 +504,7 @@
                             [(Print
                                 (StringConstant
                                     "ap == cp"
-                                    (String 1 8 () PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )
                             (If
@@ -521,13 +521,13 @@
                                 [(Print
                                     (StringConstant
                                         "cp == dp"
-                                        (String 1 8 () PointerString)
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                 )]
                                 [(Print
                                     (StringConstant
                                         "cp /= dp"
-                                        (String 1 8 () PointerString)
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                 )]
                             )]
@@ -542,7 +542,7 @@
                                 [(Print
                                     (StringConstant
                                         "c == d"
-                                        (String 1 6 () PointerString)
+                                        (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                 )]
                                 []
