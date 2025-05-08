@@ -58,7 +58,7 @@ program continue_compilation_1
     character :: c1
     complex :: c = (1.0, 2.0)
     real a_real(0)
-    integer, allocatable ::  shape_(:), arr4(:)
+    integer, allocatable ::  shape_(:), arr4(:), arr5(:)
     integer, dimension(2, 3) :: matrix
     integer, dimension(4) :: source = [1, 2, 3, 4]
     allocate(shape_(2))
@@ -77,7 +77,7 @@ program continue_compilation_1
     character(len=100) :: filename
     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
-    integer, allocatable :: arr5(:)
+    
 
 
 

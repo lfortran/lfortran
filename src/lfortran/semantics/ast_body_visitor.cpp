@@ -1585,7 +1585,7 @@ public:
         if( !cond ) {
             diag.add(Diagnostic(
                 "`allocate` statement only "
-                "accepts four keyword arguments,"
+                "accepts four keyword arguments: "
                 "`stat`, `errmsg`, `source` and `mold`",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
