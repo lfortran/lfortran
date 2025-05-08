@@ -1543,20 +1543,28 @@ public:
                     ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
                     if ( ASRUtils::check_equal_type(mold_type, a_type) ) {
                         if (ASRUtils::is_array(mold_type)) {
-                            ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
-                            ASR::alloc_arg_t new_arg;
-                            new_arg.loc = alloc_args_vec[i].loc;
-                            new_arg.m_a = alloc_args_vec[i].m_a;
-                            new_arg.m_len_expr = nullptr;
-                            new_arg.m_type = nullptr;
-                            new_arg.m_dims = mold_array_type->m_dims;
-                            new_arg.n_dims = mold_array_type->n_dims;
-                            new_alloc_args_vec.push_back(al, new_arg);
-                            alloc_args_vec = new_alloc_args_vec;
+                            if (ASR::is_a<ASR::Array_t>(*mold_type)) {
+                                ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
+                                ASR::alloc_arg_t new_arg;
+                                new_arg.loc = alloc_args_vec[i].loc;
+                                new_arg.m_a = alloc_args_vec[i].m_a;
+                                new_arg.m_len_expr = nullptr;
+                                new_arg.m_type = nullptr;
+                                new_arg.m_dims = mold_array_type->m_dims;
+                                new_arg.n_dims = mold_array_type->n_dims;
+                                new_alloc_args_vec.push_back(al, new_arg);
+                                alloc_args_vec = new_alloc_args_vec;
+                            } else {
+                                diag.add(Diagnostic("Runtime dimensions are not supported yet for mold.",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{mold->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
                         } else {
                             diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
                                 Level::Error, Stage::Semantic, {
-                                    Label("",{x.base.base.loc})
+                                    Label("",{mold->base.loc})
                                 }));
                             throw SemanticAbort();
                         }
@@ -1577,7 +1585,7 @@ public:
         if( !cond ) {
             diag.add(Diagnostic(
                 "`allocate` statement only "
-                "accepts four keyword arguments,"
+                "accepts four keyword arguments: "
                 "`stat`, `errmsg`, `source` and `mold`",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
