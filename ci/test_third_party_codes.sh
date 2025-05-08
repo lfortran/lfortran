@@ -50,12 +50,12 @@ cd "$TMP_DIR"
 # Section 1: stdlib (Less Workarounds)
 ##########################
 time_section "🧪 Testing stdlib (Less Workarounds)" '
-  git clone https://github.com/czgdp1807/stdlib.git
-  cd stdlib
+  git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
+  cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-5
-  git checkout 00a68c42ecf731c5b7b3d656203d6c20caae0dfa
+  git checkout n-lf-6
+  git checkout aec6ad66cc039e84c365a12409efec3aa43e698c
   micromamba install -c conda-forge fypp
 
   git clean -fdx
