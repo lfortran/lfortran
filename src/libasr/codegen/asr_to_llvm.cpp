@@ -2517,6 +2517,11 @@ public:
         llvm::Value* array = tmp;
         this->visit_expr(*x.m_shape);
         llvm::Value* shape = tmp;
+        llvm::Value* pad = nullptr;
+        if (x.m_pad) {
+            this->visit_expr(*x.m_pad);
+            pad = tmp;
+        }
         ASR::ttype_t* x_m_array_type = ASRUtils::expr_type(x.m_array);
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(x_m_array_type);
         switch( array_physical_type ) {
@@ -2537,17 +2542,61 @@ public:
                 llvm::Value *target = llvm_utils->CreateAlloca(
                     target_type, nullptr, "fixed_size_reshaped_array");
                 llvm::Value* target_ = llvm_utils->create_gep(target, 0);
-                ASR::dimension_t* asr_dims = nullptr;
-                size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
-                int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
-                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type))), module.get());
+                int64_t total_size = ASRUtils::get_fixed_size_of_array(x.m_type);
+                int64_t original_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_array));
+                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(x_m_array_type))), module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
-                llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-                llvm_size = builder->CreateMul(llvm_size,
+                llvm::Value* llvm_original_size = llvm::ConstantInt::get(context, llvm::APInt(32, original_size));
+                llvm::Value* llvm_original_array = builder->CreateMul(llvm_original_size,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
-                builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+                builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_original_array);
+
+                if (x.m_pad) {
+                    ASR::array_physical_typeType pad_physical_type = ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_pad));
+                    int64_t pad_elements = total_size - original_size;
+                    switch (pad_physical_type) {
+                        case ASR::array_physical_typeType::FixedSizeArray: {
+                            if (pad_elements > 0) {
+                                int pad_array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_pad));
+                
+                                llvm::Value* pad_start_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), original_size);
+                                llvm::Value* pad_ptr = builder->CreateGEP(
+                                    llvm_data_type, target_, pad_start_idx);
+
+                                std::vector<llvm::Value*> pad_values;
+                                for (int i = 0; i < pad_array_size; ++i) {
+                                    llvm::Value* pad_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), i);
+                                    llvm::Value* pad_elem_ptr = builder->CreateGEP(
+                                        llvm_data_type, pad, pad_idx);
+                                    llvm::Value* pad_val = builder->CreateLoad(llvm_data_type, pad_elem_ptr);
+                                    pad_values.push_back(pad_val);
+                                }
+                
+                                for (int64_t i = 0; i < pad_elements; ++i) {
+                                    llvm::Value* offset = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), i);
+                                    llvm::Value* dst_ptr = builder->CreateGEP(
+                                        llvm_data_type, pad_ptr, offset);
+                                    llvm::Value* pad_val = pad_values[i % pad_array_size];
+                                    builder->CreateStore(pad_val, dst_ptr);
+                                }
+                            }
+                            break;
+                        }
+                        case ASR::array_physical_typeType::DescriptorArray: {
+                            
+                        }
+                        default:
+                            throw CodeGenError("Unsupported pad physical type for reshaped array.");
+                    }
+                }
+                
+                
+                
+
                 tmp = target;
                 break;
             }
