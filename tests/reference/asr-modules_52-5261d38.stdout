@@ -23,7 +23,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 () .false. .true. PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -119,7 +119,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (String 1 -2 () PointerString)
+                                                (String 1 () .false. .true. PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -214,7 +214,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 -1 () PointerString)
+                                                        (String 1 () .true. .false. PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -292,7 +292,7 @@
                                             )
                                         )
                                         (Array
-                                            (String 1 -1 () PointerString)
+                                            (String 1 () .true. .false. PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -484,7 +484,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source

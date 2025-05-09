@@ -279,7 +279,7 @@ LFORTRAN_API char *_lfortran_get_env_variable(char *name);
 LFORTRAN_API char *_lfortran_get_environment_variable(char *name);
 LFORTRAN_API int _lfortran_exec_command(char *cmd);
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format,const char* serialization_string, int32_t array_sizes_cnt, ...);
+LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format,const char* serialization_string, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 
 #ifdef __cplusplus
 }

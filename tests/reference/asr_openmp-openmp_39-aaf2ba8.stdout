@@ -1360,16 +1360,16 @@
                                 ()
                                 [(StringConstant
                                     "iy->"
-                                    (String 1 4 () PointerString)
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                                 (Var 2 iy)
                                 (StringConstant
                                     "ix->"
-                                    (String 1 4 () PointerString)
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                                 (Var 2 ix)]
                                 FormatFortran
-                                (String -1 0 () PointerString)
+                                (String 1 () .false. .false. CString)
                                 ()
                             )
                         )
@@ -1390,26 +1390,26 @@
                                         ()
                                         [(StringConstant
                                             "iy->"
-                                            (String 1 4 () PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                         (Var 2 iy)
                                         (StringConstant
                                             "ix->"
-                                            (String 1 4 () PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                         (Var 2 ix)
                                         (StringConstant
                                             "iz->"
-                                            (String 1 4 () PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                         (Var 2 iz)
                                         (StringConstant
                                             "ik->"
-                                            (String 1 4 () PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                         (Var 2 ik)]
                                         FormatFortran
-                                        (String -1 0 () PointerString)
+                                        (String 1 () .false. .false. CString)
                                         ()
                                     )
                                 )]

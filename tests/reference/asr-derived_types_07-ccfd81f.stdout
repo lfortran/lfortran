@@ -51,7 +51,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 256 () PointerString)
+                                                    (String 1 (IntegerConstant 256 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private

@@ -158,7 +158,7 @@
                             (Var 2 datap)
                             (Var 2 realr)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

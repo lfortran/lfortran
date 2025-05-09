@@ -379,7 +379,7 @@
                             ()
                             [(Var 2 output_min)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -447,7 +447,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 22 () PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         []
@@ -470,7 +470,7 @@
                             ()
                             [(Var 2 output_min0)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -507,7 +507,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 22 () PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         []
@@ -535,7 +535,7 @@
                             ()
                             [(Var 2 output_amin0)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -595,7 +595,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 22 () PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         []
@@ -623,7 +623,7 @@
                             ()
                             [(Var 2 output_min1)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -660,7 +660,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 22 () PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         []
@@ -683,7 +683,7 @@
                             ()
                             [(Var 2 output_amin1)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -743,7 +743,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 22 () PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         []
@@ -766,7 +766,7 @@
                             ()
                             [(Var 2 output_dmin1)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -834,7 +834,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 22 () PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         []
@@ -862,7 +862,7 @@
                             ()
                             [(Var 2 output_min_different_kinds)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -925,7 +925,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 22 () PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         []

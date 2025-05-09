@@ -1907,16 +1907,13 @@ namespace LCompilers {
         builder->CreateCall(fn, args);
     }
 
-    void LLVMUtils::initialize_string_heap(llvm::Value* str, llvm::Value* len){
+    void LLVMUtils::initialize_string_heap(llvm::Value* str, llvm::Value* len /*null-char not included*/){
+        len = builder->CreateAdd(
+            builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, 1))); // increment to include null-char. 
         llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, len);
         string_init(len, s_malloc);
         builder->CreateStore(s_malloc, str);
-    }
-
-    void LLVMUtils::initialize_string_heap(llvm::Value* str, int64_t len){
-        llvm::Value* len_llvm = llvm::ConstantInt::get(context,
-            llvm::APInt(32,len+1));
-        initialize_string_heap(str, len_llvm);
     }
 
     llvm::Value* LLVMUtils::is_equal_by_value(llvm::Value* left, llvm::Value* right,

@@ -59,7 +59,11 @@ public:
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
         ASR::stmt_t* doloop = nullptr;
         ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+            al, loc, 1, 
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            false, false,
+            ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len_2));
         ASR::stmt_t* empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, loc, empty_space));
@@ -178,7 +182,11 @@ public:
             ASR::stmt_t* empty_print_endl;
             ASR::stmt_t* print_stmt;
             ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
-            al, x.base.base.loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+            al, x.base.base.loc, 1, 
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
+            false, false,
+            ASR::string_physical_typeType::PointerString));
             ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, x.base.base.loc, s2c(al, ""), str_type_len_2));
             empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, empty_space));
@@ -216,7 +224,11 @@ public:
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
         ASR::stmt_t* doloop = nullptr;
         ASR::ttype_t *str_type_len = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+            al, loc, 1, 
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            false, false,
+            ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len));
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc,

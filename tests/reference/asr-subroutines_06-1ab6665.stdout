@@ -260,7 +260,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -279,7 +279,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -298,7 +298,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -330,11 +330,11 @@
                                         })
                                     error_handler
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)
+                                        [(String 1 () .true. .false. PointerString)
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)
-                                        (String 1 -1 () PointerString)]
+                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () .true. .false. PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -359,7 +359,7 @@
                                             [(Var 6 error)
                                             (Var 6 status)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]
@@ -402,7 +402,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -421,7 +421,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -440,7 +440,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -472,11 +472,11 @@
                                         })
                                     error_handler~genericprocedure
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)
+                                        [(String 1 () .true. .false. PointerString)
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)
-                                        (String 1 -1 () PointerString)]
+                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () .true. .false. PointerString)]
                                         ()
                                         Source
                                         Interface

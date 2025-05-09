@@ -60,7 +60,7 @@ define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
 .entry:
   %0 = alloca float, align 4
   store float 1.000000e+00, float* %0, align 4
-  %1 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, float* %0)
+  %1 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, float* %0)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   %2 = load i32, i32* %m, align 4
   %3 = mul i32 1, %2
@@ -156,7 +156,7 @@ return:                                           ; preds = %ifcont12
   ret void
 }
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

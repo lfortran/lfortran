@@ -14,79 +14,79 @@
                     [(Print
                         (StringConstant
                             "1 LFortran"
-                            (String 1 10 () PointerString)
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "2 LFortran 1"
-                            (String 1 12 () PointerString)
+                            (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "3 LFortran 1"
-                            (String 1 12 () PointerString)
+                            (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "4 LFortran 1"
-                            (String 1 12 () PointerString)
+                            (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "42 LFortran 1"
-                            (String 1 13 () PointerString)
+                            (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "X is 1"
-                            (String 1 6 () PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1 Y is 1"
-                            (String 1 8 () PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "X is 2"
-                            (String 1 6 () PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "2 Y is 3"
-                            (String 1 8 () PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "X is 4"
-                            (String 1 6 () PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "4 Y is 4"
-                            (String 1 8 () PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "X is not 1-4"
-                            (String 1 12 () PointerString)
+                            (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "5 Y is not 1-4"
-                            (String 1 14 () PointerString)
+                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )]
                 )

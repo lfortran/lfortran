@@ -42,7 +42,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 -1 () PointerString)
+                                                            (String 1 () .true. .false. PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -68,7 +68,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 () .false. .true. PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -88,7 +88,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (String 1 -1 () PointerString)
+                                                (String 1 () .true. .false. PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -140,12 +140,12 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (String 1 -2 () PointerString)
+                                                        (String 1 () .false. .true. PointerString)
                                                         ColMajor
                                                         ()
                                                     )
                                                     (Integer 4)
-                                                    (IntegerConstant -2 (Integer 4) Decimal)
+                                                    ()
                                                 )
                                                 LtE
                                                 (StringLen
@@ -160,18 +160,15 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (String 1 -1 () PointerString)
+                                                        (String 1 () .true. .false. PointerString)
                                                         ColMajor
                                                         ()
                                                     )
                                                     (Integer 4)
-                                                    (IntegerConstant -1 (Integer 4) Decimal)
+                                                    ()
                                                 )
                                                 (Logical 4)
-                                                (LogicalConstant
-                                                    .true.
-                                                    (Logical 4)
-                                                )
+                                                ()
                                             )
                                             [(Assignment
                                                 (Var 3 strings)
@@ -184,7 +181,25 @@
                                                 (ArrayConstructor
                                                     []
                                                     (Array
-                                                        (String 1 1 () PointerString)
+                                                        (String 1 (StringLen
+                                                            (ArrayItem
+                                                                (Var 3 strings)
+                                                                [(()
+                                                                (ArrayBound
+                                                                    (Var 3 strings)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    LBound
+                                                                    ()
+                                                                )
+                                                                ())]
+                                                                (String 1 () .true. .false. PointerString)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        ) .false. .false. PointerString)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 0 (Integer 4) Decimal))]
                                                         FixedSizeArray
@@ -211,7 +226,25 @@
                                             (ArrayConstructor
                                                 []
                                                 (Array
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (ArrayItem
+                                                            (Var 3 strings)
+                                                            [(()
+                                                            (ArrayBound
+                                                                (Var 3 strings)
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                LBound
+                                                                ()
+                                                            )
+                                                            ())]
+                                                            (String 1 () .true. .false. PointerString)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal))]
                                                     FixedSizeArray
@@ -262,7 +295,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (String 1 5 () PointerString)
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -293,7 +326,7 @@
                     (Print
                         (StringConstant
                             "executing modules_35"
-                            (String 1 20 () PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (SubroutineCall

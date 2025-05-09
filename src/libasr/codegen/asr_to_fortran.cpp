@@ -180,15 +180,16 @@ public:
             } case ASR::ttypeType::String: {
                 ASR::String_t *c = down_cast<ASR::String_t>(t);
                 r = "character(len=";
-                if(c->m_len > 0) {
-                    r += std::to_string(c->m_len);
+                int str_len;
+                if(ASRUtils::extract_value(c->m_len, str_len)) {
+                    r += std::to_string(str_len);
                 } else {
-                    if (c->m_len == -1) {
-                        r += "*";
-                    } else if (c->m_len == -2) {
+                    if (c->m_is_deferred_length) {
                         r += ":";
-                    } else if (c->m_len == -3) {
-                        visit_expr(*c->m_len_expr);
+                    } else if (c->m_is_assumed_length){
+                        r += "*";
+                    } else { // Not constant expression.
+                        visit_expr(*c->m_len);
                         r += src;
                     }
                 }
