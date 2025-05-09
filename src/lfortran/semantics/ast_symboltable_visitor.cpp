@@ -2088,7 +2088,13 @@ public:
             AST::intrinsicopType opType = AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op;
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
-            overloaded_op_procs[opType] = proc_names;
+            // check if the operator is already defined, if yes, then a new defition means it is being overloaded
+            if (overloaded_op_procs.find(opType) != overloaded_op_procs.end()) {
+                overloaded_op_procs[opType].insert(overloaded_op_procs[opType].end(),
+                    proc_names.begin(), proc_names.end());
+            } else {
+                overloaded_op_procs[opType] = proc_names;
+            }
         } else if (AST::is_a<AST::InterfaceHeaderDefinedOperator_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
             std::vector<std::string> proc_names;
