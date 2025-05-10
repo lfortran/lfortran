@@ -7964,8 +7964,28 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         this->visit_expr_wrapper(x.m_source, true);
         llvm::Value* source = tmp;
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_source), module.get());
-        llvm::Value* source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
-        builder->CreateStore(source, source_ptr);
+        llvm::Value* source_ptr;
+        bool is_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_source));
+        if (source->getType()->isPointerTy() || source_type->isArrayTy()) {   //Case: [n x i8]* type Arrays and ptr %
+            source_ptr = source;
+        } else if (is_array) {
+            source_type = source->getType();
+            source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
+            builder->CreateStore(source, source_ptr);
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_source)));
+            llvm::Type* source_type_ = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), module.get());
+            if (arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                source_ptr = llvm_utils->create_gep(source_ptr, 0);
+                source_ptr = builder->CreateLoad(source_type_->getPointerTo(), source_ptr);
+            } else {      // For PointerToDataArray source itself is a pointer to data
+                source_ptr = source;
+            }
+        } else {
+            source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
+            builder->CreateStore(source, source_ptr);
+        }
         llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(x.m_type), module.get());
         if (ASR::is_a<ASR::String_t>(*x.m_type)) {
             tmp = builder->CreateBitCast(source_ptr, target_base_type);
