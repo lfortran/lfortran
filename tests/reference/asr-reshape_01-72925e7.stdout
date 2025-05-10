@@ -1,0 +1,136 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            expr2:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        16
+                                        [1, 2, 3, 4]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        16
+                                        [1, 2, 3, 4]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            shape:
+                                (Variable
+                                    2
+                                    shape
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        8
+                                        [2, 4]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        [2, 4]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    expr2
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(ArrayReshape
+                                (Var 2 a)
+                                (ArrayPhysicalCast
+                                    (Var 2 shape)
+                                    FixedSizeArray
+                                    DescriptorArray
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())
+                                    (()
+                                    ())]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () .false. .false. CString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

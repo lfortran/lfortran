@@ -1,0 +1,13 @@
+{
+    "basename": "asr-reshape_01-72925e7",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/reshape_01.f90",
+    "infile_hash": "48b6c3d41909025485e1d4a34c8d7b80023dc52109a4e52ab070e612",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-reshape_01-72925e7.stdout",
+    "stdout_hash": "5dfab11819cc8a10a75368dc1da89046e62e1e576b15ca78d073e18b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

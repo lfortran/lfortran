@@ -2583,6 +2583,11 @@ public:
                 llvm_size = builder->CreateMul(llvm_size,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                 builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+                int64_t total_size = ASRUtils::get_fixed_size_of_array(x.m_type);
+                int64_t original_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_array));
+                if (total_size != original_size) {
+                    throw CodeGenError("Incompatible array sizes", x.base.base.loc);
+                }
                 tmp = target;
                 break;
             }
