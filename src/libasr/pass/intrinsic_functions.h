@@ -1631,10 +1631,19 @@ namespace Ishft {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t val;
-        if(val2<=0){
+        if (val2 <= 0) {        // For logical shift val1 is treated as unsigned
             val2 = val2 * -1;
-            val = val1 >> val2;
+            if (kind == 1) { 
+                val = (uint8_t) val1 >> val2;
+            } else if(kind == 2) {
+                val = (uint16_t) val1 >> val2;
+            } else if(kind == 4) {
+                val = (uint32_t) val1 >> val2;
+            } else {
+                val = (uint64_t) val1 >> val2;
+            }
         } else {
             val = val1 << val2;
         }
@@ -1663,10 +1672,10 @@ namespace Ishft {
             arg_2 = args[1];
         }
         if (ASRUtils::extract_kind_from_ttype_t(return_type) != ASRUtils::extract_kind_from_ttype_t(arg_types[0])) {
-            if_shift = b.i2i_t(b.BitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]), return_type);
+            if_shift = b.i2i_t(b.LBitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]), return_type);
             else_shift = b.i2i_t(b.BitLshift(args[0], arg_2, arg_types[0]), return_type);
         } else {
-            if_shift = b.BitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]);
+            if_shift = b.LBitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]);
             else_shift = b.BitLshift(args[0], arg_2, arg_types[0]);
         }
         body.push_back(al, b.If(b.LtE(arg_2, b.i_t(0, arg_types[0])), {

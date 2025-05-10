@@ -2052,6 +2052,7 @@ static inline std::string binop_to_str_python(const ASR::binopType t) {
         case (ASR::binopType::BitXor): { return "^"; }
         case (ASR::binopType::BitLShift): { return "<<"; }
         case (ASR::binopType::BitRShift): { return ">>"; }
+        case (ASR::binopType::LBitRShift): { return ">>"; }
         default : throw LCompilersException("Cannot represent the binary operator as a string");
     }
 }
@@ -3581,7 +3582,8 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
                 case ASR::binopType::Div:
                 case ASR::binopType::Pow:
                 case ASR::binopType::BitLShift:
-                case ASR::binopType::BitRShift: {
+                case ASR::binopType::BitRShift:
+                case ASR::binopType::LBitRShift: {
                     return (left_left && right_right);
                 }
             }
