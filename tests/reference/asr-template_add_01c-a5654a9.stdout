@@ -708,11 +708,11 @@
                                             ()
                                             [(StringConstant
                                                 "The result is"
-                                                (String 1 13 () PointerString)
+                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             (Var 8 n)]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () .false. .false. CString)
                                             ()
                                         )
                                     )]

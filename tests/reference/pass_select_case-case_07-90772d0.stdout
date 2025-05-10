@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -40,7 +40,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 10 () PointerString)
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -53,8 +53,8 @@
                                         })
                                     test_case
                                     (FunctionType
-                                        [(String 1 1 () PointerString)]
-                                        (String 1 10 () PointerString)
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -73,7 +73,7 @@
                                             (StringCompare
                                                 (StringConstant
                                                     "a"
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                 )
                                                 LtE
                                                 (Var 3 c)
@@ -86,7 +86,7 @@
                                                 LtE
                                                 (StringConstant
                                                     "j"
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                 )
                                                 (Logical 4)
                                                 ()
@@ -98,7 +98,7 @@
                                             (Var 3 res)
                                             (StringConstant
                                                 "a:j"
-                                                (String 1 3 () PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             ()
                                             .false.
@@ -106,7 +106,7 @@
                                         (Print
                                             (StringConstant
                                                 "one of the first ten letters"
-                                                (String 1 28 () PointerString)
+                                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                         )]
                                         [(If
@@ -114,7 +114,7 @@
                                                 (StringCompare
                                                     (StringConstant
                                                         "l"
-                                                        (String 1 1 () PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                     LtE
                                                     (Var 3 c)
@@ -127,7 +127,7 @@
                                                     LtE
                                                     (StringConstant
                                                         "p"
-                                                        (String 1 1 () PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                     (Logical 4)
                                                     ()
@@ -139,7 +139,7 @@
                                                 (Var 3 res)
                                                 (StringConstant
                                                     "l:p"
-                                                    (String 1 3 () PointerString)
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                                 )
                                                 ()
                                                 .false.
@@ -147,7 +147,7 @@
                                             (Print
                                                 (StringConstant
                                                     "one of l, m, n, o, p"
-                                                    (String 1 20 () PointerString)
+                                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
                                                 )
                                             )]
                                             [(If
@@ -156,7 +156,7 @@
                                                     Eq
                                                     (StringConstant
                                                         "z"
-                                                        (String 1 1 () PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                     (Logical 4)
                                                     ()
@@ -165,7 +165,7 @@
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "z"
-                                                        (String 1 1 () PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                     ()
                                                     .false.
@@ -173,14 +173,14 @@
                                                 (Print
                                                     (StringConstant
                                                         "one of z"
-                                                        (String 1 8 () PointerString)
+                                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                 )]
                                                 [(Assignment
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "not found"
-                                                        (String 1 9 () PointerString)
+                                                        (String 1 (IntegerConstant 9 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                     ()
                                                     .false.
@@ -188,7 +188,7 @@
                                                 (Print
                                                     (StringConstant
                                                         "other characters, which may not be letters"
-                                                        (String 1 42 () PointerString)
+                                                        (String 1 (IntegerConstant 42 (Integer 4) Decimal) .false. .false. PointerString)
                                                     )
                                                 )]
                                             )]
@@ -210,16 +210,16 @@
                                 ()
                                 [((StringConstant
                                     "a"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 ))]
-                                (String 1 10 () PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "a:j"
-                                (String 1 3 () PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()
@@ -236,16 +236,16 @@
                                 ()
                                 [((StringConstant
                                     "d"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 ))]
-                                (String 1 10 () PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "a:j"
-                                (String 1 3 () PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()
@@ -262,16 +262,16 @@
                                 ()
                                 [((StringConstant
                                     "l"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 ))]
-                                (String 1 10 () PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "l:p"
-                                (String 1 3 () PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()
@@ -288,16 +288,16 @@
                                 ()
                                 [((StringConstant
                                     "p"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 ))]
-                                (String 1 10 () PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "l:p"
-                                (String 1 3 () PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()
@@ -314,16 +314,16 @@
                                 ()
                                 [((StringConstant
                                     "z"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 ))]
-                                (String 1 10 () PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "z"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()
@@ -340,16 +340,16 @@
                                 ()
                                 [((StringConstant
                                     "k"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 ))]
-                                (String 1 10 () PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "not found"
-                                (String 1 9 () PointerString)
+                                (String 1 (IntegerConstant 9 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()
@@ -366,16 +366,16 @@
                                 ()
                                 [((StringConstant
                                     "r"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 ))]
-                                (String 1 10 () PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "not found"
-                                (String 1 9 () PointerString)
+                                (String 1 (IntegerConstant 9 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()

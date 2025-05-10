@@ -96,7 +96,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -134,7 +134,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -153,7 +153,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 9 () PointerString)
+                                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -213,7 +213,7 @@
                                             2 person
                                         )
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)
+                                        (String 1 () .true. .false. PointerString)
                                         (Array
                                             (Integer 4)
                                             [(()
@@ -221,7 +221,7 @@
                                             DescriptorArray
                                         )
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)]
+                                        (String 1 () .true. .false. PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -283,7 +283,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -339,7 +339,7 @@
                                         )
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)]
+                                        (String 1 () .true. .false. PointerString)]
                                         ()
                                         Source
                                         Implementation

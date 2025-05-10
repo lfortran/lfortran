@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 3 () PointerString)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -36,7 +36,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 -2 () DescriptorString)
+                                        (String 1 () .false. .true. DescriptorString)
                                     )
                                     ()
                                     Source
@@ -63,7 +63,7 @@
                         (Var 2 num)
                         (StringConstant
                             "abc"
-                            (String 1 3 () PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -75,7 +75,7 @@
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (String 1 3 () DescriptorString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. DescriptorString)
                             )
                             ()
                         )
@@ -89,14 +89,18 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (String 1 -2 () PointerString)
+                                    (String 1 (StringLen
+                                        (Var 2 string)
+                                        (Integer 4)
+                                        ()
+                                    ) .false. .false. PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "abc"
-                                (String 1 3 () PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()
@@ -112,7 +116,7 @@
                             ()
                             ()
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (String 1 -1 () DescriptorString)
+                            (String 1 () .true. .false. DescriptorString)
                             ()
                         )
                         (StringPhysicalCast
@@ -120,7 +124,7 @@
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (String 1 3 () DescriptorString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. DescriptorString)
                             )
                             ()
                         )
@@ -134,14 +138,18 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (String 1 -2 () PointerString)
+                                    (String 1 (StringLen
+                                        (Var 2 string)
+                                        (Integer 4)
+                                        ()
+                                    ) .false. .false. PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "abc"
-                                (String 1 3 () PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()

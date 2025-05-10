@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "BC"
-                                        (String 1 2 () PointerString)
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (StringConstant
                                         "BC"
-                                        (String 1 2 () PointerString)
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     Save
-                                    (String 1 2 () PointerString)
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -60,7 +60,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 3 () PointerString)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -82,7 +82,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -93,7 +93,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -108,7 +108,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -119,7 +119,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -138,7 +138,7 @@
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -146,7 +146,7 @@
                         (Var 2 c)
                         (StringConstant
                             "@a"
-                            (String 1 2 () PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -160,7 +160,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -171,7 +171,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -186,7 +186,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -197,7 +197,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -216,7 +216,7 @@
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -224,7 +224,7 @@
                         (Var 2 c)
                         (StringConstant
                             "a@"
-                            (String 1 2 () PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -238,7 +238,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -249,7 +249,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -264,7 +264,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -275,7 +275,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -294,7 +294,7 @@
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -310,7 +310,7 @@
                             )
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (String 1 -3 (IntegerBinOp
+                            (String 1 (IntegerBinOp
                                 (IntegerConstant 3 (Integer 4) Decimal)
                                 Sub
                                 (IntegerBinOp
@@ -322,12 +322,12 @@
                                 )
                                 (Integer 4)
                                 ()
-                            ) PointerString)
+                            ) .false. .false. PointerString)
                             ()
                         )
                         (StringConstant
                             "sbs"
-                            (String 1 3 () PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -338,7 +338,7 @@
                             NotEq
                             (StringConstant
                                 "sbs"
-                                (String 1 3 () PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Logical 4)
                             ()

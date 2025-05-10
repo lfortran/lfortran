@@ -16,38 +16,38 @@
                             ()
                             [(IntegerConstant 1 (Integer 4) Decimal)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "__VERSION__ present"
-                            (String 1 19 () PointerString)
+                            (String 1 (IntegerConstant 19 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "__LFORTRAN_MAJOR__ present"
-                            (String 1 26 () PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "__LFORTRAN_MINOR__ present"
-                            (String 1 26 () PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "__LFORTRAN_PATCHLEVEL__ present"
-                            (String 1 31 () PointerString)
+                            (String 1 (IntegerConstant 31 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "tests/preprocessor8.f90"
-                            (String 1 23 () PointerString)
+                            (String 1 (IntegerConstant 23 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -55,7 +55,7 @@
                             ()
                             [(IntegerConstant 19 (Integer 4) Decimal)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -64,7 +64,7 @@
                             ()
                             [(IntegerConstant 20 (Integer 4) Decimal)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

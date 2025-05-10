@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 32 () PointerString)
+                                    (String 1 (IntegerConstant 32 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -84,11 +84,11 @@
                             ()
                             [(StringConstant
                                 "count: "
-                                (String 1 7 () PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 2 count)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -103,7 +103,7 @@
                             StringTrim
                             [(Var 2 arg)]
                             0
-                            (String 1 32 () PointerString)
+                            (String 1 (IntegerConstant 32 (Integer 4) Decimal) .false. .false. PointerString)
                             ()
                         )
                     )]

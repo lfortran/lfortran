@@ -663,7 +663,9 @@ public:
                     case ASR::ttypeType::String: {
                         ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
                         t = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
-                                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
+                                    tnew->m_kind, tnew->m_len,
+                                    tnew->m_is_assumed_length, tnew->m_is_deferred_length,
+                                    ASR::string_physical_typeType::PointerString));
                         break;
                     }
                     case ASR::ttypeType::Complex: {

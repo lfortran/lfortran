@@ -14,7 +14,7 @@
                     [(Print
                         (StringConstant
                             "executing modules_37"
-                            (String 1 20 () PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )]
                 ),
@@ -127,7 +127,7 @@
                                                             (Var 9 temp)
                                                             12 1_string_t_s
                                                             (Allocatable
-                                                                (String 1 -2 () DescriptorString)
+                                                                (String 1 () .false. .true. DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -135,7 +135,7 @@
                                                             (Var 12 target)
                                                             12 1_build_target_t_output_dir
                                                             (Allocatable
-                                                                (String 1 -2 () DescriptorString)
+                                                                (String 1 () .false. .true. DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -478,7 +478,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -734,7 +734,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source

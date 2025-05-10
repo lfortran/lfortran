@@ -7,7 +7,7 @@
     [(Print
         (StringConstant
             "OK"
-            (String 1 2 () PointerString)
+            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
         )
     )]
 )

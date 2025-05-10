@@ -66,7 +66,7 @@
                                                             ()
                                                             [(IntegerConstant 5 (Integer 4) Decimal)]
                                                             FormatFortran
-                                                            (String -1 0 () PointerString)
+                                                            (String 1 () .false. .false. CString)
                                                             ()
                                                         )
                                                     )
@@ -75,7 +75,7 @@
                                                             ()
                                                             [(Var 3 x)]
                                                             FormatFortran
-                                                            (String -1 0 () PointerString)
+                                                            (String 1 () .false. .false. CString)
                                                             ()
                                                         )
                                                     )]
@@ -139,7 +139,7 @@
                                     (Print
                                         (StringConstant
                                             "b()"
-                                            (String 1 3 () PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                         )
                                     )
                                     (SubroutineCall

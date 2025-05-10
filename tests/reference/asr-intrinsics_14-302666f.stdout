@@ -61,7 +61,7 @@
                                         SelectedCharKind
                                         [(StringConstant
                                             "default"
-                                            (String 1 7 () PointerString)
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                         )]
                                         0
                                         (Integer 4)
@@ -350,7 +350,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 7 () PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -367,7 +367,7 @@
                         (Var 2 s1)
                         (StringConstant
                             "default"
-                            (String 1 7 () PointerString)
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -390,7 +390,7 @@
                             )
                             (Var 2 k1)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -406,7 +406,7 @@
                             )
                             (Var 2 k2)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -422,7 +422,7 @@
                             )
                             (Var 2 k3)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -438,7 +438,7 @@
                             )
                             (Var 2 k4)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -454,7 +454,7 @@
                             )
                             (Var 2 k5)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -472,7 +472,7 @@
                             )
                             (Var 2 k6)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -490,7 +490,7 @@
                             )
                             (Var 2 k7)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -508,7 +508,7 @@
                             )
                             (Var 2 k8)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -526,7 +526,7 @@
                             )
                             (Var 2 k9)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -537,7 +537,7 @@
                                 SelectedCharKind
                                 [(StringConstant
                                     "default"
-                                    (String 1 7 () PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                 )]
                                 0
                                 (Integer 4)
@@ -545,7 +545,7 @@
                             )
                             (Var 2 k10)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -560,7 +560,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -577,7 +577,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -592,7 +592,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -610,7 +610,7 @@
                             )
                             (Var 2 k11)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -628,7 +628,7 @@
                             )
                             (Var 2 k12)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]
