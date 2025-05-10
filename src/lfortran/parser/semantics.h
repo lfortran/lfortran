@@ -109,6 +109,7 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 #define CONCURRENT_LOCALITIES(x) VEC_CAST(x, concurrent_locality)
 #define INTERFACE_ITEMS(x) VEC_CAST(x, interface_item)
 #define GENERIC_TYPE_PARAMS(x) VEC_CAST(x, generic_type_param)
+#define GENERIC_TYPE_PARAM_INSTANTIATIONS(x) VEC_CAST(x, generic_type_param_instantiation)
 
 Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
     Vec<ast_t*> v;
@@ -1334,6 +1335,7 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 
 // Allocator &al, const Location &a_loc, char* a_name, decl_typeType a_type_name
 #define GENERIC_TYPE_PARAM(a_name, a_type_name, l) make_GenericTypeParameter_t(p.m_a, l, name2char(a_name), name2char(a_type_name))
+#define GENERIC_TYPE_PARAM_INSTANTIATION(a_type_name, l) make_GenericTypeParamInstantiation_t(p.m_a, l, name2char(a_type_name))
 
 #define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
@@ -2035,6 +2037,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         const Vec<FnArg> &args,
         const Vec<FnArg> &subargs,
         const Vec<ast_t*> &temp_args,
+        const Vec<ast_t*> &generic_args,
         Location &l) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
@@ -2057,24 +2060,32 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
     for (size_t i=0; i<temp_args.size(); i++) {
         v3.push_back(al, down_cast<decl_attribute_t>(temp_args[i]));
     }
+    Vec<generic_type_param_instantiation_t*> v4;
+    v4.reserve(al, generic_args.size());
+    for (size_t i=0; i<generic_args.size(); i++) {
+        v4.push_back(al, down_cast<generic_type_param_instantiation_t>(generic_args[i]));
+    }
     return make_FuncCallOrArray_t(al, l,
         /*char* a_func*/ name2char(id),
         /* struct_member_t* */member.p, /* size_t */member.size(),
         /*fnarg_t* a_args*/ v.p, /*size_t n_args*/ v.size(),
         /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
         /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
-        /*m_temp_args*/ v3.p, /*n_temp_args*/ v3.size());
+        /*m_temp_args*/ v3.p, /*n_temp_args*/ v3.size(),
+        /*m_generic_args*/ v4.p, /*n_generic_args*/ v4.size());
 }
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
-        args, empty1(), empty_vecast(), l)
+        args, empty1(), empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY2(members, id, args, l) FUNCCALLORARRAY0(p.m_a, id, \
-        members, args, empty1(), empty_vecast(), l)
+        members, args, empty1(), empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY3(id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        empty5(), args, subargs, empty_vecast(), l)
+        empty5(), args, subargs, empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY4(mem, id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        mem, args, subargs, empty_vecast(), l)
+        mem, args, subargs, empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY5(id, args, temp_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
-        args, empty1(), temp_args, l)
+        args, empty1(), temp_args, empty_vecast(), l)
+#define FUNCCALLORARRAY6(id, generic_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
+        empty1(), empty1(), empty_vecast(), generic_args, l)
 
 ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
         const Vec<FnArg> &args, Location &l) {
@@ -2281,6 +2292,10 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define INTERFACE_PROC(proc, l) \
         make_InterfaceProc_t(p.m_a, l, \
         down_cast<program_unit_t>(proc))
+// Allocator &al, const Location &a_loc, decl_attribute_t** a_types, size_t n_types
+#define INTERFACE_TYPE_LIST(a_types, l) make_InterfaceTypeList_t(p.m_a, l, \
+        VEC_CAST(a_types, decl_attribute), \
+        a_types.size())
 
 #define DERIVED_TYPE(attr, name, trivia, decl, contains, l) make_DerivedType_t(p.m_a, l, \
         name2char(name), nullptr, 0, \

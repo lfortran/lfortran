@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 %expect    215 // shift/reduce conflicts
-%expect-rr 189 // reduce/reduce conflicts
+%expect-rr 191 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -405,6 +405,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> end_function
 %type <vec_ast> generic_type_param_list
 %type <ast> generic_type_param
+%type <vec_ast> generic_type_param_instantiation_list
+%type <ast> generic_type_param_instantiation
 %type <ast> use_statement
 %type <ast> use_statement1
 %type <vec_ast> use_statement_star
@@ -567,8 +569,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_equi> equivalence_set_list
 %type <ast> sep_one
 %type <vec_ast> sep
-%type <ast> type_set_decl
-%type <ast> type_set_stmt
 %type <vec_ast> type_list
 
 // Precedence
@@ -671,6 +671,7 @@ interface_stmt
     | KW_INTERFACE KW_OPERATOR "(" TK_DEF_OP ")" {
         $$ = INTERFACE_HEADER_DEFOP($4, @$); }
     | KW_ABSTRACT KW_INTERFACE { $$ = ABSTRACT_INTERFACE_HEADER(@$); }
+    | KW_ABSTRACT KW_INTERFACE "::" id { $$ = ABSTRACT_INTERFACE_HEADER_NAME($4, @$); }
     | KW_INTERFACE KW_WRITE "(" id ")" { $$ = INTERFACE_HEADER_WRITE($4, @$); }
     | KW_INTERFACE KW_READ "(" id ")" { $$ = INTERFACE_HEADER_READ($4, @$); }
     ;
@@ -708,26 +709,13 @@ interface_item
         $$ = INTERFACE_PROC($1, @$); }
     | function {
         $$ = INTERFACE_PROC($1, @$); }
-    ;
-
-type_set_decl
-    : type_set_stmt sep type_list sep end_type_set sep {
-            $$ = INTERFACE($1, TRIVIA($2, $6, @$), $3, @$); 
-            }
-    ;
-
-type_set_stmt
-    : KW_ABSTRACT KW_INTERFACE "::" id { $$ = ABSTRACT_INTERFACE_HEADER_NAME($4, @$); }
+    | type_list sep {
+        $$ = INTERFACE_TYPE_LIST($1, @$); }
     ;
 
 type_list
     : var_type { LIST_NEW($$); LIST_ADD($$, $1); }
     | type_list TK_VBAR var_type { $$ = $1; LIST_ADD($$, $3); }
-    ;
-
-end_type_set
-    : endinterface0
-    | endinterface0 id
     ;
 
 enum_decl
@@ -1008,12 +996,13 @@ function
                 TRIVIA($6, $13, @$), $7, $8, $9, SPLIT_DECL(p.m_a, $10),
                 SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
     | KW_FUNCTION id "{" generic_type_param_list "}" "(" id_list_opt ")"
+        result_opt
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @13); $$ = GENERIC_FUNCTION0($2, $4, $7, nullptr, nullptr,
-                TRIVIA($9, $16, @$), $10, $11, $12, SPLIT_DECL(p.m_a, $13),
-                SPLIT_STMT(p.m_a, $13), $14, $15, @$); }
+            LLOC(@$, @14); $$ = GENERIC_FUNCTION0($2, $4, $7, nullptr, nullptr,
+                TRIVIA($10, $17, @$), $11, $12, $13, SPLIT_DECL(p.m_a, $14),
+                SPLIT_STMT(p.m_a, $14), $15, $16, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
@@ -1090,6 +1079,13 @@ generic_type_param
     : id "::" id { $$ = GENERIC_TYPE_PARAM($1, $3, @$); }
     ;
 
+generic_type_param_instantiation_list
+    : generic_type_param_instantiation_list "," generic_type_param_instantiation { $$ = $1, LIST_ADD($$, $3); }
+    | generic_type_param_instantiation { LIST_NEW($$); LIST_ADD($$, $1); }
+
+generic_type_param_instantiation
+    : id { $$ = GENERIC_TYPE_PARAM_INSTANTIATION($1, @$); }
+
 temp_decl_star
     : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
@@ -1097,7 +1093,6 @@ temp_decl_star
 
 temp_decl
     : var_decl
-    | type_set_decl
     | interface_decl
     | derived_type_decl
     | template_decl
@@ -1112,7 +1107,6 @@ decl_star
 
 decl
     : var_decl
-    | type_set_decl
     | interface_decl 
     | derived_type_decl
     | template_decl
@@ -1635,7 +1629,6 @@ decl_statements
 
 decl_statement
     : var_decl
-    | type_set_decl
     | interface_decl
     | derived_type_decl
     | enum_decl
@@ -2337,6 +2330,7 @@ expr
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
+    | id "{" generic_type_param_instantiation_list "}" { $$ = FUNCCALLORARRAY6($1, $3, @$); }
     | id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {

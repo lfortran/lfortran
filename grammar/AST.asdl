@@ -205,7 +205,8 @@ expr
     | DefUnaryOp(string op, expr operand)
     | Compare(expr left, cmpop op, expr right)
     | FuncCallOrArray(identifier func, struct_member* member,
-        fnarg* args, keyword* keywords, fnarg* subargs, decl_attribute* temp_args)
+        fnarg* args, keyword* keywords, fnarg* subargs, decl_attribute* temp_args,
+        generic_type_param_instantiation* generic_type_params)
     | CoarrayRef(identifier name, struct_member* member,
         fnarg* args, keyword* fnkw, coarrayarg* coargs, keyword* cokw)
     | ArrayInitializer(decl_attribute? vartype, identifier? classtype, expr* args)
@@ -262,6 +263,7 @@ intrinsicop
     | CONCAT
 
 generic_type_param = GenericTypeParameter(identifier name, identifier type_name)
+generic_type_param_instantiation = GenericTypeParamInstantiation(identifier type_name)
 
 procedure_decl
     = DerivedTypeProc(identifier? name, decl_attribute* attr,
@@ -344,6 +346,10 @@ event_attribute
     | AttrErrmsg(identifier variable)
     | AttrNewIndex(expr value)
     | AttrEventWaitKwArg(identifier id, expr value)
+
+generic_argument
+    = GenericIntrinsic(decl_type type)
+    | GenericInterface(identifier name)
 
 team_attribute = CoarrayAssociation(expr coarray, expr selector)
 
