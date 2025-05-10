@@ -2622,7 +2622,7 @@ public:
                             break;
                         }
                         case ASR::array_physical_typeType::DescriptorArray: {
-                            
+                            throw CodeGenError("Reshape with descriptor array padding is not supported.");
                         }
                         default:
                             throw CodeGenError("Unsupported pad physical type for reshaped array.");
