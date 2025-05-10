@@ -2217,3 +2217,4 @@ RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emc
     EXTRA_ARGS --implicit-typing)
 
 RUN(NAME logical_testing LABELS gfortran llvm)
+RUN(NAME compare_pointers_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
