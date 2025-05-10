@@ -1,5 +1,5 @@
 module omp_lib
-use iso_c_binding
+use iso_c_binding, only: c_funptr, c_ptr, c_int
 implicit none
 
 interface
