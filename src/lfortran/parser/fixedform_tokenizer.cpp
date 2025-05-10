@@ -1586,8 +1586,7 @@ struct FixedFormRecursiveDescent {
             while(lex_procedure(cur));
         } else if (next_is(cur, "subroutine") || next_is(cur, "function")) {
             Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start;
+            token_loc(cur, cur + 1, loc);
             if (continue_compilation) {
                 diagnostics.add(LFortran::parser_local::TokenizerError("Expecting contains keyword before procedure definition", loc).d);
                 if (next_is(cur, "subroutine")) {
