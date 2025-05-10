@@ -2,6 +2,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
+#include <llvm/Support/raw_ostream.h>
 
 namespace LCompilers {
 
@@ -3166,7 +3167,7 @@ namespace LCompilers {
             llvm::Value* key_mask_value = llvm_utils->CreateLoad2(
                 llvm::Type::getInt8Ty(context),
                 llvm_utils->create_ptr_gep2(
-                    llvm::Type::getInt8Ty(context)->getPointerTo(), key_mask, pos));
+                    llvm::Type::getInt8Ty(context), key_mask, pos));
             llvm::Value* is_key_skip = builder->CreateICmpEQ(key_mask_value,
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 3)));
             llvm::Value* is_key_set = builder->CreateICmpNE(key_mask_value,
@@ -3401,7 +3402,7 @@ namespace LCompilers {
                                          value_asr_type, false, module, name2memidx);
 
         llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
-            llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context)->getPointerTo(), key_mask, pos));
+            llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key_mask, pos));
         llvm::Value* is_slot_empty = builder->CreateICmpEQ(key_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)));
         is_slot_empty = builder->CreateOr(is_slot_empty, builder->CreateICmpEQ(key_mask_value,
@@ -3417,7 +3418,7 @@ namespace LCompilers {
             builder->CreateICmpEQ(
                 llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
                     llvm_utils->create_ptr_gep2(
-                        llvm::Type::getInt8Ty(context)->getPointerTo(), key_mask, key_hash)),
+                        llvm::Type::getInt8Ty(context), key_mask, key_hash)),
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 2)
             ))
         );
@@ -3425,9 +3426,9 @@ namespace LCompilers {
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 2)),
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
         LLVM::CreateStore(*builder, set_max_2, llvm_utils->create_ptr_gep2(
-            llvm::Type::getInt8Ty(context)->getPointerTo(), key_mask, key_hash));
+            llvm::Type::getInt8Ty(context), key_mask, key_hash));
         LLVM::CreateStore(*builder, set_max_2, llvm_utils->create_ptr_gep2(
-            llvm::Type::getInt8Ty(context)->getPointerTo(), key_mask, pos));
+            llvm::Type::getInt8Ty(context), key_mask, pos));
     }
 
     void LLVMDictSeparateChaining::resolve_collision_for_write(
@@ -3687,9 +3688,8 @@ namespace LCompilers {
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-        llvm::Type* llvm_key_type = llvm_utils->get_type_from_ttype_t_util(key_asr_type, module);
-        llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm_key_type,
-            llvm_utils->create_ptr_gep2(llvm_key_type->getPointerTo(), key_mask, key_hash));
+        llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
+            llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key_mask, key_hash));
         llvm::Value* is_prob_not_neeeded = builder->CreateICmpEQ(key_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
         builder->CreateCondBr(is_prob_not_neeeded, thenBB, elseBB);
