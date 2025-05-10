@@ -1646,7 +1646,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     }
                     char buffer[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        if (double_val == 0.0 || fabs(double_val) >= 0.1) {
+                        if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
                             snprintf(buffer, sizeof(buffer), format_spec, double_val);
