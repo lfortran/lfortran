@@ -43,7 +43,7 @@
                             ()
                             [(Var 2 l_knd)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

@@ -427,7 +427,7 @@
                             ()
                             [(Var 3 y)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -449,7 +449,7 @@
                             ()
                             [(Var 3 q)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

@@ -2582,7 +2582,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             case ASR::ttypeType::String: {
                 ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-                int len = char_type->m_len;
+                int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
                 char* data_char = (char*)data + i*len;
                 // take first len characters
                 char* new_char = new char[len];

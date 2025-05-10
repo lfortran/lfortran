@@ -628,7 +628,7 @@
                             ()
                             [(Var 2 b)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -637,7 +637,7 @@
                             ()
                             [(Var 2 a)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

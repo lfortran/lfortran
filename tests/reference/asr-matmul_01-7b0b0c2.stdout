@@ -415,11 +415,11 @@
                             ()
                             [(StringConstant
                                 "Size (n x n): n ="
-                                (String 1 17 () PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 n)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -428,11 +428,11 @@
                             ()
                             [(StringConstant
                                 "Iter ="
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 iter)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -441,7 +441,7 @@
                             ()
                             [(StringConstant
                                 "Size MB:"
-                                (String 1 8 () PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (RealBinOp
                                 (RealBinOp
@@ -490,7 +490,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -540,7 +540,7 @@
                     (Print
                         (StringConstant
                             "Fortran intrinsic matmul:"
-                            (String 1 25 () PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (IntrinsicImpureSubroutine
@@ -699,18 +699,18 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Clock cycles per element:"
-                            (String 1 25 () PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -718,15 +718,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -735,15 +735,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -752,15 +752,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -769,14 +769,14 @@
                             ()
                             []
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "matmul2:"
-                            (String 1 8 () PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (IntrinsicImpureSubroutine
@@ -848,11 +848,11 @@
                             ()
                             [(StringConstant
                                 "Error:"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -972,18 +972,18 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Clock cycles per element:"
-                            (String 1 25 () PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -991,15 +991,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1008,15 +1008,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1025,15 +1025,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1058,14 +1058,14 @@
                             ()
                             []
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "matmul1:"
-                            (String 1 8 () PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (IntrinsicImpureSubroutine
@@ -1137,11 +1137,11 @@
                             ()
                             [(StringConstant
                                 "Error:"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1261,18 +1261,18 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Clock cycles per element:"
-                            (String 1 25 () PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (Print
@@ -1280,15 +1280,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1297,15 +1297,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (String 1 6 () PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1314,15 +1314,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (String 1 29 () PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )

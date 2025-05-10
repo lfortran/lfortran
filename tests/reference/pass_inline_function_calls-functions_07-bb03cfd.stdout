@@ -86,10 +86,10 @@
                                     .false.
                                     ()
                                 ),
-                            u_f_a_f_b_f_c:
+                            u:
                                 (Variable
                                     8
-                                    u_f_a_f_b_f_c
+                                    u
                                     []
                                     Local
                                     ()
@@ -105,10 +105,10 @@
                                     .false.
                                     ()
                                 ),
-                            v_f_a_f_b_f_c:
+                            v:
                                 (Variable
                                     8
-                                    v_f_a_f_b_f_c
+                                    v
                                     []
                                     Local
                                     ()
@@ -124,10 +124,10 @@
                                     .false.
                                     ()
                                 ),
-                            w_f_c:
+                            w:
                                 (Variable
                                     8
-                                    w_f_c
+                                    w
                                     []
                                     Local
                                     ()
@@ -143,10 +143,10 @@
                                     .false.
                                     ()
                                 ),
-                            x_f_b_f_c:
+                            x:
                                 (Variable
                                     8
-                                    x_f_b_f_c
+                                    x
                                     []
                                     Local
                                     ()
@@ -162,10 +162,10 @@
                                     .false.
                                     ()
                                 ),
-                            y_f_b_f_c:
+                            y:
                                 (Variable
                                     8
-                                    y_f_b_f_c
+                                    y
                                     []
                                     Local
                                     ()
@@ -181,10 +181,10 @@
                                     .false.
                                     ()
                                 ),
-                            z_f_c:
+                            z:
                                 (Variable
                                     8
-                                    z_f_c
+                                    z
                                     []
                                     Local
                                     ()
@@ -204,27 +204,27 @@
                     functions_07
                     [functions_07_c]
                     [(Assignment
-                        (Var 8 w_f_c)
+                        (Var 8 w)
                         (Var 8 p)
                         ()
                         .false.
                     )
                     (Assignment
-                        (Var 8 x_f_b_f_c)
-                        (Var 8 w_f_c)
+                        (Var 8 x)
+                        (Var 8 w)
                         ()
                         .false.
                     )
                     (Assignment
-                        (Var 8 u_f_a_f_b_f_c)
-                        (Var 8 x_f_b_f_c)
+                        (Var 8 u)
+                        (Var 8 x)
                         ()
                         .false.
                     )
                     (Assignment
-                        (Var 8 v_f_a_f_b_f_c)
+                        (Var 8 v)
                         (RealBinOp
-                            (Var 8 u_f_a_f_b_f_c)
+                            (Var 8 u)
                             Add
                             (RealConstant
                                 1.000000
@@ -237,9 +237,9 @@
                         .false.
                     )
                     (Assignment
-                        (Var 8 y_f_b_f_c)
+                        (Var 8 y)
                         (RealBinOp
-                            (Var 8 v_f_a_f_b_f_c)
+                            (Var 8 v)
                             Add
                             (RealConstant
                                 1.000000
@@ -252,9 +252,9 @@
                         .false.
                     )
                     (Assignment
-                        (Var 8 z_f_c)
+                        (Var 8 z)
                         (RealBinOp
-                            (Var 8 y_f_b_f_c)
+                            (Var 8 y)
                             Add
                             (RealConstant
                                 1.000000
@@ -268,7 +268,7 @@
                     )
                     (Assignment
                         (Var 8 q)
-                        (Var 8 z_f_c)
+                        (Var 8 z)
                         ()
                         .false.
                     )
@@ -277,7 +277,7 @@
                             ()
                             [(Var 8 q)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]
@@ -395,10 +395,10 @@
                                     (SymbolTable
                                         5
                                         {
-                                            u_f_a:
+                                            u:
                                                 (Variable
                                                     5
-                                                    u_f_a
+                                                    u
                                                     []
                                                     Local
                                                     ()
@@ -414,10 +414,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            v_f_a:
+                                            v:
                                                 (Variable
                                                     5
-                                                    v_f_a
+                                                    v
                                                     []
                                                     Local
                                                     ()
@@ -490,15 +490,15 @@
                                     []
                                     [(Var 5 x)]
                                     [(Assignment
-                                        (Var 5 u_f_a)
+                                        (Var 5 u)
                                         (Var 5 x)
                                         ()
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 5 v_f_a)
+                                        (Var 5 v)
                                         (RealBinOp
-                                            (Var 5 u_f_a)
+                                            (Var 5 u)
                                             Add
                                             (RealConstant
                                                 1.000000
@@ -513,7 +513,7 @@
                                     (Assignment
                                         (Var 5 y)
                                         (RealBinOp
-                                            (Var 5 v_f_a)
+                                            (Var 5 v)
                                             Add
                                             (RealConstant
                                                 1.000000
@@ -567,10 +567,10 @@
                                     (SymbolTable
                                         7
                                         {
-                                            u_f_a_f_b:
+                                            u:
                                                 (Variable
                                                     7
-                                                    u_f_a_f_b
+                                                    u
                                                     []
                                                     Local
                                                     ()
@@ -586,10 +586,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            v_f_a_f_b:
+                                            v:
                                                 (Variable
                                                     7
-                                                    v_f_a_f_b
+                                                    v
                                                     []
                                                     Local
                                                     ()
@@ -624,10 +624,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            x_f_b:
+                                            x:
                                                 (Variable
                                                     7
-                                                    x_f_b
+                                                    x
                                                     []
                                                     Local
                                                     ()
@@ -643,10 +643,10 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            y_f_b:
+                                            y:
                                                 (Variable
                                                     7
-                                                    y_f_b
+                                                    y
                                                     []
                                                     Local
                                                     ()
@@ -700,21 +700,21 @@
                                     []
                                     [(Var 7 w)]
                                     [(Assignment
-                                        (Var 7 x_f_b)
+                                        (Var 7 x)
                                         (Var 7 w)
                                         ()
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 7 u_f_a_f_b)
-                                        (Var 7 x_f_b)
+                                        (Var 7 u)
+                                        (Var 7 x)
                                         ()
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 7 v_f_a_f_b)
+                                        (Var 7 v)
                                         (RealBinOp
-                                            (Var 7 u_f_a_f_b)
+                                            (Var 7 u)
                                             Add
                                             (RealConstant
                                                 1.000000
@@ -727,9 +727,9 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 7 y_f_b)
+                                        (Var 7 y)
                                         (RealBinOp
-                                            (Var 7 v_f_a_f_b)
+                                            (Var 7 v)
                                             Add
                                             (RealConstant
                                                 1.000000
@@ -744,7 +744,7 @@
                                     (Assignment
                                         (Var 7 z)
                                         (RealBinOp
-                                            (Var 7 y_f_b)
+                                            (Var 7 y)
                                             Add
                                             (RealConstant
                                                 1.000000

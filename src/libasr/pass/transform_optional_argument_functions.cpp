@@ -388,8 +388,18 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             if( i - is_method >= (int)x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
                 ASR::ttype_t* arg_type = func_arg_j->m_type;
+                if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
+                    arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
+                    ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::extract_type(arg_type));
+                    if( str->m_len &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){
+                        str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 0,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
+                    }
+                }
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
-                if( ASR::is_a<ASR::Array_t>(*arg_type) ) {
+                if( ASR::is_a<ASR::Array_t>(*arg_type) ) { // Create dummy array dims
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(arg_type);
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, array_t->n_dims);

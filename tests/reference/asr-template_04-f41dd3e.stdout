@@ -12653,7 +12653,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -12712,14 +12712,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 (StringConstant
                                     "\n"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -12794,7 +12794,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -12853,14 +12853,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 (StringConstant
                                     "\n"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -13221,7 +13221,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -13280,14 +13280,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 (StringConstant
                                     "\n"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -13362,7 +13362,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -13421,14 +13421,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 (StringConstant
                                     "\n"
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]
@@ -21749,7 +21749,7 @@
                                                         [(ErrorStop
                                                             (StringConstant
                                                                 "n must be > 0"
-                                                                (String 1 13 () PointerString)
+                                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
                                                             )
                                                         )]
                                                         []
@@ -22802,7 +22802,7 @@
                                                         [(ErrorStop
                                                             (StringConstant
                                                                 "Attempted to sconcat empty list"
-                                                                (String 1 31 () PointerString)
+                                                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) .false. .false. PointerString)
                                                             )
                                                         )]
                                                     )]
@@ -22932,7 +22932,7 @@
                                                         [(ErrorStop
                                                             (StringConstant
                                                                 "n must be > 0"
-                                                                (String 1 13 () PointerString)
+                                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
                                                             )
                                                         )]
                                                         []

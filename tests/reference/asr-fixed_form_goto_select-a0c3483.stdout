@@ -80,7 +80,7 @@
                     (Print
                         (StringConstant
                             "hello"
-                            (String 1 5 () PointerString)
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                     )
                     (GoToTarget

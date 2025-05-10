@@ -7,7 +7,7 @@ source_filename = "LFortran"
 @3 = private unnamed_addr constant [18 x i8] c"test is not found\00", align 1
 @4 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info = private unnamed_addr constant [5 x i8] c"S,I4\00", align 1
+@serialization_info = private unnamed_addr constant [8 x i8] c"S-24,I4\00", align 1
 @6 = private unnamed_addr constant [25 x i8] c"test is found at index: \00", align 1
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
@@ -324,7 +324,7 @@ else:                                             ; preds = %.entry
   %9 = call i32 @_lcompilers_index_str1(i8** %mystring, i8** %teststring, i1* %call_arg_value2, i32* %call_arg_value3)
   %10 = alloca i32, align 4
   store i32 %9, i32* %10, align 4
-  %11 = call i8* (i8*, i8*, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @serialization_info, i32 0, i32 0), i32 0, i8** %8, i32* %10)
+  %11 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i8** %8, i32* %10)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
   br label %ifcont
 
@@ -346,6 +346,6 @@ declare void @_lfortran_strcpy_pointer_string(i8**, i8*)
 
 declare void @_lfortran_printf(i8*, ...)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lpython_free_argv()

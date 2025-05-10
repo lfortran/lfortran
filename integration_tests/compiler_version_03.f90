@@ -28,4 +28,6 @@ program compiler_version_03
     c = compiler_version()
     print *, len(c), c
 
+    if(len(c) /= len(a)) error stop
+    if(c /= a) error stop
 end program

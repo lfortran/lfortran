@@ -146,7 +146,7 @@
                             (Var 2 v)
                             (Var 2 zero)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

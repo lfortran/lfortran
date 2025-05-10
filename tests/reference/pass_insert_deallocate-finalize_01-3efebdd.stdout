@@ -117,7 +117,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -193,7 +193,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 -2 () DescriptorString)
+                                        (String 1 () .false. .true. DescriptorString)
                                     )
                                     ()
                                     Source
@@ -365,7 +365,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source

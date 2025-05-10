@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 30 () PointerString)
+                                    (String 1 (IntegerConstant 30 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -35,7 +35,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 10 () PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -52,7 +52,7 @@
                         (Var 2 mystring)
                         (StringConstant
                             "This is a test"
-                            (String 1 14 () PointerString)
+                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -61,7 +61,7 @@
                         (Var 2 teststring)
                         (StringConstant
                             "test"
-                            (String 1 4 () PointerString)
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
                         )
                         ()
                         .false.
@@ -89,7 +89,7 @@
                         [(Print
                             (StringConstant
                                 "test is not found"
-                                (String 1 17 () PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         [(Print
@@ -97,7 +97,7 @@
                                 ()
                                 [(StringConstant
                                     "test is found at index: "
-                                    (String 1 24 () PointerString)
+                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                                 (IntrinsicElementalFunction
                                     SubstrIndex
@@ -113,7 +113,7 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (String -1 0 () PointerString)
+                                (String 1 () .false. .false. CString)
                                 ()
                             )
                         )]
