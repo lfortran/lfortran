@@ -7045,6 +7045,10 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 tmp = builder->CreateAShr(left_val, right_val);
                 break;
             }
+            case ASR::binopType::LBitRShift: {
+                tmp = builder->CreateLShr(left_val, right_val);
+                break;
+            }
         }
     }
 
