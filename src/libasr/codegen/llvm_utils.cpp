@@ -1947,9 +1947,9 @@ namespace LCompilers {
                 {
                     llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
                     llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                        llvm::Type::getInt8Ty(context)->getPointerTo(), left, i));
+                        llvm::Type::getInt8Ty(context), left, i));
                     llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                        llvm::Type::getInt8Ty(context)->getPointerTo(), right, i));
+                        llvm::Type::getInt8Ty(context), right, i));
                     llvm::Value *cond = builder->CreateAnd(
                         builder->CreateICmpNE(l, null_char),
                         builder->CreateICmpNE(r, null_char)
@@ -1973,9 +1973,9 @@ namespace LCompilers {
                 start_new_block(loopend);
                 llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
                 llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                    llvm::Type::getInt8Ty(context)->getPointerTo(), left, i));
+                    llvm::Type::getInt8Ty(context), left, i));
                 llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                    llvm::Type::getInt8Ty(context)->getPointerTo(), right, i));
+                    llvm::Type::getInt8Ty(context), right, i));
                 return builder->CreateICmpEQ(l, r);
             }
             case ASR::ttypeType::Tuple: {
