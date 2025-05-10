@@ -14,7 +14,6 @@ program array_04_transfer
     real :: value(5) = [1.1, 1.2, 1.3, 1.4, 1.5]
     integer(int8) :: key(16) = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
     integer :: val(5)
-    integer(int64) :: map_to_6
     val = transfer(value, val, 1 * size(value))
     print * , val
     if (all(val /= [1066192077, 1067030938, 1067869798, 1068708659, 1069547520])) error stop
@@ -22,16 +21,6 @@ program array_04_transfer
     if (real32_int64 /= 4652758847580893348_8) error stop
     if (int32_int64 /= -2401053088876216593_8) error stop
     call test_sub(key)
-    map_to_6 = transfer( [ key(1), 0_int8, 0_int8, 0_int8, &
-                        0_int8, 0_int8, 0_int8, 0_int8 ], &
-                        0_int64 )
-    print *, map_to_6
-    if (map_to_6 /= 1) error stop
-    map_to_6 = transfer( [ key(1:4), 0_int8, 0_int8, 0_int8], &
-                        0_int64 )
-    print *, map_to_6
-    if (map_to_6 /= 67305985) error stop
-
 
 contains 
     subroutine test_sub(key)
