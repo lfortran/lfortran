@@ -2547,7 +2547,7 @@ namespace LCompilers {
         llvm::Value* dict, llvm::Module* module, llvm::Value* llvm_capacity) {
         llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(dict);
         llvm::Value* rehash_flag = llvm_utils->CreateLoad2(
-            llvm::Type::getInt8Ty(context), rehash_flag_ptr);
+            llvm::Type::getInt1Ty(context), rehash_flag_ptr);
         llvm::Value* llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
         llvm::Value* occupancy_ptr = get_pointer_to_occupancy(dict);
         LLVM::CreateStore(*builder, llvm_zero, occupancy_ptr);
@@ -2880,7 +2880,7 @@ namespace LCompilers {
         llvm::Value* src_key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(src));
         llvm::Value* src_rehash_flag = llvm_utils->CreateLoad2(
-            llvm::Type::getInt8Ty(context), get_pointer_to_rehash_flag(src));
+            llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag(src));
         LLVM::CreateStore(*builder, src_occupancy, get_pointer_to_occupancy(dest));
         LLVM::CreateStore(*builder, src_filled_buckets, get_pointer_to_number_of_filled_buckets(dest));
         LLVM::CreateStore(*builder, src_capacity, get_pointer_to_capacity(dest));
@@ -3071,14 +3071,14 @@ namespace LCompilers {
             if( for_read ) {
                 cond = builder->CreateAnd(is_key_set, builder->CreateNot(
                             llvm_utils->CreateLoad2(
-                                llvm::Type::getInt8Ty(context), is_key_matching_var))
+                                llvm::Type::getInt1Ty(context), is_key_matching_var))
                 );
                 cond = builder->CreateOr(is_key_skip, cond);
             } else {
                 cond = builder->CreateAnd(is_key_set, builder->CreateNot(is_key_skip));
                 cond = builder->CreateAnd(cond, builder->CreateNot(
                             llvm_utils->CreateLoad2(
-                                llvm::Type::getInt8Ty(context),
+                                llvm::Type::getInt1Ty(context),
                                 is_key_matching_var))
                 );
             }
@@ -3193,7 +3193,7 @@ namespace LCompilers {
             if( for_read ) {
                 cond = builder->CreateAnd(is_key_set, builder->CreateNot(
                             llvm_utils->CreateLoad2(
-                                llvm::Type::getInt8Ty(context),
+                                llvm::Type::getInt1Ty(context),
                                 is_key_matching_var))
                         );
                 cond = builder->CreateOr(is_key_skip, cond);
@@ -3201,7 +3201,7 @@ namespace LCompilers {
                 cond = builder->CreateAnd(is_key_set, builder->CreateNot(is_key_skip));
                 cond = builder->CreateAnd(cond, builder->CreateNot(
                             llvm_utils->CreateLoad2(
-                                llvm::Type::getInt8Ty(context),
+                                llvm::Type::getInt1Ty(context),
                                 is_key_matching_var))
                         );
             }
@@ -3291,7 +3291,7 @@ namespace LCompilers {
                 llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo())
             );
             cond = builder->CreateAnd(cond, builder->CreateNot(
-                    llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), is_key_matching_var)));
+                    llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), is_key_matching_var)));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
@@ -3299,7 +3299,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(loopbody);
         {
             llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad2(
-                llvm::Type::getInt8Ty(context), chain_itr);
+                llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr);
             llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_pair_type->getPointerTo());
             llvm::Type* llvm_key_type = llvm_utils->get_type_from_ttype_t_util(key_asr_type, module);
             llvm::Value* kv_struct_key = llvm_utils->create_gep2(kv_pair_type, kv_struct, 0);
@@ -3309,7 +3309,7 @@ namespace LCompilers {
             LLVM::CreateStore(*builder, llvm_utils->is_equal_by_value(key, kv_struct_key,
                                 module, key_asr_type), is_key_matching_var);
             llvm_utils->create_if_else(builder->CreateNot(llvm_utils->CreateLoad2(
-                llvm::Type::getInt8Ty(context), is_key_matching_var)), [&]() {
+                llvm::Type::getInt1Ty(context), is_key_matching_var)), [&]() {
                 LLVM::CreateStore(*builder, kv_struct_i8, chain_itr_prev);
                 llvm::Value* next_kv_struct = llvm_utils->CreateLoad2(
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
