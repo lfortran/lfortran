@@ -59,6 +59,7 @@
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
+#include <server/lsp_specification.h>
 
 #ifdef WITH_LSP
 #include <bin/language_server_interface.h>
@@ -2328,6 +2329,12 @@ int main_app(int argc, char *argv[]) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::cout << "LLVM: " << LCompilers::LLVMEvaluator::llvm_version() << std::endl;
         std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
+#endif
+#ifdef WITH_LSP
+        std::cout << "LSP Version: " << LCompilers::LanguageServerProtocol::LSP_VERSION
+                  << std::endl;
+        std::cout << "JSON_RPC Version: " << LCompilers::LanguageServerProtocol::JSON_RPC_VERSION
+                  << std::endl;
 #endif
         return 0;
     }
