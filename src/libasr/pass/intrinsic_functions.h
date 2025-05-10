@@ -4390,12 +4390,12 @@ namespace Ishftc {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         std::string c_func_name;
-        if(ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 4){
+        if(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4){
             c_func_name = "_lfortran_sishftc";
         } else {
             c_func_name = "_lfortran_dishftc";
         }
-        std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python(arg_types[1]);
+        std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python(arg_types[0]);
 
         declare_basic_variables(new_name);
         if (scope->get_symbol(new_name)) {
