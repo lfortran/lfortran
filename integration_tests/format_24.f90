@@ -23,4 +23,6 @@ program format_24
   print "(G0.17)", "Hello G format!"            ! Character string
   print "(G0.17)", z                            ! Complex number
   print "(3G0.17)", rvals                       ! Array of real numbers
+  print "(G0.17)", 123456789012345.d+4
+  print "(G0.17)", -123456789012345.d+7
 end program format_24
