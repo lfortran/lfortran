@@ -8708,7 +8708,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             x.m_values[i]->base.loc, x.m_values[i], type32, nullptr));
                         llvm::Value *str = var_to_read_into;  
                         visit_StringLen(*strlen);
-                        builder->CreateCall(fn, {str, unit_val, tmp}); tmp = nullptr;
+                        builder->CreateCall(fn, {str, unit_val, iostat, tmp}); tmp = nullptr;
                     } else {
                         builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
                     }
@@ -8728,12 +8728,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
                             llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             *module);
             }
-            builder->CreateCall(fn, {unit_val});
+            builder->CreateCall(fn, {unit_val, iostat});
         }
     }
 
