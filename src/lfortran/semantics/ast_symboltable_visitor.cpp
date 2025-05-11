@@ -1076,7 +1076,8 @@ public:
                 throw SemanticAbort();
             }
         }
-        if( sym_name == interface_name ) {
+        
+        if (interface_name == to_lower(sym_name) && deftype == ASR::deftypeType::Interface) {
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -1987,7 +1988,6 @@ public:
             } else {
                 generic_procedures[generic_name] = proc_names;
             }
-            interface_name.clear();
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
                    AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)) {
             std::vector<std::string> proc_names;
