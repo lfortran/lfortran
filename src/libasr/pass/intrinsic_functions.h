@@ -4399,6 +4399,10 @@ namespace Ishftc {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         std::string c_func_name;
+        Vec<ASR::ttype_t*> arg_types2; arg_types2.reserve(al, 1);   // keeping x and size always int64 to maintain uniformity
+        arg_types2.push_back(al, arg_types[0]);
+        arg_types2.push_back(al, int64);         
+        arg_types2.push_back(al, int64);
         if(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4){
             c_func_name = "_lfortran_sishftc";
         } else {
@@ -4407,17 +4411,23 @@ namespace Ishftc {
         std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python(arg_types[0]);
 
         declare_basic_variables(new_name);
+        if (new_args.p[1].m_value && ASRUtils::extract_kind_from_ttype_t(arg_types[1]) != 8) {
+            new_args.p[1].m_value = b.i2i_t(new_args.p[1].m_value, int64);
+        }
+        if (new_args.p[2].m_value && ASRUtils::extract_kind_from_ttype_t(arg_types[2]) != 8) {
+            new_args.p[2].m_value = b.i2i_t(new_args.p[2].m_value, int64);
+        }
         if (scope->get_symbol(new_name)) {
             ASR::symbol_t *s = scope->get_symbol(new_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
-        fill_func_arg("n", arg_types[0]);
-        fill_func_arg("x", arg_types[1]);
-        fill_func_arg("size", arg_types[2]);
+        fill_func_arg("n", arg_types2[0]);
+        fill_func_arg("x", arg_types2[1]);
+        fill_func_arg("size", arg_types2[2]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 3, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 3, arg_types2);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));

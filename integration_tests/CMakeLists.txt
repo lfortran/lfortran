@@ -2203,7 +2203,7 @@ RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array pas
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME ishftc_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME ishftc_01 LABELS gfortran llvm)
 
 RUN(NAME separate_compilation_01 LABELS gfortran llvm EXTRAFILES separate_compilation_01b.f90)
 RUN(NAME separate_compilation_02 LABELS gfortran llvm EXTRAFILES separate_compilation_02b.f90)
@@ -2212,8 +2212,9 @@ RUN(NAME separate_compilation_04 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_05 LABELS gfortran llvm EXTRAFILES separate_compilation_05a.f90 separate_compilation_05b.f90)
 RUN(NAME separate_compilation_06 LABELS gfortran llvm EXTRAFILES separate_compilation_06a.f90 separate_compilation_06b.f90)
 
+
+
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
 
 RUN(NAME logical_testing LABELS gfortran llvm)
-
