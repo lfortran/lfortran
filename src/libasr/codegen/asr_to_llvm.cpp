@@ -8402,7 +8402,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 character_type->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, true);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -8706,7 +8707,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         visit_StringLen(*strlen);
                         builder->CreateCall(fn, {str, unit_val, tmp}); tmp = nullptr;
                     } else {
-                        builder->CreateCall(fn, {var_to_read_into, unit_val});
+                        builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
                     }
                 }
             }
@@ -8724,13 +8725,12 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
                             llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             *module);
             }
-            builder->CreateCall(fn, {unit_val, iostat});
+            builder->CreateCall(fn, {unit_val});
         }
     }
 
