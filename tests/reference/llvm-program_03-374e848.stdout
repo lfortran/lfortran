@@ -14,34 +14,33 @@ define i32 @main(i32 %0, i8** %1) {
   %z1 = alloca i32, align 4
   %2 = load i32, i32* %z1, align 4
   store i32 %2, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 0, i32* %z1, align 4
+  store i32 1, i32* %z1, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
   %3 = load i32, i32* %z1, align 4
-  %4 = add i32 %3, 1
-  %5 = icmp sle i32 %4, 10
-  br i1 %5, label %loop.body, label %loop.end
+  %4 = icmp sle i32 %3, 10
+  br i1 %4, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %6 = load i32, i32* %z1, align 4
-  %7 = add i32 %6, 1
-  store i32 %7, i32* %z1, align 4
-  %8 = load i32, i32* %z1, align 4
-  store i32 %8, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  %5 = load i32, i32* %z1, align 4
+  store i32 %5, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
   store i32 1, i32* %call_arg_value, align 4
-  %9 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
-  %10 = alloca i32, align 4
-  store i32 %9, i32* %10, align 4
-  %11 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %10)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %12 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 %12, i32* %z1, align 4
+  %6 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
+  %7 = alloca i32, align 4
+  store i32 %6, i32* %7, align 4
+  %8 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %7)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %9 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %9, i32* %z1, align 4
+  %10 = load i32, i32* %z1, align 4
+  %11 = add i32 %10, 1
+  store i32 %11, i32* %z1, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %13 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 %13, i32* %z1, align 4
+  %12 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %12, i32* %z1, align 4
   call void @_lpython_free_argv()
   br label %return
 

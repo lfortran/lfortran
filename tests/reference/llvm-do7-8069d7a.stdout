@@ -9,22 +9,21 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a1 = alloca i32, align 4
   %i2 = alloca i32, align 4
-  store i32 0, i32* %i2, align 4
+  store i32 1, i32* %i2, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
   %2 = load i32, i32* %i2, align 4
-  %3 = add i32 %2, 1
-  %4 = icmp sle i32 %3, 10
-  br i1 %4, label %loop.body, label %loop.end
+  %3 = icmp sle i32 %2, 10
+  br i1 %3, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
+  store i32 5, i32* %call_arg_value, align 4
+  %4 = call i32 @f(i32* %call_arg_value)
+  store i32 %4, i32* %a1, align 4
   %5 = load i32, i32* %i2, align 4
   %6 = add i32 %5, 1
   store i32 %6, i32* %i2, align 4
-  store i32 5, i32* %call_arg_value, align 4
-  %7 = call i32 @f(i32* %call_arg_value)
-  store i32 %7, i32* %a1, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
