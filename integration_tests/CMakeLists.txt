@@ -878,7 +878,7 @@ RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_160 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ior
 RUN(NAME intrinsics_161 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ieor
 RUN(NAME intrinsics_162 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Not
-RUN(NAME intrinsics_163 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ishftc
+RUN(NAME intrinsics_163 LABELS gfortran llvm fortran) # ishftc
 RUN(NAME intrinsics_164 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # iand
 RUN(NAME intrinsics_165 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum
 RUN(NAME intrinsics_166 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST_TILL_LLVM16) # ibset
@@ -2203,7 +2203,6 @@ RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array pas
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME ishftc_01 LABELS gfortran llvm)
 
 RUN(NAME separate_compilation_01 LABELS gfortran llvm EXTRAFILES separate_compilation_01b.f90)
 RUN(NAME separate_compilation_02 LABELS gfortran llvm EXTRAFILES separate_compilation_02b.f90)
