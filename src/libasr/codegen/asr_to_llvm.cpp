@@ -9164,7 +9164,10 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             res += "S";
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
             int len;
-            if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
+            bool cond = ASRUtils::extract_value(str_type->m_len, len);
+            // LPython has strings initialized with negative 
+            // lengths, ignore for now
+            if(cond && len>-1){res += "-" + std::to_string(len);}
         } else if (ASR::is_a<ASR::Complex_t>(*type)){
             res += "{R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
                     ",R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
