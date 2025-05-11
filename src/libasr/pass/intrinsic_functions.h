@@ -1347,7 +1347,16 @@ namespace Shiftr {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
-        int64_t val = val1 >> val2;
+        int64_t val;
+        if (kind == 1) {                       // For logical shift val1 is treated as unsigned
+            val = (uint8_t) val1 >> val2;
+        } else if(kind == 2) {
+            val = (uint16_t) val1 >> val2;
+        } else if(kind == 4) {
+            val = (uint32_t) val1 >> val2;
+        } else {
+            val = (uint64_t) val1 >> val2;
+        }
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
@@ -1362,7 +1371,7 @@ namespace Shiftr {
         * r = shiftr(x, y)
         * r = x >> y
         */
-        body.push_back(al, b.Assignment(result, b.BitRshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, b.LBitRshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
