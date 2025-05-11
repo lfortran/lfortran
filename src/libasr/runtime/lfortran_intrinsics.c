@@ -3939,9 +3939,12 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num)
 // TODO : Implement iostat check (refer _lfortran_read_char)
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat)
 {
+
+    if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];   // Long enough buffer to fit any 32 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
         }
@@ -3949,6 +3952,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         // Use strtok() to extract only the first token before any whitespace
         char *token = strtok(buffer, " \t\n");
         if (token == NULL) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Invalid input for int32_t.\n");
             exit(1);
         }
@@ -3958,12 +3962,14 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         long long_val = strtol(token, &endptr, 10);
 
         if (endptr == token || *endptr != '\0') {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Invalid input for int32_t.\n");
             exit(1);
         }
 
         // check for overflow (when input value is more than the int32 limit)
         if (errno == ERANGE || long_val < INT32_MIN || long_val > INT32_MAX) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Value %ld is out of integer(4) range.\n", long_val);
             exit(1);
         }
@@ -3976,23 +3982,27 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
+        if (iostat) { *iostat = 1;}
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
         if (fread(p, sizeof(*p), 1, filep) != 1) {
+            if (iostat) { *iostat = -1;}
             fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
             exit(1);
         }
     } else {
         long temp;
         if (fscanf(filep, "%ld", &temp) != 1) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
             exit(1);
         }
 
         if (temp < INT32_MIN || temp > INT32_MAX) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Value %ld is out of integer(4) range (file).\n", temp);
             exit(1);
         }
@@ -4004,15 +4014,19 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
 // TODO : Implement iostat check (refer _lfortran_read_char)
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat)
 {
+
+    if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];   // Long enough buffer to fit any 64 bit integer
         if (!fgets(buffer, sizeof(buffer), stdin)) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Failed to read input.\n");
             exit(1);
         }
 
         char *token = strtok(buffer, " \t\n");
         if (token == NULL) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Invalid input for int64_t.\n");
             exit(1);
         }
@@ -4022,11 +4036,13 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
         long long long_val = strtoll(token, &endptr, 10);
 
         if (endptr == token || *endptr != '\0') {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Invalid input for int64_t.\n");
             exit(1);
         }
 
         if (errno == ERANGE || long_val < INT64_MIN || long_val > INT64_MAX) {
+            if (iostat) { *iostat = 1;}
             fprintf(stderr, "Error: Value %lld is out of integer(8) range.\n", long_val);
             exit(1);
         }
@@ -4038,22 +4054,26 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
     if (!filep) {
+        if (iostat) { *iostat = 1;}
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
         if (fread(p, sizeof(*p), 1, filep) != 1) {
+            if (iostat) { *iostat = -1;}
             fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
             exit(1);
         }
     } else {
         int64_t temp;
         if (fscanf(filep, "%" PRId64, &temp) != 1) {
+            if (iostat) { *iostat = -1;}
             fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
             exit(1);
         }
         if (temp < INT64_MIN || temp > INT64_MAX) {
+            if (iostat) { *iostat = -1;}
             fprintf(stderr, "Error: Value %" PRId64 " is out of integer(8) range (file).\n", temp);
             exit(1);
         }
@@ -4310,7 +4330,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, int32_t *iosta
         // Only read header if not access=stream and is at start of file
         if (access_id != 1 && ftell(filep) == 0 &&               
                 fread(&data_length, sizeof(int32_t), 1, filep) != 1) {   
-            if (iostat) { *iostat = 1; va_end(args); return; }
+            if (iostat) { *iostat = 1; va_end(args);}
             printf("Error reading data length from file.\n");
             exit(1);
         }
@@ -4338,9 +4358,10 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, int32_t *iosta
 
         // read the actual data
         if (fread(*p, sizeof(char), data_length, filep) != data_length) {
-            if (iostat) { *iostat = 1; free(*p); va_end(args);}
+            if (iostat) { *iostat = 1;}
             printf("Error reading data from file.\n");
             free(*p);
+            va_end(args);
             exit(1);
         }
         (*p)[var_len] = '\0';
@@ -4828,7 +4849,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     }
 }
 
-LFORTRAN_API void _lfortran_empty_read(int32_t unit_num) {
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t *iostat) {
     if (unit_num == -1) {
         // Read from stdin
         return;
