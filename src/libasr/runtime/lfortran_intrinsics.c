@@ -4280,8 +4280,33 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, char* fmt, int32_t no_of_args, ...)
 {
-    if (!streql(fmt, "(a)")) {
-        printf("Only (a) supported as fmt currently");
+    int width = -1; // default is -1, if length not mentioned
+
+    // Supported format are (a) and (aw)
+    if (streql(fmt, "(a)")) {
+        width = -1;
+    }
+    else if(fmt[0] == '(' && (fmt[1] == 'a' || fmt[1] == 'A')) {
+        int i = 2;
+        while (isdigit(fmt[i])) i++;
+
+        if (fmt[i] == ')' && i > 2) {
+            char width_str[16];
+            strncpy(width_str, fmt + 2, i - 2);
+            width_str[i - 2] = '\0';
+            width = atoi(width_str);
+
+            if (width <= 0) {
+                printf("Invalid format width in '%s'\n", fmt);
+                exit(1);
+            }
+        } else {
+            printf("Only (a) and (aw) are supported.\n");
+            exit(1);
+        }
+    }
+    else{
+        printf("Only (a) and (aw) are supported.\n");
         exit(1);
     }
 
@@ -4292,14 +4317,16 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     va_start(args, no_of_args);
     char** arg = va_arg(args, char**);
 
-    int n = strlen(*arg);
-    *arg = (char*)malloc((n + 1) * sizeof(char));
+    int n = strlen(*arg); // length of string
+    if (width == -1) width = n;
+
+    // *arg = (char*)malloc((n + 1) * sizeof(char));
     const char SPACE = ' ';
 
     if (unit_num == -1) {
-        // Read from stdin
-        char *buffer = (char*)malloc((n + 1) * sizeof(char));
-        if (fgets(buffer, n + 1, stdin) == NULL) {
+        // Block for reading from standard input (stdin)
+        char *buffer = (char*)malloc((width + 1) * sizeof(char));
+        if (fgets(buffer, width + 1, stdin) == NULL) {
             *iostat = -1;
             va_end(args);
             free(buffer);
@@ -4312,13 +4339,43 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             }
 
             size_t input_length = strcspn(buffer, "\n");
-
             *chunk = input_length;
-            while (input_length < n) {
-                buffer[input_length] = SPACE;
-                input_length++;
+
+            char *output = (char*)malloc(n + 1);
+            memset(output, SPACE, n); // Initialize with spaces
+            output[n] = '\0';
+            
+            if (width > 0) {
+                char *padded_buffer = (char*)malloc(width + 1);
+                strncpy(padded_buffer, buffer, input_length);
+                for (size_t i = input_length; i < width; ++i) {
+                    padded_buffer[i] = SPACE;
+                }
+                padded_buffer[width] = '\0';
+
+                if (width > n) {
+                    if (input_length >= width) {
+                        strncpy(output, padded_buffer + (width - n), n);
+                    } else if (input_length >= n) {
+                        strncpy(output, buffer + (input_length - n), n);
+                    } else {
+                        strncpy(output, buffer, input_length);
+                    }
+                } else { // width <= n
+                    strncpy(output, padded_buffer, width);
+                    for(size_t i = width; i < n; ++i) {
+                        output[i] = SPACE;
+                    }
+                    output[n] = '\0';
+                }
+                free(padded_buffer);
+            } else { // For (a) format (width == n)
+                strncpy(output, buffer, n);
             }
-            strcpy(*arg, buffer);
+
+            strncpy(*arg, output, n);         
+
+            free(output);
             va_end(args);
             free(buffer);
             return;
@@ -4331,8 +4388,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
         printf("No file found with given unit\n");
         exit(1);
     } else {
-        char *buffer = (char*)malloc((n + 1) * sizeof(char));
-        if (fgets(buffer, n + 1, filep) == NULL) {
+        // Block for reading from a file
+        char *buffer = (char*)malloc((width + 1) * sizeof(char));
+        if (fgets(buffer, width + 1, filep) == NULL) {
             *iostat = -1;
             va_end(args);
             free(buffer);
@@ -4350,11 +4408,41 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 
             size_t input_length = strlen(buffer);
             *chunk = input_length;
-            while (input_length < n) {
-                strncat(buffer, &SPACE, 1);
-                input_length++;
+
+            char *output = (char*)malloc(n + 1);
+            memset(output, SPACE, n);
+            output[n] = '\0';
+
+            if (width > 0) { // For (aw) format
+                char *padded_buffer = (char*)malloc(width + 1);
+                strncpy(padded_buffer, buffer, width);
+                for (size_t i = input_length; i < width; ++i) {
+                    padded_buffer[i] = SPACE;
+                }
+                padded_buffer[width] = '\0';
+
+                if (width > n) {
+                    if (input_length >= width) {
+                        strncpy(output, padded_buffer + (width - n), n);
+                    } else if (input_length >= n) {
+                        strncpy(output, buffer + (input_length - n), n);
+                    } else {
+                        strncpy(output, buffer, input_length);
+                    }
+                } else { // width <= n
+                    strncpy(output, padded_buffer, width);
+                    for(size_t i = width; i < n; ++i) {
+                        output[i] = SPACE;
+                    }
+                    output[n] = '\0';
+                }
+            } else { // For (a) format
+                strncpy(output, buffer, n);
             }
-            strcpy(*arg, buffer);
+            
+            strncpy(*arg, output, n);
+
+            free(output);
             va_end(args);
             free(buffer);
         }
