@@ -9029,6 +9029,13 @@ public:
             builder->CreateCall(fn, args);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
+            // changes for empty read (no variable given)
+            llvm::ConstantInt* const_minus_1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context),
+                -1,
+                true
+            );
+            builder->CreateStore(const_minus_1, iostat); // Initialize iostat to -1
             for (size_t i=0; i<x.n_values; i++) {
                 int ptr_copy = ptr_loads;
                 ptr_loads = 0;

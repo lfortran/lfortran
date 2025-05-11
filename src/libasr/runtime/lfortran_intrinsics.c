@@ -4011,7 +4011,6 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
     }
 }
 
-// TODO : Implement iostat check (refer _lfortran_read_char)
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat)
 {
 
@@ -4864,10 +4863,24 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t *iostat) {
 
     if (!unit_file_bin) {
         // The contents of `c` are ignored
+        long pos_before_read = ftell(fp); // Get file position before reading
         char c = fgetc(fp);
         while (c != '\n' && c != EOF) {
             c = fgetc(fp);
         }
+        long pos_after_read = ftell(fp);
+        if (feof(fp)) {
+            if (pos_before_read == pos_after_read && *iostat != 0) {
+                *iostat = -1; // EOF at the start of the line
+            }else{
+                *iostat = 0;
+            } 
+        } else if (ferror(fp)) {
+            *iostat = 1;
+        } else {
+            *iostat = 0;
+        }
+        
     }
 }
 
