@@ -668,8 +668,8 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
         }
     }
     // Cast LHS or RHS if necessary
-    ASR::ttype_t *left_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(left));
-    ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(right));
+    ASR::ttype_t *left_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(left));
+    ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(right));
     ASR::ttype_t *left_type2 = ASRUtils::type_get_past_array(left_type);
     ASR::ttype_t *right_type2 = ASRUtils::type_get_past_array(right_type);
 
