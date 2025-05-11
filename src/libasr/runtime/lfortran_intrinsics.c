@@ -4265,14 +4265,19 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     }
 }
 
-LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
+LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, int32_t *iostat, ...)
 {
     const char SPACE = ' ';
     int n = strlen(*p);
+    if (iostat) *iostat = 0;
+
     if (unit_num == -1) {
         // Read from stdin
         *p = (char*)malloc(n * sizeof(char));
-        (void)!fgets(*p, n + 1, stdin);
+        if (!fgets(*p, n + 1, stdin)) {
+            if (iostat) { *iostat = 1;}
+            fprintf(stderr, "Error reading from stdin\n"); exit(1); 
+        }
         (*p)[strcspn(*p, "\n")] = 0;
         size_t input_length = strlen(*p);
         while (input_length < n) {
@@ -4287,6 +4292,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
     int access_id;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
     if (!filep) {
+        if(iostat) { *iostat = 1;}
         printf("No file found with given unit\n");
         exit(1);
     }
@@ -4294,13 +4300,14 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
     if (unit_file_bin) {
         // read the record marker for data length
         va_list args;
-        va_start(args, unit_num); 
+        va_start(args, iostat); 
         int32_t var_len = va_arg(args, int32_t);
 
         int32_t data_length;
         // Only read header if not access=stream and is at start of file
         if (access_id != 1 && ftell(filep) == 0 &&               
                 fread(&data_length, sizeof(int32_t), 1, filep) != 1) {   
+            if (iostat) { *iostat = 1; va_end(args); return; }
             printf("Error reading data length from file.\n");
             exit(1);
         }
@@ -4319,6 +4326,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
         // allocate memory for the data based on data length
         *p = (char*)malloc((var_len + 1) * sizeof(char));
         if (*p == NULL) {
+            if (iostat) { *iostat = 1; va_end(args);}
             printf("Memory allocation failed.\n");
             exit(1);
         }
@@ -4327,6 +4335,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
 
         // read the actual data
         if (fread(*p, sizeof(char), data_length, filep) != data_length) {
+            if (iostat) { *iostat = 1; free(*p); va_end(args);}
             printf("Error reading data from file.\n");
             free(*p);
             exit(1);
@@ -4335,7 +4344,9 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
         va_end(args);
     } else {
         char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
-        (void)!fscanf(filep, "%s", tmp_buffer);
+        if (fscanf(filep, "%s", tmp_buffer) != 1) {
+            if (iostat) { *iostat = -1; free(tmp_buffer); return; }
+        }
         size_t input_length = strlen(tmp_buffer);
         strcpy(*p, tmp_buffer);
         free(tmp_buffer);
@@ -4346,6 +4357,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
         (*p)[n] = '\0';
     }
     if (streql(*p, "")) {
+        if(iostat) { *iostat = -1;}
         printf("Runtime error: End of file!\n");
         exit(1);
     }
@@ -4813,7 +4825,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     }
 }
 
-LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num) {
     if (unit_num == -1) {
         // Read from stdin
         return;
@@ -4831,14 +4843,6 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
         char c = fgetc(fp);
         while (c != '\n' && c != EOF) {
             c = fgetc(fp);
-        }
-
-        if (feof(fp)) {
-            *iostat = -1;
-        } else if (ferror(fp)) {
-            *iostat = 1;
-        } else {
-            *iostat = 0;
         }
     }
 }

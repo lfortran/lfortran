@@ -8809,7 +8809,8 @@ public:
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 character_type->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, true);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -9130,7 +9131,7 @@ public:
                         visit_StringLen(*strlen);
                         builder->CreateCall(fn, {str, unit_val, tmp}); tmp = nullptr;
                     } else {
-                        builder->CreateCall(fn, {var_to_read_into, unit_val});
+                        builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
                     }
                 }
             }
@@ -9148,13 +9149,12 @@ public:
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
                             llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             *module);
             }
-            builder->CreateCall(fn, {unit_val, iostat});
+            builder->CreateCall(fn, {unit_val});
         }
     }
 
