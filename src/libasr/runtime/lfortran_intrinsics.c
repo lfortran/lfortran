@@ -3935,7 +3935,9 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num)
 // Improved input validation for integer reading
 // - Prevents auto-casting of invalid inputs to integers
 // NOTE:- More changes need to be implemented for advanced error detection and check
-LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
+
+// TODO : Implement iostat check (refer _lfortran_read_char)
+LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat)
 {
     if (unit_num == -1) {
         char buffer[100];   // Long enough buffer to fit any 32 bit integer
@@ -3999,7 +4001,8 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
+// TODO : Implement iostat check (refer _lfortran_read_char)
+LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat)
 {
     if (unit_num == -1) {
         char buffer[100];   // Long enough buffer to fit any 64 bit integer
@@ -4062,7 +4065,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 // boolean read implementation is in process
 // Implementing a Logical read API (starting with the basic input of just logical-further, logicalArray also needed)
 // changes for the same are in: asr_to_llvm.cpp (line 8210 onwards)
-LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat)
 {
     if (unit_num == -1) {
         // Reading from standard input (console)
@@ -4367,7 +4370,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, int32_t *iosta
 // Improved input validation for float reading
 // - Prevents auto-casting of invalid inputs to float/real
 // NOTE:- More changes need to be implemented for advanced error detection and check
-LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
+LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat)
 {
     if (unit_num == -1) {
         char buffer[100];   // Long enough buffer to fit any 64 bit integer
@@ -4632,7 +4635,7 @@ LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t un
     }
 }
 
-LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
+LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *iostat)
 {
     if (unit_num == -1) {
         // Read from stdin

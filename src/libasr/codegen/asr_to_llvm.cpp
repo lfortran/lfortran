@@ -8795,7 +8795,8 @@ public:
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -8836,7 +8837,8 @@ public:
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -8859,7 +8861,8 @@ public:
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
