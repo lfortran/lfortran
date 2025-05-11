@@ -2520,6 +2520,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             case (ASR::binopType::BitXor) : { last_expr_precedence = 12; break; }
             case (ASR::binopType::BitLShift) : { last_expr_precedence = 7; break; }
             case (ASR::binopType::BitRShift) : { last_expr_precedence = 7; break; }
+            case (ASR::binopType::LBitRShift) : { last_expr_precedence = 7; break; }
             case (ASR::binopType::Pow) : {
                 src = "pow(" + left + ", " + right + ")";
                 if (is_c) {

@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "B"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (StringConstant
                                         "B"
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     Save
-                                    (String 1 1 () PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -40,12 +40,12 @@
                         [(CaseStmt
                             [(StringConstant
                                 "A"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Excellent!"
-                                    (String 1 10 () PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             .false.
@@ -53,7 +53,7 @@
                         (CaseStmt
                             [(StringConstant
                                 "B"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             []
                             .false.
@@ -61,12 +61,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "C"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Well done"
-                                    (String 1 9 () PointerString)
+                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             .false.
@@ -74,12 +74,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "D"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "You passed"
-                                    (String 1 10 () PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             .false.
@@ -87,12 +87,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "F"
-                                (String 1 1 () PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Better try again"
-                                    (String 1 16 () PointerString)
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) .false. .false. PointerString)
                                 )
                             )]
                             .false.
@@ -100,7 +100,7 @@
                         [(Print
                             (StringConstant
                                 "Invalid grade"
-                                (String 1 13 () PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                         )]
                         .false.
@@ -110,11 +110,11 @@
                             ()
                             [(StringConstant
                                 "Your grade is "
-                                (String 1 14 () PointerString)
+                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 2 grade)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

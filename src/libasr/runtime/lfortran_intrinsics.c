@@ -871,7 +871,6 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     return format_values_2;
 }
 
-#define primitive_types_cnt  10
 typedef enum primitive_types{
     INTEGER_64_TYPE = 0,
     INTEGER_32_TYPE = 1,
@@ -885,10 +884,6 @@ typedef enum primitive_types{
     NONE_TYPE = 9
 } Primitive_Types;
 
-const int primitive_type_sizes[primitive_types_cnt] = 
-                                        {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
-                                         sizeof(int8_t) , sizeof(double), sizeof(float), 
-                                         sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/};
 
 char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
     switch(primitive_enum){
@@ -992,23 +987,62 @@ typedef struct serialization_info{
         va_list* args;
         void* current_arg; // holds pointer to the arg being printed (Scalar or Vector) 
         bool is_complex;
+        int64_t current_string_len; // Holds string length 'If Exist'
     } current_arg_info;
-    struct array_sizes{ // Sizes of passed arrays
+    struct runtime_sizes_lengths{ // Passed array sizes or string legnths.
         int64_t* ptr;
         int32_t current_index;
-    } array_sizes;
+    } array_sizes, string_lengths;
     bool just_peeked; // Flag to indicate if we just peeked the next element.
+    char* temp_char_pp; // Dummy container (Should be removed)
 } Serialization_Info;
 
 
 
-// Transforms serialized array size from string to int64 (characters into numbers).
-int64_t get_serialized_array_size(struct serialization_info* s_info){
+// Transforms serialized size (array-size, string-size)
+int64_t transform_string_size_into_int(struct serialization_info* s_info){
     int64_t array_size = 0;
     while(isdigit(s_info->serialization_string[s_info->current_stop])){
         array_size = array_size * 10 + (s_info->serialization_string[s_info->current_stop++] - '0');
     }
     return array_size;
+}
+
+// Sets `current_string_length` either from the serialization string or passed run-time length
+void set_string_length(Serialization_Info* s_info){
+    if(s_info->serialization_string[s_info->current_stop] == '-'){
+        s_info->current_stop++;
+        s_info->current_arg_info.current_string_len = 
+            transform_string_size_into_int(s_info);
+    } else {
+        if(s_info->current_element_type == CHARACTER_TYPE) return; // Array. length already set (Consumed from array of lengths).
+        s_info->current_arg_info.current_string_len = 
+            s_info->string_lengths.ptr[s_info->string_lengths.current_index++];
+    }
+}
+
+
+
+// Moves a containing pointer (struct, array) to the next the element
+void move_containing_ptr_next(Serialization_Info* s_info){
+    // Ordering of types is crucial (Matched with enum `Primitive_Types`)
+    static const int primitive_type_sizes[] = 
+        {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
+        sizeof(int8_t) , sizeof(double), sizeof(float), 
+        sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/};
+    
+    if(false /*Remove after stringsArray refactoring*/ && !stack_empty(s_info->array_sizes_stack) && 
+        s_info->current_element_type == CHARACTER_TYPE){ // Array of strings (Single Ptr)
+        char* arr_str_ptr = *(char**)s_info->current_arg_info.current_arg;
+        s_info->temp_char_pp =  arr_str_ptr + s_info->current_arg_info.current_string_len + 1 /*\0*/;
+        s_info->current_arg_info.current_arg = (void*)&s_info->temp_char_pp;
+    } else {
+        s_info->current_arg_info.current_arg = 
+            (void*)
+            ((char*)s_info->current_arg_info.current_arg +
+                primitive_type_sizes[s_info->current_element_type]); // char* cast needed for windows MinGW.
+    }
+        
 }
 
 /* Sets primitive type for the current argument
@@ -1061,6 +1095,7 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
         *PrimitiveType = LOGICAL_TYPE;
         break;
     case 'S':
+        set_string_length(s_info);
         *PrimitiveType = CHARACTER_TYPE;
         break;
     case 'C':
@@ -1100,7 +1135,7 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
         bool zero_size = (!stack_empty(s_info->array_sizes_stack) &&
                             (get_stack_top(s_info->array_sizes_stack) == 0)); 
         if(isdigit(cur)){ // ArraySize --> `50[I4]`
-            int64_t array_size = get_serialized_array_size(s_info);
+            int64_t array_size = transform_string_size_into_int(s_info);
             ASSERT_MSG(s_info->serialization_string[s_info->current_stop] == '[',
                 "RunTime - Compiler Internal error "
                 ": Wrong serialization for print statement --> %s\n",
@@ -1156,10 +1191,7 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
                 set_current_PrimitiveType(s_info);/*Keep deserializing*/
                 continue;
             }
-            // move the current_arg by the size of current_arg.
-            s_info->current_arg_info.current_arg = (void*)
-                            ((char*)s_info->current_arg_info.current_arg +
-                                primitive_type_sizes[s_info->current_element_type]); // char* cast needed for windows MinGW.
+            move_containing_ptr_next(s_info); // Moves containing pointer to the next element (Non-Primitive Types).
             set_current_PrimitiveType(s_info);
             return true;
         }
@@ -1210,7 +1242,10 @@ void print_into_string(Serialization_Info* s_info,  char* result){
             if(*(char**)arg == NULL){
                 sprintf(result, "%s", " ");
             } else {
-                sprintf(result, "%s",*(char**)arg);
+                memcpy(result,
+                    *(char**)arg,
+                    s_info->current_arg_info.current_string_len);
+                *(result + s_info->current_arg_info.current_string_len) = '\0';
             }
             break;
         case CPTR_VOID_PTR_TYPE:
@@ -1235,7 +1270,7 @@ void default_formatting(char** result, struct serialization_info* s_info){
         int size_to_allocate;
         if(s_info->current_element_type == CHARACTER_TYPE && 
             *(char**)s_info->current_arg_info.current_arg != NULL){
-            size_to_allocate = (strlen(*(char**)s_info->current_arg_info.current_arg)
+            size_to_allocate = (s_info->current_arg_info.current_string_len
                                  + default_spacing_len + 1) * sizeof(char);
         } else {
             size_to_allocate = (60 + default_spacing_len) * sizeof(char);
@@ -1260,16 +1295,17 @@ void default_formatting(char** result, struct serialization_info* s_info){
 }
 void free_serialization_info(Serialization_Info* s_info){
     free(s_info->array_sizes.ptr);
+    free(s_info->string_lengths.ptr);
     free_stack(s_info->array_sizes_stack);
     free_stack(s_info->array_serialiation_start_index);
     va_end(*s_info->current_arg_info.args);
 }
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const char* serialization_string, 
-    int32_t array_sizes_cnt, ...)
+    int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...)
 {
     va_list args;
-    va_start(args, array_sizes_cnt);
+    va_start(args, string_lengths_cnt);
     char* result = (char*)malloc(sizeof(char)); //TODO : the consumer of this string needs to free it.
     result[0] = '\0';
 
@@ -1283,12 +1319,21 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
     s_info.current_element_type = NONE_TYPE;
     s_info.current_arg_info.is_complex = false;
     s_info.array_sizes.current_index = 0;
+    s_info.string_lengths.current_index = 0;
     s_info.just_peeked = false;
+
     int64_t* array_sizes = (int64_t*) malloc(array_sizes_cnt * sizeof(int64_t));
     for(int i=0; i<array_sizes_cnt; i++){
         array_sizes[i] = va_arg(args, int64_t);
     }
     s_info.array_sizes.ptr = array_sizes;
+
+    int64_t* string_lengths = (int64_t*) malloc(string_lengths_cnt * sizeof(int64_t));
+    for(int i=0; i<string_lengths_cnt; i++){
+        string_lengths[i] = va_arg(args, int64_t);
+    }
+    s_info.string_lengths.ptr = string_lengths;
+
     s_info.current_arg_info.current_arg = va_arg(args, void*);
 
     if(!s_info.current_arg_info.current_arg && 
@@ -1601,7 +1646,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     }
                     char buffer[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        if (double_val == 0.0 || fabs(double_val) >= 0.1) {
+                        if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
                             snprintf(buffer, sizeof(buffer), format_spec, double_val);

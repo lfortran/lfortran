@@ -105,7 +105,10 @@ class ASRBuilder {
     #define complex32    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4))
     #define complex64    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8))
     #define logical      ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))
-    #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
+    #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,\
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
+                            al, loc, x, int32)),false, false,\
+                            ASR::string_physical_typeType::PointerString))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
@@ -405,6 +408,10 @@ class ASRBuilder {
 
     inline ASR::expr_t* BitLshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitLShift, bits, t, nullptr));
+    }
+
+    inline ASR::expr_t* LBitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::LBitRShift, bits, t, nullptr));
     }
 
     ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {

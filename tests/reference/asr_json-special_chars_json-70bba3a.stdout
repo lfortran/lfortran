@@ -25,8 +25,41 @@
                                                 "node": "String",
                                                 "fields": {
                                                     "kind": 1,
-                                                    "len": 11,
-                                                    "len_expr": [],
+                                                    "len": {
+                                                        "node": "IntegerConstant",
+                                                        "fields": {
+                                                            "n": 11,
+                                                            "type": {
+                                                                "node": "Integer",
+                                                                "fields": {
+                                                                    "kind": 4
+                                                                },
+                                                                "loc": {
+                                                                    "first": 59,
+                                                                    "last": 73,
+                                                                    "first_filename": "tests/special_chars_json.f90",
+                                                                    "first_line": 3,
+                                                                    "first_column": 14,
+                                                                    "last_filename": "tests/special_chars_json.f90",
+                                                                    "last_line": 3,
+                                                                    "last_column": 28
+                                                                }
+                                                            },
+                                                            "intboz_type": "Decimal"
+                                                        },
+                                                        "loc": {
+                                                            "first": 59,
+                                                            "last": 73,
+                                                            "first_filename": "tests/special_chars_json.f90",
+                                                            "first_line": 3,
+                                                            "first_column": 14,
+                                                            "last_filename": "tests/special_chars_json.f90",
+                                                            "last_line": 3,
+                                                            "last_column": 28
+                                                        }
+                                                    },
+                                                    "is_assumed_length": false,
+                                                    "is_deferred_length": false,
                                                     "physical_type": "PointerString"
                                                 },
                                                 "loc": {

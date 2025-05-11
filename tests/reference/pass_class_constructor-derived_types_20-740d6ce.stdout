@@ -47,7 +47,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -112,7 +112,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -458,7 +458,7 @@
                                                         50
                                                         ["src", "lib", "app", "test", "example"]
                                                         (Array
-                                                            (String 1 10 () PointerString)
+                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 5 (Integer 4) Decimal))]
                                                             FixedSizeArray
@@ -507,13 +507,13 @@
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_name
                                                 (Allocatable
-                                                    (String 1 -2 () DescriptorString)
+                                                    (String 1 () .false. .true. DescriptorString)
                                                 )
                                                 ()
                                             )
                                             (StringConstant
                                                 "xyz"
-                                                (String 1 3 () PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             ()
                                             .false.
@@ -659,7 +659,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -691,7 +691,7 @@
                                         })
                                     specified
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)]
+                                        [(String 1 () .true. .false. PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation

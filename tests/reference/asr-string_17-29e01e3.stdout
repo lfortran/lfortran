@@ -103,14 +103,25 @@
                                                     (Var 4 string)
                                                     4 1_string_type_raw
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 4 string)
+                                                            4 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 () .false. .true. DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             )]
@@ -125,7 +136,7 @@
                                                     (Var 4 string)
                                                     4 1_string_type_raw
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -173,14 +184,14 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -3 (FunctionCall
+                                                    (String 1 (FunctionCall
                                                         2 len_string
                                                         2 len
                                                         [((Var 5 string))]
                                                         (Integer 4)
                                                         ()
                                                         ()
-                                                    ) PointerString)
+                                                    ) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -223,23 +234,7 @@
                                             .true.
                                             2 string_type
                                         )]
-                                        (String 1 -3 (FunctionCall
-                                            2 len_string
-                                            2 len
-                                            [((FunctionParam
-                                                0
-                                                (StructType
-                                                    []
-                                                    []
-                                                    .true.
-                                                    2 string_type
-                                                )
-                                                ()
-                                            ))]
-                                            (Integer 4)
-                                            ()
-                                            ()
-                                        ) PointerString)
+                                        (String 1 () .false. .false. PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -261,14 +256,25 @@
                                                     (Var 5 string)
                                                     5 1_string_type_raw
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 string)
+                                                            5 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 () .false. .true. DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             )]
@@ -283,14 +289,25 @@
                                                     (Var 5 string)
                                                     5 1_string_type_raw
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 string)
+                                                            5 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 () .false. .true. DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             )
@@ -301,7 +318,7 @@
                                             (Var 5 maybe_string)
                                             (StringConstant
                                                 ""
-                                                (String 1 0 () PointerString)
+                                                (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
                                             )
                                             ()
                                             .false.
@@ -328,7 +345,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source

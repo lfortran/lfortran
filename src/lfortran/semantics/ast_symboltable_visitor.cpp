@@ -115,105 +115,6 @@ public:
         // To Be Implemented
     }
 
-    template <typename T>
-    void fix_type_info(T* x) {
-        current_module_dependencies.clear(al);
-        std::map<ASR::asr_t*, SetChar> node2deps;
-        for( TypeMissingData* data: type_info ) {
-            if( data->sym_type == -1 ) {
-                continue;
-            }
-            ASR::expr_t* expr = nullptr;
-            if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
-                SymbolTable* current_scope_copy = current_scope;
-                current_scope = data->scope;
-                current_function_dependencies.clear(al);
-                visit_expr(*data->expr);
-                for( size_t i = 0; i < current_function_dependencies.size(); i++ ) {
-                    char* itr = current_function_dependencies[i];
-                    node2deps[current_scope->asr_owner].push_back(al, itr);
-                }
-                expr = ASRUtils::EXPR(tmp);
-                current_scope = current_scope_copy;
-            }
-            if( expr ) {
-                switch( data->type->type ) {
-                    case ASR::ttypeType::String: {
-                        ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(data->type);
-                        char_type->m_len_expr = expr;
-                        char_type->m_len = -3;
-                        if( expr->type == ASR::exprType::FunctionCall ) {
-                            ASR::FunctionCall_t *call = ASR::down_cast<ASR::FunctionCall_t>(expr);
-                            for(size_t i = 0; i < call->n_args; i ++) {
-                                if (ASR::is_a<ASR::Var_t>(*call->m_args[i].m_value)) {
-                                    ASR::Variable_t *v = ASRUtils::EXPR2VAR(call->m_args[i].m_value);
-                                    if (v->m_storage == ASR::storage_typeType::Parameter) {
-                                        call->m_args[i].m_value = v->m_value;
-                                    }
-                                }
-                            }
-                            if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
-                                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-                                    ASR::down_cast<ASR::symbol_t>(data->scope->asr_owner));
-                                ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
-                                if( func_type->m_return_var_type ) {
-                                    ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
-                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type, data->scope);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    default: {
-                        diag.add(diag::Diagnostic(
-                            "Only String type is supported as of now.",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {data->type->base.loc})}));
-                        throw SemanticAbort();
-                    }
-                }
-            }
-
-            ASR::symbol_t* sym = data->scope->get_symbol(data->sym_name);
-            if( sym && ASR::is_a<ASR::Variable_t>(*sym) ) {
-                ASR::Variable_t* sym_variable = ASR::down_cast<ASR::Variable_t>(sym);
-                SetChar variable_dependencies_vec;
-                variable_dependencies_vec.reserve(al, 1);
-                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, sym_variable->m_type,
-                    sym_variable->m_symbolic_value, sym_variable->m_value);
-                sym_variable->m_dependencies = variable_dependencies_vec.p;
-                sym_variable->n_dependencies = variable_dependencies_vec.size();
-            }
-        }
-
-        for( auto& itr: node2deps ) {
-            if( ASR::is_a<ASR::symbol_t>(*itr.first) ) {
-                ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(itr.first);
-                if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
-                    SetChar func_deps;
-                    ASR::Function_t* asr_owner_func = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
-                    func_deps.from_pointer_n_copy(al, asr_owner_func->m_dependencies,
-                                                  asr_owner_func->n_dependencies);
-                    for( size_t i = 0; i < itr.second.size(); i++ ) {
-                        char* dep = itr.second[i];
-                        func_deps.push_back(al, dep);
-                    }
-                    asr_owner_func->m_dependencies = func_deps.p;
-                    asr_owner_func->n_dependencies = func_deps.size();
-                }
-            }
-        }
-
-        SetChar x_deps_vec;
-        x_deps_vec.from_pointer_n_copy(al, x->m_dependencies, x->n_dependencies);
-        for( size_t i = 0; i < current_module_dependencies.size(); i++ ) {
-            x_deps_vec.push_back(al, current_module_dependencies[i]);
-        }
-        x->m_dependencies = x_deps_vec.p;
-        x->n_dependencies = x_deps_vec.size();
-
-        type_info.clear();
-    }
 
     void fix_struct_type(SymbolTable* symtab) {
         for( auto& itr: symtab->get_scope() ) {
@@ -343,7 +244,12 @@ public:
                             break;
                         }
                         case (AST::decl_typeType::TypeCharacter) : {
-                            type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                            type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, 
+                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                    al, x.base.base.loc, a_len,
+                                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
+                                    false, false,
+                                ASR::string_physical_typeType::PointerString));
                             break;
                         }
                         default :
@@ -457,7 +363,6 @@ public:
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
-        fix_type_info(m);
         fix_struct_type(m->m_symtab);
         dflt_access = ASR::Public;
     }
@@ -612,7 +517,6 @@ public:
         external_procedures_mapping[hash] = external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
 
-        fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
     }
@@ -1531,6 +1435,7 @@ public:
                     ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                     if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
                         a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
+                        a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(kind_expr));
                     } else {
                         a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
@@ -1569,7 +1474,12 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
-                    type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                    type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, x.base.base.loc, 1,
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind)))),
+                        false, false,
+                        ASR::string_physical_typeType::PointerString));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -2088,7 +1998,13 @@ public:
             AST::intrinsicopType opType = AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op;
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
-            overloaded_op_procs[opType] = proc_names;
+            // check if the operator is already defined, if yes, then a new defition means it is being overloaded
+            if (overloaded_op_procs.find(opType) != overloaded_op_procs.end()) {
+                overloaded_op_procs[opType].insert(overloaded_op_procs[opType].end(),
+                    proc_names.begin(), proc_names.end());
+            } else {
+                overloaded_op_procs[opType] = proc_names;
+            }
         } else if (AST::is_a<AST::InterfaceHeaderDefinedOperator_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
             std::vector<std::string> proc_names;
@@ -2347,7 +2263,7 @@ public:
 
     /* 
         Evaluate call expressions to genericProcedures that's used in variable declaration.
-        e.g : `integer :: arr(generic_proc(),10)`
+        e.g : `integer :: arr(generic_proc(),10)` OR Character(len=len_generic()) :: char
     */
     void evaluate_postponed_calls_to_genericProcedure(){
         if(!generic_procedures.empty()){

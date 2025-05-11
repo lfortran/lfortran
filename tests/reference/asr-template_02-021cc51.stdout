@@ -131,7 +131,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 1 () PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -149,7 +149,7 @@
                                     change_positions_chr
                                     (FunctionType
                                         [(Array
-                                            (String 1 1 () PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -271,7 +271,7 @@
                                                     [(()
                                                     (Var 12 i)
                                                     ())]
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ColMajor
                                                     ()
                                                 ))
@@ -286,7 +286,7 @@
                                                         ()
                                                     )
                                                     ())]
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ColMajor
                                                     ()
                                                 ))]
@@ -875,7 +875,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -894,7 +894,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 1 () PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -926,8 +926,8 @@
                                         })
                                     ~neq_intrinsic1
                                     (FunctionType
-                                        [(String 1 1 () PointerString)
-                                        (String 1 1 () PointerString)]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -1004,7 +1004,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1019,7 +1019,7 @@
                                         7
                                         ["a", "a", "b", ...., "p", "p", "o"]
                                         (Array
-                                            (String 1 1 () PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 7 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -1029,7 +1029,7 @@
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
-                                        (String 1 1 () PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
                                         DescriptorArray
@@ -1048,7 +1048,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

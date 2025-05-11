@@ -66,11 +66,11 @@
                             ()
                             [(StringConstant
                                 "tf=0:"
-                                (String 1 5 () PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -91,11 +91,11 @@
                             ()
                             [(StringConstant
                                 "tf=1:"
-                                (String 1 5 () PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

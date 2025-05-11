@@ -674,7 +674,7 @@
                             ()
                             [(Var 2 a1)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -699,7 +699,7 @@
                             ()
                             [(Var 2 a2)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -724,7 +724,7 @@
                             ()
                             [(Var 2 a3)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -749,7 +749,7 @@
                             ()
                             [(Var 2 ar1)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -774,7 +774,7 @@
                             ()
                             [(Var 2 ar2)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -799,7 +799,7 @@
                             ()
                             [(Var 2 ar3)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -830,7 +830,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -861,7 +861,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -892,7 +892,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -929,7 +929,7 @@
                                 (IntegerConstant 18 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -966,7 +966,7 @@
                                 (IntegerConstant 37 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1003,7 +1003,7 @@
                                 (IntegerConstant 307 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1040,7 +1040,7 @@
                                 (IntegerConstant 37 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1077,7 +1077,7 @@
                                 (IntegerConstant 307 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1119,7 +1119,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1166,7 +1166,7 @@
                                 (IntegerConstant 307 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -1213,7 +1213,7 @@
                                 (IntegerConstant 37 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )

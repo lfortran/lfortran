@@ -17,7 +17,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 -2 () DescriptorString)
+                                        (String 1 () .false. .true. DescriptorString)
                                     )
                                     ()
                                     Source
@@ -116,7 +116,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 -2 () DescriptorString)
+                                        (String 1 () .false. .true. DescriptorString)
                                     )
                                     ()
                                     Source
@@ -278,7 +278,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -299,7 +299,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -320,7 +320,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -341,7 +341,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -362,7 +362,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -383,7 +383,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -435,7 +435,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -513,7 +513,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -534,7 +534,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -593,7 +593,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -677,10 +677,10 @@
                                     get_flags
                                     (FunctionType
                                         [(Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () .false. .true. DescriptorString)
                                         )
                                         (Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () .false. .true. DescriptorString)
                                         )
                                         (Integer 4)
                                         (Allocatable
@@ -740,7 +740,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (Var 6 profile_name)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             ))
@@ -749,7 +753,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (Var 6 compiler_name)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             ))
@@ -759,7 +767,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (Var 6 flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             ))
@@ -771,7 +783,11 @@
                                                         DescriptorString
                                                         PointerString
                                                         (Allocatable
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 (StringLen
+                                                                (Var 6 flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) .false. .false. PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -792,7 +808,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (Var 6 c_flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             ))
@@ -804,7 +824,11 @@
                                                         DescriptorString
                                                         PointerString
                                                         (Allocatable
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 (StringLen
+                                                                (Var 6 c_flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) .false. .false. PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -825,7 +849,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (Var 6 cxx_flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             ))
@@ -837,7 +865,11 @@
                                                         DescriptorString
                                                         PointerString
                                                         (Allocatable
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 (StringLen
+                                                                (Var 6 cxx_flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) .false. .false. PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -858,7 +890,11 @@
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (Var 6 link_time_flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) .false. .false. PointerString)
                                                 )
                                                 ()
                                             ))
@@ -870,7 +906,11 @@
                                                         DescriptorString
                                                         PointerString
                                                         (Allocatable
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 (StringLen
+                                                                (Var 6 link_time_flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) .false. .false. PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -952,7 +992,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -971,7 +1011,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -990,7 +1030,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1038,7 +1078,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1190,7 +1230,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1252,7 +1292,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () .true. .false. PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1265,16 +1305,16 @@
                                         })
                                     new_profile
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)
-                                        (String 1 -1 () PointerString)
+                                        [(String 1 () .true. .false. PointerString)
+                                        (String 1 () .true. .false. PointerString)
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)
+                                        (String 1 () .true. .false. PointerString)
                                         (Logical 4)
-                                        (String 1 -1 () PointerString)
+                                        (String 1 () .true. .false. PointerString)
                                         (Logical 4)
-                                        (String 1 -1 () PointerString)
+                                        (String 1 () .true. .false. PointerString)
                                         (Logical 4)
-                                        (String 1 -1 () PointerString)
+                                        (String 1 () .true. .false. PointerString)
                                         (Logical 4)
                                         (Array
                                             (StructType
@@ -1345,7 +1385,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1366,7 +1406,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1387,7 +1427,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1439,7 +1479,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1479,7 +1519,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1519,7 +1559,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () .false. .true. DescriptorString)
                                                     )
                                                     ()
                                                     Source

@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "Dominic"
-                                        (String 1 7 () PointerString)
+                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     (StringConstant
                                         "Dominic"
-                                        (String 1 7 () PointerString)
+                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                     )
                                     Save
-                                    (String 1 7 () PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                                     ()
                                     Source
                                     Public
@@ -40,11 +40,11 @@
                             ()
                             [(StringConstant
                                 "My name is "
-                                (String 1 11 () PointerString)
+                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 2 my_name)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]

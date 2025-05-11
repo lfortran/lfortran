@@ -488,11 +488,11 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (String 1 7 () PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -515,11 +515,11 @@
                             ()
                             [(StringConstant
                                 "7.0 == "
-                                (String 1 7 () PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -542,11 +542,11 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (String 1 7 () PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )
@@ -569,11 +569,11 @@
                             ()
                             [(StringConstant
                                 "8.0 == "
-                                (String 1 7 () PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String -1 0 () PointerString)
+                            (String 1 () .false. .false. CString)
                             ()
                         )
                     )]
