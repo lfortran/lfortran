@@ -4369,7 +4369,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             output[n] = '\0';
 
             if (width > 0) { // For (aw) format
-                char padded_buffer[width + 1];
+                char *padded_buffer = (char*)malloc(width + 1);
                 strncpy(padded_buffer, buffer, width);
                 for (size_t i = input_length; i < width; ++i) {
                     padded_buffer[i] = SPACE;
