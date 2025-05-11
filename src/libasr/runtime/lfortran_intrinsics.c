@@ -4297,8 +4297,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, int32_t *iosta
         // Read from stdin
         *p = (char*)malloc(n * sizeof(char));
         if (!fgets(*p, n + 1, stdin)) {
-            if (iostat) { *iostat = 1;}
-            fprintf(stderr, "Error reading from stdin\n"); exit(1); 
+            if (iostat) { *iostat = 1; return;}
         }
         (*p)[strcspn(*p, "\n")] = 0;
         size_t input_length = strlen(*p);
