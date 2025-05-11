@@ -406,7 +406,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> generic_type_param_list
 %type <ast> generic_type_param
 %type <vec_ast> generic_type_param_instantiation_list
-%type <ast> generic_type_param_instantiation
 %type <ast> use_statement
 %type <ast> use_statement1
 %type <vec_ast> use_statement_star
@@ -1080,11 +1079,9 @@ generic_type_param
     ;
 
 generic_type_param_instantiation_list
-    : generic_type_param_instantiation_list "," generic_type_param_instantiation { $$ = $1, LIST_ADD($$, $3); }
-    | generic_type_param_instantiation { LIST_NEW($$); LIST_ADD($$, $1); }
-
-generic_type_param_instantiation
-    : id { $$ = GENERIC_TYPE_PARAM_INSTANTIATION($1, @$); }
+    : var_type { LIST_NEW($$); LIST_ADD($$, $1); }
+    | type_list "," var_type { $$ = $1; LIST_ADD($$, $3); }
+    ;
 
 temp_decl_star
     : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }

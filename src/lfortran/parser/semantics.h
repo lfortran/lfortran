@@ -2060,10 +2060,10 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
     for (size_t i=0; i<temp_args.size(); i++) {
         v3.push_back(al, down_cast<decl_attribute_t>(temp_args[i]));
     }
-    Vec<generic_type_param_instantiation_t*> v4;
+    Vec<decl_attribute_t*> v4;
     v4.reserve(al, generic_args.size());
     for (size_t i=0; i<generic_args.size(); i++) {
-        v4.push_back(al, down_cast<generic_type_param_instantiation_t>(generic_args[i]));
+        v4.push_back(al, down_cast<decl_attribute_t>(generic_args[i]));
     }
     return make_FuncCallOrArray_t(al, l,
         /*char* a_func*/ name2char(id),
