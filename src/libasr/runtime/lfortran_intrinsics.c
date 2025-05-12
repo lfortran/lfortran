@@ -1263,7 +1263,7 @@ void print_into_string(Serialization_Info* s_info,  char* result){
 
 }
 
-void strip_outer_paranthesis(const char* str, int len, char* output) {
+void strip_outer_parenthesis(const char* str, int len, char* output) {
     if (len >= 2 && str[0] == '(' && str[len - 1] == ')') {
         int nest = 0;
         int i;
@@ -1391,7 +1391,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
     modified_input_string = (char*)malloc((len+1) * sizeof(char));
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
-    strip_outer_paranthesis(cleaned_format, len, modified_input_string);
+    strip_outer_parenthesis(cleaned_format, len, modified_input_string);
     format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
