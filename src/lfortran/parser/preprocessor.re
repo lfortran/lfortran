@@ -928,10 +928,15 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
     std::string str;
     unsigned char *old_cur = cur;
     get_next_token(string_start, cur, type, str);
-    while (type == CPPTokenType::TK_AND || type == CPPTokenType::TK_OR) {
+    while (type == CPPTokenType::TK_AND || type == CPPTokenType::TK_OR || type == CPPTokenType::TK_BITOR
+        || type == CPPTokenType::TK_BITAND) {
         bool factor = parse_bfactor(string_start, cur, macro_definitions) > 0;
         if (type == CPPTokenType::TK_AND) {
             tmp = (int)( (tmp > 0) && (factor > 0) );
+        } else if (type == CPPTokenType::TK_BITOR) {
+            tmp = (int)( (tmp > 0) | (factor > 0) );
+        } else if (type == CPPTokenType::TK_BITAND) {
+            tmp = (int)( (tmp > 0) & (factor > 0) );
         } else {
             tmp = (int)( (tmp > 0) || (factor > 0) );
         }
