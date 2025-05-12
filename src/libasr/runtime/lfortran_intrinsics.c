@@ -442,6 +442,9 @@ void parse_decimal_format(char* format, int* width_digits, int* decimal_digits, 
     *decimal_digits = atoi(++dot_pos);
 
     char *exp_pos = strchr(dot_pos, 'e');
+    if (exp_pos == NULL) {
+        exp_pos = strchr(dot_pos, 'E');
+    }
     if(exp_pos != NULL) {
         *exp_digits = atoi(++exp_pos);
     }
@@ -503,7 +506,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         decimal--;
         // loop end: decimal = -9
     }
+    bool is_s_format = false;
     if (tolower(format[1]) == 's') {
+        is_s_format = true;
         scale = 1;
     }
 
@@ -597,13 +602,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         free(temp);
     }
 
-    strcat(formatted_value, c);
-    // formatted_value = "  1.12E"
-
-
-
-    strcat(formatted_value, exponent);
-    // formatted_value = "  1.12E+10"
+    if (!(val >= 0 && val < 10 && is_s_format && exp_digits == 0)) {
+        strcat(formatted_value, c);
+        // formatted_value = "  1.12E"
+        strcat(formatted_value, exponent);
+        // formatted_value = "  1.12E+10"
+    }
 
     if (strlen(formatted_value) == width + 1 && scale <= 0) {
         char* ptr = strchr(formatted_value, '0');
@@ -621,6 +625,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // result = "  1.12E+10"
     }
 }
+
 void handle_SP_specifier(char** result, bool is_positive_value){
     char positive_sign_string[] = "+";
     if(is_positive_value) append_to_string(*result, positive_sign_string);
@@ -1426,7 +1431,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
             } else if (tolower(value[0]) == 's') {
-                is_SP_specifier = ( strlen(value) == 2 /*case 'S' speicifer*/ &&
+                is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
@@ -1473,7 +1478,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
             } else {
                 if (!move_to_next_element(&s_info, false)) break;
                 if (!is_format_match(
-                        tolower(value[0]), s_info.current_element_type)){
+                        tolower(value[0]), s_info.current_element_type)) {
                     char* type; // For better error message.
                     switch (primitive_enum_to_format_specifier(s_info.current_element_type))
                     {
