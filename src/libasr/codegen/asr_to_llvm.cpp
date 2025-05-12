@@ -4689,6 +4689,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     llvm_tmp = llvm_utils->create_gep(llvm_tmp, 0);
                     break;
                 }
+                case ASR::array_physical_typeType::PointerToDataArray: {
+                    break;
+                }
                 default: {
                     LCOMPILERS_ASSERT(false);
                 }
