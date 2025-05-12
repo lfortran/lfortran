@@ -59,9 +59,10 @@
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
-#include <server/lsp_specification.h>
+
 
 #ifdef WITH_LSP
+#include <server/lsp_specification.h>
 #include <bin/language_server_interface.h>
 #endif // WITH_LSP
 
