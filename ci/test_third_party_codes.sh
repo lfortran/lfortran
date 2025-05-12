@@ -502,6 +502,10 @@ time_section "🧪 Testing SNAP" '
     ./gsnap ../qasnap/sample/inp out
 
     make clean
+    make -j8 FORTRAN=$FC FFLAGS="--generate-object-code" MPI=no OPENMP=no
+    ./gsnap ../qasnap/sample/inp out
+
+    make clean
     make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 '
