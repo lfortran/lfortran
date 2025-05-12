@@ -1,5 +1,5 @@
-C preprocessor error: Unexpected token '^' in factor()
- --> tests/errors/cpp_err5.f90:2:8
+C preprocessor error: Unknown token '@'
+ --> tests/errors/cpp_err5.f90:2:9
   |
-2 | #if 1 + ^ 1 2
-  |        ^^^ 
+2 | #if 1 + @ 1 2
+  |         ^ 
