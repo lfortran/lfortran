@@ -72,6 +72,16 @@ public:
         *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_function_scope->get_symbol(ASRUtils::symbol_name(x->m_v))));
     }
 
+    void replace_Var(ASR::Var_t* x) {
+        if ( newargsp == nullptr) {
+            return ;
+        }
+        if ( new_function_scope == nullptr ) {
+            return ;
+        }
+        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_function_scope->get_symbol(ASRUtils::symbol_name(x->m_v))));
+    }
+
     void replace_FunctionParam(ASR::FunctionParam_t* x) {
         if( newargsp == nullptr ) {
             return ;
@@ -265,6 +275,7 @@ public:
                         false));
         call_for_return_var = function_call_for_return_var;
         new_function_scope = new_function_scope_copy;
+        new_function_scope = new_function_scope_copy;
     }
 
 };
@@ -337,6 +348,75 @@ public:
         }
 
         ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_Array(x);
+    }
+
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+        if (!current_scope) return;
+
+        if (is_function_call_or_intrinsic_array_function(x.m_left)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_left));
+            this->call_replacer_(x.m_left);
+            current_expr = current_expr_copy;
+        }
+
+        if (is_function_call_or_intrinsic_array_function(x.m_right)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_right));
+            this->call_replacer_(x.m_right);
+            current_expr = current_expr_copy;
+        }
+
+        ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_IntegerBinOp(x);
+    }
+
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+        if (!current_scope) return;
+
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t* arg = x.m_args[i];
+            if (is_function_call_or_intrinsic_array_function(arg)) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = const_cast<ASR::expr_t**>(&(x.m_args[i]));
+                this->call_replacer_(x.m_args[i]);
+                current_expr = current_expr_copy;
+            }
+        }
+
+        ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_IntrinsicElementalFunction(x);
+    }
+
+    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        if (!current_scope) return;
+
+        if (is_function_call_or_intrinsic_array_function(x.m_left)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_left));
+            this->call_replacer_(x.m_left);
+            current_expr = current_expr_copy;
+        }
+
+        if (is_function_call_or_intrinsic_array_function(x.m_right)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_right));
+            this->call_replacer_(x.m_right);
+            current_expr = current_expr_copy;
+        }
+
+        ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_RealBinOp(x);
+    }
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        if (!current_scope) return;
+
+        if (is_function_call_or_intrinsic_array_function(x.m_arg)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_arg));
+            this->call_replacer_(x.m_arg);
+            current_expr = current_expr_copy;
+        }
+
+        ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_Cast(x);
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
