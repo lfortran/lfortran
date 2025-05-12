@@ -1,0 +1,35 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            preprocessor21:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    preprocessor21
+                    []
+                    [(Print
+                        (StringConstant
+                            "Atleast one of VAR1 and VAR2 isn't defined"
+                            (String 1 (IntegerConstant 42 (Integer 4) Decimal) .false. .false. PointerString)
+                        )
+                    )
+                    (Print
+                        (StringConstant
+                            "Neither of VAR3 or VAR4 is defined"
+                            (String 1 (IntegerConstant 34 (Integer 4) Decimal) .false. .false. PointerString)
+                        )
+                    )
+                    (Print
+                        (StringConstant
+                            "Both VAR5 and VAR6 are defined or neither is defined."
+                            (String 1 (IntegerConstant 53 (Integer 4) Decimal) .false. .false. PointerString)
+                        )
+                    )]
+                )
+        })
+    []
+)
