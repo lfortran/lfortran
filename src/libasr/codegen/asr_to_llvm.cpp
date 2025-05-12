@@ -8388,7 +8388,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -8402,7 +8403,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 character_type->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, true);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -8428,7 +8430,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -8451,7 +8454,8 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
                                 type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
+                                llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
                             }, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -8604,6 +8608,13 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             builder->CreateCall(fn, args);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
+            // changes for empty read (no variable given)
+            llvm::ConstantInt* const_minus_1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context),
+                -1,
+                true
+            );
+            builder->CreateStore(const_minus_1, iostat); // Initialize iostat to -1
             for (size_t i=0; i<x.n_values; i++) {
                 int ptr_copy = ptr_loads;
                 ptr_loads = 0;
@@ -8704,9 +8715,9 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             x.m_values[i]->base.loc, x.m_values[i], type32, nullptr));
                         llvm::Value *str = var_to_read_into;  
                         visit_StringLen(*strlen);
-                        builder->CreateCall(fn, {str, unit_val, tmp}); tmp = nullptr;
+                        builder->CreateCall(fn, {str, unit_val, iostat, tmp}); tmp = nullptr;
                     } else {
-                        builder->CreateCall(fn, {var_to_read_into, unit_val});
+                        builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
                     }
                 }
             }
