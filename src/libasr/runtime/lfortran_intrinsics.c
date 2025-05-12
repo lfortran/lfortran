@@ -1263,6 +1263,34 @@ void print_into_string(Serialization_Info* s_info,  char* result){
 
 }
 
+void strip_outer_parenthesis(const char* str, int len, char* output) {
+    if (len >= 2 && str[0] == '(' && str[len - 1] == ')') {
+        int nest = 0;
+        int i;
+        // Check balance: if the outermost '(' is properly closed by the last character
+        for (i = 0; i < len; i++) {
+            if (str[i] == '(') {
+                nest++;
+            } else if (str[i] == ')') {
+                nest--;
+                // If the nesting level reaches 0 before the end, the outermost ')' isn't at len-1
+                if (nest == 0) {
+                    break;
+                }
+            }
+        }
+        
+        if (nest == 0) {
+            // Copy the string without outer parentheses
+            memmove(output, output + 1, len);
+            output[i - 1] = '\0';
+        } else {
+            memmove(output, output + 1, len);
+            output[len - 2] = '\0';
+        }
+    }
+}
+
 void default_formatting(char** result, struct serialization_info* s_info){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
@@ -1363,11 +1391,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
     modified_input_string = (char*)malloc((len+1) * sizeof(char));
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
-    if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
-        memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
-        modified_input_string[len-2] = '\0';
-    }
-    format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
+    strip_outer_parenthesis(cleaned_format, len, modified_input_string);
+    format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
     is_SP_specifier = true  --> 'SP'
