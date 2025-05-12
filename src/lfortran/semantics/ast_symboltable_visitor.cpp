@@ -28,7 +28,7 @@ public:
     };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
-    std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
+    std::map<std::string, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
@@ -1274,7 +1274,7 @@ public:
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
-        std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
+        std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
             is_template = true;
@@ -1704,7 +1704,7 @@ public:
                     t = t.substr(8);
                     // !LF$ attributes simd :: X, Y, Z
                     for (auto &var : string_split(t, ", ")) {
-                        simd_variables.push_back(std::pair(var, x.base.base.loc));
+                        simd_variables.push_back(std::pair<std::string, Location>(var, x.base.base.loc));
                     }
                 } else {
                     diag.add(diag::Diagnostic(
@@ -1995,21 +1995,27 @@ public:
                 visit_interface_item(*x.m_items[i]);
             }
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
-            AST::intrinsicopType opType = AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op;
+            std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
             // check if the operator is already defined, if yes, then a new defition means it is being overloaded
-            if (overloaded_op_procs.find(opType) != overloaded_op_procs.end()) {
-                overloaded_op_procs[opType].insert(overloaded_op_procs[opType].end(),
+            if (overloaded_op_procs.find(op) != overloaded_op_procs.end()) {
+                overloaded_op_procs[op].insert(overloaded_op_procs[op].end(),
                     proc_names.begin(), proc_names.end());
             } else {
-                overloaded_op_procs[opType] = proc_names;
+                overloaded_op_procs[op] = proc_names;
             }
         } else if (AST::is_a<AST::InterfaceHeaderDefinedOperator_t>(*x.m_header)) {
-            std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
+            std::string op = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
-            defined_op_procs[op_name] = proc_names;
+            // check if the operator is already defined, if yes, then a new defition means it is being overloaded
+            if (defined_op_procs.find(op) != defined_op_procs.end()) {
+                defined_op_procs[op].insert(defined_op_procs[op].end(),
+                    proc_names.begin(), proc_names.end());
+            } else {
+                defined_op_procs[op] = proc_names;
+            }
         }  else if (AST::is_a<AST::InterfaceHeaderAssignment_t>(*x.m_header)) {
             fill_interface_proc_names(x, assgn_proc_names);
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
@@ -2158,15 +2164,30 @@ public:
             symbols.push_back(al, x);
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
+        // Check if the operator is already imported into the scope. If yes, include it's procedures
+        // into the current `CustomOperator` symbol that we overwrite with.
+        if (current_scope->get_symbol(generic_name) != nullptr) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*current_scope->get_symbol(generic_name))) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::ExternalSymbol_t>(
+                                    current_scope->get_symbol(generic_name))->m_external;
+                if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
+                    ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
+                    for (size_t i = 0; i < cop->n_procs; i++) {
+                        std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
+                        symbols.push_back(al, resolve_symbol(loc, s2c(al, proc_name)));
+                    }
+                }
+            }
+        }
         ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                             generic_name, symbols.p, symbols.size(), access);
-        current_scope->add_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
+        current_scope->add_or_overwrite_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
     }
 
     void add_overloaded_procedures() {
         for (auto &proc : overloaded_op_procs) {
             std::pair<const std::string, std::vector<std::string>>
-                proc_ = {intrinsic2str[proc.first], proc.second};
+                proc_ = {proc.first, proc.second};
             add_custom_operator(proc_, ASR::accessType::Public);
         }
         overloaded_op_procs.clear();
@@ -3236,7 +3257,7 @@ public:
             current_procedure_args.push_back(arg);
         }
 
-        std::map<AST::intrinsicopType, std::vector<std::string>> requirement_op_procs;
+        std::map<std::string, std::vector<std::string>> requirement_op_procs;
         for (auto &proc: overloaded_op_procs) {
             requirement_op_procs[proc.first] = proc.second;
         }
@@ -3423,7 +3444,7 @@ public:
             current_procedure_args.push_back(to_lower(x.m_namelist[i]));
         }
 
-        std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
+        std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
         for (auto &proc: overloaded_op_procs) {
             ext_overloaded_op_procs[proc.first] = proc.second;
         }
