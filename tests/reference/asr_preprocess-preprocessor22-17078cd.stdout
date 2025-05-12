@@ -22,6 +22,12 @@
                             "At least one of VAR3 or VAR4 is defined."
                             (String 1 (IntegerConstant 40 (Integer 4) Decimal) .false. .false. PointerString)
                         )
+                    )
+                    (Print
+                        (StringConstant
+                            "Exactly one of VAR5 or VAR6 is not defined."
+                            (String 1 (IntegerConstant 43 (Integer 4) Decimal) .false. .false. PointerString)
+                        )
                     )]
                 )
         })

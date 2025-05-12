@@ -21,12 +21,11 @@ program preprocessor22
 #endif
 
 #define VAR5 6
-#define VAR6 11
 
-!#if (!defined(VAR5) ^ !defined(VAR6))
-!    print *, "Exactly one of VAR5 or VAR6 is not defined."
-!#else
-!    print *, "Both VAR5 and VAR6 are defined or neither is defined."
-!#endif
+#if (!defined(VAR5) ^ !defined(VAR6))
+   print *, "Exactly one of VAR5 or VAR6 is not defined."
+#else
+   print *, "Both VAR5 and VAR6 are defined or neither is defined."
+#endif
 
 end program preprocessor22

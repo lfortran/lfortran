@@ -780,7 +780,7 @@ enum CPPTokenType {
     TK_EOF, TK_NAME, TK_INTEGER, TK_STRING, TK_AND, TK_OR, TK_NEG,
     TK_LPAREN, TK_RPAREN, TK_LT, TK_GT, TK_LTE, TK_GTE, TK_NE, TK_EQ,
     TK_PLUS, TK_MINUS, TK_MUL, TK_DIV, TK_PERCENT, TK_LSHIFT, TK_RSHIFT,
-    TK_BITAND, TK_BITOR
+    TK_BITAND, TK_BITOR, TK_BITXOR
 };
 
 std::string token_type_to_string(CPPTokenType type) {
@@ -809,6 +809,7 @@ std::string token_type_to_string(CPPTokenType type) {
         case (TK_RSHIFT)  : return ">>";
         case (TK_BITAND)  : return "&";
         case (TK_BITOR)   : return "|";
+        case (TK_BITXOR)  : return "^";
     }
     return "";
 }
@@ -844,6 +845,7 @@ void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenTy
             ">>" { type = CPPTokenType::TK_RSHIFT; return; }
             "&" { type = CPPTokenType::TK_BITAND; return; }
             "|" { type = CPPTokenType::TK_BITOR; return; }
+            "^" { type = CPPTokenType::TK_BITXOR; return; }
             "&&" { type = CPPTokenType::TK_AND; return; }
             "||" { type = CPPTokenType::TK_OR; return; }
             "!" { type = CPPTokenType::TK_NEG; return; }
@@ -929,7 +931,7 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
     unsigned char *old_cur = cur;
     get_next_token(string_start, cur, type, str);
     while (type == CPPTokenType::TK_AND || type == CPPTokenType::TK_OR || type == CPPTokenType::TK_BITOR
-        || type == CPPTokenType::TK_BITAND) {
+        || type == CPPTokenType::TK_BITAND || type == CPPTokenType::TK_BITXOR) {
         bool factor = parse_bfactor(string_start, cur, macro_definitions) > 0;
         if (type == CPPTokenType::TK_AND) {
             tmp = (int)( (tmp > 0) && (factor > 0) );
@@ -937,6 +939,8 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
             tmp = (int)( (tmp > 0) | (factor > 0) );
         } else if (type == CPPTokenType::TK_BITAND) {
             tmp = (int)( (tmp > 0) & (factor > 0) );
+        } else if (type == CPPTokenType::TK_BITXOR) {
+            tmp = (int)( (tmp > 0) ^ (factor > 0) );
         } else {
             tmp = (int)( (tmp > 0) || (factor > 0) );
         }
@@ -991,7 +995,8 @@ int parse_term(unsigned char *string_start, unsigned char *&cur, const cpp_symta
            type == CPPTokenType::TK_LSHIFT ||
            type == CPPTokenType::TK_RSHIFT ||
            type == CPPTokenType::TK_BITAND ||
-           type == CPPTokenType::TK_BITOR) {
+           type == CPPTokenType::TK_BITOR ||
+           type == CPPTokenType::TK_BITXOR) {
         int term = parse_factor(string_start, cur, macro_definitions);
         if (type == CPPTokenType::TK_MUL) {
             tmp = tmp * term;
@@ -1007,6 +1012,8 @@ int parse_term(unsigned char *string_start, unsigned char *&cur, const cpp_symta
             tmp = tmp & term;
         } else if (type == CPPTokenType::TK_BITOR) {
             tmp = tmp | term;
+        } else if (type == CPPTokenType::TK_BITXOR) {
+            tmp = tmp ^ term;
         } else {
             Location loc;
             loc.first = old_cur - string_start;
