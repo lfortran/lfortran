@@ -459,6 +459,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     parse_decimal_format(format, &width_digits, &decimal_digits, &exp_digits);
 
     int width = width_digits;
+
+    // Dynamically allocate buffer based on width
+    char* formatted_value = (char*)malloc(width + 2);
+    formatted_value[0] = '\0';
+
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
     // sign_width = 0
@@ -528,7 +533,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp_length = strlen(exponent);
 
     if (width == 0) {
-        if (decimal_digits == 0) {
+        if (decimal_digits == 0 && scale != 1) {
             decimal_digits = 9;
         }
         width = sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length;
@@ -541,7 +546,6 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         strcat(val_str, "0");
     }
 
-    char formatted_value[64] = "";
     int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length + sign_plus_exist);
     // spaces = 2
     for (int i = 0; i < spaces; i++) {
@@ -624,6 +628,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         *result = append_to_string(*result, formatted_value);
         // result = "  1.12E+10"
     }
+    free(formatted_value);
 }
 
 void handle_SP_specifier(char** result, bool is_positive_value){

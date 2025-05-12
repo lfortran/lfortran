@@ -103,6 +103,11 @@ program format_04
     print 30, 0.102212
     30 FORMAT ("x:", ES15.5)
     print "(*(es15.5e2,1x))", e
+
+    !test for issue: https://github.com/lfortran/lfortran/issues/6301
+    print "(ES0.0)", 1.0
+    print "(ES300.0)", 1.0
+
     print 31, e
     31 FORMAT (*(es15.5e2,1x))
     print 32, e
