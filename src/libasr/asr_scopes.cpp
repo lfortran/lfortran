@@ -47,13 +47,14 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
             case (ASR::symbolType::Function) : {
                 ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(a.second);
                 ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
-                if (v_func_type->m_abi != ASR::abiType::Interactive) {
+                if (v_func_type->m_abi != ASR::abiType::Interactive && v_func_type->m_abi != ASR::abiType::BindC) {
                     v->m_body = nullptr;
                     v->n_body = 0;
                     PassUtils::UpdateDependenciesVisitor ud(al);
                     ud.visit_Function(*v);
+                    v_func_type->m_abi = ASR::abiType::Interactive;
                 }
-                v_func_type->m_abi = ASR::abiType::Interactive;
+
                 break;
             }
             case (ASR::symbolType::Module) : {
