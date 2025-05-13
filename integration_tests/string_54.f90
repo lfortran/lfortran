@@ -1,4 +1,4 @@
-module string3_mod
+module string_54_mod
     interface double
       procedure :: double_
     end interface
@@ -14,12 +14,13 @@ module string3_mod
     subroutine foo_sub(x, char)
       integer , intent(in) :: x 
       character(double(x)) :: char
+      ! if(len(char) /= 20) error stop ! >>>>>>>>>>>>>>>>>>>>>>>>>>> Uncomment after string is refactored(char should be of physicalType `DescriptorString`).
     end subroutine
   
 end module
   
-program string3
-use string3_mod
+program string_54
+use string_54_mod
 integer :: x
 character(10) :: char
 x = 10
