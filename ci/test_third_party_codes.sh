@@ -152,9 +152,12 @@ time_section "🧪 Testing POT3D" '
   git checkout 695841f041300ee75fdfdd1da5d0fc6fe66f5717
 
   git clone https://github.com/lfortran/fortran_mpi
-  cp fortran_mpi/src/mpi.f90 ./src/
-  cp fortran_mpi/src/mpi_c_bindings.f90 ./src/
-  cp fortran_mpi/src/mpi_constants.c ./src/
+  cd fortran_mpi
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  cp src/mpi.f90 ../src/
+  cp src/mpi_c_bindings.f90 ../src/
+  cp src/mpi_constants.c ../src/
+  cd ..
 
   print_subsection "Building with default flags"
   FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run.sh
