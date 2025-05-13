@@ -399,6 +399,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     parse_decimal_or_en_format(format, &width, &decimal_digits, &exp_digits);
 
     // Default fallback if 0
+    bool is_g0_like = (width == 0 && decimal_digits == 0 && exp_digits == 0);
     if (decimal_digits <= 0) decimal_digits = 9;
     if (exp_digits == 0) exp_digits = 2;
     else if (exp_digits == -1) exp_digits = 3;
@@ -407,26 +408,36 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
 
     char formatted_value[256];
     double abs_val = fabs(val);
-    if (abs_val == 0.0 || (abs_val >= 1.0 && abs_val < 1000.0)) {
-        // Print in normal float format
-        snprintf(formatted_value, sizeof(formatted_value), "%.*f", decimal_digits, val);
-    } else {
-        // Engineering notation: scale exponent to multiple of 3
-        int exponent = (int)floor(log10(abs_val));
-        int remainder = exponent % 3;
-        if (remainder < 0) remainder += 3;
-        exponent -= remainder;
-        double scaled_val = val / pow(10, exponent);
+    if (is_g0_like) {
+        if (abs_val == 0.0 || (abs_val >= 1.0 && abs_val < 1000.0)) {
+            snprintf(formatted_value, sizeof(formatted_value), "%.9f", val);
+        } else {
+            // Engineering notation: scale exponent to multiple of 3
+            int exponent = (int)floor(log10(abs_val));
+            int remainder = exponent % 3;
+            if (remainder < 0) remainder += 3;
+            exponent -= remainder;
+            double scaled_val = val / pow(10, exponent);
 
+            char val_str[128];
+            snprintf(val_str, sizeof(val_str), "%.9f", scaled_val);
+            snprintf(formatted_value, sizeof(formatted_value),
+                    "%s%s%+d", val_str, c, exponent);  // no padding, plain exponent
+        }
+    } else {
+        int exponent = 0;
+        double scaled_val = val;
+        if (abs_val != 0.0) {
+            exponent = (int)floor(log10(abs_val));
+            int remainder = exponent % 3;
+            if (remainder < 0) remainder += 3;
+            exponent -= remainder;
+            scaled_val = val / pow(10, exponent);
+        }
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
-
-        // Append exponent manually
-        int n = snprintf(formatted_value, sizeof(formatted_value),
-                 "%s%s%+0*d", val_str, c, exp_digits, exponent);
-        if (n >= sizeof(formatted_value)) {
-            fprintf(stderr, "Error: output was truncated. Needed %d characters.\n", n);
-        }
+        snprintf(formatted_value, sizeof(formatted_value),
+                "%s%s%+0*d", val_str, c, exp_digits, exponent);
     }
 
     // Width == 0, no padding
@@ -443,7 +454,21 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
         return;
     }
 
-    // Allocate for width
+    // Check for overflow
+    int total_len = strlen(formatted_value);
+    if (sign_plus_exist) total_len += 1;
+    
+    if (total_len > width) {
+        // Overflow: fill with '*'
+        char* final_result = malloc(width + 1);
+        memset(final_result, '*', width);
+        final_result[width] = '\0';
+        *result = append_to_string(*result, final_result);
+        free(final_result);
+        return;
+    }
+
+    // Allocate and pad properly
     char* final_result = malloc(width + 1);
     int padding = width - strlen(formatted_value) - sign_plus_exist;
     if (padding > 0) {
