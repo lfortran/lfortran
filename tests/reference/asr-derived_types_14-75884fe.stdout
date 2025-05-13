@@ -221,7 +221,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -253,7 +253,7 @@
                                         })
                                     check
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -367,7 +367,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -399,7 +399,7 @@
                                         })
                                     toml_get_value_type
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Integer 4)
                                         Source
                                         Implementation
@@ -575,7 +575,7 @@
                     [(Print
                         (StringConstant
                             "running derived_types_14 main program"
-                            (String 1 (IntegerConstant 37 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 )

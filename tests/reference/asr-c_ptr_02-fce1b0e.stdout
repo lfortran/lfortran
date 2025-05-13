@@ -498,7 +498,7 @@
                             ()
                             [(Var 2 c_arr)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -507,7 +507,7 @@
                             ()
                             [(Var 2 r_ptr)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )

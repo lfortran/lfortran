@@ -221,7 +221,7 @@
                             ()
                             [(Var 2 ans)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -274,7 +274,7 @@
                             [(Var 2 i4)
                             (Var 2 i8)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -358,7 +358,7 @@
                             [(Var 2 i4)
                             (Var 2 i8)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )

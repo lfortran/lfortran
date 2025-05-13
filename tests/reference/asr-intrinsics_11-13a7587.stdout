@@ -65,7 +65,7 @@
                             ()
                             [(Var 2 y)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

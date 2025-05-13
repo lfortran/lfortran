@@ -14,7 +14,7 @@
                     [(Print
                         (StringConstant
                             "executing modules_37"
-                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 ),
@@ -165,7 +165,7 @@
                                                             (Var 13 temp)
                                                             12 1_string_t_s
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -173,7 +173,7 @@
                                                             (Var 14 target)
                                                             12 1_build_target_t_output_dir
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -529,7 +529,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -816,7 +816,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source

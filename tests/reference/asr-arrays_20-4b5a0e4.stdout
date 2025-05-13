@@ -18,7 +18,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -137,13 +137,13 @@
                                             ()
                                         )
                                         ())]
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ColMajor
                                         ()
                                     )
                                     (Integer 4)
                                     (IntegerConstant 5 (Integer 4) Decimal)
-                                ) .false. .false. PointerString)
+                                ) ExpressionLength PointerString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray

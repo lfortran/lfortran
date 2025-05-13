@@ -68,7 +68,7 @@
                             (Print
                                 (StringConstant
                                     "Excellent!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -84,7 +84,7 @@
                             (Print
                                 (StringConstant
                                     "Very good!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -100,7 +100,7 @@
                             (Print
                                 (StringConstant
                                     "Well done!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -116,7 +116,7 @@
                             (Print
                                 (StringConstant
                                     "Not bad!"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -132,7 +132,7 @@
                             (Print
                                 (StringConstant
                                     "You passed!"
-                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -148,7 +148,7 @@
                             (Print
                                 (StringConstant
                                     "Better try again!"
-                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )]
@@ -161,7 +161,7 @@
                         (Print
                             (StringConstant
                                 "Invalid marks"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                         )]
                         .false.
@@ -171,11 +171,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -200,7 +200,7 @@
                             [(Print
                                 (StringConstant
                                     "Excellent!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -210,7 +210,7 @@
                             [(Print
                                 (StringConstant
                                     "Very good!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -220,7 +220,7 @@
                             [(Print
                                 (StringConstant
                                     "Well done!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -230,7 +230,7 @@
                             [(Print
                                 (StringConstant
                                     "Not bad!"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -240,7 +240,7 @@
                             [(Print
                                 (StringConstant
                                     "You passed!"
-                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -250,14 +250,14 @@
                             [(Print
                                 (StringConstant
                                     "Better try again!"
-                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                         )]
                         .false.
@@ -267,11 +267,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -283,7 +283,7 @@
                             [(Print
                                 (StringConstant
                                     "Excellent!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -293,7 +293,7 @@
                             [(Print
                                 (StringConstant
                                     "Very good!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -303,7 +303,7 @@
                             [(Print
                                 (StringConstant
                                     "Well done!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -313,7 +313,7 @@
                             [(Print
                                 (StringConstant
                                     "Not bad!"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -323,7 +323,7 @@
                             [(Print
                                 (StringConstant
                                     "You passed!"
-                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )
@@ -333,14 +333,14 @@
                             [(Print
                                 (StringConstant
                                     "Better try again!"
-                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                         )]
                         .false.
@@ -350,11 +350,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

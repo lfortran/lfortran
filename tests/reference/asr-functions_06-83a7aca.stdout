@@ -35,14 +35,14 @@
                                     Local
                                     (StringConstant
                                         "  abc"
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "  abc"
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -74,7 +74,7 @@
                                 (Var 6 string)
                                 (Integer 4)
                                 ()
-                            ) .false. .false. PointerString)
+                            ) ExpressionLength PointerString)
                             ()
                             ()
                         )
@@ -100,7 +100,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -125,7 +125,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]
@@ -196,7 +196,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -209,14 +209,14 @@
                                         })
                                     int_return
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -330,7 +330,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -343,14 +343,14 @@
                                         })
                                     real_return
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -424,7 +424,7 @@
                                                         (Var 3 s)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -443,7 +443,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -456,16 +456,16 @@
                                         })
                                     trim_wrapper
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (String 1 (StringLen
                                             (FunctionParam
                                                 0
-                                                (String 1 () .true. .false. PointerString)
+                                                (String 1 () AssumedLength PointerString)
                                                 ()
                                             )
                                             (Integer 4)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -485,7 +485,7 @@
                                             StringTrim
                                             [(Var 3 s)]
                                             0
-                                            (String 1 () .true. .false. PointerString)
+                                            (String 1 () AssumedLength PointerString)
                                             ()
                                         )
                                         ()

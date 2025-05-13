@@ -14,91 +14,91 @@
                     [(Print
                         (StringConstant
                             "1a"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1b"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "2a"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "2b"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1b"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "10"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1a0"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1ab"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1ac"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1c"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "10"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1a0"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1aa"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1ac"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
                         (StringConstant
                             "1c"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 )

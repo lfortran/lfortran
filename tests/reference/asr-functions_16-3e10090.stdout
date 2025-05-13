@@ -14,7 +14,7 @@
                     [(Print
                         (StringConstant
                             "running functions_16 program"
-                            (String 1 (IntegerConstant 28 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 ),
@@ -143,7 +143,7 @@
                                                     (Var 8 lhs)
                                                     8 1_toml_key_key
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -155,13 +155,13 @@
                                                             (Var 8 lhs)
                                                             8 1_toml_key_key
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )
@@ -171,7 +171,7 @@
                                                     (Var 8 rhs)
                                                     8 1_toml_key_key
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -183,13 +183,13 @@
                                                             (Var 8 rhs)
                                                             8 1_toml_key_key
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )
@@ -1429,7 +1429,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source

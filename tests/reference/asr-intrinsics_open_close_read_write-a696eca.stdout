@@ -34,14 +34,14 @@
                                     Local
                                     (StringConstant
                                         "Some error occured"
-                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "Some error occured"
-                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -306,11 +306,11 @@
                         (Var 2 u_ptr)
                         (StringConstant
                             "data.dat"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         (StringConstant
                             "replace"
-                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         ()
@@ -332,7 +332,7 @@
                             [(StringFormat
                                 (StringConstant
                                     "(10F8.2)"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                                 [(ArrayItem
                                     (Var 2 x)
@@ -353,7 +353,7 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (String 1 () .false. .false. CString)
+                                (String 1 () ExpressionLength CString)
                                 ()
                             )]
                             ()
@@ -380,11 +380,11 @@
                         (IntegerConstant 2 (Integer 4) Decimal)
                         (StringConstant
                             "data.dat"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         (StringConstant
                             "old"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         ()
@@ -470,7 +470,7 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (String 1 () .false. .false. CString)
+                                (String 1 () ExpressionLength CString)
                                 ()
                             )]
                             ()

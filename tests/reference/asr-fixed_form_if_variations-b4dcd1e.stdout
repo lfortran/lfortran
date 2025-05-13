@@ -49,7 +49,7 @@
                             ()
                             [(Var 2 a)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]
@@ -82,7 +82,7 @@
                         [(Print
                             (StringConstant
                                 "first branch"
-                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                         )
                         (GoToTarget
@@ -92,7 +92,7 @@
                         [(Print
                             (StringConstant
                                 "second branch"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                         )]
                     )

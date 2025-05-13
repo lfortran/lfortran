@@ -1019,7 +1019,7 @@
                                             ()
                                             [(StringConstant
                                                 "First element: "
-                                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_int_fst
@@ -1030,7 +1030,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )
@@ -1050,7 +1050,7 @@
                                             ()
                                             [(StringConstant
                                                 "Second element: "
-                                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_int_snd
@@ -1061,7 +1061,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )
@@ -1084,7 +1084,7 @@
                                             ()
                                             [(StringConstant
                                                 "First element: "
-                                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_real_fst
@@ -1095,7 +1095,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )
@@ -1118,7 +1118,7 @@
                                             ()
                                             [(StringConstant
                                                 "Second element: "
-                                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_real_snd
@@ -1129,7 +1129,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )]

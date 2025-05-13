@@ -55,7 +55,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -74,7 +74,7 @@
                                             .true.
                                             2 string_type
                                         )
-                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -95,7 +95,7 @@
                                             (Var 4 lhs)
                                             4 1_string_type_raw
                                             (Allocatable
-                                                (String 1 () .false. .true. DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -104,7 +104,7 @@
                                             PointerString
                                             DescriptorString
                                             (Allocatable
-                                                (String 1 () .true. .false. DescriptorString)
+                                                (String 1 () AssumedLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -132,7 +132,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -253,7 +253,7 @@
                                             (Var 5 string)
                                             5 1_string_type_raw
                                             (Allocatable
-                                                (String 1 () .false. .true. DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -266,7 +266,7 @@
                                                     (Var 5 string)
                                                     5 1_string_type_raw
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -278,13 +278,13 @@
                                                             (Var 5 string)
                                                             5 1_string_type_raw
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))]

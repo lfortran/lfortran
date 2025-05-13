@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -45,7 +45,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -83,7 +83,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -102,7 +102,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -119,7 +119,7 @@
                         (Var 3 verb)
                         (StringConstant
                             "learned "
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -128,7 +128,7 @@
                         (Var 3 posit)
                         (StringConstant
                             "from "
-                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -137,7 +137,7 @@
                         (Var 3 title)
                         (StringConstant
                             "the "
-                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -146,7 +146,7 @@
                         (Var 3 last_name)
                         (StringConstant
                             "best"
-                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -160,26 +160,26 @@
                                         (StringConcat
                                             (Var 3 intro)
                                             (Var 3 verb)
-                                            (String 1 (IntegerConstant 13 (Integer 8) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 13 (Integer 8) Decimal) ExpressionLength PointerString)
                                             ()
                                         )
                                         (Var 3 posit)
-                                        (String 1 (IntegerConstant 18 (Integer 8) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength PointerString)
                                         ()
                                     )
                                     (Var 3 title)
-                                    (String 1 (IntegerConstant 22 (Integer 8) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 22 (Integer 8) Decimal) ExpressionLength PointerString)
                                     ()
                                 )
                                 (Var 3 last_name)
-                                (String 1 (IntegerConstant 29 (Integer 8) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 8) Decimal) ExpressionLength PointerString)
                                 ()
                             )
                             (StringConstant
                                 "."
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                            (String 1 (IntegerConstant 30 (Integer 8) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 30 (Integer 8) Decimal) ExpressionLength PointerString)
                             ()
                         )
                         ()
@@ -202,14 +202,14 @@
                                     Local
                                     (StringConstant
                                         "I've "
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "I've "
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public

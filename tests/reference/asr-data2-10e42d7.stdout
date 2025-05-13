@@ -98,11 +98,11 @@
                             ()
                             [(StringConstant
                                 "factor in a:"
-                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 3 factor)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -165,11 +165,11 @@
                             ()
                             [(StringConstant
                                 "factor: "
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 4 factor)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

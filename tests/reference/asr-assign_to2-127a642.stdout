@@ -171,7 +171,7 @@
                             ()
                             [(IntegerConstant 50 (Integer 4) Decimal)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -190,7 +190,7 @@
                             ()
                             [(IntegerConstant 70 (Integer 4) Decimal)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

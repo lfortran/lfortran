@@ -64,7 +64,7 @@
                             [(Var 2 random_sp)
                             (Var 2 random_dp)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

@@ -57,7 +57,7 @@
                             ()
                             [(Var 4 i)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]
@@ -112,7 +112,7 @@
                                     [(Print
                                         (StringConstant
                                             "b()"
-                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (Assignment

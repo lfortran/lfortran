@@ -42,7 +42,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -98,7 +98,7 @@
                                         [(ClassType
                                             2 logger_type
                                         )
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -163,7 +163,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -220,7 +220,7 @@
                                             2 logger_type
                                         )
                                         (Integer 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Integer 4)]
                                         ()
                                         Source
