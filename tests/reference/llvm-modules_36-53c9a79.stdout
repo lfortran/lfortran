@@ -8,11 +8,11 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 
-define i1 @Any_4_1_0_logical____0(i1* %mask, i32* %__1mask, i32* %__2mask) {
+define i1 @_lcompilers_Any_4_1_0_logical____0(i1* %mask, i32* %__1mask, i32* %__2mask) {
 .entry:
-  %Any_4_1_0 = alloca i1, align 1
   %__1_i = alloca i32, align 4
-  store i1 false, i1* %Any_4_1_0, align 1
+  %_lcompilers_Any_4_1_0 = alloca i1, align 1
+  store i1 false, i1* %_lcompilers_Any_4_1_0, align 1
   %0 = load i32, i32* %__1mask, align 4
   %1 = sub i32 %0, 1
   store i32 %1, i32* %__1_i, align 4
@@ -32,7 +32,7 @@ loop.body:                                        ; preds = %loop.head
   %9 = load i32, i32* %__1_i, align 4
   %10 = add i32 %9, 1
   store i32 %10, i32* %__1_i, align 4
-  %11 = load i1, i1* %Any_4_1_0, align 1
+  %11 = load i1, i1* %_lcompilers_Any_4_1_0, align 1
   %12 = load i32, i32* %__1_i, align 4
   %13 = load i32, i32* %__1mask, align 4
   %14 = load i32, i32* %__2mask, align 4
@@ -44,14 +44,14 @@ loop.body:                                        ; preds = %loop.head
   %20 = load i1, i1* %19, align 1
   %21 = icmp eq i1 %11, false
   %22 = select i1 %21, i1 %20, i1 %11
-  store i1 %22, i1* %Any_4_1_0, align 1
+  store i1 %22, i1* %_lcompilers_Any_4_1_0, align 1
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
-  %23 = load i1, i1* %Any_4_1_0, align 1
+  %23 = load i1, i1* %_lcompilers_Any_4_1_0, align 1
   ret i1 %23
 }
 
@@ -141,7 +141,7 @@ loop.end:                                         ; preds = %ifcont8
   %25 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 0
   store i32 1, i32* %call_arg_value, align 4
   store i32 2, i32* %call_arg_value9, align 4
-  %26 = call i1 @Any_4_1_0_logical____0(i1* %25, i32* %call_arg_value, i32* %call_arg_value9)
+  %26 = call i1 @_lcompilers_Any_4_1_0_logical____0(i1* %25, i32* %call_arg_value, i32* %call_arg_value9)
   store i1 %26, i1* %__libasr_created__intrinsic_array_function_Any1, align 1
   %27 = load i1, i1* %__libasr_created__intrinsic_array_function_Any1, align 1
   %28 = load i1, i1* %toomany, align 1
