@@ -148,8 +148,13 @@ time_section "🧪 Testing Numerical Methods Fortran" '
 time_section "🧪 Testing POT3D" '
   git clone https://github.com/gxyd/pot3d.git
   cd pot3d
-  git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
-  git checkout 83e1e90db7e7517fcbe8c7bce5ba309addfb23f6
+  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
+  git checkout fc2788ca07c065152b2cd6f3d0eb1abfbee9ffcf
+
+  git clone https://github.com/lfortran/fortran_mpi
+  cp fortran_mpi/src/mpi.f90 ./src/
+  cp fortran_mpi/src/mpi_c_bindings.f90 ./src/
+  cp fortran_mpi/src/mpi_constants.c ./src/
 
   print_subsection "Building with default flags"
   FC=$FC ./build_and_run.sh
