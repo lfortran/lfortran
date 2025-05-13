@@ -148,22 +148,14 @@ time_section "🧪 Testing Numerical Methods Fortran" '
 time_section "🧪 Testing POT3D" '
   git clone https://github.com/gxyd/pot3d.git
   cd pot3d
-  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-  git checkout 695841f041300ee75fdfdd1da5d0fc6fe66f5717
-
-  git clone https://github.com/lfortran/fortran_mpi
-  cd fortran_mpi
-  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
-  cp src/mpi.f90 ../src/
-  cp src/mpi_c_bindings.f90 ../src/
-  cp src/mpi_constants.c ../src/
-  cd ..
+  git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
+  git checkout 83e1e90db7e7517fcbe8c7bce5ba309addfb23f6
 
   print_subsection "Building with default flags"
-  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run.sh
+  FC=$FC ./build_and_run.sh
 
   print_subsection "Building with optimization flags"
-  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run.sh
+  FC="$FC --fast --skip-pass=dead_code_removal" ./build_and_run.sh
 
   print_subsection "Building POT3D in separate compilation mode"
   FC="$FC --generate-object-code --skip-pass=pass_array_by_data" ./build_and_run.sh
