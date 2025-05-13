@@ -39,20 +39,37 @@ module class_18_mod
    subroutine map_s_insert_single(this, value, unused, is_new)
       class(map_Set), target, intent(inout) :: this
       type(Integer32Complex32Pair), intent(in) :: value
-      type (KeywordEnforcer), optional :: unused
+      integer, optional :: unused
       logical, optional, intent(out) :: is_new
-      is_new = .true.
+      if (present(is_new)) then
+         is_new = .true.
+      end if
+
+      if (present(unused)) then
+         unused = 21
+      end if
    end subroutine map_s_insert_single
 
    subroutine map_of(this, key)
-       class(Integer32Complex32Map), target, intent(inout) :: this
-       integer(kind=INT32), intent(in) :: key
-       type(Integer32Complex32Pair) :: p
-       logical :: is_new
-       p%first= key
-       call this%tree%insert(p, is_new=is_new)
-       ! error checking is done here
-       if (is_new .eqv. .false.) error stop
+      class(Integer32Complex32Map), target, intent(inout) :: this
+      integer(kind=INT32), intent(in) :: key
+      type(Integer32Complex32Pair) :: p
+      logical :: is_new1, is_new2, is_new3
+      integer :: unused1, unused2, unused3
+      p%first= key
+      call this%tree%insert(p, is_new=is_new1)
+      if (is_new1 .eqv. .false.) error stop
+
+      call this%tree%insert(p, unused=unused1)
+      if (unused1 /= 21) error stop
+
+      call this%tree%insert(p, is_new=is_new2, unused=unused2)
+      if (is_new2 .eqv. .false.) error stop
+      if (unused2 /= 21) error stop
+
+      call this%tree%insert(p, unused=unused3, is_new=is_new3)
+      if (is_new3 .eqv. .false.) error stop
+      if (unused3 /= 21) error stop
    end subroutine map_of
 end module class_18_mod
 
