@@ -10139,7 +10139,7 @@ public:
         std::vector<std::string> fn_args2 = convert_fn_args_to_string(fn_args, fn_n_args);
 
         int offset = args.size();
-        for (int i = 0; i < (int)fn_n_args - offset - (int)type_bound; i++) {
+        for (int i = 0; i < (int)fn_n_args - offset - is_method; i++) {
             ASR::call_arg_t call_arg;
             call_arg.loc = loc;
             call_arg.m_value = nullptr;
@@ -10159,7 +10159,7 @@ public:
                 return ;
             }
 
-            int idx = std::distance(fn_args2.begin(), search) - (int)type_bound;
+            int idx = std::distance(fn_args2.begin(), search) - (int)is_method;
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument '" + name + "' is already specified as a positional argument",
