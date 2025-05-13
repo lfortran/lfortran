@@ -1,7 +1,7 @@
 module template_vector_m
     implicit none
     private
-    public :: vector_t
+    public :: vector_t, main
 
     template vector_t(T)
         type, deferred :: T
@@ -14,7 +14,7 @@ module template_vector_m
             procedure :: resize
             procedure :: push_back
         end type
-    
+
     contains
 
         subroutine push_back(this, item)
