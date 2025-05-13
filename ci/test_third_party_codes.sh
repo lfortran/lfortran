@@ -168,6 +168,9 @@ time_section "🧪 Testing POT3D" '
   print_subsection "Building POT3D in separate compilation mode"
   FC="$FC --generate-object-code --skip-pass=pass_array_by_data" ./build_and_run.sh
 
+  print_subsection "Building with optimization flags and f23 standard"
+  FC="$FC --std=f23 --fast --skip-pass=dead_code_removal" ./build_and_run.sh
+
   print_success "Done with POT3D"
   cd ..
 '
