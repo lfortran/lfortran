@@ -157,10 +157,10 @@ time_section "🧪 Testing POT3D" '
   cp fortran_mpi/src/mpi_constants.c ./src/
 
   print_subsection "Building with default flags"
-  FC="$FC --cpp" ./build_and_run.sh
+  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run.sh
 
   print_subsection "Building with optimization flags"
-  FC="$FC --cpp --fast --skip-pass=dead_code_removal" ./build_and_run.sh
+  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run.sh
 
   print_success "Done with POT3D"
   cd ..
