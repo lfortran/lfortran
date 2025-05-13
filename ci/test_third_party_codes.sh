@@ -166,7 +166,7 @@ time_section "🧪 Testing POT3D" '
   FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run.sh
 
   print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --generate-object-code --skip-pass=pass_array_by_data" ./build_and_run.sh
+  FC="$FC --cpp --generate-object-code --skip-pass=pass_array_by_data -DOPEN_MPI=yes" ./build_and_run.sh
 
   print_success "Done with POT3D"
   cd ..
