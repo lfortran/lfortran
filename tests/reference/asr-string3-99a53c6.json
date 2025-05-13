@@ -1,0 +1,13 @@
+{
+    "basename": "asr-string3-99a53c6",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/string3.f90",
+    "infile_hash": "609c534008be0ebbab9ac5c08e5c23ea444a6c25231a4bb7a63992ed",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-string3-99a53c6.stdout",
+    "stdout_hash": "91be2389f1820b1c206cfbb4d2ddccf8154641fd1459b30905288513",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

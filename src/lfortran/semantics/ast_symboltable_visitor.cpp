@@ -2309,8 +2309,31 @@ public:
             LCOMPILERS_ASSERT(
                 ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
                 ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_scope->asr_owner))
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
+
+            // Correct the Type in FunctionType + replace with FunctionParam
+            ASR::Function_t* func =ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+            ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+            ASR::symbol_t* sym_to_variable = current_scope->get_symbol(to_lower(std::string(var_name)));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym_to_variable))
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym_to_variable);
+            if(variable->m_intent == ASRUtils::intent_return_var) {
+                ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
+                func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(
+                            variable->m_type, current_scope);
+            } else {
+                for(size_t i = 0; i < func->n_args; i++){ 
+                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(func->m_args[i]);
+                    if(var == variable){
+                        ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
+                        func_type->m_arg_types[i] = replacer.replace_args_with_FunctionParam(
+                                    variable->m_type, current_scope);
+                        break;
+                    }
+                }
+            }
+
             // Raise warning for user if variable declaration is calling its function scope recursively.
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
             if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
                 diag.add(diag::Diagnostic(
                     "Variable declaration is calling its function scope recursively",
@@ -2319,16 +2342,12 @@ public:
             }
 
             // Add called function as dependency to Variable node.
-            ASR::symbol_t* sym_to_variable = current_scope->get_symbol(to_lower(std::string(var_name)));
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym_to_variable))
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym_to_variable);
             SetChar var_dep;var_dep.reserve(al,0);
             ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
             variable->m_dependencies = var_dep.p;
             variable->n_dependencies = var_dep.n;
 
             // Add called function as dependency to the owning-function's scope
-            ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
             SetChar func_dep;
             func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
             func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));

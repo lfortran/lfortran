@@ -118,6 +118,13 @@ static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t* x) {
 static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
     return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
 }
+class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
+{
+    public:
+
+    ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
+
+};
 
 static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {
@@ -3009,8 +3016,15 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::String: {
             ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
+            ASR::expr_t* len_expr;
+            if(tnew->m_len){
+                ASRUtils::ExprStmtDuplicator duplicator_instance(al);
+                len_expr = duplicator_instance.duplicate_expr(tnew->m_len);
+            } else {
+                len_expr = nullptr;
+            }
             t_ = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
-                    tnew->m_kind, tnew->m_len, tnew->m_is_assumed_length,
+                    tnew->m_kind, len_expr, tnew->m_is_assumed_length,
                     tnew->m_is_deferred_length, tnew->m_physical_type));
             break;
         }
@@ -4514,13 +4528,6 @@ inline int64_t lookup_var_index(ASR::expr_t **args, size_t n_args, ASR::Var_t *v
     return -1;
 }
 
-class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
-{
-    public:
-
-    ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
-
-};
 
 class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWithScopeDuplicator>
 {
