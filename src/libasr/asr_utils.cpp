@@ -1212,7 +1212,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                         || (ASR::is_a<ASR::ClassType_t>(*left_arg_type) &&
                             ASR::is_a<ASR::StructType_t>(*left_type))
                         || (ASR::is_a<ASR::ClassType_t>(*right_arg_type) &&
-                            ASR::is_a<ASR::StructType_t>(*right_type))) {
+                            ASR::is_a<ASR::StructType_t>(*right_type))
+                        || (ASR::is_a<ASR::StructType_t>(*left_arg_type) &&
+                            ASR::is_a<ASR::ClassType_t>(*left_type))
+                        || (ASR::is_a<ASR::StructType_t>(*right_arg_type) &&
+                            ASR::is_a<ASR::ClassType_t>(*right_type)) ) {
                             // If all are StructTypes then the Struct symbols should match
                             if (ASR::is_a<ASR::StructType_t>(*left_type) &&
                                 ASR::is_a<ASR::StructType_t>(*right_type) &&
