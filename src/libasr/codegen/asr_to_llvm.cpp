@@ -3685,7 +3685,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     ASR::string_physical_typeType::PointerString) { // FixedSize Strings
                 ASR::String_t* str = ASR::down_cast<ASR::String_t>(symbol_type);
                 visit_expr(*str->m_len);
-                if(str->m_is_assumed_length || str->m_is_deferred_length ){LCOMPILERS_ASSERT(false);}
+                if(str->m_len_kind != ASR::string_length_kindType::ExpressionLength){LCOMPILERS_ASSERT(false);}
                 llvm_utils->initialize_string_heap(ptr_member, tmp);
                 tmp = nullptr;
             }
@@ -3894,7 +3894,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         } else if (is_a<ASR::String_t>(*v->m_type)) {
             ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
             visit_expr(*t->m_len);
-            if( t->m_is_deferred_length ){LCOMPILERS_ASSERT(false);}
+            if( t->m_len_kind == ASR::string_length_kindType::DeferredLength ){LCOMPILERS_ASSERT(false);}
             llvm_utils->initialize_string_heap(target_var, tmp);
             tmp = nullptr;
             // target decides if the str_copy is performed on string descriptor or pointer.
@@ -4155,15 +4155,15 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     /*  This function (process_Variable) isn't used to
                         declare function variables.
                         Hence, assumed length is only used with dummy arg variables.
-                    */LCOMPILERS_ASSERT(!t->m_is_assumed_length);
-                    if (!t->m_is_deferred_length) {
+                    */LCOMPILERS_ASSERT(t->m_len_kind != ASR::string_length_kindType::AssumedLength);
+                    if (t->m_len_kind != ASR::string_length_kindType::DeferredLength) {
                             this->visit_expr(*t->m_len); 
                             llvm_utils->initialize_string_heap(target_var, tmp); tmp = nullptr;
                             if (v->m_intent == intent_local) {
                                 strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
                             }
                         
-                    } else if (t->m_is_deferred_length) {
+                    } else if (t->m_len_kind == ASR::string_length_kindType::DeferredLength) {
                         // Allocatable string. Initialize to `nullptr` (unallocated)
                         llvm::Value *init_value = llvm::Constant::getNullValue(type);
                         builder->CreateStore(init_value, /*TODO-StringsRefactoring : Remove this ternary check (ASRVerify)*/
@@ -5595,7 +5595,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         asr_target->m_symbolic_value != nullptr && !already_allocated) {
                         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_target->m_type);
                         visit_expr(*str_type->m_len);
-                        if(str_type->m_is_assumed_length || str_type->m_is_deferred_length ){LCOMPILERS_ASSERT(false);}
+                        if(str_type->m_len_kind != ASR::string_length_kindType::ExpressionLength){LCOMPILERS_ASSERT(false);}
                         llvm_utils->initialize_string_heap(target, tmp);
                         tmp = nullptr;
                         strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(asr_target->m_type, target));
@@ -8625,7 +8625,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                         asr_target->m_symbolic_value != nullptr &&
                         !already_allocated) {
                         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_target->m_type);
-                        if(str_type->m_is_assumed_length || str_type->m_is_deferred_length ){LCOMPILERS_ASSERT(false);}
+                        if(str_type->m_len_kind != ASR::string_length_kindType::ExpressionLength){LCOMPILERS_ASSERT(false);}
                         visit_expr(*str_type->m_len);
                         llvm_utils->initialize_string_heap(var_to_read_into, tmp); tmp = nullptr;
                         strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(asr_target->m_type, var_to_read_into));
@@ -9380,7 +9380,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     al, loc, 1,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, stop_msg.size(),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                    false, false,
+                    ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::PointerString));
         ASR::expr_t* STOP_MSG = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
             s2c(al, stop_msg), str_type_len_msg));
@@ -9388,7 +9388,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 al, loc, 1, 
                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                     ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                false, false,
+                ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::PointerString));
         ASR::expr_t* NEWLINE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
             s2c(al, "\n"), str_type_len_1));

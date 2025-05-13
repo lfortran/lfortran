@@ -107,7 +107,8 @@ class ASRBuilder {
     #define logical      ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,\
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
-                            al, loc, x, int32)),false, false,\
+                            al, loc, x, int32)),\
+                            ASR::string_length_kindType::ExpressionLength,\
                             ASR::string_physical_typeType::PointerString))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 

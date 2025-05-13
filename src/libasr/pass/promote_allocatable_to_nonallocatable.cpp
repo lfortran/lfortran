@@ -142,10 +142,11 @@ class PromoteAllocatableToNonAllocatable:
                             ASRUtils::type_get_past_allocatable(alloc_variable->m_type)));
                         // Set length of String type -> e.g. `character(:), allocatable :: arr(:)`
                         if(ASRUtils::is_character(*array_type) && 
-                            ASR::down_cast<ASR::String_t>(array_type)->m_is_deferred_length){
+                            ASR::down_cast<ASR::String_t>(array_type)->m_len_kind ==
+                            ASR::string_length_kindType::DeferredLength){
                             ASR::String_t* str = ASR::down_cast<ASR::String_t>(array_type);
-                            str->m_is_deferred_length = false;
                             str->m_len = alloc_arg.m_len_expr;
+                            str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
                         }
                     alloc_variable->m_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
                     array_type, alloc_arg.m_dims, alloc_arg.n_dims);

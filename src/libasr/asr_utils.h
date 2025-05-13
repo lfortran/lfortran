@@ -3024,8 +3024,9 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 len_expr = nullptr;
             }
             t_ = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
-                    tnew->m_kind, len_expr, tnew->m_is_assumed_length,
-                    tnew->m_is_deferred_length, tnew->m_physical_type));
+                    tnew->m_kind, len_expr, 
+                    tnew->m_len_kind,
+                    tnew->m_physical_type));
             break;
         }
         case ASR::ttypeType::StructType: {
@@ -3185,7 +3186,7 @@ static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR:
         ASRUtils::TYPE(ASR::make_String_t(al, string->base.loc, 1,
             ASRUtils::EXPR(ASR::make_StringLen_t(al, string->base.loc, string, 
                 ASRUtils::TYPE(ASR::make_Integer_t(al, string->base.loc, 4)), nullptr)), 
-            false, false,
+            ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::PointerString));
     if(ASR::is_a<ASR::Allocatable_t>(*expr_type(string))){
         stringPointer_type = ASRUtils::TYPE(
@@ -3271,7 +3272,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
             return ASRUtils::TYPE(ASR::make_String_t(al, loc,
                         tnew->m_kind, tnew->m_len, 
-                        tnew->m_is_assumed_length, tnew->m_is_deferred_length,
+                        tnew->m_len_kind,
                         ASR::string_physical_typeType::PointerString));
         }
         case ASR::ttypeType::StructType: {
@@ -5634,12 +5635,13 @@ static inline void import_struct_t(Allocator& al,
         }
     } else if( ASR::is_a<ASR::String_t>(*var_type_unwrapped) ) {
         ASR::String_t* char_t = ASR::down_cast<ASR::String_t>(var_type_unwrapped);
-        if( char_t->m_is_assumed_length && intent == ASR::intentType::Local ) {
+        if( char_t->m_len_kind == ASR::string_length_kindType::AssumedLength &&
+            intent == ASR::intentType::Local ) {
             var_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, char_t->m_kind,
                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                     ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                false, false,
-            ASR::string_physical_typeType::PointerString));
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString));
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);
@@ -6138,7 +6140,9 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
         return ASR::make_Print_t(al, loc, a_args[0]);
     } else {
         ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, nullptr, false, false, ASR::string_physical_typeType::CString));
+            al, loc, 1, nullptr,
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::CString));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
             ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
