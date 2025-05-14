@@ -2234,6 +2234,21 @@ class TransformVariableInitialiser:
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
         // TODO: StructType expressions aren't evaluated at compile time
         // currently, see: https://github.com/lfortran/lfortran/issues/4909
+        SymbolTable* parent_scope = x.m_parent_symtab;
+        if ( ASR::is_a<ASR::symbol_t>(*parent_scope->asr_owner) ) {
+            ASR::symbol_t* parent_scope_symbol = ASR::down_cast<ASR::symbol_t>(parent_scope->asr_owner);
+            if ( ASR::is_a<ASR::Function_t>(*parent_scope_symbol) ) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(parent_scope_symbol);
+                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+                if (func_type->m_abi == ASR::abiType::Interactive) {
+                    // it is safe to do because we are not going to instantiate this function in LLVM
+                    ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+                    xx.m_symbolic_value = nullptr;
+                    xx.m_value = nullptr;
+                    return;
+                }
+            }
+        }
         if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
