@@ -561,6 +561,7 @@ jobs:
             cd build
             micromamba create -f environment_unix.yml
             micromamba activate lapack
+            ln -s $CONDA_PREFIX/lib/librhash.1.4.6.dylib $CONDA_PREFIX/lib/librhash.1.4.5.dylib
             ./build_lf.sh
 
 
