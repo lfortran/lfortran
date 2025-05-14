@@ -82,6 +82,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
 
   print_success "Done with POT3D"
   cd ..
+  rm -rf pot3d
 '
 
 
