@@ -12,6 +12,16 @@
                                     (SymbolTable
                                         4
                                         {
+                                            1_map_setiterator_i:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_map_setiterator_i
+                                                    3 i
+                                                    map_setiterator
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
                                             a:
                                                 (Variable
                                                     4
@@ -111,9 +121,22 @@
                                     (Var 4 b)]
                                     [(Assignment
                                         (Var 4 eq)
-                                        (LogicalConstant
-                                            .true.
+                                        (IntegerCompare
+                                            (StructInstanceMember
+                                                (Var 4 a)
+                                                4 1_map_setiterator_i
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Eq
+                                            (StructInstanceMember
+                                                (Var 4 b)
+                                                4 1_map_setiterator_i
+                                                (Integer 4)
+                                                ()
+                                            )
                                             (Logical 4)
+                                            ()
                                         )
                                         ()
                                         .false.
@@ -234,6 +257,16 @@
                                         )
                                         ()
                                         .false.
+                                    )
+                                    (Assignment
+                                        (Var 5 ne)
+                                        (LogicalNot
+                                            (Var 5 ne)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
                                     )]
                                     (Var 5 ne)
                                     Public
@@ -246,11 +279,29 @@
                                     (SymbolTable
                                         3
                                         {
-                                            
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
                                         })
                                     map_setiterator
                                     []
-                                    []
+                                    [i]
                                     []
                                     Source
                                     Public
@@ -279,6 +330,170 @@
                     []
                     .false.
                     .false.
+                ),
+            polymorphic_class_compare:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            1_map_setiterator_i:
+                                (ExternalSymbol
+                                    6
+                                    1_map_setiterator_i
+                                    3 i
+                                    map_setiterator
+                                    []
+                                    i
+                                    Public
+                                ),
+                            iter1:
+                                (Variable
+                                    6
+                                    iter1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        6 map_setiterator
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            iter2:
+                                (Variable
+                                    6
+                                    iter2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        6 map_setiterator
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            map_s_iter_equal:
+                                (ExternalSymbol
+                                    6
+                                    map_s_iter_equal
+                                    2 map_s_iter_equal
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_s_iter_equal
+                                    Public
+                                ),
+                            map_s_iter_not_equal:
+                                (ExternalSymbol
+                                    6
+                                    map_s_iter_not_equal
+                                    2 map_s_iter_not_equal
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_s_iter_not_equal
+                                    Public
+                                ),
+                            map_setiterator:
+                                (ExternalSymbol
+                                    6
+                                    map_setiterator
+                                    2 map_setiterator
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_setiterator
+                                    Public
+                                ),
+                            ~eq:
+                                (ExternalSymbol
+                                    6
+                                    ~eq
+                                    2 ~eq
+                                    gftl2_integer32complex32map
+                                    []
+                                    ~eq
+                                    Public
+                                ),
+                            ~noteq:
+                                (ExternalSymbol
+                                    6
+                                    ~noteq
+                                    2 ~noteq
+                                    gftl2_integer32complex32map
+                                    []
+                                    ~noteq
+                                    Public
+                                )
+                        })
+                    polymorphic_class_compare
+                    [gftl2_integer32complex32map]
+                    [(Assignment
+                        (StructInstanceMember
+                            (Var 6 iter1)
+                            6 1_map_setiterator_i
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 6 iter2)
+                            6 1_map_setiterator_i
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (If
+                        (OverloadedCompare
+                            (Var 6 iter1)
+                            NotEq
+                            (Var 6 iter2)
+                            (Logical 4)
+                            ()
+                            (FunctionCall
+                                6 map_s_iter_not_equal
+                                6 ~noteq
+                                [((Var 6 iter1))
+                                ((Var 6 iter2))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Error: iter1 and iter2 should be equal"
+                                (String 1 (IntegerConstant 38 (Integer 4) Decimal) .false. .false. PointerString)
+                            )
+                        )]
+                        []
+                    )]
                 )
         })
     []
