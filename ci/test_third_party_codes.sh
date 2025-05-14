@@ -56,6 +56,13 @@ time_section "🧪 Testing fortran_mpi" '
   cd tests/
   FC="$FC --cpp" ./run_tests.sh
   print_success "Done with fortran_mpi"
+
+  cd ../
+  git clean -fdx
+  print_subsection "Building fortran_mpi with separate compilation"
+  cd tests/
+  FC="$FC --cpp --generate-object-code" ./run_tests.sh
+  print_success "Done with fortran_mpi"
   cd ../../
   rm -rf fortran_mpi
 '
@@ -79,6 +86,9 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
 
   print_subsection "Building with optimization flags"
   FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run.sh
+
+  print_subsection "Building POT3D in separate compilation mode"
+  FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes" ./build_and_run.sh
 
   print_success "Done with POT3D"
   cd ..
