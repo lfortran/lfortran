@@ -45,6 +45,45 @@ time_section() {
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+time_section "🧪 Testing fortran_mpi" '
+  git clone https://github.com/lfortran/fortran_mpi.git
+  cd fortran_mpi
+  export PATH="$(pwd)/../src/bin:$PATH"
+
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+
+  git clean -fdx
+  cd tests/
+  FC="$FC --cpp" ./run_tests.sh
+  print_success "Done with fortran_mpi"
+  cd ../../
+  rm -rf fortran_mpi
+'
+
+time_section "🧪 Testing POT3D with fortran_mpi" '
+  git clone https://github.com/gxyd/pot3d.git
+  cd pot3d
+  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
+  git checkout 695841f041300ee75fdfdd1da5d0fc6fe66f5717
+
+  git clone https://github.com/lfortran/fortran_mpi
+  cd fortran_mpi
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  cp src/mpi.f90 ../src/
+  cp src/mpi_c_bindings.f90 ../src/
+  cp src/mpi_constants.c ../src/
+  cd ..
+
+  print_subsection "Building with default flags"
+  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run.sh
+
+  print_subsection "Building with optimization flags"
+  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run.sh
+
+  print_success "Done with POT3D"
+  cd ..
+'
+
 
 ##########################
 # Section 1: stdlib (Less Workarounds)
