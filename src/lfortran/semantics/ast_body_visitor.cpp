@@ -1476,7 +1476,7 @@ public:
                     }
                 } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
-                    ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
+                    ASR::symbol_t *v = current_scope->resolve_symbol(to_lower(name_t->m_id));
                     if (v) {
                         ASR::ttype_t* struct_t = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                         new_arg.m_type = struct_t;
