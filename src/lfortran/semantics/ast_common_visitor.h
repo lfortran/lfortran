@@ -5440,8 +5440,6 @@ public:
                                 Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                             throw SemanticAbort();
                         }
-                    } else {
-                        LCOMPILERS_ASSERT_MSG(false, "Array Initializer of not compile-time length not supported.");
                     }
                 }
             } else if (!ASRUtils::check_equal_type(expr_type, type)) {
