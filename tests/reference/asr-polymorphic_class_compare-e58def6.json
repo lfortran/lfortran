@@ -1,0 +1,13 @@
+{
+    "basename": "asr-polymorphic_class_compare-e58def6",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/polymorphic_class_compare.f90",
+    "infile_hash": "25a7e3ef9752b7afdefb40760c046aa2708e3b239a1ee9926567915b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-polymorphic_class_compare-e58def6.stdout",
+    "stdout_hash": "103017c9eb8fa972d661299d3ff25f040cbbe6cf9214ad61d554880c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
