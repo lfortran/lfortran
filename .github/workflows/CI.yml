@@ -476,6 +476,7 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             openmpi=5.0.6
+            mpich=4.3.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
