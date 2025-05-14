@@ -2121,6 +2121,8 @@ RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm
 RUN(NAME polymorphic_arguments_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME polymorphic_arguments_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+RUN(NAME polymorphic_class_compare LABELS gfortran)
+
 RUN(NAME binop_of_struct_instance_in_function_call gfortran llvm fortran)
 
 RUN(NAME test_call_arg_structinstance_member gfortran llvm fortran)
