@@ -94,12 +94,15 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-6
-  git checkout aec6ad66cc039e84c365a12409efec3aa43e698c
+  git checkout n-lf-7
+  git checkout 978bba7fdfd0d54ae1ecf17f61a933285a55a690
   micromamba install -c conda-forge fypp
 
   git clean -fdx
-  FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+  FC=$FC cmake . \
+      -DTEST_DRIVE_BUILD_TESTING=OFF \
+      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
+      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
