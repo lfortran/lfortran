@@ -8811,24 +8811,40 @@ public:
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
                     ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f2);
                     bool function_found = false;
+                    bool is_nopass = false;
+                    bool is_class_procedure = false;
                     for( int i = 0; i < (int) gp->n_procs; i++ ) {
-                        Vec<ASR::call_arg_t> args_copy;
-                        args_copy.reserve(al, args.size() + x.n_keywords);
-                        for( size_t j = 0; j < args.size(); j++ ) {
-                            args_copy.push_back(al, args[j]);
-                        }
                         ASR::symbol_t* f4 = gp->m_procs[i];
-                        if( !ASR::is_a<ASR::Function_t>(*f4) ) {
+                        if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::ClassProcedure_t>(*f4) ) {
                             diag.add(Diagnostic(std::string(ASRUtils::symbol_name(f4)) +
-                                                " is not a function.",
-                                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                            " is not a function.",
+                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                             throw SemanticAbort();
+                        }
+                        if (ASR::is_a<ASR::ClassProcedure_t>(*f4)) {
+                            ASR::ClassProcedure_t* f5 = ASR::down_cast<ASR::ClassProcedure_t>(f4);
+                            f4 = f5->m_proc;
+                            is_nopass = f5->m_is_nopass;
+                            is_class_procedure = true;
                         }
                         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
                         diag::Diagnostics diags;
+
+                        Vec<ASR::call_arg_t> args_copy;
+                        args_copy.reserve(al, args.size() + x.n_keywords + (is_class_procedure && !is_nopass ? 1 : 0));
+                        for( size_t j = 0; j < args.size(); j++ ) {
+                            args_copy.push_back(al, args[j]);
+                        }
                         visit_kwargs(args_copy, x.m_keywords, x.n_keywords,
                             f->m_args, f->n_args, x.base.base.loc, f,
-                            diags, x.n_member);
+                            diags, x.n_member, is_nopass);
+                        // Add 'this' if type-bound and not nopass
+                        if (is_class_procedure && !is_nopass && x.n_member >= 1) {
+                            ASR::call_arg_t this_arg;
+                            this_arg.loc = v_expr->base.loc;
+                            this_arg.m_value = v_expr;
+                            args_copy.push_front(al, this_arg);
+                        }
                         if( diags.has_error() ) {
                             continue ;
                         }
@@ -8840,9 +8856,10 @@ public:
                                         false);
                         if( idx == i ) {
                             function_found = true;
-                            for( size_t j = args.size(); j < args_copy.size(); j++ ) {
-                                args.push_back(al, args_copy[j]);
-                            }
+                            args.n = 0;
+                            args.from_pointer_n_copy(al, args_copy.p , args_copy.size() );
+                            args_with_mdt.n = 0;
+                            args_with_mdt.from_pointer_n_copy(al, args_copy.p , args_copy.size() );
                             break;
                         }
                     }
