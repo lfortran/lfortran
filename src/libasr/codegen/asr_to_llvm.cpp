@@ -7300,11 +7300,11 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch( a_kind ) {
             case 1: {
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(8, val, true));
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(8, static_cast<int8_t>(val), true));
                 break ;
             }
             case 2: {
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(16, val, true));
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(16, static_cast<int16_t>(val), true));
                 break ;
             }
             case 4 : {
