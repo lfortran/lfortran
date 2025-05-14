@@ -1,0 +1,500 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            gftl2_integer32complex32map:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            map_s_iter_equal:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_map_setiterator_i:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_map_setiterator_i
+                                                    3 i
+                                                    map_setiterator
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
+                                            a:
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 map_setiterator
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 map_setiterator
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            eq:
+                                                (Variable
+                                                    4
+                                                    eq
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    map_s_iter_equal
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 map_setiterator
+                                        )
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 map_setiterator
+                                        )]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 a)
+                                    (Var 4 b)]
+                                    [(Assignment
+                                        (Var 4 eq)
+                                        (IntegerCompare
+                                            (StructInstanceMember
+                                                (Var 4 a)
+                                                4 1_map_setiterator_i
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Eq
+                                            (StructInstanceMember
+                                                (Var 4 b)
+                                                4 1_map_setiterator_i
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 4 eq)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            map_s_iter_not_equal:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            a:
+                                                (Variable
+                                                    5
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (ClassType
+                                                        2 map_setiterator
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            b:
+                                                (Variable
+                                                    5
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (ClassType
+                                                        2 map_setiterator
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            ne:
+                                                (Variable
+                                                    5
+                                                    ne
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    map_s_iter_not_equal
+                                    (FunctionType
+                                        [(ClassType
+                                            2 map_setiterator
+                                        )
+                                        (ClassType
+                                            2 map_setiterator
+                                        )]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [map_s_iter_equal]
+                                    [(Var 5 a)
+                                    (Var 5 b)]
+                                    [(Assignment
+                                        (Var 5 ne)
+                                        (OverloadedCompare
+                                            (Var 5 a)
+                                            Eq
+                                            (Var 5 b)
+                                            (Logical 4)
+                                            ()
+                                            (FunctionCall
+                                                2 map_s_iter_equal
+                                                2 ~eq
+                                                [((Var 5 a))
+                                                ((Var 5 b))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                        )
+                                        ()
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 5 ne)
+                                        (LogicalNot
+                                            (Var 5 ne)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 5 ne)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            map_setiterator:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    map_setiterator
+                                    []
+                                    [i]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            ~eq:
+                                (CustomOperator
+                                    2
+                                    ~eq
+                                    [2 map_s_iter_equal]
+                                    Public
+                                ),
+                            ~noteq:
+                                (CustomOperator
+                                    2
+                                    ~noteq
+                                    [2 map_s_iter_not_equal]
+                                    Public
+                                )
+                        })
+                    gftl2_integer32complex32map
+                    []
+                    .false.
+                    .false.
+                ),
+            polymorphic_class_compare:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            1_map_setiterator_i:
+                                (ExternalSymbol
+                                    6
+                                    1_map_setiterator_i
+                                    3 i
+                                    map_setiterator
+                                    []
+                                    i
+                                    Public
+                                ),
+                            iter1:
+                                (Variable
+                                    6
+                                    iter1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        6 map_setiterator
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            iter2:
+                                (Variable
+                                    6
+                                    iter2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        6 map_setiterator
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            map_s_iter_equal:
+                                (ExternalSymbol
+                                    6
+                                    map_s_iter_equal
+                                    2 map_s_iter_equal
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_s_iter_equal
+                                    Public
+                                ),
+                            map_s_iter_not_equal:
+                                (ExternalSymbol
+                                    6
+                                    map_s_iter_not_equal
+                                    2 map_s_iter_not_equal
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_s_iter_not_equal
+                                    Public
+                                ),
+                            map_setiterator:
+                                (ExternalSymbol
+                                    6
+                                    map_setiterator
+                                    2 map_setiterator
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_setiterator
+                                    Public
+                                ),
+                            ~eq:
+                                (ExternalSymbol
+                                    6
+                                    ~eq
+                                    2 ~eq
+                                    gftl2_integer32complex32map
+                                    []
+                                    ~eq
+                                    Public
+                                ),
+                            ~noteq:
+                                (ExternalSymbol
+                                    6
+                                    ~noteq
+                                    2 ~noteq
+                                    gftl2_integer32complex32map
+                                    []
+                                    ~noteq
+                                    Public
+                                )
+                        })
+                    polymorphic_class_compare
+                    [gftl2_integer32complex32map]
+                    [(Assignment
+                        (StructInstanceMember
+                            (Var 6 iter1)
+                            6 1_map_setiterator_i
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 6 iter2)
+                            6 1_map_setiterator_i
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (If
+                        (OverloadedCompare
+                            (Var 6 iter1)
+                            NotEq
+                            (Var 6 iter2)
+                            (Logical 4)
+                            ()
+                            (FunctionCall
+                                6 map_s_iter_not_equal
+                                6 ~noteq
+                                [((Var 6 iter1))
+                                ((Var 6 iter2))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Error: iter1 and iter2 should be equal"
+                                (String 1 (IntegerConstant 38 (Integer 4) Decimal) .false. .false. PointerString)
+                            )
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

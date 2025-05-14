@@ -4112,6 +4112,10 @@ filename = "errors/compare_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/polymorphic_class_compare.f90"
+asr = true
+
+[[test]]
 filename = "errors/kind_string_of_int.f90"
 asr = true
 
