@@ -35,7 +35,7 @@ program main
     use shapes_module
     implicit none
 
-    type(Shape), allocatable :: s
+    class(Shape), allocatable :: s
     real :: a
 
     allocate(Circle :: s)
