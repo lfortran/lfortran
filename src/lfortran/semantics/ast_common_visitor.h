@@ -4423,6 +4423,26 @@ public:
                 throw SemanticAbort();
             }
         }
+        if (sym_type->m_type == AST::decl_typeType::TypeCharacter && !is_allocatable
+            && !is_pointer) {
+            if (sym_type->m_kind != nullptr) {
+                if (!(sym_type->m_kind->m_type == AST::kind_item_typeType::Colon
+                      || sym_type->m_kind->m_type == AST::kind_item_typeType::Star)
+                    && sym_type->m_kind->m_value && sym_type->m_kind->m_value->type != AST::exprType::FuncCallOrArray) {
+                    this->visit_expr(*sym_type->m_kind->m_value);
+                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                    if (kind_expr->type == ASR::exprType::Var) {
+                        ASR::Var_t* kind_var = ASR::down_cast<ASR::Var_t>(kind_expr);
+                        ASR::Variable_t* kind_variable = ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(kind_var->m_v));
+                        if (kind_variable->m_intent != ASR::intentType::In) {
+                            a_kind = ASRUtils::extract_kind<SemanticAbort>(
+                                kind_expr, sym_type->m_kind->loc, diag);
+                        }
+                    }
+                }
+            }
+        }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
             if (a_kind != 4 && a_kind != 8) {
                 diag.add(Diagnostic(
