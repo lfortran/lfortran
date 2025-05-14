@@ -157,6 +157,9 @@ time_section "🧪 Testing POT3D" '
   print_subsection "Building with optimization flags"
   FC="$FC --fast --skip-pass=dead_code_removal" ./build_and_run.sh
 
+  print_subsection "Building POT3D in separate compilation mode"
+  FC="$FC --generate-object-code --skip-pass=pass_array_by_data" ./build_and_run.sh
+
   print_success "Done with POT3D"
   cd ..
 '
@@ -496,6 +499,10 @@ time_section "🧪 Testing SNAP" '
     git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
     cd ./src
     make -j8 FORTRAN=$FC FFLAGS= MPI=no OPENMP=no
+    ./gsnap ../qasnap/sample/inp out
+
+    make clean
+    make -j8 FORTRAN=$FC FFLAGS="--generate-object-code" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 
     make clean

@@ -1877,6 +1877,10 @@ filename = "../integration_tests/format_26.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_27.f90"
+run = true
+
+[[test]]
 filename = "interop/mod1-14.mod"
 mod_to_asr = true
 
@@ -2340,6 +2344,11 @@ asr = true
 filename = "string2.f90"
 asr = true
 extrafiles = "string1.f90"
+
+[[test]]
+filename = "../integration_tests/string_54.f90"
+asr = true
+llvm = true
 
 [[test]]
 filename = "../integration_tests/string_01.f90"

@@ -3979,6 +3979,19 @@ public:
                         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
                         value = init_expr;
                     }
+                    if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
+                        && ASR::is_a<ASR::ArrayConstant_t>(*tmp_init)) {
+                        ASR::Array_t* lhs_array = ASR::down_cast<ASR::Array_t>(type);
+                        ASR::Array_t* rhs_array
+                            = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(tmp_init));
+                        if (lhs_array->n_dims != rhs_array->n_dims) {
+                            diag.add(Diagnostic("Incompatible ranks in assignment",
+                                                Level::Error,
+                                                Stage::Semantic,
+                                                { Label("", { x.base.base.loc }) }));
+                            throw SemanticAbort();
+                        }
+                    }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
                     if (ASRUtils::is_real(*type) && ASRUtils::is_logical(*init_type)) {
                         diag.add(Diagnostic(
@@ -10139,7 +10152,7 @@ public:
         std::vector<std::string> fn_args2 = convert_fn_args_to_string(fn_args, fn_n_args);
 
         int offset = args.size();
-        for (int i = 0; i < (int)fn_n_args - offset - (int)type_bound; i++) {
+        for (int i = 0; i < (int)fn_n_args - offset - is_method; i++) {
             ASR::call_arg_t call_arg;
             call_arg.loc = loc;
             call_arg.m_value = nullptr;
@@ -10159,7 +10172,7 @@ public:
                 return ;
             }
 
-            int idx = std::distance(fn_args2.begin(), search) - (int)type_bound;
+            int idx = std::distance(fn_args2.begin(), search) - (int)is_method;
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument '" + name + "' is already specified as a positional argument",

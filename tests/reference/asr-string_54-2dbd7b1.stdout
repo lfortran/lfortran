@@ -1,0 +1,283 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            string_54:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            char:
+                                (Variable
+                                    5
+                                    char
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            double:
+                                (ExternalSymbol
+                                    5
+                                    double
+                                    2 double
+                                    string_54_mod
+                                    []
+                                    double
+                                    Public
+                                ),
+                            double_:
+                                (ExternalSymbol
+                                    5
+                                    double_
+                                    2 double_
+                                    string_54_mod
+                                    []
+                                    double_
+                                    Public
+                                ),
+                            foo_sub:
+                                (ExternalSymbol
+                                    5
+                                    foo_sub
+                                    2 foo_sub
+                                    string_54_mod
+                                    []
+                                    foo_sub
+                                    Public
+                                ),
+                            x:
+                                (Variable
+                                    5
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    string_54
+                    [string_54_mod]
+                    [(Assignment
+                        (Var 5 x)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        5 foo_sub
+                        ()
+                        [((Var 5 x))
+                        ((Var 5 char))]
+                        ()
+                    )]
+                ),
+            string_54_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            double:
+                                (GenericProcedure
+                                    2
+                                    double
+                                    [2 double_]
+                                    Public
+                                ),
+                            double_:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            ret:
+                                                (Variable
+                                                    3
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    double_
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 x)]
+                                    [(Assignment
+                                        (Var 3 ret)
+                                        (IntegerBinOp
+                                            (Var 3 x)
+                                            Mul
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 3 ret)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            foo_sub:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            char:
+                                                (Variable
+                                                    4
+                                                    char
+                                                    [double_
+                                                    x]
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (FunctionCall
+                                                        2 double_
+                                                        2 double
+                                                        [((Var 4 x))]
+                                                        (Integer 4)
+                                                        ()
+                                                        ()
+                                                    ) .false. .false. PointerString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    foo_sub
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (String 1 (FunctionCall
+                                            2 double_
+                                            2 double
+                                            [((FunctionParam
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        ) .false. .false. PointerString)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [double_]
+                                    [(Var 4 x)
+                                    (Var 4 char)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    string_54_mod
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

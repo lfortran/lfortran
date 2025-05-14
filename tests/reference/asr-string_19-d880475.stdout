@@ -219,7 +219,23 @@
                                             .true.
                                             2 string_type
                                         )]
-                                        (String 1 () .false. .false. PointerString)
+                                        (String 1 (FunctionCall
+                                            2 len_string
+                                            2 len
+                                            [((FunctionParam
+                                                0
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .true.
+                                                    2 string_type
+                                                )
+                                                ()
+                                            ))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        ) .false. .false. PointerString)
                                         Source
                                         Implementation
                                         ()
