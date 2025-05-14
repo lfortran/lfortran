@@ -363,70 +363,7 @@ void handle_float(char* format, double val, char** result, bool use_sign_plus) {
     }
 }
 
-/*
-`handle_en` - Formats a floating-point number using a Fortran-style "EN" format.
-
-NOTE: The function allocates memory for the formatted result, which is returned via
-the `result` parameter. It is the responsibility of the caller to free this memory
-using `free(*result)` after it is no longer needed.
-*/
-void handle_en(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
-    int width, decimal_digits;
-    char *num_pos = format, *dot_pos = strchr(format, '.');
-    decimal_digits = atoi(++dot_pos);
-    while (!isdigit(*num_pos)) num_pos++;
-    width = atoi(num_pos);
-    bool sign_plus_exist = (is_signed_plus && val >= 0); // `SP` specifier
-    // Calculate exponent
-    int exponent = 0;
-    if (val != 0.0) {
-        exponent = (int)floor(log10(fabs(val)));
-        int remainder = exponent % 3;
-        if (remainder < 0) remainder += 3;
-        exponent -= remainder;
-    }
-
-    double scaled_val = val / pow(10, exponent);
-
-    // Prepare value string
-    char val_str[128];
-    sprintf(val_str, "%.*lf", decimal_digits, scaled_val);
-
-    // Truncate unnecessary zeros
-    char* ptr = strchr(val_str, '.');
-    if (ptr) {
-        char* end_ptr = ptr;
-        while (*end_ptr != '\0') end_ptr++;
-        end_ptr--;
-        while (*end_ptr == '0' && end_ptr > ptr) end_ptr--;
-        *(end_ptr + 1) = '\0';
-    }
-
-    // Allocate a larger buffer
-    char formatted_value[256];  // Increased size to accommodate larger exponent values
-    int n = snprintf(formatted_value, sizeof(formatted_value), "%s%s%+03d", val_str, c, exponent);
-    if (n >= sizeof(formatted_value)) {
-        fprintf(stderr, "Error: output was truncated. Needed %d characters.\n", n);
-    }
-
-    // Handle width and padding
-    char* final_result = malloc(width + 1);
-    int padding = width - strlen(formatted_value) - sign_plus_exist;
-    if (padding > 0) {
-        memset(final_result, ' ', padding);
-        if(sign_plus_exist){final_result[padding] = '+';}
-        strcpy(final_result + padding + sign_plus_exist, formatted_value);
-    } else {
-        if(sign_plus_exist){final_result[0] = '+';}
-        strncpy(final_result + is_signed_plus /*Move on char*/, formatted_value, width);
-        final_result[width] = '\0';
-    }
-
-    // Assign the result to the output parameter
-    *result = append_to_string(*result, final_result);
-}
-
-void parse_decimal_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
+void parse_decimal_or_en_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
     *width_digits = -1;
     *decimal_digits = -1;
     *exp_digits = -1;
@@ -450,13 +387,85 @@ void parse_decimal_format(char* format, int* width_digits, int* decimal_digits, 
     }
 }
 
+/*
+`handle_en` - Formats a floating-point number using a Fortran-style "EN" format.
+
+NOTE: The function allocates memory for the formatted result, which is returned via
+the `result` parameter. It is the responsibility of the caller to free this memory
+using `free(*result)` after it is no longer needed.
+*/
+void handle_en(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
+    int width, decimal_digits, exp_digits;
+    parse_decimal_or_en_format(format, &width, &decimal_digits, &exp_digits);
+
+    // Default fallback if 0
+    if (decimal_digits <= 0) decimal_digits = 9;
+    if (exp_digits == 0) exp_digits = 2;
+    else if (exp_digits == -1) exp_digits = 3;
+
+    bool sign_plus_exist = (is_signed_plus && val >= 0); // SP specifier
+
+    char formatted_value[256];
+    double abs_val = fabs(val);
+    if (abs_val == 0.0 || (abs_val >= 1.0 && abs_val < 1000.0)) {
+        // Print in normal float format
+        snprintf(formatted_value, sizeof(formatted_value), "%.*f", decimal_digits, val);
+    } else {
+        // Engineering notation: scale exponent to multiple of 3
+        int exponent = (int)floor(log10(abs_val));
+        int remainder = exponent % 3;
+        if (remainder < 0) remainder += 3;
+        exponent -= remainder;
+        double scaled_val = val / pow(10, exponent);
+
+        char val_str[128];
+        snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+
+        // Append exponent manually
+        int n = snprintf(formatted_value, sizeof(formatted_value),
+                 "%s%s%+0*d", val_str, c, exp_digits, exponent);
+        if (n >= sizeof(formatted_value)) {
+            fprintf(stderr, "Error: output was truncated. Needed %d characters.\n", n);
+        }
+    }
+
+    // Width == 0, no padding
+    if (width == 0) {
+        if (sign_plus_exist) {
+            char* temp = malloc(strlen(formatted_value) + 2);
+            temp[0] = '+';
+            strcpy(temp + 1, formatted_value);
+            *result = append_to_string(*result, temp);
+            free(temp);
+        } else {
+            *result = append_to_string(*result, formatted_value);
+        }
+        return;
+    }
+
+    // Allocate for width
+    char* final_result = malloc(width + 1);
+    int padding = width - strlen(formatted_value) - sign_plus_exist;
+    if (padding > 0) {
+        memset(final_result, ' ', padding);
+        if (sign_plus_exist) final_result[padding] = '+';
+        strcpy(final_result + padding + sign_plus_exist, formatted_value);
+    } else {
+        if (sign_plus_exist) final_result[0] = '+';
+        strncpy(final_result + is_signed_plus, formatted_value, width);
+        final_result[width] = '\0';
+    }
+
+    *result = append_to_string(*result, final_result);
+    free(final_result);
+}
 
 void handle_decimal(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
 
     int width_digits, decimal_digits, exp_digits;
-    parse_decimal_format(format, &width_digits, &decimal_digits, &exp_digits);
+    parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
 
     int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
