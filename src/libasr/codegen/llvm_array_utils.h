@@ -161,6 +161,12 @@ namespace LCompilers {
                     llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
 
                 virtual
+                void reset_array_details(
+                    llvm::Value* arr, llvm::Value* source_arr,
+                    llvm::Value** lbs, llvm::Value** lengths,
+                    int n_dims) = 0;
+
+                virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
@@ -188,12 +194,12 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr) = 0;
-                
+
                 /*
                 * Returns pointer to data in the input
                 * array descriptor according to the rules
                 * implemented by current class.
-                * Uses ASR type to get the corresponding LLVM type 
+                * Uses ASR type to get the corresponding LLVM type
                 */
                 virtual
                 llvm::Value* get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
@@ -389,6 +395,12 @@ namespace LCompilers {
                     llvm::Value* arr, llvm::Value* source_arr, int n_dims);
 
                 virtual
+                void reset_array_details(
+                    llvm::Value* arr, llvm::Value* source_arr,
+                    llvm::Value** lbs, llvm::Value** lengths,
+                    int n_dims);
+
+                virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
@@ -408,7 +420,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr);
 
-                /* 
+                /*
                  * Return pointer to data in array descriptor,
                  * Used arr_type to get the corresponding llvm::Type (LLVM 17+).
                 */

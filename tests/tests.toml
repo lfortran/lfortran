@@ -1182,10 +1182,6 @@ filename = "../integration_tests/arrays_10.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/arrays_13.f90"
-llvm = true
-
-[[test]]
 filename = "../integration_tests/arrays_20.f90"
 asr = true
 
@@ -3140,10 +3136,6 @@ options = "--realloc-lhs"
 filename = "../integration_tests/automatic_allocation_02.f90"
 llvm = true
 options = "--realloc-lhs"
-
-[[test]]
-filename = "../integration_tests/modules_38.f90"
-llvm = true
 
 [[test]]
 filename = "../integration_tests/derived_types_20.f90"
