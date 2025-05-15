@@ -194,12 +194,12 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr) = 0;
-                
+
                 /*
                 * Returns pointer to data in the input
                 * array descriptor according to the rules
                 * implemented by current class.
-                * Uses ASR type to get the corresponding LLVM type 
+                * Uses ASR type to get the corresponding LLVM type
                 */
                 virtual
                 llvm::Value* get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
@@ -420,7 +420,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr);
 
-                /* 
+                /*
                  * Return pointer to data in array descriptor,
                  * Used arr_type to get the corresponding llvm::Type (LLVM 17+).
                 */
