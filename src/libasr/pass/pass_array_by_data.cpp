@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_by_data.h>
+#include <libasr/asr_builder.h>
 
 #include <vector>
 #include <utility>
@@ -194,25 +195,26 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
                     Vec<ASR::expr_t*> dim_variables;
                     std::string arg_name = std::string(arg->m_name);
-                    PassUtils::create_vars(dim_variables, 2 * n_dims, arg->base.base.loc, al,
+                    PassUtils::create_vars(dim_variables, n_dims, arg->base.base.loc, al,
                                             x->m_symtab, arg_name, ASR::intentType::In, arg->m_presence);
                     Vec<ASR::dimension_t> new_dims;
                     new_dims.reserve(al, n_dims);
+                    ASRUtils::ASRBuilder builder(al, arg->base.base.loc);
                     for( int j = 0, k = 0; j < n_dims; j++ ) {
                         ASR::dimension_t new_dim;
                         new_dim.loc = dims[j].loc;
                         if (dims[j].m_start) {
                             new_dim.m_start = dims[j].m_start;
                         } else {
-                            new_dim.m_start = dim_variables[k];
+                            new_dim.m_start = builder.i32(1);
                         }
-                        new_dim.m_length = dim_variables[k + 1];
+                        new_dim.m_length = dim_variables[k];
                         new_dims.push_back(al, new_dim);
-                        k += 2;
+                        k += 1;
                     }
                     ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, arg->m_type, &new_dims);
                     arg->m_type = new_type;
-                    for( int k = 0; k < 2 * n_dims; k++ ) {
+                    for( int k = 0; k < n_dims; k++ ) {
                         new_args.push_back(al, dim_variables[k]);
                     }
                 }
@@ -577,10 +579,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             ASR::dimension_t* compile_time_dims = nullptr;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims);
             for( int i = 0; i < n_dims; i++ ) {
-                ASR::expr_t* start = compile_time_dims[i].m_start;
-                if( start == nullptr ) {
-                    start = PassUtils::get_bound(array, i + 1, "lbound", al);
-                }
                 ASR::expr_t* length = compile_time_dims[i].m_length;
                 if( length == nullptr ) {
                     if (ASRUtils::is_allocatable(array_type)) {
@@ -589,7 +587,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         length = PassUtils::get_bound(array, i + 1, "ubound", al);
                     }
                 }
-                dims.push_back(al, start);
                 dims.push_back(al, length);
             }
         }
