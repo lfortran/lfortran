@@ -189,9 +189,9 @@ public:
     void process_format_statement(ASR::asr_t *old_tmp, int &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
         T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));
         ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
-            al, old_stmt->base.base.loc, 1, 
+            al, old_stmt->base.base.loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, old_stmt->base.base.loc, format_statements[label].size(),
-                ASRUtils::TYPE(ASR::make_Integer_t(al, old_stmt->base.base.loc, 4)))), 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, old_stmt->base.base.loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::PointerString));
         ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -972,7 +972,7 @@ public:
                 ASR::expr_t* adv_val_expr = ASRUtils::EXPR(tmp);
                 a_advance = adv_val_expr;
                 ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_String_t(
-                    al, loc, 1, 
+                    al, loc, 1,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                     ASR::string_length_kindType::ExpressionLength,
@@ -983,7 +983,7 @@ public:
                     al, loc, 1,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                    ASR::string_length_kindType::ExpressionLength, 
+                    ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::PointerString));
                 ASR::expr_t *newline = ASRUtils::EXPR(ASR::make_StringConstant_t(
                     al, loc, s2c(al, "\n"), str_type_len_1));
@@ -1008,7 +1008,7 @@ public:
                         static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim),
                         trim_arg.p, trim_arg.n, 0, ASRUtils::expr_type(a_advance), nullptr));
                     ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, 1, 
+                        al, loc, 1,
                         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 3,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
@@ -1075,7 +1075,7 @@ public:
             } else {
                 ASR::ttype_t* char_type = ASRUtils::TYPE(
                     ASR::make_String_t(
-                        al, loc, 1, 
+                        al, loc, 1,
                         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 12,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
@@ -1133,7 +1133,7 @@ public:
                 return;
             }
             ASR::ttype_t* a_fmt_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, a_fmt->base.loc, 1, 
+                al, a_fmt->base.loc, 1,
                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, a_fmt->base.loc, format_statements[label].size(),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, a_fmt->base.loc, 4)))),
@@ -1153,7 +1153,7 @@ public:
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(
-                    al, loc, 1, nullptr, 
+                    al, loc, 1, nullptr,
                     ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::CString));
                 ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
@@ -3710,7 +3710,7 @@ public:
                 throw SemanticAbort();
             }
         }
-    
+
         // handle GenericProcedure
         if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
             ASR::GenericProcedure_t* f3 = ASR::down_cast<ASR::GenericProcedure_t>(f2);
@@ -3733,7 +3733,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-    
+
                 if (x.n_keywords > 0) {
                     ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(f4);
                     diag::Diagnostics diags;
@@ -4235,7 +4235,7 @@ public:
 
     ASR::asr_t* construct_leading_space(const Location &loc) {
         ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, 
+            al, loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
@@ -4243,7 +4243,7 @@ public:
         ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len_0));
         ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, 
+            al, loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
@@ -4283,7 +4283,7 @@ public:
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
                 ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
-                    al, x.base.base.loc, 1, nullptr, 
+                    al, x.base.base.loc, 1, nullptr,
                     ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::CString));
                 tmp =  ASR::make_Print_t(al, x.base.base.loc,
@@ -4294,7 +4294,7 @@ public:
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, fmt->base.loc, 1,
-                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, fmt->base.loc, 
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, fmt->base.loc,
                     format_statements[label].size(),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, fmt->base.loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
