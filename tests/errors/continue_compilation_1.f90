@@ -309,4 +309,7 @@ program continue_compilation_1
 
     allocate(arr5, status=q1)
     allocate(arr5, mold = arr4)
+
+    print *, ["aa", "aaa"]
+    print *, ["aa", string(x+1:x+2), "aaa"]
 end program

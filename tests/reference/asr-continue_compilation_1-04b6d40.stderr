@@ -697,3 +697,15 @@ semantic error: Runtime dimensions are not supported yet for mold.
     |
 311 |     allocate(arr5, mold = arr4)
     |                           ^^^^ 
+
+semantic error: Different `character` lengths 2 and 3 in array constructor
+   --> tests/errors/continue_compilation_1.f90:313:21
+    |
+313 |     print *, ["aa", "aaa"]
+    |                     ^^^^^ 
+
+semantic error: Different `character` lengths 2 and 3 in array constructor
+   --> tests/errors/continue_compilation_1.f90:314:38
+    |
+314 |     print *, ["aa", string(x+1:x+2), "aaa"]
+    |                                      ^^^^^ 
