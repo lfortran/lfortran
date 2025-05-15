@@ -4334,7 +4334,7 @@ public:
     void visit_If(const AST::If_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
-        ASR::ttype_t *test_type = ASRUtils::expr_type(test);
+        ASR::ttype_t *test_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(test));
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
                 ASRUtils::type_to_str_fortran(test_type) + " instead",
