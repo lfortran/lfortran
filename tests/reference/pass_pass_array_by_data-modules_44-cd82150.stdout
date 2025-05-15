@@ -224,13 +224,6 @@
                                             )
                                             ()
                                         ))
-                                        ((ArrayBound
-                                            (Var 8 littlefile)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            LBound
-                                            ()
-                                        ))
                                         ((ArraySize
                                             (Var 8 littlefile)
                                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -368,39 +361,19 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            __2data:
-                                                (Variable
-                                                    10
-                                                    __2data
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
                                             data:
                                                 (Variable
                                                     10
                                                     data
-                                                    [__1data
-                                                    __2data]
+                                                    [__1data]
                                                     In
                                                     ()
                                                     ()
                                                     Default
                                                     (Array
                                                         (String 1 () AssumedLength PointerString)
-                                                        [((Var 10 __1data)
-                                                        (Var 10 __2data))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 10 __1data))]
                                                         PointerToDataArray
                                                     )
                                                     ()
@@ -437,19 +410,14 @@
                                         [(String 1 () AssumedLength PointerString)
                                         (Array
                                             (String 1 () AssumedLength PointerString)
-                                            [((FunctionParam
-                                                2
-                                                (Integer 4)
-                                                ()
-                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (FunctionParam
-                                                3
+                                                2
                                                 (Integer 4)
                                                 ()
                                             ))]
                                             PointerToDataArray
                                         )
-                                        (Integer 4)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -466,8 +434,7 @@
                                     []
                                     [(Var 10 fname)
                                     (Var 10 data)
-                                    (Var 10 __1data)
-                                    (Var 10 __2data)]
+                                    (Var 10 __1data)]
                                     []
                                     ()
                                     Public
