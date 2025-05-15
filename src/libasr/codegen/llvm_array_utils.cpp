@@ -409,6 +409,46 @@ namespace LCompilers {
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
         }
 
+        void SimpleCMODescriptor::reset_array_details(
+            llvm::Value* arr, llvm::Value* source_arr,
+            llvm::Value** lbs, llvm::Value** lengths,
+            int n_dims) {
+            llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_val);
+            llvm::Value* dim_des_val = this->get_pointer_to_dimension_descriptor_array(arr, false);
+            llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context), nullptr);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
+            llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
+                                                            llvm_utils->CreateLoad(llvm_ndims));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
+            builder->CreateStore(dim_des_first, dim_des_val);
+            dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
+            llvm::Value* source_dim_des_arr = this->get_pointer_to_dimension_descriptor_array(source_arr);
+            for( int r = 0; r < n_dims; r++ ) {
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
+                llvm::Value* stride = this->get_stride(
+                    this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                builder->CreateStore(stride, s_val);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                if( lbs[r] == nullptr ) {
+                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), l_val);
+                } else {
+                    builder->CreateStore(lbs[r], l_val);
+                }
+                if( lengths[r] == nullptr ) {
+                    llvm::Value* dim_size = this->get_dimension_size(
+                    this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                    builder->CreateStore(dim_size, dim_size_ptr);
+                } else {
+                    builder->CreateStore(lengths[r], dim_size_ptr);
+                }
+            }
+        }
+
         void SimpleCMODescriptor::reset_array_details(llvm::Value* arr, llvm::Value* source_arr, int n_dims) {
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_val);

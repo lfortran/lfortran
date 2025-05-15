@@ -4483,6 +4483,62 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         builder->SetInsertPoint(BB);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         declare_args(x, *F);
+        for( auto& sym: x.m_symtab->get_scope() ) {
+            if( !ASR::is_a<ASR::Variable_t>(*sym.second) ) {
+                continue ;
+            }
+            ASR::intentType symbol_intent = ASRUtils::symbol_intent(
+                ASRUtils::symbol_get_past_external(sym.second));
+            if( !(symbol_intent == ASRUtils::intent_in ||
+                 symbol_intent == ASRUtils::intent_inout ||
+                 symbol_intent == ASRUtils::intent_out) ) {
+                continue;
+            }
+            ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym.second);
+            if( !(ASRUtils::is_pointer(symbol_type) || ASRUtils::is_allocatable(symbol_type)) &&
+                ASRUtils::is_array(symbol_type) &&
+                ASRUtils::extract_physical_type(symbol_type)
+                    == ASR::array_physical_typeType::DescriptorArray ) {
+                llvm::Type* desc_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable_pointer(symbol_type),
+                        module.get());
+                llvm::Value* array_desc = llvm_utils->CreateAlloca(
+                    desc_array_type, nullptr, "array_descriptor_local");
+                uint32_t h = get_hash((ASR::asr_t*)sym.second);
+                LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+                llvm::Value* arg_array_desc = llvm_symtab[h];
+                llvm::Type *data_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::extract_type(symbol_type), module.get());
+                builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
+                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arg_array_desc)),
+                    arr_descr->get_offset(arg_array_desc)), arr_descr->get_pointer_to_data(array_desc));
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims);
+                Vec<llvm::Value*> lbs, lengths;
+                lbs.reserve(al, n_dims);
+                lengths.reserve(al, n_dims);
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
+                for( int i = 0; i < n_dims; i++ ) {
+                    if( m_dims[i].m_start ) {
+                        visit_expr_wrapper(m_dims[i].m_start);
+                        lbs.push_back(al, tmp);
+                    } else {
+                        lbs.push_back(al, nullptr);
+                    }
+                    if( m_dims[i].m_length ) {
+                        visit_expr_wrapper(m_dims[i].m_length);
+                        lengths.push_back(al, tmp);
+                    } else {
+                        lengths.push_back(al, nullptr);
+                    }
+                }
+                arr_descr->reset_array_details(
+                    array_desc, arg_array_desc, lbs.p, lengths.p, n_dims);
+                ptr_loads = ptr_loads_copy;
+                llvm_symtab[h] = array_desc;
+            }
+        }
         declare_local_vars(x);
     }
 
