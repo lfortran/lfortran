@@ -32,18 +32,18 @@
                                                         Achar
                                                         [(IntegerConstant 10 (Integer 4) Decimal)]
                                                         0
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         (StringConstant
                                                             "\n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         )
                                                     )
                                                     (StringConstant
                                                         "\n"
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     Save
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -75,29 +75,29 @@
                                     (StringConcat
                                         (StringConstant
                                             " "
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (StructInstanceMember
                                             (Var 2 toml_escape)
                                             2 1_enum_escape_newline
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             (StringConstant
                                                 "\n"
-                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                         )
-                                        (String 1 (IntegerConstant 2 (Integer 8) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 2 (Integer 8) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             " \n"
-                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         " \n"
-                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) .true. .false. PointerString)
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -117,7 +117,7 @@
                                         SelectedCharKind
                                         [(StringConstant
                                             "DEFAULT"
-                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )]
                                         0
                                         (Integer 4)
@@ -145,7 +145,7 @@
                                         2 enum_escape
                                         [((StringConstant
                                             "\n"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ))]
                                         (StructType
                                             []
@@ -158,7 +158,7 @@
                                         2 enum_escape
                                         [((StringConstant
                                             "\n"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ))]
                                         (StructType
                                             []

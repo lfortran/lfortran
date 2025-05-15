@@ -613,7 +613,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -634,7 +634,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source

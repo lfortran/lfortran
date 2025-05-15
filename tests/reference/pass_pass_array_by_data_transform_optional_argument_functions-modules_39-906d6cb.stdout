@@ -39,7 +39,7 @@
                     (Print
                         (StringConstant
                             "executing modules_39"
-                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 ),
@@ -62,7 +62,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -81,7 +81,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -100,7 +100,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -119,7 +119,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -138,7 +138,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -157,7 +157,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -194,11 +194,11 @@
                                                 ()
                                                 [((StringConstant
                                                     "build"
-                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 ))
                                                 ((StringConstant
                                                     ".gitignore"
-                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 ))
                                                 ((Var 7 __libasr_created_variable_))
                                                 ((LogicalConstant
@@ -216,7 +216,7 @@
                                                     (Logical 4)
                                                 ))]
                                                 (Allocatable
-                                                    (String 1 () .false. .true. DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                                 ()
@@ -230,11 +230,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "build"
-                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         ))
                                                         ((StringConstant
                                                             ".gitignore"
-                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         ))
                                                         ((Var 7 __libasr_created_variable_3))
                                                         ((LogicalConstant
@@ -252,14 +252,14 @@
                                                             (Logical 4)
                                                         ))]
                                                         (Allocatable
-                                                            (String 1 () .false. .true. DescriptorString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         ()
                                                         ()
                                                     )
                                                     (Integer 4)
                                                     ()
-                                                ) .false. .false. PointerString)
+                                                ) ExpressionLength PointerString)
                                             )
                                             ()
                                         ))
@@ -268,7 +268,7 @@
                                                 1
                                                 ["*"]
                                                 (Array
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                                     FixedSizeArray
@@ -278,7 +278,7 @@
                                             FixedSizeArray
                                             PointerToDataArray
                                             (Array
-                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 PointerToDataArray
@@ -380,7 +380,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () .true. .false. PointerString)
+                                                        (String 1 () AssumedLength PointerString)
                                                         [((Var 9 __1filedata)
                                                         (Var 9 __2filedata))]
                                                         PointerToDataArray
@@ -403,7 +403,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -416,9 +416,9 @@
                                         })
                                     filewrite_string____1
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Array
-                                            (String 1 () .true. .false. PointerString)
+                                            (String 1 () AssumedLength PointerString)
                                             [((FunctionParam
                                                 2
                                                 (Integer 4)
@@ -471,7 +471,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -490,7 +490,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -509,7 +509,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -528,7 +528,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -547,7 +547,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -624,7 +624,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -638,16 +638,16 @@
                                         })
                                     join_path
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
-                                        (String 1 () .true. .false. PointerString)
-                                        (String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)]
                                         (Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation

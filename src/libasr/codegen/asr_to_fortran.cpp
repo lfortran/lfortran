@@ -184,13 +184,17 @@ public:
                 if(ASRUtils::extract_value(c->m_len, str_len)) {
                     r += std::to_string(str_len);
                 } else {
-                    if (c->m_is_deferred_length) {
-                        r += ":";
-                    } else if (c->m_is_assumed_length){
-                        r += "*";
-                    } else { // Not constant expression.
-                        visit_expr(*c->m_len);
-                        r += src;
+                    switch(c->m_len_kind){
+                        case ASR::string_length_kindType::ExpressionLength:
+                            visit_expr(*c->m_len);
+                            r += src;
+                            break;
+                        case ASR::string_length_kindType::AssumedLength:
+                            r += "*";
+                            break;
+                        case ASR::string_length_kindType::DeferredLength:
+                            r += ":";
+                            break;
                     }
                 }
                 r += ", kind=";

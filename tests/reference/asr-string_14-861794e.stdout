@@ -32,7 +32,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -70,7 +70,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -90,7 +90,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -178,7 +178,7 @@
                                             2 string_type
                                         )
                                         (Integer 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Array
                                             (Integer 4)
                                             [(()
@@ -186,7 +186,7 @@
                                             DescriptorArray
                                         )
                                         (Integer 4)
-                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -228,7 +228,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -266,7 +266,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -304,7 +304,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -391,7 +391,7 @@
                                             2 string_type
                                         )
                                         (Integer 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Array
                                             (Integer 4)
                                             [(()
@@ -399,7 +399,7 @@
                                             DescriptorArray
                                         )
                                         (Integer 4)
-                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         ()
                                         Source
                                         Implementation

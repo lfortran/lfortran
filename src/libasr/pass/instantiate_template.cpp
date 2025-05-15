@@ -664,7 +664,7 @@ public:
                         ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
                         t = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
                                     tnew->m_kind, tnew->m_len,
-                                    tnew->m_is_assumed_length, tnew->m_is_deferred_length,
+                                    tnew->m_len_kind,
                                     ASR::string_physical_typeType::PointerString));
                         break;
                     }

@@ -83,7 +83,7 @@
                                                     Default
                                                     (Pointer
                                                         (Array
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -118,7 +118,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -134,7 +134,7 @@
                                     (FunctionType
                                         []
                                         (Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -156,7 +156,7 @@
                                             2 f_string
                                             [((Var 19 c_tempfile))]
                                             (Allocatable
-                                                (String 1 () .false. .true. DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                             ()
@@ -233,7 +233,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -289,7 +289,7 @@
                                                     2 f_string
                                                     [((Var 18 dir_entry_c))]
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     ()
@@ -469,7 +469,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -485,7 +485,7 @@
                                     (FunctionType
                                         [(CPtr)]
                                         (Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -522,7 +522,7 @@
                                                     (Integer 8)
                                                     ()
                                                     ()
-                                                ) .false. .false. PointerString)
+                                                ) ExpressionLength PointerString)
                                                 ()
                                                 ()
                                             )
@@ -536,7 +536,7 @@
                                                     (Integer 8)
                                                     ()
                                                     ()
-                                                ) .false. .false. DescriptorString)
+                                                ) ExpressionLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -601,7 +601,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 8 n) .false. .false. PointerString)
+                                                    (String 1 (Var 8 n) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -620,7 +620,7 @@
                                             1
                                             (Integer 8)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -657,7 +657,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -681,7 +681,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -696,13 +696,13 @@
                                     f_string~genericprocedure
                                     (FunctionType
                                         [(Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )]
                                         (Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -739,7 +739,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source

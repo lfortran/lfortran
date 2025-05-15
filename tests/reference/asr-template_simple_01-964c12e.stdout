@@ -1760,7 +1760,7 @@
                                             ()
                                             [(Var 13 s_i)]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )
@@ -1769,7 +1769,7 @@
                                             ()
                                             [(Var 13 s_r)]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )]

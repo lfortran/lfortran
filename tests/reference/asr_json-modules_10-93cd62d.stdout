@@ -335,8 +335,7 @@
                                                                 "fields": {
                                                                     "kind": 1,
                                                                     "len": [],
-                                                                    "is_assumed_length": false,
-                                                                    "is_deferred_length": false,
+                                                                    "len_kind": "ExpressionLength",
                                                                     "physical_type": "CString"
                                                                 },
                                                                 "loc": {

@@ -176,7 +176,7 @@
                                                         (Integer 4)
                                                         ()
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -235,7 +235,7 @@
                                             (Integer 4)
                                             ()
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -356,7 +356,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -453,7 +453,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -466,14 +466,14 @@
                                         })
                                     compute_lps
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -534,7 +534,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -547,7 +547,7 @@
                                         })
                                     compute_lps_use
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Integer 4)
                                         Source
                                         Implementation
@@ -583,7 +583,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )]
@@ -696,7 +696,7 @@
                                                 (Integer 4)
                                                 ()
                                                 ()
-                                            ) .false. .false. PointerString)
+                                            ) ExpressionLength PointerString)
                                             ()
                                             ()
                                         )
@@ -772,7 +772,7 @@
                                                         (Var 12 string)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -791,7 +791,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -804,17 +804,17 @@
                                         })
                                     padl_char_default
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Integer 4)]
                                         (String 1 (StringLen
                                             (FunctionParam
                                                 0
-                                                (String 1 () .true. .false. PointerString)
+                                                (String 1 () AssumedLength PointerString)
                                                 ()
                                             )
                                             (Integer 4)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -838,7 +838,7 @@
                                             ((Var 12 output_length))
                                             ((StringConstant
                                                 " "
-                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             ))]
                                             (String 1 (IntrinsicElementalFunction
                                                 Max
@@ -851,7 +851,7 @@
                                                 0
                                                 (Integer 4)
                                                 ()
-                                            ) .false. .false. PointerString)
+                                            ) ExpressionLength PointerString)
                                             ()
                                             ()
                                         )
@@ -897,7 +897,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -928,7 +928,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -947,7 +947,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -979,15 +979,15 @@
                                         })
                                     padl_char_pad_with
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Integer 4)
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         (String 1 (IntrinsicElementalFunction
                                             Max
                                             [(StringLen
                                                 (FunctionParam
                                                     0
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -1001,7 +1001,7 @@
                                             0
                                             (Integer 4)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -1165,14 +1165,14 @@
                                                             (Integer 4)
                                                             ()
                                                             ()
-                                                        ) .false. .false. PointerString)
+                                                        ) ExpressionLength PointerString)
                                                         ()
                                                         ()
                                                     ))
                                                     ((Var 10 output_length))
                                                     ((StringConstant
                                                         " "
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ))]
                                                     (String 1 (IntrinsicElementalFunction
                                                         Max
@@ -1188,7 +1188,7 @@
                                                                     (Integer 4)
                                                                     ()
                                                                     ()
-                                                                ) .false. .false. PointerString)
+                                                                ) ExpressionLength PointerString)
                                                                 ()
                                                                 ()
                                                             )
@@ -1199,7 +1199,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     ()
                                                 )
@@ -1220,7 +1220,7 @@
                                                                     (Integer 4)
                                                                     ()
                                                                     ()
-                                                                ) .false. .false. PointerString)
+                                                                ) ExpressionLength PointerString)
                                                                 ()
                                                                 ()
                                                             )
@@ -1231,7 +1231,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. DescriptorString)
+                                                    ) ExpressionLength DescriptorString)
                                                 )
                                                 ()
                                             ))]
@@ -1305,7 +1305,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1373,7 +1373,7 @@
                                             6 string_type
                                         )
                                         (Integer 4)
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         (StructType
                                             []
                                             []
@@ -1414,7 +1414,7 @@
                                                             (Integer 4)
                                                             ()
                                                             ()
-                                                        ) .false. .false. PointerString)
+                                                        ) ExpressionLength PointerString)
                                                         ()
                                                         ()
                                                     ))
@@ -1434,7 +1434,7 @@
                                                                     (Integer 4)
                                                                     ()
                                                                     ()
-                                                                ) .false. .false. PointerString)
+                                                                ) ExpressionLength PointerString)
                                                                 ()
                                                                 ()
                                                             )
@@ -1445,7 +1445,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     ()
                                                 )
@@ -1466,7 +1466,7 @@
                                                                     (Integer 4)
                                                                     ()
                                                                     ()
-                                                                ) .false. .false. PointerString)
+                                                                ) ExpressionLength PointerString)
                                                                 ()
                                                                 ()
                                                             )
@@ -1477,7 +1477,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. DescriptorString)
+                                                    ) ExpressionLength DescriptorString)
                                                 )
                                                 ()
                                             ))]

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -36,7 +36,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 () .false. .true. DescriptorString)
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
@@ -63,7 +63,7 @@
                         (Var 2 num)
                         (StringConstant
                             "abc"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -75,7 +75,7 @@
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             ()
                         )
@@ -93,14 +93,14 @@
                                         (Var 2 string)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "abc"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             ()
@@ -116,7 +116,7 @@
                             ()
                             ()
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (String 1 () .true. .false. DescriptorString)
+                            (String 1 () DeferredLength DescriptorString)
                             ()
                         )
                         (StringPhysicalCast
@@ -124,7 +124,7 @@
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             ()
                         )
@@ -142,14 +142,14 @@
                                         (Var 2 string)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "abc"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             ()

@@ -105,7 +105,7 @@
                             ()
                             [(StringConstant
                                 "T*T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -124,7 +124,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -133,7 +133,7 @@
                             ()
                             [(StringConstant
                                 "T*F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -152,7 +152,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -161,7 +161,7 @@
                             ()
                             [(StringConstant
                                 "F*T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -180,7 +180,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -189,7 +189,7 @@
                             ()
                             [(StringConstant
                                 "F*F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -208,7 +208,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -217,7 +217,7 @@
                             ()
                             [(StringConstant
                                 "T+T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -236,7 +236,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -245,7 +245,7 @@
                             ()
                             [(StringConstant
                                 "T+F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -264,7 +264,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -273,7 +273,7 @@
                             ()
                             [(StringConstant
                                 "F+T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -292,7 +292,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -301,7 +301,7 @@
                             ()
                             [(StringConstant
                                 "F+F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -320,7 +320,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

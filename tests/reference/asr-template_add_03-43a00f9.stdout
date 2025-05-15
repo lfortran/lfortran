@@ -752,7 +752,7 @@
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (FunctionCall
                                                 8 add_real
@@ -764,7 +764,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )

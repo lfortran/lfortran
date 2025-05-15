@@ -244,7 +244,7 @@
                                                     (Var 15 self)
                                                     15 1_toml_value_key
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -256,13 +256,13 @@
                                                             (Var 15 self)
                                                             15 1_toml_value_key
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -275,7 +275,7 @@
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
-                                                    (String 1 () .false. .true. DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -564,7 +564,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source

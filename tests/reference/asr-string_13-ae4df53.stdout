@@ -16,7 +16,7 @@
                                     (Iachar
                                         (StringConstant
                                             "0"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 48 (Integer 4) Decimal)
@@ -42,7 +42,7 @@
                                     (Iachar
                                         (StringConstant
                                             "5"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 53 (Integer 4) Decimal)
@@ -68,7 +68,7 @@
                                     (Iachar
                                         (StringConstant
                                             "9"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 57 (Integer 4) Decimal)
@@ -143,7 +143,7 @@
                             (Var 2 ia5)
                             (Var 2 ia9)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

@@ -109,7 +109,7 @@
                             (Var 2 v)
                             (Var 2 zero)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

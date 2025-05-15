@@ -40,7 +40,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -59,7 +59,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -87,7 +87,7 @@
                                                                 StringTrim
                                                                 [(Var 3 line)]
                                                                 0
-                                                                (String 1 () .true. .false. PointerString)
+                                                                (String 1 () AssumedLength PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -96,7 +96,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -109,9 +109,9 @@
                                         })
                                     atleast
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Integer 4)
-                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         (String 1 (IntrinsicElementalFunction
                                             Max
                                             [(FunctionParam
@@ -124,11 +124,11 @@
                                                     StringTrim
                                                     [(FunctionParam
                                                         0
-                                                        (String 1 () .true. .false. PointerString)
+                                                        (String 1 () AssumedLength PointerString)
                                                         ()
                                                     )]
                                                     0
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -137,7 +137,7 @@
                                             0
                                             (Integer 4)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -190,10 +190,10 @@
                                                         ()
                                                     )]
                                                     0
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
-                                                (String 1 () .false. .false. PointerString)
+                                                (String 1 () ExpressionLength PointerString)
                                                 ()
                                             )
                                             ()
@@ -226,7 +226,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -266,7 +266,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () .false. .true. PointerString)
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -318,7 +318,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () .false. .true. PointerString)
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -363,7 +363,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () .false. .true. PointerString)
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -381,7 +381,7 @@
                                         })
                                     print_dictionary
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Logical 4)]
                                         ()
                                         Source
@@ -407,14 +407,14 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(a,1x,a,1x,a,1x,a)"
-                                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             [(FunctionCall
                                                 2 atleast
                                                 ()
                                                 [((StringConstant
                                                     "KEYWORD"
-                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 ))
                                                 ((IntrinsicElementalFunction
                                                     Max
@@ -430,7 +430,7 @@
                                                                 ()
                                                             )
                                                             ())]
-                                                            (String 1 () .false. .true. PointerString)
+                                                            (String 1 () DeferredLength PointerString)
                                                             ColMajor
                                                             ()
                                                         )
@@ -459,7 +459,7 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (String 1 () .false. .true. PointerString)
+                                                                (String 1 () DeferredLength PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
@@ -476,10 +476,10 @@
                                                             StringTrim
                                                             [(StringConstant
                                                                 "KEYWORD"
-                                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             )]
                                                             0
-                                                            (String 1 () .true. .false. PointerString)
+                                                            (String 1 () AssumedLength PointerString)
                                                             ()
                                                         )
                                                         (Integer 4)
@@ -488,24 +488,24 @@
                                                     0
                                                     (Integer 4)
                                                     ()
-                                                ) .false. .false. PointerString)
+                                                ) ExpressionLength PointerString)
                                                 ()
                                                 ()
                                             )
                                             (StringConstant
                                                 "SHORT"
-                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (StringConstant
                                                 "PRESENT"
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (StringConstant
                                                 "VALUE"
-                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )]
                                         ()
@@ -522,7 +522,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(*(a,1x,a5,1x,l1,8x,\"[\",a,\"]\",/))"
-                                                (String 1 (IntegerConstant 33 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             [(ImpliedDoLoop
                                                 [(FunctionCall
@@ -533,7 +533,7 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (String 1 () .false. .true. PointerString)
+                                                        (String 1 () DeferredLength PointerString)
                                                         ColMajor
                                                         ()
                                                     ))
@@ -551,7 +551,7 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (String 1 () .false. .true. PointerString)
+                                                                (String 1 () DeferredLength PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
@@ -580,7 +580,7 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (String 1 () .false. .true. PointerString)
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -600,12 +600,12 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (String 1 () .false. .true. PointerString)
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )]
                                                                 0
-                                                                (String 1 () .true. .false. PointerString)
+                                                                (String 1 () AssumedLength PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -614,7 +614,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     ()
                                                 )
@@ -623,7 +623,7 @@
                                                     [(()
                                                     (Var 4 i)
                                                     ())]
-                                                    (String 1 () .false. .true. PointerString)
+                                                    (String 1 () DeferredLength PointerString)
                                                     ColMajor
                                                     ()
                                                 )
@@ -642,14 +642,14 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (String 1 () .false. .true. PointerString)
+                                                        (String 1 () DeferredLength PointerString)
                                                         ColMajor
                                                         ()
                                                     )
                                                     ()
                                                     ()
                                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (String 1 () .false. .true. PointerString)
+                                                    (String 1 () DeferredLength PointerString)
                                                     ()
                                                 )]
                                                 (Var 4 i)
@@ -678,7 +678,7 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (String 1 () .false. .true. PointerString)
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -698,12 +698,12 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (String 1 () .false. .true. PointerString)
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )]
                                                                 0
-                                                                (String 1 () .true. .false. PointerString)
+                                                                (String 1 () AssumedLength PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -712,15 +712,15 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
-                                                    (String 1 () .false. .true. PointerString)
+                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength PointerString)
                                                     (Logical 4)
-                                                    (String 1 () .false. .true. PointerString)]
+                                                    (String 1 () DeferredLength PointerString)]
                                                 )
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )]
                                         ()

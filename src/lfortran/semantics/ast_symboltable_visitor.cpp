@@ -248,7 +248,7 @@ public:
                                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                     al, x.base.base.loc, a_len,
                                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
-                                    false, false,
+                                    ASR::string_length_kindType::ExpressionLength,
                                 ASR::string_physical_typeType::PointerString));
                             break;
                         }
@@ -1478,7 +1478,7 @@ public:
                         al, x.base.base.loc, 1,
                         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind)))),
-                        false, false,
+                        ASR::string_length_kindType::ExpressionLength,
                         ASR::string_physical_typeType::PointerString));
                     break;
                 }

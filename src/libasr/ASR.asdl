@@ -197,7 +197,7 @@ ttype
     | UnsignedInteger(int kind)
     | Real(int kind)
     | Complex(int kind)
-    | String(int kind, expr? len, bool is_assumed_length, bool is_deferred_length, string_physical_type physical_type)
+    | String(int kind, expr? len, string_length_kind len_kind, string_physical_type physical_type)
     | Logical(int kind)
     | Set(ttype type)
     | List(ttype type)
@@ -237,6 +237,7 @@ enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonIn
 require_instantiation = Require(identifier name, identifier* args)
 array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
 string_physical_type = PointerString | DescriptorString | CString
+string_length_kind = AssumedLength | DeferredLength | ExpressionLength
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift
 reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX
 logicalbinop = And | Or | Xor | NEqv | Eqv

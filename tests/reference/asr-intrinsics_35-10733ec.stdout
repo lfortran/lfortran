@@ -233,7 +233,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )
@@ -280,7 +280,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )]
@@ -334,7 +334,7 @@
                             ()
                             [(Var 2 l)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )

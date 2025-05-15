@@ -82,7 +82,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -107,7 +107,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -141,7 +141,7 @@
                                     get_current_directory
                                     (FunctionType
                                         [(Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         ()
                                         Source
@@ -177,7 +177,7 @@
                                                 DescriptorArray
                                                 StringArraySinglePointer
                                                 (Array
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     [(()
                                                     ())]
                                                     StringArraySinglePointer
@@ -204,11 +204,11 @@
                                                 ()
                                                 [(StringConstant
                                                     "PWD: "
-                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (Var 12 tmp)]
                                                 FormatFortran
-                                                (String 1 () .false. .false. CString)
+                                                (String 1 () ExpressionLength CString)
                                                 ()
                                             )
                                         )]
@@ -235,7 +235,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         [(()
                                                         ())]
                                                         StringArraySinglePointer
@@ -291,7 +291,7 @@
                                     getcwd
                                     (FunctionType
                                         [(Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             StringArraySinglePointer

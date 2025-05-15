@@ -73,7 +73,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -135,7 +135,7 @@
                         ()
                         (StringConstant
                             "file_b"
-                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         ()
@@ -245,7 +245,7 @@
                     (Print
                         (StringConstant
                             "err rewind"
-                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (GoToTarget
@@ -255,7 +255,7 @@
                     (Print
                         (StringConstant
                             "err inquire"
-                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 )

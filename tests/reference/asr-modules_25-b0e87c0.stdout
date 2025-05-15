@@ -73,7 +73,7 @@
                     [(Print
                         (StringConstant
                             "running module_25 program"
-                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 ),
@@ -181,7 +181,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (String 1 () .false. .true. PointerString)
+                                                        (String 1 () DeferredLength PointerString)
                                                     )
                                                     ()
                                                     Source

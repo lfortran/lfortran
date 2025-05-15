@@ -503,7 +503,7 @@
                     (Print
                         (StringConstant
                             "End Stream Triad"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 )

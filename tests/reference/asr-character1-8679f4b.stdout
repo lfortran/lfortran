@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -29,7 +29,7 @@
                         })
                     xerror
                     (FunctionType
-                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
+                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                         ()
                         Source
                         Implementation
@@ -48,7 +48,7 @@
                         (StringItem
                             (Var 2 mess)
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ()
                         )
                     )

@@ -213,7 +213,7 @@
                                     [(Print
                                         (StringConstant
                                             "default class"
-                                            (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )]
                                     ()
@@ -256,7 +256,7 @@
                                     [(Print
                                         (StringConstant
                                             "not ok"
-                                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )]
                                     ()
@@ -280,7 +280,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -379,7 +379,7 @@
                     [(Print
                         (StringConstant
                             "running derived_types_19 main program"
-                            (String 1 (IntegerConstant 37 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 )

@@ -2543,7 +2543,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -2556,7 +2556,7 @@
                                         })
                                     f_string
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Integer 4)
                                         Source
                                         Implementation
@@ -2579,7 +2579,7 @@
                                             [((StringConcat
                                                 (Var 53 s)
                                                 (Var 2 c_null_char)
-                                                (String 1 () .false. .false. PointerString)
+                                                (String 1 () ExpressionLength PointerString)
                                                 ()
                                             ))]
                                             (Integer 4)
@@ -2628,7 +2628,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     BindC
                                                     Public
@@ -2641,7 +2641,7 @@
                                         })
                                     f_string0
                                     (FunctionType
-                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         (Integer 4)
                                         BindC
                                         Interface

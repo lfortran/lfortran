@@ -56,7 +56,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -69,7 +69,7 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (StructType
                                             []
                                             []
@@ -345,7 +345,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -428,7 +428,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -441,7 +441,7 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (StructType
                                             []
                                             []

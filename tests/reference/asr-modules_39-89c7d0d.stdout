@@ -49,7 +49,7 @@
                     (Print
                         (StringConstant
                             "executing modules_39"
-                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 ),
@@ -91,17 +91,17 @@
                                                 ()
                                                 [((StringConstant
                                                     "build"
-                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 ))
                                                 ((StringConstant
                                                     ".gitignore"
-                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 ))
                                                 (())
                                                 (())
                                                 (())]
                                                 (Allocatable
-                                                    (String 1 () .false. .true. DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                                 ()
@@ -115,24 +115,24 @@
                                                         ()
                                                         [((StringConstant
                                                             "build"
-                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         ))
                                                         ((StringConstant
                                                             ".gitignore"
-                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         ))
                                                         (())
                                                         (())
                                                         (())]
                                                         (Allocatable
-                                                            (String 1 () .false. .true. DescriptorString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         ()
                                                         ()
                                                     )
                                                     (Integer 4)
                                                     ()
-                                                ) .false. .false. PointerString)
+                                                ) ExpressionLength PointerString)
                                             )
                                             ()
                                         ))
@@ -141,7 +141,7 @@
                                                 1
                                                 ["*"]
                                                 (Array
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                                     FixedSizeArray
@@ -151,7 +151,7 @@
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
-                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 DescriptorArray
@@ -212,7 +212,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () .true. .false. PointerString)
+                                                        (String 1 () AssumedLength PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -235,7 +235,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -248,9 +248,9 @@
                                         })
                                     filewrite
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Array
-                                            (String 1 () .true. .false. PointerString)
+                                            (String 1 () AssumedLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -291,7 +291,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -310,7 +310,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -329,7 +329,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -348,7 +348,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -367,7 +367,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -387,7 +387,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -401,13 +401,13 @@
                                         })
                                     join_path
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
-                                        (String 1 () .true. .false. PointerString)
-                                        (String 1 () .true. .false. PointerString)
-                                        (String 1 () .true. .false. PointerString)
-                                        (String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)]
                                         (Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation

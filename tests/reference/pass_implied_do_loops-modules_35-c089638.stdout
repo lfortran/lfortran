@@ -73,13 +73,13 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (String 1 () .true. .false. PointerString)
+                                                                    (String 1 () AssumedLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
                                                                 (Integer 4)
                                                                 ()
-                                                            ) .false. .false. PointerString)
+                                                            ) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -117,13 +117,13 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (String 1 () .true. .false. PointerString)
+                                                                    (String 1 () AssumedLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
                                                                 (Integer 4)
                                                                 ()
-                                                            ) .false. .false. PointerString)
+                                                            ) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -168,7 +168,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () .true. .false. PointerString)
+                                                            (String 1 () AssumedLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -194,7 +194,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () .false. .true. PointerString)
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -214,7 +214,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (String 1 () .true. .false. PointerString)
+                                                (String 1 () AssumedLength PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -266,7 +266,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (String 1 () .false. .true. PointerString)
+                                                        (String 1 () DeferredLength PointerString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -286,7 +286,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (String 1 () .true. .false. PointerString)
+                                                        (String 1 () AssumedLength PointerString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -415,7 +415,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -446,7 +446,7 @@
                     (Print
                         (StringConstant
                             "executing modules_35"
-                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (SubroutineCall

@@ -860,21 +860,21 @@
                                 ()
                                 [(StringConstant
                                     "iy->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                                 (Var 2 iy)
                                 (StringConstant
                                     "ix->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                                 (Var 2 ix)
                                 (StringConstant
                                     "iz->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                                 (Var 2 iz)]
                                 FormatFortran
-                                (String 1 () .false. .false. CString)
+                                (String 1 () ExpressionLength CString)
                                 ()
                             )
                         )]

@@ -71,7 +71,7 @@
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_sp)  =\""
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (IntrinsicElementalFunction
                                 Acos
@@ -95,10 +95,10 @@
                             )
                             (StringConstant
                                 "\""
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -107,7 +107,7 @@
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_dp)  =\""
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (IntrinsicElementalFunction
                                 Acos
@@ -131,10 +131,10 @@
                             )
                             (StringConstant
                                 "\""
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]
