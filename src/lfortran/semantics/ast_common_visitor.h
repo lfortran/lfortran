@@ -4424,7 +4424,7 @@ public:
             }
         }
         if (sym_type->m_type == AST::decl_typeType::TypeCharacter && !is_allocatable
-            && !is_pointer && !is_optional) {
+            && !is_pointer && !is_optional && !is_argument) {
             if (sym_type->m_kind != nullptr) {
                 if (!(sym_type->m_kind->m_type == AST::kind_item_typeType::Colon
                       || sym_type->m_kind->m_type == AST::kind_item_typeType::Star)

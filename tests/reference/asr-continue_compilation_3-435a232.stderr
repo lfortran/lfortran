@@ -11,9 +11,9 @@ syntax error: Token ')' is unexpected here
    |                     ^ 
 
 syntax error: The LFortran pragma !LF$ must be followed by a space
-   --> tests/errors/continue_compilation_3.f90:172:9
+   --> tests/errors/continue_compilation_3.f90:170:9
     |
-172 |         !LF$unroll 4  ! Error: Missing space after `!LF$`
+170 |         !LF$unroll 4  ! Error: Missing space after `!LF$`
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Module 'continue_compilation_3_fake_module' not declared in the current source and the modfile was not found
@@ -29,256 +29,256 @@ semantic error: Parameter 'linelen' is a variable, which does not reduce to a co
    |               ^^^^^^^^^^^ 
 
 semantic error: Empty array constructor is not allowed
-  --> tests/errors/continue_compilation_3.f90:92:9
+  --> tests/errors/continue_compilation_3.f90:90:9
    |
-92 |     a = []
+90 |     a = []
    |         ^^ 
 
 semantic error: Empty array constructor is not allowed
-  --> tests/errors/continue_compilation_3.f90:94:16
+  --> tests/errors/continue_compilation_3.f90:92:16
    |
-94 |     print *, [[[], [[]]], [[]], []]
+92 |     print *, [[[], [[]]], [[]], []]
    |                ^^ 
 
 semantic error: Empty array constructor is not allowed
-  --> tests/errors/continue_compilation_3.f90:95:16
+  --> tests/errors/continue_compilation_3.f90:93:16
    |
-95 |     print *, [[[], [[]]], []]
+93 |     print *, [[[], [[]]], []]
    |                ^^ 
 
 semantic error: Rank mismatch in array reference: the array `b` has rank `1`, but is referenced as rank `2`
-  --> tests/errors/continue_compilation_3.f90:97:5
+  --> tests/errors/continue_compilation_3.f90:95:5
    |
-97 |     b(:,:) = 1
+95 |     b(:,:) = 1
    |     ^^^^^^ 
 
 semantic error: Rank mismatch in array reference: the array `b` has rank `1`, but is referenced as rank `2`
-  --> tests/errors/continue_compilation_3.f90:98:5
+  --> tests/errors/continue_compilation_3.f90:96:5
    |
-98 |     b(:,:) = 2
+96 |     b(:,:) = 2
    |     ^^^^^^ 
 
 semantic error: Type member xx is not an array so it cannot be indexed.
-   --> tests/errors/continue_compilation_3.f90:100:5
-    |
-100 |     y%xx(:) = 1
-    |     ^^^^^^^ 
+  --> tests/errors/continue_compilation_3.f90:98:5
+   |
+98 |     y%xx(:) = 1
+   |     ^^^^^^^ 
 
 semantic error: Rank mismatch in array reference: the array `str` has rank `1`, but is referenced as rank `2`
-   --> tests/errors/continue_compilation_3.f90:102:5
+   --> tests/errors/continue_compilation_3.f90:100:5
     |
-102 |     str(1, 2)(:) = '1234'
+100 |     str(1, 2)(:) = '1234'
     |     ^^^^^^^^^^^^ 
 
 semantic error: Rank mismatch in array reference: the array `str` has rank `1`, but is referenced as rank `3`
-   --> tests/errors/continue_compilation_3.f90:103:5
+   --> tests/errors/continue_compilation_3.f90:101:5
     |
-103 |     str(1,2,3)(:) = '1234'
+101 |     str(1,2,3)(:) = '1234'
     |     ^^^^^^^^^^^^^ 
 
 semantic error: Type-spec cannot contain an asterisk for a type parameter
-   --> tests/errors/continue_compilation_3.f90:105:14
+   --> tests/errors/continue_compilation_3.f90:103:14
     |
-105 |     print *, [character(*) :: "a", "b", "ball", "cat"]
+103 |     print *, [character(*) :: "a", "b", "ball", "cat"]
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type-spec cannot contain an asterisk for a type parameter
-   --> tests/errors/continue_compilation_3.f90:106:14
+   --> tests/errors/continue_compilation_3.f90:104:14
     |
-106 |     print *, [character(*) :: "a2", "b2", "ball2", "cat2"]
+104 |     print *, [character(*) :: "a2", "b2", "ball2", "cat2"]
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Different shape for array assignment on dimension 1(3 and 2)
-   --> tests/errors/continue_compilation_3.f90:108:5
+   --> tests/errors/continue_compilation_3.f90:106:5
     |
-108 |     x1 = reshape([1,2,3,4],[2,2])
+106 |     x1 = reshape([1,2,3,4],[2,2])
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Different shape for array assignment on dimension 1(3 and 1)
-   --> tests/errors/continue_compilation_3.f90:109:5
+   --> tests/errors/continue_compilation_3.f90:107:5
     |
-109 |     x1 = reshape([1,2,3,4],[1,2])
+107 |     x1 = reshape([1,2,3,4],[1,2])
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Arithmetic if (x) requires an integer or real for `x`
-   --> tests/errors/continue_compilation_3.f90:113:9
+   --> tests/errors/continue_compilation_3.f90:111:9
     |
-113 |     if ("yy") 1, 2, 3
+111 |     if ("yy") 1, 2, 3
     |         ^^^^ 
 
 semantic error: Incorrect number of arguments passed to the 'size' intrinsic. It accepts at least 1 and at most 3 arguments.
-   --> tests/errors/continue_compilation_3.f90:120:9
+   --> tests/errors/continue_compilation_3.f90:118:9
     |
-120 |     i = size(a1, 1, 4, kind=4)
+118 |     i = size(a1, 1, 4, kind=4)
     |         ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Incorrect number of arguments passed to the 'size' intrinsic. It accepts at least 1 and at most 3 arguments.
-   --> tests/errors/continue_compilation_3.f90:121:9
+   --> tests/errors/continue_compilation_3.f90:119:9
     |
-121 |     i = size()
+119 |     i = size()
     |         ^^^^^^ 
 
 semantic error: Cannot assign to a constant variable
-   --> tests/errors/continue_compilation_3.f90:123:5
+   --> tests/errors/continue_compilation_3.f90:121:5
     |
-123 |     x3 = 1
+121 |     x3 = 1
     |     ^^^^^^ assignment here
     |
  55 |     integer, parameter :: x3 = 2
     |                           ~~~~~~ declared as constant
 
 semantic error: The end variable of the data implied do loop must be constants
-   --> tests/errors/continue_compilation_3.f90:126:22
+   --> tests/errors/continue_compilation_3.f90:124:22
     |
-126 |     data(a1(i), i=1, k) / 1, 2, 3 /
+124 |     data(a1(i), i=1, k) / 1, 2, 3 /
     |                      ^ 
 
 semantic error: The increment variable of the data implied do loop must be a constant
-   --> tests/errors/continue_compilation_3.f90:128:25
+   --> tests/errors/continue_compilation_3.f90:126:25
     |
-128 |     data(a1(i), i=1, 3, k) / 1, 2, 3 /
+126 |     data(a1(i), i=1, 3, k) / 1, 2, 3 /
     |                         ^ 
 
 semantic error: The start variable of the data implied do loop must be constants
-   --> tests/errors/continue_compilation_3.f90:130:19
+   --> tests/errors/continue_compilation_3.f90:128:19
     |
-130 |     data(a1(i), i=k, 3) / 1, 2, 3 /
+128 |     data(a1(i), i=k, 3) / 1, 2, 3 /
     |                   ^ 
 
 semantic error: Variable 'foo' is not declared
-   --> tests/errors/continue_compilation_3.f90:133:9
+   --> tests/errors/continue_compilation_3.f90:131:9
     |
-133 |     i = foo
+131 |     i = foo
     |         ^^^ 'foo' is undeclared
 
 semantic error: Invalid argument `end` supplied
-   --> tests/errors/continue_compilation_3.f90:135:5
+   --> tests/errors/continue_compilation_3.f90:133:5
     |
-135 |     rewind(end="world")
+133 |     rewind(end="world")
     |     ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: same_type_as is not implemented yet
-   --> tests/errors/continue_compilation_3.f90:137:14
+   --> tests/errors/continue_compilation_3.f90:135:14
     |
-137 |     print *, same_type_as(1.0, 1.0)
+135 |     print *, same_type_as(1.0, 1.0)
     |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Kind of all the arguments of Sign must be the same
-   --> tests/errors/continue_compilation_3.f90:139:14
+   --> tests/errors/continue_compilation_3.f90:137:14
     |
-139 |     print *, sign(1, 1_8)
+137 |     print *, sign(1, 1_8)
     |              ^^^^^^^^^^^^ 
 
 semantic error: Argument 1 of dabs must be of double precision real type
-   --> tests/errors/continue_compilation_3.f90:141:13
+   --> tests/errors/continue_compilation_3.f90:139:13
     |
-141 |     print*, dabs(1)
+139 |     print*, dabs(1)
     |             ^^^^^^^ 
 
 semantic error: Argument of `sqrt` has a negative argument
-   --> tests/errors/continue_compilation_3.f90:143:14
+   --> tests/errors/continue_compilation_3.f90:141:14
     |
-143 |     print *, sqrt(-1.0)
+141 |     print *, sqrt(-1.0)
     |              ^^^^^^^^^^ 
 
 semantic error: Binary numeric operators cannot be used on strings
-   --> tests/errors/continue_compilation_3.f90:145:14
+   --> tests/errors/continue_compilation_3.f90:143:14
     |
-145 |     print *, "a" + "b"
+143 |     print *, "a" + "b"
     |              ^^^^^^^^^ help: use '//' for string concatenation
 
 semantic error: The first index in string section is less than 1
-   --> tests/errors/continue_compilation_3.f90:148:19
+   --> tests/errors/continue_compilation_3.f90:146:19
     |
-148 |     print*, "s:", s(-1:4)
+146 |     print*, "s:", s(-1:4)
     |                   ^^^^^^^ 
 
 semantic error: Substring `start` is less than one
-   --> tests/errors/continue_compilation_3.f90:150:13
+   --> tests/errors/continue_compilation_3.f90:148:13
     |
-150 |     print*, s1(-2:6)
+148 |     print*, s1(-2:6)
     |             ^^^^^^^^ 
 
 semantic error: Substring end index exceeds the string length
-   --> tests/errors/continue_compilation_3.f90:153:13
+   --> tests/errors/continue_compilation_3.f90:151:13
     |
-153 |     print*, s1(1: 9)
+151 |     print*, s1(1: 9)
     |             ^^^^^^^^ 
 
 semantic error: Substring end index at must be of type integer
-   --> tests/errors/continue_compilation_3.f90:155:18
+   --> tests/errors/continue_compilation_3.f90:153:18
     |
-155 |     print*, s1(1:5.2)
+153 |     print*, s1(1:5.2)
     |                  ^^^ 
 
 semantic error: Substring start index at must be of type integer
-   --> tests/errors/continue_compilation_3.f90:157:16
+   --> tests/errors/continue_compilation_3.f90:155:16
     |
-157 |     print*, s1(1.1:5)
+155 |     print*, s1(1.1:5)
     |                ^^^ 
 
 semantic error: Substring stride must be of type integer
-   --> tests/errors/continue_compilation_3.f90:159:19
+   --> tests/errors/continue_compilation_3.f90:157:19
     |
-159 |     print*, s(1:5:2.2)
+157 |     print*, s(1:5:2.2)
     |                   ^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:159:5
+    |
+159 |     x = "x"
+    |     ^   ^^^ type mismatch (integer and string)
+
+semantic error: Type mismatch in binary operator, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:161:9
+    |
+161 |     x = 5 + "x"
+    |         ^   ^^^ type mismatch (integer and string)
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_3.f90:161:5
     |
-161 |     x = "x"
-    |     ^   ^^^ type mismatch (integer and string)
-
-semantic error: Type mismatch in binary operator, the types must be compatible
-   --> tests/errors/continue_compilation_3.f90:163:9
-    |
-163 |     x = 5 + "x"
-    |         ^   ^^^ type mismatch (integer and string)
-
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_3.f90:163:5
-    |
-163 |     x = 5 + "x"
+161 |     x = 5 + "x"
     |     ^       ^^^ type mismatch (integer and string)
 
 semantic error: Subroutine `bpe` called as a function
-   --> tests/errors/continue_compilation_3.f90:166:9
+   --> tests/errors/continue_compilation_3.f90:164:9
     |
-166 |     i = bpe()
+164 |     i = bpe()
     |         ^^^^^ 
 
 semantic error: Variable 'xx' is not declared
-   --> tests/errors/continue_compilation_3.f90:167:14
+   --> tests/errors/continue_compilation_3.f90:165:14
     |
-167 |     print *, xx
+165 |     print *, xx
     |              ^^ 'xx' is undeclared
 
 semantic error: Variable 'test_re' is not declared
-   --> tests/errors/continue_compilation_3.f90:168:5
+   --> tests/errors/continue_compilation_3.f90:166:5
     |
-168 |     test_re = 1245.13
+166 |     test_re = 1245.13
     |     ^^^^^^^ 'test_re' is undeclared
 
 semantic error: Array reference is not allowed on scalar variable
-   --> tests/errors/continue_compilation_3.f90:169:5
+   --> tests/errors/continue_compilation_3.f90:167:5
     |
-169 |     c(1) = 1
+167 |     c(1) = 1
     |     ^^^^ 
 
 semantic error: Argument of `size` must be an array
-   --> tests/errors/continue_compilation_3.f90:179:18
+   --> tests/errors/continue_compilation_3.f90:177:18
     |
-179 |         print *, size(bpe)
+177 |         print *, size(bpe)
     |                  ^^^^^^^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:180:15
+   --> tests/errors/continue_compilation_3.f90:178:15
     |
-180 |         bpe = d
+178 |         bpe = d
     |               ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:180:9
+   --> tests/errors/continue_compilation_3.f90:178:9
     |
-180 |         bpe = d
+178 |         bpe = d
     |         ^^^ 
