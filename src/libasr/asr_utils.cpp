@@ -2190,7 +2190,8 @@ ASR::asr_t* make_ArraySize_t_util(
         }
     }
     if( is_binop_expr(a_v) && for_type ) {
-        if( ASR::is_a<ASR::Var_t>(*extract_member_from_binop(a_v, 1)) ) {
+        if( ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_broadcast(extract_member_from_binop(a_v, 1))) ||
+            ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_broadcast(extract_member_from_binop(a_v, 1))) ) {
             return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 1), a_dim, a_type, a_value, for_type);
         } else {
             return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 0), a_dim, a_type, a_value, for_type);
