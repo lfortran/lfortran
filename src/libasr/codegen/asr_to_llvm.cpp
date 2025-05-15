@@ -1087,27 +1087,13 @@ public:
                             llvm::Type::getInt32Ty(context))),
                     [&]() {
                         llvm::Value* ptr_;
-                        if(ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(tmp_expr))){
-                            //create memory on heap
-                            std::vector<llvm::Value*> idx_vec = {
-                            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-                            llvm::Value* null_array_ptr = llvm::ConstantPointerNull::get(type->getPointerTo());
-                            llvm::Value* size_of_array_struct = llvm_utils->CreateGEP2(type, null_array_ptr, idx_vec);
-                            llvm::Value* size_of_array_struct_casted = builder->CreatePtrToInt(size_of_array_struct, llvm::Type::getInt32Ty(context)); //cast to int32
-                            llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, size_of_array_struct_casted);
-                            ptr_ = builder->CreateBitCast(struct_ptr, type->getPointerTo());
-#if LLVM_VERSION_MAJOR > 16
-                            ptr_type[ptr_] = type;
-#endif
-                            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
-                        } else {
+                        
                             ptr_ = llvm_utils->CreateAlloca(*builder, type);
 #if LLVM_VERSION_MAJOR > 16
                             ptr_type[ptr_] = type;
 #endif
                             arr_descr->fill_dimension_descriptor(ptr_, n_dims);
-                        }
+                        
                         LLVM::CreateStore(*builder, ptr_, x_arr);
                     },
                     []() {});
