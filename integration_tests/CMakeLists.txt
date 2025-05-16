@@ -2133,7 +2133,7 @@ RUN(NAME polymorphic_arguments_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME polymorphic_class_compare LABELS gfortran)
 
-RUN(NAME nested_struct_proc_01 LABELS gfortran)
+RUN(NAME nested_struct_proc_01 LABELS gfortran llvm)
 
 RUN(NAME binop_of_struct_instance_in_function_call gfortran llvm fortran)
 
