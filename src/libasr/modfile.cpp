@@ -147,7 +147,10 @@ inline void load_serialised_asr(const std::string &s, std::string& asr_binary,
     }
     std::string version = b.read_string();
     if (version != LFORTRAN_VERSION) {
-        throw LCompilersException("Incompatible format: LFortran Modfile was generated using version '" + version + "', but current LFortran version is '" + LFORTRAN_VERSION + "'");
+        std::cerr << "Incompatible format: LFortran Modfile was generated using version '"
+                      + version + "', but current LFortran version is '" + LFORTRAN_VERSION + "'"
+                  << std::endl;
+        std::abort();
     }
     LCompilers::LocationManager serialized_lm;
     int32_t n_files = b.read_int32();
