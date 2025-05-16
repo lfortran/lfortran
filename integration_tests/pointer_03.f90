@@ -1,4 +1,4 @@
-module test
+module test_pointer_association
     implicit none
     integer, target :: i
     contains
@@ -8,8 +8,8 @@ module test
         r=>i
     end function
 end module
-program main
-    use test
+program pointer_03
+    use test_pointer_association
     implicit none
     integer, pointer :: r
     r=>mergei32()
