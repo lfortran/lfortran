@@ -8,56 +8,51 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 
-define i1 @_lcompilers_Any_4_1_0_logical____0(i1* %mask, i32* %__1mask, i32* %__2mask) {
+define i1 @_lcompilers_Any_4_1_0_logical____0(i1* %mask, i32* %__1mask) {
 .entry:
   %__1_i = alloca i32, align 4
   %_lcompilers_Any_4_1_0 = alloca i1, align 1
   store i1 false, i1* %_lcompilers_Any_4_1_0, align 1
-  %0 = load i32, i32* %__1mask, align 4
-  %1 = sub i32 %0, 1
-  store i32 %1, i32* %__1_i, align 4
+  store i32 0, i32* %__1_i, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %2 = load i32, i32* %__1_i, align 4
+  %0 = load i32, i32* %__1_i, align 4
+  %1 = add i32 %0, 1
+  %2 = load i32, i32* %__1mask, align 4
   %3 = add i32 %2, 1
-  %4 = load i32, i32* %__2mask, align 4
-  %5 = load i32, i32* %__1mask, align 4
-  %6 = add i32 %4, %5
-  %7 = sub i32 %6, 1
-  %8 = icmp sle i32 %3, %7
-  br i1 %8, label %loop.body, label %loop.end
+  %4 = sub i32 %3, 1
+  %5 = icmp sle i32 %1, %4
+  br i1 %5, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
+  %6 = load i32, i32* %__1_i, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, i32* %__1_i, align 4
+  %8 = load i1, i1* %_lcompilers_Any_4_1_0, align 1
   %9 = load i32, i32* %__1_i, align 4
-  %10 = add i32 %9, 1
-  store i32 %10, i32* %__1_i, align 4
-  %11 = load i1, i1* %_lcompilers_Any_4_1_0, align 1
-  %12 = load i32, i32* %__1_i, align 4
-  %13 = load i32, i32* %__1mask, align 4
-  %14 = load i32, i32* %__2mask, align 4
-  %15 = sub i32 %12, %13
-  %16 = mul i32 1, %15
-  %17 = add i32 0, %16
-  %18 = mul i32 1, %14
-  %19 = getelementptr inbounds i1, i1* %mask, i32 %17
-  %20 = load i1, i1* %19, align 1
-  %21 = icmp eq i1 %11, false
-  %22 = select i1 %21, i1 %20, i1 %11
-  store i1 %22, i1* %_lcompilers_Any_4_1_0, align 1
+  %10 = load i32, i32* %__1mask, align 4
+  %11 = sub i32 %9, 1
+  %12 = mul i32 1, %11
+  %13 = add i32 0, %12
+  %14 = mul i32 1, %10
+  %15 = getelementptr inbounds i1, i1* %mask, i32 %13
+  %16 = load i1, i1* %15, align 1
+  %17 = icmp eq i1 %8, false
+  %18 = select i1 %17, i1 %16, i1 %8
+  store i1 %18, i1* %_lcompilers_Any_4_1_0, align 1
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
-  %23 = load i1, i1* %_lcompilers_Any_4_1_0, align 1
-  ret i1 %23
+  %19 = load i1, i1* %_lcompilers_Any_4_1_0, align 1
+  ret i1 %19
 }
 
 define void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %settings, i1* %test) {
 .entry:
-  %call_arg_value9 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
   %array_bound5 = alloca i32, align 4
   %array_bound1 = alloca i32, align 4
@@ -139,9 +134,8 @@ loop.body:                                        ; preds = %ifcont8
 
 loop.end:                                         ; preds = %ifcont8
   %25 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 0
-  store i32 1, i32* %call_arg_value, align 4
-  store i32 2, i32* %call_arg_value9, align 4
-  %26 = call i1 @_lcompilers_Any_4_1_0_logical____0(i1* %25, i32* %call_arg_value, i32* %call_arg_value9)
+  store i32 2, i32* %call_arg_value, align 4
+  %26 = call i1 @_lcompilers_Any_4_1_0_logical____0(i1* %25, i32* %call_arg_value)
   store i1 %26, i1* %__libasr_created__intrinsic_array_function_Any1, align 1
   %27 = load i1, i1* %__libasr_created__intrinsic_array_function_Any1, align 1
   %28 = load i1, i1* %toomany, align 1
@@ -173,18 +167,18 @@ loop.end:                                         ; preds = %ifcont8
   %52 = select i1 %51, i1 %44, i1 %50
   %53 = icmp eq i1 %27, false
   %54 = select i1 %53, i1 %52, i1 %27
-  br i1 %54, label %then10, label %else11
+  br i1 %54, label %then9, label %else10
 
-then10:                                           ; preds = %loop.end
-  br label %ifcont12
+then9:                                            ; preds = %loop.end
+  br label %ifcont11
 
-else11:                                           ; preds = %loop.end
-  br label %ifcont12
+else10:                                           ; preds = %loop.end
+  br label %ifcont11
 
-ifcont12:                                         ; preds = %else11, %then10
+ifcont11:                                         ; preds = %else10, %then9
   br label %return
 
-return:                                           ; preds = %ifcont12
+return:                                           ; preds = %ifcont11
   ret void
 }
 

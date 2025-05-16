@@ -57,25 +57,6 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            __2targets:
-                                                (Variable
-                                                    13
-                                                    __2targets
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
@@ -302,8 +283,7 @@
                                                 (Variable
                                                     13
                                                     targets
-                                                    [__1targets
-                                                    __2targets]
+                                                    [__1targets]
                                                     InOut
                                                     ()
                                                     ()
@@ -315,8 +295,8 @@
                                                             .true.
                                                             2 build_target_ptr
                                                         )
-                                                        [((Var 13 __1targets)
-                                                        (Var 13 __2targets))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 13 __1targets))]
                                                         PointerToDataArray
                                                     )
                                                     ()
@@ -381,19 +361,14 @@
                                                 .true.
                                                 2 build_target_ptr
                                             )
-                                            [((FunctionParam
-                                                1
-                                                (Integer 4)
-                                                ()
-                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (FunctionParam
-                                                2
+                                                1
                                                 (Integer 4)
                                                 ()
                                             ))]
                                             PointerToDataArray
                                         )
-                                        (Integer 4)
                                         (Integer 4)
                                         (StructType
                                             []
@@ -417,7 +392,6 @@
                                     []
                                     [(Var 13 targets)
                                     (Var 13 __1targets)
-                                    (Var 13 __2targets)
                                     (Var 13 model)
                                     (Var 13 verbose)]
                                     [(Allocate
@@ -690,13 +664,6 @@
                                                     PointerToDataArray
                                                 )
                                             )
-                                            ()
-                                        ))
-                                        ((ArrayBound
-                                            (Var 10 targets)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            LBound
                                             ()
                                         ))
                                         ((ArraySize

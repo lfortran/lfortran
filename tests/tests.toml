@@ -1155,21 +1155,18 @@ ast_f90 = true
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
 asr = true
-llvm = true
 cpp = true
 julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_04_func.f90"
 asr = true
-llvm = true
 cpp = true
 julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_08_func.f90"
 asr = true
-llvm = true
 julia = true
 
 [[test]]

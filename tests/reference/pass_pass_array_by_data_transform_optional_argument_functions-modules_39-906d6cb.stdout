@@ -285,7 +285,6 @@
                                             )
                                             ()
                                         ))
-                                        ((IntegerConstant 1 (Integer 4) Decimal))
                                         ((IntegerConstant 1 (Integer 4) Decimal))]
                                         ()
                                     )]
@@ -350,39 +349,19 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            __2filedata:
-                                                (Variable
-                                                    9
-                                                    __2filedata
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
                                             filedata:
                                                 (Variable
                                                     9
                                                     filedata
-                                                    [__1filedata
-                                                    __2filedata]
+                                                    [__1filedata]
                                                     In
                                                     ()
                                                     ()
                                                     Default
                                                     (Array
                                                         (String 1 () AssumedLength PointerString)
-                                                        [((Var 9 __1filedata)
-                                                        (Var 9 __2filedata))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 9 __1filedata))]
                                                         PointerToDataArray
                                                     )
                                                     ()
@@ -419,19 +398,14 @@
                                         [(String 1 () AssumedLength PointerString)
                                         (Array
                                             (String 1 () AssumedLength PointerString)
-                                            [((FunctionParam
-                                                2
-                                                (Integer 4)
-                                                ()
-                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (FunctionParam
-                                                3
+                                                2
                                                 (Integer 4)
                                                 ()
                                             ))]
                                             PointerToDataArray
                                         )
-                                        (Integer 4)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -448,8 +422,7 @@
                                     []
                                     [(Var 9 filename)
                                     (Var 9 filedata)
-                                    (Var 9 __1filedata)
-                                    (Var 9 __2filedata)]
+                                    (Var 9 __1filedata)]
                                     []
                                     ()
                                     Public

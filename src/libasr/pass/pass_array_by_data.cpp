@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_by_data.h>
+#include <libasr/asr_builder.h>
 
 #include <vector>
 #include <utility>
@@ -194,25 +195,26 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
                     Vec<ASR::expr_t*> dim_variables;
                     std::string arg_name = std::string(arg->m_name);
-                    PassUtils::create_vars(dim_variables, 2 * n_dims, arg->base.base.loc, al,
+                    PassUtils::create_vars(dim_variables, n_dims, arg->base.base.loc, al,
                                             x->m_symtab, arg_name, ASR::intentType::In, arg->m_presence);
                     Vec<ASR::dimension_t> new_dims;
                     new_dims.reserve(al, n_dims);
+                    ASRUtils::ASRBuilder builder(al, arg->base.base.loc);
                     for( int j = 0, k = 0; j < n_dims; j++ ) {
                         ASR::dimension_t new_dim;
                         new_dim.loc = dims[j].loc;
                         if (dims[j].m_start) {
                             new_dim.m_start = dims[j].m_start;
                         } else {
-                            new_dim.m_start = dim_variables[k];
+                            new_dim.m_start = builder.i32(1);
                         }
-                        new_dim.m_length = dim_variables[k + 1];
+                        new_dim.m_length = dim_variables[k];
                         new_dims.push_back(al, new_dim);
-                        k += 2;
+                        k += 1;
                     }
                     ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, arg->m_type, &new_dims);
                     arg->m_type = new_type;
-                    for( int k = 0; k < 2 * n_dims; k++ ) {
+                    for( int k = 0; k < n_dims; k++ ) {
                         new_args.push_back(al, dim_variables[k]);
                     }
                 }
@@ -347,7 +349,7 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         create `calcfc_internal_real____0` as replacement of `calcfc_internal` and add it as a symbol
         in scope of `cobyla`. Now, we visit `cobyla_real____0` and replace `calcfc_internal` with
         `calcfc_internal_real____0`
-        
+
         This means both symbols `cobyla` and `cobyla_real____0` have `calcfc_internal_real____0` as a symbol
         but eventually `cobyla` is removed from scope.
 
@@ -366,7 +368,7 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         if( v.proc2newproc.find(ext_sym) != v.proc2newproc.end() ) {
             ASR::symbol_t* new_sym = v.proc2newproc[ext_sym].first;
             ASR::asr_t* new_sym_parent = ASRUtils::symbol_parent_symtab(new_sym)->asr_owner;
-            if ( ASR::is_a<ASR::symbol_t>(*new_sym_parent) && 
+            if ( ASR::is_a<ASR::symbol_t>(*new_sym_parent) &&
                  current_scope->get_counter() != ASRUtils::symbol_parent_symtab(new_sym)->get_counter() ) {
                 ASR::symbol_t* resolved_parent_sym = resolve_new_proc(ASR::down_cast<ASR::symbol_t>(new_sym_parent));
                 if ( resolved_parent_sym != nullptr ) {
@@ -399,7 +401,7 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
             }
             return ;
         }
-        
+
         edit_symbol_pointer(v)
     }
 
@@ -525,7 +527,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             if( v.proc2newproc.find(ext_sym) != v.proc2newproc.end() ) {
                 ASR::symbol_t* new_sym = v.proc2newproc[ext_sym].first;
                 ASR::asr_t* new_sym_parent = ASRUtils::symbol_parent_symtab(new_sym)->asr_owner;
-                if ( ASR::is_a<ASR::symbol_t>(*new_sym_parent) && 
+                if ( ASR::is_a<ASR::symbol_t>(*new_sym_parent) &&
                         current_scope->get_counter() != ASRUtils::symbol_parent_symtab(new_sym)->get_counter() ) {
                     ASR::symbol_t* resolved_parent_sym = resolve_new_proc(ASR::down_cast<ASR::symbol_t>(new_sym_parent));
                     if ( resolved_parent_sym != nullptr ) {
@@ -577,10 +579,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             ASR::dimension_t* compile_time_dims = nullptr;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims);
             for( int i = 0; i < n_dims; i++ ) {
-                ASR::expr_t* start = compile_time_dims[i].m_start;
-                if( start == nullptr ) {
-                    start = PassUtils::get_bound(array, i + 1, "lbound", al);
-                }
                 ASR::expr_t* length = compile_time_dims[i].m_length;
                 if( length == nullptr ) {
                     if (ASRUtils::is_allocatable(array_type)) {
@@ -589,7 +587,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         length = PassUtils::get_bound(array, i + 1, "ubound", al);
                     }
                 }
-                dims.push_back(al, start);
                 dims.push_back(al, length);
             }
         }
@@ -602,7 +599,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     new_args.push_back(al, orig_args[i]);
                     continue;
                 } else if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
-                    ASR::expr_t* expr = orig_args[i].m_value;    
+                    ASR::expr_t* expr = orig_args[i].m_value;
                     if (ASR::is_a<ASR::Var_t>(*expr)) {
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
                         ASR::symbol_t* sym = var->m_v;
@@ -688,7 +685,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
                 if ( v.proc2newproc.find(subrout_sym) != v.proc2newproc.end()) {
                     ASR::symbol_t* new_x_name = nullptr;
-                    if (is_external && (v.proc2newproc.find(x.m_name) != v.proc2newproc.end())) { 
+                    if (is_external && (v.proc2newproc.find(x.m_name) != v.proc2newproc.end())) {
                         new_x_name = v.proc2newproc[x.m_name].first;
                     } else {
                         new_x_name = resolve_new_proc(x.m_name);
@@ -808,7 +805,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
             current_scope = current_scope_copy;
         }
-        
+
         void visit_Program(const ASR::Program_t &x) {
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
@@ -859,7 +856,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
             // Case: procedure(cb) :: call_back (Here call_back is variable of type cb which is a function)
             ASR::symbol_t* type_dec = x.m_type_declaration;
-            if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() && 
+            if (v.proc2newproc.find(ASRUtils::symbol_get_past_external(type_dec)) != v.proc2newproc.end() &&
                     v.proc2newproc.find(type_dec) == v.proc2newproc.end()){
                 ASR::symbol_t* new_func = resolve_new_proc(ASRUtils::symbol_get_past_external(type_dec));
                 ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(type_dec);
@@ -873,7 +870,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 v.proc2newproc[type_dec] = {new_func_sym_, {}};
                 x_sym_ext->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
             }
-            if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() && 
+            if(type_dec && v.proc2newproc.find(type_dec) != v.proc2newproc.end() &&
                 ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_dec))){
                 ASR::symbol_t* new_sym = resolve_new_proc(type_dec);
                 if ( new_sym == nullptr ) {
@@ -894,12 +891,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 std::string new_sym_name = x.m_parent_symtab->get_unique_name(x.m_name);
                 ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(v.al, x.base.base.loc, x.m_parent_symtab, s2c(v.al, new_sym_name), 
-                        x.m_dependencies, x.n_dependencies, x.m_intent, 
-                        sym_val, m_val, x.m_storage, subrout->m_function_signature, 
+                    ASRUtils::make_Variable_t_util(v.al, x.base.base.loc, x.m_parent_symtab, s2c(v.al, new_sym_name),
+                        x.m_dependencies, x.n_dependencies, x.m_intent,
+                        sym_val, m_val, x.m_storage, subrout->m_function_signature,
                         new_sym, x.m_abi, x.m_access, x.m_presence, x.m_value_attr));
                 v.proc2newproc[(ASR::symbol_t *) &x] = {new_func_sym_, {}};
-                x.m_parent_symtab->add_symbol(new_sym_name, new_func_sym_); 
+                x.m_parent_symtab->add_symbol(new_sym_name, new_func_sym_);
                 not_to_be_erased.insert(new_func_sym_);
             }
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Variable(x);
@@ -929,8 +926,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 sim.m_type = ASRUtils::symbol_type(new_func_sym_);
             }
         }
- 
-        void visit_Struct(const ASR::Struct_t &x) { 
+
+        void visit_Struct(const ASR::Struct_t &x) {
             //just to update names of changed symbols of Struct
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Struct(x);
             ASR::Struct_t& ss = const_cast<ASR::Struct_t&>(x);
@@ -941,7 +938,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
         }
-      
+
         void visit_Var(const ASR::Var_t &x) {
             if (v.proc2newproc.find(x.m_v) != v.proc2newproc.end()){
                 ASR::symbol_t* new_sym = v.proc2newproc[x.m_v].first;
