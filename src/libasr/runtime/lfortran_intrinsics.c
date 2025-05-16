@@ -517,7 +517,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     // val_str = "11230000128."
 
     int exp = 2;
-    if (exp_digits != -1) {
+    if (exp_digits != -1 && exp_digits != 0) {
         exp = exp_digits;
     }
     // exp = 2;
@@ -545,6 +545,19 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         is_s_format = true;
         scale = 1;
     }
+    int exponent_value;
+    if (val != 0) {
+        exponent_value = (integer_length > 0 && integer_part != 0)
+            ? integer_length - scale
+            : decimal - scale;
+    } else {
+        exponent_value = (integer_length > 0 && integer_part != 0)
+            ? integer_length - scale
+            : decimal;
+    }
+    if (exp != -1 && abs(exponent_value) >= pow(10, exp)) {
+        goto overflow;
+    }
 
     char exponent[12];
     if (width_digits == 0) {
@@ -568,7 +581,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         width = sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length;
     }
     if (decimal_digits > width - FIXED_CHARS_LENGTH) {
-        perror("Specified width is not enough for the specified number of decimal digits.\n");
+        goto overflow;
     }
     int zeroes_needed = decimal_digits - (strlen(val_str) - integer_length);
     for(int i=0; i < zeroes_needed; i++) {
@@ -643,21 +656,19 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // formatted_value = "  1.12E+10"
     }
 
-    if (strlen(formatted_value) == width + 1 && scale <= 0) {
-        char* ptr = strchr(formatted_value, '0');
-        if (ptr != NULL) {
-            memmove(ptr, ptr + 1, strlen(ptr));
-        }
-    }
-
     if (strlen(formatted_value) > width) {
-        for(int i=0; i<width; i++){
-            *result = append_to_string(*result,"*");
-        }
+        goto overflow;
     } else {
         *result = append_to_string(*result, formatted_value);
+        return;
         // result = "  1.12E+10"
     }
+
+    overflow:
+    for (int i = 0; i < width; i++) {
+        *result = append_to_string(*result, "*");
+    }
+    return;
 }
 
 void handle_SP_specifier(char** result, bool is_positive_value){
