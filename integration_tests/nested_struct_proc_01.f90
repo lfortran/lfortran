@@ -47,7 +47,7 @@ contains
 
       this%map%stored_value = value  ! Store the value
       tmp => this%map%at(key, rc=status)
-      print *, "Real:", real(tmp), "Imag:", aimag(tmp), "Status:", status
+      ! print *, "Real:", real(tmp), "Imag:", aimag(tmp), "Status:", status
       if (abs(real(tmp) - real(value)) > tol .or. abs(aimag(tmp) - aimag(value)) > tol) then
          print *, "Test failed: tmp does not match value"
          error stop

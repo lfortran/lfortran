@@ -5151,6 +5151,10 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                 llvm::Value* value_class = llvm_utils->CreateLoad2(value_llvm_type, llvm_utils->create_gep(llvm_value, 1));
                 builder->CreateStore(value_vtabid, llvm_utils->create_gep(llvm_target, 0));
                 builder->CreateStore(value_class, llvm_utils->create_gep(llvm_target, 1));
+            } else if (ASR::is_a<ASR::Pointer_t>(*value_type) &&
+                       ASR::is_a<ASR::Pointer_t>(*target_type) &&
+                       ASR::is_a<ASR::FunctionCall_t>(*x.m_value)) {
+                builder->CreateStore(llvm_value, llvm_target);
             } else {
                 bool is_value_data_only_array = (ASRUtils::is_array(value_type) && (
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::PointerToDataArray ||
