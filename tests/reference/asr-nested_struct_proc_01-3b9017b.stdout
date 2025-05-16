@@ -586,41 +586,6 @@
                                             ()
                                         )
                                     )
-                                    (Print
-                                        (StringFormat
-                                            ()
-                                            [(StringConstant
-                                                "Real:"
-                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
-                                            )
-                                            (IntrinsicElementalFunction
-                                                Real
-                                                [(Var 10 tmp)]
-                                                0
-                                                (Real 4)
-                                                ()
-                                            )
-                                            (StringConstant
-                                                "Imag:"
-                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
-                                            )
-                                            (IntrinsicElementalFunction
-                                                Aimag
-                                                [(Var 10 tmp)]
-                                                0
-                                                (Real 4)
-                                                ()
-                                            )
-                                            (StringConstant
-                                                "Status:"
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
-                                            )
-                                            (Var 10 status)]
-                                            FormatFortran
-                                            (String 1 () ExpressionLength CString)
-                                            ()
-                                        )
-                                    )
                                     (If
                                         (LogicalBinOp
                                             (RealCompare
