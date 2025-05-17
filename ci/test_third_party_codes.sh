@@ -432,6 +432,17 @@ time_section "🧪 Testing fastGPT" '
         ./test_basic_input
         ./test_more_inputs
         cd ..
+
+        mkdir lf-goc
+        cd lf-goc
+        FC="$FC --generate-object-code --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        make VERBOSE=1
+        ln -s ../model.dat .
+        ./gpt2
+        ./test_basic_input
+        ./test_more_inputs
+        cd ..
+
     elif [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
         git clone https://github.com/certik/fastGPT.git
         cd fastGPT
@@ -467,6 +478,17 @@ time_section "🧪 Testing fastGPT" '
         ./test_chat
         ctest -V
 
+        cd ..
+
+        mkdir lf-goc
+        cd lf-goc
+        FC="$FC --generate-object-code --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        make VERBOSE=1
+        ln -s ../model.dat .
+        ./gpt2
+        ./test_more_inputs
+        ./test_chat
+        ctest -V
         cd ..
 
         mkdir lf-fast
