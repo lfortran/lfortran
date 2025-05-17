@@ -39,6 +39,7 @@ public:
     bool in_submodule = false;
     bool is_interface = false;
     std::string interface_name = "";
+    bool is_module_procedure = false;
     ASR::symbol_t *current_module_sym;
 
     ASR::ttype_t *tmp_type;
@@ -1077,8 +1078,10 @@ public:
             }
         }
         
-        if (interface_name == to_lower(sym_name) && deftype == ASR::deftypeType::Interface) {
+        if (interface_name == to_lower(sym_name) && (is_module_procedure || deftype == ASR::deftypeType::Interface)) {
             sym_name = sym_name + "~genericprocedure";
+            // we are done handling same name conflict for the subroutine, so reset the name
+            interface_name.clear();
         }
 
         SetChar func_deps;
@@ -1549,9 +1552,10 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
-        if (generic_procedures.find(sym_name) != generic_procedures.end()
-            || interface_name == to_lower(sym_name)) {
+        if (interface_name == to_lower(sym_name) && (is_module_procedure || deftype == ASR::deftypeType::Interface)) {
             sym_name = sym_name + "~genericprocedure";
+            // we are done handling same name conflict for the subroutine, so reset the name
+            interface_name.clear();
         }
 
         if (parent_scope->get_symbol(sym_name) != nullptr) {
@@ -1923,6 +1927,7 @@ public:
         for (size_t i = 0; i < x.n_items; i++) {
             AST::interface_item_t *item = x.m_items[i];
             if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
+                is_module_procedure = true;
                 AST::InterfaceModuleProcedure_t *proc
                     = AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
                 std::set<std::string> items_set;
@@ -1945,6 +1950,7 @@ public:
                     }
                 }
             } else if(AST::is_a<AST::InterfaceProc_t>(*item)) {
+                is_module_procedure = false;
                 visit_interface_item(*item);
                 AST::InterfaceProc_t *proc
                     = AST::down_cast<AST::InterfaceProc_t>(item);
