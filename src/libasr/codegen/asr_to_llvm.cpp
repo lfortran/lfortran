@@ -4610,14 +4610,6 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
 
             if (interactive) return;
 
-            if (compiler_options.generate_object_code
-                    && (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic)
-                    && !compiler_options.rtlib) {
-                // Skip intrinsic functions in generate_object_code mode
-                // They must be later linked
-                return;
-            }
-
             if (!prototype_only) {
                 define_function_entry(x);
 
