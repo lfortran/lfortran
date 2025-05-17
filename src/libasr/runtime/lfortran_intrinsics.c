@@ -655,9 +655,14 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         strcat(formatted_value, exponent);
         // formatted_value = "  1.12E+10"
     }
-
     if (strlen(formatted_value) > width) {
-        goto overflow;
+        if (strlen(formatted_value) - width == 1 && formatted_value[0] == '0') {
+            memmove(formatted_value, formatted_value + 1, strlen(formatted_value));
+            *result = append_to_string(*result, formatted_value);
+            return;
+        } else {
+            goto overflow;
+        }
     } else {
         *result = append_to_string(*result, formatted_value);
         return;
