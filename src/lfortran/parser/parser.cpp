@@ -243,11 +243,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
                 return Error();
             }
         };
-    } catch (const parser_local::TokenizerError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
-    }  catch (const parser_local::ParserAbort &) {
+    } catch (const parser_local::ParserAbort &) {
         Error error;
         return error;
     }
@@ -354,9 +350,6 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
             Location l;
             try {
                 token = t.lex(al, y, l, diagnostics, continue_compilation);
-            } catch (const parser_local::TokenizerError &e) {
-                diagnostics.diagnostics.push_back(e.d);
-                return Error();
             } catch (const parser_local::TokenizerAbort &e) {
                 return Error();
             }
