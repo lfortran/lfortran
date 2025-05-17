@@ -36,4 +36,10 @@ program format_28
     write(*,"(ES5.1E1)") 3.14e+0
     write(*,"(ES6.1E1)") 0.0
     write(*,"(ES0.0E0)") 0.0
+    print '(E7.2)', 289.
+    print '(E7.2)', 289.
+    print '(E8.2)', 289.
+    print '(E7.2)', 0.289
+    print '(E9.2)', 1.23456789e+12
+    print '(E7.2)', -289.
 end program format_28
