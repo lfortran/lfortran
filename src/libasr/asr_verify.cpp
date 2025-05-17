@@ -417,7 +417,7 @@ public:
             "ClassProcedure::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
 
-        ASR::Function_t* x_m_proc = ASR::down_cast<ASR::Function_t>(x.m_proc);
+        ASR::Function_t* x_m_proc = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_proc));
         if( x.m_self_argument ) {
             bool arg_found = false;
             std::string self_arg_name = std::string(x.m_self_argument);
