@@ -334,7 +334,10 @@ struct FixedFormRecursiveDescent {
         loc.last = loc_first;
         // auto next=cur; next_line(next);
         //std::cout << "error line " << tostr(cur,next-1) << std::endl;
-        throw LFortran::parser_local::TokenizerError(text, loc);
+        diag.add(diag::Diagnostic(
+            text,
+            diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+        throw parser_local::TokenizerAbort();
     }
 
     // Are the next characters in the `cur` stream equal to `str`?
@@ -768,13 +771,19 @@ struct FixedFormRecursiveDescent {
                 Location loc;
                 loc.first = end - string_start;
                 loc.last = end - string_start;
-                throw parser_local::TokenizerError("Expected `)` here to end the condition expression of the if statement ", loc);
+                diag.add(diag::Diagnostic(
+                    "Expected `)` here to end the condition expression of the if statement ",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
             }
         } else {
             Location loc;
             loc.first = cur - string_start;
             loc.last = cur - string_start;
-            throw parser_local::TokenizerError("Expected expression after `if`", loc);
+            diag.add(diag::Diagnostic(
+                "Expected expression after `if`",
+                diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+            throw parser_local::TokenizerAbort();
         }
         tokenize_until(end);
         cur = end;
@@ -1226,13 +1235,19 @@ struct FixedFormRecursiveDescent {
                 Location loc;
                 loc.first = cur-string_start;
                 loc.last = cur-string_start;
-                throw parser_local::TokenizerError("Expected 'to' here", loc);
+                diag.add(diag::Diagnostic(
+                    "Expected 'to' here",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
             }
         } else {
             Location loc;
             loc.first = cur-string_start;
             loc.last = cur-string_start;
-            throw parser_local::TokenizerError("Expected integer after `assign`", loc);
+            diag.add(diag::Diagnostic(
+                "Expected integer after `assign`",
+                diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+            throw parser_local::TokenizerAbort();
         }
     }
 
@@ -1261,7 +1276,10 @@ struct FixedFormRecursiveDescent {
             Location loc;
             loc.first = 1;
             loc.last = 1;
-            throw parser_local::TokenizerError("End of file encountered in labeled do loop (loop is not terminated)", loc);
+            diag.add(diag::Diagnostic(
+                "End of file encountered in labeled do loop (loop is not terminated)",
+                diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+            throw parser_local::TokenizerAbort();
         }
         int64_t label = eat_label(cur);
         if (label != do_label) {
@@ -1399,8 +1417,10 @@ struct FixedFormRecursiveDescent {
                 Location loc;
                 loc.first = cur - string_start;
                 loc.last = cur - string_start;
-                throw parser_local::TokenizerError("Expected an executable "
-                    "statement inside do concurrent loop", loc);
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside do concurrent loop",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
             }
         }
     }
@@ -1448,7 +1468,10 @@ struct FixedFormRecursiveDescent {
                 Location loc;
                 loc.first = cur-string_start;
                 loc.last = cur-string_start;
-                throw parser_local::TokenizerError("Expected an executable statement inside a do loop", loc);
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside a do loop",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
             };
         }
     }
@@ -1463,7 +1486,10 @@ struct FixedFormRecursiveDescent {
                 Location loc;
                 loc.first = cur-string_start;
                 loc.last = cur-string_start;
-                throw parser_local::TokenizerError("Expected an executable statement inside a labeled do loop", loc);
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside a labeled do loop",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
             };
             if (!label_last(do_label)) {
                 // The lex_body_statement() above was a labeled loop that ended
@@ -1588,7 +1614,9 @@ struct FixedFormRecursiveDescent {
             Location loc;
             token_loc(cur, cur + 1, loc);
             if (continue_compilation) {
-                diagnostics.add(LFortran::parser_local::TokenizerError("Expecting contains keyword before procedure definition", loc).d);
+                diagnostics.add(diag::Diagnostic(
+                    "Expecting contains keyword before procedure definition",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
                 if (next_is(cur, "subroutine")) {
                     while (!next_is(cur, "endprogram")) {
                         next_line(cur);
@@ -1599,7 +1627,10 @@ struct FixedFormRecursiveDescent {
                     }
                 }
             } else {
-                throw parser_local::TokenizerError("Expecting contains keyword before procedure definition", loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Expecting contains keyword before procedure definition",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
             }
         }
         if (next_is(cur, "endprogram")) {
@@ -1609,6 +1640,10 @@ struct FixedFormRecursiveDescent {
             push_token_advance(cur, "end");
             tokenize_line(cur);
         } else {
+            uint32_t loc_first = cur-string_start;
+            Location loc;
+            loc.first = loc_first;
+            loc.last = loc_first;
             error(cur, "Expecting terminating symbol for program");
         }
     }
@@ -1853,8 +1888,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
         LCOMPILERS_ASSERT(tokens.size() == stypes.size())
         LCOMPILERS_ASSERT(tokens.size() == locations.size())
         tokenized = true;
-    } catch (const parser_local::TokenizerError &e) {
-        diagnostics.diagnostics.push_back(e.d);
+    } catch (const parser_local::TokenizerAbort &) {
         return false;
     }
     return true;
