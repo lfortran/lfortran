@@ -235,11 +235,30 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                 )
                                         })
                                     second_interface~genericprocedure
                                     (FunctionType
-                                        []
+                                        [(Integer 4)]
                                         (Integer 4)
                                         Source
                                         Interface
@@ -253,9 +272,70 @@
                                         .false.
                                     )
                                     []
-                                    []
+                                    [(Var 4 x)]
                                     []
                                     (Var 4 second_interface)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            third_interface:
+                                (GenericProcedure
+                                    2
+                                    third_interface
+                                    [2 third_interface~genericprocedure]
+                                    Public
+                                ),
+                            third_interface~genericprocedure:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            i:
+                                                (Variable
+                                                    8
+                                                    i
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    third_interface~genericprocedure
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 8 i)]
+                                    [(Assignment
+                                        (Var 8 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                    )]
+                                    ()
                                     Public
                                     .false.
                                     .false.
