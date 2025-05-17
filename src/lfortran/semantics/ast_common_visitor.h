@@ -6475,10 +6475,16 @@ public:
                         al, loc, &val, v_variable_m_type, dest_type, diag);
                     return (ASR::asr_t*)val;
                 } else {
+                    ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
                     ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                         ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
-                    return ASR::make_ComplexIm_t(al, loc, ASRUtils::EXPR(
-                        ASR::make_Var_t(al, loc, v)), real_type, nullptr);
+                    ASR::expr_t *complex_value = ASRUtils::expr_value(val);
+                    ASR::expr_t *im_value = nullptr;
+                    if (complex_value && ASR::is_a<ASR::ComplexConstant_t>(*complex_value)) {
+                        ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(complex_value);
+                        im_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, c->m_im, real_type));
+                    }
+                    return ASR::make_ComplexIm_t(al, loc, val, real_type, im_value);
                 }
             }
         } else if (ASR::is_a<ASR::String_t>(*v_variable_m_type)) {
