@@ -6,6 +6,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/bwriter.h>
+#include <iostream>
 
 namespace LCompilers {
 
@@ -135,7 +136,7 @@ std::string save_pycfile(const ASR::TranslationUnit_t &m, LCompilers::LocationMa
 }
 
 inline void load_serialised_asr(const std::string &s, std::string& asr_binary,
-                                LCompilers::LocationManager &lm) {
+                                LCompilers::LocationManager &lm, std::string& error_message, int& error_code) {
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryReader b(s);
 #else
@@ -147,10 +148,10 @@ inline void load_serialised_asr(const std::string &s, std::string& asr_binary,
     }
     std::string version = b.read_string();
     if (version != LFORTRAN_VERSION) {
-        std::cerr << "Incompatible format: LFortran Modfile was generated using version '"
-                      + version + "', but current LFortran version is '" + LFORTRAN_VERSION + "'"
-                  << std::endl;
-        std::abort();
+        error_message = "Incompatible format: LFortran Modfile was generated using version '"
+                        + version + "', but current LFortran version is '" + LFORTRAN_VERSION + "'";
+        error_code = 1;
+        return;  // Error code for incompatible version
     }
     LCompilers::LocationManager serialized_lm;
     int32_t n_files = b.read_int32();
@@ -219,7 +220,13 @@ inline void load_serialised_asr(const std::string &s, std::string& asr_binary,
 ASR::TranslationUnit_t* load_modfile(Allocator &al, const std::string &s,
         bool load_symtab_id, SymbolTable &symtab, LCompilers::LocationManager &lm) {
     std::string asr_binary;
-    load_serialised_asr(s, asr_binary, lm);
+    std::string error_message;
+    int error_code = 0;
+    load_serialised_asr(s, asr_binary, lm, error_message, error_code);
+    if (error_code != 0) {
+        std::cerr << "Error loading modfile: " << error_message << std::endl;
+        std::abort();
+    }
     // take offset as last second element of file_ends
     uint32_t offset = lm.file_ends[lm.file_ends.size()-2];
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab, offset);
@@ -230,7 +237,13 @@ ASR::TranslationUnit_t* load_modfile(Allocator &al, const std::string &s,
 ASR::TranslationUnit_t* load_pycfile(Allocator &al, const std::string &s,
         bool load_symtab_id, LCompilers::LocationManager &lm) {
     std::string asr_binary;
-    load_serialised_asr(s, asr_binary, lm);
+    std::string error_message;
+    int error_code = 0;
+    load_serialised_asr(s, asr_binary, lm, error_message, error_code);
+    if (error_code != 0) {
+        std::cerr << "Error loading modfile: " << error_message << std::endl;
+        std::abort();
+    }
     uint32_t offset = 0;
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, offset);
 
