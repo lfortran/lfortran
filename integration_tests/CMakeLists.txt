@@ -1674,6 +1674,7 @@ RUN(NAME class_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm NO_STD_F23)
 
