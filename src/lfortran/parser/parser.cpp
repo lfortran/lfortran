@@ -32,7 +32,7 @@ bool is_program_end(AST::Name_t* name) {
             || to_lower(name->m_id) == "end program");
 }
 
-void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast) {
+void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics) {
     Vec<AST::ast_t*> global_items; global_items.reserve(al, 0);
     Vec<AST::unit_decl1_t*> use; use.reserve(al, 0);
     Vec<AST::implicit_statement_t*> implicit; implicit.reserve(al, 0);
@@ -46,8 +46,11 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                 || ast.m_items[i]->type == AST::astType::mod) {
                 global_items.push_back(al, ast.m_items[i]);
             } else {
-                throw parser_local::ParserError("Only function, subroutine, procedure, module, submodule or"
-                    " block data allowed in global scope in non-interactive mode", ast.m_items[i]->loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Only function, subroutine, procedure, module, submodule or"
+                    " block data allowed in global scope in non-interactive mode",
+                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                throw parser_local::ParserAbort();
             }
         } else if (contains) {
             if (ast.m_items[i]->type == AST::astType::program_unit) {
@@ -64,13 +67,22 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                         global_items.push_back(al, program_ast);
                         program_added = true;
                     } else {
-                        throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", name->base.base.loc);
+                        diagnostics.add(diag::Diagnostic(
+                            "Expected function, subroutine, procedure in program contains",
+                            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {name->base.base.loc})}));
+                        throw parser_local::ParserAbort();
                     }
                 } else {
-                    throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", expr->base.loc);
+                    diagnostics.add(diag::Diagnostic(
+                        "Expected function, subroutine, procedure in program contains",
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {expr->base.loc})}));
+                    throw parser_local::ParserAbort();
                 }
             } else {
-                throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", ast.m_items[i]->loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Expected function, subroutine, procedure in program contains",
+                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                throw parser_local::ParserAbort();
             }
         } else if (ast.m_items[i]->type == AST::astType::stmt) {
             body.push_back(al, AST::down_cast<AST::stmt_t>(ast.m_items[i]));
@@ -111,7 +123,10 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                 } else if (to_lower(name->m_id) == "contains") {
                     contains = true;
                 } else {
-                    throw parser_local::ParserError("Statement or Declaration expected inside program, found Variable name", ast.m_items[i]->loc);
+                    diagnostics.add(diag::Diagnostic(
+                        "Statement or Declaration expected inside program, found Variable name",
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                    throw parser_local::ParserAbort();
                 }
             } else if (AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
                 AST::FuncCallOrArray_t* func_call_or_array = AST::down_cast<AST::FuncCallOrArray_t>(expr);
@@ -199,14 +214,20 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                     body.push_back(al, AST::down_cast<AST::stmt_t>(flush_ast));
                 }
             } else {
-                throw parser_local::ParserError("Statement or Declaration expected inside program, found Expression", ast.m_items[i]->loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Statement or Declaration expected inside program, found Expression",
+                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                throw parser_local::ParserAbort();
             }
         } else {
             global_items.push_back(al, ast.m_items[i]);
         }
     }
     if (!program_added) {
-        throw parser_local::ParserError("Expected program end", ast.base.base.loc);
+        diagnostics.add(diag::Diagnostic(
+            "Expected program end",
+            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.base.base.loc})}));
+        throw parser_local::ParserAbort();
     }
     ast.m_items = global_items.p;
     ast.n_items = global_items.size();
@@ -226,9 +247,8 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         Error error;
         diagnostics.diagnostics.push_back(e.d);
         return error;
-    } catch (const parser_local::ParserError &e) {
+    }  catch (const parser_local::ParserAbort &) {
         Error error;
-        diagnostics.diagnostics.push_back(e.d);
         return error;
     }
     Location l;
@@ -243,10 +263,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         p.result.p, p.result.size());
     if (!co.interactive && !co.fixed_form && is_program_needed(*ast)) {
         try {
-            fix_program_without_program_line(al, *ast);
-        } catch (const parser_local::ParserError &e) {
+            fix_program_without_program_line(al, *ast, diagnostics);
+        }  catch (const parser_local::ParserAbort &) {
             Error error;
-            diagnostics.diagnostics.push_back(e.d);
             if (!co.continue_compilation) {
                 return error;
             }
@@ -286,9 +305,14 @@ bool Parser::parse(const std::string &input)
 
     if (!diag.has_error()) {
         if (this->continue_compilation) {
-            diag.add(parser_local::ParserError("Parsing unsuccessful (internal compiler error)").d);
+            diag.add(diag::Diagnostic(
+                "Parsing unsuccessful (internal compiler error)",
+                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
         } else {
-            throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
+            diag.add(diag::Diagnostic(
+                "Parsing unsuccessful (internal compiler error)",
+                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
+            throw parser_local::ParserAbort();
         }
     }
     return false;
@@ -1137,9 +1161,14 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
                 message = "unknown error";
                 if (this->continue_compilation) {
-                    diag.add(parser_local::ParserError(message, loc).d);
+                    diag.add(diag::Diagnostic(
+                        message,
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
                 } else {
-                    throw parser_local::ParserError(message, loc);
+                    diag.add(diag::Diagnostic(
+                        message,
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+                    throw parser_local::ParserAbort();
                 }
             }
             invalid_token--;
@@ -1172,9 +1201,14 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
         message = "Internal Compiler Error: parser returned unknown error";
     }
     if (this->continue_compilation) {
-        diag.add(parser_local::ParserError(message, loc).d);
+        diag.add(diag::Diagnostic(
+            message,
+            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
     } else {
-        throw parser_local::ParserError(message, loc);
+        diag.add(diag::Diagnostic(
+            message,
+            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+        throw parser_local::ParserAbort();
     }
 }
 

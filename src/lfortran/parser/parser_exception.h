@@ -31,6 +31,9 @@ namespace parser_local {
         { }
     };
 
+    class ParserAbort {
+    };
+
     class ParserError
     {
     public:
