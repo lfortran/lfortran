@@ -1640,10 +1640,6 @@ struct FixedFormRecursiveDescent {
             push_token_advance(cur, "end");
             tokenize_line(cur);
         } else {
-            uint32_t loc_first = cur-string_start;
-            Location loc;
-            loc.first = loc_first;
-            loc.last = loc_first;
             error(cur, "Expecting terminating symbol for program");
         }
     }
