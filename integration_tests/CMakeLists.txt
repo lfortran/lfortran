@@ -2025,6 +2025,9 @@ RUN(NAME optional_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME optional_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME optional_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME optional_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
+RUN(NAME optional_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
