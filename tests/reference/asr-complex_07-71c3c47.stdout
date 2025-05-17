@@ -877,7 +877,20 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 2 z1)]
+                            [(ComplexConstructor
+                                (ComplexRe
+                                    (Var 2 z1)
+                                    (Real 4)
+                                    ()
+                                )
+                                (ComplexIm
+                                    (Var 2 z1)
+                                    (Real 4)
+                                    ()
+                                )
+                                (Complex 4)
+                                ()
+                            )]
                             FormatFortran
                             (String 1 () ExpressionLength CString)
                             ()
@@ -888,7 +901,20 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
-                                    (Var 2 z1)
+                                    (ComplexConstructor
+                                        (ComplexRe
+                                            (Var 2 z1)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (ComplexIm
+                                            (Var 2 z1)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (Complex 4)
+                                        ()
+                                    )
                                     Sub
                                     (ComplexConstructor
                                         (RealConstant
