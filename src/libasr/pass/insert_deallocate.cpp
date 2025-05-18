@@ -118,7 +118,6 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 
         void visit_Function(const ASR::Function_t& x) {
             if (ASRUtils::get_FunctionType(&x)->m_abi == ASR::abiType::Interactive) {
-                ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Function(x);
                 return;
             }
             ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
