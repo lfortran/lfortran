@@ -6475,10 +6475,16 @@ public:
                         al, loc, &val, v_variable_m_type, dest_type, diag);
                     return (ASR::asr_t*)val;
                 } else {
+                    ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
                     ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                         ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
-                    return ASR::make_ComplexIm_t(al, loc, ASRUtils::EXPR(
-                        ASR::make_Var_t(al, loc, v)), real_type, nullptr);
+                    ASR::expr_t *complex_value = ASRUtils::expr_value(val);
+                    ASR::expr_t *im_value = nullptr;
+                    if (complex_value && ASR::is_a<ASR::ComplexConstant_t>(*complex_value)) {
+                        ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(complex_value);
+                        im_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, c->m_im, real_type));
+                    }
+                    return ASR::make_ComplexIm_t(al, loc, val, real_type, im_value);
                 }
             }
         } else if (ASR::is_a<ASR::String_t>(*v_variable_m_type)) {
@@ -10307,6 +10313,15 @@ public:
                         {loc},
                         "Argument '" + constructor_args[i] + "' not specified for " + ASRUtils::symbol_name(fn));
                     throw SemanticAbort();
+                }
+                // Replace symbols in StructConstant to external symbols
+                if (default_init && ASR::is_a<ASR::StructConstant_t>(*default_init)) {
+                    ASR::StructConstant_t *st = ASR::down_cast<ASR::StructConstant_t>(default_init);
+                    ASR::symbol_t *ext_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym)) {
+                        ASR::ttype_t *type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, ext_sym));
+                        default_init = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, ext_sym, st->m_args, st->n_args, type));
+                    }
                 }
                 args.p[i].m_value = default_init;
                 args.p[i].loc = arg_sym->base.loc;
