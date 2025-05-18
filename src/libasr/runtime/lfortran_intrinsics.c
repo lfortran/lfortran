@@ -273,7 +273,8 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
-void handle_float(char* format, double val, char** result, bool use_sign_plus) {
+void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus) {
+    val = val * pow(10, scale); // scale the value
     if (strcmp(format,"f-64") == 0) { //use c formatting.
         char* float_str = (char*)malloc(50 * sizeof(char));
         sprintf(float_str,"%23.17e",val);
@@ -1769,7 +1770,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                         handle_decimal(value, double_val, scale, &result, "E", is_SP_specifier);
                     }
                 } else if (tolower(value[0]) == 'f') {
-                    handle_float(value, double_val, &result, is_SP_specifier);
+                    handle_float(value, double_val, scale, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'l') {
                     bool val = *(bool*)s_info.current_arg_info.current_arg;
                     handle_logical(value, val, &result);

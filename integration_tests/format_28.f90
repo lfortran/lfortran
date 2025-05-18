@@ -3,6 +3,9 @@ program format_28
     integer w,io
     character(12) fmt
     real :: x = -0.0
+    real, parameter :: a(4) = [ 1.0, 2.0, 3.0, 4.0 ]
+    real, parameter :: b(4) = a / SUM(a)
+    print "(4E11.3)", b
     do w = 6,9
       write(fmt,'(A,I0,A)') '(A,ES',w,'.2E1)'
       write(*,fmt,iostat=io) fmt//' ',3e20
