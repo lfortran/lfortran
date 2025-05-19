@@ -1874,6 +1874,14 @@ filename = "../integration_tests/format_27.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_28.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_29.f90"
+run = true
+
+[[test]]
 filename = "interop/mod1-14.mod"
 mod_to_asr = true
 
