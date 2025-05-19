@@ -15,4 +15,4 @@ cmake \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
 -G Ninja \
     .
-cmake --build .
+cmake --build . -j 4

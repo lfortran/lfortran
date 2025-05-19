@@ -4525,47 +4525,85 @@ public:
                 str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
             }
 
-            LCOMPILERS_ASSERT(sym_type->n_kind < 3) // TODO
-            for (size_t i = 0; i < sym_type->n_kind; i++) {
-                // TODO: Allow len or/and kind only once (else throw SyntaxError)
-                if (sym_type->m_kind[i].m_id != nullptr
-                        && to_lower(sym_type->m_kind[i].m_id) == "kind") {
-                    // TODO: take into account m_kind->m_id and all kind items
-                    continue;
+
+            LCOMPILERS_ASSERT(sym_type->n_kind < 3)
+
+            if (sym_type->n_kind == 1) {
+                const auto &item = sym_type->m_kind[0];
+                std::string id = item.m_id ? to_lower(item.m_id) : "";
+
+                if (id != "kind" && id != "len" && id != "") {
+                    diag.add(Diagnostic(
+                        "Error: Syntax error in CHARACTER declaration, only 'len' and 'kind' are allowed as type parameters",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
                 }
-                switch (sym_type->m_kind[i].m_type) {
-                    case (AST::kind_item_typeType::Value) : {
-                        LCOMPILERS_ASSERT(sym_type->m_kind[i].m_value != nullptr);
-                        if(is_funcCall_to_unresolved_genereicProcedure(sym_type->m_kind[i].m_value)){ // Postpone the evaluation
-                            postponed_genericProcedure_calls_vec.emplace_back(&str->m_len, current_scope,
-                            sym_type->m_kind[i].m_value, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
-                        } else { // Evaluate normally
-                            _processing_char_len = true;
-                            this->visit_expr(*sym_type->m_kind[i].m_value);
-                            ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                            str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
-                            _processing_char_len = false;
-                        }
-                        str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
-                        break;
-                    }
-                    case (AST::kind_item_typeType::Star) : {
-                        LCOMPILERS_ASSERT(sym_type->m_kind[i].m_value == nullptr);
-                        str->m_len = nullptr; // If it's parameter variable, len will be set later.
-                        str->m_len_kind = ASR::string_length_kindType::AssumedLength;
-                        break;
-                    }
-                    case (AST::kind_item_typeType::Colon) : {
-                        LCOMPILERS_ASSERT(sym_type->m_kind[i].m_value == nullptr);
-                        str->m_len = nullptr;
-                        str->m_len_kind = ASR::string_length_kindType::DeferredLength;
-                        break;
-                    }
-                    default :{
-                        throw LCompilersException("Character's len Not identified");
-                    }
+
+                if (id == "kind") {
+                    //TODO: Handle kind attribute on item (ideally should be a function call)
+                } else {
+                    determine_char_len(item, sym, str);
+                }
+
+            } else if (sym_type->n_kind == 2) {
+                const auto &item1 = sym_type->m_kind[0];
+                const auto &item2 = sym_type->m_kind[1];
+                std::string id1 = item1.m_id ? to_lower(item1.m_id) : "";
+                std::string id2 = item2.m_id ? to_lower(item2.m_id) : "";
+
+                if ((id1 != "kind" && id1 != "len" && id1 != "") ||
+                        (id2 != "kind" && id2 != "len" && id2 != "")) {
+                    diag.add(Diagnostic(
+                        "Error: Syntax error in CHARACTER declaration, only 'len' and 'kind' are allowed as keyword arguments",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                // character(kind=x, kind=y) or character(len=x, len=y)
+                if (id1 == id2 && id1 != "") {
+                    diag.add(Diagnostic(
+                        "Error: Syntax error in CHARACTER declaration, can't use a keyword argument more than once",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                // character(len=x, y) or character(kind=x, y)
+                if (id1 != "" && id2 == "") {
+                    diag.add(Diagnostic(
+                        "Error: Syntax error in CHARACTER declaration, positional type parameters cannot follow a keyword argument",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                // character(x, len=y)
+                if (id1 == "" && id2 == "len") {
+                    diag.add(Diagnostic(
+                        "Error: Syntax error in CHARACTER declaration, using only 'len' keyword argument after a positional type is invalid",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                if (id1 == "kind" && id2 == "len") {
+                    determine_char_len(item2, sym, str);
+
+                    //TODO: Handle kind attribute on item1 (ideally should be a function call)
+                } else {
+                    determine_char_len(item1, sym, str);
+
+                    //TODO: Handle kind attribute on item2 (ideally should be a function call)
                 }
             }
+
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
                 dims.size() > 0 && abi == ASR::abiType::BindC ? ASR::array_physical_typeType::StringArraySinglePointer :
@@ -10523,7 +10561,40 @@ public:
         visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc);
     }
 
-
+    void determine_char_len(const AST::kind_item_t& item, std::string& sym, ASR::String_t* str) {
+        switch (item.m_type) {
+            case (AST::kind_item_typeType::Value) : {
+                LCOMPILERS_ASSERT(item.m_value != nullptr);
+                if(is_funcCall_to_unresolved_genereicProcedure(item.m_value)){ // Postpone the evaluation
+                    postponed_genericProcedure_calls_vec.emplace_back(&str->m_len, current_scope,
+                    item.m_value, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
+                } else { // Evaluate normally
+                    _processing_char_len = true;
+                    this->visit_expr(*item.m_value);
+                    ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                    str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
+                    _processing_char_len = false;
+                }
+                str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
+                break;
+            }
+            case (AST::kind_item_typeType::Star) : {
+                LCOMPILERS_ASSERT(item.m_value == nullptr);
+                str->m_len = nullptr; // If it's parameter variable, len will be set later.
+                str->m_len_kind = ASR::string_length_kindType::AssumedLength;
+                break;
+            }
+            case (AST::kind_item_typeType::Colon) : {
+                LCOMPILERS_ASSERT(item.m_value == nullptr);
+                str->m_len = nullptr;
+                str->m_len_kind = ASR::string_length_kindType::DeferredLength;
+                break;
+            }
+            default :{
+                throw LCompilersException("Character's len Not identified");
+            }
+        }
+    }
 };
 
 } // namespace LCompilers::LFortran
