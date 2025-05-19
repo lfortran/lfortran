@@ -2241,8 +2241,7 @@ namespace LCompilers {
                         std::string mem_name = item.first;
                         int mem_idx = name2memidx[der_type_name][mem_name];
                         llvm::Value* src_member = nullptr;
-                        if (llvm::isa<llvm::ConstantStruct>(src) ||
-                            llvm::isa<llvm::ConstantAggregateZero>(src)) {
+                        if (llvm::isa<llvm::ConstantStruct>(src)) {
                             src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
                         } else {
                             src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
@@ -2253,8 +2252,7 @@ namespace LCompilers {
                         if( !LLVM::is_llvm_struct(member_type) &&
                             !ASRUtils::is_array(member_type) &&
                             !ASRUtils::is_descriptorString(member_type) &&
-                            !llvm::isa<llvm::ConstantStruct>(src) &&
-                            !llvm::isa<llvm::ConstantAggregateZero>(src)) {
+                            !llvm::isa<llvm::ConstantStruct>(src)) {
                             src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
                         }
                         llvm::Value* dest_member = create_gep2(name2dertype[der_type_name], dest, mem_idx);
