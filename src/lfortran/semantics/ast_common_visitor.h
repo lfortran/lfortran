@@ -7344,7 +7344,18 @@ public:
                     throw SemanticAbort();
                 }
             }
-            return (ASR::asr_t*) x_;
+            int64_t kind_value = handle_kind(kind);
+            if (kind_value != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x_))) {
+                ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
+                                    kind_value));
+                ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, kind_value));
+                ASR::expr_t* real_part = ASRUtils::EXPR(ASR::make_ComplexRe_t(al, x.base.base.loc, x_, real_type, nullptr));
+                ASR::expr_t* imag_part = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, x.base.base.loc, x_, real_type, nullptr));
+                return ASR::make_ComplexConstructor_t(al, x.base.base.loc, real_part, imag_part, 
+                                    return_type, nullptr);
+            } else {
+                return (ASR::asr_t*) x_;
+            }
         }
         int64_t kind_value = handle_kind(kind);
         ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al,
