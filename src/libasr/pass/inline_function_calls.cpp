@@ -142,10 +142,6 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         // The type of those Variable symbols shouldn’t be FunctionType.
         for( auto sym: function->m_symtab->get_scope() ) {
             if( !ASR::is_a<ASR::Variable_t>(*sym.second) ||
-                (ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_in && // TODO: Remove these intent checks
-                ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_local && // IntentOut can be accomodated
-                ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_unspecified && // via pointer variables
-                ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_return_var) ||
                 ASRUtils::is_array(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type) ||
                 ASR::is_a<ASR::String_t>(
                     *ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) ) { // TODO: Remove this check as well, use pointers for arrays
@@ -224,6 +220,10 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym.second);
             std::string local_sym_unique_name = current_scope->get_unique_name(variable->m_name);
             ASR::ttype_t* local_ttype_copy = type_duplicator.duplicate_ttype(variable->m_type);
+            if( variable->m_intent == ASRUtils::intent_out ||
+                variable->m_intent == ASRUtils::intent_inout ) {
+                local_ttype_copy = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, local_ttype_copy));
+            }
             ASR::symbol_t* local_sym = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, local_sym_unique_name),
                 nullptr, 0, ASRUtils::intent_local, nullptr, nullptr, variable->m_storage,
@@ -258,10 +258,17 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         for( size_t i = 0; i < x->n_args; i++ ) {
             ASR::symbol_t* original_symbol = argidx2function.at(i);
             ASR::symbol_t* local_symbol = function2currentscope[original_symbol];
-            ASR::stmt_t* init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
-                x->m_args[i].m_value, nullptr, false
-            ));
+            ASR::stmt_t* init_stmt = nullptr;
+            if( ASRUtils::is_pointer(ASRUtils::symbol_type(local_symbol)) ) {
+                init_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
+                    x->m_args[i].m_value, nullptr));
+            } else {
+                init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
+                    x->m_args[i].m_value, nullptr, false
+                ));
+            }
             current_body->push_back(al, init_stmt);
         }
 
