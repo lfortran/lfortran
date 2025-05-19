@@ -173,7 +173,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 mangle_c(sym , std::string(x.m_name));
             }
         }
-        if (intrinsic_symbols_mangling && startswith(x.m_name, "_lcompilers_")) {
+        if (intrinsic_symbols_mangling && (startswith(x.m_name, "_lcompilers_") || startswith(x.m_name, "__lcompilers"))) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             sym_to_renamed[sym] = update_name(x.m_name);
         }
