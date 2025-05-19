@@ -1319,7 +1319,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
     fill_func_arg("kind", arg_types[3]);
     fill_func_arg("back", arg_types[4]);
     ASR::expr_t *result = nullptr;
-    int n_dims = extract_n_dims_from_ttype(arg_types[0]);
+    ASR::dimension_t* array_dims = nullptr;
+    int n_dims = extract_dimensions_from_ttype(arg_types[0], array_dims);
     ASR::ttype_t *type = extract_type(return_type);
     if( !ASRUtils::is_array(return_type) ) {
         result = declare("result", return_type, ReturnVar);
@@ -1328,6 +1329,13 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
         args.push_back(al, result);
     }
+
+    ASR::ttype_t* mask_type = arg_types[2];
+    if (extract_n_dims_from_ttype(mask_type) == 0) {
+        mask_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, extract_type(arg_types[2]), array_dims, n_dims, ASR::array_physical_typeType::FixedSizeArray));
+    }
+    ASR::expr_t* mask_value = declare("mask_value", mask_type, Local);
+    body.push_back(al, b.Assignment(mask_value, args[2]));
     Vec<ASR::expr_t*> idx_vars, target_idx_vars;
     Vec<ASR::stmt_t*> doloop_body;
     if (overload_id < 2) {
@@ -1335,8 +1343,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             loc, args[0], fn_symtab, body, idx_vars, doloop_body,
             [=, &al, &body, &b] () {
                 ASR::expr_t *i = declare("i", type, Local);
-                ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
-                body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                ASR::expr_t *maskval = b.ArrayItem_01(mask_value, {i});
+                body.push_back(al, b.DoLoop(i, LBound(mask_value, 1), UBound(mask_value, 1), {
                     b.If(b.Eq(maskval, b.bool_t(1, logical)), {
                         b.Assignment(result, i),
                         b.Exit()
@@ -1357,7 +1365,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 }
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
                 ASR::expr_t *array_ref_02 = ArrayItem_02(args[0], result_idx);
-                ASR::expr_t *mask_val = ArrayItem_02(args[2], idx_vars);
+                ASR::expr_t *mask_val = ArrayItem_02(mask_value, idx_vars);
                 if (overload_id == 1) {
                     if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
                         doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
@@ -1396,8 +1404,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             target_idx_vars, doloop_body,
             [=, &al, &body, &b] () {
                ASR::expr_t *i = declare("i", type, Local);
-                ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
-                body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                ASR::expr_t *maskval = b.ArrayItem_01(mask_value, {i});
+                body.push_back(al, b.DoLoop(i, LBound(mask_value, 1), UBound(mask_value, 1), {
                     b.If(b.Eq(maskval, b.bool_t(1, logical)), {
                         b.Assignment(result, i),
                         b.Exit()
@@ -1423,7 +1431,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 if (extract_kind_from_ttype_t(type) != 4) {
                     res_idx = b.i2i_t(res_idx, type);
                 }
-                ASR::expr_t *mask_val = ArrayItem_02(args[2], idx_vars);
+                ASR::expr_t *mask_val = ArrayItem_02(mask_value, idx_vars);
                 if (overload_id == 3) {
                     if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
                         doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
