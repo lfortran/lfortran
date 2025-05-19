@@ -2765,13 +2765,7 @@ public:
         int member_idx = name2memidx[current_der_type_name][member_name];
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
-        if (llvm::isa<llvm::ConstantStruct>(tmp)) {
-            llvm::Value *v = builder->CreateExtractValue(tmp, {static_cast<unsigned int>(member_idx)});
-            tmp = llvm_utils->CreateAlloca(v->getType());
-            builder->CreateStore(v, tmp);
-        } else {
-            tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
-        }
+        tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
 #if LLVM_VERSION_MAJOR > 16
