@@ -4534,7 +4534,7 @@ public:
 
                 if (id != "kind" && id != "len" && id != "") {
                     diag.add(Diagnostic(
-                        "Error: Syntax error in CHARACTER declaration, only 'len' and 'kind' are allowed as type parameters",
+                        "Syntax error in CHARACTER declaration: only 'len' and 'kind' are allowed as type parameters",
                         Level::Error, Stage::Semantic, {
                             Label("",{sym_type->base.base.loc})
                         }));
@@ -4556,7 +4556,7 @@ public:
                 if ((id1 != "kind" && id1 != "len" && id1 != "") ||
                         (id2 != "kind" && id2 != "len" && id2 != "")) {
                     diag.add(Diagnostic(
-                        "Error: Syntax error in CHARACTER declaration, only 'len' and 'kind' are allowed as keyword arguments",
+                        "Syntax error in CHARACTER declaration: only 'len' and 'kind' are allowed as keyword arguments",
                         Level::Error, Stage::Semantic, {
                             Label("",{sym_type->base.base.loc})
                         }));
@@ -4566,7 +4566,7 @@ public:
                 // character(kind=x, kind=y) or character(len=x, len=y)
                 if (id1 == id2 && id1 != "") {
                     diag.add(Diagnostic(
-                        "Error: Syntax error in CHARACTER declaration, can't use a keyword argument more than once",
+                        "Syntax error in CHARACTER declaration: can't use a keyword argument more than once",
                         Level::Error, Stage::Semantic, {
                             Label("",{sym_type->base.base.loc})
                         }));
@@ -4576,7 +4576,7 @@ public:
                 // character(len=x, y) or character(kind=x, y)
                 if (id1 != "" && id2 == "") {
                     diag.add(Diagnostic(
-                        "Error: Syntax error in CHARACTER declaration, positional type parameters cannot follow a keyword argument",
+                        "Syntax error in CHARACTER declaration: positional type parameters cannot follow a keyword argument",
                         Level::Error, Stage::Semantic, {
                             Label("",{sym_type->base.base.loc})
                         }));
@@ -4586,7 +4586,7 @@ public:
                 // character(x, len=y)
                 if (id1 == "" && id2 == "len") {
                     diag.add(Diagnostic(
-                        "Error: Syntax error in CHARACTER declaration, using only 'len' keyword argument after a positional type is invalid",
+                        "Syntax error in CHARACTER declaration: using only 'len' keyword argument after a positional type is invalid",
                         Level::Error, Stage::Semantic, {
                             Label("",{sym_type->base.base.loc})
                         }));
