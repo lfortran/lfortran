@@ -800,11 +800,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'e' :
                 start = index++;
                 bool edot = false;
-                bool is_en_formatting = false;
-                if (tolower(format[index]) == 'n') {
-                    index++;  // move past the 'N'
-                    is_en_formatting = true;
-                }
+                if (tolower(format[index]) == 'n') index++;
                 if (tolower(format[index]) == 's') index++;
                 while (isdigit(format[index])) index++;
                 if (format[index] == '.') {
@@ -905,7 +901,8 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                             format_values_2[format_values_count++] = substring(format, start, index);
                         }
                     } else {
-                        start = index++;
+                        start = index;
+                        while (isalpha(format[index])) index++; 
                         if (isdigit(format[index])) {
                             while (isdigit(format[index])) index++;
                             if (format[index] == '.') index++;
@@ -1443,7 +1440,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
     strip_outer_parenthesis(cleaned_format, len, modified_input_string);
-    format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
+    format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
     is_SP_specifier = true  --> 'SP'
@@ -1463,8 +1460,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
                 value[strlen(value)-1] = '\0';
                 int64_t new_fmt_val_count = 0;
-                char** new_fmt_val = parse_fortran_format(++value,&new_fmt_val_count,&item_start_idx);
-
+                char** new_fmt_val = parse_fortran_format(++value, &new_fmt_val_count, &item_start_idx);
                 char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
                 if (ptr == NULL) {
                     perror("Memory allocation failed.\n");
