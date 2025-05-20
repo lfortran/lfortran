@@ -2884,13 +2884,20 @@ public:
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
                 AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
-            //char *name = down_cast<AttrNamelist_t>(x.m_attributes[0])->m_name;
-            diag.add(Diagnostic(
-                "Namelists not implemented yet",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
+            char *name = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0])->m_name;
+            Vec<ASR::symbol_t*> namelist_object_symbols;
+            namelist_object_symbols.reserve(al, x.n_syms);
+            for (size_t i=0; i < x.n_syms; i++) {
+                AST::var_sym_t& s = x.m_syms[i];
+                std::string sym = to_lower(s.m_name);
+                ASR::symbol_t* namelist_obj_symbol = current_scope->resolve_symbol(sym);
+                LCOMPILERS_ASSERT(namelist_obj_symbol != nullptr)
+                namelist_object_symbols.push_back(al, namelist_obj_symbol);
+            }
+            ASR::asr_t* v = ASR::make_Namelist_t(al, x.base.base.loc, current_scope, name, namelist_object_symbols.p, namelist_object_symbols.size(), ASR::accessType::Public);
+            current_scope->add_symbol(std::string(name), ASR::down_cast<ASR::symbol_t>(v));
+            tmp = v;
+            return;
         }
         for (size_t i=0; i<x.n_attributes; i++) {
             if (AST::is_a<AST::AttrType_t>(*x.m_attributes[i])) {

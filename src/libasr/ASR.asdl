@@ -30,7 +30,7 @@ symbol
     -- Namelists can be declared with 'access' as
     -- PUBLIC :: group
     -- NAMELIST a, b, c
-    | Namelist(symbol_table symtab, identifier group_name, identifier* variables, access access)
+    | Namelist(symbol_table parent_symtab, identifier group_name, symbol* variables, access access)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
