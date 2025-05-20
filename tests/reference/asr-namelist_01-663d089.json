@@ -1,0 +1,13 @@
+{
+    "basename": "asr-namelist_01-663d089",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/namelist_01.f90",
+    "infile_hash": "8d137496523f2edfdf23149ece78c98a6ae0ce24476ffafe238bb7f6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-namelist_01-663d089.stdout",
+    "stdout_hash": "a6682bdd6244b50950637a4c8544fa275bb93afb252fbc28635a8a60",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

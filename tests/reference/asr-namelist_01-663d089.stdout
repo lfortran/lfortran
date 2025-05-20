@@ -1,0 +1,83 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            namelist_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            config:
+                                (Namelist
+                                    2
+                                    config
+                                    [2 temperature
+                                    2 max_iterations
+                                    2 model_name]
+                                    Public
+                                ),
+                            max_iterations:
+                                (Variable
+                                    2
+                                    max_iterations
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            model_name:
+                                (Variable
+                                    2
+                                    model_name
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 20 () PointerString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            temperature:
+                                (Variable
+                                    2
+                                    temperature
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    namelist_01
+                    []
+                    []
+                )
+        })
+    []
+)
