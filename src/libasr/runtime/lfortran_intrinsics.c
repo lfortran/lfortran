@@ -907,6 +907,8 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                             while (isdigit(format[index])) index++;
                             if (format[index] == '.') index++;
                             while (isdigit(format[index])) index++;
+                            if (format[index] == 'e' || format[index] == 'E') index++;
+                            while (isdigit(format[index])) index++;
                         }
                         for (int i = 0; i < repeat; i++) {
                             format_values_2[format_values_count++] = substring(format, start, index);
