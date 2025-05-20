@@ -1,0 +1,144 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            namelist_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            config:
+                                (Namelist
+                                    2
+                                    config
+                                    [2 temperature
+                                    2 max_iterations
+                                    2 model_name]
+                                    Public
+                                ),
+                            max_iterations:
+                                (Variable
+                                    2
+                                    max_iterations
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            model_name:
+                                (Variable
+                                    2
+                                    model_name
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            temperature:
+                                (Variable
+                                    2
+                                    temperature
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    namelist_01
+                    []
+                    [(Assignment
+                        (Var 2 temperature)
+                        (RealConstant
+                            25.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 max_iterations)
+                        (IntegerConstant 100 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 model_name)
+                        (StringConstant
+                            "default_model"
+                            (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
+                        ()
+                        .false.
+                    )
+                    (FileOpen
+                        0
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        (StringConstant
+                            "input.txt"
+                            (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
+                        (StringConstant
+                            "old"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
+                        ()
+                        ()
+                        ()
+                        ()
+                    )
+                    (FileRead
+                        0
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        []
+                        ()
+                        .false.
+                        (Var 2 config)
+                    )
+                    (FileClose
+                        0
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        ()
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)
