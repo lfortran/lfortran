@@ -1649,7 +1649,8 @@ public:
 
         // The symbol `v` must be a Variable
         ASR::symbol_t *vpast = ASRUtils::symbol_get_past_external(v);
-        if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)) {
+        if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)
+            || ASR::is_a<ASR::Namelist_t>(*vpast)) {
             return ASR::make_Var_t(al, loc, v);
         } else {
             std::string sym_type = ASRUtils::symbol_type_name(*vpast);

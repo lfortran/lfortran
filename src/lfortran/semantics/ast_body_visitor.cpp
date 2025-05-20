@@ -762,8 +762,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_namelist;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_namelist = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         std::string read_write = "";
         bool formatted = (n_args == 2);
@@ -1031,8 +1031,12 @@ public:
                             body.size(), nullptr, 0));
                     a_end = empty;
                 }
+            } else if (m_arg_str == std::string("nml")) {
+                this->visit_expr(*kwarg.m_value);
+                a_namelist = ASRUtils::EXPR(tmp);
             }
         }
+        // TODO: raise an error when `nml` and `fmt` are both specified
         if( a_fmt == nullptr && a_end != nullptr ) {
             diag.add(Diagnostic(
                 R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
@@ -1169,7 +1173,7 @@ public:
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted,
-               nullptr);
+               a_namelist);
         }
 
         tmp_vec.push_back(tmp);

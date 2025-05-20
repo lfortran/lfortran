@@ -414,6 +414,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
         case ASR::symbolType::Template: return "Template";
+        case ASR::symbolType::Namelist: return "Namelist";
         default: {
             LCOMPILERS_ASSERT(false);
         }
@@ -761,6 +762,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_name;
         }
+        case ASR::symbolType::Namelist: {
+            return ASR::down_cast<ASR::Namelist_t>(f)->m_group_name;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -1070,6 +1074,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab->parent;
         }
+        case ASR::symbolType::Namelist: {
+            return ASR::down_cast<ASR::Namelist_t>(f)->m_parent_symtab;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -1123,6 +1130,10 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::Namelist: {
+            return nullptr;
+            //throw LCompilersException("Namelist does not have a symtab");
         }
         default : throw LCompilersException("Not implemented");
     }
