@@ -54,7 +54,9 @@ stmt
     | Print(expr text)
     | FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form, expr? access, expr? iostat, expr? iomsg)
     | FileClose(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
-    | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? advance, expr? size, expr? id, expr* values, stmt? overloaded, bool is_formatted)
+    -- (R1213) A namelist-group-name shall not appear if a REC= specifier, format, input-item-list, or an output-item-list appears in the data transfer statement.
+    -- If the data transfer statement contains a format or namelist-group-name, the statement is a formatted in-put/output statement; otherwise, it is an unformatted input/output statement.
+    | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? advance, expr? size, expr? id, expr* values, stmt? overloaded, bool is_formatted, symbol? namelist_group_name)
     | FileBackspace(int label, expr? unit, expr? iostat, expr? err)
     | FileRewind(int label, expr? unit, expr? iostat, expr? err)
     | FileInquire(int label, expr? unit, expr? file, expr? iostat, expr? err, expr? exist, expr? opened, expr? number, expr? named, expr? name, expr? access, expr? sequential, expr? direct, expr? form, expr? formatted, expr? unformatted, expr? recl, expr? nextrec, expr? blank, expr? position, expr? action, expr? read, expr? write, expr? readwrite, expr? delim, expr? pad, expr? flen, expr? blocksize, expr? convert, expr? carriagecontrol, expr? size, expr? pos, expr? iolength)
