@@ -202,13 +202,16 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = call i8* @_lfortran_malloc(i32 7)
   call void @_lfortran_string_init(i64 7, i8* %9)
   store i8* %9, i8** %8, align 8
-  %10 = alloca %fpm_run_settings_polymorphic, align 8
-  %11 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %10, i32 0, i32 0
-  store i64 0, i64* %11, align 4
-  %12 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %10, i32 0, i32 1
-  store %fpm_run_settings* %settings, %fpm_run_settings** %12, align 8
+  %10 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 0
+  %11 = getelementptr %fpm_build_settings, %fpm_build_settings* %10, i32 0, i32 0
+  store i1 false, i1* %11, align 1
+  %12 = alloca %fpm_run_settings_polymorphic, align 8
+  %13 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %12, i32 0, i32 0
+  store i64 0, i64* %13, align 4
+  %14 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %12, i32 0, i32 1
+  store %fpm_run_settings* %settings, %fpm_run_settings** %14, align 8
   store i1 true, i1* %call_arg_value, align 1
-  call void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %10, i1* %call_arg_value)
+  call void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %12, i1* %call_arg_value)
   call void @_lpython_free_argv()
   br label %return
 
