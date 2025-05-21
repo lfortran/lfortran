@@ -5518,7 +5518,10 @@ public:
         if (x.m_realloc_lhs &&
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            if (ASRUtils::is_allocatable(ASRUtils::expr_type(sim->m_v))) {
+            ASR::ttype_t *v_type = ASRUtils::expr_type(sim->m_v);
+            if (ASRUtils::is_allocatable(v_type) &&
+                // TODO: support Classtype here
+                !ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(v_type))) {
                 check_and_allocate(sim->m_v);
             }
         }
