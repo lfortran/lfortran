@@ -1321,6 +1321,9 @@ namespace LCompilers {
         ASR::abiType m_abi, bool is_pointer) {
         llvm::Type* llvm_type = nullptr;
 
+        // Hide unused parameter warning, it is used in the below macro
+        (void)is_pointer;
+
         #define handle_llvm_pointers1()                                         \
             if (n_dims == 0 && ASR::is_a<ASR::String_t>(*t2)) {              \
                 if(ASRUtils::is_descriptorString(t2)) {          \
@@ -1436,7 +1439,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::ClassType) : {
-                llvm_type = getClassType(asr_type, is_pointer);
+                llvm_type = getClassType(asr_type, true);
                 break;
             }
             case (ASR::ttypeType::UnionType) : {
@@ -1453,8 +1456,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Allocatable) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Allocatable_t>(asr_type)->m_type;
-                bool is_pointer_ = (ASR::is_a<ASR::String_t>(*t2)
-                    && m_abi != ASR::abiType::BindC);
+                bool is_pointer_ = ((ASR::is_a<ASR::String_t>(*t2) ||
+                                     ASR::is_a<ASR::ClassType_t>(*t2))
+                                    && m_abi != ASR::abiType::BindC);
                 is_malloc_array_type = ASRUtils::is_array(t2);
                 handle_llvm_pointers1()
                 break;
