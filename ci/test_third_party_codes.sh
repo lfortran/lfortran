@@ -133,6 +133,10 @@ time_section "🧪 Testing Fortran-Primes" '
   print_subsection "Building and running Fortran-Primes"
   FC=$FC ./build_and_run.sh
 
+  print_subsection "Building Fortran-Primes with separate compilation"
+  git clean -dfx
+  FC="$FC --generate-object-code" ./build_and_run.sh
+
   print_success "Done with Fortran-Primes"
   cd ..
   rm -rf fortran-primes

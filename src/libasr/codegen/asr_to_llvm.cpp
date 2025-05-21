@@ -9761,6 +9761,26 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     }
                 }
                 llvm::Value *value = tmp;
+                if (orig_arg_intent == ASR::intentType::In ||
+                    orig_arg_intent == ASR::intentType::InOut ||
+                    orig_arg_intent == ASR::intentType::Out) {
+                    /*
+                        For the cases where argument intent is In or InOut or Out, we
+                        cannot pass the evaluated value of expression directly to it. Currently
+                        the value of `value` is the evaluated value of expression and this is because
+                        for every expression we visit, we have a check to prefer the evaluated value.
+
+                        To avoid this problem, we manually set the expr value to nullptr.
+                        For example, refer integration_tests/intent_03.f90
+                    */
+                    // TODO: this is possible in other cases as well, support those.
+                    if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
+                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
+                        arr_item->m_value = nullptr;
+                        this->visit_expr_wrapper((ASR::expr_t*)arr_item);
+                        value = tmp;
+                    }
+                }
                 // TODO: we are getting a warning of uninitialized variable,
                 // there might be a bug below.
                 llvm::Type *target_type = nullptr;
