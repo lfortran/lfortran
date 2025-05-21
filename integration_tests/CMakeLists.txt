@@ -1605,6 +1605,8 @@ RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME intent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intent_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intent_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
 
 RUN(NAME callback_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
