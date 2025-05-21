@@ -62,9 +62,8 @@ program continue_compilation_3
         integer :: xx
     end type
     type(t) :: y
-
-
-
+    integer :: linelen = 2
+    character(len=linelen) :: line
 
 
 
