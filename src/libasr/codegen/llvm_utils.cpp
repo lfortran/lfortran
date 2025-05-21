@@ -1318,11 +1318,8 @@ namespace LCompilers {
         ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
         bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
         ASR::dimension_t*& m_dims, int& n_dims, int& a_kind, llvm::Module* module,
-        ASR::abiType m_abi, bool is_pointer) {
+        ASR::abiType m_abi) {
         llvm::Type* llvm_type = nullptr;
-
-        // Hide unused parameter warning, it is used in the below macro
-        (void)is_pointer;
 
         #define handle_llvm_pointers1()                                         \
             if (n_dims == 0 && ASR::is_a<ASR::String_t>(*t2)) {              \
@@ -1334,7 +1331,7 @@ namespace LCompilers {
             } else {                                                            \
                 llvm_type = get_type_from_ttype_t(t2, nullptr, m_storage,       \
                     is_array_type, is_malloc_array_type, is_list, m_dims,       \
-                    n_dims, a_kind, module, m_abi, is_pointer_);                \
+                    n_dims, a_kind, module, m_abi);                             \
                 if( !is_pointer_ ) {                                            \
                     llvm_type = llvm_type->getPointerTo();                      \
                 }                                                               \

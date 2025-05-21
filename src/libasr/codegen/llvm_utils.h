@@ -388,7 +388,7 @@ namespace LCompilers {
                 ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
                 bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
                 ASR::dimension_t*& m_dims, int& n_dims, int& a_kind, llvm::Module* module,
-                ASR::abiType m_abi=ASR::abiType::Source, bool is_pointer=false);
+                ASR::abiType m_abi=ASR::abiType::Source);
 
             llvm::Type* get_type_from_ttype_t_util(ASR::ttype_t* asr_type,
                 llvm::Module* module, ASR::abiType asr_abi=ASR::abiType::Source);
