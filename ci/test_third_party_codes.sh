@@ -84,8 +84,14 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   print_subsection "Building with default flags"
   FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run.sh
 
+  print_subsection "Building with default flags and f23 standard"
+  FC="$FC --cpp -DOPEN_MPI=yes --std=f23" ./build_and_run.sh
+
   print_subsection "Building with optimization flags"
   FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run.sh
+
+  print_subsection "Building with optimization flags and f23 standard"
+  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes --std=f23" ./build_and_run.sh
 
   print_subsection "Building POT3D in separate compilation mode"
   FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes" ./build_and_run.sh
