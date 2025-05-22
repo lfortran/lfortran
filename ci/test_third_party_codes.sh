@@ -96,6 +96,9 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   print_subsection "Building POT3D in separate compilation mode"
   FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes" ./build_and_run.sh
 
+  print_subsection "Building POT3D in separate compilation mode and f23 standard"
+  FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes --std=f23" ./build_and_run.sh
+
   print_success "Done with POT3D"
   cd ..
   rm -rf pot3d
