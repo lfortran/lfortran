@@ -444,7 +444,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( i == var_with_maxrank ) {
                 continue;
             }
-            ASR::expr_t* index_var = at(var2indices[i], loop_depth);
+            ASR::expr_t* index_var = var2indices[i].p[loop_depth];
             if( index_var == nullptr ) {
                 continue;
             }
@@ -463,12 +463,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( i == var_with_maxrank ) {
                 continue;
             }
-            ASR::expr_t* index_var = at(var2indices[i], loop_depth);
+            ASR::expr_t* index_var = var2indices[i].p[loop_depth];
             if( index_var == nullptr ) {
                 continue;
             }
             ASR::expr_t* lbound = PassUtils::get_bound(vars_expr[i],
-                loop_depth + max_rank + 1, "lbound", al);
+                loop_depth + 1, "lbound", al);
             ASR::stmt_t* set_index_var = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, index_var, lbound, nullptr, false));
             dest_vec.push_back(al, set_index_var);
@@ -487,11 +487,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( i == var_with_maxrank ) {
                 continue;
             }
-            ASR::expr_t* index_var = at(var2indices[i], loop_depth);
+            ASR::expr_t* index_var = var2indices[i].p[loop_depth];
             if( index_var == nullptr ) {
                 continue;
             }
-            size_t bound_dim = loop_depth + max_rank + 1;
+            size_t bound_dim = loop_depth + 1;
             if( index2var[index_var].second == IndexType::ArrayIndex ) {
                 bound_dim = 1;
             }
@@ -598,7 +598,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::array_index_t> rhs_array_indices_args; rhs_array_indices_args.reserve(al, 1);
         int n_array_indices_args = -1;
         int temp_n = -1;
-        size_t do_loop_depth = var_rank;
+        size_t do_loop_depth = 0;
         if( is_target_array ) {
             vars_expr.push_back(al, ASRUtils::extract_array_variable(target));
             ASRUtils::extract_array_indices(target, al, array_indices_args, n_array_indices_args);
@@ -664,17 +664,18 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         ASR::do_loop_head_t do_loop_head;
         do_loop_head.loc = loc;
-        do_loop_head.m_v = at(var2indices[var_with_maxrank], -1);
-        size_t bound_dim = do_loop_depth;
+        do_loop_head.m_v = var2indices[var_with_maxrank].p[0];
+        size_t bound_dim = do_loop_depth + 1;
         if( index2var[do_loop_head.m_v].second == IndexType::ArrayIndex ) {
             bound_dim = 1;
         }
-        if( n_array_indices_args > -1 && array_indices_args[n_array_indices_args].m_right != nullptr &&
-                array_indices_args[n_array_indices_args].m_left != nullptr &&
-                array_indices_args[n_array_indices_args].m_step != nullptr) {
-            do_loop_head.m_start = array_indices_args[n_array_indices_args].m_left;
-            do_loop_head.m_end = array_indices_args[n_array_indices_args].m_right;
-            do_loop_head.m_increment = array_indices_args[n_array_indices_args].m_step;
+        int64_t array_indices_args_i = 0;
+        if( n_array_indices_args > -1 && array_indices_args[array_indices_args_i].m_right != nullptr &&
+                array_indices_args[array_indices_args_i].m_left != nullptr &&
+                array_indices_args[array_indices_args_i].m_step != nullptr) {
+            do_loop_head.m_start = array_indices_args[array_indices_args_i].m_left;
+            do_loop_head.m_end = array_indices_args[array_indices_args_i].m_right;
+            do_loop_head.m_increment = array_indices_args[array_indices_args_i].m_step;
         } else {
             do_loop_head.m_start = PassUtils::get_bound(
                 index2var[do_loop_head.m_v].first, bound_dim, "lbound", al);
@@ -685,36 +686,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::stmt_t*> parent_do_loop_body; parent_do_loop_body.reserve(al, 1);
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
         set_index_variables(var2indices, index2var, var_with_maxrank,
-                            var_rank, -1, parent_do_loop_body, loc);
+                            var_rank, 0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
-        increment_index_variables(var2indices, var_with_maxrank, -1,
+        increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
-        do_loop_depth--;
-        n_array_indices_args--;
+        do_loop_depth += 1;
+        array_indices_args_i += 1;
         parent_do_loop_body.push_back(al, do_loop);
         do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
         parent_do_loop_body.reserve(al, 1);
 
-        for( int64_t i = -2; i >= -static_cast<int64_t>(var_rank); i-- ) {
+        for( int64_t i = 1; i < static_cast<int64_t>(var_rank); i++ ) {
             set_index_variables(var2indices, index2var, var_with_maxrank,
                                 var_rank, i, parent_do_loop_body, loc);
             increment_index_variables(var2indices, var_with_maxrank, i,
                                       do_loop_body, loc);
             ASR::do_loop_head_t do_loop_head;
             do_loop_head.loc = loc;
-            do_loop_head.m_v = at(var2indices[var_with_maxrank], i);
-            bound_dim = do_loop_depth;
+            do_loop_head.m_v = var2indices[var_with_maxrank].p[i];
+            bound_dim = do_loop_depth + 1;
             if( index2var[do_loop_head.m_v].second == IndexType::ArrayIndex ) {
                 bound_dim = 1;
             }
-            if( n_array_indices_args > -1 && array_indices_args[n_array_indices_args].m_right != nullptr &&
-                    array_indices_args[n_array_indices_args].m_left != nullptr &&
-                    array_indices_args[n_array_indices_args].m_step != nullptr) {
-                do_loop_head.m_start = array_indices_args[n_array_indices_args].m_left;
-                do_loop_head.m_end = array_indices_args[n_array_indices_args].m_right;
-                do_loop_head.m_increment = array_indices_args[n_array_indices_args].m_step;
+            if( n_array_indices_args > -1 && array_indices_args[array_indices_args_i].m_right != nullptr &&
+                    array_indices_args[array_indices_args_i].m_left != nullptr &&
+                    array_indices_args[array_indices_args_i].m_step != nullptr) {
+                do_loop_head.m_start = array_indices_args[array_indices_args_i].m_left;
+                do_loop_head.m_end = array_indices_args[array_indices_args_i].m_right;
+                do_loop_head.m_increment = array_indices_args[array_indices_args_i].m_step;
             } else {
                 do_loop_head.m_start = PassUtils::get_bound(
                     index2var[do_loop_head.m_v].first, bound_dim, "lbound", al);
@@ -724,8 +725,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
             ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
-            do_loop_depth--;
-            n_array_indices_args--;
+            do_loop_depth++;
+            array_indices_args_i += 1;
             parent_do_loop_body.push_back(al, do_loop);
             do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
             parent_do_loop_body.reserve(al, 1);
@@ -807,18 +808,18 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         ASR::do_loop_head_t do_loop_head;
         do_loop_head.loc = loc;
-        do_loop_head.m_v = at(var2indices[var_with_maxrank], -1);
+        do_loop_head.m_v = var2indices[var_with_maxrank].p[0];
         do_loop_head.m_start = PassUtils::get_bound(vars_expr[var_with_maxrank],
-            var_ranks[var_with_maxrank], "lbound", al);
+            1, "lbound", al);
         do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
-            var_ranks[var_with_maxrank], "ubound", al);
+            1, "ubound", al);
         do_loop_head.m_increment = nullptr;
         Vec<ASR::stmt_t*> parent_do_loop_body; parent_do_loop_body.reserve(al, 1);
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
         set_index_variables(var2indices, vars_expr, var_with_maxrank,
-                            var_ranks[var_with_maxrank], -1, parent_do_loop_body, loc);
+                            var_ranks[var_with_maxrank], 0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
-        increment_index_variables(var2indices, var_with_maxrank, -1,
+        increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
@@ -826,18 +827,18 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
         parent_do_loop_body.reserve(al, 1);
 
-        for( int64_t i = -2; i >= -static_cast<int64_t>(var_ranks[var_with_maxrank]); i-- ) {
+        for( int64_t i = 1; i < static_cast<int64_t>(var_ranks[var_with_maxrank]); i++ ) {
             set_index_variables(var2indices, vars_expr, var_with_maxrank,
                                 var_ranks[var_with_maxrank], i, parent_do_loop_body, loc);
             increment_index_variables(var2indices, var_with_maxrank, i,
                                       do_loop_body, loc);
             ASR::do_loop_head_t do_loop_head;
             do_loop_head.loc = loc;
-            do_loop_head.m_v = at(var2indices[var_with_maxrank], i);
-            do_loop_head.m_start = PassUtils::get_bound(vars_expr[var_with_maxrank],
-                var_ranks[var_with_maxrank] + i + 1, "lbound", al);
-            do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
-                var_ranks[var_with_maxrank] + i + 1, "ubound", al);
+            do_loop_head.m_v = var2indices[var_with_maxrank].p[i];
+            do_loop_head.m_start = PassUtils::get_bound(
+                vars_expr[var_with_maxrank], i + 1, "lbound", al);
+            do_loop_head.m_end = PassUtils::get_bound(
+                vars_expr[var_with_maxrank], i + 1, "ubound", al);
             do_loop_head.m_increment = nullptr;
             ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
