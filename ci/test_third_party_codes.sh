@@ -319,6 +319,44 @@ time_section "🧪 Testing PRIMA" '
     cd ..
   fi
 
+  print_subsection "Building PRIMA with f23 standard"
+  FC="$FC --cpp --std=f23" cmake -S . -B build \
+    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+    -DCMAKE_Fortran_FLAGS="" \
+    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
+    -DCMAKE_MACOSX_RPATH=OFF \
+    -DCMAKE_SKIP_INSTALL_RPATH=ON \
+    -DCMAKE_SKIP_RPATH=ON
+
+  cmake --build build --target install
+
+  run_test ./build/fortran/example_bobyqa_fortran_1_exe
+  run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  run_test ./build/fortran/example_cobyla_fortran_1_exe
+  run_test ./build/fortran/example_cobyla_fortran_2_exe
+  run_test ./build/fortran/example_lincoa_fortran_1_exe
+  run_test ./build/fortran/example_lincoa_fortran_2_exe
+  run_test ./build/fortran/example_newuoa_fortran_1_exe
+  run_test ./build/fortran/example_newuoa_fortran_2_exe
+  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  run_test ./build/fortran/example_uobyqa_fortran_2_exe
+
+  if [[ "$RUNNER_OS" == "macos-latest" ]]; then
+    cd fortran
+    test_name=test_bobyqa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_newuoa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_cobyla.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_lincoa.f90 FC="$FC --std=f23" ./script.sh
+    cd ..
+  fi
+
+  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+    cd fortran
+    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+    cd ..
+  fi
+
   print_subsection "Rebuilding PRIMA with optimization"
   git clean -dfx
 
