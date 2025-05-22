@@ -237,27 +237,6 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         return true;
     }
 
-    bool is_argument(ASR::symbol_t* variable, ASR::intentType intent,
-                     ASR::expr_t** args, size_t n_args) {
-        if( intent == ASRUtils::intent_in ||
-            intent == ASRUtils::intent_inout ||
-            intent == ASRUtils::intent_out ) {
-            return true;
-        }
-
-        if( intent == ASRUtils::intent_local ||
-            intent == ASRUtils::intent_return_var ) {
-            return false;
-        }
-
-        for( size_t i = 0; i < n_args; i++ ) {
-            if( ASR::down_cast<ASR::Var_t>(args[i])->m_v == variable ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( !check_inline_possibility(x->m_name, x) ) {
             return ;
@@ -285,8 +264,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             if( (variable->m_intent == ASRUtils::intent_out ||
                 variable->m_intent == ASRUtils::intent_inout) ||
                 (ASRUtils::is_array(variable->m_type) &&
-                 is_argument(sym.second, variable->m_intent,
-                             function->m_args, function->n_args)) ) {
+                 ASRUtils::is_arg_dummy(variable->m_intent)) ) {
                 if( ASRUtils::is_array(variable->m_type) ) {
                     local_ttype_copy = ASRUtils::duplicate_type_with_empty_dims(
                         al, local_ttype_copy, ASR::array_physical_typeType::DescriptorArray, true);
