@@ -242,28 +242,6 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   rm -rf numerical-methods-fortran
 '
 
-######################
-# Section 4: POT3D    #
-######################
-time_section "🧪 Testing POT3D" '
-  git clone https://github.com/gxyd/pot3d.git
-  cd pot3d
-  git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
-  git checkout 83e1e90db7e7517fcbe8c7bce5ba309addfb23f6
-
-  print_subsection "Building with default flags"
-  FC=$FC ./build_and_run.sh
-
-  print_subsection "Building with optimization flags"
-  FC="$FC --fast --skip-pass=dead_code_removal" ./build_and_run.sh
-
-  print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --generate-object-code --skip-pass=pass_array_by_data" ./build_and_run.sh
-
-  print_success "Done with POT3D"
-  cd ..
-'
-
 #######################
 # Section 5: PRIMA    #
 #######################
