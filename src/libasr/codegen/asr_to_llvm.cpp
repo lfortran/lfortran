@@ -2549,6 +2549,8 @@ public:
 #if LLVM_VERSION_MAJOR > 16
                 ptr_type[array] = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
+                ptr_type[shape] = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
 #endif
                 tmp = arr_descr->reshape(array, llvm_data_type, shape, asr_shape_type, module.get());
                 break;
@@ -11509,7 +11511,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     }
 
     // Uncomment for debugging the ASR after the transformation
-    // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
+    // std::cout << LCompilers::pickle(asr, false, false, false) << std::endl;
 
     t1 = std::chrono::high_resolution_clock::now();
     try {
