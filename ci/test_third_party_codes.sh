@@ -171,9 +171,10 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   run_test plot_pendulum.exe
   run_test plot_transes_iso.exe
 
+  git clean -dfx
   print_subsection "Building Numerical Methods Fortran with f23 standard"
-  FC="$FC --std=f23" make
 
+  FC="$FC --std=f23" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
@@ -196,6 +197,27 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   print_subsection "Building Numerical Methods Fortran with separate compilation"
 
   FC="$FC --generate-object-code" make
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
+  git clean -dfx
+  print_subsection "Building Numerical Methods Fortran with separate compilation and f23 standard"
+
+  FC="$FC --generate-object-code --std=f23" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
