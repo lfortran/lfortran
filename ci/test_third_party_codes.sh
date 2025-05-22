@@ -322,12 +322,25 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   run_test examples/example_lmder1
   run_test examples/example_lmdif1
   run_test examples/example_primes
-
   print_subsection "Running CTest"
   ctest
+  cd ../
+
+  print_subsection "Testing with f23 standard"
+  git clean -dfx
+  mkdir lf && cd lf
+  FC="$FC --intrinsic-mangling --std=f23" cmake ..
+  make
+  run_test examples/example_hybrd
+  run_test examples/example_hybrd1
+  run_test examples/example_lmder1
+  run_test examples/example_lmdif1
+  run_test examples/example_primes
+  print_subsection "Running CTest"
+  ctest
+  cd ../
 
   print_subsection "Testing with separate compilation"
-  cd ../
   git clean -dfx
   mkdir lf && cd lf
   FC="$FC --intrinsic-mangling --generate-object-code" cmake ..
@@ -339,6 +352,25 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   run_test examples/example_primes
   print_subsection "Running CTest"
   ctest
+  cd ../
+
+  print_subsection "Testing with separate compilation and f23 standard"
+  git clean -dfx
+  mkdir lf && cd lf
+  FC="$FC --intrinsic-mangling --generate-object-code --std=f23" cmake ..
+  make
+  run_test examples/example_hybrd
+  run_test examples/example_hybrd1
+  run_test examples/example_lmder1
+  run_test examples/example_lmdif1
+  run_test examples/example_primes
+  print_subsection "Running CTest"
+  ctest
+  cd ../
+
+  print_success "Done with Legacy Minpack (SciPy)"
+  cd ../
+  rm -rf minpack
 '
 
 ##########################
