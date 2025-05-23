@@ -38,20 +38,20 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 if ( v->m_abi == ASR::abiType::BindC ) {
                     return;
                 }
-                v->m_abi = ASR::abiType::Interactive;
+                v->m_abi = ASR::abiType::ExternalUndefined;
                 break;
             }
             case (ASR::symbolType::Enum) : {
                 ASR::Enum_t *en = ASR::down_cast<ASR::Enum_t>(a.second);
-                en->m_abi = ASR::abiType::Interactive;
+                en->m_abi = ASR::abiType::ExternalUndefined;
                 en->m_symtab->mark_all_variables_external(al);
                 break;
             }
             case (ASR::symbolType::Function) : {
                 ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(a.second);
                 ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
-                if (v_func_type->m_abi != ASR::abiType::Interactive && v_func_type->m_abi != ASR::abiType::BindC) {
-                    v_func_type->m_abi = ASR::abiType::Interactive;
+                if (v_func_type->m_abi != ASR::abiType::ExternalUndefined && v_func_type->m_abi != ASR::abiType::BindC) {
+                    v_func_type->m_abi = ASR::abiType::ExternalUndefined;
                 }
 
                 break;

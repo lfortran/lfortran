@@ -2883,7 +2883,7 @@ public:
         // external (global variable not declared/initialized in this
         // translation unit, just referenced).
         LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
-            || x.m_abi == ASR::abiType::Interactive);
+            || x.m_abi == ASR::abiType::ExternalUndefined);
         bool external = (x.m_abi != ASR::abiType::Source);
         llvm::Constant* init_value = nullptr;
         if (x.m_symbolic_value != nullptr){
@@ -3211,7 +3211,7 @@ public:
     }
 
     void visit_Enum(const ASR::Enum_t& x) {
-        if ( x.m_abi == ASR::abiType::Interactive ) {
+        if ( x.m_abi == ASR::abiType::ExternalUndefined ) {
             return;
         }
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
@@ -4601,7 +4601,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
     }
 
     void generate_function(const ASR::Function_t &x) {
-        bool interactive = (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Interactive);
+        bool interactive = (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::ExternalUndefined);
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Implementation ) {
 
             if (interactive) return;
@@ -10304,7 +10304,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
         ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
         if (s_func_type->m_abi == ASR::abiType::LFortranModule) {
             throw CodeGenError("Subroutine LCompilers interfaces not implemented yet");
-        } else if (s_func_type->m_abi == ASR::abiType::Interactive) {
+        } else if (s_func_type->m_abi == ASR::abiType::ExternalUndefined) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Source) {
             h = get_hash((ASR::asr_t*)proc_sym);
@@ -10902,7 +10902,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::LFortranModule) {
             throw CodeGenError("Function LCompilers interfaces not implemented yet");
-        } else if (s_func_type->m_abi == ASR::abiType::Interactive) {
+        } else if (s_func_type->m_abi == ASR::abiType::ExternalUndefined) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
             h = get_hash((ASR::asr_t*)proc_sym);
