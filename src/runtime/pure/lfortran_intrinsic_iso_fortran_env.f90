@@ -20,6 +20,8 @@ integer, parameter :: logical_kinds(1) = [4]
 
 integer, parameter :: iostat_end = -1
 
+integer, parameter :: numeric_storage_size = 32
+
 contains
 function compiler_version() result(version)
     character(len=:), allocatable :: version
