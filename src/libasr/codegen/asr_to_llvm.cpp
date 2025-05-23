@@ -3618,10 +3618,7 @@ public:
     #define set_pointer_variable_to_null(null_value, ptr) if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) || \
                 ASR::is_a<ASR::Pointer_t>(*v->m_type)) && \
             (v->m_intent == ASRUtils::intent_local || \
-             v->m_intent == ASRUtils::intent_return_var ) && \
-            !ASR::is_a<ASR::ClassType_t>( \
-                *ASRUtils::type_get_past_allocatable( \
-                    ASRUtils::type_get_past_pointer(v->m_type)))) { \
+             v->m_intent == ASRUtils::intent_return_var )) { \
             if(ASRUtils::is_descriptorString(v->m_type)){ \
                 /*set string descriptor to {char* null, int64 0, int 64 0} */ \
                 builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8Ty(context)->getPointerTo()),\
@@ -3630,6 +3627,11 @@ public:
                 llvm_utils->create_gep2(string_descriptor, ptr, 1));\
                 builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0),\
                 llvm_utils->create_gep2(string_descriptor, ptr, 2));\
+            } else if (ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(v->m_type))) { \
+                /* set the polymorphic class type to {i64 0, polymorphic* null} */ \
+                builder->CreateStore(llvm::ConstantInt::getNullValue(llvm::Type::getInt64Ty(context)), llvm_utils->create_gep(ptr, 0));\
+                llvm::Value* polymorphic_ptr = llvm_utils->create_gep(ptr, 1);\
+                builder->CreateStore(llvm::Constant::getNullValue(llvm_utils->CreateLoad(polymorphic_ptr)->getType()), polymorphic_ptr); \
             } else { \
                 builder->CreateStore(null_value, ptr); \
             }\
@@ -4951,7 +4953,11 @@ public:
             ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(p_type)), module.get());
 #endif
-        ptr = llvm_utils->CreateLoad2(p_type, ptr);
+        if (ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(p_type))) {
+            ptr = llvm_utils->CreateLoad(llvm_utils->create_gep(ptr, 1));
+        } else {
+            ptr = llvm_utils->CreateLoad2(p_type, ptr);
+        }
         if( ASRUtils::is_array(p_type) &&
             ASRUtils::extract_physical_type(p_type) ==
             ASR::array_physical_typeType::DescriptorArray) {
@@ -5875,7 +5881,6 @@ public:
                     check_and_allocate(x.m_target);
                 }
             }
-
             target = llvm_utils->CreateLoad(target);
             builder->CreateStore(value, target);
         } else {
