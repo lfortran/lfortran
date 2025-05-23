@@ -1,0 +1,13 @@
+{
+    "basename": "run-allocatble_c_ptr-84ee050",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/allocatble_c_ptr.f90",
+    "infile_hash": "cac792d012d6f546393ff04d5258851231c05e560ce338debbfad8c1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

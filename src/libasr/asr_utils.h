@@ -3301,6 +3301,9 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
             return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, tp->m_param));
         }
+        case ASR::ttypeType::CPtr: {
+            return ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+        }
         default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
     }
 }

@@ -1079,11 +1079,16 @@ public:
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(tmp_expr))), module.get());
+                llvm::Value* ptr_val = x_arr;
+                llvm::Type* i8_ptr_ty = llvm::Type::getInt8PtrTy(context);
+                if (x_arr && x_arr->getType() == nullptr) {
+                    ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
+                }
                 llvm_utils->create_if_else(
                     builder->CreateICmpEQ(
-                        builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), x_arr), llvm::Type::getInt32Ty(context)),
+                        builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
                         builder->CreatePtrToInt(
-                            llvm::ConstantPointerNull::get(x_arr->getType()->getPointerTo()),
+                            llvm::ConstantPointerNull::get((x_arr && x_arr->getType() != nullptr) ? x_arr->getType()->getPointerTo() : ptr_val->getType()->getPointerTo()),
                             llvm::Type::getInt32Ty(context))),
                     [&]() {
                         llvm::Value* ptr_;
@@ -1094,10 +1099,11 @@ public:
 #endif
                             arr_descr->fill_dimension_descriptor(ptr_, n_dims);
 
-                        LLVM::CreateStore(*builder, ptr_, x_arr);
+                            LLVM::CreateStore(
+                                *builder, ptr_, (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
                     },
                     []() {});
-                fill_malloc_array_details(x_arr, type, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims, realloc);
+                fill_malloc_array_details((x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val, type, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims, realloc);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                     llvm::Value* x_arr_ = llvm_utils->CreateLoad(x_arr);
 #if LLVM_VERSION_MAJOR > 16
@@ -7746,6 +7752,7 @@ ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                     case ASR::ttypeType::StructType:
                     case ASR::ttypeType::String:
                     case ASR::ttypeType::Logical:
+                    case ASR::ttypeType::CPtr:
                     case ASR::ttypeType::ClassType: {
                         if( t2->type == ASR::ttypeType::StructType ) {
                             ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t2);
