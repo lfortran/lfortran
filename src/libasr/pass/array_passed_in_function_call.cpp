@@ -9,6 +9,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pickle.h>
 
 namespace LCompilers {
 
@@ -106,6 +107,7 @@ class CallVisitor : public ASR::CallReplacerOnExpressionsVisitor<CallVisitor>
 public:
 
     Allocator &al;
+    int is_current_body_set = 0;
     Vec<ASR::stmt_t*>* current_body;
     Vec<ASR::stmt_t*>* body_after_curr_stmt;
 
@@ -123,8 +125,10 @@ public:
     }
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
+        is_current_body_set++;
         transform_stmts_impl(al, m_body, n_body, current_body, body_after_curr_stmt,
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
+        is_current_body_set--;
     }
 
     template <typename T>
@@ -879,7 +883,9 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-        visit_Call(x, "_function_call_");
+        if (is_current_body_set != 0) {
+            visit_Call(x, "_function_call_");
+        }
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_FunctionCall(x);
     }
 

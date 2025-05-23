@@ -197,7 +197,7 @@ ttype
     | UnsignedInteger(int kind)
     | Real(int kind)
     | Complex(int kind)
-    | String(int kind, int len, expr? len_expr, string_physical_type physical_type)
+    | String(int kind, expr? len, string_length_kind len_kind, string_physical_type physical_type)
     | Logical(int kind)
     | Set(ttype type)
     | List(ttype type)
@@ -221,7 +221,7 @@ access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface
 presence = Required | Optional
-abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | Interactive | Intrinsic
+abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | ExternalUndefined | Intrinsic
 dimension = (expr? start, expr? length)
 alloc_arg = (expr a, dimension* dims, expr? len_expr, ttype? type)
 attribute = Attribute(identifier name, attribute_arg *args)
@@ -236,8 +236,9 @@ type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* b
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
 array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
-string_physical_type = PointerString | DescriptorString
-binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
+string_physical_type = PointerString | DescriptorString | CString
+string_length_kind = AssumedLength | DeferredLength | ExpressionLength
+binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift
 reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX
 logicalbinop = And | Or | Xor | NEqv | Eqv
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE

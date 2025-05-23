@@ -70,6 +70,9 @@ binop_to_str_julia(const ASR::binopType t)
         case (ASR::binopType::BitRShift): {
             return " >> ";
         }
+        case (ASR::binopType::LBitRShift): {
+            return " >> ";
+        }
         default:
             throw LCompilersException("Cannot represent the binary operator as a string");
     }
@@ -865,7 +868,8 @@ public:
                 break;
             }
             case (ASR::binopType::BitLShift):
-            case (ASR::binopType::BitRShift): {
+            case (ASR::binopType::BitRShift):
+            case (ASR::binopType::LBitRShift): {
                 last_expr_precedence = julia_prec::BitShift;
                 break;
             }

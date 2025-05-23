@@ -28,26 +28,6 @@ std::string get_unique_ID() {
     return res;
 }
 
-bool read_file(const std::string &filename, std::string &text)
-{
-    if (filename.empty()) return false;
-    std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary
-            | std::ios::ate);
-    if (!ifs.is_open()) return false;
-
-    std::ifstream::pos_type filesize = ifs.tellg();
-    if (filesize < 0) return false;
-
-    ifs.seekg(0, std::ios::beg);
-
-    std::vector<char> bytes(filesize);
-    if (filesize == 0) bytes.reserve(1);
-    ifs.read(&bytes[0], filesize);
-
-    text = std::string(&bytes[0], filesize);
-    return true;
-}
-
 bool present(Vec<char*> &v, const char* name) {
     for (auto &a : v) {
         if (std::string(a) == std::string(name)) {

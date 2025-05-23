@@ -194,4 +194,13 @@ program intrinsics_163
     print *, ishftc(x, y, size1)
     if (ishftc(x, y, size1) /= 20) error stop
 
+    a = 293436938_8
+    res_8 = ishftc(a, 23)
+    print *, res_8
+    if (res_8 /= 2461527445602304_8) error stop 
+    b = -1292093_8
+    res_8 = ishftc(b, -32)
+    print *, res_8
+    if (res_8 /= -5549492883423233_8) error stop
+
  end program

@@ -313,6 +313,8 @@ bool set_allocation_size(
     const Location& loc = value->base.loc;
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    ASR::expr_t* int64_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))));
     if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -458,13 +460,19 @@ bool set_allocation_size(
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(value);
             allocate_dims.reserve(al, array_section_t->n_args);
+            ASR::expr_t* int_one;
             for( size_t i = 0; i < array_section_t->n_args; i++ ) {
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* step = array_section_t->m_args[i].m_step;
+                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) == 8) {
+                    int_one = int64_one;
+                } else {
+                    int_one = int32_one;
+                }
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
-                allocate_dim.m_start = int32_one;
+                allocate_dim.m_start = int_one;
                 if( start == nullptr && step == nullptr && end != nullptr ) {
                     if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
                         allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
@@ -478,7 +486,7 @@ bool set_allocation_size(
                         end_minus_start, ASR::binopType::Div, step, ASRUtils::expr_type(end_minus_start),
                         nullptr));
                     ASR::expr_t* length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        by_step, ASR::binopType::Add, int32_one, ASRUtils::expr_type(by_step), nullptr));
+                        by_step, ASR::binopType::Add, int_one, ASRUtils::expr_type(by_step), nullptr));
                     allocate_dim.m_length = length;
                     allocate_dims.push_back(al, allocate_dim);
                 }
@@ -1529,6 +1537,20 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
+        if( !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(x.m_shape)) ) {
+            replace_expr_with_temporary_variable(xx.m_shape, x.m_shape, "_array_reshape_shape", true);
+            ASR::ttype_t* shape_ttype = ASRUtils::expr_type(xx.m_shape);
+            ASR::array_physical_typeType shape_ptype = ASRUtils::extract_physical_type(shape_ttype);
+            if( shape_ptype != ASR::array_physical_typeType::DescriptorArray ) {
+                xx.m_shape = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(
+                    al, xx.m_shape->base.loc, xx.m_shape, shape_ptype,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, shape_ttype, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true),
+                    nullptr)
+                );
+            }
+        }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
             ASRUtils::extract_physical_type(xx.m_type) !=
@@ -2171,7 +2193,8 @@ class ReplaceModuleVarWithValue:
             ASRUtils::symbol_get_past_external(x->m_v));
         if( !((check_if_ASR_owner_is_module(y->m_parent_symtab->asr_owner)) &&
               y->m_storage == ASR::storage_typeType::Parameter) ||
-            y->m_symbolic_value == nullptr ) {
+            y->m_symbolic_value == nullptr ||
+            ASR::is_a<ASR::StructConstant_t>(*y->m_value)) {
             return ;
         }
 
@@ -2212,6 +2235,21 @@ class TransformVariableInitialiser:
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
         // TODO: StructType expressions aren't evaluated at compile time
         // currently, see: https://github.com/lfortran/lfortran/issues/4909
+        SymbolTable* parent_scope = x.m_parent_symtab;
+        if ( ASR::is_a<ASR::symbol_t>(*parent_scope->asr_owner) ) {
+            ASR::symbol_t* parent_scope_symbol = ASR::down_cast<ASR::symbol_t>(parent_scope->asr_owner);
+            if ( ASR::is_a<ASR::Function_t>(*parent_scope_symbol) ) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(parent_scope_symbol);
+                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+                if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
+                    // it is safe to do because we are not going to instantiate this function in LLVM
+                    ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+                    xx.m_symbolic_value = nullptr;
+                    xx.m_value = nullptr;
+                    return;
+                }
+            }
+        }
         if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||

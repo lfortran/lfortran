@@ -1,6 +1,5 @@
 passes = [
         "array_struct_temporary",
-        "replace_arr_slice",
         "replace_openmp",
         "replace_function_call_in_declaration",
         "replace_array_passed_in_function_call",

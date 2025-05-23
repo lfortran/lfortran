@@ -575,6 +575,14 @@ filename = "preprocessor20.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor21.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "preprocessor22.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true
@@ -1147,21 +1155,18 @@ ast_f90 = true
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
 asr = true
-llvm = true
 cpp = true
 julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_04_func.f90"
 asr = true
-llvm = true
 cpp = true
 julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_08_func.f90"
 asr = true
-llvm = true
 julia = true
 
 [[test]]
@@ -1172,10 +1177,6 @@ ast_f90 = true
 [[test]]
 filename = "../integration_tests/arrays_10.f90"
 asr = true
-
-[[test]]
-filename = "../integration_tests/arrays_13.f90"
-llvm = true
 
 [[test]]
 filename = "../integration_tests/arrays_20.f90"
@@ -1582,6 +1583,10 @@ filename = "write6.f90"
 run = true
 
 [[test]]
+filename = "write7.f90"
+asr = true
+
+[[test]]
 filename = "read1.f90"
 ast = true
 ast_f90 = true
@@ -1854,6 +1859,34 @@ run = true
 
 [[test]]
 filename = "../integration_tests/format_23.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_24.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_25.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_26.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_27.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_28.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_29.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_30.f90"
 run = true
 
 [[test]]
@@ -2320,6 +2353,11 @@ asr = true
 filename = "string2.f90"
 asr = true
 extrafiles = "string1.f90"
+
+[[test]]
+filename = "../integration_tests/string_54.f90"
+asr = true
+llvm = true
 
 [[test]]
 filename = "../integration_tests/string_01.f90"
@@ -3111,10 +3149,6 @@ options = "--realloc-lhs"
 filename = "../integration_tests/automatic_allocation_02.f90"
 llvm = true
 options = "--realloc-lhs"
-
-[[test]]
-filename = "../integration_tests/modules_38.f90"
-llvm = true
 
 [[test]]
 filename = "../integration_tests/derived_types_20.f90"
@@ -4083,6 +4117,14 @@ filename = "errors/compare_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/polymorphic_class_compare.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/nested_struct_proc_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/kind_string_of_int.f90"
 asr = true
 
@@ -4599,4 +4641,8 @@ run = true
 
 [[test]]
 filename = "errors/integerStringInput_64.f90"
+run = true
+
+[[test]]
+filename = "errors/integer_overflow.f90"
 run = true

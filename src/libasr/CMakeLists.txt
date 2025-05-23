@@ -47,7 +47,6 @@ set(SRC
     pass/subroutine_from_function.cpp
     pass/transform_optional_argument_functions.cpp
     pass/class_constructor.cpp
-    pass/arr_slice.cpp
     pass/print_arr.cpp
     pass/print_struct_type.cpp
     pass/print_list_tuple.cpp

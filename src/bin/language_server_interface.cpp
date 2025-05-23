@@ -552,7 +552,10 @@ namespace LCompilers::LLanguageServer::Interface {
                     startChanged,
                     startMutex
                 );
-            start = true;
+            {
+                std::unique_lock<std::mutex> startLock(startMutex);
+                start = true;
+            }
             startChanged.notify_all();
             communicationProtocol->serve();
             logger.info()

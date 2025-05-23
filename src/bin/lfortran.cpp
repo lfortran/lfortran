@@ -31,7 +31,6 @@
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_class_constructor.h>
-#include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/replace_where.h>
 #include <libasr/pass/unused_functions.h>
@@ -61,7 +60,9 @@
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
 
+
 #ifdef WITH_LSP
+#include <server/lsp_specification.h>
 #include <bin/language_server_interface.h>
 #endif // WITH_LSP
 
@@ -85,6 +86,7 @@ namespace {
 
 using LCompilers::endswith;
 using LCompilers::CompilerOptions;
+using LCompilers::read_file_ok;
 
 namespace lcli = LCompilers::CommandLineInterface;
 
@@ -155,7 +157,7 @@ void print_one_component(std::string component) {
                   << std::left << component_name << RESET << '\n';
     } else {
         float time_float = std::stof(time_value);
-        int time_width = 10; 
+        int time_width = 10;
 
         std::cout << std::string(indent_width, ' ')  // Print indentation
                   << std::left << std::setw(name_width) << component_name << RESET
@@ -190,22 +192,6 @@ void print_time_report(const std::vector<std::string>& vector_of_time_report) {
     }
 
     std::cout << std::string(60, '-') << '\n';
-}
-
-std::string read_file(const std::string &filename)
-{
-    std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary
-            | std::ios::ate);
-
-    std::ifstream::pos_type filesize = ifs.tellg();
-    if (filesize < 0) return std::string();
-
-    ifs.seekg(0, std::ios::beg);
-
-    std::vector<char> bytes(filesize);
-    ifs.read(&bytes[0], filesize);
-
-    return std::string(&bytes[0], filesize);
 }
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -503,7 +489,7 @@ int prompt(bool verbose, CompilerOptions &cu)
 
 int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::LocationManager lm;
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -525,7 +511,7 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 
 int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     // Src -> Tokens
     Allocator al(64*1024*1024);
     std::vector<int> toks;
@@ -571,7 +557,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
 
 int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -602,7 +588,7 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
 
 int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
@@ -628,7 +614,7 @@ int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
 int format(const std::string &infile, bool inplace, bool color, int indent,
     bool indent_unit, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
 
     if (inplace) color = false;
@@ -658,7 +644,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
     bool c_order = (0==array_order.compare("c"));
 
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -716,7 +702,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 [[maybe_unused]] int run_parser_and_semantics(const std::string &infile,
     CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -742,7 +728,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -797,7 +783,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
 int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -822,7 +808,7 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 int emit_c(const std::string &infile,
     LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -857,7 +843,7 @@ int emit_c(const std::string &infile,
 
 int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -880,7 +866,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 }
 
 int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -904,7 +890,7 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
 
 int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options,
                         LCompilers::PassManager &pass_manager) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -981,7 +967,7 @@ int handle_mlir(const std::string &infile,
         const std::string &outfile,
         CompilerOptions &compiler_options,
         bool emit_mlir, bool emit_llvm) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -1035,7 +1021,7 @@ int handle_mlir(const std::string &infile,
 int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
               CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -1060,7 +1046,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
 
 int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -1099,7 +1085,7 @@ int compile_src_to_object_file(const std::string &infile,
     int time_llvm_to_bin=0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     auto t2 = std::chrono::high_resolution_clock::now();
     time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
@@ -1118,6 +1104,7 @@ int compile_src_to_object_file(const std::string &infile,
     }
     if (compiler_options.separate_compilation) {
         compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
     }
     LCompilers::diag::Diagnostics diagnostics;
     t1 = std::chrono::high_resolution_clock::now();
@@ -1254,7 +1241,7 @@ int compile_llvm_to_object_file(const std::string& infile,
                                 const std::string& outfile,
                                 CompilerOptions& compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
     std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input, infile);
@@ -1274,7 +1261,7 @@ int compile_to_assembly_file(const std::string &infile,
 
 int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -1314,7 +1301,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        input = read_file(infile);
+        input = read_file_ok(infile);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
@@ -1415,7 +1402,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        input = read_file(infile);
+        input = read_file_ok(infile);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
@@ -1504,7 +1491,7 @@ int compile_to_object_file_cpp(const std::string &infile,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
         CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -1617,7 +1604,7 @@ int compile_to_object_file_c(const std::string &infile,
         LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     // Src -> AST -> ASR
@@ -1717,7 +1704,7 @@ int compile_to_object_file_c(const std::string &infile,
 int compile_to_binary_fortran(const std::string &infile,
         const std::string &outfile,
         CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -2139,7 +2126,7 @@ int link_executable(const std::vector<std::string> &infiles,
 
 int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::LFortran::CPreprocessor cpp(compiler_options);
     LCompilers::LocationManager lm;
@@ -2332,6 +2319,8 @@ int main_app(int argc, char *argv[]) {
     lcompilers_unique_ID = ( parser.opts.compiler_options.generate_object_code || compiler_options.separate_compilation ) ? get_unique_ID() : "";
     if (parser.opts.compiler_options.generate_object_code) {
         compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
     }
 
     if (opts.arg_version) {
@@ -2341,6 +2330,12 @@ int main_app(int argc, char *argv[]) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::cout << "LLVM: " << LCompilers::LLVMEvaluator::llvm_version() << std::endl;
         std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
+#endif
+#ifdef WITH_LSP
+        std::cout << "LSP Version: " << LCompilers::LanguageServerProtocol::LSP_VERSION
+                  << std::endl;
+        std::cout << "JSON_RPC Version: " << LCompilers::LanguageServerProtocol::JSON_RPC_VERSION
+                  << std::endl;
 #endif
         return 0;
     }
@@ -2448,8 +2443,7 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (CLI::NonexistentPath(opts.arg_file).empty()) {
-        std::cerr << "error: '" + opts.arg_file + "': linker input file not found: " +
-            "No such file or directory" << std::endl;
+        std::cerr << "error: no such file or directory: '" + opts.arg_file + "'" << std::endl;
         return 1;
     }
 

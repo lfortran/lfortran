@@ -97,9 +97,15 @@ public:
         if(indent) s.append("\n" + indented);
         else s.append(" ");
         s.append("[");
-        int size = x.m_n_data / (ASRUtils::is_character(*x.m_type) ?
-                                ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(x.m_type))->m_len :
-                                ASRUtils::extract_kind_from_ttype_t(x.m_type));
+        int kind;
+        if(ASRUtils::is_character(*x.m_type)){
+            ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                ASRUtils::type_get_past_array(x.m_type));
+            if(!ASRUtils::extract_value(str->m_len, kind)){LCOMPILERS_ASSERT(false)}
+        } else {
+            kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        }
+        int size = x.m_n_data / kind;
         int curr = 0;
         for (int i = 0; i < 3; i++) {
             if (curr < size) {

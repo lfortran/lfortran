@@ -28,7 +28,7 @@ public:
     };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
-    std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
+    std::map<std::string, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
@@ -115,105 +115,6 @@ public:
         // To Be Implemented
     }
 
-    template <typename T>
-    void fix_type_info(T* x) {
-        current_module_dependencies.clear(al);
-        std::map<ASR::asr_t*, SetChar> node2deps;
-        for( TypeMissingData* data: type_info ) {
-            if( data->sym_type == -1 ) {
-                continue;
-            }
-            ASR::expr_t* expr = nullptr;
-            if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
-                SymbolTable* current_scope_copy = current_scope;
-                current_scope = data->scope;
-                current_function_dependencies.clear(al);
-                visit_expr(*data->expr);
-                for( size_t i = 0; i < current_function_dependencies.size(); i++ ) {
-                    char* itr = current_function_dependencies[i];
-                    node2deps[current_scope->asr_owner].push_back(al, itr);
-                }
-                expr = ASRUtils::EXPR(tmp);
-                current_scope = current_scope_copy;
-            }
-            if( expr ) {
-                switch( data->type->type ) {
-                    case ASR::ttypeType::String: {
-                        ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(data->type);
-                        char_type->m_len_expr = expr;
-                        char_type->m_len = -3;
-                        if( expr->type == ASR::exprType::FunctionCall ) {
-                            ASR::FunctionCall_t *call = ASR::down_cast<ASR::FunctionCall_t>(expr);
-                            for(size_t i = 0; i < call->n_args; i ++) {
-                                if (ASR::is_a<ASR::Var_t>(*call->m_args[i].m_value)) {
-                                    ASR::Variable_t *v = ASRUtils::EXPR2VAR(call->m_args[i].m_value);
-                                    if (v->m_storage == ASR::storage_typeType::Parameter) {
-                                        call->m_args[i].m_value = v->m_value;
-                                    }
-                                }
-                            }
-                            if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
-                                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-                                    ASR::down_cast<ASR::symbol_t>(data->scope->asr_owner));
-                                ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
-                                if( func_type->m_return_var_type ) {
-                                    ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
-                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type, data->scope);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    default: {
-                        diag.add(diag::Diagnostic(
-                            "Only String type is supported as of now.",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {data->type->base.loc})}));
-                        throw SemanticAbort();
-                    }
-                }
-            }
-
-            ASR::symbol_t* sym = data->scope->get_symbol(data->sym_name);
-            if( sym && ASR::is_a<ASR::Variable_t>(*sym) ) {
-                ASR::Variable_t* sym_variable = ASR::down_cast<ASR::Variable_t>(sym);
-                SetChar variable_dependencies_vec;
-                variable_dependencies_vec.reserve(al, 1);
-                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, sym_variable->m_type,
-                    sym_variable->m_symbolic_value, sym_variable->m_value);
-                sym_variable->m_dependencies = variable_dependencies_vec.p;
-                sym_variable->n_dependencies = variable_dependencies_vec.size();
-            }
-        }
-
-        for( auto& itr: node2deps ) {
-            if( ASR::is_a<ASR::symbol_t>(*itr.first) ) {
-                ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(itr.first);
-                if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
-                    SetChar func_deps;
-                    ASR::Function_t* asr_owner_func = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
-                    func_deps.from_pointer_n_copy(al, asr_owner_func->m_dependencies,
-                                                  asr_owner_func->n_dependencies);
-                    for( size_t i = 0; i < itr.second.size(); i++ ) {
-                        char* dep = itr.second[i];
-                        func_deps.push_back(al, dep);
-                    }
-                    asr_owner_func->m_dependencies = func_deps.p;
-                    asr_owner_func->n_dependencies = func_deps.size();
-                }
-            }
-        }
-
-        SetChar x_deps_vec;
-        x_deps_vec.from_pointer_n_copy(al, x->m_dependencies, x->n_dependencies);
-        for( size_t i = 0; i < current_module_dependencies.size(); i++ ) {
-            x_deps_vec.push_back(al, current_module_dependencies[i]);
-        }
-        x->m_dependencies = x_deps_vec.p;
-        x->n_dependencies = x_deps_vec.size();
-
-        type_info.clear();
-    }
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
@@ -306,7 +207,12 @@ public:
                             break;
                         }
                         case (AST::decl_typeType::TypeCharacter) : {
-                            type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                            type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, 
+                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                    al, x.base.base.loc, a_len,
+                                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                ASR::string_physical_typeType::PointerString));
                             break;
                         }
                         default :
@@ -574,7 +480,6 @@ public:
         external_procedures_mapping[hash] = external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
 
-        fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
     }
@@ -1040,7 +945,11 @@ public:
                         "Dummy argument '" + arg_s + "' not defined",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
+                    if (compiler_options.continue_compilation) {
+                        continue;
+                    } else {
+                        throw SemanticAbort();
+                    }
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
@@ -1083,7 +992,7 @@ public:
             ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(f1_);
             if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
-                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
@@ -1328,7 +1237,7 @@ public:
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
-        std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
+        std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
             is_template = true;
@@ -1489,6 +1398,7 @@ public:
                     ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                     if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
                         a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
+                        a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(kind_expr));
                     } else {
                         a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
@@ -1527,7 +1437,12 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
-                    type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                    type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, x.base.base.loc, 1,
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind)))),
+                        ASR::string_length_kindType::ExpressionLength,
+                        ASR::string_physical_typeType::PointerString));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -1607,7 +1522,7 @@ public:
                 parent_scope->erase_symbol(sym_name);
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
-                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                     // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     // Previous declaration will be shadowed
@@ -1752,7 +1667,7 @@ public:
                     t = t.substr(8);
                     // !LF$ attributes simd :: X, Y, Z
                     for (auto &var : string_split(t, ", ")) {
-                        simd_variables.push_back(std::pair(var, x.base.base.loc));
+                        simd_variables.push_back(std::pair<std::string, Location>(var, x.base.base.loc));
                     }
                 } else {
                     diag.add(diag::Diagnostic(
@@ -2040,15 +1955,27 @@ public:
                 visit_interface_item(*x.m_items[i]);
             }
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
-            AST::intrinsicopType opType = AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op;
+            std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
-            overloaded_op_procs[opType] = proc_names;
+            // check if the operator is already defined, if yes, then a new defition means it is being overloaded
+            if (overloaded_op_procs.find(op) != overloaded_op_procs.end()) {
+                overloaded_op_procs[op].insert(overloaded_op_procs[op].end(),
+                    proc_names.begin(), proc_names.end());
+            } else {
+                overloaded_op_procs[op] = proc_names;
+            }
         } else if (AST::is_a<AST::InterfaceHeaderDefinedOperator_t>(*x.m_header)) {
-            std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
+            std::string op = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
-            defined_op_procs[op_name] = proc_names;
+            // check if the operator is already defined, if yes, then a new defition means it is being overloaded
+            if (defined_op_procs.find(op) != defined_op_procs.end()) {
+                defined_op_procs[op].insert(defined_op_procs[op].end(),
+                    proc_names.begin(), proc_names.end());
+            } else {
+                defined_op_procs[op] = proc_names;
+            }
         }  else if (AST::is_a<AST::InterfaceHeaderAssignment_t>(*x.m_header)) {
             fill_interface_proc_names(x, assgn_proc_names);
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
@@ -2197,15 +2124,30 @@ public:
             symbols.push_back(al, x);
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
+        // Check if the operator is already imported into the scope. If yes, include it's procedures
+        // into the current `CustomOperator` symbol that we overwrite with.
+        if (current_scope->get_symbol(generic_name) != nullptr) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*current_scope->get_symbol(generic_name))) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::ExternalSymbol_t>(
+                                    current_scope->get_symbol(generic_name))->m_external;
+                if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
+                    ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
+                    for (size_t i = 0; i < cop->n_procs; i++) {
+                        std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
+                        symbols.push_back(al, resolve_symbol(loc, s2c(al, proc_name)));
+                    }
+                }
+            }
+        }
         ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                             generic_name, symbols.p, symbols.size(), access);
-        current_scope->add_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
+        current_scope->add_or_overwrite_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
     }
 
     void add_overloaded_procedures() {
         for (auto &proc : overloaded_op_procs) {
             std::pair<const std::string, std::vector<std::string>>
-                proc_ = {intrinsic2str[proc.first], proc.second};
+                proc_ = {proc.first, proc.second};
             add_custom_operator(proc_, ASR::accessType::Public);
         }
         overloaded_op_procs.clear();
@@ -2302,7 +2244,7 @@ public:
 
     /* 
         Evaluate call expressions to genericProcedures that's used in variable declaration.
-        e.g : `integer :: arr(generic_proc(),10)`
+        e.g : `integer :: arr(generic_proc(),10)` OR Character(len=len_generic()) :: char
     */
     void evaluate_postponed_calls_to_genericProcedure(){
         if(!generic_procedures.empty()){
@@ -2327,8 +2269,31 @@ public:
             LCOMPILERS_ASSERT(
                 ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
                 ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_scope->asr_owner))
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
+
+            // Correct the Type in FunctionType + replace with FunctionParam
+            ASR::Function_t* func =ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+            ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+            ASR::symbol_t* sym_to_variable = current_scope->get_symbol(to_lower(std::string(var_name)));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym_to_variable))
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym_to_variable);
+            if(variable->m_intent == ASRUtils::intent_return_var) {
+                ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
+                func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(
+                            variable->m_type, current_scope);
+            } else {
+                for(size_t i = 0; i < func->n_args; i++){ 
+                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(func->m_args[i]);
+                    if(var == variable){
+                        ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
+                        func_type->m_arg_types[i] = replacer.replace_args_with_FunctionParam(
+                                    variable->m_type, current_scope);
+                        break;
+                    }
+                }
+            }
+
             // Raise warning for user if variable declaration is calling its function scope recursively.
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
             if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
                 diag.add(diag::Diagnostic(
                     "Variable declaration is calling its function scope recursively",
@@ -2337,16 +2302,12 @@ public:
             }
 
             // Add called function as dependency to Variable node.
-            ASR::symbol_t* sym_to_variable = current_scope->get_symbol(to_lower(std::string(var_name)));
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym_to_variable))
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym_to_variable);
             SetChar var_dep;var_dep.reserve(al,0);
             ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
             variable->m_dependencies = var_dep.p;
             variable->n_dependencies = var_dep.n;
 
             // Add called function as dependency to the owning-function's scope
-            ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
             SetChar func_dep;
             func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
             func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
@@ -2470,17 +2431,9 @@ public:
 
     bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
-        while( true ) {
-            std::string proc = clss->m_name;
-            if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
-                return true;
-            }
-            ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(clss->m_parent);
-            if( !clss_sym ) {
-                break;
-            }
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*clss_sym));
-            clss = ASR::down_cast<ASR::Struct_t>(clss_sym);
+        std::string proc = clss->m_name;
+        if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
+            return true;
         }
         return false;
     }
@@ -2524,14 +2477,16 @@ public:
                     }
                 }
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
-                if (!is_deferred &&
-                    ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
-                    diag.add(diag::Diagnostic(
-                        "PROCEDURE(interface) should be declared DEFERRED",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {loc})}));
-                    throw SemanticAbort();
-                }
+                // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
+                //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
+                // if (!is_deferred &&
+                //     ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
+                //     diag.add(diag::Diagnostic(
+                //         "PROCEDURE(interface) should be declared DEFERRED",
+                //         diag::Level::Error, diag::Stage::Semantic, {
+                //             diag::Label("", {loc})}));
+                //     throw SemanticAbort();
+                // }
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
@@ -3247,6 +3202,17 @@ public:
         }
     }
 
+    void visit_GenericWrite(const AST::GenericWrite_t &x) {
+        // this can only either be "~write_formatted" or "~write_unformatted"
+        std::string generic_name = "~write_" + to_lower(std::string(x.m_id));
+        for (size_t i = 0; i < x.n_names; i++) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(
+                to_lower(x_m_name)
+            );
+        }
+    }
+
     void visit_GenericDefinedOperator(const AST::GenericDefinedOperator_t &x) {
         std::string generic_name = "~def_op~" + std::string(x.m_optype);
         for( size_t i = 0; i < x.n_names; i++ ) {
@@ -3270,7 +3236,7 @@ public:
             current_procedure_args.push_back(arg);
         }
 
-        std::map<AST::intrinsicopType, std::vector<std::string>> requirement_op_procs;
+        std::map<std::string, std::vector<std::string>> requirement_op_procs;
         for (auto &proc: overloaded_op_procs) {
             requirement_op_procs[proc.first] = proc.second;
         }
@@ -3457,7 +3423,7 @@ public:
             current_procedure_args.push_back(to_lower(x.m_namelist[i]));
         }
 
-        std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
+        std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
         for (auto &proc: overloaded_op_procs) {
             ext_overloaded_op_procs[proc.first] = proc.second;
         }

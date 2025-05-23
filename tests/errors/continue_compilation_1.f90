@@ -58,7 +58,7 @@ program continue_compilation_1
     character :: c1
     complex :: c = (1.0, 2.0)
     real a_real(0)
-    integer, allocatable ::  shape_(:), arr4(:)
+    integer, allocatable ::  shape_(:), arr4(:), arr5(:)
     integer, dimension(2, 3) :: matrix
     integer, dimension(4) :: source = [1, 2, 3, 4]
     allocate(shape_(2))
@@ -77,10 +77,10 @@ program continue_compilation_1
     character(len=100) :: filename
     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
-
-
-
-
+    character(width=10) :: str_c_1
+    character(len=10, len=20) :: str_c_2
+    character(len=10, 1) :: str_c_3
+    character(1, len=20) :: str_c_4
 
 
 
@@ -306,4 +306,10 @@ program continue_compilation_1
 
     call logger % add_log_file(filename=filename)
     call logger % add_log_file()
+
+    allocate(arr5, status=q1)
+    allocate(arr5, mold = arr4)
+
+    print *, ["aa", "aaa"]
+    print *, ["aa", string(x+1:x+2), "aaa"]
 end program

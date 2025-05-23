@@ -52,7 +52,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -88,7 +88,7 @@
                                     date_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         (ClassType
                                             7 toml_date
@@ -126,7 +126,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(i4.4,\"-\",i2.2,\"-\",i2.2)"
-                                                (String 1 24 () PointerString)
+                                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             [(StructInstanceMember
                                                 (Var 11 rhs)
@@ -147,7 +147,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String -1 0 () PointerString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )]
                                         ()
@@ -166,12 +166,22 @@
                                     (SymbolTable
                                         12
                                         {
-                                            1_to_string:
+                                            1_date_to_string:
                                                 (ExternalSymbol
                                                     12
-                                                    1_to_string
+                                                    1_date_to_string
                                                     8 to_string
                                                     toml_date
+                                                    []
+                                                    to_string
+                                                    Public
+                                                ),
+                                            1_time_to_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_time_to_string
+                                                    10 to_string
+                                                    toml_time
                                                     []
                                                     to_string
                                                     Public
@@ -206,7 +216,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -248,7 +258,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -263,7 +273,7 @@
                                     datetime_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         (ClassType
                                             7 toml_datetime
@@ -304,7 +314,7 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            12 1_to_string
+                                            12 1_date_to_string
                                             ()
                                             [((Var 12 lhs))]
                                             (StructInstanceMember
@@ -342,7 +352,7 @@
                                                 ()
                                             )
                                             [(SubroutineCall
-                                                12 1_to_string
+                                                12 1_time_to_string
                                                 ()
                                                 [((Var 12 temporary))]
                                                 (StructInstanceMember
@@ -368,7 +378,11 @@
                                                             DescriptorString
                                                             PointerString
                                                             (Allocatable
-                                                                (String 1 -2 () PointerString)
+                                                                (String 1 (StringLen
+                                                                    (Var 12 lhs)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ) ExpressionLength PointerString)
                                                             )
                                                             ()
                                                         )
@@ -377,17 +391,21 @@
                                                             DescriptorString
                                                             PointerString
                                                             (Allocatable
-                                                                (String 1 -2 () PointerString)
+                                                                (String 1 (StringLen
+                                                                    (Var 12 temporary)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ) ExpressionLength PointerString)
                                                             )
                                                             ()
                                                         )
-                                                        (String 1 -1 () PointerString)
+                                                        (String 1 () ExpressionLength PointerString)
                                                         ()
                                                     )
                                                     PointerString
                                                     DescriptorString
                                                     (Allocatable
-                                                        (String 1 -1 () DescriptorString)
+                                                        (String 1 () ExpressionLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -625,7 +643,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -642,7 +660,7 @@
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 -1 () PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         (StructType
                                             []
                                             []
@@ -765,7 +783,7 @@
                                                 (Var 13 self)
                                                 13 1_toml_time_zone
                                                 (Allocatable
-                                                    (String 1 -2 () DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -774,7 +792,7 @@
                                                 PointerString
                                                 DescriptorString
                                                 (Allocatable
-                                                    (String 1 -1 () DescriptorString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -854,7 +872,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -890,7 +908,7 @@
                                     time_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (String 1 -2 () DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         (ClassType
                                             7 toml_time
@@ -943,7 +961,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
-                                                    (String 1 33 () PointerString)
+                                                    (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 14 rhs)
@@ -972,7 +990,7 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String -1 0 () PointerString)
+                                                (String 1 () ExpressionLength CString)
                                                 ()
                                             )]
                                             ()
@@ -998,7 +1016,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2)"
-                                                    (String 1 24 () PointerString)
+                                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 14 rhs)
@@ -1019,7 +1037,7 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String -1 0 () PointerString)
+                                                (String 1 () ExpressionLength CString)
                                                 ()
                                             )]
                                             ()
@@ -1036,14 +1054,25 @@
                                                     (Var 14 rhs)
                                                     14 1_toml_time_zone
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (String 1 -2 () PointerString)
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 14 rhs)
+                                                            14 1_toml_time_zone
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -1060,7 +1089,11 @@
                                                         DescriptorString
                                                         PointerString
                                                         (Allocatable
-                                                            (String 1 -2 () PointerString)
+                                                            (String 1 (StringLen
+                                                                (Var 14 lhs)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) ExpressionLength PointerString)
                                                         )
                                                         ()
                                                     )
@@ -1071,28 +1104,50 @@
                                                                 (Var 14 rhs)
                                                                 14 1_toml_time_zone
                                                                 (Allocatable
-                                                                    (String 1 -2 () DescriptorString)
+                                                                    (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 ()
                                                             )
                                                             DescriptorString
                                                             PointerString
                                                             (Allocatable
-                                                                (String 1 -2 () PointerString)
+                                                                (String 1 (StringLen
+                                                                    (StructInstanceMember
+                                                                        (Var 14 rhs)
+                                                                        14 1_toml_time_zone
+                                                                        (Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )
+                                                                        ()
+                                                                    )
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ) ExpressionLength PointerString)
                                                             )
                                                             ()
                                                         )]
                                                         0
-                                                        (String 1 -2 () PointerString)
+                                                        (String 1 (StringLen
+                                                            (StructInstanceMember
+                                                                (Var 14 rhs)
+                                                                14 1_toml_time_zone
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        ) ExpressionLength PointerString)
                                                         ()
                                                     )
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () ExpressionLength PointerString)
                                                     ()
                                                 )
                                                 PointerString
                                                 DescriptorString
                                                 (Allocatable
-                                                    (String 1 -1 () DescriptorString)
+                                                    (String 1 () ExpressionLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -1395,7 +1450,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 -2 () DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1647,7 +1702,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 -1 () PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1703,7 +1758,7 @@
                                         })
                                     toml_raw_to_timestamp
                                     (FunctionType
-                                        [(String 1 -1 () PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (StructType
                                             []
                                             []

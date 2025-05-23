@@ -118,6 +118,13 @@ static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t* x) {
 static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
     return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
 }
+class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
+{
+    public:
+
+    ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
+
+};
 
 static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {
@@ -2055,6 +2062,7 @@ static inline std::string binop_to_str_python(const ASR::binopType t) {
         case (ASR::binopType::BitXor): { return "^"; }
         case (ASR::binopType::BitLShift): { return "<<"; }
         case (ASR::binopType::BitRShift): { return ">>"; }
+        case (ASR::binopType::LBitRShift): { return ">>"; }
         default : throw LCompilersException("Cannot represent the binary operator as a string");
     }
 }
@@ -3036,8 +3044,17 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::String: {
             ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
+            ASR::expr_t* len_expr;
+            if(tnew->m_len){
+                ASRUtils::ExprStmtDuplicator duplicator_instance(al);
+                len_expr = duplicator_instance.duplicate_expr(tnew->m_len);
+            } else {
+                len_expr = nullptr;
+            }
             t_ = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
-                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, tnew->m_physical_type));
+                    tnew->m_kind, len_expr, 
+                    tnew->m_len_kind,
+                    tnew->m_physical_type));
             break;
         }
         case ASR::ttypeType::StructType: {
@@ -3192,15 +3209,50 @@ static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR:
 static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR::expr_t* string){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
     is_descriptorString(expr_type(string)));
-    // Create string node with `PointerString` physical type
-    ASR::ttype_t* stringPointer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(string));
-    ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable(stringPointer_type))->m_physical_type = ASR::string_physical_typeType::PointerString;
+    // Create string type with `PointerString` physical type + StringLen expression as size.
+    ASR::ttype_t* stringPointer_type =
+        ASRUtils::TYPE(ASR::make_String_t(al, string->base.loc, 1,
+            ASRUtils::EXPR(ASR::make_StringLen_t(al, string->base.loc, string, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, string->base.loc, 4)), nullptr)), 
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::PointerString));
+    if(ASR::is_a<ASR::Allocatable_t>(*expr_type(string))){
+        stringPointer_type = ASRUtils::TYPE(
+            ASR::make_Allocatable_t(al, string->base.loc, stringPointer_type));
+    }
     // Create descriptorString to pointerString cast node
     ASR::expr_t* des_to_ptr_string_cast = ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
         ASR::string_physical_typeType::DescriptorString, ASR::string_physical_typeType::PointerString,
         stringPointer_type, nullptr));
     return des_to_ptr_string_cast;
+}
+/*
+ * Makes sure to cast the string to the required physical type.
+ * If the string is already of the required physical type, it returns the same string
+ * PointerString -> Needs to have information about the length of the string
+*/
+static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string, ASR::string_physical_typeType to){
+    LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)))
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(expr_type(string));
+    if(to == str_type->m_physical_type){return string;}
+
+    ASR::ttype_t* cast_expr_type = ASRUtils::duplicate_type(al, (ASR::ttype_t*)str_type);
+    ASR::down_cast<ASR::String_t>(cast_expr_type)->m_physical_type = to;
+    if(to == ASR::string_physical_typeType::PointerString){
+        ASR::expr_t* str_len = 
+            ASRUtils::EXPR(ASR::make_StringLen_t(al, string->base.loc, string, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, string->base.loc, 8)), nullptr));
+        ASR::down_cast<ASR::String_t>(cast_expr_type)->m_len = str_len;
+    } else if (to == ASR::string_physical_typeType::DescriptorString || 
+               to == ASR::string_physical_typeType::CString) {
+    } else {
+        LCompilersException("Not implemented");
+    }
+
+    return ASRUtils::EXPR(
+        ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
+        str_type->m_physical_type, to, cast_expr_type, nullptr));
 }
 
 static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::ttype_t* t,
@@ -3247,7 +3299,9 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         case ASR::ttypeType::String: {
             ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
             return ASRUtils::TYPE(ASR::make_String_t(al, loc,
-                        tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
+                        tnew->m_kind, tnew->m_len, 
+                        tnew->m_len_kind,
+                        ASR::string_physical_typeType::PointerString));
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
@@ -3571,7 +3625,8 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
                 case ASR::binopType::Div:
                 case ASR::binopType::Pow:
                 case ASR::binopType::BitLShift:
-                case ASR::binopType::BitRShift: {
+                case ASR::binopType::BitRShift:
+                case ASR::binopType::LBitRShift: {
                     return (left_left && right_right);
                 }
             }
@@ -4469,6 +4524,8 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         if( idx_found ) {
             LCOMPILERS_ASSERT(current_expr);
             *current_expr = orig_args[arg_idx].m_value;
+        }  else if (ASRUtils::expr_value((ASR::expr_t*)x)){ //  Replace Constant args 
+            *current_expr = ASRUtils::expr_value((ASR::expr_t*)x); 
         }
     }
 
@@ -4493,13 +4550,6 @@ inline int64_t lookup_var_index(ASR::expr_t **args, size_t n_args, ASR::Var_t *v
     return -1;
 }
 
-class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
-{
-    public:
-
-    ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
-
-};
 
 class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWithScopeDuplicator>
 {
@@ -4556,6 +4606,8 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
             *current_expr = ASRUtils::EXPR(ASR::make_FunctionParam_t(
                                 al, m_args[arg_idx]->base.loc, arg_idx,
                                 t_, nullptr));
+        } else if (ASRUtils::expr_value((ASR::expr_t*)x)){//  Replace Constant args
+            *current_expr = ASRUtils::expr_value((ASR::expr_t*)x); 
         }
     }
 
@@ -4572,23 +4624,6 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
         LCOMPILERS_ASSERT(duplicator.success);
         replace_ttype(t);
         return t;
-    }
-
-};
-
-class ReplaceFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceFunctionParamVisitor> {
-
-    private:
-
-    ASR::call_arg_t* m_args;
-
-    public:
-
-    ReplaceFunctionParamVisitor(ASR::call_arg_t* m_args_) :
-        m_args(m_args_) {}
-
-    void replace_FunctionParam(ASR::FunctionParam_t* x) {
-        *current_expr = m_args[x->m_param_number].m_value;
     }
 
 };
@@ -5519,7 +5554,6 @@ static inline bool is_allocatable(ASR::ttype_t* type) {
     return ASR::is_a<ASR::Allocatable_t>(*type);
 }
 
-
 static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_arg, ASR::array_physical_typeType a_old, ASR::array_physical_typeType a_new,
     ASR::ttype_t* a_type, ASR::expr_t* a_value) {
@@ -5615,7 +5649,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = char_type->m_len;
+            int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
             ASR::StringConstant_t* value_str = ASR::down_cast<ASR::StringConstant_t>(value);
             char* data = value_str->m_s;
             for (int j = 0; j < len; j++) {
@@ -5682,7 +5716,7 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = char_type->m_len;
+            int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
             char* data_char = (char*)data + i*len;
             // take first len characters
             char* new_char = new char[len + 1];
@@ -5775,7 +5809,7 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = char_type->m_len;
+            int len = -1; len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
             char* data_char = (char*)data;
             std::string str = std::string(data_char + i*len, len);
             value = EXPR(ASR::make_StringConstant_t(al, loc,
@@ -5874,7 +5908,7 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
             return (void*) data;
         }
         case ASR::ttypeType::String: {
-            int len = ASR::down_cast<ASR::String_t>(a_type)->m_len;
+            int len = -1; len = ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type)->m_len, len)? len : 0;
             char* data = new char[len*n_args + 1];
             for (size_t i = 0; i < n_args; i++) {
                 char* value = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(a_args[i]))->m_s;
@@ -5978,7 +6012,9 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         // data is always allocated to n_data bytes
         int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
         if (is_character(*a_type_->m_type)) {
-            n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
+            int len;
+            if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
+            n_data = curr_idx * len;
         }
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
@@ -5999,7 +6035,9 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
         return ASR::make_Print_t(al, loc, a_args[0]);
     } else {
         ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+            al, loc, 1, nullptr,
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::CString));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
             ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
