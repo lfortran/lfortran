@@ -3507,7 +3507,7 @@ public:
         return nullptr;
     }
 
-    ASR::asr_t* handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
+    void handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "mvbits") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
                 IntrinsicSignature signature = get_intrinsic_signature(var_name);
@@ -3540,14 +3540,14 @@ public:
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
                     tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[3], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
-                    return tmp;
+                    current_body->push_back(al, ASRUtils::STMT(tmp));
+                    tmp = nullptr;
                 }
             }
         }
-        return nullptr;
     }
 
-    ASR::asr_t* handle_MoveAlloc(const AST::SubroutineCall_t &x, std::string var_name) {
+    void handle_MoveAlloc(const AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "move_alloc") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
                 IntrinsicSignature signature = get_intrinsic_signature(var_name);
@@ -3579,12 +3579,16 @@ public:
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
+                    Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
+                    explicit_deallocate_args.push_back(al, args[0]);
+                    ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, x.base.base.loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
                     tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[1], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
-                    return tmp;
+                    current_body->push_back(al, ASRUtils::STMT(tmp));
+                    current_body->push_back(al, explicit_deallocate);
+                    tmp = nullptr;
                 }
             }
         }
-        return nullptr;
     }
 
     /*
@@ -3788,7 +3792,9 @@ public:
             tmp = intrinsic_subroutine;
             return;
         }
-        if (handle_Mvbits(x, sub_name) || handle_MoveAlloc(x, sub_name)) {
+        if (sub_name == "move_alloc" || sub_name == "mvbits") {
+            handle_MoveAlloc(x, sub_name);
+            handle_Mvbits(x, sub_name);
             return;
         }
         if (x.n_temp_args > 0) {
