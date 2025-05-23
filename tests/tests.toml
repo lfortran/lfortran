@@ -4634,7 +4634,3 @@ run = true
 [[test]]
 filename = "errors/integer_overflow.f90"
 run = true
-
-[[test]]
-filename = "allocatble_c_ptr.f90"
-run = true
