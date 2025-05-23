@@ -360,8 +360,6 @@ namespace LCompilers {
             llvm::Type* getUnion(ASR::ttype_t* _type,
                 llvm::Module* module, bool is_pointer=false);
 
-            llvm::Type* getClassType(ASR::Class_t* der_type, bool is_pointer=false);
-
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
 
             llvm::Type* getClassType(ASR::ttype_t* _type, bool is_pointer=false);

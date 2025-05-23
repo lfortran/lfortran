@@ -309,55 +309,6 @@ namespace LCompilers {
         return getUnion(union_type, module, is_pointer);
     }
 
-    llvm::Type* LLVMUtils::getClassType(ASR::Class_t* der_type, bool is_pointer) {
-        const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
-        std::vector<llvm::Type*> member_types;
-        int member_idx = 0;
-        for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
-            if (!ASR::is_a<ASR::ClassProcedure_t>(*itr->second) &&
-                !ASR::is_a<ASR::GenericProcedure_t>(*itr->second) &&
-                !ASR::is_a<ASR::CustomOperator_t>(*itr->second)) {
-                ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(itr->second);
-                llvm::Type* mem_type = nullptr;
-                switch( member->m_type->type ) {
-                    case ASR::ttypeType::Integer: {
-                        int a_kind = ASR::down_cast<ASR::Integer_t>(member->m_type)->m_kind;
-                        mem_type = getIntType(a_kind);
-                        break;
-                    }
-                    case ASR::ttypeType::Real: {
-                        int a_kind = ASR::down_cast<ASR::Real_t>(member->m_type)->m_kind;
-                        mem_type = getFPType(a_kind);
-                        break;
-                    }
-                    case ASR::ttypeType::ClassType: {
-                        mem_type = getClassType(member->m_type);
-                        break;
-                    }
-                    case ASR::ttypeType::Complex: {
-                        int a_kind = ASR::down_cast<ASR::Complex_t>(member->m_type)->m_kind;
-                        mem_type = getComplexType(a_kind);
-                        break;
-                    }
-                    default:
-                        throw CodeGenError("Cannot identify the type of member, '" +
-                                            std::string(member->m_name) +
-                                            "' in derived type, '" + der_type_name + "'.",
-                                            member->base.base.loc);
-                }
-                member_types.push_back(mem_type);
-                name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
-                member_idx++;
-            }
-        }
-        llvm::StructType* der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
-        name2dertype[der_type_name] = der_type_llvm;
-        if( is_pointer ) {
-            return der_type_llvm->getPointerTo();
-        }
-        return (llvm::Type*) der_type_llvm;
-    }
-
     llvm::Type* LLVMUtils::getClassType(ASR::Struct_t* der_type, bool is_pointer) {
         std::string der_type_name = std::string(der_type->m_name) + std::string("_polymorphic");
         llvm::StructType* der_type_llvm = nullptr;
@@ -384,9 +335,6 @@ namespace LCompilers {
             member_types.push_back(getIntType(8));
             if( der_sym_name == "~abstract_type" ) {
                 member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
-            } else if( ASR::is_a<ASR::Class_t>(*der_sym) ) {
-                ASR::Class_t* class_type_t = ASR::down_cast<ASR::Class_t>(der_sym);
-                member_types.push_back(getClassType(class_type_t, is_pointer));
             } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(der_sym);
                 member_types.push_back(getStructType(struct_type_t, module, is_pointer));
