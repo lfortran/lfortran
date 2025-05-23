@@ -293,7 +293,7 @@ program intrinsics_179
         end do
     end do
 
-    print *, sum(sum(aaaa, dim, mask))
+    print *, sum(sum(aaaa, dim))
     if (abs(sum(sum(aaaa, dim)) - 2.27976032e-02) > 1e-8) error stop
     mask = .false.
     print *, sum(sum(aaaa, dim, mask))
