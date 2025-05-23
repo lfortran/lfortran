@@ -7835,10 +7835,7 @@ public:
             case ASR::ttypeType::ClassType: {
                 ASR::ClassType_t* der = ASR::down_cast<ASR::ClassType_t>(t2_);
                 ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_class_type);
-                if( ASR::is_a<ASR::Class_t>(*der_sym) ) {
-                    ASR::Class_t* der_type = ASR::down_cast<ASR::Class_t>(der_sym);
-                    current_der_type_name = std::string(der_type->m_name);
-                } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
+                if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
                     ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
                     current_der_type_name = std::string(der_type->m_name);
                 }
