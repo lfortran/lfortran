@@ -295,7 +295,15 @@ program intrinsics_179
 
     print *, sum(sum(aaaa, dim))
     if (abs(sum(sum(aaaa, dim)) - 2.27976032e-02) > 1e-8) error stop
-    mask = .false.
+    do i = lbound(mask, 1), ubound(mask, 1)
+    do j = lbound(mask, 2), ubound(mask, 2)
+    do k = lbound(mask, 3), ubound(mask, 3)
+    do l = lbound(mask, 4), ubound(mask, 4)
+    mask(i, j, k, l) = .false.
+    end do
+    end do
+    end do
+    end do
     print *, sum(sum(aaaa, dim, mask))
     if (abs(sum(sum(aaaa, dim, mask)) - 0.0) > 1e-8) error stop
     mask(1, 1, :, :) = .true.
