@@ -1080,7 +1080,13 @@ public:
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(tmp_expr))), module.get());
                 llvm::Value* ptr_val = x_arr;
+#if LLVM_VERSION_MAJOR >= 17
+                llvm::Type* i8_ptr_ty
+                    = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+#else
                 llvm::Type* i8_ptr_ty = llvm::Type::getInt8PtrTy(context);
+#endif
+
                 if (x_arr && x_arr->getType() == nullptr) {
                     ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
                 }
