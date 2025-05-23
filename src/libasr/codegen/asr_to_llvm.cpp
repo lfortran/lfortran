@@ -10916,9 +10916,9 @@ public:
                 llvm::Type *dt_type = llvm_utils->getStructType(caller_type,
                     module.get());
                 llvm::Value* dt_1 = llvm_utils->create_gep2(dt_type, dt, dt_idx);
-                dt_1 = llvm_utils->CreateLoad2(a_type, llvm_utils->create_gep2(a_poly_type, llvm_utils->CreateLoad2(a_poly_type->getPointerTo(), dt_1), 1));
+                dt_1 = llvm_utils->CreateLoad2(a_type, llvm_utils->CreateLoad2(a_type->getPointerTo(), llvm_utils->create_gep2(a_poly_type, dt_1, 1)));
                 llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
-                builder->CreateStore(dt_1, class_ptr);
+                builder->CreateStore(dt_1, llvm_utils->CreateLoad2(a_type->getPointerTo(), class_ptr));
                 if (self_argument.length() == 0) {
                     args.push_back(dt_polymorphic);
                 } else {
