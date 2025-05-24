@@ -3017,10 +3017,10 @@ LFORTRAN_API int _lfortran_str_ord_c(char* s)
     return s[0];
 }
 
-LFORTRAN_API char* _lfortran_str_chr(int val)
+LFORTRAN_API char* _lfortran_str_chr(uint8_t val)
 {
     char* dest_char = (char*)malloc(2);
-    uint8_t extended_ascii = (uint8_t)val;
+    uint8_t extended_ascii = val;
     dest_char[0] = extended_ascii;
     dest_char[1] = '\0';
     return dest_char;
