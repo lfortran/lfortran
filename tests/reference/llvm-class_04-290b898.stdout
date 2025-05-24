@@ -2,12 +2,12 @@
 source_filename = "LFortran"
 
 %__vtab_foo_c = type { i64 }
-%foo_c = type <{ %foo_b, %bar_c }>
-%foo_b = type <{ %foo_a, %bar_b }>
-%foo_a = type <{ %bar_a }>
-%bar_a = type <{ i32 }>
-%bar_b = type <{ %bar_a, i32 }>
-%bar_c = type <{ %bar_b, i32 }>
+%foo_c = type { %foo_b, %bar_c }
+%foo_b = type { %foo_a, %bar_b }
+%foo_a = type { %bar_a }
+%bar_a = type { i32 }
+%bar_b = type { %bar_a, i32 }
+%bar_c = type { %bar_b, i32 }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
