@@ -3572,13 +3572,11 @@ public:
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     fill_optional_kind_arg(var_name, args);
 
-                    ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
-                    ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
                     Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
                     explicit_deallocate_args.push_back(al, args[0]);
                     ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, x.base.base.loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
-                    tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[1], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
+                    tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[1], args[0], nullptr, compiler_options.po.realloc_lhs);
+                    
                     current_body->push_back(al, ASRUtils::STMT(tmp));
                     current_body->push_back(al, explicit_deallocate);
                     tmp = nullptr;
