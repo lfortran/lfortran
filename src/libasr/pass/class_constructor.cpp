@@ -100,7 +100,14 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
                 return ;
             }
 
-            replacer.result_var = x.m_target;
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            if (ASR::is_a<ASR::Allocatable_t>(*target_type) &&
+                ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_allocatable(target_type))) {
+                replacer.result_var = nullptr;
+            } else {
+                replacer.result_var = x.m_target;
+            }
+
             ASR::expr_t** current_expr_copy_9 = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();

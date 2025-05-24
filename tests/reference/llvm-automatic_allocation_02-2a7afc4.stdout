@@ -263,6 +263,8 @@ return:                                           ; preds = %ifcont33
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
+declare void @_lfortran_allocate_string(i8**, i64, i64*, i64*)
+
 declare i8* @_lfortran_malloc(i32)
 
 ; Function Attrs: argmemonly nounwind willreturn writeonly
