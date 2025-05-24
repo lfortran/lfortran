@@ -2281,4 +2281,4 @@ RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input
 
 
 # LP integration tests 
-RUN(NAME lp_list_test_01 LABELS llvm llvm_wasm_emcc) # No gfortran  # Renable llvm_wasm
+RUN(NAME lp_list_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
