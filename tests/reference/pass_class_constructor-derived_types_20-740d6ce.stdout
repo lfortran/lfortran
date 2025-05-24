@@ -410,6 +410,30 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                ),
+                                            temp_struct_var__:
+                                                (Variable
+                                                    7
+                                                    temp_struct_var__
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        4 fpm_new_settings
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                 )
                                         })
                                     get_command_line_settings
@@ -490,7 +514,7 @@
                                         )
                                         [(Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_cmd_settings_verbose
                                                 (Logical 4)
                                                 ()
@@ -504,7 +528,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_name
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -520,7 +544,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_executable
                                                 (Logical 4)
                                                 ()
@@ -534,7 +558,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_test
                                                 (Logical 4)
                                                 ()
@@ -548,7 +572,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_lib
                                                 (Logical 4)
                                                 ()
@@ -562,7 +586,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_example
                                                 (Logical 4)
                                                 ()
@@ -576,7 +600,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_full
                                                 (Logical 4)
                                                 ()
@@ -590,7 +614,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_bare
                                                 (Logical 4)
                                                 ()
@@ -604,7 +628,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_backfill
                                                 (Logical 4)
                                                 ()
@@ -613,6 +637,12 @@
                                                 .false.
                                                 (Logical 4)
                                             )
+                                            ()
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (Var 7 cmd_settings)
+                                            (Var 7 temp_struct_var__)
                                             ()
                                             .false.
                                         )]

@@ -3618,10 +3618,7 @@ public:
     #define set_pointer_variable_to_null(null_value, ptr) if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) || \
                 ASR::is_a<ASR::Pointer_t>(*v->m_type)) && \
             (v->m_intent == ASRUtils::intent_local || \
-             v->m_intent == ASRUtils::intent_return_var ) && \
-            !ASR::is_a<ASR::ClassType_t>( \
-                *ASRUtils::type_get_past_allocatable( \
-                    ASRUtils::type_get_past_pointer(v->m_type)))) { \
+             v->m_intent == ASRUtils::intent_return_var )) { \
             if(ASRUtils::is_descriptorString(v->m_type)){ \
                 /*set string descriptor to {char* null, int64 0, int 64 0} */ \
                 builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8Ty(context)->getPointerTo()),\
@@ -3630,6 +3627,18 @@ public:
                 llvm_utils->create_gep2(string_descriptor, ptr, 1));\
                 builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0),\
                 llvm_utils->create_gep2(string_descriptor, ptr, 2));\
+            } else if (ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_allocatable_pointer(v->m_type))) { \
+                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::ClassType_t>(ASRUtils::extract_type(v->m_type))->m_class_type); \
+                ASR::ttype_t* wrapped_struct_type = ASRUtils::TYPE( \
+                            ASRUtils::make_StructType_t_util(al, v->m_type->base.loc, \
+                                struct_sym)); \
+                llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_struct_type, module.get()); \
+                llvm::Value* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), \
+                                        llvm::APInt(64, get_class_hash(struct_sym))); \
+                llvm::Value* hash_ptr = llvm_utils->create_gep2(v->m_type, ptr, 0); \
+                builder->CreateStore(struct_hash, hash_ptr); \
+                llvm::Value* struct_ptr = llvm_utils->create_gep2(v->m_type, ptr, 1); \
+                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr); \
             } else { \
                 builder->CreateStore(null_value, ptr); \
             }\
@@ -5491,6 +5500,9 @@ public:
         } else if (ASR::is_a<ASR::Allocatable_t>(*asr_target_type) &&
                    ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_allocatable(asr_target_type)) &&
                    is_value_struct) {
+            if (x.m_realloc_lhs) {
+                check_and_allocate(x.m_target, asr_value_type);
+            }
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_value);
@@ -5543,14 +5555,10 @@ public:
         // When assigning to a StructInstanceMember, whose instance is allocatable
         // Check if the underlying struct instance is allocated, if not allocate
         if (x.m_realloc_lhs &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
+            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+            !ASRUtils::is_character(*asr_value_type)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            ASR::ttype_t *v_type = ASRUtils::expr_type(sim->m_v);
-            if (ASRUtils::is_allocatable(v_type) &&
-                // TODO: support Classtype here
-                !ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(v_type))) {
-                check_and_allocate(sim->m_v);
-            }
+            check_and_allocate(sim->m_v);
         }
 
         llvm::Value *target, *value;
@@ -5912,28 +5920,64 @@ public:
 
     // Checks if target_expr is allocated and if not then allocate
     // Used for compiler_options.po.realloc_lhs
-    void check_and_allocate(ASR::expr_t *target_expr) {
+    void check_and_allocate(ASR::expr_t *target_expr, ASR::ttype_t *value_struct_type = nullptr) {
         LCOMPILERS_ASSERT(compiler_options.po.realloc_lhs);
+        ASR::ttype_t *asr_ttype =ASRUtils::expr_type(target_expr);
         ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
-            ASRUtils::type_get_past_allocatable(
-            ASRUtils::expr_type(target_expr)));
+            ASRUtils::type_get_past_allocatable(asr_ttype));
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr_wrapper(target_expr, false);
         ptr_loads = ptr_loads_copy;
         llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module.get());
+        llvm::Value* llvm_cond = nullptr;
+        if (ASR::is_a<ASR::Allocatable_t>(*asr_ttype) &&
+            ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_allocatable(asr_ttype))) {
+            ASR::ttype_t* wrapped_struct_type = ASRUtils::TYPE(
+                        ASRUtils::make_StructType_t_util(al, asr_ttype->base.loc,
+                        ASR::down_cast<ASR::ClassType_t>(ASRUtils::extract_type(asr_ttype))->m_class_type));
+            llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_struct_type, module.get());
+            llvm::Value* target_struct_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type->getPointerTo(),
+                                            llvm_utils->create_gep2(asr_ttype, tmp, 1));
+            llvm::Value* null_cond = builder->CreateICmpEQ(
+                        target_struct_ptr,
+                        llvm::ConstantPointerNull::get(wrapper_struct_llvm_type->getPointerTo()));
+
+            ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(value_struct_type))->m_derived_type);
+            llvm::Value* value_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                            llvm::APInt(64, get_class_hash(value_struct_sym)));
+            llvm::Value* hash_ptr = llvm_utils->create_gep2(asr_ttype, tmp, 0);
+            llvm::Value* present_hash = llvm_utils->CreateLoad2(llvm_utils->getIntType(8), hash_ptr);
+            llvm::Value* hash_cond = builder->CreateICmpNE(
+                        present_hash,
+                        value_hash);
+
+            // Reallocate when target struct ptr is null or
+            // hashes of target and value are not equal
+            llvm_cond = builder->CreateOr(null_cond, hash_cond);
+        } else {
+            llvm_cond = builder->CreateICmpEQ(
+                        builder->CreateLoad(llvm_type->getPointerTo(), tmp),
+                        llvm::ConstantPointerNull::get(llvm_type->getPointerTo()));
+        }
         llvm_utils->create_if_else(
-            builder->CreateICmpEQ(
-                    builder->CreateLoad(llvm_type->getPointerTo(), tmp),
-                    llvm::ConstantPointerNull::get(llvm_type->getPointerTo())),
+            llvm_cond,
             [&]() {
-                llvm::Value* malloc_size = SizeOfTypeUtil(asr_type, llvm_utils->getIntType(4),
-                ASRUtils::TYPE(ASR::make_Integer_t(al, target_expr->base.loc, 4)));
-                llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
-                    context, *module, *builder, malloc_size);
-                builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
-                builder->CreateStore(builder->CreateBitCast(
-                    malloc_ptr, llvm_type->getPointerTo()), tmp);
+                    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+                    ASR::alloc_arg_t alloc_arg;
+                    alloc_arg.loc = target_expr->base.loc;
+                    alloc_arg.m_a = target_expr;
+                    alloc_arg.m_dims = nullptr;
+                    alloc_arg.n_dims = 0;
+                    alloc_arg.m_type = value_struct_type;
+                    alloc_arg.m_len_expr = nullptr;
+                    alloc_args.push_back(al, alloc_arg);
+                    ASR::stmt_t *alloc_stmt =
+                        ASRUtils::STMT(
+                            ASR::make_Allocate_t(al, target_expr->base.loc, alloc_args.p, 1, nullptr, nullptr, nullptr));
+
+                    this->visit_stmt(*alloc_stmt);
             },
             []() {});
     }
