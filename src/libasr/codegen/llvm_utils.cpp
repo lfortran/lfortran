@@ -1632,8 +1632,8 @@ namespace LCompilers {
 #else
         llvm::Type *type = nullptr, *type_copy = nullptr;
         bool is_type_pointer = false;
-        if (ptr_type.find(x) != ptr_type.end()) {
-            type_copy = type = ptr_type[x];
+        if (ptr_type.find(x->getType()) != ptr_type.end()) {
+            type_copy = type = ptr_type[x->getType()];
         }
         LCOMPILERS_ASSERT(type);
         // getPointerTo() is used for allocatable or pointer

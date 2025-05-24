@@ -30,6 +30,9 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(Srand)
         INTRINSIC_SUBROUTINE_NAME_CASE(SystemClock)
         INTRINSIC_SUBROUTINE_NAME_CASE(DateAndTime)
+
+        // LP Ported subroutines 
+        INTRINSIC_SUBROUTINE_NAME_CASE(LF_ListAppend)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -65,6 +68,10 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&ExecuteCommandLine::instantiate_ExecuteCommandLine, &ExecuteCommandLine::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
             {&CpuTime::instantiate_CpuTime, &CpuTime::verify_args}},
+
+        // LP Ported subroutines 
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::LF_ListAppend),
+            {&LF_ListAppend::instantiate_LF_ListAppend, &LF_ListAppend::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
@@ -106,6 +113,9 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
                 {"cpu_time", &CpuTime::create_CpuTime},
                 {"date_and_time", &DateAndTime::create_DateAndTime},
+
+                // LP Ported subroutines 
+                {"_lfortran_list_append", &LF_ListAppend::create_LF_ListAppend}
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {

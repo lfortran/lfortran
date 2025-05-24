@@ -1282,7 +1282,11 @@ public:
         {"digits", IntrinsicSignature({"x"}, 1, 1)},
         {"present", IntrinsicSignature({"a"}, 1, 1)},
         {"leadz", IntrinsicSignature({"i"}, 1, 1)},
-        {"trailz", IntrinsicSignature({"i"}, 1, 1)}
+        {"trailz", IntrinsicSignature({"i"}, 1, 1)},
+
+
+        // LP Ported intrinsics
+        {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
     };
 
 
@@ -4649,6 +4653,15 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
+            } else if (derived_type_name.rfind("_lfortran_", 0) == 0) {
+                // LP ported types for LF 
+
+                if (derived_type_name == "_lfortran_list_integer") {
+                    /*return determine_type(loc, sym, decl_attribute, is_pointer,*/
+                    /*    is_allocatable, dims, type_declaration, abi, is_argument);*/
+                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                }
+            
             }
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
