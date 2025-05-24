@@ -73,6 +73,7 @@ unit_decl2
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* funcs)
     | Require(unit_require* reqs)
+    | Implements(implements_header header, implements_item* item)
 
 interface_header
     = InterfaceHeader()
@@ -89,6 +90,13 @@ interface_item
     = InterfaceProc(program_unit proc)
     | InterfaceModuleProcedure(identifier* names, decl_attribute* attributes, trivia? trivia)
     | InterfaceTypeList(decl_attribute* types)
+
+implements_header
+    = ImplementsHeaderType(identifier interface_name, decl_attribute type_name)
+    | ImplementsHeaderInterface(identifier interface_name, identifier type_name)
+
+implements_item
+    = ImplementsProc(identifier name, decl_attribute* attrs)
 
 import_statement
     = Import(identifier* symbols, import_modifier mod, trivia? trivia)
@@ -344,12 +352,7 @@ event_attribute
     | AttrNewIndex(expr value)
     | AttrEventWaitKwArg(identifier id, expr value)
 
-generic_argument
-    = GenericIntrinsic(decl_type type)
-    | GenericInterface(identifier name)
-
 generic_type_param = GenericTypeParameter(identifier name, identifier type_name)
-generic_type_param_instantiation = GenericInter(identifier type_name)
 
 team_attribute = CoarrayAssociation(expr coarray, expr selector)
 

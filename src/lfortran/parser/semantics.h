@@ -108,6 +108,7 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 #define CONCURRENT_CONTROLS(x) VEC_CAST(x, concurrent_control)
 #define CONCURRENT_LOCALITIES(x) VEC_CAST(x, concurrent_locality)
 #define INTERFACE_ITEMS(x) VEC_CAST(x, interface_item)
+#define IMPLEMENTS_ITEMS(x) VEC_CAST(x, implements_item)
 #define GENERIC_TYPE_PARAMS(x) VEC_CAST(x, generic_type_param)
 #define GENERIC_TYPE_PARAM_INSTANTIATIONS(x) VEC_CAST(x, generic_type_param_instantiation)
 
@@ -2292,10 +2293,24 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define INTERFACE_PROC(proc, l) \
         make_InterfaceProc_t(p.m_a, l, \
         down_cast<program_unit_t>(proc))
-// Allocator &al, const Location &a_loc, decl_attribute_t** a_types, size_t n_types
+
 #define INTERFACE_TYPE_LIST(a_types, l) make_InterfaceTypeList_t(p.m_a, l, \
         VEC_CAST(a_types, decl_attribute), \
         a_types.size())
+
+#define IMPLEMENTS(header, contains, l) make_Implements_t(p.m_a, l, \
+        down_cast<implements_header_t>(header), \
+        IMPLEMENTS_ITEMS(contains), contains.size())
+
+#define IMPLEMENTS_HEADER_TYPE(interface_name, type_name, l) make_ImplementsHeaderType_t(p.m_a, l, \
+        name2char(interface_name), down_cast<decl_attribute_t>(type_name))
+
+#define IMPLEMENTS_HEADER_INTERFACE(interface_name, type_name, l) make_ImplementsHeaderInterface_t(p.m_a, l, \
+        name2char(interface_name), name2char(type_name))
+
+#define IMPLEMENTS_PROC(a_name, a_attrs, l) make_ImplementsProc_t(p.m_a, l, \
+        name2char(a_name), \
+        VEC_CAST(a_attrs, decl_attribute), a_attrs.size())
 
 #define DERIVED_TYPE(attr, name, trivia, decl, contains, l) make_DerivedType_t(p.m_a, l, \
         name2char(name), nullptr, 0, \
@@ -2358,6 +2373,8 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         name2char(name), VEC_CAST(attr, decl_attribute), attr.size(), \
         USE_SYMBOLS(syms), syms.size(), \
         trivia_cast(trivia))
+#define BIND_PROC(name, attrs, l) make_BindProc_t(p.m_a, l, \
+        name2char(name), VEC_CAST(attrs, decl_attribute), attrs.size())
 #define GENERIC_OPERATOR(attr, optype, namelist, trivia, l) make_GenericOperator_t(p.m_a, l, \
         VEC_CAST(attr, decl_attribute), attr.size(), \
         optype, REDUCE_ARGS(p.m_a, namelist), namelist.size(), \

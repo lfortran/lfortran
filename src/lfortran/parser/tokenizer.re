@@ -367,6 +367,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'end' whitespace 'interface' { KW(END_INTERFACE) }
             'endinterface' { KW(ENDINTERFACE) }
 
+            'end' whitespace 'implements' { KW(END_IMPLEMENTS) }
+            'endimplements' { KW(ENDIMPLEMENTS) }
+
             'end' whitespace 'type' { KW(END_TYPE) }
             'endtype' { KW(ENDTYPE) }
 
@@ -439,6 +442,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'intent' { KW(INTENT) }
             'interface' { KW(INTERFACE) }
             'intrinsic' { KW(INTRINSIC) }
+            'implements' { KW(IMPLEMENTS) }
             'is' { KW(IS) }
             'kind' { KW(KIND) }
             'len' { KW(LEN) }

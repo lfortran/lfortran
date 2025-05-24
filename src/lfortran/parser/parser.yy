@@ -4,8 +4,8 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    215 // shift/reduce conflicts
-%expect-rr 191 // reduce/reduce conflicts
+%expect    227 // shift/reduce conflicts
+%expect-rr 219 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -222,6 +222,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_END_INTERFACE
 %token <string> KW_ENDINTERFACE
 
+%token <string> KW_END_IMPLEMENTS
+%token <string> KW_ENDIMPLEMENTS
+
 %token <string> KW_END_TYPE
 %token <string> KW_ENDTYPE
 
@@ -281,6 +284,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_INTEGER
 %token <string> KW_INTENT
 %token <string> KW_INTERFACE
+%token <string> KW_IMPLEMENTS
 %token <string> KW_INTRINSIC
 %token <string> KW_IS
 %token <string> KW_KIND
@@ -382,6 +386,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
+%type <ast> implements_decl
+%type <ast> implements_stmt
 %type <ast> derived_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
@@ -541,6 +547,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> interface_body
 %type <ast> interface_item
 %type <interface_op_type> operator_type
+%type <vec_ast> implements_body
+%type <ast> implements_item
 %type <ast> write_arg
 %type <argstarkw> write_arg2
 %type <vec_argstarkw> write_arg_list
@@ -689,7 +697,6 @@ endinterface0
     | KW_ENDINTERFACE
     ;
 
-
 interface_body
     : interface_body interface_item { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
@@ -715,6 +722,38 @@ interface_item
 type_list
     : var_type { LIST_NEW($$); LIST_ADD($$, $1); }
     | type_list TK_VBAR var_type { $$ = $1; LIST_ADD($$, $3); }
+    ;
+
+implements_decl
+    : implements_stmt sep implements_body endimplements {
+        $$ = IMPLEMENTS($1, $3, @$); }
+    ;
+
+implements_stmt
+    : KW_IMPLEMENTS id "::" var_type { $$ = IMPLEMENTS_HEADER_TYPE($2, $4, @$); }
+    | KW_IMPLEMENTS id "::" id { $$ =  IMPLEMENTS_HEADER_INTERFACE($2, $4, @$); }
+    ;
+
+implements_body
+    : implements_body implements_item { $$ = $1; LIST_ADD($$, $2); }
+    | %empty { LIST_NEW($$); }
+    ;
+
+implements_item
+    : KW_PROCEDURE proc_modifiers id sep { $$ = IMPLEMENTS_PROC($3, $2, @$); }
+    ;
+
+// Using "id" instead of "TK_NAME" causes ambiguity and hundreds of reduce/shift 
+// conflicts with "var_type"
+endimplements
+    : endimplements0
+    | endimplements0 TK_NAME sep
+    | endimplements0 var_type sep
+    ;
+
+endimplements0
+    : KW_END_IMPLEMENTS
+    | KW_ENDIMPLEMENTS
     ;
 
 enum_decl
@@ -1105,6 +1144,7 @@ decl_star
 decl
     : var_decl
     | interface_decl 
+    | implements_decl
     | derived_type_decl
     | template_decl
     | requirement_decl
@@ -1627,6 +1667,7 @@ decl_statements
 decl_statement
     : var_decl
     | interface_decl
+    | implements_decl
     | derived_type_decl
     | enum_decl
     | statement
@@ -2524,6 +2565,7 @@ id
     | KW_ENDDO { $$ = SYMBOL($1, @$); }
     | KW_ENDIF { $$ = SYMBOL($1, @$); }
     | KW_ENDINTERFACE { $$ = SYMBOL($1, @$); }
+    | KW_ENDIMPLEMENTS { $$ = SYMBOL($1, @$ ); }
     | KW_ENDTYPE { $$ = SYMBOL($1, @$); }
     | KW_ENDPROGRAM { $$ = SYMBOL($1, @$); }
     | KW_ENDMODULE { $$ = SYMBOL($1, @$); }
@@ -2574,6 +2616,7 @@ id
     | KW_INTEGER { $$ = SYMBOL($1, @$); }
     | KW_INTENT { $$ = SYMBOL($1, @$); }
     | KW_INTERFACE { $$ = SYMBOL($1, @$); }
+    | KW_IMPLEMENTS { $$ = SYMBOL($1, @$); }
     | KW_INTRINSIC { $$ = SYMBOL($1, @$); }
     | KW_IS { $$ = SYMBOL($1, @$); }
     | KW_KIND { $$ = SYMBOL($1, @$); }
