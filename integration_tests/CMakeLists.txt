@@ -2277,3 +2277,8 @@ RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emc
 RUN(NAME logical_testing LABELS gfortran llvm)
 
 RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input_01.txt)
+
+
+
+# LP integration tests 
+RUN(NAME lp_list_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
