@@ -98,6 +98,23 @@ enum Backend {
     llvm, c, cpp, x86, wasm, fortran, mlir
 };
 
+std::string get_system_temp_dir()
+{
+    #ifdef _WIN32
+    char buffer[MAX_PATH];
+    DWORD len = GetTempPathA(MAX_PATH, buffer);
+    return std::string(buffer, len);
+    #else
+    const char* tmp = getenv("TMPDIR");
+    if (tmp) return tmp;
+    return "/tmp";
+    #endif
+}
+
+std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
+
+std::vector<std::string> lfortran_generated_temp_files;
+
 std::string get_unique_ID() {
     static std::random_device dev;
     static std::mt19937 rng(dev());
@@ -1198,8 +1215,9 @@ int compile_src_to_object_file(const std::string &infile,
                 std::cerr << diagnostics.render(lm, compiler_options);
                 if (mlir_res.ok) {
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
-                    std::string mlir_tmp_o{std::filesystem::path(infile).
-                        replace_extension(".mlir.tmp.o").string()};
+                    std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile).
+                        replace_extension(".mlir.tmp.o")).string();
+                    lfortran_generated_temp_files.push_back(mlir_tmp_o);
                     e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
                 } else {
                     LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -2090,6 +2108,10 @@ int link_executable(const std::vector<std::string> &infiles,
         return 0;
     }
 
+    for (const std::string& filename : lfortran_generated_temp_files) {
+        std::remove(filename.c_str());
+    }
+
     std::string run_cmd = "";
     if (backend == Backend::wasm) {
         // for node version less than 16, we need to also provide flag --experimental-wasm-bigint
@@ -2612,7 +2634,9 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> object_files;
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
-        std::string tmp_o = std::filesystem::path(arg_file).replace_extension(".tmp.o").string();
+        std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
+                                .filename().replace_extension(".tmp.o")).string();
+        lfortran_generated_temp_files.push_back(tmp_o);
         if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
             if (backend == Backend::x86) {
