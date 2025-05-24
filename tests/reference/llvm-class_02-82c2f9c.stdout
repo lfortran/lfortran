@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 
 %circle_polymorphic = type { i64, %circle* }
-%circle = type <{ float }>
+%circle = type { float }
 %__vtab_circle = type { i64 }
 
 @pi = global float 0x400921FB60000000

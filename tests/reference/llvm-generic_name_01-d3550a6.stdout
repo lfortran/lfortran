@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 
 %complextype_polymorphic = type { i64, %complextype* }
-%complextype = type <{ float, float }>
+%complextype = type { float, float }
 %__vtab_complextype = type { i64 }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

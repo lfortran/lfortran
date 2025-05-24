@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 
 %__vtab_myint = type { i64 }
-%myint = type <{ i32 }>
+%myint = type { i32 }
 
 @0 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
