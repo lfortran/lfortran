@@ -1,4 +1,8 @@
 program lp_list_test_01
+
+    ! placeholder integer to add entry to ptr_type
+    integer :: _placeholder = 15
+
     type(_lfortran_list_integer) :: test_list 
     call _lfortran_list_append(test_list, 1)
     call _lfortran_list_append(test_list, 10)
