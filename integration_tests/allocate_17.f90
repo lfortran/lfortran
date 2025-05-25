@@ -19,14 +19,14 @@ program allocate_17
     if (any(arr4 /= [2,1,3,4,1])) error stop
 
     allocate(arr5(2,3), source=src2(:,1:3))
-    ! if (any(arr5(:,1) /= [1,2])) error stop
-    ! if (any(arr5(:,2) /= [3,2])) error stop
-    ! if (any(arr5(:,3) /= [1,3])) error stop
+    if (any(arr5(:,1) /= [1,2])) error stop
+    if (any(arr5(:,2) /= [3,2])) error stop
+    if (any(arr5(:,3) /= [1,3])) error stop
 
-    ! allocate(l_arr1(3), source = .true.)
-    ! if (any(l_arr1 .neqv. .true.)) error stop
+    allocate(l_arr1(3), source = .true.)
+    if (any(l_arr1 .neqv. .true.)) error stop
 
-    ! allocate(l_arr2(3), l_arr3(3), source = l_src)
-    ! if (any(l_arr2 .neqv. [.true., .false., .true.])) error stop
-    ! if (any(l_arr3 .neqv. [.true., .false., .true.])) error stop
+    allocate(l_arr2(3), l_arr3(3), source = l_src)
+    if (any(l_arr2 .neqv. [.true., .false., .true.])) error stop
+    if (any(l_arr3 .neqv. [.true., .false., .true.])) error stop
 end program
