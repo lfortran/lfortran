@@ -2,11 +2,11 @@
     "basename": "run-format_30-3cec484",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/../integration_tests/format_30.f90",
-    "infile_hash": "a07f583ac4bc32e5451f7b713207efdf6e95610e8248f8f58306c3f2",
+    "infile_hash": "9463fceff208fd12eb521e098f5ad0bee7c73dbde9178b847135cce4",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-format_30-3cec484.stdout",
-    "stdout_hash": "75c8f07ea18e58921a18cb92fbb1089662f50eb252d46e1fb79152cc",
+    "stdout_hash": "4637f8f444c7c7e054fdbd17a6aa72e98164dd4fa9c4b66eb71ec6af",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
