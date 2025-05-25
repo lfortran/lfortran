@@ -361,7 +361,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                     /* a_name */ fn_name,
                                     original_symbol,
                                     ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_symbol)),
-                                    nullptr, 0, fn_name, ASR::accessType::Public
+                                    nullptr, 0, ASRUtils::symbol_name(original_symbol), ASR::accessType::Public
                                 );
                                 m_derived_type_or_class_type = ASR::down_cast<ASR::symbol_t>(fn);
                                 current_scope->add_symbol(fn_name, m_derived_type_or_class_type);
