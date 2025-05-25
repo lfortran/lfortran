@@ -1,11 +1,11 @@
-module struct_var
-type :: toml_value
-    integer :: key = 0
-end type toml_value
+module struct_var_nested_12
+    type :: toml_value
+        integer :: key = 0
+    end type toml_value
 end module
 
 module nested_12_mod
-    use struct_var, only: toml_lexer => toml_value
+    use struct_var_nested_12, only: toml_lexer => toml_value
 contains
     subroutine char_num()
         type(toml_lexer) :: lexer
@@ -24,7 +24,7 @@ contains
 end module 
 
 program nested_12
-    use struct_var
+    use struct_var_nested_12
     use nested_12_mod
    call char_num()
 end program
