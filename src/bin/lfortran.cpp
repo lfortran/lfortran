@@ -1140,7 +1140,7 @@ int compile_src_to_object_file(const std::string &infile,
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
-        return 0;
+        return has_error_w_cc;
     }
 
     // if compiler_options.separate_compilation is true, then mark all modules as external
