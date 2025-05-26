@@ -7274,27 +7274,6 @@ public:
 
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
-=======
-        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
-        if (!ASR::is_a<ASR::List_t>(*arg_type)) {
-            diag.add(Diagnostic("Argument of `size` must be an array",
-                                Level::Error,
-                                Stage::Semantic,
-                                { Label("", { x.base.base.loc }) }));
-=======
-        if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(arg))) {
-            diag.add(Diagnostic("Arguement to _lfortran_list_len must be of list type",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
->>>>>>> d295a2e23 (Removed real type still needs fixes)
-            throw SemanticAbort();
-        }
-
-
-        return ASR::make_ListLen_t(al, x.base.base.loc, arg, 
-                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
-    }
-
-    ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
