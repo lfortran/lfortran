@@ -196,9 +196,6 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SymbolicSinQ)
         INTRINSIC_NAME_CASE(SymbolicGetArgument)
         INTRINSIC_NAME_CASE(Int)
-
-        // LP Ported functions 
-        INTRINSIC_NAME_CASE(LF_ListLen)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -568,11 +565,6 @@ namespace IntrinsicElementalFunctionRegistry {
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             {&Int::instantiate_Int, &Int::verify_args}},
-
-
-        // LP Ported functions 
-        {static_cast<int64_t>(IntrinsicElementalFunctions::LF_ListLen),
-            {nullptr, &LF_ListLen::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -1114,9 +1106,6 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"SinQ", {&SymbolicSinQ::create_SymbolicSinQ, &SymbolicSinQ::eval_SymbolicSinQ}},
                 {"GetArgument", {&SymbolicGetArgument::create_SymbolicGetArgument, &SymbolicGetArgument::eval_SymbolicGetArgument}},
                 {"int", {&Int::create_Int, &Int::eval_Int}},
-
-                // LP Ported functions 
-                {"_lfortran_list_len", {&LF_ListLen::create_LF_ListLen, &LF_ListLen::eval_LF_ListLen}}
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
