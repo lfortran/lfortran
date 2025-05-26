@@ -7202,7 +7202,7 @@ public:
         return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
     }
 
-    ASR::asr_t* create_LF_ListLen(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_ListLen(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_list_len expects exactly one list argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
