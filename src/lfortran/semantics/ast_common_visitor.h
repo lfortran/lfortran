@@ -4658,9 +4658,8 @@ public:
 
                 if (derived_type_name == "_lfortran_list_integer") 
                     return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-                // TODO: Fix
-                /*else if (derived_type_name == "_lfortran_list_real") */
-                /*    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));*/
+                else if (derived_type_name == "_lfortran_list_real") 
+                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
             
             }
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
