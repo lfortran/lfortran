@@ -3499,6 +3499,54 @@ public:
                     return tmp;
                 }
             }
+        } else if (var_name.rfind("_lfortran_", 0) == 0) {
+            // LFortran specific intrinsics
+            
+            if (var_name == "_lfortran_list_append") {
+                IntrinsicSignature signature = get_intrinsic_signature(var_name);
+                Vec<ASR::expr_t*> args;
+                bool signature_matched = false;
+                signature_matched = handle_intrinsic_node_args(
+                    x, args, signature.kwarg_names,
+                    signature.positional_args, signature.max_args,
+                    var_name, true);
+                
+                if( !signature_matched ) {
+                    diag.add(Diagnostic(
+                        "No matching signature found for intrinsic " + var_name,
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    diag.add(Diagnostic(
+                        "First argument of " + var_name + " must be of list type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(args[0]));
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(args[1]);
+                ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
+                if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                    diag.add(Diagnostic(
+                        "Type mismatch in " + var_name + ", the types must be compatible",
+                        Level::Error, Stage::Semantic, {
+                            Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                return ASR::make_ListAppend_t(al, x.base.base.loc, args[0], args[1]);
+
+            }
         }
         return nullptr;
     }
