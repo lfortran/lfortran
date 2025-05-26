@@ -895,24 +895,38 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_type = nullptr;
         alloc_args.push_back(al, alloc_arg);
 
-        ASR::stmt_t* realloc_t = ASRUtils::STMT(ASR::make_ReAlloc_t(
-                al, loc, alloc_args.p, alloc_args.size()));
-        if( array_copy && ASRUtils::is_allocatable(target_type) && !realloc_lhs ) {
-            Vec<ASR::expr_t*> args; args.reserve(al, 1);
-            args.push_back(al, target);
-            diag::Diagnostics diags;
-            ASR::expr_t* is_allocated = ASRUtils::EXPR(
-                ASRUtils::Allocated::create_Allocated(
-                    al, loc, args, diags));
-            ASR::expr_t* not_allocated = ASRUtils::EXPR(ASR::make_LogicalNot_t(
-                al, loc, is_allocated, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-            Vec<ASR::stmt_t*> if_body; if_body.reserve(al, 1);
-            if_body.push_back(al, realloc_t);
-            ASR::stmt_t* if_stmt_t = ASRUtils::STMT(ASR::make_If_t(al,
-                loc, not_allocated, if_body.p, if_body.size(), nullptr, 0));
-            pass_result.push_back(al, if_stmt_t);
-        } else {
-            pass_result.push_back(al, realloc_t);
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
+                al, loc, alloc_args.p, alloc_args.size())));
+    }
+
+    void visit_Allocate(const ASR::Allocate_t& x) {
+        ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
+        if (xx.m_source) {
+            pass_result.push_back(al, &(xx.base));
+            // Pushing assignment statements to source
+            for (size_t i = 0; i < x.n_args ; i++) {
+                ASR::ttype_t* source_type = ASRUtils::expr_type(xx.m_source);
+                ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_args[i].m_a);
+                if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
+                    ASRUtils::make_ArrayBroadcast_t_util(
+                        al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source);
+                }
+                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs));
+                ASR::Assignment_t* assignment_t = ASR::down_cast<ASR::Assignment_t>(assign);
+                Vec<ASR::expr_t**> fix_type_args;
+                fix_type_args.reserve(al, 2);
+                fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(assignment_t->m_target)));
+                fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(assignment_t->m_value)));
+
+                Vec<ASR::expr_t**> vars;
+                vars.reserve(al, 1);
+                vars.push_back(al, &(assignment_t->m_value));
+                vars.push_back(al, &(assignment_t->m_target));
+
+                generate_loop(*assignment_t, vars, fix_type_args, x.base.base.loc);
+            }
+            xx.m_source = nullptr;
         }
     }
 
