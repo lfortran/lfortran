@@ -854,9 +854,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        bool array_copy = ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target);
         if( (realloc_lhs == false || !ASRUtils::is_allocatable(target_type) || vars.size() == 1) &&
-            !(ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target) &&
-              ASRUtils::is_allocatable(target_type)) ) {
+            !(array_copy && ASRUtils::is_allocatable(target_type)) ) {
             return ;
         }
 
@@ -895,8 +895,25 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_type = nullptr;
         alloc_args.push_back(al, alloc_arg);
 
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
-            al, loc, alloc_args.p, alloc_args.size())));
+        ASR::stmt_t* realloc_t = ASRUtils::STMT(ASR::make_ReAlloc_t(
+                al, loc, alloc_args.p, alloc_args.size()));
+        if( array_copy && ASRUtils::is_allocatable(target_type) && !realloc_lhs ) {
+            Vec<ASR::expr_t*> args; args.reserve(al, 1);
+            args.push_back(al, target);
+            diag::Diagnostics diags;
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(
+                ASRUtils::Allocated::create_Allocated(
+                    al, loc, args, diags));
+            ASR::expr_t* not_allocated = ASRUtils::EXPR(ASR::make_LogicalNot_t(
+                al, loc, is_allocated, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            Vec<ASR::stmt_t*> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, realloc_t);
+            ASR::stmt_t* if_stmt_t = ASRUtils::STMT(ASR::make_If_t(al,
+                loc, not_allocated, if_body.p, if_body.size(), nullptr, 0));
+            pass_result.push_back(al, if_stmt_t);
+        } else {
+            pass_result.push_back(al, realloc_t);
+        }
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
