@@ -441,6 +441,9 @@ namespace GetCommandArgument {
         declare_basic_variables(new_name);
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
         fill_func_arg_sub("number", arg_types[0], In);
+
+        std::string first_param_c_func_name = ASRUtils::is_integer(*arg_types[1]) ? c_func_name_2 : c_func_name_1;
+
         if (arg_types.size() > 1) { // TODO : Correct this as it assumes `arg[1]` to be the `value` (this function has all parameters as optional)
             ASR::ttype_t* CString_type = character(-1);
             ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
@@ -452,14 +455,14 @@ namespace GetCommandArgument {
             args_1.push_back(al, arg);
             SetChar dep_1; dep_1.reserve(al, 1);
             Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name_1,
+            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, first_param_c_func_name,
                 ASRUtils::is_character(*arg_types[1])? CString_type : ASRUtils::extract_type(arg_types[1]),
                 ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-            ASR::symbol_t *s_1 = make_ASR_Function_t(c_func_name_1, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_1));
+            ASR::symbol_t *s_1 = make_ASR_Function_t(first_param_c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, first_param_c_func_name));
             
-            fn_symtab->add_symbol(c_func_name_1, s_1);
-            dep.push_back(al, s2c(al, c_func_name_1));
+            fn_symtab->add_symbol(first_param_c_func_name, s_1);
+            dep.push_back(al, s2c(al, first_param_c_func_name));
             Vec<ASR::expr_t*> call_args1; call_args1.reserve(al, 1);
             call_args1.push_back(al, args[0]);
             body.push_back(al, b.Assignment(args[1], 
@@ -468,7 +471,7 @@ namespace GetCommandArgument {
                     ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type)
                     :b.Call(s_1, call_args1, arg_types[1])));
         }
-        if (arg_types.size() > 2) {
+        if (arg_types.size() > 2 && !ASRUtils::is_integer(*arg_types[1])) {
             fill_func_arg_sub("length", arg_types[2], InOut);
             
             ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 1, arg_types[2]);
@@ -477,6 +480,12 @@ namespace GetCommandArgument {
             Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 1);
             call_args2.push_back(al, args[0]);
             body.push_back(al, b.Assignment(args[2], b.Call(s_2, call_args2, arg_types[2])));
+        } else if ( arg_types.size() > 2 && ASRUtils::is_integer(*arg_types[1]) ) {
+            fill_func_arg_sub("status", arg_types[2], InOut);
+            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
+            fn_symtab->add_symbol(c_func_name_3, s_3);
+            dep.push_back(al, s2c(al, c_func_name_3));
+            body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
         }
         if (arg_types.size() == 4) {
             fill_func_arg_sub("status", arg_types[3], InOut);
