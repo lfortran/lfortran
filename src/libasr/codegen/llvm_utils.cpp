@@ -2,6 +2,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
+#include <llvm/IR/Type.h>
 
 namespace LCompilers {
 
@@ -4716,7 +4717,8 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMList::len(llvm::Value* list) {
-        return llvm_utils->CreateLoad(get_pointer_to_current_end_point(list));
+        return llvm_utils->CreateLoad2(
+                llvm::Type::getInt32Ty(context) ,get_pointer_to_current_end_point(list));
     }
 
     llvm::Value* LLVMDict::len(llvm::Value* dict) {
@@ -4765,7 +4767,7 @@ namespace LCompilers {
                                                    llvm::APInt(32, type_size)),
                                                    new_capacity);
         llvm::Value* copy_data_ptr = get_pointer_to_list_data(list);
-        llvm::Value* copy_data = llvm_utils->CreateLoad(copy_data_ptr);
+        llvm::Value* copy_data = llvm_utils->CreateLoad2(el_type->getPointerTo() ,copy_data_ptr);
         copy_data = LLVM::lfortran_realloc(context, *module, *builder,
                                            copy_data, arg_size);
         copy_data = builder->CreateBitCast(copy_data, el_type->getPointerTo());
@@ -4778,7 +4780,8 @@ namespace LCompilers {
 
     void LLVMList::shift_end_point_by_one(llvm::Value* list) {
         llvm::Value* end_point_ptr = get_pointer_to_current_end_point(list);
-        llvm::Value* end_point = llvm_utils->CreateLoad(end_point_ptr);
+        llvm::Value* end_point = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
+                                                            end_point_ptr);
         end_point = builder->CreateAdd(end_point, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
         builder->CreateStore(end_point, end_point_ptr);
     }
@@ -4786,8 +4789,10 @@ namespace LCompilers {
     void LLVMList::append(llvm::Value* list, llvm::Value* item,
                           ASR::ttype_t* asr_type, llvm::Module* module,
                           std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        llvm::Value* current_end_point = llvm_utils->CreateLoad(get_pointer_to_current_end_point(list));
-        llvm::Value* current_capacity = llvm_utils->CreateLoad(get_pointer_to_current_capacity(list));
+        llvm::Value* current_end_point = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
+                                                                 get_pointer_to_current_end_point(list));
+        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
+                                                                get_pointer_to_current_capacity(list));
         std::string type_code = ASRUtils::get_type_code(asr_type);
         int type_size = std::get<1>(typecode2listtype[type_code]);
         llvm::Type* el_type = std::get<2>(typecode2listtype[type_code]);
@@ -4802,10 +4807,10 @@ namespace LCompilers {
                                llvm::Module* module,
                                std::map<std::string, std::map<std::string, int>>& name2memidx) {
         std::string type_code = ASRUtils::get_type_code(asr_type);
-        llvm::Value* current_end_point = llvm_utils->CreateLoad(
-                                        get_pointer_to_current_end_point(list));
-        llvm::Value* current_capacity = llvm_utils->CreateLoad(
-                                        get_pointer_to_current_capacity(list));
+        llvm::Value* current_end_point = llvm_utils->CreateLoad2(
+                               llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
+        llvm::Value* current_capacity = llvm_utils->CreateLoad2(
+                               llvm::Type::getInt32Ty(context), get_pointer_to_current_capacity(list));
         int type_size = std::get<1>(typecode2listtype[type_code]);
         llvm::Type* el_type = std::get<2>(typecode2listtype[type_code]);
         resize_if_needed(list, current_end_point, current_capacity,
@@ -4924,8 +4929,8 @@ namespace LCompilers {
          *  }
          */
 
-        llvm::Value* end_point = llvm_utils->CreateLoad(
-                                        get_pointer_to_current_end_point(list));
+        llvm::Value* end_point = llvm_utils->CreateLoad2(
+                               llvm::Type::getInt32Ty(context) ,get_pointer_to_current_end_point(list));
 
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
         llvm::AllocaInst *i = llvm_utils->CreateAlloca(pos_type);
@@ -4995,8 +5000,8 @@ namespace LCompilers {
             end_point = end;
         }
         else {
-            end_point = llvm_utils->CreateLoad(
-                            get_pointer_to_current_end_point(list));
+            end_point = llvm_utils->CreateLoad2(
+                llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
         }
         llvm::Value* tmp = nullptr;
 
@@ -5072,8 +5077,8 @@ namespace LCompilers {
     llvm::Value* LLVMList::count(llvm::Value* list, llvm::Value* item,
                                 ASR::ttype_t* item_type, llvm::Module* module) {
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
-        llvm::Value* current_end_point = llvm_utils->CreateLoad(
-                                        get_pointer_to_current_end_point(list));
+        llvm::Value* current_end_point = llvm_utils->CreateLoad2(
+            llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
         llvm::AllocaInst *i = llvm_utils->CreateAlloca(pos_type);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), i);
@@ -5138,8 +5143,8 @@ namespace LCompilers {
     void LLVMList::remove(llvm::Value* list, llvm::Value* item,
                           ASR::ttype_t* item_type, llvm::Module* module) {
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
-        llvm::Value* current_end_point = llvm_utils->CreateLoad(
-                                        get_pointer_to_current_end_point(list));
+        llvm::Value* current_end_point = llvm_utils->CreateLoad2(
+            llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
         // TODO: Should be created outside the user loop and not here.
         // LLVMList should treat them as data members and create them
         // only if they are NULL
@@ -5185,7 +5190,8 @@ namespace LCompilers {
 
         // Decrement end point by one
         llvm::Value* end_point_ptr = get_pointer_to_current_end_point(list);
-        llvm::Value* end_point = llvm_utils->CreateLoad(end_point_ptr);
+        llvm::Value* end_point = llvm_utils->CreateLoad2(
+            llvm::Type::getInt32Ty(context),end_point_ptr);
         end_point = builder->CreateSub(end_point, llvm::ConstantInt::get(
                                        context, llvm::APInt(32, 1)));
         builder->CreateStore(end_point, end_point_ptr);
@@ -5195,7 +5201,8 @@ namespace LCompilers {
         // If list is empty, output error
 
         llvm::Value* end_point_ptr = get_pointer_to_current_end_point(list);
-        llvm::Value* end_point = llvm_utils->CreateLoad(end_point_ptr);
+        llvm::Value* end_point = llvm_utils->CreateLoad2(
+            llvm::Type::getInt32Ty(context),end_point_ptr);
 
         llvm::Value* cond = builder->CreateICmpEQ(llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), end_point);
@@ -5235,7 +5242,8 @@ namespace LCompilers {
          */
 
         llvm::Value* end_point_ptr = get_pointer_to_current_end_point(list);
-        llvm::Value* end_point = llvm_utils->CreateLoad(end_point_ptr);
+        llvm::Value* end_point = llvm_utils->CreateLoad2(
+            llvm::Type::getInt32Ty(context),end_point_ptr);
 
         llvm::AllocaInst *pos_ptr = llvm_utils->CreateAlloca(
                                     llvm::Type::getInt32Ty(context));
