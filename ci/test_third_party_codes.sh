@@ -498,6 +498,22 @@ time_section "🧪 Testing dftatom" '
   git clean -dfx
   make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --fast"
   make -f Makefile.manual quicktest
+
+  git clean -dfx
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --std=f23"
+  make -f Makefile.manual quicktest
+
+  git clean -dfx
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --fast --std=f23"
+  make -f Makefile.manual quicktest
+
+  git clean -dfx
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --std=f23"
+  make -f Makefile.manual quicktest
+
+  git clean -dfx
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --fast --std=f23"
+  make -f Makefile.manual quicktest
 '
 
 
