@@ -1715,15 +1715,8 @@ public:
                         }
                     }
                 }
-                if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
-                    ASRUtils::make_ArrayBroadcast_t_util(
-                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
-                }
-                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr, compiler_options.po.realloc_lhs));
-                current_body->push_back(al, assign);
             }
-            tmp = nullptr;   // Doing it nullptr as we have already pushed allocate
+            tmp = nullptr;
         } else {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if( ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
