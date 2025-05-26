@@ -7225,6 +7225,55 @@ public:
                                  ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
     }
 
+    ASR::asr_t* create_ListConstant(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_list_constant expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args == 0) {
+            diag.add(Diagnostic("As of now _lfortran_list_constant expects atleast one argument",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+            
+        
+        AST::expr_t* source = nullptr;
+        ASR::ttype_t *contained_type = nullptr;
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 1);
+        
+
+        for (size_t i=0;i<x.n_args;i++) {
+            source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+            args.push_back(al, arg);
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+
+
+            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+                std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                diag.add(Diagnostic(
+                    "Type mismatch in _lfortran_list_constant, the types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch (found '" + 
+                    arg_type_str + "', expected '" + contained_type_str +  "')",{arg->base.loc})
+                    }));
+                throw SemanticAbort();
+            } else if (!contained_type) {
+                contained_type = arg_type;
+            }
+        }
+
+
+        return ASR::make_ListConstant_t(al, x.base.base.loc, args.p, args.n, 
+                                        ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type)));
+    }
+
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
@@ -8035,6 +8084,8 @@ public:
                 
                 if ( var_name == "_lfortran_list_len")
                     tmp = create_ListLen(x);
+                else if ( var_name == "_lfortran_list_constant")
+                    tmp = create_ListConstant(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
