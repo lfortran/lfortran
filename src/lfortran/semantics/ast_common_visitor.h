@@ -4654,7 +4654,7 @@ public:
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
             } else if (derived_type_name.rfind("_lfortran_", 0) == 0) {
-                // LP ported types for LF 
+                // LFortran-specific intrinsics 
 
                 if (derived_type_name == "_lfortran_list_integer") 
                     return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
