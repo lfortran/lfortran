@@ -905,12 +905,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             pass_result.push_back(al, &(xx.base));
             // Pushing assignment statements to source
             for (size_t i = 0; i < x.n_args ; i++) {
-                ASR::ttype_t* source_type = ASRUtils::expr_type(xx.m_source);
-                ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_args[i].m_a);
-                if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
-                    ASRUtils::make_ArrayBroadcast_t_util(
-                        al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source);
-                }
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                     al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs));
                 ASR::Assignment_t* assignment_t = ASR::down_cast<ASR::Assignment_t>(assign);
@@ -921,7 +915,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
                 Vec<ASR::expr_t**> vars;
                 vars.reserve(al, 1);
-                vars.push_back(al, &(assignment_t->m_value));
+                if( ASRUtils::is_array(
+                        ASRUtils::expr_type(assignment_t->m_value)) ) {
+                    vars.push_back(al, &(assignment_t->m_value));
+                }
                 vars.push_back(al, &(assignment_t->m_target));
 
                 generate_loop(*assignment_t, vars, fix_type_args, x.base.base.loc);
