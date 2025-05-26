@@ -3499,7 +3499,11 @@ public:
                     return tmp;
                 }
             }
+<<<<<<< HEAD
         } else if (startswith(var_name, "_lfortran_")) {
+=======
+        } else if (var_name.rfind("_lfortran_", 0) == 0) {
+>>>>>>> 5b6ce97da (Simplified list append)
             // LFortran specific intrinsics
             
             if (var_name == "_lfortran_list_append") {

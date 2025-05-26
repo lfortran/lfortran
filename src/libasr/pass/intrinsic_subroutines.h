@@ -890,36 +890,6 @@ namespace CpuTime {
 
 } // namespace CpuTime
 
-
-
-namespace LF_ListAppend {
-
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
-        if (x.n_args == 2) {
-            ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of list type", x.base.base.loc, diagnostics);
-
-            ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_args[0]));
-            ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_args[1]);
-            ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
-            std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
-            ASRUtils::require_impl(ASRUtils::check_equal_type(contained_type, arg_type), "Type mismatch in append, types must be compatible\n(Expected '" + contained_type_str + "' found '" + arg_type_str +  " )", x.base.base.loc, diagnostics);
-        }
-    }
-
-    static inline ASR::asr_t* create_LF_ListAppend(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return ASR::make_ListAppend_t(al, loc, args[0], args[1]);
-    }
-
-    static inline ASR::stmt_t* instantiate_LF_ListAppend(Allocator& /*al*/, const Location& /*loc*/,
-            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/,
-            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) {
-                
-        return nullptr;
-    }
-
-} // namespace LF_ListAppend 
-
 } // namespace LCompilers::ASRUtils
 
 #endif // LIBASR_PASS_INTRINSIC_SUBROUTINES_H

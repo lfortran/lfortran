@@ -4653,29 +4653,13 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-<<<<<<< HEAD
             } else if (startswith(derived_type_name, "_lfortran_")) {
-=======
-            } else if (derived_type_name.rfind("_lfortran_", 0) == 0) {
->>>>>>> d295a2e23 (Removed real type still needs fixes)
                 // LFortran-specific intrinsics 
 
                 if (derived_type_name == "_lfortran_list_integer") 
                     return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-<<<<<<< HEAD
-<<<<<<< HEAD
                 else if (derived_type_name == "_lfortran_list_real") 
                     return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
-=======
-                // TODO: Fix
-                /*else if (derived_type_name == "_lfortran_list_real") */
-                /*    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));*/
-=======
-                else if (derived_type_name == "_lfortran_list_real") 
-                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
->>>>>>> aada41b0e (Real lists enabled)
-            
->>>>>>> d295a2e23 (Removed real type still needs fixes)
             }
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
