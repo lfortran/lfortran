@@ -8034,7 +8034,7 @@ public:
                 // LFortran specific
                 
                 if ( var_name == "_lfortran_list_len")
-                    tmp = create_LF_ListLen(x);
+                    tmp = create_ListLen(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
