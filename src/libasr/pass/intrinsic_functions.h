@@ -201,9 +201,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     Or,
     Xor,
     // ...
-    
-    // LP Ported functions
-    LF_ListLen
 };
 
 typedef ASR::expr_t* (*impl_function)(
@@ -7026,35 +7023,6 @@ namespace SymbolicGetArgument {
     }
 } // namespace SymbolicGetArgument
 
-
-
-
-namespace LF_ListLen {
-
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
-        diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 1, "List len "
-            "accepts exactly 1 argument", x.base.base.loc, diagnostics);
-
-        ASR::ttype_t* arg1_type = ASRUtils::expr_type(x.m_args[0]);
-        ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*arg1_type),
-            "Argument to list len must be a list",
-                x.base.base.loc, diagnostics);
-    }
-
-    static inline ASR::asr_t* create_LF_ListLen(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return (ASR::asr_t *)ASR::make_ListLen_t(al, loc, args[0], 
-                                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr);
-    }
-
-    static inline ASR::expr_t* eval_LF_ListLen(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
-        // TODO
-        return nullptr;
-    }
-
-} // namespace LF_ListLen
 
 #define create_symbolic_query_macro(X)                                                    \
 namespace X {                                                                             \
