@@ -1306,7 +1306,7 @@ public:
     void visit_Deallocate(const T& x) {
         llvm::Function* free_fn = _Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
-            const ASR::expr_t* tmp_expr = x.m_vars[i];
+            ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
             ASR::abiType abt = ASR::abiType::Source;
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
@@ -1316,7 +1316,12 @@ public:
                                     symbol_get_past_external(curr_obj));
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 1 - LLVM::is_llvm_pointer(*v->m_type);
-                fetch_var(v);
+                if (!ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(v->m_type))) {
+                    fetch_var(v);
+                } else {
+                    uint32_t h = get_hash((ASR::asr_t*)v);
+                    tmp = llvm_symtab[h];
+                }
                 ptr_loads = ptr_loads_copy;
                 abt = v->m_abi;
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
@@ -1366,15 +1371,31 @@ public:
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), capacity);
                     continue;
                 } else {
+                    llvm::Type* llvm_data_type;
                     llvm::Value* tmp_ = tmp;
-                    if( LLVM::is_llvm_pointer(*cur_type) ) {
+                    if (LLVM::is_llvm_pointer(*cur_type)
+                        && !ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(cur_type))) {
                         tmp = llvm_utils->CreateLoad(tmp);
                     }
-                    llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-                        ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(cur_type))),
-                        module.get(), abt);
+                    if (ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(cur_type))) {
+                        // If it is a class type, we need to get the pointer to the struct
+                        tmp = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)),
+                            module.get()), tmp, 1);
+                        llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::extract_type(ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                                al, cur_type->base.loc, ASR::down_cast<ASR::ClassType_t>(
+                                    ASRUtils::extract_type(cur_type))->m_class_type))),
+                            module.get());
+                        tmp_ = tmp;
+                        tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), tmp);
+                    } else {
+                        llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::type_get_past_array(
+                                ASRUtils::type_get_past_pointer(
+                                    ASRUtils::type_get_past_allocatable(cur_type))),
+                            module.get(), abt);
+                    }
                     llvm::Value *cond = builder->CreateICmpNE(
                         builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
                         builder->CreatePtrToInt(
