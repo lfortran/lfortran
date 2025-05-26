@@ -4663,12 +4663,17 @@ public:
                 if (derived_type_name == "_lfortran_list_integer") 
                     return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
 <<<<<<< HEAD
+<<<<<<< HEAD
                 else if (derived_type_name == "_lfortran_list_real") 
                     return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
 =======
                 // TODO: Fix
                 /*else if (derived_type_name == "_lfortran_list_real") */
                 /*    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));*/
+=======
+                else if (derived_type_name == "_lfortran_list_real") 
+                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
+>>>>>>> aada41b0e (Real lists enabled)
             
 >>>>>>> d295a2e23 (Removed real type still needs fixes)
             }
@@ -7305,14 +7310,7 @@ public:
                                  ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
     }
 
-<<<<<<< HEAD
-    ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x)
-    {
->>>>>>> ed238e8d0 (Better comments)
-=======
-
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
->>>>>>> d295a2e23 (Removed real type still needs fixes)
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
@@ -8116,8 +8114,6 @@ public:
                 tmp = create_Complex(x);
             } else if( var_name == "is_contiguous" ) {
                 tmp = create_ArrayIsContiguous(x);
-<<<<<<< HEAD
-<<<<<<< HEAD
             } else if( startswith(var_name, "_lfortran_") ) {
                 // LFortran specific
                 
@@ -8125,21 +8121,6 @@ public:
                     tmp = create_ListLen(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
-=======
-            } else if (var_name.rfind("_lfortran_", 0) == 0) {
-                // LF Specific
-
-                if (var_name == "_lfortran_list_len") {
-                    tmp = create_LF_ListLen(x);
-                }
->>>>>>> ed238e8d0 (Better comments)
-=======
-            } else if( var_name.rfind("_lfortran_", 0) == 0 ) {
-                // LFortran specific
-                
-                if ( var_name == "_lfortran_list_len")
-                    tmp = create_LF_ListLen(x);
->>>>>>> d295a2e23 (Removed real type still needs fixes)
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
