@@ -1,6 +1,8 @@
 #ifndef LIBASR_PASS_INTRINSIC_FUNCTIONS_H
 #define LIBASR_PASS_INTRINSIC_FUNCTIONS_H
 
+#include "libasr/asr.h"
+#include "libasr/asr_utils.h"
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 #include <math.h>
@@ -7042,8 +7044,8 @@ namespace LF_ListLen {
 
     static inline ASR::asr_t* create_LF_ListLen(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        ASR::ttype_t* contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(args[0]));
-        return (ASR::asr_t *)ASR::make_ListLen_t(al, loc, args[0],contained_type, nullptr);
+        return (ASR::asr_t *)ASR::make_ListLen_t(al, loc, args[0], 
+                                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr);
     }
 
     static inline ASR::expr_t* eval_LF_ListLen(Allocator &/*al*/,
