@@ -1285,7 +1285,7 @@ public:
         {"trailz", IntrinsicSignature({"i"}, 1, 1)},
 
 
-        // LP Ported intrinsics
+        // LFortran-specific intrinsics
         {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
     };
 
