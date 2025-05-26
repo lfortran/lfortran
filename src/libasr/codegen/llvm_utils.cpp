@@ -2,7 +2,6 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
-#include <llvm/IR/Type.h>
 
 namespace LCompilers {
 
