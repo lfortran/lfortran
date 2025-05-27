@@ -29,7 +29,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     CpuTime,
     Srand,
     SystemClock,
-    DateAndTime
+    DateAndTime,
     // ...
 };
 
