@@ -3499,7 +3499,7 @@ public:
                     return tmp;
                 }
             }
-        } else if (var_name.rfind("_lfortran_", 0) == 0) {
+        } else if (startswith(var_name, "_lfortran_") == 0) {
             // LFortran specific intrinsics
             
             if (var_name == "_lfortran_list_append") {
