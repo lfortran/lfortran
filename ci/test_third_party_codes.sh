@@ -117,6 +117,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   ctest
 
   git clean -dfx
+  git restore .
   git checkout 9e54a1115c9b5d5558e9db6f295849912b1202d5
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
