@@ -5611,7 +5611,7 @@ public:
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
             !ASRUtils::is_character(*asr_value_type)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            check_and_allocate(sim->m_v);
+            check_and_allocate(sim->m_v, asr_value_type);
         }
 
         llvm::Value *target, *value;
@@ -5996,19 +5996,24 @@ public:
                         target_struct_ptr,
                         llvm::ConstantPointerNull::get(wrapper_struct_llvm_type->getPointerTo()));
 
-            ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(value_struct_type))->m_derived_type);
-            llvm::Value* value_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
-                            llvm::APInt(64, get_class_hash(value_struct_sym)));
-            llvm::Value* hash_ptr = llvm_utils->create_gep2(asr_ttype, tmp, 0);
-            llvm::Value* present_hash = llvm_utils->CreateLoad2(llvm_utils->getIntType(8), hash_ptr);
-            llvm::Value* hash_cond = builder->CreateICmpNE(
-                        present_hash,
-                        value_hash);
-
-            // Reallocate when target struct ptr is null or
-            // hashes of target and value are not equal
-            llvm_cond = builder->CreateOr(null_cond, hash_cond);
+            // consider the class hash only if the assignment value is a struct type
+            if (ASR::is_a<ASR::StructType_t>(*value_struct_type)) {
+                ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(value_struct_type))->m_derived_type);
+                llvm::Value* value_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                                llvm::APInt(64, get_class_hash(value_struct_sym)));
+                llvm::Value* hash_ptr = llvm_utils->create_gep2(asr_ttype, tmp, 0);
+                llvm::Value* present_hash = llvm_utils->CreateLoad2(llvm_utils->getIntType(8), hash_ptr);
+                llvm::Value* hash_cond = builder->CreateICmpNE(
+                            present_hash,
+                            value_hash);
+                // Reallocate when target struct ptr is null or
+                // hashes of target and value are not equal
+                llvm_cond = builder->CreateOr(null_cond, hash_cond);
+            } else {
+                // Reallocate when target struct ptr is null
+                llvm_cond = null_cond;
+            }
         } else {
             llvm_cond = builder->CreateICmpEQ(
                         builder->CreateLoad(llvm_type->getPointerTo(), tmp),
@@ -6023,7 +6028,16 @@ public:
                     alloc_arg.m_a = target_expr;
                     alloc_arg.m_dims = nullptr;
                     alloc_arg.n_dims = 0;
-                    alloc_arg.m_type = value_struct_type;
+                    // if the assignment target is a class type variable and the value is not a struct type,
+                    // then set the ttype of the alloc_arg to the class type
+                    if (ASR::is_a<ASR::ClassType_t>(*asr_type) &&
+                        !ASR::is_a<ASR::StructType_t>(*value_struct_type)) {
+                        alloc_arg.m_type = ASRUtils::TYPE(
+                            ASRUtils::make_StructType_t_util(al, asr_type->base.loc,
+                                ASR::down_cast<ASR::ClassType_t>(ASRUtils::extract_type(asr_type))->m_class_type));
+                    } else {
+                        alloc_arg.m_type  = value_struct_type;
+                    }
                     alloc_arg.m_len_expr = nullptr;
                     alloc_args.push_back(al, alloc_arg);
                     ASR::stmt_t *alloc_stmt =
