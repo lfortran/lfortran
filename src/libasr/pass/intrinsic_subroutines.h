@@ -29,12 +29,8 @@ enum class IntrinsicImpureSubroutines : int64_t {
     CpuTime,
     Srand,
     SystemClock,
-    DateAndTime,
+    DateAndTime
     // ...
-
-    // LP Ported Subroutines 
-    LF_ListAppend
-
 };
 
 typedef ASR::stmt_t* (*impl_subroutine)(
