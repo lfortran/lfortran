@@ -116,6 +116,15 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   make -j8
   ctest
 
+  git clean -dfx
+  git checkout 9e54a1115c9b5d5558e9db6f295849912b1202d5
+  FC=$FC cmake . \
+      -DTEST_DRIVE_BUILD_TESTING=OFF \
+      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
+      -DCMAKE_Fortran_FLAGS="--cpp --generate-object-code --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+  make -j8
+  ctest
+
   print_success "Done with stdlib (Less Workarounds)"
   cd ..
   rm -rf stdlib
