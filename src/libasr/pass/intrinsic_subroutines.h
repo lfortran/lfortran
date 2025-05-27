@@ -731,43 +731,60 @@ namespace GetEnvironmentVariable {
         std::string new_name = "_lcompilers_get_environment_variable_";
         declare_basic_variables(new_name);
         fill_func_arg_sub("name", arg_types[0], InOut);
-        fill_func_arg_sub("value", arg_types[1], InOut);
-        if (arg_types.size() == 3) {
-            fill_func_arg_sub("length", arg_types[2], InOut);
-        }
-        if (arg_types.size() == 4) {
-            fill_func_arg_sub("status", arg_types[3], InOut);
-        }
-        if (arg_types.size() == 5) {
-            fill_func_arg_sub("trim_name", arg_types[4], InOut);
-        }
-        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {
+            // this is the case where args[1] is `value`
+            ASR::ttype_t* CString_type = character(-1);
+            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
+            fill_func_arg_sub("value", arg_types[1], InOut);
+            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
+                CString_type);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+            call_args.push_back(al, args[0]);
+            body.push_back(al, b.Assignment(args[1],
+                    ASRUtils::create_string_physical_cast(al, b.Call(s, call_args, CString_type),
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type)));
 
-        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
-        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
-            ASR::intentType::InOut, ASR::abiType::BindC, true);
-        args_1.push_back(al, arg);
-        ASR::ttype_t* CString_type = character(-1);
-        ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
-        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            ASRUtils::is_character(*arg_types[1]) ?
-            CString_type :
-            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[1])),
-            ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-           
-        SetChar dep_1; dep_1.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-        fn_symtab->add_symbol(c_func_name, s);
-        dep.push_back(al, s2c(al, c_func_name));
+            if (arg_types.size() >= 3) {
+                std::string c_func_name = "_lfortran_get_length_of_environment_variable";
+                fill_func_arg_sub("length", arg_types[2], InOut);
+                ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
+                    arg_types[2]);
+                fn_symtab->add_symbol(c_func_name, s);
+                dep.push_back(al, s2c(al, c_func_name));
+                Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+                call_args.push_back(al, args[0]);
+                body.push_back(al, b.Assignment(args[2], b.Call(s, call_args, arg_types[2])));
+            }
+            if (arg_types.size() >= 4) {
+                fill_func_arg_sub("status", arg_types[3], InOut);
+            }
+            if (arg_types.size() >= 5) {
+                fill_func_arg_sub("trim_name", arg_types[4], InOut);
+            }
+        } else if ( arg_types.size() >= 2 && ASRUtils::is_integer(*arg_types[1]) ) {
+            // this is the case where args[1] is `length`
+            c_func_name = "_lfortran_get_length_of_environment_variable";
+            fill_func_arg_sub("length", arg_types[1], InOut);
+            ASR::ttype_t* CString_type = character(-1);
+            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
+            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
+                arg_types[1]);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+            call_args.push_back(al, args[0]);
+            body.push_back(al, b.Assignment(args[1], b.Call(s, call_args, arg_types[1])));
 
-        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-        call_args.push_back(al, args[0]);
-        body.push_back(al, b.Assignment(args[1], ASRUtils::is_character(*arg_types[1])?
-            ASRUtils::create_string_physical_cast(al, b.Call(s, call_args, CString_type),
-                ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type) 
-        : b.Call(s, call_args, arg_types[1])));
+            if (arg_types.size() >= 3) {
+                fill_func_arg_sub("status", arg_types[2], InOut);
+            }
+
+            if (arg_types.size() >= 4) {
+                fill_func_arg_sub("trim_name", arg_types[3], InOut);
+            }
+        }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
