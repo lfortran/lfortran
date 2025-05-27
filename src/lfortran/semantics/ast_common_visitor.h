@@ -4653,7 +4653,7 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            } else if (startswith(derived_type_name, "_lfortran_") == 0) {
+            } else if (startswith(derived_type_name, "_lfortran_")) {
                 // LFortran-specific intrinsics 
 
                 if (derived_type_name == "_lfortran_list_integer") 
@@ -8079,7 +8079,7 @@ public:
                 tmp = create_Complex(x);
             } else if( var_name == "is_contiguous" ) {
                 tmp = create_ArrayIsContiguous(x);
-            } else if( startswith(var_name, "_lfortran_") == 0 ) {
+            } else if( startswith(var_name, "_lfortran_") ) {
                 // LFortran specific
                 
                 if ( var_name == "_lfortran_list_len")

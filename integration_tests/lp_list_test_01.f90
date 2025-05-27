@@ -12,7 +12,7 @@ program lp_list_test_01
     
     call _lfortran_list_append(test_list, -50)
     if (_lfortran_list_len(test_list) /= 5) error stop
-    !
+     
     type(_lfortran_list_real) :: test_list_r  = _lfortran_list_constant(1.0, 2.0, 3.0, 4.0)
     if (_lfortran_list_len(test_list_r) /= 4) error stop
     call _lfortran_list_append(test_list_r, 1.11)
