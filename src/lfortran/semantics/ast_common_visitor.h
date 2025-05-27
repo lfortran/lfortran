@@ -1282,7 +1282,11 @@ public:
         {"digits", IntrinsicSignature({"x"}, 1, 1)},
         {"present", IntrinsicSignature({"a"}, 1, 1)},
         {"leadz", IntrinsicSignature({"i"}, 1, 1)},
-        {"trailz", IntrinsicSignature({"i"}, 1, 1)}
+        {"trailz", IntrinsicSignature({"i"}, 1, 1)},
+
+
+        // LFortran-specific intrinsics
+        {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
     };
 
 
@@ -4649,6 +4653,14 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
+            } else if (startswith(derived_type_name, "_lfortran_")) {
+                // LFortran-specific intrinsics 
+
+                if (derived_type_name == "_lfortran_list_integer") 
+                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
+                else if (derived_type_name == "_lfortran_list_real") 
+                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
+            
             }
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
@@ -7190,6 +7202,79 @@ public:
         return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
     }
 
+    ASR::asr_t* create_ListLen(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 1 || x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_list_len expects exactly one list argument, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+
+        if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(arg))) {
+            diag.add(Diagnostic("Arguement to _lfortran_list_len must be of list type",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+
+        return ASR::make_ListLen_t(al, x.base.base.loc, arg, 
+                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
+    }
+
+    ASR::asr_t* create_ListConstant(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_list_constant expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args == 0) {
+            diag.add(Diagnostic("As of now _lfortran_list_constant expects atleast one argument",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+            
+        
+        AST::expr_t* source = nullptr;
+        ASR::ttype_t *contained_type = nullptr;
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 1);
+        
+
+        for (size_t i=0;i<x.n_args;i++) {
+            source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+            args.push_back(al, arg);
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+
+
+            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+                std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                diag.add(Diagnostic(
+                    "Type mismatch in _lfortran_list_constant, the types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch (found '" + 
+                    arg_type_str + "', expected '" + contained_type_str +  "')",{arg->base.loc})
+                    }));
+                throw SemanticAbort();
+            } else if (!contained_type) {
+                contained_type = arg_type;
+            }
+        }
+
+
+        return ASR::make_ListConstant_t(al, x.base.base.loc, args.p, args.n, 
+                                        ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type)));
+    }
+
+
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
@@ -7994,6 +8079,13 @@ public:
                 tmp = create_Complex(x);
             } else if( var_name == "is_contiguous" ) {
                 tmp = create_ArrayIsContiguous(x);
+            } else if( startswith(var_name, "_lfortran_") ) {
+                // LFortran specific
+                
+                if ( var_name == "_lfortran_list_len")
+                    tmp = create_ListLen(x);
+                else if ( var_name == "_lfortran_list_constant")
+                    tmp = create_ListConstant(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
