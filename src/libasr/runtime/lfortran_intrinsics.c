@@ -1640,10 +1640,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     handle_integer(value, integer_val, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'b') {
                     int width = 0;
+                    int min_digit_cnt = 0;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'B'
                     }
-
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    if (dot != NULL) {
+                        min_digit_cnt = atoi(dot + 1); // get digits after '.'
+                    }
                     int bit_size = 0;
                     uint64_t uval = 0;
                     char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
@@ -1703,11 +1707,26 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             result = append_to_string(result, "*");
                         }
                     } else {
+                        int bin_len = strlen(binary_str);
+                        // Step 1: Pad with zeros to meet min_digit_cnt
+                        if (min_digit_cnt > bin_len) {
+                            int zero_padding = min_digit_cnt - bin_len;
+                            char* zeros = (char*)malloc((zero_padding + 1) * sizeof(char));
+                            memset(zeros, '0', zero_padding);
+                            zeros[zero_padding] = '\0';
+                            char* tmp = (char*)malloc((min_digit_cnt + 1) * sizeof(char));
+                            strcpy(tmp, zeros);
+                            strcat(tmp, binary_str);
+                            strcpy(binary_str, tmp);
+                            free(tmp);
+                            free(zeros);
+                            bin_len = strlen(binary_str);
+                        }
+                        // Step 2: Pad with spaces to meet width
                         int padding_needed = width - bin_len;
-                        char pad_char = ' ';
                         if (padding_needed > 0) {
                             char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
-                            memset(pad, pad_char, padding_needed);
+                            memset(pad, ' ', padding_needed);
                             pad[padding_needed] = '\0';
                             result = append_to_string(result, pad);
                             free(pad);
@@ -3017,10 +3036,10 @@ LFORTRAN_API int _lfortran_str_ord_c(char* s)
     return s[0];
 }
 
-LFORTRAN_API char* _lfortran_str_chr(int val)
+LFORTRAN_API char* _lfortran_str_chr(uint8_t val)
 {
     char* dest_char = (char*)malloc(2);
-    uint8_t extended_ascii = (uint8_t)val;
+    uint8_t extended_ascii = val;
     dest_char[0] = extended_ascii;
     dest_char[1] = '\0';
     return dest_char;

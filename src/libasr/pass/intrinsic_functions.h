@@ -4528,8 +4528,8 @@ namespace ToLowerCase {
             b.If(b.And(b.GtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("A", arg_types[0], int32)),
                 b.LtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("Z", arg_types[0], int32))), {
                 b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc,
-            b.Sub(b.Add(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
-            b.Ichar("A", arg_types[0], int32)), return_type, nullptr)), char_type))
+            b.i2i_t(b.Sub(b.Add(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
+            b.Ichar("A", arg_types[0], int32)), int8), return_type, nullptr)), char_type))
             }, {
                 b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), char_type))
             }),
@@ -5075,7 +5075,7 @@ namespace Char {
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
 
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int32), return_type, nullptr))));
+        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -5099,7 +5099,8 @@ namespace Achar {
         declare_basic_variables("_lcompilers_achar_" + type_to_str_python(arg_types[0]));
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, args[0], return_type, nullptr))));
+
+        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

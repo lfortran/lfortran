@@ -2169,6 +2169,12 @@ namespace LCompilers {
                 list_api->list_deepcopy(src, dest, list_type, module, name2memidx);
                 break ;
             }
+            case ASR::ttypeType::Pointer: {
+                ASR::Pointer_t* pointer_type = ASR::down_cast<ASR::Pointer_t>(asr_type);
+                src = CreateLoad2(get_type_from_ttype_t_util(pointer_type->m_type, module)->getPointerTo(), src);
+                LLVM::CreateStore(*builder, src, dest);
+                break ;
+            }
             case ASR::ttypeType::Dict: {
                 ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(asr_type);
                 set_dict_api(dict_type);
@@ -2201,6 +2207,7 @@ namespace LCompilers {
                         ASR::ttype_t* member_type = ASRUtils::symbol_type(item.second);
                         if( !LLVM::is_llvm_struct(member_type) &&
                             !ASRUtils::is_array(member_type) &&
+                            !ASRUtils::is_pointer(member_type) &&
                             !ASRUtils::is_descriptorString(member_type) &&
                             !llvm::isa<llvm::ConstantStruct>(src) &&
                             !llvm::isa<llvm::ConstantAggregateZero>(src)) {

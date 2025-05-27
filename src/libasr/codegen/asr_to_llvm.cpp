@@ -708,7 +708,7 @@ public:
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
-                        llvm::Type::getInt32Ty(context)
+                        llvm::Type::getInt8Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -5047,6 +5047,7 @@ public:
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
+        bool is_parameter = ASRUtils::is_value_constant(array_section->m_v);
 
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
@@ -5106,12 +5107,14 @@ public:
             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
+        int dims = ASRUtils::extract_n_dims_from_ttype(array_type);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
         if( arr_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
             arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
-            if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+            if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) && 
+                !(is_parameter && dims == 1) ) {
                 llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(value_array_type)),
