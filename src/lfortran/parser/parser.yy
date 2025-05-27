@@ -4,8 +4,8 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    227 // shift/reduce conflicts
-%expect-rr 219 // reduce/reduce conflicts
+%expect    230 // shift/reduce conflicts
+%expect-rr 224 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -331,6 +331,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_RETURN
 %token <string> KW_REWIND
 %token <string> KW_SAVE
+%token <string> KW_SEALED
 %token <string> KW_SELECT
 %token <string> KW_SELECT_CASE
 %token <string> KW_SELECT_RANK
@@ -771,6 +772,13 @@ enum_var_modifiers
     | var_modifier_list { $$ = $1; }
     ;
 
+// It seems var_modifier only covers simple_attribute, we need a new rule that
+// includes var_modifiers and decl_attribute (where AttrImplements is).
+// make_DerivedType_t(Allocator &al, const Location &a_loc, 
+//                    char* a_name, char** a_namelist, size_t n_namelist, 
+//                    trivia_t* a_trivia, decl_attribute_t** a_attrtype, 
+//                    size_t n_attrtype, unit_decl2_t** a_items, 
+//                    size_t n_items, procedure_decl_t** a_contains, size_t n_contains)
 derived_type_decl
     : KW_TYPE "," KW_DEFERRED "::" id sep {
             $$ = DERIVED_TYPE2($5, SIMPLE_ATTR(Deferred, @$), TRIVIA_AFTER($6, @$), @$); }
@@ -780,6 +788,11 @@ derived_type_decl
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    | KW_TYPE var_modifiers KW_IMPLEMENTS "(" id_list ")" id "(" id_list ")" sep var_decl_star
+        derived_type_contains_opt end_type sep {
+
+        }
+
     ;
 
 template_decl
@@ -1512,6 +1525,7 @@ var_modifier
     | KW_OPTIONAL { $$ = SIMPLE_ATTR(Optional, @$); }
     | KW_PROTECTED { $$ = SIMPLE_ATTR(Protected, @$); }
     | KW_SAVE { $$ = SIMPLE_ATTR(Save, @$); }
+    | KW_SEALED { $$ = SIMPLE_ATTR(Sealed, @$); }
     | KW_SEQUENCE { $$ = SIMPLE_ATTR(Sequence, @$); }
     | KW_CONTIGUOUS { $$ = SIMPLE_ATTR(Contiguous, @$); }
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
@@ -1530,6 +1544,7 @@ var_modifier
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
+    | KW_IMPLEMENTS "(" id_list ")" { $$ = ATTR_IMPLEMENTS($3, @$); }
     ;
 
 var_type
@@ -2665,6 +2680,7 @@ id
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }
     | KW_SAVE { $$ = SYMBOL($1, @$); }
+    | KW_SEALED { $$ = SYMBOL($1, @$); }
     | KW_SELECT { $$ = SYMBOL($1, @$); }
     | KW_SELECT_CASE { $$ = SYMBOL($1, @$); }
     | KW_SELECT_RANK { $$ = SYMBOL($1, @$); }

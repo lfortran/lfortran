@@ -490,6 +490,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'return' { KW(RETURN) }
             'rewind' { KW(REWIND) }
             'save' { KW(SAVE) }
+            'sealed' { KW(SEALED) }
             'select' { KW(SELECT) }
             'selectcase' { KW(SELECT_CASE) }
             'selectrank' { KW(SELECT_RANK) }

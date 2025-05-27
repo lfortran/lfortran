@@ -290,6 +290,7 @@ decl_attribute
     | AttrEquivalence(equi* args)
     | AttrExtends(identifier name)
     | AttrIntent(attr_intent intent)
+    | AttrImplements(identifier* name)
     | AttrNamelist(identifier name)
     | AttrPass(identifier? name)
     | SimpleAttribute(simple_attribute attr)
@@ -326,6 +327,7 @@ simple_attribute
     | AttrPure
     | AttrRecursive
     | AttrSave
+    | AttrSealed
     | AttrSequence
     | AttrTarget
     | AttrValue
