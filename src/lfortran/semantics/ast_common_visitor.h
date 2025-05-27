@@ -7204,7 +7204,7 @@ public:
         return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
     }
 
-    ASR::asr_t* create_ListLen(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_LFLen(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_list_len expects exactly one list argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -7215,15 +7215,18 @@ public:
         this->visit_expr(*source);
         ASR::expr_t* arg = ASRUtils::EXPR(tmp);
 
-        if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(arg))) {
-            diag.add(Diagnostic("Arguement to _lfortran_list_len must be of list type",
+        if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(arg))) 
+            return ASR::make_ListLen_t(al, x.base.base.loc, arg, 
+                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
+        else if (ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(arg)))
+            return ASR::make_SetLen_t(al, x.base.base.loc, arg, 
+                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
+        else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg));
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_len has not been implemented yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-
-
-        return ASR::make_ListLen_t(al, x.base.base.loc, arg, 
-                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
     }
 
     ASR::asr_t* create_ListConstant(const AST::FuncCallOrArray_t& x) {
@@ -7273,30 +7276,6 @@ public:
 
         return ASR::make_ListConstant_t(al, x.base.base.loc, args.p, args.n, 
                                         ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type)));
-    }
-
-
-    ASR::asr_t* create_SetLen(const AST::FuncCallOrArray_t& x) {
-        if (x.n_args != 1 || x.n_keywords > 0) {
-            diag.add(Diagnostic("_lfortran_set_len expects exactly one set argument, got " +
-                                std::to_string(x.n_args) + " arguments instead.",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-
-        AST::expr_t* source = x.m_args[0].m_end;
-        this->visit_expr(*source);
-        ASR::expr_t* arg = ASRUtils::EXPR(tmp);
-
-        if (!ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(arg))) {
-            diag.add(Diagnostic("Arguement to _lfortran_set_len must be of set type",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-
-
-        return ASR::make_SetLen_t(al, x.base.base.loc, arg, 
-                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
     }
 
     ASR::asr_t* create_SetConstant(const AST::FuncCallOrArray_t& x) {
@@ -8155,12 +8134,10 @@ public:
             } else if( startswith(var_name, "_lfortran_") ) {
                 // LFortran specific
                 
-                if ( var_name == "_lfortran_list_len")
-                    tmp = create_ListLen(x);
+                if ( var_name == "_lfortran_len")
+                    tmp = create_LFLen(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
-                else if ( var_name == "_lfortran_set_len")
-                    tmp = create_SetLen(x);
                 else if ( var_name == "_lfortran_set_constant")
                     tmp = create_SetConstant(x);
             } else {
