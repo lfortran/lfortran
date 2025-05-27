@@ -4653,7 +4653,7 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            } else if (derived_type_name.rfind("_lfortran_", 0) == 0) {
+            } else if (startswith(derived_type_name, "_lfortran_") == 0) {
                 // LFortran-specific intrinsics 
 
                 if (derived_type_name == "_lfortran_list_integer") 
