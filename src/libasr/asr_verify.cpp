@@ -383,7 +383,9 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
-        if ( x.m_realloc_lhs ) {
+        // it's possible that the target is an external symbol, and during
+        // initial deserialization pass, so we don't do the below verification
+        if ( check_external && x.m_realloc_lhs ) {
             ASR::expr_t* a_target = x.m_target;
             bool is_allocatable = ASRUtils::is_allocatable(a_target);
             if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
