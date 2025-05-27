@@ -7206,7 +7206,7 @@ public:
 
     ASR::asr_t* create_LFLen(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
-            diag.add(Diagnostic("_lfortran_list_len expects exactly one list argument, got " +
+            diag.add(Diagnostic("_lfortran_len expects exactly one list argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
         }
