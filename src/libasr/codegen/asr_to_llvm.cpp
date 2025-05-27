@@ -9888,16 +9888,42 @@ public:
                                 if( orig_arg &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
-                                    ASRUtils::check_equal_type(
-                                        ASRUtils::type_get_past_allocatable(
-                                            ASRUtils::type_get_past_pointer(orig_arg->m_type)),
-                                        ASRUtils::type_get_past_allocatable(
-                                            ASRUtils::type_get_past_pointer(arg->m_type))) &&
                                     !ASRUtils::is_character(*arg->m_type) &&
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(arg->m_type))) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
                                     tmp = llvm_utils->CreateLoad(tmp);
+                                }
+
+                                if (ASRUtils::is_class_type(
+                                        ASRUtils::type_get_past_allocatable(arg->m_type))
+                                    && ASR::is_a<ASR::StructType_t>(
+                                        *ASRUtils::type_get_past_allocatable(orig_arg->m_type))
+                                    && !ASRUtils::is_class_type(
+                                        ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
+                                    // if the required argument is of struct type, we need to pass
+                                    // in the struct pointer to it
+                                    ASR::ttype_t* struct_type = ASRUtils::TYPE(
+                                                                    ASRUtils::make_StructType_t_util(
+                                                                    al, arg->m_type->base.loc,
+                                                                    (ASR::down_cast<ASR::StructType_t>(
+                                                                        ASRUtils::type_get_past_allocatable(
+                                                                            arg->m_type))->m_derived_type)));
+                                    llvm::Type* llvm_struct_type = llvm_utils->get_type_from_ttype_t_util(struct_type,
+                                            module.get())->getPointerTo();
+                                    llvm::Value* struct_ptr = llvm_utils->create_gep2(
+                                                            llvm_utils->get_type_from_ttype_t_util(
+                                                                ASRUtils::type_get_past_allocatable(arg->m_type),
+                                                                module.get()),
+                                                            tmp, 1);
+                                    
+                                    if (ASRUtils::is_class_type(
+                                            ASRUtils::type_get_past_allocatable(arg->m_type))
+                                        && !ASR::is_a<ASR::Allocatable_t>(*orig_arg->m_type)) {
+                                        tmp = llvm_utils->CreateLoad2(llvm_struct_type, struct_ptr);
+                                    } else {
+                                        tmp = struct_ptr;
+                                    }
                                 }
                             }
                         } else {
