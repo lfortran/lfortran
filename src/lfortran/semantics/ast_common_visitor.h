@@ -8079,7 +8079,7 @@ public:
                 tmp = create_Complex(x);
             } else if( var_name == "is_contiguous" ) {
                 tmp = create_ArrayIsContiguous(x);
-            } else if( var_name.rfind("_lfortran_", 0) == 0 ) {
+            } else if( startswith(var_name, "_lfortran_") == 0 ) {
                 // LFortran specific
                 
                 if ( var_name == "_lfortran_list_len")
