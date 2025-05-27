@@ -5,5 +5,5 @@ CALL get_environment_variable("LFORTRAN_TEST_ENV_VAR", test_env_var, len)
 WRITE (*,*) TRIM(test_env_var)
 if (trim(test_env_var) /= "STATUS OK!") error stop
 print *, len
-if (len /= 9) error stop
+if (len /= 10) error stop
 END PROGRAM
