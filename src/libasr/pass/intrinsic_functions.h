@@ -1,8 +1,6 @@
 #ifndef LIBASR_PASS_INTRINSIC_FUNCTIONS_H
 #define LIBASR_PASS_INTRINSIC_FUNCTIONS_H
 
-#include "libasr/asr.h"
-#include "libasr/asr_utils.h"
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 #include <math.h>
@@ -199,7 +197,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Present,
     And,
     Or,
-    Xor,
+    Xor
     // ...
 };
 
@@ -7021,7 +7019,6 @@ namespace SymbolicGetArgument {
             0, to_type, diag);
     }
 } // namespace SymbolicGetArgument
-
 
 #define create_symbolic_query_macro(X)                                                    \
 namespace X {                                                                             \
