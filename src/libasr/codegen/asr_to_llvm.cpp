@@ -1,4 +1,6 @@
 #include <iostream>
+#include <llvm/ADT/StringRef.h>
+#include <llvm/IR/Constant.h>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -2879,6 +2881,21 @@ public:
         current_der_type_name = ASRUtils::symbol_name(x.m_dt_sym);
     }
 
+    llvm::Constant* get_str_const_array(ASR::ArrayConstant_t *arr_const) {
+        std::vector<llvm::Constant*> arr_elements;
+        std::vector<std::string> str_elements;
+        size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
+        arr_elements.reserve(arr_const_size);
+        for (size_t i = 0; i < arr_const_size; i++) {
+            ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, i);
+            ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(elem);
+            this->visit_StringConstant(*str_const);
+            arr_elements.push_back(llvm::cast<llvm::Constant>(tmp));
+        }
+        llvm::ArrayType* arr_type = llvm::ArrayType::get(character_type, arr_const_size);
+        return llvm::ConstantArray::get(arr_type, arr_elements);
+    }
+
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
         ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -2906,6 +2923,8 @@ public:
                 ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
                 arr_elements.push_back(llvm::ConstantInt::get(
                     context, llvm::APInt(1, logical_const->m_value)));
+            } else if (ASR::is_a<ASR::StringConstant_t>(*elem)) {
+                return get_str_const_array(arr_const);
             }
         }
         llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
@@ -3078,16 +3097,42 @@ public:
                 llvm_symtab[h] = ptr;
             } else {
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
-                llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                    type);
+                llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
                 if (!external) {
                     if (init_value) {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
                     } else {
-                        module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                llvm::Constant::getNullValue(type)
-                            );
+                        std::vector<llvm::Constant*> elements;
+
+                        ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
+                        for (size_t i = 0; i < st->n_members; i++) {
+                            if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                                    st->m_symtab->get_symbol(st->m_members[i])))) {
+                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(
+                                    st->m_symtab->get_symbol(st->m_members[i])));
+                                if (var->m_value) {
+                                    if (ASR::is_a<ASR::ArrayConstant_t>(*var->m_value)) {
+                                        ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(var->m_value);
+                                        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(arr_const->m_type, module.get());
+                                        llvm::Constant* initializer = get_const_array(var->m_value, type);
+                                        elements.push_back(initializer);
+                                    } else {
+                                        this->visit_expr(*var->m_value);
+                                        if (llvm::isa<llvm::Constant>(tmp)) {
+                                            elements.push_back(llvm::cast<llvm::Constant>(tmp));
+                                        }
+                                    }
+                                } else {
+                                    elements.push_back(llvm::Constant::getNullValue(
+                                        llvm_utils->get_type_from_ttype_t_util(
+                                            ASRUtils::extract_type(var->m_type), module.get())));
+                                }
+                            }
+                        }
+                        llvm::Constant* struct_init = llvm::ConstantStruct::get(static_cast<llvm::StructType*>(type), elements);
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(struct_init);
                     }
                 }
                 llvm_symtab[h] = ptr;

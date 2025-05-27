@@ -244,7 +244,7 @@ namespace LCompilers {
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
-            (*der_type_llvm)->setBody(member_types, true);
+            (*der_type_llvm)->setBody(member_types);
             name2dertype[der_type_name] = *der_type_llvm;
         }
         struct_type_stack.pop_back();
