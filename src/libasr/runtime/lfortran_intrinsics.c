@@ -5220,6 +5220,20 @@ LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
     }
 }
 
+LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(char *name) {
+    // temporary solution, the below function _lfortran_get_env_variable should be used
+    if (name == NULL) {
+        return 0;
+    } else {
+        char *value = getenv(name);
+        if (value == NULL) {
+            return 0; // If the environment variable is not found, return 0
+        } else {
+            return strlen(value); // Return the length of the environment variable value
+        }
+    }
+}
+
 LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
     return getenv(name);
 }
