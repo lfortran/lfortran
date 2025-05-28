@@ -102,7 +102,7 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
 
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             if (ASR::is_a<ASR::Allocatable_t>(*target_type) &&
-                ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_allocatable(target_type))) {
+                ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(target_type))) {
                 replacer.result_var = nullptr;
             } else {
                 replacer.result_var = x.m_target;

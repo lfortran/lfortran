@@ -96,7 +96,7 @@ namespace LCompilers {
          #define fix_struct_type_scope() array_ref_type = ASRUtils::type_get_past_array( \
                 ASRUtils::type_get_past_pointer( \
                     ASRUtils::type_get_past_allocatable(array_ref_type))); \
-            if( current_scope && ASR::is_a<ASR::StructType_t>(*array_ref_type) ) { \
+            if( current_scope && ASR::is_a<ASR::StructType_t>(*array_ref_type) && !ASRUtils::is_class_type(array_ref_type)) { \
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(array_ref_type); \
                 if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab( \
                         struct_t->m_derived_type)->get_counter() ) { \

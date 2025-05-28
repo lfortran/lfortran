@@ -353,16 +353,12 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, dup_sym);
                     continue;
                 }
-                if( ASR::is_a<ASR::StructType_t>(*var_type_) || ASR::is_a<ASR::ClassType_t>(*var_type_) ) {
+                if( ASR::is_a<ASR::StructType_t>(*var_type_)) {
                     ASR::symbol_t* derived_type_or_class_type = nullptr;
                     ASR::StructType_t* struct_t = nullptr;
-                    ASR::ClassType_t* class_t = nullptr;
                     if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
                         struct_t = ASR::down_cast<ASR::StructType_t>(var_type_);
                         derived_type_or_class_type = struct_t->m_derived_type;
-                    } else {
-                        class_t = ASR::down_cast<ASR::ClassType_t>(var_type_);
-                        derived_type_or_class_type = class_t->m_class_type;
                     }
                     if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(derived_type_or_class_type)->get_counter() ) {
                         ASR::symbol_t* m_derived_type_or_class_type = current_scope->get_symbol(
@@ -394,9 +390,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             }
                         }
                         if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
-                            var_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, struct_t->base.base.loc, m_derived_type_or_class_type));
-                        } else {
-                            var_type_ = ASRUtils::TYPE(ASR::make_ClassType_t(al, class_t->base.base.loc, m_derived_type_or_class_type));
+                            var_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                                            al,
+                                            struct_t->base.base.loc,
+                                            m_derived_type_or_class_type,
+                                            ASR::down_cast<ASR::StructType_t>(var_type_)->m_is_cstruct));
                         }
                         if( ASR::is_a<ASR::Array_t>(*var_type) ) {
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
@@ -664,6 +662,10 @@ public:
                                        ASRUtils::type_get_past_allocatable_pointer(
                                            ASR::down_cast<ASR::Variable_t>(
                                                ASRUtils::symbol_get_past_external(ext_sym))->m_type)))
+                                    && !ASRUtils::is_class_type(
+                                        ASRUtils::type_get_past_allocatable_pointer(
+                                            ASR::down_cast<ASR::Variable_t>(
+                                                ASRUtils::symbol_get_past_external(ext_sym))->m_type))
                                    && ASR::is_a<ASR::Program_t>(*ASRUtils::get_asr_owner((ext_sym)))) {
                             ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(ASRUtils::type_get_past_array(
                                                     ASRUtils::type_get_past_allocatable_pointer(
@@ -802,7 +804,9 @@ public:
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable_pointer(v->m_type)))) {
+                        ASRUtils::type_get_past_allocatable_pointer(v->m_type)))
+                    && !ASRUtils::is_class_type(
+                        ASRUtils::type_get_past_allocatable_pointer(v->m_type))) {
                     // Fix the ttype of variables to point to the imported Struct (as ExternalSymbol)
                     ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(
                                                 ASRUtils::type_get_past_array(
