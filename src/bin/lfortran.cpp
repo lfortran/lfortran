@@ -98,6 +98,22 @@ enum Backend {
     llvm, c, cpp, x86, wasm, fortran, mlir
 };
 
+std::string get_system_temp_dir()
+{
+    #ifdef _WIN32
+    char buffer[MAX_PATH];
+    DWORD len = GetTempPathA(MAX_PATH, buffer);
+    return std::string(buffer, len);
+    #else
+    const char* tmp = getenv("TMPDIR");
+    if (tmp) return tmp;
+    return "/tmp";
+    #endif
+}
+
+std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
+
+
 std::string get_unique_ID() {
     static std::random_device dev;
     static std::mt19937 rng(dev());
@@ -1198,8 +1214,8 @@ int compile_src_to_object_file(const std::string &infile,
                 std::cerr << diagnostics.render(lm, compiler_options);
                 if (mlir_res.ok) {
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
-                    std::string mlir_tmp_o{std::filesystem::path(infile).
-                        replace_extension(".mlir.tmp.o").string()};
+                    std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
+                        .filename().replace_extension(".mlir.tmp.o")).string();
                     e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
                 } else {
                     LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1812,6 +1828,8 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
+    std::vector<std::string> mlir_temp_object_files;
+
     size_t dot_index = outfile.find_last_of(".");
     std::string file_name = outfile.substr(0, dot_index);
     std::string extra_linker_flags;
@@ -1928,9 +1946,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 if (backend == Backend::llvm &&
                         compiler_options.po.enable_gpu_offloading &&
                         LCompilers::endswith(s, ".tmp.o")) {
-                    std::string mlir_tmp_o{s.substr(0, s.size() - 6) +
-                        ".mlir.tmp.o"};
+                    std::string mlir_tmp_o = s.substr(0, s.size() - 6) +
+                        ".mlir.tmp.o";
                     compile_cmd += mlir_tmp_o + " ";
+                    mlir_temp_object_files.push_back(mlir_tmp_o);
                 }
             }
             if(!extra_library_flags.empty()) {
@@ -2121,6 +2140,11 @@ int link_executable(const std::vector<std::string> &infiles,
         std::string message = "Linking time:  " + std::to_string(time_total / 1000) + "." + std::to_string(time_total % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
     }
+
+    for (const std::string& filename : mlir_temp_object_files) {
+        std::remove(filename.c_str());
+    }
+
     return 0;
 }
 
@@ -2610,9 +2634,14 @@ int main_app(int argc, char *argv[]) {
 
     int err_ = 0;
     std::vector<std::string> object_files;
+    // we need this separate vector to store temporary object files as some object files passed as arguments
+    // are considered as it is and we do not want to delete them
+    std::vector<std::string> temp_object_files;
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
-        std::string tmp_o = std::filesystem::path(arg_file).replace_extension(".tmp.o").string();
+        std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
+                                .filename().replace_extension(".tmp.o")).string();
+        temp_object_files.push_back(tmp_o);
         if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
             if (backend == Backend::x86) {
@@ -2674,6 +2703,10 @@ int main_app(int argc, char *argv[]) {
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
         auto end_time = std::chrono::high_resolution_clock::now();
+        
+        for (const std::string &filename : temp_object_files) {
+            std::remove(filename.c_str());
+        }
         if (compiler_options.time_report) {
             int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
             std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
