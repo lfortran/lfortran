@@ -5219,12 +5219,23 @@ public:
                     ASRUtils::type_get_past_pointer(target_type));
                 [[maybe_unused]] ASR::ClassType_t* value_class_t = ASR::down_cast<ASR::ClassType_t>(
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(value_type)));
+                std::string value_struct_t_name = "";
+                if ( ASR::is_a<ASR::Struct_t>(*value_class_t->m_class_type) ) {
+                    ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(value_class_t->m_class_type));
+                    value_struct_t_name = value_struct_t->m_name;
+                }
                 LCOMPILERS_ASSERT(target_class_t->m_class_type == value_class_t->m_class_type);
                 llvm::Type *value_llvm_type = llvm_utils->getStructType(
                     ASRUtils::extract_type(value_type), module.get(), true);
                 llvm::Value* value_vtabid = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_value, 0));
                 llvm::Value* value_class = llvm_utils->CreateLoad2(value_llvm_type, llvm_utils->create_gep(llvm_value, 1));
                 builder->CreateStore(value_vtabid, llvm_utils->create_gep(llvm_target, 0));
+                if ( value_struct_t_name == "~abstract_type" ) {
+                    // we need to cast `value_class` to `void*`
+                    llvm::Type* void_ptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                    value_class = builder->CreateBitCast(value_class, void_ptr_type);
+                }
                 builder->CreateStore(value_class, llvm_utils->create_gep(llvm_target, 1));
             } else if (ASR::is_a<ASR::Pointer_t>(*value_type) &&
                        ASR::is_a<ASR::Pointer_t>(*target_type) &&
