@@ -8573,7 +8573,10 @@ public:
                 std::string runtime_func_name;
                 llvm::Type *type_arg;
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-                if (a_kind == 4) {
+                if ( a_kind == 2 ) {
+                    runtime_func_name = "_lfortran_read_int16";
+                    type_arg = llvm::Type::getInt16Ty(context);
+                } else if (a_kind == 4) {
                     runtime_func_name = "_lfortran_read_int32";
                     type_arg = llvm::Type::getInt32Ty(context);
                 } else if (a_kind == 8) {
@@ -8667,6 +8670,9 @@ public:
                     if (a_kind == 1) {
                         runtime_func_name = "_lfortran_read_array_int8";
                         type_arg = llvm::Type::getInt8Ty(context);
+                    } else if ( a_kind == 2) {
+                        runtime_func_name = "_lfortran_read_array_int16";
+                        type_arg = llvm::Type::getInt16Ty(context);
                     } else if (a_kind == 4) {
                         runtime_func_name = "_lfortran_read_array_int32";
                         type_arg = llvm::Type::getInt32Ty(context);
