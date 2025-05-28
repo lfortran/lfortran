@@ -565,7 +565,13 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     if (width_digits == 0) {
         sprintf(exponent, "%+02d", exponent_value);
     } else {
-        sprintf(exponent, "%+0*d", exp+1, exponent_value);
+        int exp_width = exp + 1;
+        if (exp_width > 10) exp_width = 10;
+
+        int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+        if (len < 0 || len >= sizeof(exponent)) {
+            goto overflow;
+        }
         // exponent = "+10"
     }
 
