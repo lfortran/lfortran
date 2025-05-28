@@ -200,7 +200,7 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
 LFORTRAN_API int32_t _lfortran_str_len(char** s);
 LFORTRAN_API int _lfortran_str_ord(char** s);
 LFORTRAN_API int _lfortran_str_ord_c(char* s);
-LFORTRAN_API char* _lfortran_str_chr(int c);
+LFORTRAN_API char* _lfortran_str_chr(uint8_t c);
 LFORTRAN_API int _lfortran_str_to_int(char** s);
 LFORTRAN_API void* _lfortran_malloc(int32_t size);
 LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size);

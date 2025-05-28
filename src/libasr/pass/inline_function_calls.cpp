@@ -61,6 +61,24 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     current_body = current_body_copy;
 }
 
+class CollectReturnStmt: public ASR::BaseWalkVisitor<CollectReturnStmt> {
+
+    public:
+
+    Allocator& al;
+    Vec<ASR::stmt_t*>& return_stmts;
+    size_t current_stmt_index;
+
+    CollectReturnStmt(Allocator& al_, Vec<ASR::stmt_t*>& return_stmts_):
+        al(al_), return_stmts(return_stmts_), current_stmt_index(0) {
+    }
+
+    void visit_Return(const ASR::Return_t& x) {
+        return_stmts.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+    }
+
+};
+
 class CollectCalls: public ASR::BaseWalkVisitor<CollectCalls> {
 
     public:
@@ -142,11 +160,8 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         // The type of those Variable symbols shouldn’t be FunctionType.
         for( auto sym: function->m_symtab->get_scope() ) {
             if( !ASR::is_a<ASR::Variable_t>(*sym.second) ||
-                (ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_in && // TODO: Remove these intent checks
-                ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_local && // IntentOut can be accomodated
-                ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_unspecified && // via pointer variables
-                ASR::down_cast<ASR::Variable_t>(sym.second)->m_intent != ASRUtils::intent_return_var) ||
-                ASRUtils::is_array(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type) ||
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) ||
                 ASR::is_a<ASR::String_t>(
                     *ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) ) { // TODO: Remove this check as well, use pointers for arrays
                 return false;
@@ -158,6 +173,12 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 return false;
             }
 
+        }
+
+        for( size_t i = 0; i < func_call->n_args; i++ ) {
+            if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_call->m_args[i].m_value) ) {
+                return false;
+            }
         }
 
         // Function should only call Functions from global scope
@@ -197,6 +218,22 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             return false;
         }
 
+        // Check if there is only one return statement
+        // and that too in the end of the function
+        Vec<ASR::stmt_t*> return_stmts; return_stmts.reserve(al, 1);
+        CollectReturnStmt collect_return_stmts(al, return_stmts);
+        collect_return_stmts.visit_Function(*function);
+        // More than one return statements
+        if( return_stmts.size() > 1 ) {
+            return false;
+        }
+
+        // Only one return statement but not in the end.
+        if( function->m_body[function->n_body - 1] != return_stmts[0] ) {
+            return false;
+        }
+
+
         return true;
     }
 
@@ -224,6 +261,17 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym.second);
             std::string local_sym_unique_name = current_scope->get_unique_name(variable->m_name);
             ASR::ttype_t* local_ttype_copy = type_duplicator.duplicate_ttype(variable->m_type);
+            if( (variable->m_intent == ASRUtils::intent_out ||
+                variable->m_intent == ASRUtils::intent_inout) ||
+                (ASRUtils::is_array(variable->m_type) &&
+                 ASRUtils::is_arg_dummy(variable->m_intent)) ) {
+                if( ASRUtils::is_array(variable->m_type) ) {
+                    local_ttype_copy = ASRUtils::duplicate_type_with_empty_dims(
+                        al, local_ttype_copy, ASR::array_physical_typeType::DescriptorArray, true);
+                }
+                local_ttype_copy = ASRUtils::TYPE(ASR::make_Pointer_t(
+                    al, loc, ASRUtils::type_get_past_allocatable_pointer(local_ttype_copy)));
+            }
             ASR::symbol_t* local_sym = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, local_sym_unique_name),
                 nullptr, 0, ASRUtils::intent_local, nullptr, nullptr, variable->m_storage,
@@ -258,10 +306,17 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         for( size_t i = 0; i < x->n_args; i++ ) {
             ASR::symbol_t* original_symbol = argidx2function.at(i);
             ASR::symbol_t* local_symbol = function2currentscope[original_symbol];
-            ASR::stmt_t* init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
-                x->m_args[i].m_value, nullptr, false
-            ));
+            ASR::stmt_t* init_stmt = nullptr;
+            if( ASRUtils::is_pointer(ASRUtils::symbol_type(local_symbol)) ) {
+                init_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
+                    x->m_args[i].m_value, nullptr));
+            } else {
+                init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
+                    x->m_args[i].m_value, nullptr, false
+                ));
+            }
             current_body->push_back(al, init_stmt);
         }
 
@@ -284,6 +339,9 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         // with their local copies
         ASRUtils::ExprStmtDuplicator stmt_duplicator(al);
         for( size_t i = 0; i < function->n_body; i++ ) {
+            if( ASR::is_a<ASR::Return_t>(*function->m_body[i]) ) {
+                continue ;
+            }
             ASR::stmt_t* stmt_copy = stmt_duplicator.duplicate_stmt(function->m_body[i]);
             fix_symbols.visit_stmt(*stmt_copy);
             current_body->push_back(al, stmt_copy);

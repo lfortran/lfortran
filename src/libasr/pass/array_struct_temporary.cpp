@@ -2193,7 +2193,8 @@ class ReplaceModuleVarWithValue:
             ASRUtils::symbol_get_past_external(x->m_v));
         if( !((check_if_ASR_owner_is_module(y->m_parent_symtab->asr_owner)) &&
               y->m_storage == ASR::storage_typeType::Parameter) ||
-            y->m_symbolic_value == nullptr ) {
+            y->m_symbolic_value == nullptr ||
+            ASR::is_a<ASR::StructConstant_t>(*y->m_value)) {
             return ;
         }
 
@@ -2240,7 +2241,7 @@ class TransformVariableInitialiser:
             if ( ASR::is_a<ASR::Function_t>(*parent_scope_symbol) ) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(parent_scope_symbol);
                 ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-                if (func_type->m_abi == ASR::abiType::Interactive) {
+                if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
                     // it is safe to do because we are not going to instantiate this function in LLVM
                     ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
                     xx.m_symbolic_value = nullptr;

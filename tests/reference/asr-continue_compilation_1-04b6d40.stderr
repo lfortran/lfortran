@@ -47,6 +47,30 @@ semantic error: Initialization of `myclass_array2` must reduce to a compile time
 79 |     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
    |                                                                  ^^^^^^^^^^^ 
 
+semantic error: Syntax error in CHARACTER declaration: only 'len' and 'kind' are allowed as type parameters
+  --> tests/errors/continue_compilation_1.f90:80:5
+   |
+80 |     character(width=10) :: str_c_1
+   |     ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: can't use a keyword argument more than once
+  --> tests/errors/continue_compilation_1.f90:81:5
+   |
+81 |     character(len=10, len=20) :: str_c_2
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: positional type parameters cannot follow a keyword argument
+  --> tests/errors/continue_compilation_1.f90:82:5
+   |
+82 |     character(len=10, 1) :: str_c_3
+   |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: using only 'len' keyword argument after a positional type is invalid
+  --> tests/errors/continue_compilation_1.f90:83:5
+   |
+83 |     character(1, len=20) :: str_c_4
+   |     ^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
     |

@@ -71,7 +71,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   git clone https://github.com/gxyd/pot3d.git
   cd pot3d
   git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-  git checkout 695841f041300ee75fdfdd1da5d0fc6fe66f5717
+  git checkout 9bf5d4784581ce83e2df13b828de86950ba88902
 
   git clone https://github.com/lfortran/fortran_mpi
   cd fortran_mpi
@@ -82,13 +82,13 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   cd ..
 
   print_subsection "Building with default flags"
-  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run.sh
+  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_subsection "Building with optimization flags"
-  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run.sh
+  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes" ./build_and_run.sh
+  FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_success "Done with POT3D"
   cd ..
@@ -104,8 +104,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-7
-  git checkout 978bba7fdfd0d54ae1ecf17f61a933285a55a690
+  git checkout n-lf-8
+  git checkout 4577d824c39f8d1235c6ee6952b0d4f21b00b473
   micromamba install -c conda-forge fypp
 
   git clean -fdx
@@ -113,6 +113,16 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
       -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+  make -j8
+  ctest
+
+  git clean -dfx
+  git restore .
+  git checkout 9e54a1115c9b5d5558e9db6f295849912b1202d5
+  FC=$FC cmake . \
+      -DTEST_DRIVE_BUILD_TESTING=OFF \
+      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
+      -DCMAKE_Fortran_FLAGS="--cpp --generate-object-code --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -133,6 +143,10 @@ time_section "🧪 Testing Fortran-Primes" '
   print_subsection "Building and running Fortran-Primes"
   FC=$FC ./build_and_run.sh
 
+  print_subsection "Building Fortran-Primes with separate compilation"
+  git clean -dfx
+  FC="$FC --generate-object-code" ./build_and_run.sh
+
   print_success "Done with Fortran-Primes"
   cd ..
   rm -rf fortran-primes
@@ -150,6 +164,27 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   print_subsection "Building project"
   FC=$FC make
 
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
+  git clean -dfx
+  print_subsection "Building Numerical Methods Fortran with f23 standard"
+
+  FC="$FC --std=f23" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
@@ -189,32 +224,32 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   run_test plot_pendulum.exe
   run_test plot_transes_iso.exe
 
+  git clean -dfx
+  print_subsection "Building Numerical Methods Fortran with separate compilation and f23 standard"
+
+  FC="$FC --generate-object-code --std=f23" make
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
 
   print_success "Done with Numerical Methods Fortran"
 
   cd ..
-'
-
-######################
-# Section 4: POT3D    #
-######################
-time_section "🧪 Testing POT3D" '
-  git clone https://github.com/gxyd/pot3d.git
-  cd pot3d
-  git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
-  git checkout 83e1e90db7e7517fcbe8c7bce5ba309addfb23f6
-
-  print_subsection "Building with default flags"
-  FC=$FC ./build_and_run.sh
-
-  print_subsection "Building with optimization flags"
-  FC="$FC --fast --skip-pass=dead_code_removal" ./build_and_run.sh
-
-  print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --generate-object-code --skip-pass=pass_array_by_data" ./build_and_run.sh
-
-  print_success "Done with POT3D"
-  cd ..
+  rm -rf numerical-methods-fortran
 '
 
 #######################
@@ -272,6 +307,44 @@ time_section "🧪 Testing PRIMA" '
     cd ..
   fi
 
+  print_subsection "Building PRIMA with f23 standard"
+  FC="$FC --cpp --std=f23" cmake -S . -B build \
+    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+    -DCMAKE_Fortran_FLAGS="" \
+    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
+    -DCMAKE_MACOSX_RPATH=OFF \
+    -DCMAKE_SKIP_INSTALL_RPATH=ON \
+    -DCMAKE_SKIP_RPATH=ON
+
+  cmake --build build --target install
+
+  run_test ./build/fortran/example_bobyqa_fortran_1_exe
+  run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  run_test ./build/fortran/example_cobyla_fortran_1_exe
+  run_test ./build/fortran/example_cobyla_fortran_2_exe
+  run_test ./build/fortran/example_lincoa_fortran_1_exe
+  run_test ./build/fortran/example_lincoa_fortran_2_exe
+  run_test ./build/fortran/example_newuoa_fortran_1_exe
+  run_test ./build/fortran/example_newuoa_fortran_2_exe
+  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  run_test ./build/fortran/example_uobyqa_fortran_2_exe
+
+  if [[ "$RUNNER_OS" == "macos-latest" ]]; then
+    cd fortran
+    test_name=test_bobyqa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_newuoa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_cobyla.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_lincoa.f90 FC="$FC --std=f23" ./script.sh
+    cd ..
+  fi
+
+  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+    cd fortran
+    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+    cd ..
+  fi
+
   print_subsection "Rebuilding PRIMA with optimization"
   git clean -dfx
 
@@ -318,12 +391,25 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   run_test examples/example_lmder1
   run_test examples/example_lmdif1
   run_test examples/example_primes
-
   print_subsection "Running CTest"
   ctest
+  cd ../
+
+  print_subsection "Testing with f23 standard"
+  git clean -dfx
+  mkdir lf && cd lf
+  FC="$FC --intrinsic-mangling --std=f23" cmake ..
+  make
+  run_test examples/example_hybrd
+  run_test examples/example_hybrd1
+  run_test examples/example_lmder1
+  run_test examples/example_lmdif1
+  run_test examples/example_primes
+  print_subsection "Running CTest"
+  ctest
+  cd ../
 
   print_subsection "Testing with separate compilation"
-  cd ../
   git clean -dfx
   mkdir lf && cd lf
   FC="$FC --intrinsic-mangling --generate-object-code" cmake ..
@@ -335,6 +421,25 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   run_test examples/example_primes
   print_subsection "Running CTest"
   ctest
+  cd ../
+
+  print_subsection "Testing with separate compilation and f23 standard"
+  git clean -dfx
+  mkdir lf && cd lf
+  FC="$FC --intrinsic-mangling --generate-object-code --std=f23" cmake ..
+  make
+  run_test examples/example_hybrd
+  run_test examples/example_hybrd1
+  run_test examples/example_lmder1
+  run_test examples/example_lmdif1
+  run_test examples/example_primes
+  print_subsection "Running CTest"
+  ctest
+  cd ../
+
+  print_success "Done with Legacy Minpack (SciPy)"
+  cd ../
+  rm -rf minpack
 '
 
 ##########################

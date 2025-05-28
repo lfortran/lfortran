@@ -196,6 +196,16 @@
                                     logical_kinds
                                     Public
                                 ),
+                            numeric_storage_size:
+                                (ExternalSymbol
+                                    2
+                                    numeric_storage_size
+                                    4 numeric_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    numeric_storage_size
+                                    Public
+                                ),
                             omap_i_at_rc:
                                 (Function
                                     (SymbolTable
@@ -1026,6 +1036,16 @@
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            numeric_storage_size:
+                                (ExternalSymbol
+                                    11
+                                    numeric_storage_size
+                                    4 numeric_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    numeric_storage_size
+                                    Public
                                 ),
                             omap_i_at_rc:
                                 (ExternalSymbol

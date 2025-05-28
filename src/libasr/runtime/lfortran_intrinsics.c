@@ -800,11 +800,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'e' :
                 start = index++;
                 bool edot = false;
-                bool is_en_formatting = false;
-                if (tolower(format[index]) == 'n') {
-                    index++;  // move past the 'N'
-                    is_en_formatting = true;
-                }
+                if (tolower(format[index]) == 'n') index++;
                 if (tolower(format[index]) == 's') index++;
                 while (isdigit(format[index])) index++;
                 if (format[index] == '.') {
@@ -905,10 +901,13 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                             format_values_2[format_values_count++] = substring(format, start, index);
                         }
                     } else {
-                        start = index++;
+                        start = index;
+                        while (isalpha(format[index])) index++; 
                         if (isdigit(format[index])) {
                             while (isdigit(format[index])) index++;
                             if (format[index] == '.') index++;
+                            while (isdigit(format[index])) index++;
+                            if (format[index] == 'e' || format[index] == 'E') index++;
                             while (isdigit(format[index])) index++;
                         }
                         for (int i = 0; i < repeat; i++) {
@@ -918,7 +917,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                     }
                 } else if (format[index] != ' ') {
                     fprintf(stderr, "Unsupported or unrecognized `%c` in format string\n", format[index]);
-                    exit(1);
+                    break;
                 }
         }
         index++;
@@ -1443,7 +1442,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
     strip_outer_parenthesis(cleaned_format, len, modified_input_string);
-    format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
+    format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
     is_SP_specifier = true  --> 'SP'
@@ -1463,8 +1462,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
                 value[strlen(value)-1] = '\0';
                 int64_t new_fmt_val_count = 0;
-                char** new_fmt_val = parse_fortran_format(++value,&new_fmt_val_count,&item_start_idx);
-
+                char** new_fmt_val = parse_fortran_format(++value, &new_fmt_val_count, &item_start_idx);
                 char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
                 if (ptr == NULL) {
                     perror("Memory allocation failed.\n");
@@ -1642,10 +1640,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     handle_integer(value, integer_val, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'b') {
                     int width = 0;
+                    int min_digit_cnt = 0;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'B'
                     }
-
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    if (dot != NULL) {
+                        min_digit_cnt = atoi(dot + 1); // get digits after '.'
+                    }
                     int bit_size = 0;
                     uint64_t uval = 0;
                     char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
@@ -1705,11 +1707,26 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             result = append_to_string(result, "*");
                         }
                     } else {
+                        int bin_len = strlen(binary_str);
+                        // Step 1: Pad with zeros to meet min_digit_cnt
+                        if (min_digit_cnt > bin_len) {
+                            int zero_padding = min_digit_cnt - bin_len;
+                            char* zeros = (char*)malloc((zero_padding + 1) * sizeof(char));
+                            memset(zeros, '0', zero_padding);
+                            zeros[zero_padding] = '\0';
+                            char* tmp = (char*)malloc((min_digit_cnt + 1) * sizeof(char));
+                            strcpy(tmp, zeros);
+                            strcat(tmp, binary_str);
+                            strcpy(binary_str, tmp);
+                            free(tmp);
+                            free(zeros);
+                            bin_len = strlen(binary_str);
+                        }
+                        // Step 2: Pad with spaces to meet width
                         int padding_needed = width - bin_len;
-                        char pad_char = ' ';
                         if (padding_needed > 0) {
                             char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
-                            memset(pad, pad_char, padding_needed);
+                            memset(pad, ' ', padding_needed);
                             pad[padding_needed] = '\0';
                             result = append_to_string(result, pad);
                             free(pad);
@@ -3019,10 +3036,10 @@ LFORTRAN_API int _lfortran_str_ord_c(char* s)
     return s[0];
 }
 
-LFORTRAN_API char* _lfortran_str_chr(int val)
+LFORTRAN_API char* _lfortran_str_chr(uint8_t val)
 {
     char* dest_char = (char*)malloc(2);
-    uint8_t extended_ascii = (uint8_t)val;
+    uint8_t extended_ascii = val;
     dest_char[0] = extended_ascii;
     dest_char[1] = '\0';
     return dest_char;
@@ -5200,6 +5217,20 @@ LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
         // if the name is not found, return empty string
         char* empty_string = "";
         return getenv(name) ? getenv(name) : empty_string;
+    }
+}
+
+LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(char *name) {
+    // temporary solution, the below function _lfortran_get_env_variable should be used
+    if (name == NULL) {
+        return 0;
+    } else {
+        char *value = getenv(name);
+        if (value == NULL) {
+            return 0; // If the environment variable is not found, return 0
+        } else {
+            return strlen(value); // Return the length of the environment variable value
+        }
     }
 }
 

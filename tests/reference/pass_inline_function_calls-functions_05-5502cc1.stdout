@@ -26,25 +26,6 @@
                                     .false.
                                     ()
                                 ),
-                            a1:
-                                (Variable
-                                    2
-                                    a1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             b:
                                 (Variable
                                     2
@@ -55,25 +36,6 @@
                                     ()
                                     Default
                                     (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            b1:
-                                (Variable
-                                    2
-                                    b1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -248,63 +210,6 @@
                                                     .false.
                                                     .false.
                                                     ()
-                                                ),
-                                            r:
-                                                (Variable
-                                                    4
-                                                    r
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            x:
-                                                (Variable
-                                                    4
-                                                    x
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            y:
-                                                (Variable
-                                                    4
-                                                    y
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
                                                 )
                                         })
                                     f_real
@@ -322,108 +227,25 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [signr32]
                                     [(Var 4 a)]
                                     [(Assignment
-                                        (Var 4 x)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
-                                        ()
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 4 y)
-                                        (Var 4 a)
-                                        ()
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 4 r)
-                                        (Var 4 x)
-                                        ()
-                                        .false.
-                                    )
-                                    (If
-                                        (LogicalBinOp
-                                            (LogicalBinOp
-                                                (RealCompare
-                                                    (Var 4 x)
-                                                    GtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                And
-                                                (RealCompare
-                                                    (Var 4 y)
-                                                    GtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                (Logical 4)
-                                                ()
-                                            )
-                                            Or
-                                            (LogicalBinOp
-                                                (RealCompare
-                                                    (Var 4 x)
-                                                    LtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                And
-                                                (RealCompare
-                                                    (Var 4 y)
-                                                    LtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                (Logical 4)
-                                                ()
-                                            )
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        [(Assignment
-                                            (Var 4 r)
-                                            (Var 4 x)
-                                            ()
-                                            .false.
-                                        )]
-                                        [(Assignment
-                                            (Var 4 r)
-                                            (RealUnaryMinus
-                                                (Var 4 x)
-                                                (Real 4)
-                                                ()
-                                            )
-                                            ()
-                                            .false.
-                                        )]
-                                    )
-                                    (Assignment
                                         (Var 4 b)
                                         (RealBinOp
                                             (Var 4 a)
                                             Add
-                                            (Var 4 r)
+                                            (FunctionCall
+                                                2 signr32
+                                                ()
+                                                [((RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                ))
+                                                ((Var 4 a))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )
                                             (Real 4)
                                             ()
                                         )
@@ -470,25 +292,6 @@
                                 (Variable
                                     2
                                     q
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            r:
-                                (Variable
-                                    2
-                                    r
                                     []
                                     Local
                                     ()
@@ -690,44 +493,6 @@
                                     .false.
                                     ()
                                 ),
-                            x1:
-                                (Variable
-                                    2
-                                    x1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            x2:
-                                (Variable
-                                    2
-                                    x2
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             y:
                                 (Variable
                                     2
@@ -746,56 +511,20 @@
                                     .false.
                                     .false.
                                     ()
-                                ),
-                            y1:
-                                (Variable
-                                    2
-                                    y1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
                                 )
                         })
                     functions_01
                     []
                     [(Assignment
-                        (Var 2 a1)
-                        (Var 2 x)
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 x1)
-                        (IntegerConstant 2 (Integer 4) Decimal)
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 b1)
-                        (IntegerBinOp
-                            (Var 2 a1)
-                            Add
-                            (Var 2 x1)
+                        (Var 2 y)
+                        (FunctionCall
+                            2 f
+                            ()
+                            [((Var 2 x))]
                             (Integer 4)
                             ()
+                            ()
                         )
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 y)
-                        (Var 2 b1)
                         ()
                         .false.
                     )
@@ -856,99 +585,16 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 x2)
-                        (Var 2 a)
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 y1)
-                        (Var 2 b)
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 r)
-                        (Var 2 x2)
-                        ()
-                        .false.
-                    )
-                    (If
-                        (LogicalBinOp
-                            (LogicalBinOp
-                                (RealCompare
-                                    (Var 2 x2)
-                                    GtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (RealCompare
-                                    (Var 2 y1)
-                                    GtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            Or
-                            (LogicalBinOp
-                                (RealCompare
-                                    (Var 2 x2)
-                                    LtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (RealCompare
-                                    (Var 2 y1)
-                                    LtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            (Logical 4)
+                        (Var 2 c)
+                        (FunctionCall
+                            2 signr32
+                            ()
+                            [((Var 2 a))
+                            ((Var 2 b))]
+                            (Real 4)
+                            ()
                             ()
                         )
-                        [(Assignment
-                            (Var 2 r)
-                            (Var 2 x2)
-                            ()
-                            .false.
-                        )]
-                        [(Assignment
-                            (Var 2 r)
-                            (RealUnaryMinus
-                                (Var 2 x2)
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                        )]
-                    )
-                    (Assignment
-                        (Var 2 c)
-                        (Var 2 r)
                         ()
                         .false.
                     )

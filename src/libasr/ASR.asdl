@@ -19,7 +19,6 @@ symbol
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration, abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr, string? bindc_name)
-    | Class(symbol_table symtab, identifier name, abi abi, access access)
     | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
@@ -221,7 +220,7 @@ access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface
 presence = Required | Optional
-abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | Interactive | Intrinsic
+abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | ExternalUndefined | Intrinsic
 dimension = (expr? start, expr? length)
 alloc_arg = (expr a, dimension* dims, expr? len_expr, ttype? type)
 attribute = Attribute(identifier name, attribute_arg *args)

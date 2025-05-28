@@ -759,8 +759,6 @@ public:
         src = r;
     }
 
-    // void visit_Class(const ASR::Class_t &x) {}
-
     // void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {}
 
     // void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {}

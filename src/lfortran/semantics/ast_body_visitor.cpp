@@ -1987,8 +1987,6 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
-                        } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
                             diag.add(Diagnostic(
                                 "Only class and derived type in select type test expressions.",
@@ -2037,8 +2035,6 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
-                        } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
                             diag.add(Diagnostic(
                                 "Only class and derived type in select type test expressions.",
@@ -3503,11 +3499,59 @@ public:
                     return tmp;
                 }
             }
+        } else if (startswith(var_name, "_lfortran_")) {
+            // LFortran specific intrinsics
+            
+            if (var_name == "_lfortran_list_append") {
+                IntrinsicSignature signature = get_intrinsic_signature(var_name);
+                Vec<ASR::expr_t*> args;
+                bool signature_matched = false;
+                signature_matched = handle_intrinsic_node_args(
+                    x, args, signature.kwarg_names,
+                    signature.positional_args, signature.max_args,
+                    var_name, true);
+                
+                if( !signature_matched ) {
+                    diag.add(Diagnostic(
+                        "No matching signature found for intrinsic " + var_name,
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    diag.add(Diagnostic(
+                        "First argument of " + var_name + " must be of list type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(args[0]));
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(args[1]);
+                ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
+                if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                    diag.add(Diagnostic(
+                        "Type mismatch in " + var_name + ", the types must be compatible",
+                        Level::Error, Stage::Semantic, {
+                            Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                return ASR::make_ListAppend_t(al, x.base.base.loc, args[0], args[1]);
+
+            }
         }
         return nullptr;
     }
 
-    ASR::asr_t* handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
+    void handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "mvbits") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
                 IntrinsicSignature signature = get_intrinsic_signature(var_name);
@@ -3540,14 +3584,14 @@ public:
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
                     tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[3], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
-                    return tmp;
+                    current_body->push_back(al, ASRUtils::STMT(tmp));
+                    tmp = nullptr;
                 }
             }
         }
-        return nullptr;
     }
 
-    ASR::asr_t* handle_MoveAlloc(const AST::SubroutineCall_t &x, std::string var_name) {
+    void handle_MoveAlloc(const AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "move_alloc") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
                 IntrinsicSignature signature = get_intrinsic_signature(var_name);
@@ -3579,12 +3623,40 @@ public:
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
+                    Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
+                    explicit_deallocate_args.push_back(al, args[0]);
+                    if (ASRUtils::is_array(ASRUtils::expr_type(args[0]))) {
+                        int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
+                        Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
+                        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        for(int i=0; i<n_dims; i++) {
+                            ASR::dimension_t dim;
+                            dim.loc = x.base.base.loc;
+                            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, x.base.base.loc, 1, integer_type));
+                            dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                    al, x.base.base.loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
+                            alloc_dims.push_back(al, dim);
+                        }
+                        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+                        ASR::alloc_arg_t alloc_arg;
+                        alloc_arg.loc = x.base.base.loc;
+                        alloc_arg.m_a = args[1];
+                        alloc_arg.m_dims = alloc_dims.p;
+                        alloc_arg.n_dims = alloc_dims.n;
+                        alloc_arg.m_len_expr = nullptr;
+                        alloc_arg.m_type = nullptr;
+                        alloc_args.push_back(al, alloc_arg);
+                        current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr)));
+                    }
+                    ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, x.base.base.loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
                     tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[1], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
-                    return tmp;
+                    current_body->push_back(al, ASRUtils::STMT(tmp));
+                    current_body->push_back(al, explicit_deallocate);
+                    tmp = nullptr;
                 }
             }
         }
-        return nullptr;
     }
 
     /*
@@ -3788,7 +3860,9 @@ public:
             tmp = intrinsic_subroutine;
             return;
         }
-        if (handle_Mvbits(x, sub_name) || handle_MoveAlloc(x, sub_name)) {
+        if (sub_name == "move_alloc" || sub_name == "mvbits") {
+            handle_MoveAlloc(x, sub_name);
+            handle_Mvbits(x, sub_name);
             return;
         }
         if (x.n_temp_args > 0) {

@@ -78,8 +78,9 @@ static inline char* name2char_with_check(const ast_t *n1, const ast_t *n2,
     if(n2) {
         char* n2c = name2char(n2);
         if (!streql(n1c, n2c)) {
-            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-                "End " + unit + " name does not match " + unit + " name", {loc}).d);
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "End " + unit + " name does not match " + unit + " name",
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
         }
     }
     return n1c;
@@ -242,13 +243,15 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
                 LCompilers::LFortran::AST::LFortranPragma, LCompilers::s2c(al, t),
                 trivia);
         } else {
-            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-                "The LFortran pragma !LF$ must be followed by a space", {loc}).d);
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "The LFortran pragma !LF$ must be followed by a space",
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
             return nullptr;
         }
     } else {
-            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-                "Unsupported compiler directive (pragma)", {loc}).d);
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "Unsupported compiler directive (pragma)",
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
             return nullptr;
     }
 }
@@ -331,8 +334,9 @@ ast_t* fn_VAR_DECL1c(Allocator &al,
             Location l, LCompilers::diag::Diagnostics &diagnostics) {
     for (size_t i=0; i<varsym.size(); i++) {
         if (varsym[i].m_sym == symbolType::Equal) {
-            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-                "Invalid syntax for variable initialization (try inserting '::' after the type)", {l}).d);
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "Invalid syntax for variable initialization (try inserting '::' after the type)",
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {l})}));
         }
     }
     return make_Declaration_t(al, l,
@@ -563,8 +567,9 @@ Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items,
       if (ls_node) {
 	ast_nodes.push_back(al, ls_node);
       } else {
-        diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-            "Bad implicit letter specification", {loc}).d);
+        diagnostics.add(LCompilers::diag::Diagnostic(
+            "Bad implicit letter specification",
+            LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
       }
     }
 
@@ -834,7 +839,7 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
 }
 
 static inline reduce_opType convert_id_to_reduce_type(
-        const Location &loc, const ast_t *id)
+        const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
 {
     std::string s_id = down_cast2<Name_t>(id)->m_id;
     if (s_id == "MIN" ) {
@@ -842,8 +847,10 @@ static inline reduce_opType convert_id_to_reduce_type(
     } else if (s_id == "MAX") {
         return reduce_opType::ReduceMAX;
     } else {
-        throw LCompilers::LFortran::parser_local::ParserError(
-            "Unsupported operation in reduction", loc);
+        diagnostics.add(LCompilers::diag::Diagnostic(
+            "Unsupported operation in reduction",
+            LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
+        throw LCompilers::LFortran::parser_local::ParserAbort();
     }
 }
 
@@ -1865,8 +1872,9 @@ void add_ws_warning(const Location &loc,
                         {loc},
                         "help: write this as 'real(8)'");
                 } else {
-                        diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc}).d);
+                        diagnostics.add(LCompilers::diag::Diagnostic(
+                            "kind " + std::to_string(a_kind) + " is not supported yet.",
+                            LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
                 }
         } else if (end_token == yytokentype::KW_INTEGER) {
                 if (a_kind == 4){
@@ -1880,8 +1888,9 @@ void add_ws_warning(const Location &loc,
                         {loc},
                         "help: write this as 'integer(8)'");
                 } else {
-                        diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-                                "kind " + std::to_string(a_kind) + " is not supported yet.", {loc}).d);
+                        diagnostics.add(LCompilers::diag::Diagnostic(
+                            "kind " + std::to_string(a_kind) + " is not supported yet.",
+                            LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
                 }
         } else if (end_token == yytokentype::KW_CHARACTER) {
                 std::string msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
@@ -1941,8 +1950,10 @@ void add_ws_warning(const Location &loc,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
         if (label == 0) { \
-            throw LCompilers::LFortran::parser_local::ParserError( \
-                "Zero is not a valid statement label", l); \
+            p.diag.add(LCompilers::diag::Diagnostic(  \
+                "Zero is not a valid statement label",   \
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {l})}));  \
+            throw LCompilers::LFortran::parser_local::ParserAbort();  \
         }
 
 #define DO3_LABEL(label, i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
@@ -1950,8 +1961,10 @@ void add_ws_warning(const Location &loc,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
         if (label == 0) { \
-            throw LCompilers::LFortran::parser_local::ParserError( \
-                "Zero is not a valid statement label", l); \
+            p.diag.add(LCompilers::diag::Diagnostic(  \
+                "Zero is not a valid statement label",   \
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {l})}));  \
+            throw LCompilers::LFortran::parser_local::ParserAbort();  \
         }
 #define DO3(i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         name2char(i), EXPR(a), EXPR(b), EXPR(c), \
@@ -2020,7 +2033,7 @@ void add_ws_warning(const Location &loc,
 
 #define REDUCE_OP_TYPE_ADD(l) reduce_opType::ReduceAdd
 #define REDUCE_OP_TYPE_MUL(l) reduce_opType::ReduceMul
-#define REDUCE_OP_TYPE_ID(id, l) convert_id_to_reduce_type(l, id)
+#define REDUCE_OP_TYPE_ID(id, l) convert_id_to_reduce_type(l, id, p.diag)
 #define REDUCE_OP_TYPE_INVALID (reduce_opType)-1
 
 #define VAR_SYM_DECL1(id, l)         DECL3(p.m_a, id, nullptr, nullptr)
@@ -2205,8 +2218,9 @@ ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
     v.reserve(al, args.size());
     for (auto &item : args) {
         if(item.keyword) {
-            diagnostics.add(LCompilers::LFortran::parser_local::ParserError(
-                "Keyword Assignment is not allowed in Character Substring", {l}).d);
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "Keyword Assignment is not allowed in Character Substring",
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {l})}));
         }
         v.push_back(al, item.arg);
     }
