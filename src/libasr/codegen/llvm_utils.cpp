@@ -7151,7 +7151,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMSetInterface::len(llvm::Value* set) {
-        return llvm_utils->CreateLoad(get_pointer_to_occupancy(set));
+        return llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_occupancy(set));
     }
 
 } // namespace LCompilers
