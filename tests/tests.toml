@@ -4646,3 +4646,7 @@ run = true
 [[test]]
 filename = "errors/integer_overflow.f90"
 run = true
+
+[[test]]
+filename = "errors/reshape_01.f90"
+asr = true
