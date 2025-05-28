@@ -1221,8 +1221,10 @@ public:
                 ASRUtils::symbol_type(tmp_sym))), module.get());
 
             llvm::Type* dest_type = tp->getPointerTo();
-            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(tmp_sym))) {
-                // functions are pointers in LLVM, so we do not need to get the pointer to it
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(tmp_sym)) || 
+                ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(tmp_sym)))) {
+                // functions are pointers in LLVM, so we do not need to get the pointer to it 
+                // Class type target is already pointer, so we dont need to get the pointer for dest
                 dest_type = tp;
             }
 
