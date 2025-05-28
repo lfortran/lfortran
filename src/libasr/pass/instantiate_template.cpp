@@ -1150,8 +1150,21 @@ public:
         dependencies.clear(al);
         new_scope = al.make_new<SymbolTable>(target_scope);
 
-        // duplicate symbol table
-        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+        std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
+        for (auto &sym_pair: x->m_symtab->get_scope()) {
+            // instatiate variables first as they might be used in the
+            // instantiation of other symbols like ClassProcedure
+            if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
+                SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                t.instantiate();
+            } else {
+                instantiation_vector.push_back(sym_pair);
+            }
+        }
+
+        // instantiate the rest of the symbols
+        for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
                 ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
             t.instantiate();
@@ -1264,7 +1277,21 @@ public:
         target_scope->add_symbol(new_sym_name, s);
         symbol_subs[x->m_name] = s;
 
-        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+        std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
+        for (auto &sym_pair: x->m_symtab->get_scope()) {
+            // instatiate variables first as they might be used in the
+            // instantiation of other symbols like ClassProcedure
+            if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
+                SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                t.instantiate();
+            } else {
+                instantiation_vector.push_back(sym_pair);
+            }
+        }
+
+        // instantiate the rest of the symbols
+        for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
                 ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
             t.instantiate();
