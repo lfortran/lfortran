@@ -134,17 +134,9 @@
                     (Assignment
                         (Var 2 z2)
                         (Cast
-                            (ComplexConstructor
-                                (ComplexRe
-                                    (Var 2 z2)
-                                    (Real 8)
-                                    ()
-                                )
-                                (ComplexIm
-                                    (Var 2 z2)
-                                    (Real 8)
-                                    ()
-                                )
+                            (Cast
+                                (Var 2 z2)
+                                ComplexToComplex
                                 (Complex 8)
                                 ()
                             )
