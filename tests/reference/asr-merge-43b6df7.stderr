@@ -1,0 +1,5 @@
+semantic error: Unequal character lengths in MERGE intrinsic
+ --> tests/errors/merge.f90:2:13
+  |
+2 |     print*, merge("okay", "ok", .true.)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
