@@ -910,7 +910,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         9 dependency_tree_t
                                                     )
                                                     ()
@@ -925,7 +928,10 @@
                                         })
                                     update_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             9 dependency_tree_t
                                         )
                                         (String 1 () AssumedLength PointerString)

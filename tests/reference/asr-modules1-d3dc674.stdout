@@ -40,7 +40,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         8 t1
                                                     )
                                                     ()
@@ -55,7 +58,10 @@
                                         })
                                     f
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             8 t1
                                         )]
                                         (Logical 4)
@@ -173,7 +179,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 t2
                                                     )
                                                     ()
@@ -188,7 +197,10 @@
                                         })
                                     sub
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             4 t2
                                         )]
                                         ()
@@ -216,7 +228,10 @@
                                                 (Var 6 self)
                                                 6 1_t2_val
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 t1
                                                     )
                                                 )
@@ -265,7 +280,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 t1
                                                         )
                                                     )

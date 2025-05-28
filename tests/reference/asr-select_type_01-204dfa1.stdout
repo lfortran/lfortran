@@ -108,7 +108,10 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             2 base
                                         )
                                     )
@@ -197,7 +200,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             2 base
                                                         )
                                                     )
@@ -356,7 +362,10 @@
                                     perform_select_type
                                     (FunctionType
                                         [(Pointer
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 2 base
                                             )
                                         )]

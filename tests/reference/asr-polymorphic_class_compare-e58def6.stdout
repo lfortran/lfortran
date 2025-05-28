@@ -161,7 +161,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 map_setiterator
                                                     )
                                                     ()
@@ -182,7 +185,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 map_setiterator
                                                     )
                                                     ()
@@ -216,10 +222,16 @@
                                         })
                                     map_s_iter_not_equal
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 map_setiterator
                                         )
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             2 map_setiterator
                                         )]
                                         (Logical 4)

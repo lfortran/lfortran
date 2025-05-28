@@ -217,7 +217,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 circle
                                                     )
                                                     ()
@@ -232,7 +235,10 @@
                                         })
                                     circle_area
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 circle
                                         )]
                                         (Real 4)
@@ -331,7 +337,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 circle
                                                     )
                                                     ()
@@ -346,7 +355,10 @@
                                         })
                                     circle_print
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 circle
                                         )]
                                         ()

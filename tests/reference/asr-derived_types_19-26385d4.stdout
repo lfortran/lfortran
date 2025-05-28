@@ -48,7 +48,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 toml_value
                                                         )
                                                     )

@@ -127,7 +127,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -180,7 +183,10 @@
                                         })
                                     str_scalar
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             3 ~abstract_type
                                         )]
                                         (Integer 4)

@@ -289,7 +289,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 omap_map
                                                     )
                                                     ()
@@ -304,7 +307,10 @@
                                         })
                                     omap_i_at_rc
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 omap_map
                                         )
                                         (Integer 4)
@@ -449,7 +455,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 integer32complex32orderedmap
                                                     )
                                                     ()
@@ -529,7 +538,10 @@
                                         })
                                     omap_insert_key_value
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 integer32complex32orderedmap
                                         )
                                         (Integer 4)
