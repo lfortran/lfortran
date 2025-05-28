@@ -435,6 +435,8 @@ program continue_compilation_2
 
     100 FORMAT(A10, @)
 
+    print*, merge("okay", "ok", .true.)
+
     contains
     logical function f(x)
         integer, intent(in), optional :: x

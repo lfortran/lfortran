@@ -748,3 +748,9 @@ semantic error: Variable 'mycircle' doesn't have any member named, 'mymember'.
     |
 434 |     print *, myCircle%mymember
     |              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Unequal character lengths in MERGE intrinsic
+   --> tests/errors/continue_compilation_2.f90:438:13
+    |
+438 |     print*, merge("okay", "ok", .true.)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
