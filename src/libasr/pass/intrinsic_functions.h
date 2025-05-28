@@ -3666,10 +3666,22 @@ namespace Maskr {
 
 namespace Merge {
 
-    static inline ASR::expr_t* eval_Merge(Allocator &, const Location &,
-            ASR::ttype_t *, Vec<ASR::expr_t*>& args, diag::Diagnostics &) {
+    static inline ASR::expr_t* eval_Merge(Allocator &, const Location& loc,
+            ASR::ttype_t *, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         bool mask = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
         ASR::expr_t *tsource = args[0], *fsource = args[1];
+        bool is_char1 = is_character(*ASRUtils::expr_type(args[0]));
+        bool is_char2 = is_character(*ASRUtils::expr_type(args[1]));
+        if (is_char1 && is_char2) {
+            char* str1 = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+            size_t len1 = std::strlen(str1);
+            char* str2 = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+            size_t len2 = std::strlen(str2);
+            if (len1 != len2) {
+                append_error(diag, "Unequal character lengths in MERGE intrinsic", loc);
+                return nullptr;
+            }
+        }
         if (mask) {
             return tsource;
         } else {
