@@ -299,6 +299,20 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         replacer.replace_expr(*current_expr);
     }
 
+    bool is_externally_defined(ASR::Variable_t* var) {
+        SymbolTable* var_parent_symtab = var->m_parent_symtab;
+        ASR::asr_t* asr_owner = var_parent_symtab->asr_owner;
+        if (ASR::is_a<ASR::symbol_t>(*asr_owner)) {
+            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
+            if ( ASR::is_a<ASR::Function_t>(*owner_sym) ) {
+                ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner_sym);
+                if (ASRUtils::get_FunctionType(owner_func)->m_abi == ASR::abiType::ExternalUndefined) {
+                    return true; // Externally defined
+                }
+            }
+        }
+        return false;
+    }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         current_scope = x.m_symtab;
@@ -312,12 +326,16 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             current_scope = al.make_new<SymbolTable>(current_scope_copy);
             std::string module_name = "__lcompilers_created__nested_context__" + std::string(
                                     ASRUtils::symbol_name(it.first)) + "_";
+            bool is_any_variable_externally_defined = false;
             std::map<ASR::symbol_t*, std::string> sym_to_name;
             module_name = current_scope->get_unique_name(module_name, false);
             for (auto &it2: it.second) {
                 std::string new_ext_var = module_name + std::string(ASRUtils::symbol_name(it2));
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                             ASRUtils::symbol_get_past_external(it2));
+                if (!is_any_variable_externally_defined && is_externally_defined(var)) {
+                    is_any_variable_externally_defined = true;
+                }
                 new_ext_var = current_scope->get_unique_name(new_ext_var, false);
                 bool is_allocatable = ASRUtils::is_allocatable(var->m_type);
                 bool is_pointer = ASRUtils::is_pointer(var->m_type);
@@ -411,6 +429,10 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             nullptr,
                                             0,
                                             false, false);
+            if (is_any_variable_externally_defined) {
+                // this module is externally defined, so we mark it as external
+                current_scope->mark_all_variables_external(al);
+            }
             ASR::symbol_t* mod_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             x.m_symtab->add_symbol(module_name, mod_sym);
         }
