@@ -7473,6 +7473,11 @@ public:
                     throw SemanticAbort();
                 }
             }
+            int64_t kind_value = handle_kind(kind);
+            if (kind_value != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x_))) {
+                return ASR::make_Cast_t(al, x.base.base.loc, x_, ASR::cast_kindType::ComplexToComplex, 
+                                                            ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, kind_value)), nullptr);
+            }
             return (ASR::asr_t*) x_;
         }
         int64_t kind_value = handle_kind(kind);
