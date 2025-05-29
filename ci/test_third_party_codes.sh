@@ -46,7 +46,7 @@ TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
 time_section "🧪 Testing fortran-regex" '
-  git clone git clone https://github.com/perazz/fortran-regex.git
+  git clone https://github.com/perazz/fortran-regex.git
   cd fortran-regex
   export PATH="$(pwd)/../src/bin:$PATH"
 
