@@ -75,6 +75,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -94,6 +95,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             newshape:
                                 (Variable
@@ -118,6 +120,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -137,6 +140,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             queries2:
                                 (Variable
@@ -160,6 +164,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -188,6 +193,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -214,6 +220,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -242,6 +249,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             yv:
                                 (Variable
@@ -268,6 +276,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     bindc4

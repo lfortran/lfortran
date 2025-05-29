@@ -30,6 +30,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             size:
                                 (Variable
@@ -49,6 +50,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     array_01_transfer

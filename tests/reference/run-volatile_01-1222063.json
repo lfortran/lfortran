@@ -1,0 +1,13 @@
+{
+    "basename": "run-volatile_01-1222063",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/volatile_01.f90",
+    "infile_hash": "4f2dab1d7d02ecea7f4217c4f8dda8b813c61c01f1db6460dbf8d3c8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-volatile_01-1222063.stdout",
+    "stdout_hash": "e43b77ad26a025f7fdae416018ee3f5b8e0478cf26745820c2448908",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -32,6 +32,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             list_integer:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             list_logical:
                                 (Variable
@@ -84,6 +86,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     arrays_20

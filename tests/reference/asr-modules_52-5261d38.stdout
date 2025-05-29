@@ -37,6 +37,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -63,6 +64,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             toml_parse:
                                                 (ExternalSymbol
@@ -227,6 +229,7 @@
                                                     .true.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -253,6 +256,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -279,6 +283,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_string
@@ -358,6 +363,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -384,6 +390,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -403,6 +410,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_unit
@@ -494,6 +502,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -513,6 +522,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_error
@@ -568,6 +578,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -593,6 +604,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table

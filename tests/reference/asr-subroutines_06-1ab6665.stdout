@@ -100,6 +100,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             set2:
                                                 (Variable
@@ -119,6 +120,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     assign_large
@@ -175,6 +177,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -194,6 +197,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     assign_logint8_large
@@ -250,6 +254,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             message:
                                                 (Variable
@@ -269,6 +274,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             module:
                                                 (Variable
@@ -288,6 +294,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             procedure:
                                                 (Variable
@@ -307,6 +314,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             status:
                                                 (Variable
@@ -326,6 +334,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     error_handler
@@ -392,6 +401,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             message:
                                                 (Variable
@@ -411,6 +421,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             module:
                                                 (Variable
@@ -430,6 +441,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             procedure:
                                                 (Variable
@@ -449,6 +461,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             status:
                                                 (Variable
@@ -468,6 +481,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     error_handler~genericprocedure
