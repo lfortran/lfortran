@@ -758,7 +758,7 @@ jobs:
             cd integration_tests
             if [[ "${{ matrix.llvm-version }}" == *"10"* ]]; then
               ./run_tests.py -b llvm_wasm llvm_wasm_emcc
-            elif [[ "${{ matrix.llvm-version }}" == *"19"* ]]; then 
+            else 
               ./run_tests.py -b llvm_wasm llvm_wasm_emcc -nl17
             fi
 
