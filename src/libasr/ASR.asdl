@@ -35,6 +35,7 @@ stmt
     | ExplicitDeallocate(expr* vars)
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
+    | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body)
     | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)
     | ErrorStop(expr? code)
     | Exit(identifier? stmt_name)
@@ -244,5 +245,20 @@ integerboz = Binary | Hex | Octal | Decimal
 arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
 string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
+
+omp_region_type = Parallel | Do | ParallelDo | Sections | Section | Single | Task | Simd | Teams | Target | TargetData
+omp_clause
+  = OMPPrivate(expr* vars)
+  | OMPShared(expr* vars)
+  | OMPFirstPrivate(expr* vars)
+  | OMPLastPrivate(expr* vars)
+  | OMPReduction(reduction_op operator, expr* vars)
+  | OMPCollapse(expr count)
+  | OMPIf(expr condition)
+  | OMPNumThreads(expr num_threads)
+  | OMPSchedule(schedule_type kind, expr? chunk_size)
+  | OMPNowait()
+schedule_type
+  = Static | Dynamic | Guided | Auto | Runtime
 
 }
