@@ -1854,7 +1854,14 @@ public:
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+        ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        if (compiler_options.implicit_typing) {
+            parent_scope->add_or_overwrite_symbol(sym_name, derived_type_sym);
+        } else {
+            parent_scope->add_symbol(sym_name, derived_type_sym);
+        }
+
         current_scope = parent_scope;
         is_derived_type = false;
     }
