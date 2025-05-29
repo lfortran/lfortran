@@ -1748,15 +1748,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
                     } 
-                    if (strlen(value) > 2 && value[2] == '.') {
-                        precision = atoi(value + 3); // Get precision after 'g.'
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    if (dot != NULL) {
+                        precision = atoi(dot + 1); // get digits after '.'
                     }
                     char buffer[100];
+                    char formatted[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
                         if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
-                            snprintf(buffer, sizeof(buffer), format_spec, double_val);
+                            snprintf(formatted, sizeof(formatted), format_spec, double_val);
                         } else {
                             int exp = 0;
                             double abs_val = fabs(double_val);
@@ -1767,8 +1769,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             double final_val = double_val * scale;
                             char mantissa[64], exponent[16];
                             snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
-                            snprintf(exponent, sizeof(exponent), "E%+d", exp);  // Force sign
-                            snprintf(buffer, sizeof(buffer), "%s%s", mantissa, exponent);
+                            if (width > 0) {
+                                snprintf(exponent, sizeof(exponent), "E%+03d", exp); 
+                            } else {
+                                snprintf(exponent, sizeof(exponent), "E%+d", exp);
+                            }
+                            snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
+                        }
+                        int len = strlen(formatted);
+                        if (width > len) {
+                            int padding = width - len;
+                            snprintf(buffer, sizeof(buffer), "%*s", width, formatted);
+                        } else {
+                            strcpy(buffer, formatted);
                         }
                         result = append_to_string(result, buffer);
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
