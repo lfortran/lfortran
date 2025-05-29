@@ -3970,9 +3970,9 @@ public:
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         if (v->m_value != nullptr) {
-            this->visit_expr_wrapper(v->m_value, true);
+            this->visit_expr_wrapper(v->m_value, true, v->m_is_volatile);
         } else {
-            this->visit_expr_wrapper(v->m_symbolic_value, true);
+            this->visit_expr_wrapper(v->m_symbolic_value, true, v->m_is_volatile);
         }
         llvm::Value *init_value = tmp;
         if( ASRUtils::is_array(v->m_type) &&
@@ -3982,7 +3982,7 @@ public:
             ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(v->m_type);
             if( target_ptype == ASR::array_physical_typeType::DescriptorArray ) {
                 target_var = arr_descr->get_pointer_to_data(target_var);
-                builder->CreateStore(init_value, target_var);
+                builder->CreateStore(init_value, target_var, v->m_is_volatile);
             } else if( target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
                 llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                 llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASR::down_cast<ASR::ArrayConstant_t>(v->m_value)->m_type)));
@@ -3993,10 +3993,10 @@ public:
                 arg_size = builder->CreateMul(llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
                 builder->CreateMemCpy(llvm_utils->create_gep(target_var, 0),
-                    llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size);
+                    llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
             }
         } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
-            builder->CreateStore(llvm_utils->CreateLoad(init_value), target_var);
+            builder->CreateStore(llvm_utils->CreateLoad(init_value), target_var, v->m_is_volatile);
         } else if (is_a<ASR::String_t>(*v->m_type)) {
             ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
             visit_expr(*t->m_len);
@@ -4006,7 +4006,7 @@ public:
             // target decides if the str_copy is performed on string descriptor or pointer.
             tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_descriptorString(v->m_type));
             if (v->m_intent == intent_local) {
-                strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
+                strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var, v->m_is_volatile));
             }
         } else if(ASRUtils::is_array(v->m_type) &&
                 (ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) ||
@@ -4019,17 +4019,17 @@ public:
                         llvm_utils->get_el_type(ASRUtils::extract_type(v->m_type), module.get()), false);
                 llvm::Value* data_ptr = llvm_utils->create_gep2(array_desc_type,
                     llvm_utils->CreateLoad(target_var), 0);
-                builder->CreateStore(init_value, data_ptr);
+                builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
         } else {
             if (v->m_storage == ASR::storage_typeType::Save
                 && v->m_value
                 && (ASR::is_a<ASR::Integer_t>(*v->m_type)
                 || ASR::is_a<ASR::Real_t>(*v->m_type)
-                || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
+                || ASR::is_a<ASR::Logical_t>(*v->m_type)) && !v->m_is_volatile) {
                 // Do nothing, the value is already initialized
                 // in the global variable
             } else {
-                builder->CreateStore(init_value, target_var);
+                builder->CreateStore(init_value, target_var, v->m_is_volatile);
             }
         }
     }
@@ -4110,8 +4110,8 @@ public:
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
                             llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_dims[i].m_length),module.get());
                             llvm::Value* deep = llvm_utils->CreateAlloca(*builder, deep_type, nullptr, "deep");
-                            builder->CreateStore(tmp, deep);
-                            tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),deep);
+                            builder->CreateStore(tmp, deep, v->m_is_volatile);
+                            tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_dims[i].m_length),deep, v->m_is_volatile);
                             llvm_symtab_deep_copy[m_length_variable_h] = deep;
                         }
                     }
@@ -4268,7 +4268,7 @@ public:
                             this->visit_expr(*t->m_len);
                             llvm_utils->initialize_string_heap(target_var, tmp); tmp = nullptr;
                             if (v->m_intent == intent_local) {
-                                strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
+                                strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var, v->m_is_volatile));
                             }
 
                     } else if (t->m_len_kind == ASR::string_length_kindType::DeferredLength) {
@@ -4276,7 +4276,7 @@ public:
                         llvm::Value *init_value = llvm::Constant::getNullValue(type);
                         builder->CreateStore(init_value, /*TODO-StringsRefactoring : Remove this ternary check (ASRVerify)*/
                             t->m_physical_type == ASR::string_physical_typeType::DescriptorString?
-                            llvm_utils->create_gep2(string_descriptor, target_var, 0): target_var);
+                            llvm_utils->create_gep2(string_descriptor, target_var, 0): target_var, v->m_is_volatile);
                     } else {
                         throw CodeGenError("Unsupported character len value in ASR.");
                     }
@@ -6373,7 +6373,7 @@ public:
         builder->SetInsertPoint(blockend);
     }
 
-    inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false) {
+    inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
         // Check if *x is nullptr.
         if( x == nullptr ) {
             throw CodeGenError("Internal error: x is nullptr");
@@ -6386,7 +6386,7 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 !ASRUtils::is_descriptorString(expr_type(x)) ) {
-                tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x), tmp);
+                tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x), tmp, is_volatile);
             }
         }
     }

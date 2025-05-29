@@ -38,6 +38,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             integer_add_subrout:
                                                 (ClassProcedure
@@ -68,6 +69,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             real_add_subrout:
                                                 (ClassProcedure
@@ -137,6 +139,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -156,6 +159,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             sum:
                                                 (Variable
@@ -180,6 +184,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -204,6 +209,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     integer_add_subrout
@@ -348,6 +354,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -367,6 +374,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             sum:
                                                 (Variable
@@ -391,6 +399,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -415,6 +424,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     real_add_subrout
@@ -590,6 +600,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -614,6 +625,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             complextype:
                                 (ExternalSymbol
@@ -643,6 +655,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fptwo:
                                 (Variable
@@ -662,6 +675,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fpzero:
                                 (Variable
@@ -681,6 +695,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ione:
                                 (Variable
@@ -700,6 +715,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             izero:
                                 (Variable
@@ -719,6 +735,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             negfpone:
                                 (Variable
@@ -738,6 +755,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     generic_name_01

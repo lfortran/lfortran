@@ -35,6 +35,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ~assign:
                                 (ExternalSymbol
@@ -128,6 +129,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -147,6 +149,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     logical_gets_integer
@@ -209,6 +212,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -228,6 +232,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     logical_gets_integer_use

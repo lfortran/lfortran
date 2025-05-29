@@ -4682,3 +4682,8 @@ asr = true
 [[test]]
 filename = "class_abstract_type.f90"
 asr = true
+
+[[test]]
+filename = "volatile_01.f90"
+run = true
+llvm = true

@@ -283,10 +283,10 @@ namespace LCompilers {
             llvm::Value* create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, int idx);
             llvm::Value* create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, llvm::Value* idx);
 
-            llvm::Value* CreateLoad(llvm::Value *x);
+            llvm::Value* CreateLoad(llvm::Value *x, bool is_volatile = false);
 
-            llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x);
-            llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x);
+            llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile = false);
+            llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x, bool is_volatile = false);
 
             llvm::Value* CreateGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
             llvm::Value* CreateGEP2(llvm::Type *t, llvm::Value *x,
