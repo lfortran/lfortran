@@ -386,7 +386,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 shape
                                                     )
                                                     ()
@@ -439,7 +442,10 @@
                                         })
                                     initialize_subrout
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 shape
                                         )
                                         (Integer 4)

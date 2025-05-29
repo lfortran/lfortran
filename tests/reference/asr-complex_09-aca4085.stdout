@@ -133,7 +133,17 @@
                     )
                     (Assignment
                         (Var 2 z2)
-                        (Var 2 z2)
+                        (Cast
+                            (Cast
+                                (Var 2 z2)
+                                ComplexToComplex
+                                (Complex 8)
+                                ()
+                            )
+                            ComplexToComplex
+                            (Complex 4)
+                            ()
+                        )
                         ()
                         .false.
                     )]

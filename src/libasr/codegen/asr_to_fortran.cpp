@@ -242,7 +242,11 @@ public:
             } case ASR::ttypeType::StructType: {
                 ASR::StructType_t* struct_type = down_cast<ASR::StructType_t>(t);
                 std::string struct_name = ASRUtils::symbol_name(struct_type->m_derived_type);
-                r = "type(";
+                if (struct_type->m_is_cstruct) {
+                    r = "type(";
+                } else {
+                    r = "class(";
+                }
                 r += struct_name;
                 r += ")";
                 if (std::find(import_struct_type.begin(), import_struct_type.end(),

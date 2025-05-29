@@ -61,7 +61,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 logger_type
                                                     )
                                                     ()
@@ -95,7 +98,10 @@
                                         })
                                     add_log_file
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 logger_type
                                         )
                                         (String 1 () AssumedLength PointerString)
@@ -182,7 +188,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 logger_type
                                                     )
                                                     ()
@@ -216,7 +225,10 @@
                                         })
                                     log_io_error
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 logger_type
                                         )
                                         (Integer 4)

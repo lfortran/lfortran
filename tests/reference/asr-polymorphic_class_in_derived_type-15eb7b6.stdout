@@ -22,7 +22,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 ~abstract_type
                                                         )
                                                     )
@@ -45,7 +48,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 ~abstract_type
                                                         )
                                                     )

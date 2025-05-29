@@ -1033,7 +1033,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
                                                     operand_type, value);
             return;
-        } else if( ASR::is_a<ASR::StructType_t>(*operand_type) ) {
+        } else if( ASR::is_a<ASR::StructType_t>(*operand_type) && !ASRUtils::is_class_type(operand_type) ) {
             ASR::expr_t* overloaded_uminus = nullptr;
             if( ASRUtils::use_overloaded_unary_minus(operand,
                 current_scope, asr, al,
@@ -4736,7 +4736,8 @@ public:
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
             }
-            type = ASRUtils::TYPE(ASR::make_ClassType_t(al, loc, v));
+            // this is class variable declaration
+            type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v, false));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
             if (is_pointer) {
@@ -4914,7 +4915,7 @@ public:
                 }
 
                 void visit_Array( const ASR::Array_t& x ) {
-                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
+                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) && !ASRUtils::is_class_type(x.m_type) ) {
                         sem += 1;
                         visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
                         sem -= 1;
@@ -4931,7 +4932,7 @@ public:
                 }
 
                 void visit_ArrayItem(const ASR::ArrayItem_t& x) {
-                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
+                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) && !ASRUtils::is_class_type(x.m_type) ) {
                         sem += 1;
                         visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
                         sem -= 1;
@@ -5650,7 +5651,8 @@ public:
                 } else {
                     sym = es_s;
                 }
-                return ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, sym));
+                return ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                    al, loc, sym, struct_t_type->m_is_cstruct));
             }
             default: {
                 return return_type;
@@ -6431,14 +6433,11 @@ public:
         }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t* v_variable_m_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(v_variable->m_type));
-        if (ASR::is_a<ASR::StructType_t>(*v_variable_m_type) ||
-                ASR::is_a<ASR::ClassType_t>(*v_variable_m_type)) {
+        if (ASR::is_a<ASR::StructType_t>(*v_variable_m_type)) {
             ASR::ttype_t* v_type = v_variable_m_type;
             ASR::symbol_t *derived_type = nullptr;
             if (ASR::is_a<ASR::StructType_t>(*v_type)) {
                 derived_type = ASR::down_cast<ASR::StructType_t>(v_type)->m_derived_type;
-            } else if (ASR::is_a<ASR::ClassType_t>(*v_type)) {
-                derived_type = ASR::down_cast<ASR::ClassType_t>(v_type)->m_class_type;
             }
             ASR::Struct_t *der_type;
             if (ASR::is_a<ASR::ExternalSymbol_t>(*derived_type)) {
@@ -6569,9 +6568,6 @@ public:
             if ( ASR::is_a<ASR::StructType_t>(*dt_type) ) {
                 ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(dt_type);
                 der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der->m_derived_type));
-            } else if( ASR::is_a<ASR::ClassType_t>(*dt_type) ) {
-                ASR::ClassType_t* der = ASR::down_cast<ASR::ClassType_t>(dt_type);
-                der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der->m_class_type));
             } else {
                 diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -7524,6 +7520,11 @@ public:
                         diag::Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
                 }
+            }
+            int64_t kind_value = handle_kind(kind);
+            if (kind_value != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x_))) {
+                return ASR::make_Cast_t(al, x.base.base.loc, x_, ASR::cast_kindType::ComplexToComplex, 
+                                                            ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, kind_value)), nullptr);
             }
             return (ASR::asr_t*) x_;
         }
@@ -9814,10 +9815,6 @@ public:
             left_struct = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
                 left_type)->m_derived_type));
-        } else if ( ASR::is_a<ASR::ClassType_t>(*left_type) ) {
-            left_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::ClassType_t>(
-                left_type)->m_class_type));
         }
 
         ASR::symbol_t* sym = current_scope->resolve_symbol(x.m_op);

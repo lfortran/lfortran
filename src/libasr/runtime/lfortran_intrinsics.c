@@ -3816,6 +3816,70 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
     }
 }
 
+LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        char buffer[100];   // Long enough buffer to fit any 16 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Use strtok() to extract only the first token before any whitespace
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int16_t.\n");
+            exit(1);
+        }
+
+        char *endptr = NULL;
+        errno = 0;
+        long long_val = strtol(token, &endptr, 10);
+
+        if (endptr == token || *endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int16_t.\n");
+            exit(1);
+        }
+
+        // check for overflow (when input value is more than the int16 limit)
+        if (errno == ERANGE || long_val < INT16_MIN || long_val > INT16_MAX) {
+            fprintf(stderr, "Error: Value %ld is out of integer(2) range.\n", long_val);
+            exit(1);
+        }
+
+        // once we checked its a proper integer, and that, it's within range, we convert it to int16
+        *p = (int16_t)long_val;
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
+            exit(1);
+        }
+    } else {
+        long temp;
+        if (fscanf(filep, "%ld", &temp) != 1) {
+            fprintf(stderr, "Error: Invalid input for int16_t from file.\n");
+            exit(1);
+        }
+
+        if (temp < INT16_MIN || temp > INT16_MAX) {
+            fprintf(stderr, "Error: Value %ld is out of integer(2) range (file).\n", temp);
+            exit(1);
+        }
+
+        *p = (int16_t)temp;
+    }
+}
+
 // Improved input validation for integer reading
 // - Prevents auto-casting of invalid inputs to integers
 // NOTE:- More changes need to be implemented for advanced error detection and check
@@ -4050,6 +4114,38 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     } else {
         for (int i = 0; i < array_size; i++) {
             (void)!fscanf(filep, "%s", &p[i]);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%hd", &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_id != 1) {
+            // Read record marker first
+            int32_t record_marker_start;
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
+        }
+        (void)!fread(p, sizeof(int16_t), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            (void)!fscanf(filep, "%hd", &p[i]);
         }
     }
 }
@@ -5217,6 +5313,20 @@ LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
         // if the name is not found, return empty string
         char* empty_string = "";
         return getenv(name) ? getenv(name) : empty_string;
+    }
+}
+
+LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(char *name) {
+    // temporary solution, the below function _lfortran_get_env_variable should be used
+    if (name == NULL) {
+        return 0;
+    } else {
+        char *value = getenv(name);
+        if (value == NULL) {
+            return 0; // If the environment variable is not found, return 0
+        } else {
+            return strlen(value); // Return the length of the environment variable value
+        }
     }
 }
 

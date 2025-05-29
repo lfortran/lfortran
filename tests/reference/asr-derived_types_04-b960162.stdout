@@ -51,7 +51,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 bitset_type
                                                     )
                                                     ()
@@ -66,7 +69,10 @@
                                         })
                                     all_abstract
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 bitset_type
                                         )]
                                         (Logical 4)

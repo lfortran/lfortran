@@ -696,7 +696,7 @@ public:
                     std::string new_struct_name = context_map[struct_name];
                     ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
                     return ASRUtils::TYPE(
-                        ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym));
+                        ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym, s->m_is_cstruct));
                 } else {
                     return ttype;
                 }
@@ -723,16 +723,6 @@ public:
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
                 return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(a->m_type)));
-            }
-            case (ASR::ttypeType::ClassType): {
-                ASR::ClassType_t *c = ASR::down_cast<ASR::ClassType_t>(ttype);
-                std::string c_name = ASRUtils::symbol_name(c->m_class_type);
-                if (context_map.find(c_name) != context_map.end()) {
-                    std::string new_c_name = context_map[c_name];
-                    return ASRUtils::TYPE(ASR::make_ClassType_t(al,
-                        ttype->base.loc, func_scope->get_symbol(new_c_name)));
-                }
-                return ttype;
             }
             default : return ttype;
         }
@@ -1160,8 +1150,21 @@ public:
         dependencies.clear(al);
         new_scope = al.make_new<SymbolTable>(target_scope);
 
-        // duplicate symbol table
-        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+        std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
+        for (auto &sym_pair: x->m_symtab->get_scope()) {
+            // instatiate variables first as they might be used in the
+            // instantiation of other symbols like ClassProcedure
+            if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
+                SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                t.instantiate();
+            } else {
+                instantiation_vector.push_back(sym_pair);
+            }
+        }
+
+        // instantiate the rest of the symbols
+        for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
                 ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
             t.instantiate();
@@ -1274,7 +1277,21 @@ public:
         target_scope->add_symbol(new_sym_name, s);
         symbol_subs[x->m_name] = s;
 
-        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+        std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
+        for (auto &sym_pair: x->m_symtab->get_scope()) {
+            // instatiate variables first as they might be used in the
+            // instantiation of other symbols like ClassProcedure
+            if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
+                SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                t.instantiate();
+            } else {
+                instantiation_vector.push_back(sym_pair);
+            }
+        }
+
+        // instantiate the rest of the symbols
+        for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
                 ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
             t.instantiate();
@@ -1373,7 +1390,8 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    return ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, ttype->base.loc, sym));
+                    return ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                        al, ttype->base.loc, sym, s->m_is_cstruct));
                 }
                 return ttype;
             }
@@ -1399,15 +1417,6 @@ public:
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
                 return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(a->m_type)));
-            }
-            case (ASR::ttypeType::ClassType) : {
-                ASR::ClassType_t *c = ASR::down_cast<ASR::ClassType_t>(ttype);
-                std::string class_name = ASRUtils::symbol_name(c->m_class_type);
-                if (symbol_subs.find(class_name) != symbol_subs.end()) {
-                    ASR::symbol_t *new_c = symbol_subs[class_name];
-                    return ASRUtils::TYPE(ASR::make_ClassType_t(al, ttype->base.loc, new_c));
-                }
-                return ttype;
             }
             default : return ttype;
         }
@@ -1793,7 +1802,8 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    ttype = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym));
+                    ttype = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                        al, s->base.base.loc, sym, s->m_is_cstruct));
                 }
                 return ttype;
             }
@@ -1819,15 +1829,6 @@ public:
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
                 return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(a->m_type)));
-            }
-            case (ASR::ttypeType::ClassType) : {
-                ASR::ClassType_t *c = ASR::down_cast<ASR::ClassType_t>(ttype);
-                std::string class_name = ASRUtils::symbol_name(c->m_class_type);
-                if (symbol_subs.find(class_name) != symbol_subs.end()) {
-                    ASR::symbol_t *new_c = symbol_subs[class_name];
-                    return ASRUtils::TYPE(ASR::make_ClassType_t(al, ttype->base.loc, new_c));
-                }
-                return ttype;
             }
             default : return ttype;
         }

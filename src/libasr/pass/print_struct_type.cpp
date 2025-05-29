@@ -52,7 +52,7 @@ public:
 
     void visit_Print(const ASR::Print_t& x) {
         #define is_struct_type(value) if( ASR::is_a<ASR::StructType_t>(    \
-            *ASRUtils::expr_type(value)) )    \
+            *ASRUtils::expr_type(value)) && !ASRUtils::is_class_type(ASRUtils::expr_type(value)) )    \
 
         bool is_struct_type_present = false;
         ASR::StringFormat_t* fmt;

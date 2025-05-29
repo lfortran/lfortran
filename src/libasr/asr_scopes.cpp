@@ -55,7 +55,7 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 } else if (v_func_type->m_abi == ASR::abiType::BindC) {
                     v_func_type->m_deftype = ASR::deftypeType::Interface;
                 }
-
+                v->m_symtab->mark_all_variables_external(al);
                 break;
             }
             case (ASR::symbolType::Module) : {

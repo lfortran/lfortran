@@ -50,7 +50,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 softmax
                                                     )
                                                     ()
@@ -89,7 +92,10 @@
                                         })
                                     eval_1d
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 softmax
                                         )
                                         (Array
@@ -192,7 +198,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 softmax
                                                     )
                                                     ()
@@ -231,7 +240,10 @@
                                         })
                                     eval_1d_prime
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 softmax
                                         )
                                         (Array

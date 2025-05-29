@@ -51,7 +51,10 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             7 toml_tokenizer
                                         )
                                     )
@@ -137,7 +140,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_tokenizer
                                                     )
                                                     ()
@@ -178,7 +184,10 @@
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_tokenizer
                                         )]
                                         ()

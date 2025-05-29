@@ -69,7 +69,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 t_1
                                                     )
                                                     ()
@@ -84,7 +87,10 @@
                                         })
                                     multiply
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 t_1
                                         )
                                         (Real 4)]
@@ -188,7 +194,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 t_1
                                                     )
                                                     ()
@@ -203,7 +212,10 @@
                                         })
                                     sqrt_subtract
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 t_1
                                         )
                                         (Integer 4)]

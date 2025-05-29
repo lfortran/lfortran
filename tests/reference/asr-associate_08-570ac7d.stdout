@@ -278,7 +278,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 t_2
                                                     )
                                                     ()
@@ -293,7 +296,10 @@
                                         })
                                     sub_1
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 t_2
                                         )
                                         (Integer 4)]
@@ -397,7 +403,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         2 t_2
                                                                     )
                                                                     ()
@@ -418,7 +427,10 @@
                                                             [(()
                                                             (IntegerConstant 0 (Integer 4) Decimal)
                                                             ())]
-                                                            (ClassType
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
                                                                 2 t_2
                                                             )
                                                             ColMajor
@@ -480,7 +492,10 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (ClassType
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
                                                                 2 t_2
                                                             )
                                                             [(()
@@ -502,7 +517,10 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (ClassType
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
                                                     2 t_2
                                                 )
                                                 [(()
@@ -531,7 +549,10 @@
                                                 [(()
                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                 ())]
-                                                (ClassType
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
                                                     2 t_2
                                                 )
                                                 ColMajor
