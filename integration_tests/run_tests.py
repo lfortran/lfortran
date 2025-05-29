@@ -17,6 +17,7 @@ LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 fast_tests = "no"
 nofast_llvm16 = "no"
 separate_compilation = "no"
+no_llvm17 = "no"
 
 def run_cmd(cmd, cwd=None):
     print(f"+ {cmd}")
@@ -42,14 +43,14 @@ def run_test(backend, std):
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
     elif backend == "cpp":
-        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} {std_string}" + common,
+        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} -DNO_LLVM17={no_llvm17} {std_string}" + common,
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
-            f"-DFAST={fast_tests} -DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
+            f"-DFAST={fast_tests} -DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} -DNO_LLVM17={no_llvm17} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
                 cwd=cwd)
     else:
-        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} -DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} -DNO_LLVM17={no_llvm17} " + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
@@ -102,6 +103,8 @@ def get_args():
                 help="Don't run unsupported tests with --fast when LLVM < 17")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
+    parser.add_argument("-nl17", "--no_llvm17_and_up", action='store_true',
+                help="Don't run unsupported tests with --fast when LLVM < 17")
     return parser.parse_args()
 
 def main():
@@ -112,7 +115,7 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation
+    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, no_llvm17
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
@@ -124,6 +127,7 @@ def main():
     fast_tests = "yes" if args.fast else "no"
     nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
     separate_compilation = "yes" if args.separate_compilation else "no"
+    no_llvm17 = "yes" if args.no_llvm17_and_up else "no"
     for backend in args.backends:
         test_backend(backend, args.std)
 

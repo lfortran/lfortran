@@ -792,9 +792,9 @@ jobs:
         run: |
             ctest --output-on-failure
             cd integration_tests
-            ./run_tests.py -b llvm -sc
-            ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f
+            ./run_tests.py -b llvm -sc -nl17
+            ./run_tests.py -b llvm llvmImplicit -nl17
+            ./run_tests.py -b llvm llvmImplicit -f -nl17
 
       - name: Test third party codes
         shell: bash -e -x -l {0}
