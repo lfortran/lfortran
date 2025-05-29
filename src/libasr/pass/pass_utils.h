@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_PASS_UTILS_H
 #define LFORTRAN_PASS_UTILS_H
 
+#include "libasr/asr_utils.h"
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
@@ -159,7 +160,8 @@ namespace LCompilers {
             ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx);
 
         static inline bool is_aggregate_type(ASR::expr_t* var) {
-            return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var));
+            return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
+                   && !ASRUtils::is_class_type(ASRUtils::expr_type(var));
         }
 
         /*  Checks for any non-primitive-function-return type 
@@ -171,7 +173,8 @@ namespace LCompilers {
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
-            return (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var)) ||
+            return ((ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
+                    && !ASRUtils::is_class_type(ASRUtils::expr_type(var))) ||
                     ASRUtils::is_array(ASRUtils::expr_type(var)) ||
                     ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }

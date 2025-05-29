@@ -100,7 +100,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             9 toml_value
                                                         )
                                                     )
@@ -122,7 +125,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -137,12 +143,18 @@
                                         })
                                     find
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             9 toml_vector
                                         )
                                         (String 1 () AssumedLength PointerString)
                                         (Pointer
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 9 toml_value
                                             )
                                         )]
@@ -213,7 +225,10 @@
                                                     )
                                                     13 1_toml_node_val
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             9 toml_value
                                                         )
                                                     )
@@ -264,7 +279,10 @@
                                                         )
                                                         13 1_toml_node_val
                                                         (Allocatable
-                                                            (ClassType
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
                                                                 9 toml_value
                                                             )
                                                         )
@@ -307,7 +325,10 @@
                                                         )
                                                         13 1_toml_node_val
                                                         (Allocatable
-                                                            (ClassType
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
                                                                 9 toml_value
                                                             )
                                                         )
@@ -498,7 +519,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             9 toml_value
                                                         )
                                                     )
@@ -648,7 +672,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         6 toml_keyval
                                                     )
                                                     ()
@@ -663,7 +690,10 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             6 toml_keyval
                                         )]
                                         ()
@@ -863,7 +893,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_value
                                                     )
                                                     ()
@@ -878,7 +911,10 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_value
                                         )]
                                         ()
@@ -964,7 +1000,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_value
                                                     )
                                                     ()
@@ -979,7 +1018,10 @@
                                         })
                                     match_key
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_value
                                         )
                                         (String 1 () AssumedLength PointerString)]

@@ -149,7 +149,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -164,7 +167,10 @@
                                                         })
                                                     __asr_push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -321,7 +327,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -362,7 +371,10 @@
                                                         })
                                                     __asr_resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -833,7 +845,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -848,7 +863,10 @@
                                                         })
                                                     push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 vector
                                                         )
                                                         (TypeParameter
@@ -1011,7 +1029,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -1054,7 +1075,10 @@
                                                         })
                                                     resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 vector
                                                         )
                                                         (Integer 4)]

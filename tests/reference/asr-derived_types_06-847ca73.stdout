@@ -72,7 +72,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         7 toml_date
                                                     )
                                                     ()
@@ -90,7 +93,10 @@
                                         [(Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             7 toml_date
                                         )]
                                         ()
@@ -236,7 +242,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         7 toml_datetime
                                                     )
                                                     ()
@@ -275,7 +284,10 @@
                                         [(Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             7 toml_datetime
                                         )]
                                         ()
@@ -892,7 +904,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         7 toml_time
                                                     )
                                                     ()
@@ -910,7 +925,10 @@
                                         [(Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             7 toml_time
                                         )]
                                         ()

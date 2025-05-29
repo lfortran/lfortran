@@ -204,7 +204,6 @@ ttype
     | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, symbol derived_type)
     | EnumType(symbol enum_type)
     | UnionType(symbol union_type)
-    | ClassType(symbol class_type)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | Allocatable(ttype type)

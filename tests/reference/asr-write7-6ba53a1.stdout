@@ -75,7 +75,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 person
                                                     )
                                                     ()
@@ -209,7 +212,10 @@
                                         })
                                     pwf
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 person
                                         )
                                         (Integer 4)
@@ -262,7 +268,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 person
                                                     )
                                                     ()
@@ -334,7 +343,10 @@
                                         })
                                     pwunf
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 person
                                         )
                                         (Integer 4)

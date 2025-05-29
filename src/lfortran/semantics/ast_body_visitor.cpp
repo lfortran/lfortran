@@ -2291,8 +2291,9 @@ public:
                         del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x->base.loc, arg_var->m_v)));
                     }
                     // Check struct-type members
-                    if(ASR::is_a<ASR::StructType_t>(*ASRUtils::symbol_type(sym)) &&
-                        ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out){
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::symbol_type(sym))
+                        && !ASRUtils::is_class_type(ASRUtils::symbol_type(sym))
+                        && ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out) {
                         ASR::StructType_t* struct_type_instance = ASR::down_cast<ASR::StructType_t>(var->m_type);
                         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(struct_type_instance->m_derived_type));
@@ -4030,7 +4031,7 @@ public:
                 // If GenericProcedure resolves to a parent struct symbol, resolve the procedure names again with the original struct symbol
                 if (v_expr &&
                     x.n_member >= 1 &&
-                    ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(v_expr)) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(v_expr)) && !ASRUtils::is_class_type(ASRUtils::expr_type(v_expr)) &&
                     (ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(ASRUtils::expr_type(v_expr))->m_derived_type)) !=
                         ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(original_sym))) {
                     for (size_t i = 0; i < p->n_procs; i++) {

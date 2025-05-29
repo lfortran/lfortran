@@ -92,7 +92,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -107,7 +110,10 @@
                                         })
                                     add_project
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             7 dependency_tree_t
                                         )
                                         (StructType
@@ -225,7 +231,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -240,7 +249,10 @@
                                         })
                                     add_project_dependencies
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             7 dependency_tree_t
                                         )
                                         (String 1 () AssumedLength PointerString)
@@ -789,7 +801,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -804,7 +819,10 @@
                                         })
                                     update_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             7 dependency_tree_t
                                         )
                                         (String 1 () AssumedLength PointerString)

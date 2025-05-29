@@ -74,7 +74,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 dependency_tree_t
                                                     )
                                                     ()
@@ -89,7 +92,10 @@
                                         })
                                     add_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 dependency_tree_t
                                         )
                                         (StructType
@@ -510,7 +516,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 dependency_config_t
                                                     )
                                                     ()
@@ -550,7 +559,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 dependency_tree_t
                                                     )
                                                     ()
@@ -565,10 +577,16 @@
                                         })
                                     find_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 dependency_tree_t
                                         )
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             2 dependency_config_t
                                         )]
                                         (Integer 4)

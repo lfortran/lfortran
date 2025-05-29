@@ -42,7 +42,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         10 toml_structure
                                                     )
                                                     ()
@@ -67,7 +70,10 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             10 toml_structure
                                         )]
                                         ()
@@ -204,7 +210,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_array
                                                     )
                                                     ()
@@ -219,7 +228,10 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_array
                                         )]
                                         ()
@@ -289,7 +301,10 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -307,7 +322,10 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -319,7 +337,10 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -426,7 +447,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             2 toml_ordered
                                                         )
                                                     )
@@ -499,7 +523,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 toml_value
                                                     )
                                                     ()
@@ -514,7 +541,10 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             4 toml_value
                                         )]
                                         ()

@@ -96,7 +96,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 toml_character_tokenizer
                                                     )
                                                     ()
@@ -130,7 +133,10 @@
                                         })
                                     next_token
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             4 toml_character_tokenizer
                                         )
                                         (Logical 4)]
@@ -271,7 +277,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         8 toml_tokenizer
                                                     )
                                                     ()
@@ -305,7 +314,10 @@
                                         })
                                     next_token
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             8 toml_tokenizer
                                         )
                                         (Logical 4)]
@@ -355,7 +367,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         8 toml_tokenizer
                                                     )
                                                     ()
@@ -396,7 +411,10 @@
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             8 toml_tokenizer
                                         )]
                                         ()

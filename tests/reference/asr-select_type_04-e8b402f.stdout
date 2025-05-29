@@ -147,7 +147,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 toml_table
                                                     )
                                                     ()
@@ -162,7 +165,10 @@
                                         })
                                     check_table
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             4 toml_table
                                         )]
                                         ()
@@ -260,7 +266,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 toml_table
                                                     )
                                                     ()
@@ -282,7 +291,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 toml_value
                                                         )
                                                     )
@@ -341,7 +353,10 @@
                                         })
                                     get_table
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             4 toml_table
                                         )
                                         (Pointer

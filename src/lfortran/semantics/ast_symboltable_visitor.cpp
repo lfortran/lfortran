@@ -131,7 +131,7 @@ public:
 
             ASR::ttype_t* sym_type = ASRUtils::type_get_past_pointer(
                                         ASRUtils::symbol_type(sym));
-            if( ASR::is_a<ASR::StructType_t>(*sym_type) ) {
+            if( ASR::is_a<ASR::StructType_t>(*sym_type) && !ASRUtils::is_class_type(sym_type) ) {
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(sym_type);
                 ASR::symbol_t* der_sym = struct_t->m_derived_type;
                 if( ASR::is_a<ASR::ExternalSymbol_t>(*der_sym) &&
@@ -1844,9 +1844,6 @@ public:
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
-                } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
-                    aggregate_type_name = ASRUtils::symbol_name(sym);
                 }
             }
             if( aggregate_type_name ) {
@@ -2418,9 +2415,9 @@ public:
     }
 
     bool arg_type_equal_to_class(ASR::ttype_t* var_type, ASR::symbol_t* clss_sym) {
-        if (ASR::is_a<ASR::ClassType_t>(*var_type)) {
-            ASR::ClassType_t* var_type_clss = ASR::down_cast<ASR::ClassType_t>(var_type);
-            ASR::symbol_t* var_type_clss_sym = var_type_clss->m_class_type;
+        if (ASRUtils::is_class_type(var_type)) {
+            ASR::StructType_t* var_type_clss = ASR::down_cast<ASR::StructType_t>(var_type);
+            ASR::symbol_t* var_type_clss_sym = var_type_clss->m_derived_type;
             while (var_type_clss_sym) {
                 if (var_type_clss_sym == clss_sym) {
                     return true;

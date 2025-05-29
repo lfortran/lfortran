@@ -379,7 +379,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         10 version_t
                                                     )
                                                     ()
@@ -415,7 +418,10 @@
                                         })
                                     as_string
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             10 version_t
                                         )]
                                         (Allocatable
@@ -467,7 +473,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         10 version_t
                                                     )
                                                     ()
@@ -503,7 +512,10 @@
                                         })
                                     to_string
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             10 version_t
                                         )
                                         (Allocatable

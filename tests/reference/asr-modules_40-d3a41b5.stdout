@@ -37,7 +37,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_tokenizer
                                                     )
                                                     ()
@@ -63,7 +66,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         2 toml_tokenizer
                                                                     )
                                                                     ()
@@ -128,7 +134,10 @@
                                                         })
                                                     fill_stack
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             2 toml_tokenizer
                                                         )
                                                         (Integer 4)
@@ -294,7 +303,10 @@
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_tokenizer
                                         )]
                                         ()

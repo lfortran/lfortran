@@ -398,7 +398,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 fpm_cmd_settings
                                                         )
                                                     )
@@ -439,7 +442,10 @@
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 4 fpm_cmd_settings
                                             )
                                         )]
@@ -772,7 +778,10 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             2 fpm_cmd_settings
                                         )
                                     )
