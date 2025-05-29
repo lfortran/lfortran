@@ -10,11 +10,24 @@ on:
     branches:
       - main
 
+# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || 'main' }}
+# which eventually evaluates to: CI-7488 and 'main' isn't used.
+# NOTE: `||` acts as a logical OR and a default operator both,
+# see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
+# When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
+# evaluate to CI-main but "cancel-in-progress" evaluates to false, so the CI on main
+# will run in a single group CI-main, in a *queue* (which will slow down the CI on main),
+# and save runner for PR's but no previous CI will be cancelled on main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+
 env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
-  Check_for_Added_Binary_Files:
+  Print_Github_Concurrent_Group_and_Check_for_Added_Binary_Files:
     name: Check for Added Binary Files
     runs-on: ubuntu-latest
     steps:
@@ -22,8 +35,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Print github concurrent group name
+        run: |
+          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || 'main' }}"
+
       - name: Check for Added Binary Files
-        run: python3 check_binary_file_in_git_history.py
+        run: |
+          python3 check_binary_file_in_git_history.py
 
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
@@ -1098,3 +1116,100 @@ jobs:
           context: .
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
+
+  test_lsp:
+    name: LSP Tests (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+
+      - name: Install Linux / macOS Packages
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install bison=3.4
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Setup Platform
+        shell: bash -e -l {0}
+        run: |
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
+
+      - name: Build (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            xonsh ci/build_tmp.xsh
+
+      - name: Install Timeout (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: brew install coreutils
+
+      # ~/.bash_logout wanted to run `/usr/bin/clear_console -q` while exiting
+      # login shells which frequently erred on ubuntu-latest since the shell was
+      # not run interactively.
+      - name: Disable ~/.bash_logout (Linux)
+        shell: bash -e {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: mv -v ~/.bash_logout ~/.bash_logout.bak
+
+      - name: Test (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        timeout-minutes: 5
+        env:
+            EXIT_SUCCESS: 0
+            EXIT_TIMEOUT: 124
+            EXIT_KILL: 137
+            MAX_ATTEMPTS: 3
+            SIGTERM_TIMEOUT: 60s
+            SIGKILL_TIMEOUT: 10s
+            PYTEST_TIMEOUT: 10
+        run: |
+            set -ex
+            pip install src/server/tests tests/server
+            timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                pytest -vv \
+                    --showlocals \
+                    --timeout=$PYTEST_TIMEOUT \
+                    --execution-strategy="concurrent" \
+                    tests/server
+            set +e
+            for (( ATTEMPT = 1; ATTEMPT <= MAX_ATTEMPTS; ATTEMPT++ )); do
+                echo "Attempt $ATTEMPT of $MAX_ATTEMPTS"
+                timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                    pytest -vv \
+                        --showlocals \
+                        --timeout=$PYTEST_TIMEOUT \
+                        --execution-strategy="parallel" \
+                        tests/server
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -eq $EXIT_SUCCESS ]; then
+                    break
+                fi
+                echo "Command failed with exit code: $EXIT_CODE" 1>&2
+            done
+            set -e
+            exit $EXIT_CODE
