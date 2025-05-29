@@ -11,6 +11,12 @@ on:
       - main
 
 concurrency:
+  # for a PR #7488 against main branch, the group will become: CI-{{ true && true && 7488 || github.sha }}
+  # which eventually evaluates to: CI-7488
+  # NOTE: || acts as a logical OR and a default operator both, hence in this case github.sha isn't evaluated
+  # when it isn't a PR against main but instead a commit pushed (or merged) to main, then 'group' will
+  # evaluate to CI-{{github.sha}} but "cancel-in-progress" evaluates to false and hence the concurrency
+  # block isn't even activated at all
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.base_ref == 'main' && github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
 
@@ -28,7 +34,10 @@ jobs:
           fetch-depth: 0
 
       - name: Check for Added Binary Files
-        run: python3 check_binary_file_in_git_history.py
+        run: |
+            python3 check_binary_file_in_git_history.py
+            echo "Concurrency Group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.base_ref == 'main' && github.event.number || github.sha }}"
+
 
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
