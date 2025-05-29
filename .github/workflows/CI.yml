@@ -756,7 +756,11 @@ jobs:
             export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
             export WASMTIME_NEW_CLI=0
             cd integration_tests
-            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+            if [[ "${{ matrix.llvm-version }}" == *"10"* ]]; then
+              ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+            elif [[ "${{ matrix.llvm-version }}" == *"19"* ]]; then 
+              ./run_tests.py -b llvm_wasm llvm_wasm_emcc -nl17
+            fi
 
       - name: Build Linux
         if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
