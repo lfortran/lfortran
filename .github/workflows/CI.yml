@@ -38,6 +38,7 @@ jobs:
       - name: Print github concurrent group name
         run: |
           echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || 'main' }}"
+          echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
       - name: Check for Added Binary Files
         run: |
