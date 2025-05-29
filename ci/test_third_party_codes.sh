@@ -45,6 +45,7 @@ time_section() {
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+
 time_section "🧪 Testing splpak" '
   git clone https://github.com/Pranavchiku/splpak.git
   cd splpak
@@ -59,6 +60,19 @@ time_section "🧪 Testing splpak" '
 
   cd ../
   rm -rf splpak
+'
+
+time_section "🧪 Testing fortran-regex" '
+  git clone git clone https://github.com/perazz/fortran-regex.git
+  cd fortran-regex
+  export PATH="$(pwd)/../src/bin:$PATH"
+
+  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
+  fpm --compiler=$FC build
+  fpm test
+
+  print_success "Done with fortran-regex"
+  cd ..
 '
 
 time_section "🧪 Testing fortran_mpi" '
